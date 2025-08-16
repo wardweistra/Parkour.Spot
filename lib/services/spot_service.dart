@@ -69,6 +69,31 @@ class SpotService extends ChangeNotifier {
     }
   }
 
+  Future<Spot?> fetchSpotById(String spotId) async {
+    try {
+      final doc = await _firestore.collection('spots').doc(spotId).get();
+      if (!doc.exists) {
+        return null;
+      }
+      final spot = Spot.fromFirestore(doc);
+      if (spot.isPublic == false) {
+        return null;
+      }
+
+      final index = _spots.indexWhere((s) => s.id == spotId);
+      if (index == -1) {
+        _spots.add(spot);
+      } else {
+        _spots[index] = spot;
+      }
+      notifyListeners();
+      return spot;
+    } catch (e) {
+      debugPrint('Error fetching spot by id: $e');
+      return null;
+    }
+  }
+
   // Search spots by name or description
   List<Spot> searchSpots(String query) {
     try {

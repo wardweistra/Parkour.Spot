@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../services/spot_service.dart';
+import '../services/deep_link_service.dart';
 import 'spots/spots_list_screen.dart';
 import 'spots/add_spot_screen.dart';
 import 'spots/map_screen.dart';
 import 'profile/profile_screen.dart';
+import 'spots/spot_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,6 +19,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   late PageController _pageController;
+  DeepLinkService? _deepLinkService;
 
   final List<Widget> _screens = [
     const SpotsListScreen(),
@@ -33,12 +36,16 @@ class _HomeScreenState extends State<HomeScreen> {
     // Load spots when the app starts
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<SpotService>(context, listen: false).fetchSpots();
+      _deepLinkService = Provider.of<DeepLinkService>(context, listen: false);
+      _handlePendingDeepLink();
+      _deepLinkService?.addListener(_handlePendingDeepLink);
     });
   }
 
   @override
   void dispose() {
     _pageController.dispose();
+    _deepLinkService?.removeListener(_handlePendingDeepLink);
     super.dispose();
   }
 
@@ -51,6 +58,33 @@ class _HomeScreenState extends State<HomeScreen> {
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
+  }
+
+  Future<void> _handlePendingDeepLink() async {
+    final deepLinkService = _deepLinkService;
+    if (deepLinkService == null) return;
+
+    final spotId = deepLinkService.consumePendingSpotId();
+    if (spotId == null || !mounted) return;
+
+    final spotService = Provider.of<SpotService>(context, listen: false);
+    final spot = await spotService.fetchSpotById(spotId);
+    if (!mounted) return;
+
+    if (spot != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SpotDetailScreen(spot: spot),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Spot not found or unavailable.'),
+        ),
+      );
+    }
   }
 
   @override

@@ -45,5 +45,24 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	
+	<!-- Custom URL scheme: parkourspot://spot/<id> -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>parkourspot</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>parkourspot</string>
+		</dict>
+	</array>
+	
+	<!-- Universal Links (placeholder, requires entitlement and apple-app-site-association) -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:parkourspot.app</string>
+	</array>
 </dict>
 </plist>

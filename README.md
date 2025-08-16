@@ -213,3 +213,18 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ---
 
 **Built with ❤️ using Flutter and Firebase**
+
+## Deep Links & Sharing
+
+- Share button on `SpotDetailScreen` shares a deep link in the form `parkourspot://spot/<SPOT_ID>`.
+- The app listens for incoming links via `uni_links` in `DeepLinkService` and navigates to the spot detail when received.
+- Android: custom scheme and https app link intent-filters are added in `android/app/src/main/AndroidManifest.xml`.
+- iOS: custom URL scheme is configured in `ios/Runner/Info.plist`. An entitlements file `ios/Runner/Runner.entitlements` with Associated Domains is included (update your Xcode project to use it).
+
+Testing deep links (Android):
+
+```bash
+adb shell am start -W -a android.intent.action.VIEW -d "parkourspot://spot/<SPOT_ID>" com.example.parkour_spot
+```
+
+Replace the package id if you’ve changed `applicationId`.

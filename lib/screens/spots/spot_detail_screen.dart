@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../models/spot.dart';
 import '../../services/spot_service.dart';
 import '../../services/auth_service.dart';
@@ -41,14 +42,14 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       fit: BoxFit.cover,
                     )
                   else
-                                          Container(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                        child: Icon(
-                          Icons.image_not_supported,
-                          size: 64,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
+                    Container(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      child: Icon(
+                        Icons.image_not_supported,
+                        size: 64,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
+                    ),
                   
                   // Gradient Overlay
                   Container(
@@ -83,7 +84,15 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     right: 16,
                     child: Row(
                       children: [
-                                                 if (widget.spot.createdBy == Provider.of<AuthService>(context, listen: false).userProfile?.id) ...[
+                        CircleAvatar(
+                          backgroundColor: Colors.black.withOpacity(0.5),
+                          child: IconButton(
+                            icon: const Icon(Icons.share, color: Colors.white),
+                            onPressed: _shareSpot,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        if (widget.spot.createdBy == Provider.of<AuthService>(context, listen: false).userProfile?.id) ...[
                           CircleAvatar(
                             backgroundColor: Colors.black.withOpacity(0.5),
                             child: IconButton(
@@ -380,6 +389,17 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         ],
       ),
     );
+  }
+
+  void _shareSpot() {
+    final spotId = widget.spot.id;
+    if (spotId == null) {
+      return;
+    }
+    final deepLink = 'parkourspot://spot/$spotId';
+    // Optional: include https fallback if you configure App/Universal Links
+    final message = 'Check out this Parkour Spot: ${widget.spot.name}\n$deepLink';
+    Share.share(message, subject: 'Parkour Spot');
   }
 
   String _formatDate(DateTime date) {
