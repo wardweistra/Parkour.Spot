@@ -9,6 +9,12 @@ class DeepLinkService extends ChangeNotifier {
   String? get pendingSpotId => _pendingSpotId;
 
   Future<void> initialize() async {
+    // Web: parse the current browser URL once on load
+    if (kIsWeb) {
+      _handleUri(Uri.base);
+      return;
+    }
+
     try {
       final initialUri = await getInitialUri();
       _handleUri(initialUri);
@@ -36,11 +42,18 @@ class DeepLinkService extends ChangeNotifier {
       return;
     }
 
-    // Optional App/Universal Link: https://parkourspot.app/spot/<id>
-    if (uri.scheme == 'https' && uri.host == 'parkourspot.app') {
+    // HTTPS/App/Universal Links: https://<any-host>/spot/<id>
+    if ((uri.scheme == 'https' || uri.scheme == 'http')) {
       final segments = uri.pathSegments;
       if (segments.length >= 2 && segments.first == 'spot') {
         _pendingSpotId = segments[1];
+        notifyListeners();
+        return;
+      }
+      // Also support query parameter: /?spot=<id>
+      final qpSpot = uri.queryParameters['spot'];
+      if (qpSpot != null && qpSpot.isNotEmpty) {
+        _pendingSpotId = qpSpot;
         notifyListeners();
         return;
       }

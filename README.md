@@ -179,6 +179,22 @@ flutter clean
 flutter build web
 ```
 
+### Web support
+
+- Direct links like `https://parkourspot.app/spot/<SPOT_ID>` will be parsed on load and navigate to the spot detail.
+- Also supports query-style deeplinks: `https://parkourspot.app/?spot=<SPOT_ID>`.
+- Ensure your hosting config rewrites to `index.html` so Flutter can handle routes (Firebase Hosting example):
+
+```json
+{
+  "hosting": {
+    "public": "build/web",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [{ "source": "**", "destination": "/index.html" }]
+  }
+}
+```
+
 ## 📱 Platform Support
 
 | Platform | Status | Notes |

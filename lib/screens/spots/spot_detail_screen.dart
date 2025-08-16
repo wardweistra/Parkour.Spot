@@ -396,9 +396,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     if (spotId == null) {
       return;
     }
-    final deepLink = 'parkourspot://spot/$spotId';
-    // Optional: include https fallback if you configure App/Universal Links
-    final message = 'Check out this Parkour Spot: ${widget.spot.name}\n$deepLink';
+    // Prefer shareable https URL for web/social, with custom scheme fallback
+    final httpsUrl = 'https://parkourspot.app/spot/$spotId';
+    final fallback = 'parkourspot://spot/$spotId';
+    final message = 'Check out this Parkour Spot: ${widget.spot.name}\n$httpsUrl\n$fallback';
     Share.share(message, subject: 'Parkour Spot');
   }
 
