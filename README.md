@@ -117,7 +117,7 @@ lib/
   "name": "String",
   "description": "String", 
   "location": "GeoPoint",
-  "imageUrl": "String?",
+  "imageUrls": "List<String>?",
   "rating": "Double?",
   "ratingCount": "Int?",
   "tags": "List<String>?",

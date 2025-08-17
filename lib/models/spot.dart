@@ -5,7 +5,7 @@ class Spot {
   final String name;
   final String description;
   final GeoPoint location;
-  final String? imageUrl;
+  final List<String>? imageUrls;
   final String? createdBy;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -19,7 +19,7 @@ class Spot {
     required this.name,
     required this.description,
     required this.location,
-    this.imageUrl,
+    this.imageUrls,
     this.createdBy,
     this.createdAt,
     this.updatedAt,
@@ -36,7 +36,9 @@ class Spot {
       name: data['name'] ?? '',
       description: data['description'] ?? '',
       location: data['location'] ?? const GeoPoint(0, 0),
-      imageUrl: data['imageUrl'],
+      imageUrls: data['imageUrls'] != null
+          ? List<String>.from(data['imageUrls'])
+          : (data['imageUrl'] != null ? [data['imageUrl']] : null),
       createdBy: data['createdBy'],
       createdAt: data['createdAt']?.toDate(),
       updatedAt: data['updatedAt']?.toDate(),
@@ -52,7 +54,7 @@ class Spot {
       'name': name,
       'description': description,
       'location': location,
-      'imageUrl': imageUrl,
+      'imageUrls': imageUrls,
       'createdBy': createdBy,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
@@ -68,7 +70,7 @@ class Spot {
     String? name,
     String? description,
     GeoPoint? location,
-    String? imageUrl,
+    List<String>? imageUrls,
     String? createdBy,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -82,7 +84,7 @@ class Spot {
       name: name ?? this.name,
       description: description ?? this.description,
       location: location ?? this.location,
-      imageUrl: imageUrl ?? this.imageUrl,
+      imageUrls: imageUrls ?? this.imageUrls,
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
