@@ -4,11 +4,15 @@ import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:io';
+import 'dart:typed_data';
 import '../../models/spot.dart';
 import '../../services/spot_service.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/custom_button.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'location_picker_screen.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class AddSpotScreen extends StatefulWidget {
   const AddSpotScreen({super.key});
@@ -23,8 +27,10 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
   final _descriptionController = TextEditingController();
   final _tagsController = TextEditingController();
   
-  List<File> _selectedImages = [];
+  List<File?> _selectedImages = [];
+  List<Uint8List?> _selectedImageBytes = [];
   Position? _currentPosition;
+  LatLng? _pickedLocation;
   bool _isLoading = false;
   bool _isGettingLocation = false;
 
@@ -115,9 +121,19 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
       );
 
       if (pickedFiles.isNotEmpty) {
-        setState(() {
-          _selectedImages.addAll(pickedFiles.map((x) => File(x.path)));
-        });
+        for (final pickedFile in pickedFiles) {
+          if (kIsWeb) {
+            // For web, read the bytes directly
+            final bytes = await pickedFile.readAsBytes();
+            _selectedImageBytes.add(bytes);
+            _selectedImages.add(null); // No File object for web
+          } else {
+            // For mobile, use File
+            _selectedImages.add(File(pickedFile.path));
+            _selectedImageBytes.add(null);
+          }
+        }
+        setState(() {}); // Force rebuild to show new images
       }
     } catch (e) {
       if (mounted) {
@@ -142,9 +158,17 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
       );
 
       if (pickedFile != null) {
-        setState(() {
+        if (kIsWeb) {
+          // For web, read the bytes directly
+          final bytes = await pickedFile.readAsBytes();
+          _selectedImageBytes.add(bytes);
+          _selectedImages.add(null); // No File object for web
+        } else {
+          // For mobile, use File
           _selectedImages.add(File(pickedFile.path));
-        });
+          _selectedImageBytes.add(null);
+        }
+        setState(() {}); // Force rebuild to show new images
       }
     } catch (e) {
       if (mounted) {
@@ -160,8 +184,118 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
 
   void _removeImageAt(int index) {
     setState(() {
-      _selectedImages.removeAt(index);
+      if (index < _selectedImages.length) {
+        _selectedImages.removeAt(index);
+      }
+      if (index < _selectedImageBytes.length) {
+        _selectedImageBytes.removeAt(index);
+      }
     });
+  }
+
+  Widget _buildCrossPlatformImage() {
+    if (kIsWeb && _selectedImageBytes.isNotEmpty) {
+      // For web, use Image.memory with bytes
+      return SizedBox(
+        height: 200,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: _selectedImageBytes.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 12),
+          itemBuilder: (context, index) {
+            return Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.memory(
+                    _selectedImageBytes[index]!,
+                    height: 200,
+                    width: 280,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: CircleAvatar(
+                    backgroundColor: Colors.black54,
+                    child: IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => _removeImageAt(index),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      );
+    } else if (!kIsWeb && _selectedImages.isNotEmpty) {
+      // For mobile, use Image.file
+      return SizedBox(
+        height: 200,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: _selectedImages.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 12),
+          itemBuilder: (context, index) {
+            return Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.file(
+                    _selectedImages[index]!,
+                    height: 200,
+                    width: 280,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: CircleAvatar(
+                    backgroundColor: Colors.black54,
+                    child: IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => _removeImageAt(index),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      );
+    } else {
+      // Fallback
+      return Container(
+        height: 200,
+        width: double.infinity,
+        color: Colors.grey[300],
+        child: const Icon(Icons.image, size: 50, color: Colors.grey),
+      );
+    }
+  }
+
+  Future<void> _pickLocationOnMap() async {
+    final LatLng? initial = _pickedLocation ?? (
+      _currentPosition != null
+        ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
+        : null
+    );
+
+    final result = await Navigator.push<LatLng>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => LocationPickerScreen(initialLocation: initial),
+      ),
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        _pickedLocation = result;
+      });
+    }
   }
 
   Future<void> _submitForm() async {
@@ -205,7 +339,11 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
         createdBy: authService.currentUser?.uid,
       );
 
-      final success = await spotService.createSpot(spot, _selectedImages);
+      final success = await spotService.createSpot(
+        spot,
+        imageFiles: _selectedImages.where((file) => file != null).cast<File>().toList(),
+        imageBytesList: _selectedImageBytes.where((bytes) => bytes != null).cast<Uint8List>().toList(),
+      );
 
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -219,6 +357,8 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
         _formKey.currentState?.reset();
         setState(() {
           _selectedImages = [];
+          _selectedImageBytes = [];
+          _pickedLocation = null;
         });
         
         // Navigate back
@@ -273,41 +413,8 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
                       ),
                       const SizedBox(height: 12),
                       
-                      if (_selectedImages.isNotEmpty) ...[
-                        SizedBox(
-                          height: 200,
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: _selectedImages.length,
-                            separatorBuilder: (_, __) => const SizedBox(width: 12),
-                            itemBuilder: (context, index) {
-                              return Stack(
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: Image.file(
-                                      _selectedImages[index],
-                                      height: 200,
-                                      width: 280,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                  Positioned(
-                                    top: 8,
-                                    right: 8,
-                                    child: CircleAvatar(
-                                      backgroundColor: Colors.black54,
-                                      child: IconButton(
-                                        icon: const Icon(Icons.close, color: Colors.white),
-                                        onPressed: () => _removeImageAt(index),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                        ),
+                      if (_selectedImages.isNotEmpty || _selectedImageBytes.isNotEmpty) ...[
+                        _buildCrossPlatformImage(),
                         const SizedBox(height: 12),
                       ],
                       
