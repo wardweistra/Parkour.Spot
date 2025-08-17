@@ -9,8 +9,6 @@ import '../../services/spot_service.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/custom_button.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'location_picker_screen.dart';
 
 class AddSpotScreen extends StatefulWidget {
   const AddSpotScreen({super.key});
@@ -25,11 +23,10 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
   final _descriptionController = TextEditingController();
   final _tagsController = TextEditingController();
   
-  File? _selectedImage;
+  List<File> _selectedImages = [];
   Position? _currentPosition;
   bool _isLoading = false;
   bool _isGettingLocation = false;
-  LatLng? _pickedLocation;
 
   @override
   void initState() {
@@ -108,26 +105,25 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
     }
   }
 
-  Future<void> _pickImage() async {
+  Future<void> _pickImagesFromGallery() async {
     try {
       final picker = ImagePicker();
-      final pickedFile = await picker.pickImage(
-        source: ImageSource.gallery,
+      final pickedFiles = await picker.pickMultiImage(
         maxWidth: 1920,
         maxHeight: 1080,
         imageQuality: 85,
       );
 
-      if (pickedFile != null) {
+      if (pickedFiles.isNotEmpty) {
         setState(() {
-          _selectedImage = File(pickedFile.path);
+          _selectedImages.addAll(pickedFiles.map((x) => File(x.path)));
         });
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error picking image: $e'),
+            content: Text('Error picking images: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -147,7 +143,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
 
       if (pickedFile != null) {
         setState(() {
-          _selectedImage = File(pickedFile.path);
+          _selectedImages.add(File(pickedFile.path));
         });
       }
     } catch (e) {
@@ -162,37 +158,19 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
     }
   }
 
-  Future<void> _pickLocationOnMap() async {
-    final LatLng? initial = _pickedLocation ?? (
-      _currentPosition != null
-        ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
-        : null
-    );
-
-    final result = await Navigator.push<LatLng>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => LocationPickerScreen(initialLocation: initial),
-      ),
-    );
-
-    if (result != null && mounted) {
-      setState(() {
-        _pickedLocation = result;
-      });
-    }
+  void _removeImageAt(int index) {
+    setState(() {
+      _selectedImages.removeAt(index);
+    });
   }
 
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
     
-    final double? latitude = _pickedLocation?.latitude ?? _currentPosition?.latitude;
-    final double? longitude = _pickedLocation?.longitude ?? _currentPosition?.longitude;
-
-    if (latitude == null || longitude == null) {
+    if (_currentPosition == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select a location on the map or allow location access'),
+          content: Text('Please wait for location to be determined'),
           backgroundColor: Colors.red,
         ),
       );
@@ -222,12 +200,12 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
       final spot = Spot(
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
-        location: GeoPoint(latitude, longitude),
+        location: GeoPoint(_currentPosition!.latitude, _currentPosition!.longitude),
         tags: tags.isNotEmpty ? tags : null,
         createdBy: authService.currentUser?.uid,
       );
 
-      final success = await spotService.createSpot(spot, _selectedImage);
+      final success = await spotService.createSpot(spot, _selectedImages);
 
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -240,8 +218,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
         // Clear form
         _formKey.currentState?.reset();
         setState(() {
-          _selectedImage = null;
-          _pickedLocation = null;
+          _selectedImages = [];
         });
         
         // Navigate back
@@ -289,21 +266,46 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Spot Image',
+                        'Spot Images',
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 12),
                       
-                      if (_selectedImage != null) ...[
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.file(
-                            _selectedImage!,
-                            height: 200,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
+                      if (_selectedImages.isNotEmpty) ...[
+                        SizedBox(
+                          height: 200,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: _selectedImages.length,
+                            separatorBuilder: (_, __) => const SizedBox(width: 12),
+                            itemBuilder: (context, index) {
+                              return Stack(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Image.file(
+                                      _selectedImages[index],
+                                      height: 200,
+                                      width: 280,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: 8,
+                                    right: 8,
+                                    child: CircleAvatar(
+                                      backgroundColor: Colors.black54,
+                                      child: IconButton(
+                                        icon: const Icon(Icons.close, color: Colors.white),
+                                        onPressed: () => _removeImageAt(index),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -313,7 +315,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
                         children: [
                           Expanded(
                             child: ElevatedButton.icon(
-                              onPressed: _pickImage,
+                              onPressed: _pickImagesFromGallery,
                               icon: const Icon(Icons.photo_library),
                               label: const Text('Gallery'),
                             ),
@@ -402,94 +404,48 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
                             Text('Getting your location...'),
                           ],
                         ),
+                      ] else if (_currentPosition != null) ...[
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.location_on,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '${_currentPosition!.latitude.toStringAsFixed(6)}, ${_currentPosition!.longitude.toStringAsFixed(6)}',
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Location determined automatically',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                          ),
+                        ),
                       ] else ...[
-                        if (_pickedLocation != null) ...[
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.edit_location_alt,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  '${_pickedLocation!.latitude.toStringAsFixed(6)}, ${_pickedLocation!.longitude.toStringAsFixed(6)}',
-                                  style: Theme.of(context).textTheme.bodyMedium,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Location selected on map',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.location_off,
+                              color: Theme.of(context).colorScheme.error,
                             ),
-                          ),
-                        ] else if (_currentPosition != null) ...[
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.location_on,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  '${_currentPosition!.latitude.toStringAsFixed(6)}, ${_currentPosition!.longitude.toStringAsFixed(6)}',
-                                  style: Theme.of(context).textTheme.bodyMedium,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Location determined automatically',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                            ),
-                          ),
-                        ] else ...[
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.location_off,
-                                color: Theme.of(context).colorScheme.error,
-                              ),
-                              const SizedBox(width: 8),
-                              const Text('Location not available'),
-                            ],
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            const Text('Location not available'),
+                          ],
+                        ),
                       ],
                       
                       const SizedBox(height: 12),
                       
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 8,
-                        children: [
-                          ElevatedButton.icon(
-                            onPressed: _isGettingLocation ? null : _getCurrentLocation,
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('Refresh Location'),
-                          ),
-                          OutlinedButton.icon(
-                            onPressed: _pickLocationOnMap,
-                            icon: const Icon(Icons.map),
-                            label: const Text('Pick on Map'),
-                          ),
-                          if (_pickedLocation != null)
-                            TextButton.icon(
-                              onPressed: () {
-                                setState(() {
-                                  _pickedLocation = null;
-                                });
-                              },
-                              icon: const Icon(Icons.clear),
-                              label: const Text('Clear selection'),
-                            ),
-                        ],
+                      ElevatedButton.icon(
+                        onPressed: _isGettingLocation ? null : _getCurrentLocation,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Refresh Location'),
                       ),
                     ],
                   ),
@@ -500,7 +456,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
               
               // Submit Button
               CustomButton(
-                onPressed: _isLoading || (_currentPosition == null && _pickedLocation == null) ? null : _submitForm,
+                onPressed: _isLoading || _currentPosition == null ? null : _submitForm,
                 text: _isLoading ? 'Creating Spot...' : 'Create Spot',
                 isLoading: _isLoading,
                 icon: Icons.add_location,
@@ -510,7 +466,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
               
               // Info Text
               Text(
-                'Note: Your current or selected map location will be used for this spot. You can pick a different location using the map.',
+                'Note: Your current location will be used for this spot. Make sure you\'re at the correct location before submitting.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                 ),
