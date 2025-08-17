@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../services/spot_service.dart';
 import '../../models/spot.dart';
 import 'spot_detail_screen.dart';
@@ -12,6 +14,171 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
+  GoogleMapController? _mapController;
+  Position? _currentPosition;
+  bool _isGettingLocation = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _getCurrentLocation();
+  }
+
+  Future<void> _getCurrentLocation() async {
+    setState(() {
+      _isGettingLocation = true;
+    });
+
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.whileInUse ||
+          permission == LocationPermission.always) {
+        final position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+        );
+
+        if (mounted) {
+          setState(() {
+            _currentPosition = position;
+          });
+
+          // Move camera to user location if map is ready
+          if (_mapController != null) {
+            _mapController!.animateCamera(
+              CameraUpdate.newLatLng(
+                LatLng(position.latitude, position.longitude),
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      // Handle error silently for map view
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGettingLocation = false;
+        });
+      }
+    }
+  }
+
+  Set<Marker> _buildMarkers(List<Spot> spots) {
+    return spots.map((spot) {
+      return Marker(
+        markerId: MarkerId(spot.id ?? spot.name),
+        position: LatLng(spot.location.latitude, spot.location.longitude),
+        infoWindow: InfoWindow(
+          title: spot.name,
+          snippet: spot.description.length > 50 
+              ? '${spot.description.substring(0, 50)}...'
+              : spot.description,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => SpotDetailScreen(spot: spot),
+              ),
+            );
+          },
+        ),
+        onTap: () {
+          // Show bottom sheet with spot details
+          _showSpotBottomSheet(spot);
+        },
+      );
+    }).toSet();
+  }
+
+  void _showSpotBottomSheet(Spot spot) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.4,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Handle bar
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Spot name
+            Text(
+              spot.name,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            
+            // Description
+            Expanded(
+              child: Text(
+                spot.description,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+            
+            // Location
+            Row(
+              children: [
+                Icon(
+                  Icons.location_on,
+                  size: 16,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '${spot.location.latitude.toStringAsFixed(4)}, ${spot.location.longitude.toStringAsFixed(4)}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // View details button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => SpotDetailScreen(spot: spot),
+                    ),
+                  );
+                },
+                child: const Text('View Details'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -74,298 +241,64 @@ class _MapScreenState extends State<MapScreen> {
             );
           }
 
-          if (spotService.spots.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.map_outlined,
-                    size: 64,
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No spots on map',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Add some parkour spots to see them on the map!',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
+          // Determine initial camera position
+          final CameraPosition initialCameraPosition = CameraPosition(
+            target: _currentPosition != null
+                ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
+                : spotService.spots.isNotEmpty
+                    ? LatLng(spotService.spots.first.location.latitude, spotService.spots.first.location.longitude)
+                    : const LatLng(37.7749, -122.4194), // Default to San Francisco
+            zoom: 14,
+          );
 
-          // Placeholder for map - will be replaced with Google Maps
-          return _buildMapPlaceholder(spotService.spots);
-        },
-      ),
-    );
-  }
-
-  Widget _buildMapPlaceholder(List<Spot> spots) {
-    return Column(
-      children: [
-        // Map placeholder
-        Expanded(
-          child: Container(
-            margin: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceVariant,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
-              ),
-            ),
-            child: Stack(
-              children: [
-                // Background pattern
-                Positioned.fill(
-                  child: CustomPaint(
-                    painter: MapPatternPainter(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.1),
-                    ),
-                  ),
-                ),
-                
-                // Spots as draggable markers
-                ...spots.map((spot) => _buildSpotMarker(spot)),
-                
-                // Center indicator
-                Center(
-                  child: Container(
-                    width: 20,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white,
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                ),
-                
-                // Map controls overlay
-                Positioned(
-                  top: 16,
-                  right: 16,
-                  child: Column(
-                    children: [
-                      FloatingActionButton.small(
-                        onPressed: () {
-                          // TODO: Implement zoom in
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Zoom in')),
-                          );
-                        },
-                        heroTag: 'zoom_in',
-                        child: const Icon(Icons.add),
-                      ),
-                      const SizedBox(height: 8),
-                      FloatingActionButton.small(
-                        onPressed: () {
-                          // TODO: Implement zoom out
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Zoom out')),
-                          );
-                        },
-                        heroTag: 'zoom_out',
-                        child: const Icon(Icons.remove),
-                      ),
-                      const SizedBox(height: 8),
-                      FloatingActionButton.small(
-                        onPressed: () {
-                          // TODO: Implement center on user location
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Center on location')),
-                          );
-                        },
-                        heroTag: 'my_location',
-                        child: const Icon(Icons.my_location),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        
-        // Spots list below map
-        Container(
-          height: 200,
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          return Stack(
             children: [
-              Text(
-                'Nearby Spots (${spots.length})',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: spots.length,
-                  itemBuilder: (context, index) {
-                    final spot = spots[index];
-                    return Container(
-                      width: 200,
-                      margin: const EdgeInsets.only(right: 12),
-                      child: Card(
-                        child: InkWell(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => SpotDetailScreen(spot: spot),
-                              ),
-                            );
-                          },
-                          borderRadius: BorderRadius.circular(12),
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  spot.name,
-                                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  spot.description,
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const Spacer(),
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.location_on,
-                                      size: 14,
-                                      color: Theme.of(context).colorScheme.primary,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Expanded(
-                                      child: Text(
-                                        '${spot.location.latitude.toStringAsFixed(4)}, ${spot.location.longitude.toStringAsFixed(4)}',
-                                        style: Theme.of(context).textTheme.bodySmall,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+              GoogleMap(
+                initialCameraPosition: initialCameraPosition,
+                markers: _buildMarkers(spotService.spots),
+                myLocationEnabled: true,
+                myLocationButtonEnabled: true,
+                onMapCreated: (GoogleMapController controller) {
+                  _mapController = controller;
+                  
+                  // Move to user location if available
+                  if (_currentPosition != null) {
+                    controller.animateCamera(
+                      CameraUpdate.newLatLng(
+                        LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
                       ),
                     );
-                  },
-                ),
+                  }
+                },
               ),
+              
+              // Floating action button for centering on user location
+              if (_isGettingLocation)
+                const Positioned(
+                  top: 16,
+                  right: 16,
+                  child: Card(
+                    child: Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          SizedBox(width: 8),
+                          Text('Finding location...'),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
             ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSpotMarker(Spot spot) {
-    // Calculate position based on spot coordinates
-    // This is a simplified positioning for the placeholder
-    final random = (spot.id?.hashCode ?? 0) % 100;
-    final left = 50 + (random % 60);
-    final top = 50 + ((random * 2) % 60);
-    
-    return Positioned(
-      left: left.toDouble(),
-      top: top.toDouble(),
-      child: GestureDetector(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => SpotDetailScreen(spot: spot),
-            ),
           );
         },
-        child: Container(
-          width: 24,
-          height: 24,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary,
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: Colors.white,
-              width: 2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: const Icon(
-            Icons.location_on,
-            color: Colors.white,
-            size: 16,
-          ),
-        ),
       ),
     );
   }
-}
-
-// Custom painter for map pattern
-class MapPatternPainter extends CustomPainter {
-  final Color color;
-
-  MapPatternPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 1;
-
-    // Draw grid lines
-    for (int i = 0; i < size.width; i += 20) {
-      canvas.drawLine(
-        Offset(i.toDouble(), 0),
-        Offset(i.toDouble(), size.height),
-        paint,
-      );
-    }
-
-    for (int i = 0; i < size.height; i += 20) {
-      canvas.drawLine(
-        Offset(0, i.toDouble()),
-        Offset(size.width, i.toDouble()),
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
