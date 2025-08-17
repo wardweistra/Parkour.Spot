@@ -88,15 +88,28 @@ class SpotService extends ChangeNotifier {
     }
   }
 
-  // Create a new spot with multiple images
-  Future<bool> createSpot(Spot spot, List<File> imageFiles) async {
+  // Create a new spot
+  Future<bool> createSpot(Spot spot, {File? imageFile, Uint8List? imageBytes, List<File>? imageFiles, List<Uint8List>? imageBytesList}) async {
     try {
       _isLoading = true;
       notifyListeners();
 
       List<String>? imageUrls;
-      if (imageFiles.isNotEmpty) {
+      
+      // Handle single image uploads
+      if (imageFile != null) {
+        final imageUrl = await _uploadImage(imageFile);
+        imageUrls = [imageUrl];
+      } else if (imageBytes != null) {
+        final imageUrl = await _uploadImageBytes(imageBytes);
+        imageUrls = [imageUrl];
+      }
+      
+      // Handle multiple image uploads
+      if (imageFiles != null && imageFiles.isNotEmpty) {
         imageUrls = await _uploadImages(imageFiles);
+      } else if (imageBytesList != null && imageBytesList.isNotEmpty) {
+        imageUrls = await _uploadImagesBytes(imageBytesList);
       }
 
       final spotWithImages = spot.copyWith(
@@ -122,18 +135,24 @@ class SpotService extends ChangeNotifier {
     }
   }
 
-  // Update an existing spot, optionally appending new images
-  Future<bool> updateSpot(Spot spot, List<File> imageFiles) async {
+  // Update an existing spot
+  Future<bool> updateSpot(Spot spot, {File? imageFile, Uint8List? imageBytes}) async {
     try {
       _isLoading = true;
       notifyListeners();
 
       List<String>? imageUrls = spot.imageUrls;
-      if (imageFiles.isNotEmpty) {
-        final uploaded = await _uploadImages(imageFiles);
+      if (imageFile != null) {
+        final imageUrl = await _uploadImage(imageFile);
         imageUrls = [
           ...?spot.imageUrls,
-          ...uploaded,
+          imageUrl,
+        ];
+      } else if (imageBytes != null) {
+        final imageUrl = await _uploadImageBytes(imageBytes);
+        imageUrls = [
+          ...?spot.imageUrls,
+          imageUrl,
         ];
       }
 
@@ -199,14 +218,40 @@ class SpotService extends ChangeNotifier {
     }
   }
 
-  // Upload multiple images
-  Future<List<String>> _uploadImages(List<File> imageFiles) async {
-    final urls = <String>[];
-    for (final file in imageFiles) {
-      final url = await _uploadImage(file);
-      urls.add(url);
+  // Upload image bytes to Firebase Storage (for web)
+  Future<String> _uploadImageBytes(Uint8List imageBytes) async {
+    try {
+      final fileName = 'spots/${DateTime.now().millisecondsSinceEpoch}_web_image.jpg';
+      final ref = _storage.ref().child(fileName);
+      
+      final uploadTask = ref.putData(imageBytes);
+      final snapshot = await uploadTask;
+      
+      return await snapshot.ref.getDownloadURL();
+    } catch (e) {
+      debugPrint('Error uploading image bytes: $e');
+      rethrow;
     }
-    return urls;
+  }
+
+  // Upload multiple images to Firebase Storage
+  Future<List<String>> _uploadImages(List<File> imageFiles) async {
+    final List<String> imageUrls = [];
+    for (final imageFile in imageFiles) {
+      final imageUrl = await _uploadImage(imageFile);
+      imageUrls.add(imageUrl);
+    }
+    return imageUrls;
+  }
+
+  // Upload multiple image bytes to Firebase Storage (for web)
+  Future<List<String>> _uploadImagesBytes(List<Uint8List> imageBytesList) async {
+    final List<String> imageUrls = [];
+    for (final imageBytes in imageBytesList) {
+      final imageUrl = await _uploadImageBytes(imageBytes);
+      imageUrls.add(imageUrl);
+    }
+    return imageUrls;
   }
 
   // Calculate distance between two points using Haversine formula

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/spot.dart';
 import '../../services/spot_service.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/custom_button.dart';
+import 'package:flutter/foundation.dart';
 
 class SpotDetailScreen extends StatefulWidget {
   final Spot spot;
@@ -100,129 +102,205 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
-      body: CustomScrollView(
-        slivers: [
-          // App Bar with Image
-          SliverAppBar(
-            expandedHeight: 300,
-            pinned: true,
-            backgroundColor: Theme.of(context).colorScheme.surface,
-            surfaceTintColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  // Background Images Carousel
-                  if (widget.spot.imageUrls != null && widget.spot.imageUrls!.isNotEmpty)
-                    PageView.builder(
-                      controller: _imagePageController,
-                      onPageChanged: (index) => setState(() => _currentImageIndex = index),
-                      itemCount: widget.spot.imageUrls!.length,
-                      itemBuilder: (context, index) {
-                        final url = widget.spot.imageUrls![index];
-                        return Image.network(
-                          url,
-                          fit: BoxFit.cover,
-                        );
-                      },
-                    )
-                  else
-                    Container(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                      child: Icon(
-                        Icons.image_not_supported,
-                        size: 64,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                  
-                  // Gradient Overlay
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withOpacity(0.7),
-                        ],
-                      ),
-                    ),
-                  ),
-                  
-                  // Back Button
-                  Positioned(
-                    top: MediaQuery.of(context).padding.top + 8,
-                    left: 16,
-                    child: CircleAvatar(
-                      backgroundColor: Colors.black.withOpacity(0.5),
-                      child: IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.white),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ),
-                  ),
-                  
-                  // Action Buttons
-                  Positioned(
-                    top: MediaQuery.of(context).padding.top + 8,
-                    right: 16,
-                    child: Row(
-                      children: [
-                        if (widget.spot.createdBy == Provider.of<AuthService>(context, listen: false).userProfile?.id) ...[
-                          CircleAvatar(
-                            backgroundColor: Colors.black.withOpacity(0.5),
-                            child: IconButton(
-                              icon: const Icon(Icons.edit, color: Colors.white),
-                              onPressed: () {
-                                // TODO: Navigate to edit screen
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          CircleAvatar(
-                            backgroundColor: Colors.red.withOpacity(0.8),
-                            child: IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.white),
-                              onPressed: _showDeleteDialog,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-
-                  // Page indicators
-                  if (widget.spot.imageUrls != null && widget.spot.imageUrls!.length > 1)
-                    Positioned(
-                      bottom: 16,
-                      left: 0,
-                      right: 0,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(widget.spot.imageUrls!.length, (index) {
-                          final isActive = index == _currentImageIndex;
-                          return AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            margin: const EdgeInsets.symmetric(horizontal: 4),
-                            width: isActive ? 10 : 8,
-                            height: isActive ? 10 : 8,
-                            decoration: BoxDecoration(
-                              color: isActive ? Colors.white : Colors.white54,
-                              shape: BoxShape.circle,
-                            ),
-                          );
-                        }),
-                      ),
-                    ),
-                ],
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        leading: CircleAvatar(
+          backgroundColor: Colors.black.withOpacity(0.5),
+          child: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
+        actions: [
+          if (widget.spot.createdBy == Provider.of<AuthService>(context, listen: false).userProfile?.id) ...[
+            CircleAvatar(
+              backgroundColor: Colors.black.withOpacity(0.5),
+              child: IconButton(
+                icon: const Icon(Icons.edit, color: Colors.white),
+                onPressed: () {
+                  // TODO: Navigate to edit screen
+                },
               ),
             ),
-          ),
-          
-          // Content
-          SliverToBoxAdapter(
-            child: Padding(
+            const SizedBox(width: 8),
+            CircleAvatar(
+              backgroundColor: Colors.red.withOpacity(0.8),
+              child: IconButton(
+                icon: const Icon(Icons.delete, color: Colors.white),
+                onPressed: _showDeleteDialog,
+              ),
+            ),
+            const SizedBox(width: 16),
+          ],
+        ],
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image Carousel
+            if (widget.spot.imageUrls != null && widget.spot.imageUrls!.isNotEmpty)
+              Container(
+                height: 300,
+                width: double.infinity,
+                child: Stack(
+                  children: [
+                    // Debug info
+                    if (kDebugMode)
+                      Positioned(
+                        top: 8,
+                        left: 8,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.7),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'Images: ${widget.spot.imageUrls!.length}',
+                            style: const TextStyle(color: Colors.white, fontSize: 12),
+                          ),
+                        ),
+                      ),
+                    
+                    // Swipeable image carousel
+                    PageView.builder(
+                      controller: _imagePageController,
+                      onPageChanged: (index) {
+                        print('Page changed to index: $index'); // Debug log
+                        setState(() => _currentImageIndex = index);
+                      },
+                      itemCount: widget.spot.imageUrls!.length,
+                      physics: const PageScrollPhysics(), // Enable page swiping
+                      itemBuilder: (context, index) {
+                        final url = widget.spot.imageUrls![index];
+                        return CachedNetworkImage(
+                          imageUrl: url,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                            child: Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) {
+                            debugPrint('Image error: $error');
+                            return Container(
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.broken_image,
+                                    size: 64,
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Image failed to load',
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurface,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                    
+                    // Gradient overlay
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.7),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Page indicators
+                    if (widget.spot.imageUrls!.length > 1)
+                      Positioned(
+                        bottom: 16,
+                        left: 0,
+                        right: 0,
+                        child: Column(
+                          children: [
+                            // Current image counter
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.6),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                '${_currentImageIndex + 1} of ${widget.spot.imageUrls!.length}',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            // Swipe hint text
+                            Text(
+                              'Swipe to view more images',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.8),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            // Page indicator dots
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(widget.spot.imageUrls!.length, (index) {
+                                final isActive = index == _currentImageIndex;
+                                return GestureDetector(
+                                  onTap: () {
+                                    // Allow tapping on dots to navigate
+                                    _imagePageController.animateToPage(
+                                      index,
+                                      duration: const Duration(milliseconds: 300),
+                                      curve: Curves.easeInOut,
+                                    );
+                                  },
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                                    width: isActive ? 12 : 8,
+                                    height: isActive ? 12 : 8,
+                                    decoration: BoxDecoration(
+                                      color: isActive ? Colors.white : Colors.white54,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white.withOpacity(0.3),
+                                        width: 1,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            
+            // Content
+            Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -458,8 +536,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                 ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
