@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../models/spot.dart';
 import '../../services/spot_service.dart';
 import '../../services/auth_service.dart';
@@ -17,6 +18,69 @@ class SpotDetailScreen extends StatefulWidget {
 class _SpotDetailScreenState extends State<SpotDetailScreen> {
   double _userRating = 0;
   bool _hasRated = false;
+
+  void _showMapOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.directions),
+              title: const Text('Get Directions'),
+              onTap: () {
+                Navigator.pop(context);
+                _openDirections();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.map),
+              title: const Text('View on Map'),
+              onTap: () {
+                Navigator.pop(context);
+                _openInMaps();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.copy),
+              title: const Text('Copy Coordinates'),
+              onTap: () {
+                Navigator.pop(context);
+                _copyCoordinates();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _openDirections() {
+    // TODO: Implement directions (could use url_launcher to open in Maps app)
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Directions feature coming soon!')),
+    );
+  }
+
+  void _openInMaps() {
+    // TODO: Implement opening in native maps app
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Open in Maps feature coming soon!')),
+    );
+  }
+
+  void _copyCoordinates() {
+    // TODO: Implement copying coordinates to clipboard
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Coordinates: ${widget.spot.location.latitude.toStringAsFixed(6)}, ${widget.spot.location.longitude.toStringAsFixed(6)}',
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -203,12 +267,15 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
+                  
+                  // Location coordinates
                   Row(
                     children: [
                       Icon(
                         Icons.location_on,
                         color: Theme.of(context).colorScheme.primary,
+                        size: 20,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -218,6 +285,51 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         ),
                       ),
                     ],
+                  ),
+                  
+                  const SizedBox(height: 12),
+                  
+                  // Small map widget
+                  Container(
+                    height: 200,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                      ),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: GoogleMap(
+                      initialCameraPosition: CameraPosition(
+                        target: LatLng(
+                          widget.spot.location.latitude,
+                          widget.spot.location.longitude,
+                        ),
+                        zoom: 16,
+                      ),
+                      markers: {
+                        Marker(
+                          markerId: MarkerId(widget.spot.id ?? 'spot'),
+                          position: LatLng(
+                            widget.spot.location.latitude,
+                            widget.spot.location.longitude,
+                          ),
+                          infoWindow: InfoWindow(
+                            title: widget.spot.name,
+                            snippet: widget.spot.description.length > 50
+                                ? '${widget.spot.description.substring(0, 50)}...'
+                                : widget.spot.description,
+                          ),
+                        ),
+                      },
+                      zoomControlsEnabled: false,
+                      myLocationButtonEnabled: false,
+                      mapToolbarEnabled: false,
+                      onTap: (_) {
+                        // Open full map view or navigation
+                        _showMapOptions(context);
+                      },
+                    ),
                   ),
                   
                   const SizedBox(height: 24),

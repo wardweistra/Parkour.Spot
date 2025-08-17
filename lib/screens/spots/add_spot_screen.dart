@@ -9,6 +9,8 @@ import '../../services/spot_service.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/custom_button.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'location_picker_screen.dart';
 
 class AddSpotScreen extends StatefulWidget {
   const AddSpotScreen({super.key});
@@ -27,6 +29,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
   Position? _currentPosition;
   bool _isLoading = false;
   bool _isGettingLocation = false;
+  LatLng? _pickedLocation;
 
   @override
   void initState() {
@@ -159,13 +162,37 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
     }
   }
 
+  Future<void> _pickLocationOnMap() async {
+    final LatLng? initial = _pickedLocation ?? (
+      _currentPosition != null
+        ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
+        : null
+    );
+
+    final result = await Navigator.push<LatLng>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => LocationPickerScreen(initialLocation: initial),
+      ),
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        _pickedLocation = result;
+      });
+    }
+  }
+
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
     
-    if (_currentPosition == null) {
+    final double? latitude = _pickedLocation?.latitude ?? _currentPosition?.latitude;
+    final double? longitude = _pickedLocation?.longitude ?? _currentPosition?.longitude;
+
+    if (latitude == null || longitude == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please wait for location to be determined'),
+          content: Text('Please select a location on the map or allow location access'),
           backgroundColor: Colors.red,
         ),
       );
@@ -195,7 +222,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
       final spot = Spot(
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
-        location: GeoPoint(_currentPosition!.latitude, _currentPosition!.longitude),
+        location: GeoPoint(latitude, longitude),
         tags: tags.isNotEmpty ? tags : null,
         createdBy: authService.currentUser?.uid,
       );
@@ -214,6 +241,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
         _formKey.currentState?.reset();
         setState(() {
           _selectedImage = null;
+          _pickedLocation = null;
         });
         
         // Navigate back
@@ -374,48 +402,94 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
                             Text('Getting your location...'),
                           ],
                         ),
-                      ] else if (_currentPosition != null) ...[
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.location_on,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                '${_currentPosition!.latitude.toStringAsFixed(6)}, ${_currentPosition!.longitude.toStringAsFixed(6)}',
-                                style: Theme.of(context).textTheme.bodyMedium,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Location determined automatically',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                          ),
-                        ),
                       ] else ...[
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.location_off,
-                              color: Theme.of(context).colorScheme.error,
+                        if (_pickedLocation != null) ...[
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.edit_location_alt,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '${_pickedLocation!.latitude.toStringAsFixed(6)}, ${_pickedLocation!.longitude.toStringAsFixed(6)}',
+                                  style: Theme.of(context).textTheme.bodyMedium,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Location selected on map',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                             ),
-                            const SizedBox(width: 8),
-                            const Text('Location not available'),
-                          ],
-                        ),
+                          ),
+                        ] else if (_currentPosition != null) ...[
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.location_on,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '${_currentPosition!.latitude.toStringAsFixed(6)}, ${_currentPosition!.longitude.toStringAsFixed(6)}',
+                                  style: Theme.of(context).textTheme.bodyMedium,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Location determined automatically',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                            ),
+                          ),
+                        ] else ...[
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.location_off,
+                                color: Theme.of(context).colorScheme.error,
+                              ),
+                              const SizedBox(width: 8),
+                              const Text('Location not available'),
+                            ],
+                          ),
+                        ],
                       ],
                       
                       const SizedBox(height: 12),
                       
-                      ElevatedButton.icon(
-                        onPressed: _isGettingLocation ? null : _getCurrentLocation,
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Refresh Location'),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 8,
+                        children: [
+                          ElevatedButton.icon(
+                            onPressed: _isGettingLocation ? null : _getCurrentLocation,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Refresh Location'),
+                          ),
+                          OutlinedButton.icon(
+                            onPressed: _pickLocationOnMap,
+                            icon: const Icon(Icons.map),
+                            label: const Text('Pick on Map'),
+                          ),
+                          if (_pickedLocation != null)
+                            TextButton.icon(
+                              onPressed: () {
+                                setState(() {
+                                  _pickedLocation = null;
+                                });
+                              },
+                              icon: const Icon(Icons.clear),
+                              label: const Text('Clear selection'),
+                            ),
+                        ],
                       ),
                     ],
                   ),
@@ -426,7 +500,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
               
               // Submit Button
               CustomButton(
-                onPressed: _isLoading || _currentPosition == null ? null : _submitForm,
+                onPressed: _isLoading || (_currentPosition == null && _pickedLocation == null) ? null : _submitForm,
                 text: _isLoading ? 'Creating Spot...' : 'Create Spot',
                 isLoading: _isLoading,
                 icon: Icons.add_location,
@@ -436,7 +510,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
               
               // Info Text
               Text(
-                'Note: Your current location will be used for this spot. Make sure you\'re at the correct location before submitting.',
+                'Note: Your current or selected map location will be used for this spot. You can pick a different location using the map.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                 ),
