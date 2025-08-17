@@ -45,18 +45,15 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-<<<<<<< Current (Your changes)
 	<key>io.flutter.embedded_views_preview</key>
 	<true/>
 	<key>GMSApiKey</key>
 	<string>YOUR_IOS_API_KEY_HERE</string>
-=======
 	<key>NSCameraUsageDescription</key>
 	<string>This app needs camera access to take photos of spots.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app needs photo library access to select spot images.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>This app saves captured photos to your library.</string>
->>>>>>> Incoming (Background Agent changes)
 </dict>
 </plist>
