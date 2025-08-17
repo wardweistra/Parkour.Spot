@@ -17,6 +17,20 @@ class SpotDetailScreen extends StatefulWidget {
 class _SpotDetailScreenState extends State<SpotDetailScreen> {
   double _userRating = 0;
   bool _hasRated = false;
+  int _currentImageIndex = 0;
+  late final PageController _imagePageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _imagePageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _imagePageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,21 +48,29 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Background Image
-                  if (widget.spot.imageUrl != null)
-                    Image.network(
-                      widget.spot.imageUrl!,
-                      fit: BoxFit.cover,
+                  // Background Images Carousel
+                  if (widget.spot.imageUrls != null && widget.spot.imageUrls!.isNotEmpty)
+                    PageView.builder(
+                      controller: _imagePageController,
+                      onPageChanged: (index) => setState(() => _currentImageIndex = index),
+                      itemCount: widget.spot.imageUrls!.length,
+                      itemBuilder: (context, index) {
+                        final url = widget.spot.imageUrls![index];
+                        return Image.network(
+                          url,
+                          fit: BoxFit.cover,
+                        );
+                      },
                     )
                   else
-                                          Container(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                        child: Icon(
-                          Icons.image_not_supported,
-                          size: 64,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
+                    Container(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      child: Icon(
+                        Icons.image_not_supported,
+                        size: 64,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
+                    ),
                   
                   // Gradient Overlay
                   Container(
@@ -83,7 +105,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     right: 16,
                     child: Row(
                       children: [
-                                                 if (widget.spot.createdBy == Provider.of<AuthService>(context, listen: false).userProfile?.id) ...[
+                        if (widget.spot.createdBy == Provider.of<AuthService>(context, listen: false).userProfile?.id) ...[
                           CircleAvatar(
                             backgroundColor: Colors.black.withOpacity(0.5),
                             child: IconButton(
@@ -105,6 +127,30 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       ],
                     ),
                   ),
+
+                  // Page indicators
+                  if (widget.spot.imageUrls != null && widget.spot.imageUrls!.length > 1)
+                    Positioned(
+                      bottom: 16,
+                      left: 0,
+                      right: 0,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(widget.spot.imageUrls!.length, (index) {
+                          final isActive = index == _currentImageIndex;
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            width: isActive ? 10 : 8,
+                            height: isActive ? 10 : 8,
+                            decoration: BoxDecoration(
+                              color: isActive ? Colors.white : Colors.white54,
+                              shape: BoxShape.circle,
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
                 ],
               ),
             ),

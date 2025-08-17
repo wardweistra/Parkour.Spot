@@ -23,7 +23,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
   final _descriptionController = TextEditingController();
   final _tagsController = TextEditingController();
   
-  File? _selectedImage;
+  List<File> _selectedImages = [];
   Position? _currentPosition;
   bool _isLoading = false;
   bool _isGettingLocation = false;
@@ -105,26 +105,25 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
     }
   }
 
-  Future<void> _pickImage() async {
+  Future<void> _pickImagesFromGallery() async {
     try {
       final picker = ImagePicker();
-      final pickedFile = await picker.pickImage(
-        source: ImageSource.gallery,
+      final pickedFiles = await picker.pickMultiImage(
         maxWidth: 1920,
         maxHeight: 1080,
         imageQuality: 85,
       );
 
-      if (pickedFile != null) {
+      if (pickedFiles.isNotEmpty) {
         setState(() {
-          _selectedImage = File(pickedFile.path);
+          _selectedImages.addAll(pickedFiles.map((x) => File(x.path)));
         });
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error picking image: $e'),
+            content: Text('Error picking images: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -144,7 +143,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
 
       if (pickedFile != null) {
         setState(() {
-          _selectedImage = File(pickedFile.path);
+          _selectedImages.add(File(pickedFile.path));
         });
       }
     } catch (e) {
@@ -157,6 +156,12 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
         );
       }
     }
+  }
+
+  void _removeImageAt(int index) {
+    setState(() {
+      _selectedImages.removeAt(index);
+    });
   }
 
   Future<void> _submitForm() async {
@@ -200,7 +205,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
         createdBy: authService.currentUser?.uid,
       );
 
-      final success = await spotService.createSpot(spot, _selectedImage);
+      final success = await spotService.createSpot(spot, _selectedImages);
 
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -213,7 +218,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
         // Clear form
         _formKey.currentState?.reset();
         setState(() {
-          _selectedImage = null;
+          _selectedImages = [];
         });
         
         // Navigate back
@@ -261,21 +266,46 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Spot Image',
+                        'Spot Images',
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 12),
                       
-                      if (_selectedImage != null) ...[
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.file(
-                            _selectedImage!,
-                            height: 200,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
+                      if (_selectedImages.isNotEmpty) ...[
+                        SizedBox(
+                          height: 200,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: _selectedImages.length,
+                            separatorBuilder: (_, __) => const SizedBox(width: 12),
+                            itemBuilder: (context, index) {
+                              return Stack(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Image.file(
+                                      _selectedImages[index],
+                                      height: 200,
+                                      width: 280,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: 8,
+                                    right: 8,
+                                    child: CircleAvatar(
+                                      backgroundColor: Colors.black54,
+                                      child: IconButton(
+                                        icon: const Icon(Icons.close, color: Colors.white),
+                                        onPressed: () => _removeImageAt(index),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -285,7 +315,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
                         children: [
                           Expanded(
                             child: ElevatedButton.icon(
-                              onPressed: _pickImage,
+                              onPressed: _pickImagesFromGallery,
                               icon: const Icon(Icons.photo_library),
                               label: const Text('Gallery'),
                             ),

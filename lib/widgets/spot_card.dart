@@ -28,13 +28,13 @@ class SpotCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Image Section
-            if (spot.imageUrl != null)
+            if (spot.imageUrls != null && spot.imageUrls!.isNotEmpty)
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                 child: AspectRatio(
                   aspectRatio: 16 / 9,
                   child: CachedNetworkImage(
-                    imageUrl: spot.imageUrl!,
+                    imageUrl: spot.imageUrls!.first,
                     fit: BoxFit.cover,
                     placeholder: (context, url) => Container(
                       color: Theme.of(context).colorScheme.surfaceVariant,
