@@ -5,7 +5,7 @@ import 'package:parkour_spot/services/auth_service.dart';
 import 'package:parkour_spot/services/spot_service.dart';
 import 'package:parkour_spot/router/app_router.dart';
 import 'package:parkour_spot/firebase_options.dart';
-import 'dart:html' as html;
+import 'package:web/web.dart' as web;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -58,7 +58,7 @@ class ParkourSpotApp extends StatelessWidget {
   
   void _checkInitialDeepLink() {
     try {
-      final browserUrl = html.window.location.href;
+      final browserUrl = web.window.location.href;
       final browserPath = Uri.parse(browserUrl).path;
       
       if (browserPath.startsWith('/spot/') || browserPath.startsWith('/s/')) {

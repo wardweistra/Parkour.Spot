@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../services/auth_service.dart';
-import 'dart:html' as html;
+import 'package:web/web.dart' as web;
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -90,7 +90,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       if (currentPath == null || currentPath == '/') {
         try {
           // This is a web-specific approach to get the current URL
-          final uri = Uri.parse(html.window.location.href);
+          final uri = Uri.parse(web.window.location.href);
           if (uri.path.startsWith('/spot/') || uri.path.startsWith('/s/')) {
             currentPath = uri.path;
           }
