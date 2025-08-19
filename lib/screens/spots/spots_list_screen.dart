@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/spot_service.dart';
-import '../../models/spot.dart';
+import '../../models/spot.dart'; // ignore: unused_import
 import '../../widgets/spot_card.dart';
 import 'spot_detail_screen.dart';
 
@@ -14,7 +14,6 @@ class SpotsListScreen extends StatefulWidget {
 
 class _SpotsListScreenState extends State<SpotsListScreen> {
   final TextEditingController _searchController = TextEditingController();
-  List<Spot> _filteredSpots = [];
   bool _isSearching = false;
 
   @override

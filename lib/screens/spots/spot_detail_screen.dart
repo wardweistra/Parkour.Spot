@@ -684,42 +684,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     );
   }
 
-  void _showFullScreenImage(int initialIndex) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => Scaffold(
-          backgroundColor: Colors.black,
-          appBar: AppBar(
-            backgroundColor: Colors.black,
-            foregroundColor: Colors.white,
-            elevation: 0,
-          ),
-          body: PageView.builder(
-            controller: PageController(initialPage: initialIndex),
-            itemCount: widget.spot.imageUrls!.length,
-            itemBuilder: (context, index) {
-              return InteractiveViewer(
-                child: CachedNetworkImage(
-                  imageUrl: widget.spot.imageUrls![index],
-                  fit: BoxFit.contain,
-                  placeholder: (context, url) => Center(
-                    child: CircularProgressIndicator(color: Colors.white),
-                  ),
-                  errorWidget: (context, url, error) => Center(
-                    child: Icon(
-                      Icons.broken_image,
-                      color: Colors.white,
-                      size: 64,
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
+
 
   void _nextImage() {
     if (_currentImageIndex < widget.spot.imageUrls!.length - 1) {
