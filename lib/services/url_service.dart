@@ -1,7 +1,7 @@
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:flutter/foundation.dart';
 
 class UrlService {
   static const String _baseUrl = 'https://parkour.spot';
@@ -16,13 +16,23 @@ class UrlService {
     return '$_baseUrl/s/$spotId';
   }
   
-  /// Share a spot URL using the system share dialog
+  /// Share a spot URL using clipboard (web-compatible)
   static Future<void> shareSpot(String spotId, String spotName) async {
     final url = generateSpotUrl(spotId);
     final text = 'Check out this parkour spot: $spotName\n\n$url';
     
     try {
-      await Share.share(text, subject: 'Parkour Spot: $spotName');
+      // Copy to clipboard (works on both web and mobile)
+      await Clipboard.setData(ClipboardData(text: text));
+      
+      // Show success feedback
+      if (kIsWeb) {
+        debugPrint('URL copied to clipboard: $url');
+        // In a real web app, you might want to show a toast notification
+      } else {
+        // On mobile, you could show a snackbar or other feedback
+        debugPrint('URL copied to clipboard: $url');
+      }
     } catch (e) {
       debugPrint('Error sharing spot: $e');
     }
