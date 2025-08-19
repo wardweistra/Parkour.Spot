@@ -85,7 +85,9 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
 
       // Get current position
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
       );
 
       if (mounted) {
@@ -556,7 +558,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
                         Text(
                           'Location determined automatically',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                           ),
                         ),
                       ] else ...[
@@ -580,7 +582,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
                             ),
                           ),
                           clipBehavior: Clip.antiAlias,
@@ -660,7 +662,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
               Text(
                 'Note: You can use your current location or pick a custom location on the map. Make sure the location is correct before submitting.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
                 textAlign: TextAlign.center,
               ),
