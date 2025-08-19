@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class LocationPickerScreen extends StatefulWidget {
   final LatLng? initialLocation;
@@ -48,6 +49,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         initialCameraPosition: initialCameraPosition,
         myLocationEnabled: true,
         myLocationButtonEnabled: true,
+        liteModeEnabled: kIsWeb,
+        compassEnabled: false,
         onMapCreated: (controller) {
           _mapController = controller;
         },
