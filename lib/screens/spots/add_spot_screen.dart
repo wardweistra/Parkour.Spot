@@ -572,6 +572,50 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
                         ),
                       ],
                       
+                      // Map preview
+                      if (_pickedLocation != null || _currentPosition != null) ...[
+                        const SizedBox(height: 16),
+                        Container(
+                          height: 200,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                            ),
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: GoogleMap(
+                            initialCameraPosition: CameraPosition(
+                              target: _pickedLocation ?? LatLng(
+                                _currentPosition!.latitude,
+                                _currentPosition!.longitude,
+                              ),
+                              zoom: 16,
+                            ),
+                            markers: {
+                              Marker(
+                                markerId: const MarkerId('selected_location'),
+                                position: _pickedLocation ?? LatLng(
+                                  _currentPosition!.latitude,
+                                  _currentPosition!.longitude,
+                                ),
+                                infoWindow: InfoWindow(
+                                  title: 'Selected Location',
+                                  snippet: 'This is where your spot will be placed',
+                                ),
+                              ),
+                            },
+                            zoomControlsEnabled: false,
+                            myLocationButtonEnabled: false,
+                            mapToolbarEnabled: false,
+                            onTap: (_) {
+                              // Open location picker when tapping the map
+                              _pickLocationOnMap();
+                            },
+                          ),
+                        ),
+                      ],
+                      
                       const SizedBox(height: 12),
                       
                       Row(
