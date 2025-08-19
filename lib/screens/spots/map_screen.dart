@@ -5,6 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import '../../services/spot_service.dart';
 import '../../models/spot.dart';
 import 'spot_detail_screen.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -258,6 +259,8 @@ class _MapScreenState extends State<MapScreen> {
                 markers: _buildMarkers(spotService.spots),
                 myLocationEnabled: true,
                 myLocationButtonEnabled: true,
+                liteModeEnabled: kIsWeb,
+                compassEnabled: false,
                 onMapCreated: (GoogleMapController controller) {
                   _mapController = controller;
                   

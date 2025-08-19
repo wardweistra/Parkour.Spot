@@ -7,7 +7,7 @@ import '../../models/spot.dart';
 import '../../services/spot_service.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/custom_button.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 
 class SpotDetailScreen extends StatefulWidget {
   final Spot spot;
@@ -313,6 +313,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         zoomControlsEnabled: false,
                         myLocationButtonEnabled: false,
                         mapToolbarEnabled: false,
+                        liteModeEnabled: kIsWeb,
+                        compassEnabled: false,
                         onTap: (_) {
                           // Open full map view or navigation
                           _showMapOptions(context);

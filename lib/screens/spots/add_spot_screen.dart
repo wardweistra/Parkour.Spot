@@ -608,6 +608,8 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
                             zoomControlsEnabled: false,
                             myLocationButtonEnabled: false,
                             mapToolbarEnabled: false,
+                            liteModeEnabled: kIsWeb,
+                            compassEnabled: false,
                             onTap: (_) {
                               // Open location picker when tapping the map
                               _pickLocationOnMap();
