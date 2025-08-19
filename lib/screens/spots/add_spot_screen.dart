@@ -301,10 +301,10 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
     
-    if (_currentPosition == null) {
+    if (_currentPosition == null && _pickedLocation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please wait for location to be determined'),
+          content: Text('Please wait for location to be determined or pick a location on the map'),
           backgroundColor: Colors.red,
         ),
       );
@@ -334,7 +334,9 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
       final spot = Spot(
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
-        location: GeoPoint(_currentPosition!.latitude, _currentPosition!.longitude),
+        location: _pickedLocation != null 
+          ? GeoPoint(_pickedLocation!.latitude, _pickedLocation!.longitude)
+          : GeoPoint(_currentPosition!.latitude, _currentPosition!.longitude),
         tags: tags.isNotEmpty ? tags : null,
         createdBy: authService.currentUser?.uid,
       );
@@ -511,6 +513,29 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
                             Text('Getting your location...'),
                           ],
                         ),
+                      ] else if (_pickedLocation != null) ...[
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.location_on,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '${_pickedLocation!.latitude.toStringAsFixed(6)}, ${_pickedLocation!.longitude.toStringAsFixed(6)}',
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Custom location selected',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
                       ] else if (_currentPosition != null) ...[
                         Row(
                           children: [
@@ -549,10 +574,24 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
                       
                       const SizedBox(height: 12),
                       
-                      ElevatedButton.icon(
-                        onPressed: _isGettingLocation ? null : _getCurrentLocation,
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Refresh Location'),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: _isGettingLocation ? null : _getCurrentLocation,
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Refresh Location'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: _pickLocationOnMap,
+                              icon: const Icon(Icons.map),
+                              label: const Text('Pick on Map'),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -563,7 +602,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
               
               // Submit Button
               CustomButton(
-                onPressed: _isLoading || _currentPosition == null ? null : _submitForm,
+                onPressed: _isLoading || (_currentPosition == null && _pickedLocation == null) ? null : _submitForm,
                 text: _isLoading ? 'Creating Spot...' : 'Create Spot',
                 isLoading: _isLoading,
                 icon: Icons.add_location,
@@ -573,7 +612,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
               
               // Info Text
               Text(
-                'Note: Your current location will be used for this spot. Make sure you\'re at the correct location before submitting.',
+                'Note: You can use your current location or pick a custom location on the map. Make sure the location is correct before submitting.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                 ),
