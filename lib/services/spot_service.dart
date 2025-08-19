@@ -69,6 +69,30 @@ class SpotService extends ChangeNotifier {
     }
   }
 
+  // Get a single spot by ID
+  Future<Spot?> getSpotById(String spotId) async {
+    try {
+      // First check if we have it in local cache
+      final localSpot = _spots.firstWhere(
+        (spot) => spot.id == spotId,
+        orElse: () => throw Exception('Spot not found locally'),
+      );
+      return localSpot;
+    } catch (e) {
+      // If not in local cache, fetch from Firestore
+      try {
+        final doc = await _firestore.collection('spots').doc(spotId).get();
+        if (doc.exists) {
+          return Spot.fromFirestore(doc);
+        }
+        return null;
+      } catch (e) {
+        debugPrint('Error fetching spot by ID: $e');
+        return null;
+      }
+    }
+  }
+
   // Search spots by name or description
   List<Spot> searchSpots(String query) {
     try {
