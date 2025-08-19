@@ -10,8 +10,7 @@ import '../screens/spots/spots_list_screen.dart';
 import '../screens/spots/map_screen.dart';
 import '../models/spot.dart';
 import '../services/spot_service.dart';
-import '../services/auth_service.dart';
-import 'package:flutter/foundation.dart';
+
 
 class AppRouter {
   static final GoRouter router = GoRouter(

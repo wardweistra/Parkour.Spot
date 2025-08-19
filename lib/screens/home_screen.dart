@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/auth_service.dart';
+
 import '../services/spot_service.dart';
 import 'spots/spots_list_screen.dart';
 import 'spots/add_spot_screen.dart';
