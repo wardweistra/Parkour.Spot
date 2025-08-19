@@ -55,5 +55,20 @@
 	<string>This app needs photo library access to select spot images.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>This app saves captured photos to your library.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>parkour.spot</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>parkourspot</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleAssociatedDomains</key>
+	<array>
+		<string>applinks:parkour.spot</string>
+	</array>
 </dict>
 </plist>

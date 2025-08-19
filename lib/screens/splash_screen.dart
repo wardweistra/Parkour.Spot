@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../services/auth_service.dart';
-import 'home_screen.dart';
-import 'auth/login_screen.dart';
+import 'dart:html' as html;
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -53,14 +53,64 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     if (mounted) {
       final authService = Provider.of<AuthService>(context, listen: false);
       
+      // Check if we have a deep link to handle - use multiple methods
+      String? currentPath;
+      
+      // Method 1: Check the current router location directly
+      try {
+        final router = GoRouter.of(context);
+        currentPath = router.routerDelegate.currentConfiguration.uri.path;
+      } catch (e) {
+        // Router not available yet
+      }
+      
+      // Method 2: If router failed, try GoRouterState
+      if (currentPath == null || currentPath == '/') {
+        try {
+          currentPath = GoRouterState.of(context).uri.path;
+        } catch (e) {
+          // GoRouterState not available yet
+        }
+      }
+      
+      // Method 3: Check if we're in a spot route by looking at the current location
+      if (currentPath == null || currentPath == '/') {
+        try {
+          final router = GoRouter.of(context);
+          final location = router.routerDelegate.currentConfiguration.uri.path;
+          if (location.startsWith('/spot/') || location.startsWith('/s/')) {
+            currentPath = location;
+          }
+        } catch (e) {
+          // Could not get location
+        }
+      }
+      
+      // Method 4: Check the browser URL directly (web-specific)
+      if (currentPath == null || currentPath == '/') {
+        try {
+          // This is a web-specific approach to get the current URL
+          final uri = Uri.parse(html.window.location.href);
+          if (uri.path.startsWith('/spot/') || uri.path.startsWith('/s/')) {
+            currentPath = uri.path;
+          }
+        } catch (e) {
+          // Could not get browser URL
+        }
+      }
+      
+      // If we have a spot URL, navigate directly to it (router will handle auth)
+      if (currentPath != null && 
+          (currentPath.startsWith('/spot/') || currentPath.startsWith('/s/'))) {
+        context.go(currentPath);
+        return;
+      }
+      
+      // Otherwise, follow normal auth flow
       if (authService.isAuthenticated) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
-        );
+        context.go('/home');
       } else {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
-        );
+        context.go('/login');
       }
     }
   }

@@ -6,6 +6,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/spot.dart';
 import '../../services/spot_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/url_service.dart';
 import '../../widgets/custom_button.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 
@@ -34,6 +35,52 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _showShareOptions() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.share),
+              title: const Text('Share Spot'),
+              onTap: () {
+                Navigator.pop(context);
+                UrlService.shareSpot(widget.spot.id!, widget.spot.name);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.copy),
+              title: const Text('Copy Link'),
+              onTap: () async {
+                Navigator.pop(context);
+                await UrlService.copySpotUrl(widget.spot.id!);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Link copied to clipboard!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.open_in_browser),
+              title: const Text('Open in Browser'),
+              onTap: () {
+                Navigator.pop(context);
+                UrlService.openSpotInBrowser(widget.spot.id!);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showMapOptions(BuildContext context) {
@@ -136,6 +183,15 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                 ),
               ),
               actions: [
+                // Share button for all users
+                CircleAvatar(
+                  backgroundColor: Colors.black.withOpacity(0.5),
+                  child: IconButton(
+                    icon: const Icon(Icons.share, color: Colors.white),
+                    onPressed: _showShareOptions,
+                  ),
+                ),
+                const SizedBox(width: 8),
                 if (widget.spot.createdBy == Provider.of<AuthService>(context, listen: false).userProfile?.id) ...[
                   CircleAvatar(
                     backgroundColor: Colors.black.withOpacity(0.5),
