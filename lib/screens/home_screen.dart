@@ -70,7 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
         currentIndex: _currentIndex,
         onTap: _onTabTapped,
         selectedItemColor: Theme.of(context).colorScheme.primary,
-        unselectedItemColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+        unselectedItemColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 8,
         items: const [

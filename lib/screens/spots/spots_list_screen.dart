@@ -66,7 +66,7 @@ class _SpotsListScreenState extends State<SpotsListScreen> {
                   borderSide: BorderSide.none,
                 ),
                 filled: true,
-                fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 12,
@@ -114,7 +114,7 @@ class _SpotsListScreenState extends State<SpotsListScreen> {
                             spotService.error!,
                             textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -143,7 +143,7 @@ class _SpotsListScreenState extends State<SpotsListScreen> {
                           Icon(
                             _isSearching ? Icons.search_off : Icons.location_off,
                             size: 64,
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                           ),
                           const SizedBox(height: 16),
                           Text(
@@ -157,7 +157,7 @@ class _SpotsListScreenState extends State<SpotsListScreen> {
                                 : 'Be the first to add a parkour spot!',
                             textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                             ),
                           ),
                         ],

@@ -58,7 +58,7 @@ class CustomTextField extends StatelessWidget {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
           ),
         ),
         focusedBorder: OutlineInputBorder(
@@ -88,10 +88,10 @@ class CustomTextField extends StatelessWidget {
           vertical: 16,
         ),
         labelStyle: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
         ),
         hintStyle: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
         ),
       ),
       style: TextStyle(
