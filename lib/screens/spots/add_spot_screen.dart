@@ -33,11 +33,21 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
   LatLng? _pickedLocation;
   bool _isLoading = false;
   bool _isGettingLocation = false;
+  GoogleMapController? _mapController;
 
   @override
   void initState() {
     super.initState();
     _getCurrentLocation();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Center map on location after the map controller is created
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _centerMapOnLocation();
+    });
   }
 
   @override
@@ -96,6 +106,8 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
           // Clear picked location so map shows current location instead
           _pickedLocation = null;
         });
+        // Center the map on the new current location
+        _centerMapOnLocation();
       }
     } catch (e) {
       if (mounted) {
@@ -299,6 +311,23 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
       setState(() {
         _pickedLocation = result;
       });
+      // Center the map on the newly picked location
+      _centerMapOnLocation();
+    }
+  }
+
+  void _centerMapOnLocation() {
+    if (_mapController != null) {
+      final LatLng? targetLocation = _pickedLocation ?? 
+        (_currentPosition != null 
+          ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
+          : null);
+      
+      if (targetLocation != null) {
+        _mapController!.animateCamera(
+          CameraUpdate.newLatLng(targetLocation),
+        );
+      }
     }
   }
 
@@ -596,6 +625,9 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
                               ),
                               zoom: 16,
                             ),
+                            onMapCreated: (GoogleMapController controller) {
+                              _mapController = controller;
+                            },
                             markers: {
                               Marker(
                                 markerId: const MarkerId('selected_location'),
