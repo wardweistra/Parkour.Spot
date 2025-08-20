@@ -50,69 +50,72 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   Future<void> _checkAuthStatus() async {
     await Future.delayed(const Duration(seconds: 2));
     
-    if (mounted) {
-      final authService = Provider.of<AuthService>(context, listen: false);
-      
-      // Check if we have a deep link to handle - use multiple methods
-      String? currentPath;
-      
-      // Method 1: Check the current router location directly
+    if (!mounted) return;
+    
+    // Check if we're already on a spot route
+    String? currentPath;
+    
+    // Method 1: Check the current route state
+    try {
+      final routerState = GoRouterState.of(context);
+      currentPath = routerState.uri.path;
+    } catch (e) {
+      // Could not get router state
+    }
+    
+    // Method 2: Check if we're in a spot route by looking at the current location
+    if (currentPath == null || currentPath == '/') {
       try {
         final router = GoRouter.of(context);
-        currentPath = router.routerDelegate.currentConfiguration.uri.path;
+        final location = router.routerDelegate.currentConfiguration.uri.path;
+        if (_isSpotUrl(location)) {
+          currentPath = location;
+        }
       } catch (e) {
-        // Router not available yet
-      }
-      
-      // Method 2: If router failed, try GoRouterState
-      if (currentPath == null || currentPath == '/') {
-        try {
-          currentPath = GoRouterState.of(context).uri.path;
-        } catch (e) {
-          // GoRouterState not available yet
-        }
-      }
-      
-      // Method 3: Check if we're in a spot route by looking at the current location
-      if (currentPath == null || currentPath == '/') {
-        try {
-          final router = GoRouter.of(context);
-          final location = router.routerDelegate.currentConfiguration.uri.path;
-          if (location.startsWith('/spot/') || location.startsWith('/s/')) {
-            currentPath = location;
-          }
-        } catch (e) {
-          // Could not get location
-        }
-      }
-      
-      // Method 4: Check the browser URL directly (web-specific)
-      if (currentPath == null || currentPath == '/') {
-        try {
-          // This is a web-specific approach to get the current URL
-          final uri = Uri.parse(web.window.location.href);
-          if (uri.path.startsWith('/spot/') || uri.path.startsWith('/s/')) {
-            currentPath = uri.path;
-          }
-        } catch (e) {
-          // Could not get browser URL
-        }
-      }
-      
-      // If we have a spot URL, navigate directly to it (router will handle auth)
-      if (currentPath != null && 
-          (currentPath.startsWith('/spot/') || currentPath.startsWith('/s/'))) {
-        context.go(currentPath);
-        return;
-      }
-      
-      // Otherwise, follow normal auth flow
-      if (authService.isAuthenticated) {
-        context.go('/home');
-      } else {
-        context.go('/login');
+        // Could not get location
       }
     }
+    
+    // Method 3: Check the browser URL directly (web-specific)
+    if (currentPath == null || currentPath == '/') {
+      try {
+        // This is a web-specific approach to get the current URL
+        final uri = Uri.parse(web.window.location.href);
+        if (_isSpotUrl(uri.path)) {
+          currentPath = uri.path;
+        }
+      } catch (e) {
+        // Could not get browser URL
+      }
+    }
+    
+    // If we have a spot URL, navigate directly to it (router will handle auth)
+    if (currentPath != null && _isSpotUrl(currentPath)) {
+      context.go(currentPath);
+      return;
+    }
+    
+    // Otherwise, follow normal auth flow
+    final authService = Provider.of<AuthService>(context, listen: false);
+    if (authService.isAuthenticated) {
+      context.go('/home');
+    } else {
+      context.go('/login');
+    }
+  }
+  
+  /// Check if the given path is a spot URL
+  /// Supports format: /&lt;xx&gt;/&lt;anything&gt;/&lt;spot-id&gt;
+  /// where xx is a 2-letter country code
+  bool _isSpotUrl(String path) {
+    // Format: /nl/amsterdam/&lt;spot-id&gt; or any /&lt;xx&gt;/&lt;anything&gt;/&lt;spot-id&gt;
+    if (path.split('/').where((segment) => segment.isNotEmpty).length == 3) {
+      final segments = path.split('/').where((segment) => segment.isNotEmpty).toList();
+      final countryCode = segments[0];
+      return countryCode.length == 2 && RegExp(r'^[a-zA-Z]{2}$').hasMatch(countryCode);
+    }
+    
+    return false;
   }
 
   @override

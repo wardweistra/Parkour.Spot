@@ -1,19 +1,16 @@
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 
 class UrlService {
   static const String _baseUrl = 'https://parkour.spot';
   
   /// Generate a shareable URL for a spot
+  /// Uses format: parkour.spot/nl/amsterdam/&lt;spot-id&gt;
   static String generateSpotUrl(String spotId) {
-    return '$_baseUrl/spot/$spotId';
-  }
-  
-  /// Generate a shorter shareable URL for a spot
-  static String generateShortSpotUrl(String spotId) {
-    return '$_baseUrl/s/$spotId';
+    // For now, using a default country/city combination
+    // In the future, this could be dynamic based on spot location
+    return '$_baseUrl/nl/amsterdam/$spotId';
   }
   
   /// Share a spot URL using clipboard (web-compatible)
@@ -69,14 +66,20 @@ class UrlService {
   }
   
   /// Extract spot ID from URL
+  /// Supports format: parkour.spot/&lt;xx&gt;/&lt;anything&gt;/&lt;spot-id&gt;
+  /// where xx is a 2-letter country code
   static String? extractSpotIdFromUrl(String url) {
     try {
       final uri = Uri.parse(url);
       final pathSegments = uri.pathSegments;
       
-      if (pathSegments.length == 2 && 
-          (pathSegments[0] == 'spot' || pathSegments[0] == 's')) {
-        return pathSegments[1];
+      // Format: /nl/amsterdam/&lt;spot-id&gt; or any /&lt;xx&gt;/&lt;anything&gt;/&lt;spot-id&gt;
+      if (pathSegments.length == 3) {
+        // Check if first segment is 2 letters (country code) and third is the spot ID
+        if (pathSegments[0].length == 2 && 
+            RegExp(r'^[a-zA-Z]{2}$').hasMatch(pathSegments[0])) {
+          return pathSegments[2];
+        }
       }
       
       return null;
