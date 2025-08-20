@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:go_router/go_router.dart';
 import '../../models/spot.dart';
 import '../../services/spot_service.dart';
 import '../../services/auth_service.dart';
@@ -179,7 +180,16 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                 backgroundColor: Colors.black.withValues(alpha: 0.5),
                 child: IconButton(
                   icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    // Check if we can pop back to a previous page
+                    if (Navigator.canPop(context)) {
+                      // If there's a previous page, go back to it
+                      Navigator.pop(context);
+                    } else {
+                      // If no previous page (direct link), go to home
+                      context.go('/home');
+                    }
+                  },
                 ),
               ),
               actions: [
@@ -767,7 +777,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                 final success = await spotService.deleteSpot(widget.spot.id!);
                 
                 if (success && mounted) {
-                  Navigator.pop(context);
+                  // Navigate to home after successful deletion
+                  context.go('/home');
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Spot deleted successfully'),
