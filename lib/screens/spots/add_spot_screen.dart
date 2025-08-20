@@ -93,6 +93,8 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
       if (mounted) {
         setState(() {
           _currentPosition = position;
+          // Clear picked location so map shows current location instead
+          _pickedLocation = null;
         });
       }
     } catch (e) {
