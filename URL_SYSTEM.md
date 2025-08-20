@@ -4,14 +4,22 @@ This document explains how the stable sharable URLs work in the ParkourSpot app.
 
 ## URL Structure
 
-The app supports two URL formats for spots:
+The app supports one URL format for spots:
 
-1. **Full format**: `https://parkour.spot/spot/{spotId}`
-2. **Short format**: `https://parkour.spot/s/{spotId}`
+**Format**: `https://parkour.spot/{countryCode}/{city}/{spotId}`
 
 ### Examples
-- `https://parkour.spot/spot/abc123def456`
-- `https://parkour.spot/s/abc123def456`
+- `https://parkour.spot/nl/amsterdam/abc123def456`
+- `https://parkour.spot/us/newyork/def456ghi789`
+- `https://parkour.spot/de/berlin/ghi789jkl012`
+
+### URL Format Details
+The format follows the pattern: `parkour.spot/{xx}/{anything}/{spotId}`
+- **First segment**: 2-letter country code (e.g., `nl`, `us`, `de`)
+- **Second segment**: City or location name (e.g., `amsterdam`, `newyork`, `berlin`)
+- **Third segment**: Unique spot identifier
+
+The country code and city segments are currently placeholders and don't affect spot loading - only the spot ID is used to find the actual spot.
 
 ## Features
 
@@ -38,8 +46,9 @@ The app supports two URL formats for spots:
 The app uses `go_router` for navigation and deep linking:
 
 ```dart
+// Spot detail route: /nl/amsterdam/&lt;spot-id&gt;
 GoRoute(
-  path: '/spot/:spotId',
+  path: '/:countryCode/:city/:spotId',
   builder: (context, state) {
     final spotId = state.pathParameters['spotId']!;
     return SpotDetailRoute(spotId: spotId);
@@ -49,7 +58,7 @@ GoRoute(
 
 ### URL Service
 The `UrlService` class provides utilities for:
-- Generating spot URLs
+- Generating spot URLs in the new format
 - Sharing spots
 - Copying URLs to clipboard
 - Opening URLs in browser
@@ -106,7 +115,7 @@ final spotId = UrlService.extractSpotIdFromUrl(url);
 
 // Navigate to spot
 if (spotId != null) {
-  context.go('/spot/$spotId');
+  context.go('/nl/amsterdam/$spotId');
 }
 ```
 
@@ -119,11 +128,12 @@ if (spotId != null) {
 
 ## Future Enhancements
 
-1. **Custom Domains**: Allow users to set custom subdomains
-2. **URL Analytics**: Track click-through rates and sharing metrics
-3. **Social Media Integration**: Direct sharing to social platforms
-4. **QR Code Generation**: Generate QR codes for spot URLs
-5. **Offline Support**: Cache spot data for offline viewing
+1. **Dynamic Location URLs**: Use actual spot location data for country/city segments
+2. **Custom Domains**: Allow users to set custom subdomains
+3. **URL Analytics**: Track click-through rates and sharing metrics
+4. **Social Media Integration**: Direct sharing to social platforms
+5. **QR Code Generation**: Generate QR codes for spot URLs
+6. **Offline Support**: Cache spot data for offline viewing
 
 ## Troubleshooting
 
@@ -162,15 +172,14 @@ if (kDebugMode) {
    flutter run -d chrome
    ```
 
-2. **Use the test file**: Open `test_deep_link.html` in your browser
+2. **Test different URLs**:
+   - `http://localhost:3000/nl/amsterdam/{spotId}`
+   - `http://localhost:3000/us/newyork/{spotId}`
+   - `http://localhost:3000/de/berlin/{spotId}`
 
-3. **Test different URLs**:
-   - `http://localhost:3000/spot/{spotId}`
-   - `http://localhost:3000/s/{spotId}`
+3. **Check browser console** for debug logs
 
-4. **Check browser console** for debug logs
-
-### Recent Fixes
+### Recent Changes
 
 #### Issue: URLs redirecting to root instead of opening spots
 **Problem**: The `SplashScreen` was hardcoded to navigate to home/login after 2 seconds, ignoring deep links.
@@ -186,7 +195,7 @@ if (kDebugMode) {
 final currentPath = GoRouterState.of(context).uri.path;
 
 // If we have a spot URL, navigate directly to it
-if (currentPath.startsWith('/spot/') || currentPath.startsWith('/s/')) {
+if (_isSpotUrl(currentPath)) {
   context.go(currentPath);
   return;
 }
@@ -199,5 +208,4 @@ For issues related to the URL system:
 2. Review platform-specific logs
 3. Test with different URL formats
 4. Verify Firebase configuration
-5. Use the test file for local debugging
-6. Check browser console for debug logs
+5. Check browser console for debug logs

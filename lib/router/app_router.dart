@@ -17,15 +17,14 @@ class AppRouter {
     initialLocation: '/',
     redirect: (context, state) {
       // If we're already on a spot detail page, don't redirect
-      if (state.matchedLocation.startsWith('/spot/') || 
-          state.matchedLocation.startsWith('/s/')) {
+      if (_isSpotUrl(state.matchedLocation)) {
         return null;
       }
       
       // If we're on the root but there's a path in the URI, redirect to that path
       if (state.matchedLocation == '/' && 
           state.uri.pathSegments.isNotEmpty &&
-          (state.uri.path.startsWith('/spot/') || state.uri.path.startsWith('/s/'))) {
+          _isSpotUrl(state.uri.path)) {
         return state.uri.path;
       }
       
@@ -60,18 +59,21 @@ class AppRouter {
         path: '/map',
         builder: (context, state) => const MapScreen(),
       ),
+      // Spot detail route: /nl/amsterdam/&lt;spot-id&gt; or any /&lt;xx&gt;/&lt;anything&gt;/&lt;spot-id&gt;
       GoRoute(
-        path: '/spot/:spotId',
+        path: '/:countryCode/:city/:spotId',
         builder: (context, state) {
           final spotId = state.pathParameters['spotId']!;
-          return SpotDetailRoute(spotId: spotId);
-        },
-      ),
-      // Alternative shorter route
-      GoRoute(
-        path: '/s/:spotId',
-        builder: (context, state) {
-          final spotId = state.pathParameters['spotId']!;
+          final countryCode = state.pathParameters['countryCode']!;
+          // city parameter is available but not currently used
+          // final city = state.pathParameters['city']!;
+          
+          // Validate that countryCode is 2 letters
+          if (countryCode.length != 2 || !RegExp(r'^[a-zA-Z]{2}$').hasMatch(countryCode)) {
+            // If not a valid country code, redirect to home
+            return const HomeScreen();
+          }
+          
           return SpotDetailRoute(spotId: spotId);
         },
       ),
@@ -102,6 +104,17 @@ class AppRouter {
       ),
     ),
   );
+  
+  /// Check if the given path matches the spot URL format
+  /// Format: /&lt;xx&gt;/&lt;anything&gt;/&lt;spot-id&gt; where xx is 2 letters
+  static bool _isSpotUrl(String path) {
+    final segments = path.split('/').where((segment) => segment.isNotEmpty).toList();
+    if (segments.length == 3) {
+      final countryCode = segments[0];
+      return countryCode.length == 2 && RegExp(r'^[a-zA-Z]{2}$').hasMatch(countryCode);
+    }
+    return false;
+  }
 }
 
 class SpotDetailRoute extends StatelessWidget {

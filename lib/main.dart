@@ -61,7 +61,7 @@ class ParkourSpotApp extends StatelessWidget {
       final browserUrl = web.window.location.href;
       final browserPath = Uri.parse(browserUrl).path;
       
-      if (browserPath.startsWith('/spot/') || browserPath.startsWith('/s/')) {
+      if (_isSpotUrl(browserPath)) {
         // Use a small delay to ensure the router is ready
         Future.delayed(const Duration(milliseconds: 100), () {
           try {
@@ -75,5 +75,19 @@ class ParkourSpotApp extends StatelessWidget {
     } catch (e) {
       // Silent fail - not critical for app functionality
     }
+  }
+  
+  /// Check if the given path is a spot URL
+  /// Supports format: /&lt;xx&gt;/&lt;anything&gt;/&lt;spot-id&gt;
+  /// where xx is a 2-letter country code
+  bool _isSpotUrl(String path) {
+    // Format: /nl/amsterdam/&lt;spot-id&gt; or any /&lt;xx&gt;/&lt;anything&gt;/&lt;spot-id&gt;
+    if (path.split('/').where((segment) => segment.isNotEmpty).length == 3) {
+      final segments = path.split('/').where((segment) => segment.isNotEmpty).toList();
+      final countryCode = segments[0];
+      return countryCode.length == 2 && RegExp(r'^[a-zA-Z]{2}$').hasMatch(countryCode);
+    }
+    
+    return false;
   }
 }
