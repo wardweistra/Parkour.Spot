@@ -381,6 +381,11 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         mapToolbarEnabled: false,
                         liteModeEnabled: kIsWeb,
                         compassEnabled: false,
+                        // Disable map interactions for preview purposes
+                        zoomGesturesEnabled: false,
+                        scrollGesturesEnabled: false,
+                        tiltGesturesEnabled: false,
+                        rotateGesturesEnabled: false,
                         onTap: (_) {
                           // Open full map view or navigation
                           _showMapOptions(context);
