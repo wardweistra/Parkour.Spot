@@ -18,6 +18,7 @@ class _MapScreenState extends State<MapScreen> {
   GoogleMapController? _mapController;
   Position? _currentPosition;
   bool _isGettingLocation = false;
+  bool _isSatelliteView = false;
 
   @override
   void initState() {
@@ -191,6 +192,36 @@ class _MapScreenState extends State<MapScreen> {
         backgroundColor: Theme.of(context).colorScheme.surface,
         foregroundColor: Theme.of(context).colorScheme.onSurface,
         actions: [
+          // Satellite view toggle
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Standard',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: !_isSatelliteView 
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
+              Switch(
+                value: _isSatelliteView,
+                onChanged: (value) {
+                  setState(() {
+                    _isSatelliteView = value;
+                  });
+                },
+              ),
+              Text(
+                'Satellite',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: _isSatelliteView 
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
+            ],
+          ),
           IconButton(
             onPressed: () {
               // TODO: Implement map filters
@@ -258,6 +289,7 @@ class _MapScreenState extends State<MapScreen> {
             children: [
               GoogleMap(
                 initialCameraPosition: initialCameraPosition,
+                mapType: _isSatelliteView ? MapType.satellite : MapType.normal,
                 markers: _buildMarkers(spotService.spots),
                 myLocationEnabled: true,
                 myLocationButtonEnabled: true,

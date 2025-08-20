@@ -13,6 +13,7 @@ class LocationPickerScreen extends StatefulWidget {
 
 class _LocationPickerScreenState extends State<LocationPickerScreen> {
   LatLng? _pickedLocation;
+  bool _isSatelliteView = false;
 
   @override
   void initState() {
@@ -34,6 +35,36 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         backgroundColor: Theme.of(context).colorScheme.surface,
         foregroundColor: Theme.of(context).colorScheme.onSurface,
         actions: [
+          // Satellite view toggle
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Standard',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: !_isSatelliteView 
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
+              Switch(
+                value: _isSatelliteView,
+                onChanged: (value) {
+                  setState(() {
+                    _isSatelliteView = value;
+                  });
+                },
+              ),
+              Text(
+                'Satellite',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: _isSatelliteView 
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
+            ],
+          ),
           TextButton(
             onPressed: _pickedLocation == null
                 ? null
@@ -46,6 +77,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       ),
       body: GoogleMap(
         initialCameraPosition: initialCameraPosition,
+        mapType: _isSatelliteView ? MapType.satellite : MapType.normal,
         myLocationEnabled: true,
         myLocationButtonEnabled: true,
         liteModeEnabled: kIsWeb,
