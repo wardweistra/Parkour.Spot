@@ -25,6 +25,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   bool _hasRated = false;
   int _currentImageIndex = 0;
   late final ScrollController _scrollController;
+  bool _isSatelliteView = false;
 
   @override
   void initState() {
@@ -343,6 +344,49 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     
                     const SizedBox(height: 12),
                     
+                    // Map view toggle
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Location',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            Text(
+                              'Standard',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: !_isSatelliteView 
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                              ),
+                            ),
+                            Switch(
+                              value: _isSatelliteView,
+                              onChanged: (value) {
+                                setState(() {
+                                  _isSatelliteView = value;
+                                });
+                              },
+                            ),
+                            Text(
+                              'Satellite',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: _isSatelliteView 
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    
+                    const SizedBox(height: 8),
+                    
                     // Small map widget
                     Container(
                       height: 200,
@@ -361,6 +405,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                           ),
                           zoom: 16,
                         ),
+                        mapType: _isSatelliteView ? MapType.satellite : MapType.normal,
                         markers: {
                           Marker(
                             markerId: MarkerId(widget.spot.id ?? 'spot'),

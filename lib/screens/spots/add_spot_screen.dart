@@ -34,6 +34,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
   bool _isLoading = false;
   bool _isGettingLocation = false;
   GoogleMapController? _mapController;
+  bool _isSatelliteView = false;
 
   @override
   void initState() {
@@ -608,6 +609,50 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
                       // Map preview
                       if (_pickedLocation != null || _currentPosition != null) ...[
                         const SizedBox(height: 16),
+                        
+                        // Map view toggle
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Location Preview',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                Text(
+                                  'Standard',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: !_isSatelliteView 
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                  ),
+                                ),
+                                Switch(
+                                  value: _isSatelliteView,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _isSatelliteView = value;
+                                    });
+                                  },
+                                ),
+                                Text(
+                                  'Satellite',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: _isSatelliteView 
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        
+                        const SizedBox(height: 8),
+                        
                         Container(
                           height: 200,
                           decoration: BoxDecoration(
@@ -625,6 +670,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
                               ),
                               zoom: 16,
                             ),
+                            mapType: _isSatelliteView ? MapType.satellite : MapType.normal,
                             onMapCreated: (GoogleMapController controller) {
                               _mapController = controller;
                             },
