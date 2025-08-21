@@ -479,7 +479,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     ],
                     
                     // Additional Info
-                    if (widget.spot.createdBy != null || widget.spot.createdAt != null) ...[
+                    if (widget.spot.createdBy != null || widget.spot.createdByName != null || widget.spot.createdAt != null) ...[
                       Text(
                         'Additional Information',
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -487,11 +487,11 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      if (widget.spot.createdBy != null) ...[
+                      if (widget.spot.createdBy != null || widget.spot.createdByName != null) ...[
                         ListTile(
                           leading: const Icon(Icons.person),
                           title: const Text('Added by'),
-                          subtitle: Text(widget.spot.createdBy!),
+                          subtitle: Text(widget.spot.createdByName ?? widget.spot.createdBy ?? ''),
                           contentPadding: EdgeInsets.zero,
                         ),
                       ],

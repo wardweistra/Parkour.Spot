@@ -161,7 +161,7 @@ class SpotCard extends StatelessWidget {
                   ),
                   
                   // Created by and date
-                  if (spot.createdBy != null) ...[
+                  if (spot.createdBy != null || spot.createdByName != null) ...[
                     const SizedBox(height: 8),
                     Row(
                       children: [
@@ -172,7 +172,7 @@ class SpotCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          'Added by ${spot.createdBy}',
+                          'Added by ${spot.createdByName ?? spot.createdBy}',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                           ),
