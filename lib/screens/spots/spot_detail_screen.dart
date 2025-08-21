@@ -10,6 +10,7 @@ import '../../services/auth_service.dart';
 import '../../services/url_service.dart';
 import '../../widgets/custom_button.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
+import '../../screens/auth/login_screen.dart';
 
 class SpotDetailScreen extends StatefulWidget {
   final Spot spot;
@@ -203,6 +204,24 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
+                // Login button for unauthenticated users
+                if (!Provider.of<AuthService>(context, listen: false).isAuthenticated) ...[
+                  CircleAvatar(
+                    backgroundColor: Colors.black.withValues(alpha: 0.5),
+                    child: IconButton(
+                      icon: const Icon(Icons.login, color: Colors.white),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const LoginScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
                 if (widget.spot.createdBy == Provider.of<AuthService>(context, listen: false).userProfile?.id) ...[
                   CircleAvatar(
                     backgroundColor: Colors.black.withValues(alpha: 0.5),
@@ -474,6 +493,51 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                               isLoading: false,
                             ),
                         ],
+                      ),
+                      const SizedBox(height: 24),
+                    ] else ...[
+                      // Show login prompt for unauthenticated users
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Rate this spot',
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Login to rate this spot and help other parkour enthusiasts',
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: ElevatedButton.icon(
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => const LoginScreen(),
+                                          ),
+                                        );
+                                      },
+                                      icon: const Icon(Icons.login),
+                                      label: const Text('Login to Rate'),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 24),
                     ],

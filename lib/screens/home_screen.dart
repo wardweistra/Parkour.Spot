@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../services/spot_service.dart';
+import '../services/auth_service.dart';
 import 'spots/spots_list_screen.dart';
 import 'spots/add_spot_screen.dart';
 import 'spots/map_screen.dart';
 import 'profile/profile_screen.dart';
+import 'auth/login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,13 +19,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   late PageController _pageController;
-
-  final List<Widget> _screens = [
-    const SpotsListScreen(),
-    const MapScreen(),
-    const AddSpotScreen(),
-    const ProfileScreen(),
-  ];
 
   @override
   void initState() {
@@ -43,6 +38,21 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onTabTapped(int index) {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    
+    // Check authentication for protected features
+    if (index == 2 && !authService.isAuthenticated) {
+      // Add Spot requires authentication
+      _showLoginRequiredDialog('Add New Spot', 'You need to be logged in to add new spots.');
+      return;
+    }
+    
+    if (index == 3 && !authService.isAuthenticated) {
+      // Profile requires authentication
+      _showLoginRequiredDialog('Profile', 'You need to be logged in to access your profile.');
+      return;
+    }
+    
     setState(() {
       _currentIndex = index;
     });
@@ -53,8 +63,136 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _showLoginRequiredDialog(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const LoginScreen(),
+                ),
+              );
+            },
+            child: const Text('Login'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildScreens() {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    
+    return [
+      const SpotsListScreen(),
+      const MapScreen(),
+      // Show login prompt for unauthenticated users trying to add spots
+      authService.isAuthenticated 
+          ? const AddSpotScreen() 
+          : _buildLoginPromptScreen(
+              'Add New Spot',
+              'Share your favorite parkour spots with the community',
+              Icons.add_location,
+            ),
+      // Show login prompt for unauthenticated users trying to access profile
+      authService.isAuthenticated 
+          ? const ProfileScreen() 
+          : _buildLoginPromptScreen(
+              'Profile',
+              'Manage your account and view your contributions',
+              Icons.person,
+            ),
+    ];
+  }
+
+  Widget _buildLoginPromptScreen(String title, String description, IconData icon) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(title),
+        elevation: 0,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 80,
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                title,
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                description,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LoginScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.login),
+                label: const Text('Login to Continue'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () {
+                  // Go back to spots list
+                  setState(() {
+                    _currentIndex = 0;
+                  });
+                  _pageController.animateToPage(
+                    0,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
+                child: const Text('Continue Browsing'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    
     return Scaffold(
       body: PageView(
         controller: _pageController,
@@ -66,7 +204,29 @@ class _HomeScreenState extends State<HomeScreen> {
             _currentIndex = index;
           });
         },
-        children: _screens,
+        children: _buildScreens(),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          if (authService.isAuthenticated) {
+            // Navigate to add spot tab
+            setState(() {
+              _currentIndex = 2;
+            });
+            _pageController.animateToPage(
+              2,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
+          } else {
+            // Show login required dialog
+            _showLoginRequiredDialog('Add New Spot', 'You need to be logged in to add new spots.');
+          }
+        },
+        icon: const Icon(Icons.add_location),
+        label: const Text('Add Spot'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,

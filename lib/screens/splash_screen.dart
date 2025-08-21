@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import '../services/auth_service.dart';
 import 'package:web/web.dart' as web;
 
 class SplashScreen extends StatefulWidget {
@@ -95,13 +93,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       return;
     }
     
-    // Otherwise, follow normal auth flow
-    final authService = Provider.of<AuthService>(context, listen: false);
-    if (authService.isAuthenticated) {
-      context.go('/home');
-    } else {
-      context.go('/login');
-    }
+    // Allow both authenticated and unauthenticated users to access public features
+    // Navigate to home for all users - authentication will be handled per-feature
+    context.go('/home');
   }
   
   /// Check if the given path is a spot URL

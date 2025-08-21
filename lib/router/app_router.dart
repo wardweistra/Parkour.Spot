@@ -10,7 +10,7 @@ import '../screens/spots/spots_list_screen.dart';
 import '../screens/spots/map_screen.dart';
 import '../models/spot.dart';
 import '../services/spot_service.dart';
-
+import '../services/auth_service.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -26,6 +26,16 @@ class AppRouter {
           state.uri.pathSegments.isNotEmpty &&
           _isSpotUrl(state.uri.path)) {
         return state.uri.path;
+      }
+      
+      // Check authentication for protected routes
+      final authService = AuthService();
+      final isAuthenticated = authService.isAuthenticated;
+      
+      // Routes that require authentication
+      final protectedRoutes = ['/profile', '/spots/add'];
+      if (protectedRoutes.contains(state.matchedLocation) && !isAuthenticated) {
+        return '/login';
       }
       
       return null;

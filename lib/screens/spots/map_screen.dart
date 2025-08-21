@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../services/spot_service.dart';
+import '../../services/auth_service.dart';
 import '../../models/spot.dart';
+import '../auth/login_screen.dart';
 import 'spot_detail_screen.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
@@ -185,6 +187,8 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Map View'),
@@ -192,6 +196,25 @@ class _MapScreenState extends State<MapScreen> {
         backgroundColor: Theme.of(context).colorScheme.surface,
         foregroundColor: Theme.of(context).colorScheme.onSurface,
         actions: [
+          // Login button for unauthenticated users
+          if (!authService.isAuthenticated) ...[
+            TextButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const LoginScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.login),
+              label: const Text('Login'),
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
           // Satellite view toggle
           Row(
             mainAxisSize: MainAxisSize.min,
@@ -308,6 +331,42 @@ class _MapScreenState extends State<MapScreen> {
                   }
                 },
               ),
+              
+              // Welcome message for unauthenticated users
+              if (!authService.isAuthenticated)
+                Positioned(
+                  top: 16,
+                  left: 16,
+                  right: 16,
+                  child: Container(
+                    padding: const EdgeInsets.all(12.0),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Browse spots on the map. Login to add new spots!',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               
               // Floating action button for centering on user location
               if (_isGettingLocation)
