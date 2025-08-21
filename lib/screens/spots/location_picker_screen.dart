@@ -65,14 +65,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
               ),
             ],
           ),
-          TextButton(
-            onPressed: _pickedLocation == null
-                ? null
-                : () {
-                    Navigator.pop(context, _pickedLocation);
-                  },
-            child: const Text('Done'),
-          ),
+
         ],
       ),
       body: GoogleMap(
@@ -80,6 +73,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         mapType: _isSatelliteView ? MapType.satellite : MapType.normal,
         myLocationEnabled: true,
         myLocationButtonEnabled: true,
+        zoomControlsEnabled: false,
+        mapToolbarEnabled: false,
         liteModeEnabled: kIsWeb,
         compassEnabled: false,
         onMapCreated: (controller) {

@@ -215,16 +215,7 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _buildActionTile(
-                    context,
-                    Icons.add_location,
-                    'Add New Spot',
-                    'Share a new parkour spot with the community',
-                    () {
-                      // Navigate to add spot screen
-                      Navigator.pushNamed(context, '/add-spot');
-                    },
-                  ),
+
                   _buildActionTile(
                     context,
                     Icons.favorite,

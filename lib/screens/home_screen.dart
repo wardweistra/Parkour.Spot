@@ -228,29 +228,7 @@ class _HomeScreenState extends State<HomeScreen> {
         },
         children: _buildScreens(),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          if (authService.isAuthenticated) {
-            // Navigate to add spot tab
-            setState(() {
-              _currentIndex = 2;
-            });
-            _pageController.animateToPage(
-              2,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-            );
-            _updateUrlForTab(2);
-          } else {
-            // Show login required dialog
-            _showLoginRequiredDialog('Add New Spot', 'You need to be logged in to add new spots.');
-          }
-        },
-        icon: const Icon(Icons.add_location),
-        label: const Text('Add Spot'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
-      ),
+
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,
