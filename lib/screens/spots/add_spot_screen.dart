@@ -373,6 +373,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
           : GeoPoint(_currentPosition!.latitude, _currentPosition!.longitude),
         tags: tags.isNotEmpty ? tags : null,
         createdBy: authService.currentUser?.uid,
+        createdByName: authService.userProfile?.displayName ?? authService.currentUser?.email ?? authService.currentUser?.uid,
       );
 
       final success = await spotService.createSpot(
