@@ -166,29 +166,57 @@ class _SpotsListScreenState extends State<SpotsListScreen> {
                   );
                 }
 
+                final screenWidth = MediaQuery.of(context).size.width;
+                final useGrid = screenWidth >= 600;
+
                 return RefreshIndicator(
                   onRefresh: () => spotService.fetchSpots(),
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: spots.length,
-                    itemBuilder: (context, index) {
-                      final spot = spots[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: SpotCard(
-                          spot: spot,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => SpotDetailScreen(spot: spot),
+                  child: useGrid
+                      ? GridView.builder(
+                          padding: const EdgeInsets.all(16),
+                          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 480,
+                            mainAxisExtent: 320,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                          ),
+                          itemCount: spots.length,
+                          itemBuilder: (context, index) {
+                            final spot = spots[index];
+                            return SpotCard(
+                              spot: spot,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => SpotDetailScreen(spot: spot),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: spots.length,
+                          itemBuilder: (context, index) {
+                            final spot = spots[index];
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: SpotCard(
+                                spot: spot,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => SpotDetailScreen(spot: spot),
+                                    ),
+                                  );
+                                },
                               ),
                             );
                           },
                         ),
-                      );
-                    },
-                  ),
                 );
               },
             ),
