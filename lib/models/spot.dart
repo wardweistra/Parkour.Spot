@@ -7,6 +7,7 @@ class Spot {
   final GeoPoint location;
   final List<String>? imageUrls;
   final String? createdBy;
+  final String? createdByName;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final double? rating;
@@ -21,6 +22,7 @@ class Spot {
     required this.location,
     this.imageUrls,
     this.createdBy,
+    this.createdByName,
     this.createdAt,
     this.updatedAt,
     this.rating,
@@ -40,6 +42,7 @@ class Spot {
           ? List<String>.from(data['imageUrls'])
           : (data['imageUrl'] != null ? [data['imageUrl']] : null),
       createdBy: data['createdBy'],
+      createdByName: data['createdByName'],
       createdAt: data['createdAt']?.toDate(),
       updatedAt: data['updatedAt']?.toDate(),
       rating: data['rating']?.toDouble(),
@@ -56,6 +59,7 @@ class Spot {
       'location': location,
       'imageUrls': imageUrls,
       'createdBy': createdBy,
+      'createdByName': createdByName,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
       'rating': rating,
@@ -72,6 +76,7 @@ class Spot {
     GeoPoint? location,
     List<String>? imageUrls,
     String? createdBy,
+    String? createdByName,
     DateTime? createdAt,
     DateTime? updatedAt,
     double? rating,
@@ -86,6 +91,7 @@ class Spot {
       location: location ?? this.location,
       imageUrls: imageUrls ?? this.imageUrls,
       createdBy: createdBy ?? this.createdBy,
+      createdByName: createdByName ?? this.createdByName,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rating: rating ?? this.rating,
