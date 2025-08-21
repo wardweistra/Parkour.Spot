@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../../services/spot_service.dart';
 import '../../services/auth_service.dart';
 import '../../models/spot.dart'; // ignore: unused_import
 import '../../widgets/spot_card.dart';
-import '../auth/login_screen.dart';
-import 'spot_detail_screen.dart';
 
 class SpotsListScreen extends StatefulWidget {
   const SpotsListScreen({super.key});
@@ -53,12 +52,7 @@ class _SpotsListScreenState extends State<SpotsListScreen> {
           if (!authService.isAuthenticated) ...[
             TextButton.icon(
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const LoginScreen(),
-                  ),
-                );
+                context.go('/login');
               },
               icon: const Icon(Icons.login),
               label: const Text('Login'),
@@ -264,12 +258,8 @@ class _SpotsListScreenState extends State<SpotsListScreen> {
                             return SpotCard(
                               spot: spot,
                               onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => SpotDetailScreen(spot: spot),
-                                  ),
-                                );
+                                // Navigate to spot detail using GoRouter
+                                context.go('/spot/${spot.id}');
                               },
                             );
                           },
@@ -284,12 +274,8 @@ class _SpotsListScreenState extends State<SpotsListScreen> {
                               child: SpotCard(
                                 spot: spot,
                                 onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => SpotDetailScreen(spot: spot),
-                                    ),
-                                  );
+                                  // Navigate to spot detail using GoRouter
+                                  context.go('/spot/${spot.id}');
                                 },
                               ),
                             );

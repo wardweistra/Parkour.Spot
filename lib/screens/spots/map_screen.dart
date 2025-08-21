@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:go_router/go_router.dart';
 import '../../services/spot_service.dart';
 import '../../services/auth_service.dart';
 import '../../models/spot.dart';
-import '../auth/login_screen.dart';
-import 'spot_detail_screen.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 class MapScreen extends StatefulWidget {
@@ -84,12 +83,7 @@ class _MapScreenState extends State<MapScreen> {
               ? '${spot.description.substring(0, 50)}...'
               : spot.description,
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => SpotDetailScreen(spot: spot),
-              ),
-            );
+            context.go('/spot/${spot.id}');
           },
         ),
         onTap: () {
@@ -169,12 +163,7 @@ class _MapScreenState extends State<MapScreen> {
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => SpotDetailScreen(spot: spot),
-                    ),
-                  );
+                  context.go('/spot/${spot.id}');
                 },
                 child: const Text('View Details'),
               ),
@@ -200,12 +189,7 @@ class _MapScreenState extends State<MapScreen> {
           if (!authService.isAuthenticated) ...[
             TextButton.icon(
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const LoginScreen(),
-                  ),
-                );
+                context.go('/login');
               },
               icon: const Icon(Icons.login),
               label: const Text('Login'),

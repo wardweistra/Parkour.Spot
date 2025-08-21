@@ -10,7 +10,6 @@ import '../../services/auth_service.dart';
 import '../../services/url_service.dart';
 import '../../widgets/custom_button.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
-import '../../screens/auth/login_screen.dart';
 
 class SpotDetailScreen extends StatefulWidget {
   final Spot spot;
@@ -211,12 +210,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     child: IconButton(
                       icon: const Icon(Icons.login, color: Colors.white),
                       onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const LoginScreen(),
-                          ),
-                        );
+                        Navigator.pop(context);
+                        context.go('/login?redirectTo=${Uri.encodeComponent('/spot/${widget.spot.id}')}');
                       },
                     ),
                   ),
@@ -522,12 +517,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                   Expanded(
                                     child: ElevatedButton.icon(
                                       onPressed: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => const LoginScreen(),
-                                          ),
-                                        );
+                                        context.go('/login?redirectTo=${Uri.encodeComponent('/spot/${widget.spot.id}')}');
                                       },
                                       icon: const Icon(Icons.login),
                                       label: const Text('Login to Rate'),

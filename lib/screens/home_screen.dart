@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 
 import '../services/spot_service.dart';
 import '../services/auth_service.dart';
@@ -7,10 +8,11 @@ import 'spots/spots_list_screen.dart';
 import 'spots/add_spot_screen.dart';
 import 'spots/map_screen.dart';
 import 'profile/profile_screen.dart';
-import 'auth/login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final int initialTab;
+  
+  const HomeScreen({super.key, this.initialTab = 0});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -23,11 +25,17 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _currentIndex = widget.initialTab;
     _pageController = PageController(initialPage: _currentIndex);
     
     // Load spots when the app starts
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<SpotService>(context, listen: false).fetchSpots();
+      
+      // If we have an initial tab that's not 0, ensure the page controller is at the right position
+      if (widget.initialTab != 0 && _pageController.hasClients) {
+        _pageController.jumpToPage(widget.initialTab);
+      }
     });
   }
 
@@ -61,6 +69,27 @@ class _HomeScreenState extends State<HomeScreen> {
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
+    
+    // Update URL to reflect current tab (but don't navigate away)
+    _updateUrlForTab(index);
+  }
+
+  void _updateUrlForTab(int index) {
+    // Update URL without navigating away from the home screen
+    switch (index) {
+      case 0:
+        context.go('/home');
+        break;
+      case 1:
+        context.go('/home?tab=map');
+        break;
+      case 2:
+        context.go('/home?tab=add');
+        break;
+      case 3:
+        context.go('/home?tab=profile');
+        break;
+    }
   }
 
   void _showLoginRequiredDialog(String title, String message) {
@@ -77,12 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const LoginScreen(),
-                ),
-              );
+              context.go('/login');
             },
             child: const Text('Login'),
           ),
@@ -154,12 +178,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 32),
               ElevatedButton.icon(
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const LoginScreen(),
-                    ),
-                  );
+                  context.go('/login');
                 },
                 icon: const Icon(Icons.login),
                 label: const Text('Login to Continue'),
@@ -179,6 +198,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     duration: const Duration(milliseconds: 300),
                     curve: Curves.easeInOut,
                   );
+                  context.go('/home');
                 },
                 child: const Text('Continue Browsing'),
               ),
@@ -196,13 +216,15 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       body: PageView(
         controller: _pageController,
-        physics: _currentIndex == 1
-            ? const NeverScrollableScrollPhysics()
-            : const PageScrollPhysics(),
+        physics: _currentIndex == 1 
+            ? const NeverScrollableScrollPhysics() // Disable swiping on map tab
+            : const PageScrollPhysics(), // Enable swiping on other tabs
         onPageChanged: (index) {
           setState(() {
             _currentIndex = index;
           });
+          // Update URL when swiping between tabs
+          _updateUrlForTab(index);
         },
         children: _buildScreens(),
       ),
@@ -218,6 +240,7 @@ class _HomeScreenState extends State<HomeScreen> {
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
             );
+            _updateUrlForTab(2);
           } else {
             // Show login required dialog
             _showLoginRequiredDialog('Add New Spot', 'You need to be logged in to add new spots.');

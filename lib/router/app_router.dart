@@ -4,10 +4,6 @@ import '../screens/splash_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/spots/spot_detail_screen.dart';
 import '../screens/auth/login_screen.dart';
-import '../screens/profile/profile_screen.dart';
-import '../screens/spots/add_spot_screen.dart';
-import '../screens/spots/spots_list_screen.dart';
-import '../screens/spots/map_screen.dart';
 import '../models/spot.dart';
 import '../services/spot_service.dart';
 import '../services/auth_service.dart';
@@ -47,27 +43,54 @@ class AppRouter {
       ),
       GoRoute(
         path: '/home',
-        builder: (context, state) => const HomeScreen(),
+        builder: (context, state) {
+          // Parse tab parameter from query string
+          final tabParam = state.uri.queryParameters['tab'];
+          int initialTab = 0;
+          
+          if (tabParam != null) {
+            switch (tabParam) {
+              case 'map':
+                initialTab = 1;
+                break;
+              case 'add':
+                initialTab = 2;
+                break;
+              case 'profile':
+                initialTab = 3;
+                break;
+              default:
+                initialTab = 0;
+            }
+          }
+          
+          return HomeScreen(initialTab: initialTab);
+        },
+      ),
+      // Individual tab routes that redirect to home with tab parameter
+      GoRoute(
+        path: '/map',
+        redirect: (context, state) => '/home?tab=map',
+      ),
+      GoRoute(
+        path: '/spots/add',
+        redirect: (context, state) => '/home?tab=add',
+      ),
+      GoRoute(
+        path: '/profile',
+        redirect: (context, state) => '/home?tab=profile',
       ),
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
       ),
+      // Simple spot detail route: /spot/:spotId
       GoRoute(
-        path: '/profile',
-        builder: (context, state) => const ProfileScreen(),
-      ),
-      GoRoute(
-        path: '/spots',
-        builder: (context, state) => const SpotsListScreen(),
-      ),
-      GoRoute(
-        path: '/spots/add',
-        builder: (context, state) => const AddSpotScreen(),
-      ),
-      GoRoute(
-        path: '/map',
-        builder: (context, state) => const MapScreen(),
+        path: '/spot/:spotId',
+        builder: (context, state) {
+          final spotId = state.pathParameters['spotId']!;
+          return SpotDetailRoute(spotId: spotId);
+        },
       ),
       // Spot detail route: /nl/amsterdam/&lt;spot-id&gt; or any /&lt;xx&gt;/&lt;anything&gt;/&lt;spot-id&gt;
       GoRoute(
