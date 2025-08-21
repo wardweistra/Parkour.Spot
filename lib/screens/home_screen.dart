@@ -58,6 +58,9 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       body: PageView(
         controller: _pageController,
+        physics: _currentIndex == 1
+            ? const NeverScrollableScrollPhysics()
+            : const PageScrollPhysics(),
         onPageChanged: (index) {
           setState(() {
             _currentIndex = index;
