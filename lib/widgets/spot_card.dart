@@ -46,6 +46,7 @@ class _SpotCardState extends State<SpotCard> {
         borderRadius: BorderRadius.circular(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min, // Prevent column from expanding unnecessarily
           children: [
             // Image Section
             if (widget.spot.imageUrls != null && widget.spot.imageUrls!.isNotEmpty)
@@ -191,12 +192,14 @@ class _SpotCardState extends State<SpotCard> {
                 ),
               ),
             
-            // Content Section
-            Flexible( // Wrapped in Flexible to allow content to expand
+            // Content Section - Wrapped in SingleChildScrollView to prevent overflow
+            SingleChildScrollView(
+              physics: const NeverScrollableScrollPhysics(), // Disable scrolling within card
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min, // Prevent unnecessary expansion
                   children: [
                     // Title and Rating Row
                     Row(
@@ -230,113 +233,97 @@ class _SpotCardState extends State<SpotCard> {
                     
                     const SizedBox(height: 8),
                     
-                    // Description
-                    Container(
-                      constraints: const BoxConstraints(
-                        minHeight: 60, // Ensure minimum height for description
-                        maxHeight: 80, // Limit maximum height to prevent overlap
+                    // Description - Removed fixed height constraints
+                    Text(
+                      widget.spot.description,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                        height: 1.4, // Better line height for readability
                       ),
-                      child: Text(
-                        widget.spot.description,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                          height: 1.4, // Better line height for readability
-                        ),
-                        maxLines: 3, // Keep at 3 lines
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.left,
-                        softWrap: true, // Ensure text wraps properly
-                      ),
+                      maxLines: 3, // Keep at 3 lines
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.left,
+                      softWrap: true, // Ensure text wraps properly
                     ),
                     
-                    const SizedBox(height: 16), // Increased spacing from 12 to 16
+                    const SizedBox(height: 16),
                     
-                    // Tags and Location
-                    Container(
-                      constraints: const BoxConstraints(
-                        minHeight: 40, // Ensure minimum height for tags and location
-                      ),
-                      child: Row(
-                        children: [
-                          // Tags
-                          if (widget.spot.tags != null && widget.spot.tags!.isNotEmpty) ...[
-                            Icon(
-                              Icons.label,
-                              size: 16,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                widget.spot.tags!.take(2).join(', '),
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                          
-                          const Spacer(),
-                          
-                          // Location indicator
+                    // Tags and Location - Removed fixed height constraints
+                    Row(
+                      children: [
+                        // Tags
+                        if (widget.spot.tags != null && widget.spot.tags!.isNotEmpty) ...[
                           Icon(
-                            Icons.location_on,
+                            Icons.label,
                             size: 16,
-                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                           const SizedBox(width: 4),
-                          Flexible( // Wrapped in Flexible to prevent overflow
+                          Expanded(
                             child: Text(
-                              '${widget.spot.location.latitude.toStringAsFixed(4)}, ${widget.spot.location.longitude.toStringAsFixed(4)}',
+                              widget.spot.tags!.take(2).join(', '),
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                color: Theme.of(context).colorScheme.primary,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
-                      ),
+                        
+                        const Spacer(),
+                        
+                        // Location indicator
+                        Icon(
+                          Icons.location_on,
+                          size: 16,
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible( // Wrapped in Flexible to prevent overflow
+                          child: Text(
+                            '${widget.spot.location.latitude.toStringAsFixed(4)}, ${widget.spot.location.longitude.toStringAsFixed(4)}',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                     
-                    // Created by and date
+                    // Created by and date - Removed fixed height constraints
                     if (widget.spot.createdBy != null || widget.spot.createdByName != null) ...[
                       const SizedBox(height: 8),
-                      Container(
-                        constraints: const BoxConstraints(
-                          minHeight: 20, // Ensure minimum height for "Added by" section
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.person,
-                              size: 14,
-                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.person,
+                            size: 14,
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded( // Wrapped in Expanded to prevent overflow
+                            child: Text(
+                              'Added by ${widget.spot.createdByName ?? widget.spot.createdBy}',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(width: 4),
-                            Expanded( // Wrapped in Expanded to prevent overflow
-                              child: Text(
-                                'Added by ${widget.spot.createdByName ?? widget.spot.createdBy}',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                          ),
+                          if (widget.spot.createdAt != null) ...[
+                            const SizedBox(width: 8),
+                            Text(
+                              '• ${_formatDate(widget.spot.createdAt!)}',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                               ),
                             ),
-                            if (widget.spot.createdAt != null) ...[
-                              const SizedBox(width: 8),
-                              Text(
-                                '• ${_formatDate(widget.spot.createdAt!)}',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-                                ),
-                              ),
-                            ],
                           ],
-                        ),
+                        ],
                       ),
                     ],
                   ],
