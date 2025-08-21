@@ -714,9 +714,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         },
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          width: isActive ? 16 : 10,
-                          height: isActive ? 16 : 10,
+                          margin: const EdgeInsets.symmetric(horizontal: 2),
+                          width: isActive ? 6 : 6,
+                          height: isActive ? 6 : 6,
                           decoration: BoxDecoration(
                             color: isActive ? Colors.white : Colors.white54,
                             shape: BoxShape.circle,
