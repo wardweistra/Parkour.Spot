@@ -1,11 +1,11 @@
 {
-    "name": "parkour_spot",
-    "short_name": "parkour_spot",
+    "name": "Parkour.Spot",
+    "short_name": "Parkour.Spot",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "A Flutter app for reporting and discovering parkour spots.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

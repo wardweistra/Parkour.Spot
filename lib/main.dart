@@ -34,7 +34,7 @@ class ParkourSpotApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SpotService()),
       ],
       child: MaterialApp.router(
-        title: 'ParkourSpot',
+        title: 'Parkour.Spot',
         routerConfig: AppRouter.router,
         theme: ThemeData(
           primarySwatch: Colors.blue,

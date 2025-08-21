@@ -42,7 +42,10 @@ class _SpotsListScreenState extends State<SpotsListScreen> {
     
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Parkour Spots'),
+        title: Text(
+          'Welcome to Parkour.Spot!',
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
         elevation: 0,
         backgroundColor: Theme.of(context).colorScheme.surface,
         foregroundColor: Theme.of(context).colorScheme.onSurface,
@@ -130,7 +133,7 @@ class _SpotsListScreenState extends State<SpotsListScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Welcome to ParkourSpot!',
+                          'Welcome to Parkour.Spot!',
                           style: Theme.of(context).textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Theme.of(context).colorScheme.primary,

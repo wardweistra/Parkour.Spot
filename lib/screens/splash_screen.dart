@@ -159,12 +159,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                     
                     // App Name
                     Text(
-                      'ParkourSpot',
-                      style: TextStyle(
-                        fontSize: 32,
+                      'Parkour.Spot',
+                      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: 1.2,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                     
