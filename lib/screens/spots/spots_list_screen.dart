@@ -168,15 +168,19 @@ class _SpotsListScreenState extends State<SpotsListScreen> {
 
                 final screenWidth = MediaQuery.of(context).size.width;
                 final useGrid = screenWidth >= 600;
+                
+                // Calculate optimal grid dimensions based on screen size
+                final maxCrossAxisExtent = screenWidth >= 1200 ? 600 : 480;
+                final mainAxisExtent = screenWidth >= 1200 ? 480 : 440; // Increased height to accommodate bottom content
 
                 return RefreshIndicator(
                   onRefresh: () => spotService.fetchSpots(),
                   child: useGrid
                       ? GridView.builder(
                           padding: const EdgeInsets.all(16),
-                          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                            maxCrossAxisExtent: 480,
-                            mainAxisExtent: 320,
+                          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: maxCrossAxisExtent.toDouble(),
+                            mainAxisExtent: mainAxisExtent.toDouble(),
                             crossAxisSpacing: 12,
                             mainAxisSpacing: 12,
                           ),
