@@ -210,7 +210,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     child: IconButton(
                       icon: const Icon(Icons.login, color: Colors.white),
                       onPressed: () {
-                        Navigator.pop(context);
                         context.go('/login?redirectTo=${Uri.encodeComponent('/spot/${widget.spot.id}')}');
                       },
                     ),
