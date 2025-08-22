@@ -216,26 +216,63 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                   ),
                   const SizedBox(width: 8),
                 ],
-                if (widget.spot.createdBy == Provider.of<AuthService>(context, listen: false).userProfile?.id) ...[
-                  CircleAvatar(
-                    backgroundColor: Colors.black.withValues(alpha: 0.5),
-                    child: IconButton(
-                      icon: const Icon(Icons.edit, color: Colors.white),
-                      onPressed: () {
-                        // TODO: Navigate to edit screen
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  CircleAvatar(
-                    backgroundColor: Colors.red.withValues(alpha: 0.8),
-                    child: IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.white),
-                      onPressed: _showDeleteDialog,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                ],
+                // Edit and Delete buttons - only show after auth state is restored
+                Consumer<AuthService>(
+                  builder: (context, authService, child) {
+                    // Wait for auth state to be restored before checking ownership
+                    if (authService.isLoading) {
+                      // Show subtle loading indicator while auth state is being restored
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white.withValues(alpha: 0.7),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                        ],
+                      );
+                    }
+                    
+                    // Check if current user owns this spot
+                    if (authService.isAuthenticated && 
+                        authService.userProfile != null &&
+                        widget.spot.createdBy == authService.userProfile!.id) {
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircleAvatar(
+                            backgroundColor: Colors.black.withValues(alpha: 0.5),
+                            child: IconButton(
+                              icon: const Icon(Icons.edit, color: Colors.white),
+                              onPressed: () {
+                                // TODO: Navigate to edit screen
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          CircleAvatar(
+                            backgroundColor: Colors.red.withValues(alpha: 0.8),
+                            child: IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.white),
+                              onPressed: _showDeleteDialog,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                        ],
+                      );
+                    }
+                    
+                    // User is authenticated but doesn't own the spot, or auth state not yet restored
+                    return const SizedBox.shrink();
+                  },
+                ),
               ],
               flexibleSpace: FlexibleSpaceBar(
                 background: _buildImageCarousel(),
@@ -454,47 +491,42 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     const SizedBox(height: 24),
                     
                     // Rating Section
-                    if (Provider.of<AuthService>(context, listen: false).userProfile != null) ...[
-                      Text(
-                        'Rate this spot',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          ...List.generate(5, (index) {
-                            return GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _userRating = index + 1.0;
-                                  _hasRated = true;
-                                });
-                              },
-                              child: Icon(
-                                index < _userRating ? Icons.star : Icons.star_border,
-                                color: Colors.amber,
-                                size: 32,
+                    Consumer<AuthService>(
+                      builder: (context, authService, child) {
+                        // Wait for auth state to be restored before showing rating section
+                        if (authService.isLoading) {
+                          // Show subtle loading indicator while auth state is being restored
+                          return Container(
+                            height: 80,
+                            child: Center(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Theme.of(context).colorScheme.primary,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'Loading...',
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            );
-                          }),
-                          const SizedBox(width: 16),
-                          if (_hasRated)
-                            CustomButton(
-                              onPressed: _submitRating,
-                              text: 'Submit Rating',
-                              isLoading: false,
                             ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                    ] else ...[
-                      // Show login prompt for unauthenticated users
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
+                          );
+                        }
+                        
+                        if (authService.isAuthenticated && authService.userProfile != null) {
+                          return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
@@ -503,33 +535,84 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Login to rate this spot and help other parkour enthusiasts',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                                ),
-                              ),
                               const SizedBox(height: 16),
                               Row(
                                 children: [
-                                  Expanded(
-                                    child: ElevatedButton.icon(
-                                      onPressed: () {
-                                        context.go('/login?redirectTo=${Uri.encodeComponent('/spot/${widget.spot.id}')}');
+                                  ...List.generate(5, (index) {
+                                    return GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          _userRating = index + 1.0;
+                                          _hasRated = true;
+                                        });
                                       },
-                                      icon: const Icon(Icons.login),
-                                      label: const Text('Login to Rate'),
+                                      child: Icon(
+                                        index < _userRating ? Icons.star : Icons.star_border,
+                                        color: Colors.amber,
+                                        size: 32,
+                                      ),
+                                    );
+                                  }),
+                                  const SizedBox(width: 16),
+                                  if (_hasRated)
+                                    CustomButton(
+                                      onPressed: _submitRating,
+                                      text: 'Submit Rating',
+                                      isLoading: false,
                                     ),
-                                  ),
                                 ],
                               ),
+                              const SizedBox(height: 24),
                             ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                    ],
+                          );
+                        } else {
+                          // Show login prompt for unauthenticated users
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Card(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Rate this spot',
+                                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Login to rate this spot and help other parkour enthusiasts',
+                                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: ElevatedButton.icon(
+                                              onPressed: () {
+                                                context.go('/login?redirectTo=${Uri.encodeComponent('/spot/${widget.spot.id}')}');
+                                              },
+                                              icon: const Icon(Icons.login),
+                                              label: const Text('Login to Rate'),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                            ],
+                          );
+                        }
+                      },
+                    ),
                     
                     // Additional Info
                     if (widget.spot.createdBy != null || widget.spot.createdByName != null || widget.spot.createdAt != null) ...[

@@ -11,32 +11,38 @@ class AuthService extends ChangeNotifier {
   bool get isAuthenticated => _auth.currentUser != null;
   bool get isLoading => _isLoading;
   
-  bool _isLoading = false;
+  bool _isLoading = true; // Start as loading while auth state is being restored
   app_user.User? _userProfile;
 
   app_user.User? get userProfile => _userProfile;
 
   AuthService() {
+    debugPrint('AuthService: Initializing, setting up auth state listener');
     _auth.authStateChanges().listen(_onAuthStateChanged);
   }
 
   void _onAuthStateChanged(User? user) {
+    debugPrint('AuthService: Auth state changed - user: ${user?.uid ?? "null"}');
     if (user != null) {
       _loadUserProfile(user.uid);
     } else {
       _userProfile = null;
+      _isLoading = false; // Auth state restored, no user
+      debugPrint('AuthService: No user, auth state restored');
+      notifyListeners();
     }
-    notifyListeners();
   }
 
   Future<void> _loadUserProfile(String uid) async {
     try {
+      debugPrint('Loading user profile for UID: $uid');
       final doc = await _firestore.collection('users').doc(uid).get();
       if (doc.exists) {
         _userProfile = app_user.User.fromMap({
           'id': uid,
           ...doc.data() as Map<String, dynamic>,
         });
+        debugPrint('User profile loaded from Firestore');
       } else {
         // Create user profile if it doesn't exist
         _userProfile = app_user.User(
@@ -48,11 +54,19 @@ class AuthService extends ChangeNotifier {
           lastLoginAt: DateTime.now(),
         );
         await _firestore.collection('users').doc(uid).set(_userProfile!.toMap());
+        debugPrint('New user profile created in Firestore');
       }
     } catch (e) {
       debugPrint('Error loading user profile: $e');
+    } finally {
+      _isLoading = false; // Auth state restored
+      debugPrint('Auth state restoration completed. isAuthenticated: $isAuthenticated, userProfile: ${_userProfile != null}');
+      notifyListeners();
     }
   }
+
+  /// Check if the authentication state has been fully restored
+  bool get isAuthStateRestored => !_isLoading;
 
   Future<bool> signInWithEmailAndPassword(String email, String password) async {
     try {
