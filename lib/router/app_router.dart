@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../screens/splash_screen.dart';
@@ -167,95 +168,76 @@ class SpotDetailRoute extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<SpotService>(
       builder: (context, spotService, child) {
-        // First check if the spot exists in local cache
-        Spot? localSpot;
-        try {
-          localSpot = spotService.spots.firstWhere(
-            (spot) => spot.id == spotId,
-          );
-        } catch (e) {
-          localSpot = null;
-        }
-        
-        // If spot is not in local cache, it might have been deleted
-        if (localSpot == null) {
-          return Scaffold(
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.location_off, size: 64, color: Colors.grey),
-                  const SizedBox(height: 16),
-                  const Text('Spot not found'),
-                  const SizedBox(height: 8),
-                  const Text('This spot may have been deleted or doesn\'t exist.'),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: () => context.go('/home'),
-                    child: const Text('Go Home'),
-                  ),
-                ],
-              ),
-            ),
-          );
+        // Ensure spots are loaded if they haven't been yet
+        if (spotService.spots.isEmpty && !spotService.isLoading) {
+          // Trigger spots loading if not already loading
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            spotService.fetchSpots();
+          });
         }
         
         return FutureBuilder<Spot?>(
           future: spotService.getSpotById(spotId),
           builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
+            // Debug logging
+            if (kDebugMode) {
+              print('SpotDetailRoute: connectionState=${snapshot.connectionState}, hasData=${snapshot.hasData}, hasError=${snapshot.hasError}');
+              print('SpotDetailRoute: spots count=${spotService.spots.length}, isLoading=${spotService.isLoading}');
+            }
+            
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Scaffold(
+                body: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
 
-        if (snapshot.hasError) {
-          return Scaffold(
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error, size: 64, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Error loading spot',
-                    style: Theme.of(context).textTheme.headlineSmall,
+            if (snapshot.hasError) {
+              return Scaffold(
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error, size: 64, color: Colors.red),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Error loading spot',
+                        style: Theme.of(context).textTheme.headlineSmall,
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Please try again later',
-                    style: Theme.of(context).textTheme.bodyMedium,
+                      const SizedBox(height: 8),
+                      Text(
+                        'Please try again later',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-          );
-        }
+                ),
+              );
+            }
 
-        if (!snapshot.hasData || snapshot.data == null) {
-          return Scaffold(
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.location_off, size: 64, color: Colors.grey),
-                  const SizedBox(height: 16),
-                  const Text('Spot not found'),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: () => context.go('/home'),
-                    child: const Text('Go Home'),
+            if (!snapshot.hasData || snapshot.data == null) {
+              return Scaffold(
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.location_off, size: 64, color: Colors.grey),
+                      const SizedBox(height: 16),
+                      const Text('Spot not found'),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: () => context.go('/home'),
+                        child: const Text('Go Home'),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-          );
-        }
+                ),
+              );
+            }
 
-        final spot = snapshot.data!;
-        return SpotDetailScreen(spot: spot);
+            final spot = snapshot.data!;
+            return SpotDetailScreen(spot: spot);
           },
         );
       },
