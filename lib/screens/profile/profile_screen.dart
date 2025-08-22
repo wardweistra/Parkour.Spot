@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/custom_button.dart';
 
@@ -70,10 +71,9 @@ class ProfileScreen extends StatelessWidget {
             CustomButton(
               onPressed: () {
                 // Navigate to login screen
-                Navigator.pushReplacementNamed(context, '/login');
+                context.go('/login');
               },
               text: 'Sign In',
-              icon: Icons.login,
               width: double.infinity,
             ),
           ],
@@ -322,7 +322,7 @@ class ProfileScreen extends StatelessWidget {
               if (shouldSignOut == true) {
                 await authService.signOut();
                 if (context.mounted) {
-                  Navigator.pushReplacementNamed(context, '/login');
+                  context.go('/home');
                 }
               }
             },
