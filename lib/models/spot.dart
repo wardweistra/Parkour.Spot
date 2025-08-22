@@ -10,8 +10,6 @@ class Spot {
   final String? createdByName;
   final DateTime? createdAt;
   final DateTime? updatedAt;
-  final double? rating;
-  final int? ratingCount;
   final List<String>? tags;
   final bool? isPublic;
 
@@ -25,8 +23,6 @@ class Spot {
     this.createdByName,
     this.createdAt,
     this.updatedAt,
-    this.rating,
-    this.ratingCount,
     this.tags,
     this.isPublic = true,
   });
@@ -45,8 +41,6 @@ class Spot {
       createdByName: data['createdByName'],
       createdAt: data['createdAt']?.toDate(),
       updatedAt: data['updatedAt']?.toDate(),
-      rating: data['rating']?.toDouble(),
-      ratingCount: data['ratingCount'],
       tags: data['tags'] != null ? List<String>.from(data['tags']) : null,
       isPublic: data['isPublic'] ?? true,
     );
@@ -62,8 +56,6 @@ class Spot {
       'createdByName': createdByName,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
-      'rating': rating,
-      'ratingCount': ratingCount,
       'tags': tags,
       'isPublic': isPublic,
     };
@@ -79,8 +71,6 @@ class Spot {
     String? createdByName,
     DateTime? createdAt,
     DateTime? updatedAt,
-    double? rating,
-    int? ratingCount,
     List<String>? tags,
     bool? isPublic,
   }) {
@@ -94,8 +84,6 @@ class Spot {
       createdByName: createdByName ?? this.createdByName,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      rating: rating ?? this.rating,
-      ratingCount: ratingCount ?? this.ratingCount,
       tags: tags ?? this.tags,
       isPublic: isPublic ?? this.isPublic,
     );

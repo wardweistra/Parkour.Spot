@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:provider/provider.dart';
 import '../models/spot.dart';
+import '../services/spot_service.dart';
 
 class SpotCard extends StatefulWidget {
   final Spot spot;
@@ -214,18 +216,45 @@ class _SpotCardState extends State<SpotCard> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (widget.showRating && widget.spot.rating != null) ...[
-                          Icon(
-                            Icons.star,
-                            size: 16,
-                            color: Colors.amber,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            widget.spot.rating!.toStringAsFixed(1),
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+                        if (widget.showRating) ...[
+                          Consumer<SpotService>(
+                            builder: (context, spotService, child) {
+                              return FutureBuilder<Map<String, dynamic>>(
+                                future: spotService.getSpotRatingStats(widget.spot.id!),
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState == ConnectionState.waiting) {
+                                    return const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    );
+                                  }
+                                  
+                                  if (snapshot.hasData && snapshot.data!['ratingCount'] > 0) {
+                                    final averageRating = snapshot.data!['averageRating'] as double;
+                                    return Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.star,
+                                          size: 16,
+                                          color: Colors.amber,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          averageRating.toStringAsFixed(1),
+                                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  }
+                                  
+                                  return const SizedBox.shrink();
+                                },
+                              );
+                            },
                           ),
                         ],
                       ],

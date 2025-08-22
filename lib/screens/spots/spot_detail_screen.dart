@@ -31,6 +31,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   void initState() {
     super.initState();
     _scrollController = ScrollController();
+    _loadUserRating();
   }
 
   @override
@@ -297,29 +298,54 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             ),
                           ),
                         ),
-                        if (widget.spot.rating != null) ...[
-                          Icon(
-                            Icons.star,
-                            color: Colors.amber,
-                            size: 24,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            widget.spot.rating!.toStringAsFixed(1),
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          if (widget.spot.ratingCount != null) ...[
-                            const SizedBox(width: 4),
-                            Text(
-                              '(${widget.spot.ratingCount})',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                              ),
-                            ),
-                          ],
-                        ],
+                        Consumer<SpotService>(
+                          builder: (context, spotService, child) {
+                            return FutureBuilder<Map<String, dynamic>>(
+                              future: spotService.getSpotRatingStats(widget.spot.id!),
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState == ConnectionState.waiting) {
+                                  return const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  );
+                                }
+                                
+                                if (snapshot.hasData && snapshot.data!['ratingCount'] > 0) {
+                                  final averageRating = snapshot.data!['averageRating'] as double;
+                                  final ratingCount = snapshot.data!['ratingCount'] as int;
+                                  
+                                  return Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.star,
+                                        color: Colors.amber,
+                                        size: 24,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        averageRating.toStringAsFixed(1),
+                                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '($ratingCount)',
+                                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                }
+                                
+                                return const SizedBox.shrink();
+                              },
+                            );
+                          },
+                        ),
                       ],
                     ),
                     
@@ -496,7 +522,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         // Wait for auth state to be restored before showing rating section
                         if (authService.isLoading) {
                           // Show subtle loading indicator while auth state is being restored
-                          return Container(
+                          return SizedBox(
                             height: 80,
                             child: Center(
                               child: Row(
@@ -689,7 +715,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       );
     }
 
-    return Container(
+    return SizedBox(
       height: 400,
       width: double.infinity,
       child: Stack(
@@ -918,8 +944,23 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
   Future<void> _submitRating() async {
     try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      if (authService.userProfile == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You must be logged in to rate spots'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      
       final spotService = Provider.of<SpotService>(context, listen: false);
-      final success = await spotService.rateSpot(widget.spot.id!, _userRating);
+      final success = await spotService.rateSpot(
+        widget.spot.id!, 
+        _userRating, 
+        authService.userProfile!.id
+      );
       
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -931,6 +972,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         setState(() {
           _hasRated = false;
         });
+        
+        // Refresh the spot data to show updated rating
+        await _refreshSpotData();
       }
     } catch (e) {
       if (mounted) {
@@ -941,6 +985,37 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _loadUserRating() async {
+    try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      if (authService.isAuthenticated && authService.userProfile != null) {
+        final spotService = Provider.of<SpotService>(context, listen: false);
+        final userRating = await spotService.getUserRating(widget.spot.id!, authService.userProfile!.id);
+        if (mounted && userRating != null) {
+          setState(() {
+            _userRating = userRating;
+            _hasRated = true;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading user rating: $e');
+    }
+  }
+
+  Future<void> _refreshSpotData() async {
+    try {
+      // Refresh the rating display by triggering a rebuild
+      if (mounted) {
+        setState(() {
+          // This will trigger a rebuild and refresh the rating display
+        });
+      }
+    } catch (e) {
+      debugPrint('Error refreshing spot data: $e');
     }
   }
 

@@ -4,6 +4,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
 import 'dart:math';
 import '../models/spot.dart';
+import '../models/rating.dart';
 
 class SpotService extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -302,33 +303,118 @@ class SpotService extends ChangeNotifier {
   }
 
   // Rate a spot
-  Future<bool> rateSpot(String spotId, double rating) async {
+  Future<bool> rateSpot(String spotId, double rating, String userId) async {
     try {
-      final spot = _spots.firstWhere((s) => s.id == spotId);
-      final currentRating = spot.rating ?? 0.0;
-      final currentCount = spot.ratingCount ?? 0;
+      // Check if user has already rated this spot
+      if (userId.isEmpty) {
+        debugPrint('User ID is required for rating');
+        return false;
+      }
       
-      final newRating = ((currentRating * currentCount) + rating) / (currentCount + 1);
-      final newCount = currentCount + 1;
+      // Check if user already rated this spot
+      final existingRatingDoc = await _firestore
+          .collection('ratings')
+          .where('spotId', isEqualTo: spotId)
+          .where('userId', isEqualTo: userId)
+          .get();
       
-      await _firestore.collection('spots').doc(spotId).update({
-        'rating': newRating,
-        'ratingCount': newCount,
-      });
-      
-      // Update the spot in the local list
-      final index = _spots.indexWhere((s) => s.id == spotId);
-      if (index != -1) {
-        _spots[index] = spot.copyWith(
-          rating: newRating,
-          ratingCount: newCount,
-        );
+      if (existingRatingDoc.docs.isNotEmpty) {
+        // Update existing rating
+        final ratingDoc = existingRatingDoc.docs.first;
+        await ratingDoc.reference.update({
+          'rating': rating,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      } else {
+        // Create new rating
+        await _firestore.collection('ratings').add({
+          'spotId': spotId,
+          'userId': userId,
+          'rating': rating,
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
       }
       
       return true;
     } catch (e) {
       debugPrint('Error rating spot: $e');
       return false;
+    }
+  }
+
+  // Get user's rating for a specific spot
+  Future<double?> getUserRating(String spotId, String userId) async {
+    try {
+      final ratingDoc = await _firestore
+          .collection('ratings')
+          .where('spotId', isEqualTo: spotId)
+          .where('userId', isEqualTo: userId)
+          .get();
+      
+      if (ratingDoc.docs.isNotEmpty) {
+        return ratingDoc.docs.first.data()['rating'] as double?;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error getting user rating: $e');
+      return null;
+    }
+  }
+
+  // Get all ratings for a specific spot
+  Future<List<Rating>> getSpotRatings(String spotId) async {
+    try {
+      final ratingsSnapshot = await _firestore
+          .collection('ratings')
+          .where('spotId', isEqualTo: spotId)
+          .get();
+      
+      return ratingsSnapshot.docs
+          .map((doc) => Rating.fromFirestore(doc))
+          .toList();
+    } catch (e) {
+      debugPrint('Error getting spot ratings: $e');
+      return [];
+    }
+  }
+
+  // Get calculated rating statistics for a spot
+  Future<Map<String, dynamic>> getSpotRatingStats(String spotId) async {
+    try {
+      final ratings = await getSpotRatings(spotId);
+      
+      if (ratings.isEmpty) {
+        return {
+          'averageRating': 0.0,
+          'ratingCount': 0,
+          'ratingDistribution': <int, int>{},
+        };
+      }
+      
+      double totalRating = 0;
+      Map<int, int> ratingDistribution = {};
+      
+      for (final rating in ratings) {
+        totalRating += rating.rating;
+        final ratingInt = rating.rating.toInt();
+        ratingDistribution[ratingInt] = (ratingDistribution[ratingInt] ?? 0) + 1;
+      }
+      
+      final averageRating = totalRating / ratings.length;
+      
+      return {
+        'averageRating': averageRating,
+        'ratingCount': ratings.length,
+        'ratingDistribution': ratingDistribution,
+      };
+    } catch (e) {
+      debugPrint('Error getting spot rating stats: $e');
+      return {
+        'averageRating': 0.0,
+        'ratingCount': 0,
+        'ratingDistribution': <int, int>{},
+      };
     }
   }
 
