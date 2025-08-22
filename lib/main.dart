@@ -5,10 +5,14 @@ import 'package:parkour_spot/services/auth_service.dart';
 import 'package:parkour_spot/services/spot_service.dart';
 import 'package:parkour_spot/router/app_router.dart';
 import 'package:parkour_spot/firebase_options.dart';
+import 'package:parkour_spot/config/app_config.dart';
 import 'package:web/web.dart' as web;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Validate configuration before initializing Firebase
+  AppConfig.validateConfiguration();
   
   // Initialize Firebase
   await Firebase.initializeApp(

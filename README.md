@@ -61,12 +61,37 @@ cd ParkourSpot-frontend
 flutter pub get
 ```
 
-### 2. **Firebase Configuration** ✅ **COMPLETED**
-Your Firebase project is already configured with:
-- **API Key**: `AIzaSyC8DOQMB0A4e0e5cT-csqjaLi_BrDK7FmQ`
-- **Project ID**: `parkourspot-93c90`
-- **Auth Domain**: `parkourspot-93c90.firebaseapp.com`
-- **Storage Bucket**: `parkourspot-93c90.firebasestorage.app`
+### 2. **Environment Configuration** 🔧 **REQUIRED**
+Before running the app, you need to set up your environment variables:
+
+1. **Copy the example environment file:**
+   ```bash
+   cp env.example .env
+   ```
+
+2. **Edit `.env` with your Firebase configuration:**
+   ```bash
+   # Firebase Configuration
+   FIREBASE_API_KEY=your_actual_api_key_here
+   FIREBASE_APP_ID_WEB=your_web_app_id_here
+   FIREBASE_APP_ID_ANDROID=your_android_app_id_here
+   FIREBASE_APP_ID_IOS=your_ios_app_id_here
+   FIREBASE_MESSAGING_SENDER_ID=your_actual_sender_id_here
+   FIREBASE_PROJECT_ID=your_actual_project_id_here
+   FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
+   FIREBASE_STORAGE_BUCKET=your_project_id.firebasestorage.app
+   FIREBASE_MEASUREMENT_ID=your_actual_measurement_id_here
+   
+   # Google Maps API Keys
+   GOOGLE_MAPS_API_KEY_ANDROID=your_android_maps_key_here
+   GOOGLE_MAPS_API_KEY_IOS=your_ios_maps_key_here
+   ```
+
+3. **Get your Firebase configuration:**
+   - Go to [Firebase Console](https://console.firebase.google.com/)
+   - Select your project
+   - Go to Project Settings → General
+   - Copy the configuration values
 
 ### 3. **Run the App**
 ```bash

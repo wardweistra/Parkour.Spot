@@ -48,7 +48,7 @@
 	<key>io.flutter.embedded_views_preview</key>
 	<true/>
 	<key>GMSApiKey</key>
-	<string>YOUR_IOS_API_KEY_HERE</string>
+	<string>$(GOOGLE_MAPS_API_KEY_IOS)</string>
 	<key>NSCameraUsageDescription</key>
 	<string>This app needs camera access to take photos of spots.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
