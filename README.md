@@ -200,6 +200,18 @@ lib/
 }
 ```
 
+### **Ratings Collection**
+```json
+{
+  "id": "String",
+  "spotId": "String",
+  "userId": "String",
+  "rating": "Double",
+  "createdAt": "Timestamp?",
+  "updatedAt": "Timestamp?"
+}
+```
+
 ## 🔑 Key Dependencies
 
 - **firebase_core**: Firebase initialization
