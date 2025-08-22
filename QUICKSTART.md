@@ -1,10 +1,10 @@
-# ⚡ ParkourSpot Quick Start Guide
+# ⚡ Parkour.Spot Quick Start Guide
 
-Get your ParkourSpot app up and running in 5 minutes! 🚀
+Get your Parkour.Spot app up and running in 5 minutes! 🚀
 
 ## 🎯 **Current Status: READY FOR SETUP**
 
-Your ParkourSpot app is ready to:
+Your Parkour.Spot app is ready to:
 - ✅ **Deploy to web** via Firebase Hosting
 - ✅ **Build Android APK** for distribution
 - ✅ **Configure Firebase backend** with your project
@@ -15,7 +15,7 @@ Your ParkourSpot app is ready to:
 ### **1. Clone & Setup** ⏱️ 1 min
 ```bash
 git clone <your-repo-url>
-cd ParkourSpot-frontend
+cd Parkour.Spot
 flutter pub get
 ```
 
@@ -69,7 +69,7 @@ flutter install
 1. **Transfer APK** to your device
 2. **Enable "Install from unknown sources"**
 3. **Install** the APK file
-4. **Open** ParkourSpot app
+4. **Open** Parkour.Spot app
 
 ## 🔧 **Quick Troubleshooting**
 
@@ -142,7 +142,7 @@ flutter build apk --release
 
 ## 🎉 **You're All Set!**
 
-Your ParkourSpot app is:
+Your Parkour.Spot app is:
 - ✅ **Fully functional** on web
 - ✅ **Ready for Android** devices
 - ✅ **Backend ready** for configuration

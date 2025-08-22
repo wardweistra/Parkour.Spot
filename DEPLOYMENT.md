@@ -1,6 +1,6 @@
-# 🚀 ParkourSpot Deployment Guide
+# 🚀 Parkour.Spot Deployment Guide
 
-Complete deployment guide for the ParkourSpot Flutter app across all platforms.
+Complete deployment guide for the Parkour.Spot Flutter app across all platforms.
 
 ## 🌐 Web Deployment (Firebase Hosting)
 
@@ -261,4 +261,4 @@ firebase login
 
 ---
 
-**Your ParkourSpot app is successfully deployed and ready for users! 🎉**
+**Your Parkour.Spot app is successfully deployed and ready for users! 🎉**

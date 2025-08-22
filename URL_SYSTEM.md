@@ -1,6 +1,6 @@
-# ParkourSpot URL System
+# Parkour.Spot URL System
 
-This document explains how the stable sharable URLs work in the ParkourSpot app.
+This document explains how the stable sharable URLs work in the Parkour.Spot app.
 
 ## URL Structure
 

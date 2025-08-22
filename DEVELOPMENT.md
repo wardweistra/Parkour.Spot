@@ -1,6 +1,6 @@
 # 🛠️ Development Guide
 
-This guide covers local development setup and common development tasks for ParkourSpot.
+This guide covers local development setup and common development tasks for Parkour.Spot.
 
 ## 🚀 Local Development Setup
 
@@ -15,7 +15,7 @@ This guide covers local development setup and common development tasks for Parko
 ```bash
 # Clone the repository
 git clone <your-repo-url>
-cd ParkourSpot-frontend
+cd Parkour.Spot
 
 # Install dependencies
 flutter pub get

@@ -1,4 +1,4 @@
-# 🏃‍♂️ ParkourSpot - Flutter App
+# 🏃‍♂️ Parkour.Spot - Flutter App
 
 A cross-platform Flutter application for discovering, reporting, and rating parkour spots. Built with Firebase backend services and modern Flutter architecture.
 
@@ -56,7 +56,7 @@ A cross-platform Flutter application for discovering, reporting, and rating park
 ### 1. **Clone and Setup**
 ```bash
 git clone <your-repo-url>
-cd ParkourSpot-frontend
+cd Parkour.Spot
 flutter pub get
 ```
 

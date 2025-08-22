@@ -1,6 +1,6 @@
-# 🤝 Contributing to ParkourSpot
+# 🤝 Contributing to Parkour.Spot
 
-Thank you for your interest in contributing to ParkourSpot! This guide will help you get started with development and contributing.
+Thank you for your interest in contributing to Parkour.Spot! This guide will help you get started with development and contributing.
 
 ## 🚀 Quick Start for Contributors
 
@@ -8,11 +8,11 @@ Thank you for your interest in contributing to ParkourSpot! This guide will help
 ```bash
 # Fork the repository on GitHub
 # Then clone your fork
-git clone https://github.com/YOUR_USERNAME/ParkourSpot-frontend.git
-cd ParkourSpot-frontend
+git clone https://github.com/YOUR_USERNAME/Parkour.Spot.git
+cd Parkour.Spot
 
 # Add the original repository as upstream
-git remote add upstream https://github.com/ORIGINAL_OWNER/ParkourSpot-frontend.git
+git remote add upstream https://github.com/ORIGINAL_OWNER/Parkour.Spot.git
 ```
 
 ### 2. **Setup Development Environment**
@@ -190,7 +190,7 @@ flutter build ios --release
 
 ## 📄 License
 
-By contributing to ParkourSpot, you agree that your contributions will be licensed under the same license as the project.
+By contributing to Parkour.Spot, you agree that your contributions will be licensed under the same license as the project.
 
 ---
 
