@@ -13,6 +13,7 @@ import '../../widgets/custom_button.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'location_picker_screen.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:go_router/go_router.dart';
 
 class AddSpotScreen extends StatefulWidget {
   const AddSpotScreen({super.key});
@@ -376,13 +377,13 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
         createdByName: authService.userProfile?.displayName ?? authService.currentUser?.email ?? authService.currentUser?.uid,
       );
 
-      final success = await spotService.createSpot(
+      final spotId = await spotService.createSpot(
         spot,
         imageFiles: _selectedImages.where((file) => file != null).cast<File>().toList(),
         imageBytesList: _selectedImageBytes.where((bytes) => bytes != null).cast<Uint8List>().toList(),
       );
 
-      if (success && mounted) {
+      if (spotId != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Spot created successfully!'),
@@ -398,8 +399,10 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
           _pickedLocation = null;
         });
         
-        // Navigate back
-        Navigator.pop(context);
+        // Navigate to the newly created spot detail page
+        if (context.mounted) {
+          context.go('/spot/$spotId');
+        }
       }
     } catch (e) {
       if (mounted) {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../screens/splash_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/spots/spot_detail_screen.dart';
@@ -164,9 +165,11 @@ class SpotDetailRoute extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Spot?>(
-      future: SpotService().getSpotById(spotId),
-      builder: (context, snapshot) {
+    return Consumer<SpotService>(
+      builder: (context, spotService, child) {
+        return FutureBuilder<Spot?>(
+          future: spotService.getSpotById(spotId),
+          builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(
@@ -215,6 +218,8 @@ class SpotDetailRoute extends StatelessWidget {
 
         final spot = snapshot.data!;
         return SpotDetailScreen(spot: spot);
+          },
+        );
       },
     );
   }

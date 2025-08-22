@@ -113,7 +113,7 @@ class SpotService extends ChangeNotifier {
   }
 
   // Create a new spot
-  Future<bool> createSpot(Spot spot, {File? imageFile, Uint8List? imageBytes, List<File>? imageFiles, List<Uint8List>? imageBytesList}) async {
+  Future<String?> createSpot(Spot spot, {File? imageFile, Uint8List? imageBytes, List<File>? imageFiles, List<Uint8List>? imageBytesList}) async {
     try {
       _isLoading = true;
       notifyListeners();
@@ -148,11 +148,11 @@ class SpotService extends ChangeNotifier {
       final newSpot = spotWithImages.copyWith(id: docRef.id);
       _spots.insert(0, newSpot);
       
-      return true;
+      return docRef.id; // Return the spot ID
     } catch (e) {
       _error = 'Failed to create spot: $e';
       debugPrint('Error creating spot: $e');
-      return false;
+      return null; // Return null on error
     } finally {
       _isLoading = false;
       notifyListeners();
