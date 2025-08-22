@@ -963,12 +963,22 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                 final success = await spotService.deleteSpot(widget.spot.id!);
                 
                 if (success && mounted) {
-                  // Navigate to home after successful deletion
-                  context.go('/home');
+                  // Show success message first
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Spot deleted successfully'),
                       backgroundColor: Colors.green,
+                    ),
+                  );
+                  
+                  // Navigate to home immediately after successful deletion
+                  // Use replace to ensure we don't go back to the deleted spot
+                  context.replace('/home');
+                } else if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Failed to delete spot'),
+                      backgroundColor: Colors.red,
                     ),
                   );
                 }

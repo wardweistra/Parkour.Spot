@@ -167,6 +167,39 @@ class SpotDetailRoute extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<SpotService>(
       builder: (context, spotService, child) {
+        // First check if the spot exists in local cache
+        Spot? localSpot;
+        try {
+          localSpot = spotService.spots.firstWhere(
+            (spot) => spot.id == spotId,
+          );
+        } catch (e) {
+          localSpot = null;
+        }
+        
+        // If spot is not in local cache, it might have been deleted
+        if (localSpot == null) {
+          return Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.location_off, size: 64, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  const Text('Spot not found'),
+                  const SizedBox(height: 8),
+                  const Text('This spot may have been deleted or doesn\'t exist.'),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () => context.go('/home'),
+                    child: const Text('Go Home'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+        
         return FutureBuilder<Spot?>(
           future: spotService.getSpotById(spotId),
           builder: (context, snapshot) {
@@ -202,14 +235,19 @@ class SpotDetailRoute extends StatelessWidget {
         }
 
         if (!snapshot.hasData || snapshot.data == null) {
-          return const Scaffold(
+          return Scaffold(
             body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.location_off, size: 64, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text('Spot not found'),
+                  const Icon(Icons.location_off, size: 64, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  const Text('Spot not found'),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () => context.go('/home'),
+                    child: const Text('Go Home'),
+                  ),
                 ],
               ),
             ),
