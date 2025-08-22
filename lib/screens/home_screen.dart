@@ -93,6 +93,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showLoginRequiredDialog(String title, String message) {
+    // Determine which tab to redirect to based on the title
+    String redirectTab = 'profile'; // default
+    if (title.contains('Add New Spot')) {
+      redirectTab = 'add';
+    } else if (title.contains('Profile')) {
+      redirectTab = 'profile';
+    }
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -106,7 +114,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              context.go('/login');
+              context.go('/login?redirectTo=${Uri.encodeComponent('/home?tab=$redirectTab')}');
             },
             child: const Text('Login'),
           ),
@@ -178,7 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 32),
               ElevatedButton.icon(
                 onPressed: () {
-                  context.go('/login');
+                  context.go('/login?redirectTo=${Uri.encodeComponent('/home?tab=profile')}');
                 },
                 icon: const Icon(Icons.login),
                 label: const Text('Login to Continue'),

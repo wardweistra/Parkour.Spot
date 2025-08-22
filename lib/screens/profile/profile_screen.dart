@@ -70,8 +70,8 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: 32),
             CustomButton(
               onPressed: () {
-                // Navigate to login screen
-                context.go('/login');
+                // Navigate to login screen with redirect back to profile tab
+                context.go('/login?redirectTo=${Uri.encodeComponent('/home?tab=profile')}');
               },
               text: 'Sign In',
               width: double.infinity,
@@ -322,7 +322,7 @@ class ProfileScreen extends StatelessWidget {
               if (shouldSignOut == true) {
                 await authService.signOut();
                 if (context.mounted) {
-                  context.go('/home');
+                  context.go('/home?tab=profile');
                 }
               }
             },
