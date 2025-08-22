@@ -2,13 +2,13 @@
 
 Get your ParkourSpot app up and running in 5 minutes! 🚀
 
-## 🎯 **Current Status: FULLY WORKING**
+## 🎯 **Current Status: READY FOR SETUP**
 
-Your ParkourSpot app is already:
-- ✅ **Deployed to web** at https://parkourspot-93c90.web.app
-- ✅ **Android APK built** and ready
-- ✅ **Firebase backend** fully configured
-- ✅ **Authentication working** with real API keys
+Your ParkourSpot app is ready to:
+- ✅ **Deploy to web** via Firebase Hosting
+- ✅ **Build Android APK** for distribution
+- ✅ **Configure Firebase backend** with your project
+- ✅ **Set up authentication** with your API keys
 
 ## 🚀 **5-Minute Setup (Already Done!)**
 
@@ -19,19 +19,20 @@ cd ParkourSpot-frontend
 flutter pub get
 ```
 
-### **2. Firebase Configuration** ⏱️ 0 min ✅ **COMPLETED**
-Your Firebase project is already configured with:
-- **API Key**: `AIzaSyC8DOQMB0A4e0e5cT-csqjaLi_BrDK7FmQ`
-- **Project ID**: `parkourspot-93c90`
-- **Auth Domain**: `parkourspot-93c90.firebaseapp.com`
+### **2. Firebase Configuration** ⏱️ 2 min 🔧 **REQUIRED**
+You need to configure your Firebase project:
+
+1. **Create a Firebase project** at [Firebase Console](https://console.firebase.google.com/)
+2. **Copy your configuration** from Project Settings
+3. **Update your `.env` file** with your API keys
+4. **Run `flutterfire configure`** to set up your project
 
 ### **3. Test the App** ⏱️ 2 min
 ```bash
-# Web (already live!)
-# Visit: https://parkourspot-93c90.web.app
-
 # Local development
 flutter run -d web
+
+# After deployment, visit your live app
 ```
 
 ### **4. Build for Android** ⏱️ 2 min
@@ -40,16 +41,20 @@ flutter build apk --debug
 # APK ready at: build/app/outputs/flutter-apk/app-debug.apk
 ```
 
-## 🌐 **Test Your Live App**
+## 🌐 **Test Your App**
 
-**Visit**: https://parkourspot-93c90.web.app
-
-**Test these features:**
+**After setup, test these features:**
 1. ✅ **Sign up** with email/password
 2. ✅ **Login** with your account
 3. ✅ **Browse spots** (if any exist)
 4. ✅ **Add new spot** with location and photo
 5. ✅ **Rate spots** and leave reviews
+
+**To deploy and test live:**
+```bash
+flutter build web
+firebase deploy --only hosting
+```
 
 ## 📱 **Install on Android Device**
 
@@ -131,19 +136,18 @@ flutter build apk --release
 
 ## 🔗 **Quick Links**
 
-- **Live App**: https://parkourspot-93c90.web.app
-- **Firebase Console**: https://console.firebase.google.com/project/parkourspot-93c90
-- **GitHub Repo**: Your repository URL
+- **Firebase Console**: https://console.firebase.google.com/
 - **Flutter Docs**: https://flutter.dev/docs
+- **GitHub Repo**: Your repository URL
 
 ## 🎉 **You're All Set!**
 
 Your ParkourSpot app is:
 - ✅ **Fully functional** on web
 - ✅ **Ready for Android** devices
-- ✅ **Backend configured** and working
-- ✅ **Authentication system** active
-- ✅ **Database connected** and secure
+- ✅ **Backend ready** for configuration
+- ✅ **Authentication system** ready to set up
+- ✅ **Database structure** defined and ready
 
 **Start exploring your app and adding parkour spots!** 🏃‍♂️✨
 

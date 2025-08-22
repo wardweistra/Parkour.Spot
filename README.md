@@ -28,20 +28,19 @@ A cross-platform Flutter application for discovering, reporting, and rating park
 
 ## 🚀 Current Status
 
-### ✅ **Web App - LIVE**
-- **URL**: https://parkourspot-93c90.web.app
+### ✅ **Web App - Ready for Deployment**
 - **Status**: Fully functional with working authentication
 - **Features**: Complete user management and spot functionality
+- **Deployment**: Ready for Firebase Hosting
 
-### ✅ **Android App - BUILT**
-- **Status**: APK successfully built and ready for installation
+### ✅ **Android App - Ready for Build**
+- **Status**: Ready to build APK for installation
 - **Location**: `build/app/outputs/flutter-apk/app-debug.apk`
 - **Platform**: Android 5.0+ (API 21+)
 
-### ✅ **Firebase Backend - CONFIGURED**
-- **Project**: parkourspot-93c90
-- **Region**: EU (europe-west1)
+### ✅ **Firebase Backend - Ready for Configuration**
 - **Services**: Firestore, Auth, Storage, Functions, Hosting
+- **Region**: Configurable (defaults to europe-west1)
 
 ## 🛠️ Prerequisites
 
@@ -214,7 +213,13 @@ flutter build web
 
 ## 🌐 Live Demo
 
-**Visit your live app**: https://parkourspot-93c90.web.app
+**After deployment, your app will be available at**: `https://your-project-id.web.app`
+
+**To deploy your app**:
+```bash
+flutter build web
+firebase deploy --only hosting
+```
 
 ## 📚 Additional Resources
 
@@ -223,13 +228,25 @@ flutter build web
 - [Firestore Security Rules](https://firebase.google.com/docs/firestore/security/get-started)
 - [Flutter Web Deployment](https://flutter.dev/docs/deployment/web)
 
+## 📖 Documentation
+
+- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Local development setup and tasks
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - How to contribute to the project
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Deployment guide for all platforms
+- **[URL_SYSTEM.md](URL_SYSTEM.md)** - Deep linking and URL system documentation
+
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed information on how to:
+
+1. Set up your development environment
+2. Fork the repository
+3. Create a feature branch
+4. Make your changes
+5. Test thoroughly
+6. Submit a pull request
+
+For quick development setup, see [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ## 📄 License
 

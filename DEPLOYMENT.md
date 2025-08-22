@@ -4,8 +4,8 @@ Complete deployment guide for the ParkourSpot Flutter app across all platforms.
 
 ## 🌐 Web Deployment (Firebase Hosting)
 
-### ✅ **Status: LIVE**
-Your web app is currently deployed and live at: **https://parkourspot-93c90.web.app**
+### ✅ **Status: Ready for Deployment**
+Your web app is ready to be deployed to Firebase Hosting
 
 ### **Deployment Process**
 ```bash
@@ -17,17 +17,17 @@ firebase deploy --only hosting
 ```
 
 ### **Firebase Hosting Configuration**
-- **Project**: parkourspot-93c90
+- **Project**: Your Firebase project ID
 - **Public Directory**: `build/web`
-- **Region**: europe-west1 (EU)
+- **Region**: Configurable (defaults to europe-west1)
 - **URLs**: 
-  - Primary: https://parkourspot-93c90.web.app
-  - Alternative: https://parkourspot-93c90.firebaseapp.com
+  - Primary: `https://your-project-id.web.app`
+  - Alternative: `https://your-project-id.firebaseapp.com`
 
 ## 🤖 Android Deployment
 
-### ✅ **Status: APK BUILT**
-Your Android APK is successfully built and ready for distribution.
+### ✅ **Status: Ready to Build**
+Your Android APK is ready to be built for distribution.
 
 ### **Build Process**
 ```bash
@@ -242,21 +242,20 @@ firebase login
 
 ## 📊 Deployment Status
 
-| Service | Status | URL/Notes |
-|---------|--------|-----------|
-| **Web App** | ✅ Live | https://parkourspot-93c90.web.app |
-| **Android APK** | ✅ Built | Ready for installation |
+| Service | Status | Notes |
+|---------|--------|-------|
+| **Web App** | ✅ Ready | Ready for Firebase Hosting |
+| **Android APK** | ✅ Ready | Ready to build |
 | **iOS App** | 🔄 Pending | Requires Xcode |
-| **Firebase Auth** | ✅ Working | Email/password enabled |
-| **Firestore DB** | ✅ Deployed | Rules configured |
-| **Cloud Storage** | ✅ Deployed | Image uploads working |
-| **Cloud Functions** | ✅ Deployed | 4 functions active |
-| **Firebase Hosting** | ✅ Deployed | Web app hosted |
+| **Firebase Auth** | ✅ Ready | Ready to configure |
+| **Firestore DB** | ✅ Ready | Rules and indexes ready |
+| **Cloud Storage** | ✅ Ready | Rules ready |
+| **Cloud Functions** | ✅ Ready | Functions ready to deploy |
+| **Firebase Hosting** | ✅ Ready | Configuration ready |
 
 ## 🔗 Useful Links
 
-- **Live App**: https://parkourspot-93c90.web.app
-- **Firebase Console**: https://console.firebase.google.com/project/parkourspot-93c90
+- **Firebase Console**: https://console.firebase.google.com/
 - **Flutter Documentation**: https://flutter.dev/docs/deployment
 - **Firebase Documentation**: https://firebase.google.com/docs
 

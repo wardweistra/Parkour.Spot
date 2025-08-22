@@ -37,7 +37,7 @@ mkdir -p functions
 # Initialize Firebase (if not already done)
 if [ ! -f ".firebaserc" ]; then
     echo "🔥 Initializing Firebase project..."
-    echo "   Please select your Firebase project: parkourspot-93c90"
+    echo "   Please create a new Firebase project or select an existing one"
     firebase init
 else
     echo "✅ Firebase already initialized"
@@ -45,14 +45,16 @@ fi
 
 # Configure FlutterFire
 echo "🔧 Configuring FlutterFire..."
-flutterfire configure --project=parkourspot-93c90
+echo "   Please enter your Firebase project ID when prompted"
+flutterfire configure
 
 echo ""
 echo "🎉 Setup complete!"
 echo ""
 echo "Next steps:"
-echo "1. Update lib/firebase_options.dart with your actual Firebase configuration"
-echo "2. Configure platform-specific settings (Android/iOS permissions)"
-echo "3. Run 'flutter run' to test the app"
+echo "1. Copy env.example to .env and fill in your Firebase configuration"
+echo "2. Run 'flutterfire configure' to set up Firebase options"
+echo "3. Configure platform-specific settings (Android/iOS permissions)"
+echo "4. Run 'flutter run' to test the app"
 echo ""
 echo "For detailed setup instructions, see README.md"
