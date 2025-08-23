@@ -211,16 +211,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           CircleAvatar(
-                            backgroundColor: Colors.black.withValues(alpha: 0.5),
-                            child: IconButton(
-                              icon: const Icon(Icons.edit, color: Colors.white),
-                              onPressed: () {
-                                // TODO: Navigate to edit screen
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          CircleAvatar(
                             backgroundColor: Colors.red.withValues(alpha: 0.8),
                             child: IconButton(
                               icon: const Icon(Icons.delete, color: Colors.white),
