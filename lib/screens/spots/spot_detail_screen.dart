@@ -23,6 +23,7 @@ class SpotDetailScreen extends StatefulWidget {
 
 class _SpotDetailScreenState extends State<SpotDetailScreen> {
   double _userRating = 0;
+  double _previousRating = 0; // Track the user's previous rating
   bool _hasRated = false;
   int _currentImageIndex = 0;
   late final ScrollController _scrollController;
@@ -37,8 +38,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    _loadUserRating();
     _loadRatingStats(); // Load rating stats once on init
+    // Note: User rating will be loaded when auth state is restored via FutureBuilder
   }
 
   @override
@@ -548,6 +549,87 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         }
                         
                         if (authService.isAuthenticated && authService.userProfile != null) {
+                          // Load user rating when auth state is confirmed
+                          if (_userRating == 0 && !_hasRated) {
+                            // Use FutureBuilder to load user rating asynchronously
+                            return FutureBuilder<double?>(
+                              future: _loadUserRatingFuture(),
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState == ConnectionState.waiting) {
+                                  return SizedBox(
+                                    height: 80,
+                                    child: Center(
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor: AlwaysStoppedAnimation<Color>(
+                                                Theme.of(context).colorScheme.primary,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Text(
+                                            'Loading your rating...',
+                                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                }
+                                
+                                // Rating widget
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Rate this spot',
+                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Row(
+                                      children: [
+                                        ...List.generate(5, (index) {
+                                          return GestureDetector(
+                                            onTap: () {
+                                              setState(() {
+                                                _userRating = index + 1.0;
+                                                _hasRated = true;
+                                              });
+                                            },
+                                            child: Icon(
+                                              index < _userRating ? Icons.star : Icons.star_border,
+                                              color: Colors.amber,
+                                              size: 32,
+                                            ),
+                                          );
+                                        }),
+                                        const SizedBox(width: 16),
+                                        if (_shouldShowSubmitButton())
+                                          CustomButton(
+                                            onPressed: _submitRating,
+                                            text: 'Submit Rating',
+                                            isLoading: false,
+                                          ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 24),
+                                  ],
+                                );
+                              },
+                            );
+                          }
+                          
+                          // Show rating widget if user rating is already loaded
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -576,7 +658,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                     );
                                   }),
                                   const SizedBox(width: 16),
-                                  if (_hasRated)
+                                  if (_shouldShowSubmitButton())
                                     CustomButton(
                                       onPressed: _submitRating,
                                       text: 'Submit Rating',
@@ -982,6 +1064,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         );
         setState(() {
           _hasRated = false;
+          _previousRating = _userRating; // Update the previous rating to the submitted rating
         });
         
         // Refresh the spot data to show updated rating
@@ -999,7 +1082,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     }
   }
 
-  Future<void> _loadUserRating() async {
+  Future<double?> _loadUserRatingFuture() async {
     try {
       final authService = Provider.of<AuthService>(context, listen: false);
       if (authService.isAuthenticated && authService.userProfile != null) {
@@ -1008,13 +1091,25 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         if (mounted && userRating != null) {
           setState(() {
             _userRating = userRating;
+            _previousRating = userRating; // Set the previous rating
             _hasRated = true;
           });
+          return userRating;
         }
       }
+      return null;
     } catch (e) {
       debugPrint('Error loading user rating: $e');
+      return null;
     }
+  }
+
+  /// Determines whether to show the submit button based on rating changes
+  bool _shouldShowSubmitButton() {
+    // Show button if user has selected a rating AND either:
+    // 1. It's their first rating (previousRating == 0)
+    // 2. It's different from their previous rating
+    return _hasRated && (_previousRating == 0 || _userRating != _previousRating);
   }
 
   Future<void> _loadRatingStats() async {
