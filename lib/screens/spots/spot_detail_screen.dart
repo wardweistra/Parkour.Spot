@@ -28,12 +28,17 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   late final ScrollController _scrollController;
   bool _isSatelliteView = false;
   bool _isShareModalOpen = false; // Add this state variable
+  
+  // Add rating cache variables
+  Map<String, dynamic>? _cachedRatingStats;
+  bool _isLoadingRatingStats = false;
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
     _loadUserRating();
+    _loadRatingStats(); // Load rating stats once on init
   }
 
   @override
@@ -272,24 +277,15 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             ),
                           ),
                         ),
-                        Consumer<SpotService>(
-                          builder: (context, spotService, child) {
-                            return FutureBuilder<Map<String, dynamic>>(
-                              future: spotService.getSpotRatingStats(widget.spot.id!),
-                              builder: (context, snapshot) {
-                                if (snapshot.connectionState == ConnectionState.waiting) {
-                                  return const SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  );
-                                }
-                                
-                                if (snapshot.hasData && snapshot.data!['ratingCount'] > 0) {
-                                  final averageRating = snapshot.data!['averageRating'] as double;
-                                  final ratingCount = snapshot.data!['ratingCount'] as int;
-                                  
-                                  return Row(
+                        // Rating display using cached data
+                        _isLoadingRatingStats
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : _cachedRatingStats != null && _cachedRatingStats!['ratingCount'] > 0
+                                ? Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Icon(
@@ -299,27 +295,21 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
-                                        averageRating.toStringAsFixed(1),
+                                        _cachedRatingStats!['averageRating'].toStringAsFixed(1),
                                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
-                                        '($ratingCount)',
+                                        '(${_cachedRatingStats!['ratingCount']})',
                                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                           color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                                         ),
                                       ),
                                     ],
-                                  );
-                                }
-                                
-                                return const SizedBox.shrink();
-                              },
-                            );
-                          },
-                        ),
+                                  )
+                                : const SizedBox.shrink(),
                       ],
                     ),
                     
@@ -1027,13 +1017,37 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     }
   }
 
-  Future<void> _refreshSpotData() async {
+  Future<void> _loadRatingStats() async {
     try {
-      // Refresh the rating display by triggering a rebuild
+      setState(() {
+        _isLoadingRatingStats = true;
+      });
+      final spotService = Provider.of<SpotService>(context, listen: false);
+      final ratingStats = await spotService.getSpotRatingStats(widget.spot.id!);
       if (mounted) {
         setState(() {
-          // This will trigger a rebuild and refresh the rating display
+          _cachedRatingStats = ratingStats;
+          _isLoadingRatingStats = false;
         });
+      }
+    } catch (e) {
+      debugPrint('Error loading rating stats: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingRatingStats = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _refreshSpotData() async {
+    try {
+      // Refresh the rating stats when a user submits a rating
+      if (mounted) {
+        setState(() {
+          _isLoadingRatingStats = true;
+        });
+        await _loadRatingStats();
       }
     } catch (e) {
       debugPrint('Error refreshing spot data: $e');

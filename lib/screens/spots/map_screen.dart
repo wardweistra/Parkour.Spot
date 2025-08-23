@@ -287,11 +287,16 @@ class _SpotBottomSheet extends StatefulWidget {
 class _SpotBottomSheetState extends State<_SpotBottomSheet> {
   late PageController _pageController;
   int _currentPage = 0;
+  
+  // Add rating cache variables
+  Map<String, dynamic>? _cachedRatingStats;
+  bool _isLoadingRatingStats = false;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
+    _loadRatingStats(); // Load rating stats once on init
   }
 
   @override
@@ -513,22 +518,15 @@ class _SpotBottomSheetState extends State<_SpotBottomSheet> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      Consumer<SpotService>(
-                        builder: (context, spotService, child) {
-                          return FutureBuilder<Map<String, dynamic>>(
-                            future: spotService.getSpotRatingStats(widget.spot.id!),
-                            builder: (context, snapshot) {
-                              if (snapshot.connectionState == ConnectionState.waiting) {
-                                return const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                );
-                              }
-                              
-                              if (snapshot.hasData && snapshot.data!['ratingCount'] > 0) {
-                                final averageRating = snapshot.data!['averageRating'] as double;
-                                return Row(
+                      // Rating display using cached data
+                      _isLoadingRatingStats
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : _cachedRatingStats != null && _cachedRatingStats!['ratingCount'] > 0
+                              ? Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(
@@ -538,20 +536,14 @@ class _SpotBottomSheetState extends State<_SpotBottomSheet> {
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      averageRating.toStringAsFixed(1),
+                                      _cachedRatingStats!['averageRating'].toStringAsFixed(1),
                                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                   ],
-                                );
-                              }
-                              
-                              return const SizedBox.shrink();
-                            },
-                          );
-                        },
-                      ),
+                                )
+                              : const SizedBox.shrink(),
                     ],
                   ),
                   
@@ -698,6 +690,29 @@ class _SpotBottomSheetState extends State<_SpotBottomSheet> {
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
+    }
+  }
+
+  Future<void> _loadRatingStats() async {
+    try {
+      setState(() {
+        _isLoadingRatingStats = true;
+      });
+      final spotService = Provider.of<SpotService>(context, listen: false);
+      final ratingStats = await spotService.getSpotRatingStats(widget.spot.id!);
+      if (mounted) {
+        setState(() {
+          _cachedRatingStats = ratingStats;
+          _isLoadingRatingStats = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading rating stats: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingRatingStats = false;
+        });
+      }
     }
   }
 }
