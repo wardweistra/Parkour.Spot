@@ -453,12 +453,11 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                   widget.spot.location.latitude,
                                   widget.spot.location.longitude,
                                 ),
-                                infoWindow: InfoWindow(
-                                  title: widget.spot.name,
-                                  snippet: widget.spot.description.length > 50
-                                      ? '${widget.spot.description.substring(0, 50)}...'
-                                      : widget.spot.description,
-                                ),
+                                // Disable marker interactions
+                                onTap: null,
+                                consumeTapEvents: true,
+                                // Remove info window to prevent popup
+                                infoWindow: InfoWindow.noText,
                               ),
                             },
                             zoomControlsEnabled: false,
@@ -466,11 +465,14 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             mapToolbarEnabled: false,
                             liteModeEnabled: kIsWeb,
                             compassEnabled: false,
-                            // Disable map interactions for preview purposes
+                            // Completely disable all map interactions for preview purposes
                             zoomGesturesEnabled: false,
                             scrollGesturesEnabled: false,
                             tiltGesturesEnabled: false,
                             rotateGesturesEnabled: false,
+                            // Disable any other potential interactions
+                            indoorViewEnabled: false,
+                            trafficEnabled: false,
                                                     onTap: (_) {
                           // Open directly in external maps app
                           _openInMaps();
