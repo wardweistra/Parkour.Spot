@@ -92,4 +92,44 @@ class UrlService {
   static bool isValidSpotUrl(String url) {
     return extractSpotIdFromUrl(url) != null;
   }
+  
+  /// Open location in external maps app
+  /// On mobile: tries to open in native maps app (Google Maps, Apple Maps, etc.)
+  /// On web: opens in Google Maps web
+  static Future<void> openLocationInMaps(double latitude, double longitude, {String? label}) async {
+    try {
+      Uri uri;
+      
+      if (kIsWeb) {
+        // On web, use Google Maps with exact coordinates and marker
+        uri = Uri.parse('https://www.google.com/maps/place/$latitude,$longitude/@$latitude,$longitude,16z');
+      } else {
+        // On mobile, try to open in native maps app
+        // First try Google Maps with exact coordinates and marker
+        final googleMapsUrl = 'https://www.google.com/maps/place/$latitude,$longitude/@$latitude,$longitude,16z';
+        uri = Uri.parse(googleMapsUrl);
+        
+        // If Google Maps can't be launched, try Apple Maps (iOS) with exact coordinates
+        if (!await canLaunchUrl(uri)) {
+          // Try Apple Maps format for iOS with exact coordinates
+          final appleMapsUrl = 'https://maps.apple.com/?ll=$latitude,$longitude&z=16';
+          uri = Uri.parse(appleMapsUrl);
+          
+          // If neither works, fall back to Google Maps web
+          if (!await canLaunchUrl(uri)) {
+            uri = Uri.parse(googleMapsUrl);
+          }
+        }
+      }
+      
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        throw Exception('Could not launch maps app');
+      }
+    } catch (e) {
+      debugPrint('Error opening location in maps: $e');
+      rethrow;
+    }
+  }
 }

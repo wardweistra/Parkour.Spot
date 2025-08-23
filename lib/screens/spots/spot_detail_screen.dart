@@ -86,68 +86,30 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     );
   }
 
-  void _showMapOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.directions),
-              title: const Text('Get Directions'),
-              onTap: () {
-                Navigator.pop(context);
-                _openDirections();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.map),
-              title: const Text('View on Map'),
-              onTap: () {
-                Navigator.pop(context);
-                _openInMaps();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.copy),
-              title: const Text('Copy Coordinates'),
-              onTap: () {
-                Navigator.pop(context);
-                _copyCoordinates();
-              },
-            ),
-          ],
-        ),
-      ),
-    );
+
+
+
+
+  void _openInMaps() async {
+    try {
+      await UrlService.openLocationInMaps(
+        widget.spot.location.latitude,
+        widget.spot.location.longitude,
+        label: widget.spot.name,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not open maps app: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
-  void _openDirections() {
-    // TODO: Implement directions (could use url_launcher to open in Maps app)
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Directions feature coming soon!')),
-    );
-  }
 
-  void _openInMaps() {
-    // TODO: Implement opening in native maps app
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Open in Maps feature coming soon!')),
-    );
-  }
-
-  void _copyCoordinates() {
-    // TODO: Implement copying coordinates to clipboard
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Coordinates: ${widget.spot.location.latitude.toStringAsFixed(6)}, ${widget.spot.location.longitude.toStringAsFixed(6)}',
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -473,46 +435,93 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         ),
                       ),
                       clipBehavior: Clip.antiAlias,
-                      child: GoogleMap(
-                        initialCameraPosition: CameraPosition(
-                          target: LatLng(
-                            widget.spot.location.latitude,
-                            widget.spot.location.longitude,
-                          ),
-                          zoom: 16,
-                        ),
-                        mapType: _isSatelliteView ? MapType.satellite : MapType.normal,
-                        markers: {
-                          Marker(
-                            markerId: MarkerId(widget.spot.id ?? 'spot'),
-                            position: LatLng(
-                              widget.spot.location.latitude,
-                              widget.spot.location.longitude,
+                      child: Stack(
+                        children: [
+                          GoogleMap(
+                            initialCameraPosition: CameraPosition(
+                              target: LatLng(
+                                widget.spot.location.latitude,
+                                widget.spot.location.longitude,
+                              ),
+                              zoom: 16,
                             ),
-                            infoWindow: InfoWindow(
-                              title: widget.spot.name,
-                              snippet: widget.spot.description.length > 50
-                                  ? '${widget.spot.description.substring(0, 50)}...'
-                                  : widget.spot.description,
+                            mapType: _isSatelliteView ? MapType.satellite : MapType.normal,
+                            markers: {
+                              Marker(
+                                markerId: MarkerId(widget.spot.id ?? 'spot'),
+                                position: LatLng(
+                                  widget.spot.location.latitude,
+                                  widget.spot.location.longitude,
+                                ),
+                                infoWindow: InfoWindow(
+                                  title: widget.spot.name,
+                                  snippet: widget.spot.description.length > 50
+                                      ? '${widget.spot.description.substring(0, 50)}...'
+                                      : widget.spot.description,
+                                ),
+                              ),
+                            },
+                            zoomControlsEnabled: false,
+                            myLocationButtonEnabled: false,
+                            mapToolbarEnabled: false,
+                            liteModeEnabled: kIsWeb,
+                            compassEnabled: false,
+                            // Disable map interactions for preview purposes
+                            zoomGesturesEnabled: false,
+                            scrollGesturesEnabled: false,
+                            tiltGesturesEnabled: false,
+                            rotateGesturesEnabled: false,
+                                                    onTap: (_) {
+                          // Open directly in external maps app
+                          _openInMaps();
+                        },
+                          ),
+                          // Interactive overlay with subtle hint
+                          Positioned.fill(
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () => _openInMaps(),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                           ),
-                        },
-                        zoomControlsEnabled: false,
-                        myLocationButtonEnabled: false,
-                        mapToolbarEnabled: false,
-                        liteModeEnabled: kIsWeb,
-                        compassEnabled: false,
-                        // Disable map interactions for preview purposes
-                        zoomGesturesEnabled: false,
-                        scrollGesturesEnabled: false,
-                        tiltGesturesEnabled: false,
-                        rotateGesturesEnabled: false,
-                        onTap: (_) {
-                          // Open full map view or navigation
-                          _showMapOptions(context);
-                        },
+                          // Hint positioned at bottom right
+                          Positioned(
+                            bottom: 8,
+                            right: 8,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.7),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.touch_app,
+                                    color: Colors.white,
+                                    size: 14,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Tap to open map',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                    
+
                     
                     const SizedBox(height: 24),
                     
