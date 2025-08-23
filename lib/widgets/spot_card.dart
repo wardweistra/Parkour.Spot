@@ -302,23 +302,7 @@ class _SpotCardState extends State<SpotCard> {
                         
                         const Spacer(),
                         
-                        // Location indicator
-                        Icon(
-                          Icons.location_on,
-                          size: 16,
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                        ),
-                        const SizedBox(width: 4),
-                        Flexible( // Wrapped in Flexible to prevent overflow
-                          child: Text(
-                            '${widget.spot.location.latitude.toStringAsFixed(4)}, ${widget.spot.location.longitude.toStringAsFixed(4)}',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
+
                       ],
                     ),
                     

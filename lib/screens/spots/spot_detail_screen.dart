@@ -353,36 +353,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       const SizedBox(height: 24),
                     ],
                     
-                    // Location
-                    Text(
-                      'Location',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    
-                    // Location coordinates
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on,
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            '${widget.spot.location.latitude.toStringAsFixed(4)}°, ${widget.spot.location.longitude.toStringAsFixed(4)}°',
-                            style: Theme.of(context).textTheme.bodyLarge,
-                          ),
-                        ),
-                      ],
-                    ),
-                    
-                    const SizedBox(height: 12),
-                    
-                    // Map view toggle
+                                        // Map view toggle
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
