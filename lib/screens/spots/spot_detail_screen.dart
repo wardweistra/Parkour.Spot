@@ -26,6 +26,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   int _currentImageIndex = 0;
   late final ScrollController _scrollController;
   bool _isSatelliteView = false;
+  bool _isShareModalOpen = false; // Add this state variable
 
   @override
   void initState() {
@@ -41,6 +42,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   }
 
   void _showShareOptions() {
+    setState(() {
+      _isShareModalOpen = true;
+    });
+    
     showModalBottomSheet(
       context: context,
       builder: (context) => Container(
@@ -53,6 +58,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
               title: const Text('Share Spot'),
               onTap: () {
                 Navigator.pop(context);
+                setState(() {
+                  _isShareModalOpen = false;
+                });
                 UrlService.shareSpot(widget.spot.id!, widget.spot.name);
               },
             ),
@@ -61,6 +69,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
               title: const Text('Copy Link'),
               onTap: () async {
                 Navigator.pop(context);
+                setState(() {
+                  _isShareModalOpen = false;
+                });
                 await UrlService.copySpotUrl(widget.spot.id!);
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -77,13 +88,23 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
               title: const Text('Open in Browser'),
               onTap: () {
                 Navigator.pop(context);
+                setState(() {
+                  _isShareModalOpen = false;
+                });
                 UrlService.openSpotInBrowser(widget.spot.id!);
               },
             ),
           ],
         ),
       ),
-    );
+    ).whenComplete(() {
+      // Ensure the state is reset when modal is dismissed
+      if (mounted) {
+        setState(() {
+          _isShareModalOpen = false;
+        });
+      }
+    });
   }
 
 
@@ -434,52 +455,54 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             // Disable any other potential interactions
                             indoorViewEnabled: false,
                             trafficEnabled: false,
-                                                    onTap: (_) {
-                          // Open directly in external maps app
-                          _openInMaps();
-                        },
+                            onTap: _isShareModalOpen ? null : (_) {
+                              // Open directly in external maps app
+                              _openInMaps();
+                            },
                           ),
                           // Interactive overlay with subtle hint
-                          Positioned.fill(
-                            child: Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                onTap: () => _openInMaps(),
-                                borderRadius: BorderRadius.circular(12),
+                          if (!_isShareModalOpen)
+                            Positioned.fill(
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () => _openInMaps(),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
                             ),
-                          ),
                           // Hint positioned at bottom right
-                          Positioned(
-                            bottom: 8,
-                            right: 8,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.7),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.touch_app,
-                                    color: Colors.white,
-                                    size: 14,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Tap to open map',
-                                    style: TextStyle(
+                          if (!_isShareModalOpen)
+                            Positioned(
+                              bottom: 8,
+                              right: 8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.7),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.touch_app,
                                       color: Colors.white,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w500,
+                                      size: 14,
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Tap to open map',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
                         ],
                       ),
                     ),
