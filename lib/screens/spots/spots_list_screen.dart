@@ -179,8 +179,8 @@ class _SpotsListScreenState extends State<SpotsListScreen> {
                 final useGrid = screenWidth >= 600;
                 
                 // Calculate optimal grid dimensions based on screen size
-                final maxCrossAxisExtent = screenWidth >= 1200 ? 600 : 480;
-                final mainAxisExtent = screenWidth >= 1200 ? 480 : 440; // Increased height to accommodate bottom content
+                final maxCrossAxisExtent = 480.0;
+                final mainAxisExtent = 440.0; // Height to accommodate bottom content
 
                 return RefreshIndicator(
                   onRefresh: () => spotService.fetchSpots(),
