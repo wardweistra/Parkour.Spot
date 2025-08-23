@@ -627,25 +627,7 @@ class _SpotBottomSheetState extends State<_SpotBottomSheet> {
                     const SizedBox(height: 16),
                   ],
                   
-                  // Location coordinates
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.location_on,
-                        size: 16,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          '${widget.spot.location.latitude.toStringAsFixed(4)}, ${widget.spot.location.longitude.toStringAsFixed(4)}',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+
                 ],
               ),
             ),
