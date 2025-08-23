@@ -1,6 +1,7 @@
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
+import 'mobile_detection_service.dart';
 
 class UrlService {
   static const String _baseUrl = 'https://parkour.spot';
@@ -96,40 +97,80 @@ class UrlService {
   /// Open location in external maps app
   /// On mobile: tries to open in native maps app (Google Maps, Apple Maps, etc.)
   /// On web: opens in Google Maps web
+  /// On web + mobile device: tries to open in native maps app first
   static Future<void> openLocationInMaps(double latitude, double longitude, {String? label}) async {
     try {
       Uri uri;
       
       if (kIsWeb) {
-        // On web, use Google Maps with exact coordinates and marker
-        uri = Uri.parse('https://www.google.com/maps/place/$latitude,$longitude/@$latitude,$longitude,16z');
-      } else {
-        // On mobile, try to open in native maps app
-        // First try Google Maps with exact coordinates and marker
-        final googleMapsUrl = 'https://www.google.com/maps/place/$latitude,$longitude/@$latitude,$longitude,16z';
-        uri = Uri.parse(googleMapsUrl);
-        
-        // If Google Maps can't be launched, try Apple Maps (iOS) with exact coordinates
-        if (!await canLaunchUrl(uri)) {
-          // Try Apple Maps format for iOS with exact coordinates
-          final appleMapsUrl = 'https://maps.apple.com/?ll=$latitude,$longitude&z=16';
-          uri = Uri.parse(appleMapsUrl);
-          
-          // If neither works, fall back to Google Maps web
-          if (!await canLaunchUrl(uri)) {
-            uri = Uri.parse(googleMapsUrl);
-          }
+        // Check if we're on a mobile device in the web version
+        if (MobileDetectionService.isMobileDevice) {
+          // Try to open in native maps app first
+          uri = await _getNativeMapsUri(latitude, longitude, label);
+        } else {
+          // Desktop web - use Google Maps web
+          uri = Uri.parse('https://www.google.com/maps/place/$latitude,$longitude/@$latitude,$longitude,16z');
         }
+      } else {
+        // Native mobile app - use native maps
+        uri = await _getNativeMapsUri(latitude, longitude, label);
       }
       
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
-        throw Exception('Could not launch maps app');
+        // Fallback to Google Maps web if native app can't be launched
+        final fallbackUri = Uri.parse('https://www.google.com/maps/place/$latitude,$longitude/@$latitude,$longitude,16z');
+        if (await canLaunchUrl(fallbackUri)) {
+          await launchUrl(fallbackUri, mode: LaunchMode.externalApplication);
+        } else {
+          throw Exception('Could not launch any maps app');
+        }
       }
     } catch (e) {
       debugPrint('Error opening location in maps: $e');
       rethrow;
     }
+  }
+  
+  /// Get the appropriate native maps URI based on device type
+  static Future<Uri> _getNativeMapsUri(double latitude, double longitude, String? label) async {
+    final preferredApp = MobileDetectionService.preferredMapsApp;
+    
+    if (preferredApp == 'apple_maps') {
+      // Apple Maps format
+      final query = label != null ? '&q=${Uri.encodeComponent(label)}' : '';
+      return Uri.parse('https://maps.apple.com/?ll=$latitude,$longitude&z=16$query');
+    } else {
+      // Google Maps format (Android and fallback)
+      final query = label != null ? '&q=${Uri.encodeComponent(label)}' : '';
+      return Uri.parse('https://www.google.com/maps/place/$latitude,$longitude/@$latitude,$longitude,16z$query');
+    }
+  }
+  
+  /// Check if the current device can open native maps apps
+  static bool get canOpenNativeMaps {
+    if (!kIsWeb) return true; // Native mobile apps can always open maps
+    return MobileDetectionService.isMobileDevice;
+  }
+  
+  /// Get device information for debugging and user experience
+  static Map<String, dynamic> get deviceInfo {
+    if (!kIsWeb) {
+      return {
+        'platform': 'native_mobile',
+        'canOpenNativeMaps': true,
+        'preferredMapsApp': 'device_default',
+      };
+    }
+    
+    return {
+      'platform': 'web',
+      'isMobileDevice': MobileDetectionService.isMobileDevice,
+      'isIOS': MobileDetectionService.isIOS,
+      'isAndroid': MobileDetectionService.isAndroid,
+      'canOpenNativeMaps': MobileDetectionService.isMobileDevice,
+      'preferredMapsApp': MobileDetectionService.preferredMapsApp,
+    };
   }
 }

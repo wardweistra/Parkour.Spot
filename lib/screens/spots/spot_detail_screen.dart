@@ -8,6 +8,7 @@ import '../../models/spot.dart';
 import '../../services/spot_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/url_service.dart';
+import '../../services/mobile_detection_service.dart';
 import '../../widgets/custom_button.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 
@@ -364,44 +365,51 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       const SizedBox(height: 24),
                     ],
                     
-                                        // Map view toggle
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        // Map view toggle and mobile detection info
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Location',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
                         Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Standard',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: !_isSatelliteView 
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                              'Location',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
-                            Switch(
-                              value: _isSatelliteView,
-                              onChanged: (value) {
-                                setState(() {
-                                  _isSatelliteView = value;
-                                });
-                              },
-                            ),
-                            Text(
-                              'Satellite',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: _isSatelliteView 
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                              ),
+                            Row(
+                              children: [
+                                Text(
+                                  'Standard',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: !_isSatelliteView 
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                  ),
+                                ),
+                                Switch(
+                                  value: _isSatelliteView,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _isSatelliteView = value;
+                                    });
+                                  },
+                                ),
+                                Text(
+                                  'Satellite',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: _isSatelliteView 
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
+                        
+
                       ],
                     ),
                     
@@ -455,10 +463,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             // Disable any other potential interactions
                             indoorViewEnabled: false,
                             trafficEnabled: false,
-                            onTap: _isShareModalOpen ? null : (_) {
-                              // Open directly in external maps app
-                              _openInMaps();
-                            },
+                            // Note: onTap is handled by the InkWell overlay below
                           ),
                           // Interactive overlay with subtle hint
                           if (!_isShareModalOpen)
@@ -471,7 +476,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                 ),
                               ),
                             ),
-                          // Hint positioned at bottom right
+                          // Enhanced hint positioned at bottom right
                           if (!_isShareModalOpen)
                             Positioned(
                               bottom: 8,
@@ -486,13 +491,17 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(
-                                      Icons.touch_app,
+                                      kIsWeb && MobileDetectionService.isMobileDevice 
+                                        ? Icons.phone_android 
+                                        : Icons.touch_app,
                                       color: Colors.white,
                                       size: 14,
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      'Tap to open map',
+                                      kIsWeb && MobileDetectionService.isMobileDevice
+                                        ? 'Tap to open in ${MobileDetectionService.preferredMapsApp == 'apple_maps' ? 'Apple Maps' : 'Google Maps'}'
+                                        : 'Tap to open map',
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontSize: 11,
@@ -510,6 +519,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
                     
                     const SizedBox(height: 24),
+                    
+
                     
                     // Rating Section
                     Consumer<AuthService>(
@@ -726,9 +737,24 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                   color: Colors.black.withValues(alpha: 0.7),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(
-                  'Images: ${widget.spot.imageUrls!.length}',
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Images: ${widget.spot.imageUrls!.length}',
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                    if (kIsWeb) ...[
+                      Text(
+                        'Mobile: ${MobileDetectionService.isMobileDevice}',
+                        style: const TextStyle(color: Colors.white, fontSize: 10),
+                      ),
+                      Text(
+                        'Platform: ${MobileDetectionService.preferredMapsApp}',
+                        style: const TextStyle(color: Colors.white, fontSize: 10),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ),
