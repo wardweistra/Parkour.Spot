@@ -8,7 +8,17 @@ class AuthService extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   
   User? get currentUser => _auth.currentUser;
-  bool get isAuthenticated => _auth.currentUser != null;
+  bool get isAuthenticated {
+    final user = _auth.currentUser;
+    if (user == null) return false;
+    // Require email verification for password (email/password) accounts
+    final hasPasswordProvider = user.providerData.any((p) => p.providerId == 'password');
+    if (hasPasswordProvider) {
+      return user.emailVerified;
+    }
+    // For other providers (e.g., Google, Apple), consider authenticated
+    return true;
+  }
   bool get isLoading => _isLoading;
   
   bool _isLoading = true; // Start as loading while auth state is being restored
@@ -74,6 +84,8 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
       
       await _auth.signInWithEmailAndPassword(email: email, password: password);
+      // Reload user to ensure latest emailVerified state
+      await _auth.currentUser?.reload();
       
       if (_auth.currentUser != null) {
         await _updateLastLogin();
@@ -105,6 +117,12 @@ class AuthService extends ChangeNotifier {
       
       if (userCredential.user != null) {
         await userCredential.user!.updateDisplayName(displayName);
+        // Send email verification to the newly created user
+        try {
+          await userCredential.user!.sendEmailVerification();
+        } catch (e) {
+          debugPrint('Failed to send verification email: $e');
+        }
         
         // Create user profile in Firestore
         final user = app_user.User(
@@ -126,6 +144,18 @@ class AuthService extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> sendEmailVerification() async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null && !user.emailVerified) {
+        await user.sendEmailVerification();
+      }
+    } catch (e) {
+      debugPrint('Error sending email verification: $e');
+      rethrow;
     }
   }
 

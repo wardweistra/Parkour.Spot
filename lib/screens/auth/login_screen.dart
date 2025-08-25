@@ -139,18 +139,50 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       if (success && mounted) {
-        debugPrint('LoginScreen: Authentication successful, showing success message');
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_isLogin ? 'Login successful!' : 'Account created successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        
-        debugPrint('LoginScreen: Calling _redirectAfterAuth from form submission');
-        // Navigate to intended destination or home
-        _redirectAfterAuth();
+        debugPrint('LoginScreen: Authentication successful');
+        final isVerifiedAndAuthed = Provider.of<AuthService>(context, listen: false).isAuthenticated;
+
+        if (_isLogin) {
+          if (isVerifiedAndAuthed) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Login successful!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+            debugPrint('LoginScreen: Verified user, redirecting after login');
+            _redirectAfterAuth();
+          } else {
+            debugPrint('LoginScreen: Unverified login detected, showing verification prompt');
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Please verify your email to continue.'),
+                action: SnackBarAction(
+                  label: 'Resend',
+                  onPressed: () async {
+                    try {
+                      await Provider.of<AuthService>(context, listen: false).sendEmailVerification();
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Verification email sent')),
+                        );
+                      }
+                    } catch (_) {}
+                  },
+                ),
+              ),
+            );
+          }
+        } else {
+          // Signup flow
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Account created! Verification email sent to ${_emailController.text.trim()}. Please verify to continue.'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          debugPrint('LoginScreen: Signup complete, verification email sent, not redirecting until verified');
+        }
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
