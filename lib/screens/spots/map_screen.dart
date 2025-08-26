@@ -21,7 +21,8 @@ class _MapScreenState extends State<MapScreen> {
   Position? _currentPosition;
   bool _isGettingLocation = false;
   bool _isSatelliteView = false;
-
+  bool _isSpotSheetOpen = false;
+  
   @override
   void initState() {
     super.initState();
@@ -87,12 +88,21 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _showSpotBottomSheet(Spot spot) {
+    setState(() {
+      _isSpotSheetOpen = true;
+    });
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => _SpotBottomSheet(spot: spot),
-    );
+    ).whenComplete(() {
+      if (mounted) {
+        setState(() {
+          _isSpotSheetOpen = false;
+        });
+      }
+    });
   }
 
   String _formatDate(DateTime date) {
@@ -226,6 +236,10 @@ class _MapScreenState extends State<MapScreen> {
                 myLocationEnabled: true,
                 myLocationButtonEnabled: true,
                 zoomControlsEnabled: false,
+                zoomGesturesEnabled: !_isSpotSheetOpen,
+                scrollGesturesEnabled: !_isSpotSheetOpen,
+                rotateGesturesEnabled: !_isSpotSheetOpen,
+                tiltGesturesEnabled: !_isSpotSheetOpen,
                 liteModeEnabled: kIsWeb,
                 compassEnabled: false,
                 onMapCreated: (GoogleMapController controller) {
