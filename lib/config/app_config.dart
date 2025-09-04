@@ -63,10 +63,10 @@ class AppConfig {
       kIsWeb ? WebEnvVars.firebaseProjectId : _getEnvVar('FIREBASE_PROJECT_ID', _defaultProjectId);
   
   static String get firebaseAuthDomain => 
-      kIsWeb ? (WebEnvVars.firebaseAuthDomain.isNotEmpty ? WebEnvVars.firebaseAuthDomain : '${firebaseProjectId}.firebaseapp.com') : _getEnvVar('FIREBASE_AUTH_DOMAIN', '${firebaseProjectId}.firebaseapp.com');
+      kIsWeb ? (WebEnvVars.firebaseAuthDomain.isNotEmpty ? WebEnvVars.firebaseAuthDomain : '$firebaseProjectId.firebaseapp.com') : _getEnvVar('FIREBASE_AUTH_DOMAIN', '$firebaseProjectId.firebaseapp.com');
   
   static String get firebaseStorageBucket => 
-      kIsWeb ? (WebEnvVars.firebaseStorageBucket.isNotEmpty ? WebEnvVars.firebaseStorageBucket : '${firebaseProjectId}.firebasestorage.app') : _getEnvVar('FIREBASE_STORAGE_BUCKET', '${firebaseProjectId}.firebasestorage.app');
+      kIsWeb ? (WebEnvVars.firebaseStorageBucket.isNotEmpty ? WebEnvVars.firebaseStorageBucket : '$firebaseProjectId.firebasestorage.app') : _getEnvVar('FIREBASE_STORAGE_BUCKET', '$firebaseProjectId.firebasestorage.app');
   
   static String get firebaseMeasurementId => 
       kIsWeb ? WebEnvVars.firebaseMeasurementId : _getEnvVar('FIREBASE_MEASUREMENT_ID', '');
