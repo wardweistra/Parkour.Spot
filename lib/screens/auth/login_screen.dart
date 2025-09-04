@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/custom_button.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import '../../web_password_manager_bridge_web.dart' if (dart.library.html) '../../web_password_manager_bridge_web.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -23,6 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _intendedDestination;
   bool _hasCapturedDestination = false;
   bool _hasRedirected = false;
+  WebPasswordManagerBridge? _pmBridge;
 
   Future<void> _showForgotPasswordDialog() async {
     final emailController = TextEditingController(text: _emailController.text.trim());
@@ -139,6 +142,22 @@ class _LoginScreenState extends State<LoginScreen> {
       final authService = Provider.of<AuthService>(context, listen: false);
       authService.addListener(_onAuthStateChanged);
       debugPrint('LoginScreen: Auth listener added');
+      // Initialize password manager bridge on web
+      if (kIsWeb) {
+        _pmBridge = WebPasswordManagerBridge();
+        _pmBridge!.init(
+          setEmail: (value) {
+            if (mounted && value.isNotEmpty && _emailController.text != value) {
+              _emailController.text = value;
+            }
+          },
+          setPassword: (value) {
+            if (mounted && value.isNotEmpty && _passwordController.text != value) {
+              _passwordController.text = value;
+            }
+          },
+        );
+      }
     });
   }
 
@@ -158,6 +177,7 @@ class _LoginScreenState extends State<LoginScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _displayNameController.dispose();
+    _pmBridge?.dispose();
     
     // Remove auth listener
     try {
@@ -365,56 +385,72 @@ class _LoginScreenState extends State<LoginScreen> {
                   
                   const SizedBox(height: 32),
                   
-                  // Display Name Field (only for sign up)
-                  if (!_isLogin) ...[
-                    CustomTextField(
-                      controller: _displayNameController,
-                      labelText: 'Display Name',
-                      prefixIcon: Icons.person,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter your display name';
-                        }
-                        return null;
-                      },
+                  // Group related fields for browser autofill
+                  AutofillGroup(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Display Name Field (only for sign up)
+                        if (!_isLogin) ...[
+                          CustomTextField(
+                            controller: _displayNameController,
+                            labelText: 'Display Name',
+                            prefixIcon: Icons.person,
+                            textInputAction: TextInputAction.next,
+                            autofillHints: const [AutofillHints.name, AutofillHints.nickname],
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Please enter your display name';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                        
+                        // Email Field
+                        CustomTextField(
+                          controller: _emailController,
+                          labelText: 'Email',
+                          prefixIcon: Icons.email,
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.next,
+                          autofillHints: const [AutofillHints.username, AutofillHints.email],
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Please enter your email';
+                            }
+                            if (!RegExp(r'^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$').hasMatch(value)) {
+                              return 'Please enter a valid email';
+                            }
+                            return null;
+                          },
+                        ),
+                        
+                        const SizedBox(height: 16),
+                        
+                        // Password Field
+                        CustomTextField(
+                          controller: _passwordController,
+                          labelText: 'Password',
+                          prefixIcon: Icons.lock,
+                          obscureText: true,
+                          textInputAction: TextInputAction.done,
+                          autofillHints: [
+                            _isLogin ? AutofillHints.currentPassword : AutofillHints.newPassword,
+                          ],
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your password';
+                            }
+                            if (value.length < 6) {
+                              return 'Password must be at least 6 characters';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                  ],
-                  
-                  // Email Field
-                  CustomTextField(
-                    controller: _emailController,
-                    labelText: 'Email',
-                    prefixIcon: Icons.email,
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Please enter your email';
-                      }
-                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                        return 'Please enter a valid email';
-                      }
-                      return null;
-                    },
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Password Field
-                  CustomTextField(
-                    controller: _passwordController,
-                    labelText: 'Password',
-                    prefixIcon: Icons.lock,
-                    obscureText: true,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your password';
-                      }
-                      if (value.length < 6) {
-                        return 'Password must be at least 6 characters';
-                      }
-                      return null;
-                    },
                   ),
                   
                   const SizedBox(height: 24),

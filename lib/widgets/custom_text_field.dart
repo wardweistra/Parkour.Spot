@@ -8,12 +8,14 @@ class CustomTextField extends StatelessWidget {
   final IconData? suffixIcon;
   final bool obscureText;
   final TextInputType? keyboardType;
+  final TextInputAction? textInputAction;
   final String? Function(String?)? validator;
   final void Function(String)? onChanged;
   final void Function()? onTap;
   final bool readOnly;
   final int? maxLines;
   final int? maxLength;
+  final Iterable<String>? autofillHints;
 
   const CustomTextField({
     super.key,
@@ -24,12 +26,14 @@ class CustomTextField extends StatelessWidget {
     this.suffixIcon,
     this.obscureText = false,
     this.keyboardType,
+    this.textInputAction,
     this.validator,
     this.onChanged,
     this.onTap,
     this.readOnly = false,
     this.maxLines = 1,
     this.maxLength,
+    this.autofillHints,
   });
 
   @override
@@ -38,12 +42,14 @@ class CustomTextField extends StatelessWidget {
       controller: controller,
       obscureText: obscureText,
       keyboardType: keyboardType,
+      textInputAction: textInputAction,
       validator: validator,
       onChanged: onChanged,
       onTap: onTap,
       readOnly: readOnly,
       maxLines: maxLines,
       maxLength: maxLength,
+      autofillHints: autofillHints,
       decoration: InputDecoration(
         labelText: labelText,
         hintText: hintText,
