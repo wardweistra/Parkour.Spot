@@ -14,6 +14,7 @@ class CustomTextField extends StatelessWidget {
   final bool readOnly;
   final int? maxLines;
   final int? maxLength;
+  final List<String>? autofillHints;
 
   const CustomTextField({
     super.key,
@@ -30,6 +31,7 @@ class CustomTextField extends StatelessWidget {
     this.readOnly = false,
     this.maxLines = 1,
     this.maxLength,
+    this.autofillHints,
   });
 
   @override
@@ -44,6 +46,7 @@ class CustomTextField extends StatelessWidget {
       readOnly: readOnly,
       maxLines: maxLines,
       maxLength: maxLength,
+      autofillHints: autofillHints,
       decoration: InputDecoration(
         labelText: labelText,
         hintText: hintText,

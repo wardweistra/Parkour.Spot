@@ -38,6 +38,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: TextFormField(
               controller: emailController,
               keyboardType: TextInputType.emailAddress,
+              autofillHints: const [AutofillHints.email],
               decoration: const InputDecoration(
                 labelText: 'Email',
                 prefixIcon: Icon(Icons.email),
@@ -371,6 +372,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       controller: _displayNameController,
                       labelText: 'Display Name',
                       prefixIcon: Icons.person,
+                      autofillHints: const [AutofillHints.name],
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return 'Please enter your display name';
@@ -387,6 +389,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     labelText: 'Email',
                     prefixIcon: Icons.email,
                     keyboardType: TextInputType.emailAddress,
+                    autofillHints: const [AutofillHints.email],
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
                         return 'Please enter your email';
@@ -406,6 +409,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     labelText: 'Password',
                     prefixIcon: Icons.lock,
                     obscureText: true,
+                    autofillHints: _isLogin 
+                        ? const [AutofillHints.password]
+                        : const [AutofillHints.newPassword],
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter your password';
