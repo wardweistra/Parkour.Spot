@@ -43,6 +43,48 @@
   <script src="flutter.js" defer></script>
 </head>
 <body>
+  <!-- Password manager helper form (hidden off-screen but detectable) -->
+  <form id="pm-helper" autocomplete="on" aria-hidden="true" tabindex="-1" style="position:fixed;left:-10000px;top:auto;width:1px;height:1px;opacity:0;pointer-events:none;">
+    <input id="pm-username" type="text" name="username" autocomplete="username" inputmode="email" />
+    <input id="pm-password" type="password" name="current-password" autocomplete="current-password" />
+  </form>
+
+  <script>
+    (function () {
+      function emitAutofillEvent() {
+        try {
+          var u = document.getElementById('pm-username');
+          var p = document.getElementById('pm-password');
+          var username = (u && u.value) || '';
+          var password = (p && p.value) || '';
+          var detail = { username: username, password: password };
+          window.dispatchEvent(new CustomEvent('password-autofill', { detail: detail }));
+        } catch (e) {
+          // no-op
+        }
+      }
+
+      function setupListeners() {
+        var u = document.getElementById('pm-username');
+        var p = document.getElementById('pm-password');
+        if (!u || !p) return;
+        ['change', 'input'].forEach(function (evt) {
+          u.addEventListener(evt, emitAutofillEvent, { passive: true });
+          p.addEventListener(evt, emitAutofillEvent, { passive: true });
+        });
+      }
+
+      window.addEventListener('load', function() {
+        setupListeners();
+        // Nudge some managers by a brief focus/blur sequence
+        var u = document.getElementById('pm-username');
+        if (u && typeof u.focus === 'function') {
+          try { u.focus({ preventScroll: true }); u.blur(); } catch (_) {}
+        }
+      });
+    })();
+  </script>
+
   <script>
     window.addEventListener('load', function(ev) {
       // Download main.dart.js
