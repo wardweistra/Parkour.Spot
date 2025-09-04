@@ -41,6 +41,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: TextFormField(
               controller: emailController,
               keyboardType: TextInputType.emailAddress,
+              autofillHints: const [AutofillHints.email],
               decoration: const InputDecoration(
                 labelText: 'Email',
                 prefixIcon: Icon(Icons.email),
