@@ -12,6 +12,7 @@ class Spot {
   final DateTime? updatedAt;
   final List<String>? tags;
   final bool? isPublic;
+  final String? spotSource;
 
   Spot({
     this.id,
@@ -25,6 +26,7 @@ class Spot {
     this.updatedAt,
     this.tags,
     this.isPublic = true,
+    this.spotSource,
   });
 
   factory Spot.fromFirestore(DocumentSnapshot doc) {
@@ -43,6 +45,7 @@ class Spot {
       updatedAt: data['updatedAt']?.toDate(),
       tags: data['tags'] != null ? List<String>.from(data['tags']) : null,
       isPublic: data['isPublic'] ?? true,
+      spotSource: data['spotSource'],
     );
   }
 
@@ -58,6 +61,7 @@ class Spot {
       'updatedAt': updatedAt,
       'tags': tags,
       'isPublic': isPublic,
+      'spotSource': spotSource,
     };
   }
 
@@ -73,6 +77,7 @@ class Spot {
     DateTime? updatedAt,
     List<String>? tags,
     bool? isPublic,
+    String? spotSource,
   }) {
     return Spot(
       id: id ?? this.id,
@@ -86,6 +91,7 @@ class Spot {
       updatedAt: updatedAt ?? this.updatedAt,
       tags: tags ?? this.tags,
       isPublic: isPublic ?? this.isPublic,
+      spotSource: spotSource ?? this.spotSource,
     );
   }
 
