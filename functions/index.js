@@ -81,15 +81,20 @@ exports.getNearbySpots = onCall(
       };
     });
 
-// Utility function to download a file from URL
+/**
+ * Downloads a file from the given URL
+ * @param {string} url - The URL to download from
+ * @return {Promise<Buffer>} A promise that resolves to the file buffer
+ */
 function downloadFile(url) {
   return new Promise((resolve, reject) => {
     https.get(url, (response) => {
       if (response.statusCode !== 200) {
-        reject(new Error(`HTTP ${response.statusCode}: ${response.statusMessage}`));
+        reject(new Error(
+            `HTTP ${response.statusCode}: ${response.statusMessage}`));
         return;
       }
-      
+
       const chunks = [];
       response.on("data", (chunk) => chunks.push(chunk));
       response.on("end", () => resolve(Buffer.concat(chunks)));
@@ -98,18 +103,22 @@ function downloadFile(url) {
   });
 }
 
-// Utility function to extract KML from KMZ
+/**
+ * Extracts KML from KMZ
+ * @param {Buffer} kmzBuffer - The KMZ buffer
+ * @return {Promise<string>} A promise that resolves to the KML content
+ */
 function extractKmlFromKmz(kmzBuffer) {
   return new Promise((resolve, reject) => {
     yauzl.fromBuffer(kmzBuffer, {lazyEntries: true}, (err, zipfile) => {
       if (err) return reject(err);
-      
+
       zipfile.readEntry();
       zipfile.on("entry", (entry) => {
         if (entry.fileName.endsWith(".kml")) {
           zipfile.openReadStream(entry, (err, readStream) => {
             if (err) return reject(err);
-            
+
             const chunks = [];
             readStream.on("data", (chunk) => chunks.push(chunk));
             readStream.on("end", () => {
@@ -129,33 +138,40 @@ function extractKmlFromKmz(kmzBuffer) {
   });
 }
 
-// Utility function to clean HTML from description text
+/**
+ * Cleans HTML from description text
+ * @param {string} description - The description text to clean
+ * @return {string} The cleaned description text
+ */
 function cleanDescription(description) {
   if (!description) return "";
-  
+
   // Remove HTML tags but preserve line breaks
-  let cleaned = description
-    .replace(/<br\s*\/?>/gi, '\n')  // Convert <br> tags to newlines
-    .replace(/<img[^>]*>/gi, '')    // Remove <img> tags
-    .replace(/<[^>]*>/g, '')        // Remove all other HTML tags
-    .replace(/&nbsp;/g, ' ')        // Convert &nbsp; to spaces
-    .replace(/&amp;/g, '&')         // Convert &amp; to &
-    .replace(/&lt;/g, '<')          // Convert &lt; to <
-    .replace(/&gt;/g, '>')          // Convert &gt; to >
-    .replace(/&quot;/g, '"')        // Convert &quot; to "
-    .replace(/&#39;/g, "'")         // Convert &#39; to '
-    .replace(/&apos;/g, "'")        // Convert &apos; to '
-    .replace(/\n\s*\n\s*\n/g, '\n\n') // Replace 3+ newlines with 2
-    .replace(/\n\s*\n/g, '\n\n')    // Replace 2+ newlines with 2
-    .trim();                        // Remove leading/trailing whitespace
-  
+  const cleaned = description
+      .replace(/<br\s*\/?>/gi, "\n") // Convert <br> tags to newlines
+      .replace(/<img[^>]*>/gi, "") // Remove <img> tags
+      .replace(/<[^>]*>/g, "") // Remove all other HTML tags
+      .replace(/&nbsp;/g, " ") // Convert &nbsp; to spaces
+      .replace(/&amp;/g, "&") // Convert &amp; to &
+      .replace(/&lt;/g, "<") // Convert &lt; to <
+      .replace(/&gt;/g, ">") // Convert &gt; to >
+      .replace(/&quot;/g, "\"") // Convert &quot; to "
+      .replace(/&apos;/g, "'") // Convert &apos; to '
+      .replace(/\n\s*\n\s*\n/g, "\n\n") // Replace 3+ newlines with 2
+      .replace(/\n\s*\n/g, "\n\n") // Replace 2+ newlines with 2
+      .trim(); // Remove leading/trailing whitespace
+
   return cleaned;
 }
 
-// Utility function to extract image URLs from placemark data
+/**
+ * Extracts image URLs from placemark data
+ * @param {Object} placemark - The placemark data
+ * @return {string[]} The image URLs
+ */
 function extractImageUrls(placemark) {
   const imageUrls = [];
-  
+
   // Extract from description CDATA
   const description = placemark.description || "";
   const imgRegex = /<img[^>]+src="([^"]+)"/g;
@@ -163,38 +179,48 @@ function extractImageUrls(placemark) {
   while ((match = imgRegex.exec(description)) !== null) {
     imageUrls.push(match[1]);
   }
-  
+
   // Extract from ExtendedData gx_media_links
   const extendedData = placemark.extendedData || {};
   if (extendedData.Data) {
-    const mediaData = extendedData.Data.find(data => 
-      data.$ && data.$.name === "gx_media_links"
+    const mediaData = extendedData.Data.find((data) =>
+      data.$ && data.$.name === "gx_media_links",
     );
     if (mediaData && mediaData.value && mediaData.value[0]) {
-      const mediaUrls = mediaData.value[0].split(" ").filter(url => url.trim());
+      const mediaUrls = mediaData.value[0].split(" ").filter((url) =>
+        url.trim(),
+      );
       imageUrls.push(...mediaUrls);
     }
   }
-  
+
   // Remove duplicates and filter out invalid URLs
-  return [...new Set(imageUrls)].filter(url => 
-    url && url.startsWith("http") && url.includes("google.com")
+  return [...new Set(imageUrls)].filter((url) =>
+    url && url.startsWith("http") && url.includes("google.com"),
   );
 }
 
-// Utility function to download and upload image to Firebase Storage
+/**
+ * Downloads and uploads an image to Firebase Storage
+ * @param {string} imageUrl - The URL of the image to download
+ * @param {string} spotName - The name of the spot for filename generation
+ * @param {number} imageIndex - The index of the image for filename generation
+ * @return {Promise<string|null>} A promise that resolves to the public URL
+ *     or null
+ */
 async function downloadAndUploadImage(imageUrl, spotName, imageIndex) {
   try {
     console.log(`Downloading image ${imageIndex + 1} for spot: ${spotName}`);
-    
+
     // Download image
     const imageBuffer = await downloadFile(imageUrl);
-    
+
     // Generate filename
     const timestamp = Date.now();
     const extension = path.extname(new URL(imageUrl).pathname) || ".jpg";
-    const filename = `spots/${spotName.replace(/[^a-zA-Z0-9]/g, "_")}_${timestamp}_${imageIndex}${extension}`;
-    
+    const filename = `spots/${spotName.replace(/[^a-zA-Z0-9]/g, "_")}_` +
+        `${timestamp}_${imageIndex}${extension}`;
+
     // Upload to Firebase Storage
     const file = bucket.file(filename);
     await file.save(imageBuffer, {
@@ -203,86 +229,110 @@ async function downloadAndUploadImage(imageUrl, spotName, imageIndex) {
         cacheControl: "public, max-age=31536000",
       },
     });
-    
+
     // Make file publicly accessible
     await file.makePublic();
-    
+
     // Return public URL
     const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filename}`;
     console.log(`Uploaded image to: ${publicUrl}`);
-    
+
     return publicUrl;
   } catch (error) {
-    console.error(`Failed to download/upload image ${imageIndex + 1} for ${spotName}:`, error);
+    console.error(`Failed to download/upload image ${imageIndex + 1} for ` +
+        `${spotName}:`, error);
     return null;
   }
 }
 
-// Utility function to process images for a placemark
+/**
+ * Processes images for a placemark by downloading and uploading them
+ * @param {Object} placemark - The placemark data containing image URLs
+ * @return {Promise<string[]>} A promise that resolves to an array of
+ *     uploaded image URLs
+ */
 async function processPlacemarkImages(placemark) {
   const imageUrls = extractImageUrls(placemark);
-  
+
   if (imageUrls.length === 0) {
     return [];
   }
-  
+
   console.log(`Found ${imageUrls.length} images for spot: ${placemark.name}`);
-  
+
   const uploadedImageUrls = [];
-  
+
   // Process images in parallel (limit to 5 concurrent downloads)
   const batchSize = 5;
   for (let i = 0; i < imageUrls.length; i += batchSize) {
     const batch = imageUrls.slice(i, i + batchSize);
-    const batchPromises = batch.map((url, index) => 
-      downloadAndUploadImage(url, placemark.name, i + index)
+    const batchPromises = batch.map((url, index) =>
+      downloadAndUploadImage(url, placemark.name, i + index),
     );
-    
+
     const batchResults = await Promise.all(batchPromises);
-    uploadedImageUrls.push(...batchResults.filter(url => url !== null));
+    uploadedImageUrls.push(...batchResults.filter((url) =>
+      url !== null,
+    ));
   }
-  
-  console.log(`Successfully uploaded ${uploadedImageUrls.length} images for spot: ${placemark.name}`);
+
+  console.log(`Successfully uploaded ${uploadedImageUrls.length} images ` +
+      `for spot: ${placemark.name}`);
   return uploadedImageUrls;
 }
 
-// Utility function to parse KML and extract Placemarks
+/**
+ * Parses KML and extracts Placemarks
+ * @param {string} kmlContent - The KML content
+ * @return {Promise<Object[]>} A promise that resolves to the Placemarks
+ */
 function parseKmlPlacemarks(kmlContent) {
   return new Promise((resolve, reject) => {
     const parser = new xml2js.Parser();
     parser.parseString(kmlContent, (err, result) => {
       if (err) return reject(err);
-      
+
       const placemarks = [];
-      
+
+      /**
+       * Recursively extracts placemarks from a folder structure
+       * @param {Object} folder - The folder containing placemarks
+       */
       function extractPlacemarksFromFolder(folder) {
         if (folder.Placemark) {
           folder.Placemark.forEach((placemark) => {
-            const name = (placemark.name && placemark.name[0]) || "Unnamed Spot";
-            const description = (placemark.description && placemark.description[0]) || "";
-            const coordinates = (placemark.Point && placemark.Point[0] && placemark.Point[0].coordinates && placemark.Point[0].coordinates[0]);
-            
+            const name = (placemark.name && placemark.name[0]) ||
+                "Unnamed Spot";
+            const description = (placemark.description &&
+                placemark.description[0]) || "";
+            const coordinates = (placemark.Point && placemark.Point[0] &&
+                placemark.Point[0].coordinates &&
+                placemark.Point[0].coordinates[0]);
+
             if (coordinates) {
-              const [longitude, latitude, altitude] = coordinates.split(",").map(Number);
+              const [longitude, latitude, altitude] = coordinates
+                  .split(",").map(Number);
               placemarks.push({
                 name: name,
                 description: description,
                 coordinates: {latitude, longitude, altitude: altitude || 0},
-                extendedData: (placemark.ExtendedData && placemark.ExtendedData[0]) || {},
+                extendedData: (placemark.ExtendedData &&
+                    placemark.ExtendedData[0]) || {},
               });
             }
           });
         }
-        
+
         if (folder.Folder) {
           folder.Folder.forEach(extractPlacemarksFromFolder);
         }
       }
-      
-      if (result.kml && result.kml.Document && result.kml.Document[0] && result.kml.Document[0].Folder) {
+
+      if (result.kml && result.kml.Document && result.kml.Document[0] &&
+          result.kml.Document[0].Folder) {
         result.kml.Document[0].Folder.forEach(extractPlacemarksFromFolder);
       }
-      
+
       resolve(placemarks);
     });
   });
@@ -294,85 +344,88 @@ exports.syncKmzSpots = onCall(
     async (request) => {
       try {
         const {kmzUrl, spotSource} = request.data;
-        
+
         if (!kmzUrl) {
           throw new Error("kmzUrl is required");
         }
-        
+
         if (!spotSource) {
           throw new Error("spotSource is required");
         }
-        
+
         console.log(`Starting KMZ sync from: ${kmzUrl}`);
-        
+
         // Download KMZ file
         const kmzBuffer = await downloadFile(kmzUrl);
         console.log(`Downloaded KMZ file, size: ${kmzBuffer.length} bytes`);
-        
+
         // Extract KML from KMZ
         const kmlContent = await extractKmlFromKmz(kmzBuffer);
-        console.log(`Extracted KML content, length: ${kmlContent.length} characters`);
-        
+        console.log(`Extracted KML content, length: ` +
+            `${kmlContent.length} characters`);
+
         // Parse KML and extract placemarks
         const placemarks = await parseKmlPlacemarks(kmlContent);
         console.log(`Found ${placemarks.length} placemarks`);
-        
+
         let created = 0;
         let updated = 0;
         const skipped = 0;
-        
+
         // Process each placemark
         for (const placemark of placemarks) {
           const {name, description, coordinates} = placemark;
-          
+
           // Process images for this placemark
           console.log(`Processing images for spot: ${name}`);
           const imageUrls = await processPlacemarkImages(placemark);
-          
+
           // Clean the description to remove HTML
           const cleanedDescription = cleanDescription(description);
-          
+
           // Check if spot already exists with same coordinates and source
           const existingSpots = await db.collection("spots")
               .where("spotSource", "==", spotSource)
               .where("location", "==", new admin.firestore.GeoPoint(
-                  coordinates.latitude, 
-                  coordinates.longitude
+                  coordinates.latitude,
+                  coordinates.longitude,
               ))
               .get();
-          
+
           const spotData = {
             name: name,
             description: cleanedDescription,
             location: new admin.firestore.GeoPoint(
-                coordinates.latitude, 
-                coordinates.longitude
+                coordinates.latitude,
+                coordinates.longitude,
             ),
             spotSource: spotSource,
             isPublic: true,
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           };
-          
+
           // Add image URLs if any were found
           if (imageUrls.length > 0) {
             spotData.imageUrls = imageUrls;
           }
-          
+
           if (existingSpots.empty) {
             // Create new spot
             spotData.createdAt = admin.firestore.FieldValue.serverTimestamp();
             await db.collection("spots").add(spotData);
             created++;
-            console.log(`Created new spot: ${name} with ${imageUrls.length} images`);
+            console.log(`Created new spot: ${name} with ` +
+                `${imageUrls.length} images`);
           } else {
             // Update existing spot
             const existingSpot = existingSpots.docs[0];
             await existingSpot.ref.update(spotData);
             updated++;
-            console.log(`Updated existing spot: ${name} (ID: ${existingSpot.id}) with ${imageUrls.length} images`);
+            console.log(`Updated existing spot: ${name} (ID: ` +
+                `${existingSpot.id}) with ${imageUrls.length} images`);
           }
         }
-        
+
         const result = {
           success: true,
           message: `KMZ sync completed successfully`,
@@ -383,10 +436,9 @@ exports.syncKmzSpots = onCall(
             skipped: skipped,
           },
         };
-        
+
         console.log("KMZ sync result:", result);
         return result;
-        
       } catch (error) {
         console.error("Error syncing KMZ spots:", error);
         throw new Error(`Failed to sync KMZ spots: ${error.message}`);
@@ -399,12 +451,12 @@ exports.syncAllSources = onCall(
     async (request) => {
       try {
         console.log("Starting sync for all sources from Firestore");
-        
+
         // Get all active sync sources
         const sourcesSnapshot = await db.collection("syncSources")
             .where("isActive", "==", true)
             .get();
-        
+
         if (sourcesSnapshot.empty) {
           return {
             success: true,
@@ -412,81 +464,85 @@ exports.syncAllSources = onCall(
             results: [],
           };
         }
-        
+
         const results = [];
         let totalCreated = 0;
         let totalUpdated = 0;
         let totalSkipped = 0;
-        
+
         // Process each source
         for (const sourceDoc of sourcesSnapshot.docs) {
           const source = sourceDoc.data();
           const sourceId = sourceDoc.id;
-          
+
           try {
             console.log(`Processing source: ${source.name} (${sourceId})`);
-            
+
             // Download and process KMZ file
             const kmzBuffer = await downloadFile(source.kmzUrl);
             const kmlContent = await extractKmlFromKmz(kmzBuffer);
             const placemarks = await parseKmlPlacemarks(kmlContent);
-            
+
             let created = 0;
             let updated = 0;
             const skipped = 0;
-            
+
             // Process each placemark
             for (const placemark of placemarks) {
               const {name, description, coordinates} = placemark;
-              
+
               // Process images for this placemark
-              console.log(`Processing images for spot: ${name} from source: ${source.name}`);
+              console.log(`Processing images for spot: ${name} ` +
+                  `from source: ${source.name}`);
               const imageUrls = await processPlacemarkImages(placemark);
-              
+
               // Clean the description to remove HTML
               const cleanedDescription = cleanDescription(description);
-              
+
               // Check if spot already exists with same coordinates and source
               const existingSpots = await db.collection("spots")
                   .where("spotSource", "==", sourceId)
                   .where("location", "==", new admin.firestore.GeoPoint(
-                      coordinates.latitude, 
-                      coordinates.longitude
+                      coordinates.latitude,
+                      coordinates.longitude,
                   ))
                   .get();
-              
+
               const spotData = {
                 name: name,
                 description: cleanedDescription,
                 location: new admin.firestore.GeoPoint(
-                    coordinates.latitude, 
-                    coordinates.longitude
+                    coordinates.latitude,
+                    coordinates.longitude,
                 ),
                 spotSource: sourceId,
-                isPublic: source.isPublic !== false, // Default to true unless explicitly false
+                isPublic: source.isPublic !== false, // Default to true
                 updatedAt: admin.firestore.FieldValue.serverTimestamp(),
               };
-              
+
               // Add image URLs if any were found
               if (imageUrls.length > 0) {
                 spotData.imageUrls = imageUrls;
               }
-              
+
               if (existingSpots.empty) {
                 // Create new spot
-                spotData.createdAt = admin.firestore.FieldValue.serverTimestamp();
+                spotData.createdAt = admin.firestore.FieldValue
+                    .serverTimestamp();
                 await db.collection("spots").add(spotData);
                 created++;
-                console.log(`Created new spot: ${name} from source: ${source.name} with ${imageUrls.length} images`);
+                console.log(`Created new spot: ${name} from source: ` +
+                    `${source.name} with ${imageUrls.length} images`);
               } else {
                 // Update existing spot
                 const existingSpot = existingSpots.docs[0];
                 await existingSpot.ref.update(spotData);
                 updated++;
-                console.log(`Updated existing spot: ${name} from source: ${source.name} with ${imageUrls.length} images`);
+                console.log(`Updated existing spot: ${name} from source: ` +
+                    `${source.name} with ${imageUrls.length} images`);
               }
             }
-            
+
             // Update source last sync time
             await sourceDoc.ref.update({
               lastSyncAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -497,7 +553,7 @@ exports.syncAllSources = onCall(
                 skipped: skipped,
               },
             });
-            
+
             const sourceResult = {
               sourceId: sourceId,
               sourceName: source.name,
@@ -509,17 +565,18 @@ exports.syncAllSources = onCall(
                 skipped: skipped,
               },
             };
-            
+
             results.push(sourceResult);
             totalCreated += created;
             totalUpdated += updated;
             totalSkipped += skipped;
-            
-            console.log(`Completed sync for source: ${source.name}`, sourceResult.stats);
-            
+
+            console.log(`Completed sync for source: ` +
+                `${source.name}`, sourceResult.stats);
           } catch (sourceError) {
-            console.error(`Error processing source ${source.name}:`, sourceError);
-            
+            console.error(`Error processing source ${source.name}:`,
+                sourceError);
+
             results.push({
               sourceId: sourceId,
               sourceName: source.name,
@@ -534,7 +591,7 @@ exports.syncAllSources = onCall(
             });
           }
         }
-        
+
         const overallResult = {
           success: true,
           message: `Sync completed for ${results.length} sources`,
@@ -546,10 +603,9 @@ exports.syncAllSources = onCall(
           },
           results: results,
         };
-        
+
         console.log("Overall sync result:", overallResult);
         return overallResult;
-        
       } catch (error) {
         console.error("Error syncing all sources:", error);
         throw new Error(`Failed to sync all sources: ${error.message}`);
@@ -561,12 +617,13 @@ exports.createSyncSource = onCall(
     {region: "europe-west1"},
     async (request) => {
       try {
-        const {name, kmzUrl, description, isPublic = true, isActive = true} = request.data;
-        
+        const {name, kmzUrl, description, isPublic = true,
+          isActive = true} = request.data;
+
         if (!name || !kmzUrl) {
           throw new Error("name and kmzUrl are required");
         }
-        
+
         const sourceData = {
           name: name,
           kmzUrl: kmzUrl,
@@ -576,16 +633,15 @@ exports.createSyncSource = onCall(
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         };
-        
+
         const docRef = await db.collection("syncSources").add(sourceData);
-        
+
         return {
           success: true,
           message: "Sync source created successfully",
           sourceId: docRef.id,
           data: sourceData,
         };
-        
       } catch (error) {
         console.error("Error creating sync source:", error);
         throw new Error(`Failed to create sync source: ${error.message}`);
@@ -597,30 +653,30 @@ exports.updateSyncSource = onCall(
     {region: "europe-west1"},
     async (request) => {
       try {
-        const {sourceId, name, kmzUrl, description, isPublic, isActive} = request.data;
-        
+        const {sourceId, name, kmzUrl, description, isPublic,
+          isActive} = request.data;
+
         if (!sourceId) {
           throw new Error("sourceId is required");
         }
-        
+
         const updateData = {
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         };
-        
+
         if (name !== undefined) updateData.name = name;
         if (kmzUrl !== undefined) updateData.kmzUrl = kmzUrl;
         if (description !== undefined) updateData.description = description;
         if (isPublic !== undefined) updateData.isPublic = isPublic;
         if (isActive !== undefined) updateData.isActive = isActive;
-        
+
         await db.collection("syncSources").doc(sourceId).update(updateData);
-        
+
         return {
           success: true,
           message: "Sync source updated successfully",
           sourceId: sourceId,
         };
-        
       } catch (error) {
         console.error("Error updating sync source:", error);
         throw new Error(`Failed to update sync source: ${error.message}`);
@@ -633,19 +689,18 @@ exports.deleteSyncSource = onCall(
     async (request) => {
       try {
         const {sourceId} = request.data;
-        
+
         if (!sourceId) {
           throw new Error("sourceId is required");
         }
-        
+
         await db.collection("syncSources").doc(sourceId).delete();
-        
+
         return {
           success: true,
           message: "Sync source deleted successfully",
           sourceId: sourceId,
         };
-        
       } catch (error) {
         console.error("Error deleting sync source:", error);
         throw new Error(`Failed to delete sync source: ${error.message}`);
@@ -658,26 +713,25 @@ exports.getSyncSources = onCall(
     async (request) => {
       try {
         const {includeInactive = false} = request.data;
-        
+
         let query = db.collection("syncSources");
-        
+
         if (!includeInactive) {
           query = query.where("isActive", "==", true);
         }
-        
+
         const snapshot = await query.orderBy("createdAt", "desc").get();
-        
+
         const sources = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
-        
+
         return {
           success: true,
           sources: sources,
           count: sources.length,
         };
-        
       } catch (error) {
         console.error("Error getting sync sources:", error);
         throw new Error(`Failed to get sync sources: ${error.message}`);
