@@ -217,7 +217,9 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       body: PageView(
         controller: _pageController,
-        physics: const PageScrollPhysics(), // Enable swiping on all tabs
+        physics: _currentIndex == 0 
+            ? const NeverScrollableScrollPhysics() // Disable swiping on Search tab (map gestures)
+            : const PageScrollPhysics(), // Enable swiping on other tabs
         onPageChanged: (index) {
           setState(() {
             _currentIndex = index;
