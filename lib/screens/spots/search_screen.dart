@@ -53,7 +53,6 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMixin {
   GoogleMapController? _mapController;
-  Position? _currentPosition;
   bool _isGettingLocation = false;
   bool _isSatelliteView = false;
   bool _isBottomSheetOpen = false; // Start collapsed by default
@@ -66,11 +65,13 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   late Animation<double> _bottomSheetAnimation;
   late PageController _imagePageController;
   int _currentImageIndex = 0;
+  double _dragStartY = 0.0;
+  bool _isDragging = false;
 
   @override
   void initState() {
     super.initState();
-    _getCurrentLocation();
+    // Removed automatic location fetching - now user-controlled
     _searchController.addListener(_onSearchChanged);
     
     // Initialize bottom sheet animation
@@ -125,10 +126,6 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
         );
 
         if (mounted) {
-          setState(() {
-            _currentPosition = position;
-          });
-
           // Move camera to user location if map is ready
           if (_mapController != null) {
             _mapController!.animateCamera(
@@ -274,6 +271,36 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     }
   }
 
+  void _handleDragStart(DragStartDetails details) {
+    _dragStartY = details.globalPosition.dy;
+    _isDragging = true;
+  }
+
+  void _handleDragUpdate(DragUpdateDetails details) {
+    if (!_isDragging) return;
+    
+    final currentY = details.globalPosition.dy;
+    final deltaY = currentY - _dragStartY;
+    final sensitivity = 2.0; // Higher sensitivity for better responsiveness
+    
+    // Only trigger if drag distance is significant
+    if (deltaY.abs() > 20) {
+      if (deltaY < -sensitivity && !_isBottomSheetOpen) {
+        // Dragging up - expand
+        _toggleBottomSheet();
+        _isDragging = false;
+      } else if (deltaY > sensitivity && _isBottomSheetOpen) {
+        // Dragging down - collapse
+        _toggleBottomSheet();
+        _isDragging = false;
+      }
+    }
+  }
+
+  void _handleDragEnd(DragEndDetails details) {
+    _isDragging = false;
+  }
+
   Widget _buildSpotsList() {
     final screenWidth = MediaQuery.of(context).size.width;
     final useGrid = screenWidth >= 600; // Use grid layout on wider screens
@@ -381,13 +408,11 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
             );
           }
 
-          // Determine initial camera position
+          // Determine initial camera position - use first spot or default location
           final CameraPosition initialCameraPosition = CameraPosition(
-            target: _currentPosition != null
-                ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
-                : spotService.spots.isNotEmpty
-                    ? LatLng(spotService.spots.first.location.latitude, spotService.spots.first.location.longitude)
-                    : const LatLng(37.7749, -122.4194), // Default to San Francisco
+            target: spotService.spots.isNotEmpty
+                ? LatLng(spotService.spots.first.location.latitude, spotService.spots.first.location.longitude)
+                : const LatLng(37.7749, -122.4194), // Default to San Francisco
             zoom: 14,
           );
 
@@ -409,15 +434,6 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                 compassEnabled: false,
                 onMapCreated: (GoogleMapController controller) {
                   _mapController = controller;
-                  
-                  // Move to user location if available
-                  if (_currentPosition != null) {
-                    controller.animateCamera(
-                      CameraUpdate.newLatLng(
-                        LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
-                      ),
-                    );
-                  }
                   
                   // Initial update of visible spots
                   _updateVisibleSpots();
@@ -763,11 +779,14 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                   child: AnimatedBuilder(
                     animation: _bottomSheetAnimation,
                     builder: (context, child) {
-                      return GestureDetector(
-                        onTap: _isBottomSheetOpen ? null : _toggleBottomSheet, // Only clickable when collapsed
-                        child: Container(
-                          height: MediaQuery.of(context).size.height * _bottomSheetAnimation.value,
-                          decoration: BoxDecoration(
+                    return GestureDetector(
+                      onTap: _isBottomSheetOpen ? null : _toggleBottomSheet, // Only clickable when collapsed
+                      onPanStart: _handleDragStart, // Always enable drag gestures
+                      onPanUpdate: _handleDragUpdate,
+                      onPanEnd: _handleDragEnd,
+                      child: Container(
+                        height: MediaQuery.of(context).size.height * _bottomSheetAnimation.value,
+                        decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.surface,
                           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                           boxShadow: [
@@ -843,6 +862,27 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                   },
                 ),
                 ),
+
+              // Location Button - Floating Action Button
+              Positioned(
+                right: 16,
+                bottom: MediaQuery.of(context).size.height * 0.09 + 16, // Position above bottom sheet
+                child: FloatingActionButton(
+                  onPressed: _getCurrentLocation,
+                  mini: true,
+                  tooltip: 'Center on my location',
+                  child: _isGettingLocation
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Icon(Icons.my_location),
+                ),
+              ),
             ],
           );
         },
