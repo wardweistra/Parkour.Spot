@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:parkour_spot/services/auth_service.dart';
 import 'package:parkour_spot/services/spot_service.dart';
+import 'package:parkour_spot/services/sync_source_service.dart';
 import 'package:parkour_spot/router/app_router.dart';
 import 'package:parkour_spot/firebase_options.dart';
 import 'package:parkour_spot/config/app_config.dart';
@@ -36,6 +37,7 @@ class ParkourSpotApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => SpotService()),
+        ChangeNotifierProvider(create: (_) => SyncSourceService()),
       ],
       child: MaterialApp.router(
         title: 'Parkour.Spot',

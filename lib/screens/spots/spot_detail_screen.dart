@@ -9,6 +9,7 @@ import '../../services/spot_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/url_service.dart';
 import '../../services/mobile_detection_service.dart';
+import '../../services/sync_source_service.dart';
 import '../../widgets/custom_button.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 
@@ -33,12 +34,17 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   // Add rating cache variables
   Map<String, dynamic>? _cachedRatingStats;
   bool _isLoadingRatingStats = false;
+  
+  // Add source name variables
+  String? _sourceName;
+  bool _isLoadingSourceName = false;
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
     _loadRatingStats(); // Load rating stats once on init
+    _loadSourceName(); // Load source name if spot has a source
     // Note: User rating will be loaded when auth state is restored via FutureBuilder
   }
 
@@ -735,6 +741,26 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                           contentPadding: EdgeInsets.zero,
                         ),
                       ],
+                      if (widget.spot.spotSource != null) ...[
+                        ListTile(
+                          leading: const Icon(Icons.source),
+                          title: const Text('Source'),
+                          subtitle: _isLoadingSourceName
+                              ? const Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text('Loading...'),
+                                  ],
+                                )
+                              : Text(_sourceName ?? 'Unknown Source'),
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ],
                       if (widget.spot.createdAt != null) ...[
                         ListTile(
                           leading: const Icon(Icons.calendar_today),
@@ -1146,6 +1172,44 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       }
     } catch (e) {
       debugPrint('Error refreshing spot data: $e');
+    }
+  }
+
+  Future<void> _loadSourceName() async {
+    if (widget.spot.spotSource == null) return;
+    
+    try {
+      if (mounted) {
+        setState(() {
+          _isLoadingSourceName = true;
+        });
+      }
+      
+      final syncSourceService = Provider.of<SyncSourceService>(context, listen: false);
+      final sourceName = await syncSourceService.getSourceName(widget.spot.spotSource!);
+      
+      // Use WidgetsBinding to ensure this runs after the current build cycle
+      if (mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              _sourceName = sourceName;
+              _isLoadingSourceName = false;
+            });
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading source name: $e');
+      if (mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              _isLoadingSourceName = false;
+            });
+          }
+        });
+      }
     }
   }
 
