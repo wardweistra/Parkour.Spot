@@ -59,14 +59,11 @@ class AppRouter {
           
           if (tabParam != null) {
             switch (tabParam) {
-              case 'map':
+              case 'add':
                 initialTab = 1;
                 break;
-              case 'add':
-                initialTab = 2;
-                break;
               case 'profile':
-                initialTab = 3;
+                initialTab = 2;
                 break;
               default:
                 initialTab = 0;
@@ -77,10 +74,6 @@ class AppRouter {
         },
       ),
       // Individual tab routes that redirect to home with tab parameter
-      GoRoute(
-        path: '/map',
-        redirect: (context, state) => '/home?tab=map',
-      ),
       GoRoute(
         path: '/spots/add',
         redirect: (context, state) => '/home?tab=add',

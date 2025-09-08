@@ -4,9 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../services/spot_service.dart';
 import '../services/auth_service.dart';
-import 'spots/spots_list_screen.dart';
+import 'spots/search_screen.dart';
 import 'spots/add_spot_screen.dart';
-import 'spots/map_screen.dart';
 import 'profile/profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -49,13 +48,13 @@ class _HomeScreenState extends State<HomeScreen> {
     final authService = Provider.of<AuthService>(context, listen: false);
     
     // Check authentication for protected features
-    if (index == 2 && !authService.isAuthenticated) {
+    if (index == 1 && !authService.isAuthenticated) {
       // Add Spot requires authentication
       _showLoginRequiredDialog('Add New Spot', 'You need to be logged in to add new spots.');
       return;
     }
     
-    if (index == 3 && !authService.isAuthenticated) {
+    if (index == 2 && !authService.isAuthenticated) {
       // Profile requires authentication
       _showLoginRequiredDialog('Profile', 'You need to be logged in to access your profile.');
       return;
@@ -81,12 +80,9 @@ class _HomeScreenState extends State<HomeScreen> {
         context.go('/home');
         break;
       case 1:
-        context.go('/home?tab=map');
-        break;
-      case 2:
         context.go('/home?tab=add');
         break;
-      case 3:
+      case 2:
         context.go('/home?tab=profile');
         break;
     }
@@ -127,8 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final authService = Provider.of<AuthService>(context, listen: false);
     
     return [
-      const SpotsListScreen(),
-      const MapScreen(),
+      const SearchScreen(),
       // Show login prompt for unauthenticated users trying to add spots
       authService.isAuthenticated 
           ? const AddSpotScreen() 
@@ -219,14 +214,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authService = Provider.of<AuthService>(context, listen: false);
-    
     return Scaffold(
       body: PageView(
         controller: _pageController,
-        physics: _currentIndex == 1 
-            ? const NeverScrollableScrollPhysics() // Disable swiping on map tab
-            : const PageScrollPhysics(), // Enable swiping on other tabs
+        physics: const PageScrollPhysics(), // Enable swiping on all tabs
         onPageChanged: (index) {
           setState(() {
             _currentIndex = index;
@@ -247,12 +238,8 @@ class _HomeScreenState extends State<HomeScreen> {
         elevation: 8,
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.list),
-            label: 'Spots',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.map),
-            label: 'Map',
+            icon: Icon(Icons.search),
+            label: 'Search',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.add_location),
