@@ -863,26 +863,27 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                 ),
                 ),
 
-              // Location Button - Floating Action Button
-              Positioned(
-                right: 16,
-                bottom: MediaQuery.of(context).size.height * 0.09 + 16, // Position above bottom sheet
-                child: FloatingActionButton(
-                  onPressed: _getCurrentLocation,
-                  mini: true,
-                  tooltip: 'Center on my location',
-                  child: _isGettingLocation
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : const Icon(Icons.my_location),
+              // Location Button - Floating Action Button (only show when bottom sheet is collapsed and no spot selected)
+              if (!_isBottomSheetOpen && _selectedSpot == null)
+                Positioned(
+                  right: 16,
+                  bottom: MediaQuery.of(context).size.height * 0.09 + 16, // Position above bottom sheet
+                  child: FloatingActionButton(
+                    onPressed: _getCurrentLocation,
+                    mini: true,
+                    tooltip: 'Center on my location',
+                    child: _isGettingLocation
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Icon(Icons.my_location),
+                  ),
                 ),
-              ),
             ],
           );
         },
