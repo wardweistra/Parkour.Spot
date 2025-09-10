@@ -5,6 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../services/spot_service.dart';
+import '../../services/sync_source_service.dart';
 import '../../models/spot.dart';
 import '../../widgets/spot_card.dart';
 
@@ -67,6 +68,17 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   int _currentImageIndex = 0;
   double _dragStartY = 0.0;
   bool _isDragging = false;
+  // Filters
+  bool _onlyWithPictures = true; // Default: exclude spots without pictures
+  bool _includeParkourNative = true; // Spots created directly on parkour.spot (spotSource == null)
+  bool _includeExternalSources = true; // Spots from external sources (spotSource != null)
+  final Set<String> _selectedExternalSourceIds = <String>{}; // Empty => include all external sources
+  SpotService? _spotServiceRef; // To attach a listener for spot updates
+  void _onSpotsChanged() {
+    if (mounted) {
+      _updateVisibleSpots();
+    }
+  }
 
   @override
   void initState() {
@@ -89,6 +101,19 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     
     // Initialize image page controller
     _imagePageController = PageController();
+
+    // Preload external sync sources for filters
+    // Safe to call with listen: false in initState
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Listen to SpotService changes to refresh visible spots when data updates
+      _spotServiceRef = Provider.of<SpotService>(context, listen: false);
+      _spotServiceRef!.addListener(_onSpotsChanged);
+
+      final syncSourceService = Provider.of<SyncSourceService>(context, listen: false);
+      if (syncSourceService.sources.isEmpty && !syncSourceService.isLoading) {
+        syncSourceService.fetchSyncSources(includeInactive: false);
+      }
+    });
   }
 
   @override
@@ -96,6 +121,8 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     _searchController.dispose();
     _bottomSheetAnimationController.dispose();
     _imagePageController.dispose();
+    // Remove SpotService listener
+    _spotServiceRef?.removeListener(_onSpotsChanged);
     super.dispose();
   }
 
@@ -156,6 +183,25 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
       filteredSpots = spotService.searchSpots(_searchQuery);
     }
 
+    // Apply picture filter (default on)
+    if (_onlyWithPictures) {
+      filteredSpots = filteredSpots.where((spot) => spot.imageUrls != null && spot.imageUrls!.isNotEmpty).toList();
+    }
+
+    // Apply source filters
+    filteredSpots = filteredSpots.where((spot) {
+      final bool isExternal = (spot.spotSource != null && spot.spotSource!.isNotEmpty);
+
+      if (isExternal) {
+        if (!_includeExternalSources) return false; // exclude all external
+        if (_selectedExternalSourceIds.isEmpty) return true; // include all external when none selected
+        return _selectedExternalSourceIds.contains(spot.spotSource);
+      } else {
+        // Native Parkour.Spot (no spotSource)
+        return _includeParkourNative;
+      }
+    }).toList();
+
     // Filter spots within visible map bounds
     if (_mapController != null) {
       _mapController!.getVisibleRegion().then((bounds) {
@@ -180,6 +226,133 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
         _markers = _buildMarkers(filteredSpots);
       });
     }
+  }
+
+  Widget _buildFilters() {
+    return Consumer<SyncSourceService>(
+      builder: (context, syncService, child) {
+        final sources = syncService.sources;
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Card(
+            elevation: 0,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Row 1: Only with pictures
+                  SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Only with pictures'),
+                    value: _onlyWithPictures,
+                    onChanged: (val) {
+                      setState(() {
+                        _onlyWithPictures = val;
+                      });
+                      _updateVisibleSpots();
+                    },
+                  ),
+                  // Row 2: Include Parkour.Spot native
+                  SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Include Parkour.Spot native spots'),
+                    subtitle: const Text('Spots added directly on parkour.spot'),
+                    value: _includeParkourNative,
+                    onChanged: (val) {
+                      setState(() {
+                        _includeParkourNative = val;
+                      });
+                      _updateVisibleSpots();
+                    },
+                  ),
+                  // Row 3: Include external sources
+                  SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Include external sources'),
+                    subtitle: const Text('Spots from external spot sources'),
+                    value: _includeExternalSources,
+                    onChanged: (val) {
+                      setState(() {
+                        _includeExternalSources = val;
+                      });
+                      _updateVisibleSpots();
+                    },
+                  ),
+                  if (_includeExternalSources) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'External sources',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                              ),
+                        ),
+                        TextButton(
+                          onPressed: _selectedExternalSourceIds.isEmpty
+                              ? null
+                              : () {
+                                  setState(() {
+                                    _selectedExternalSourceIds.clear();
+                                  });
+                                  _updateVisibleSpots();
+                                },
+                          child: const Text('Clear'),
+                        ),
+                      ],
+                    ),
+                    if (syncService.isLoading && sources.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    else if (syncService.error != null)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Text(
+                          'Failed to load sources',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.error,
+                              ),
+                        ),
+                      )
+                    else
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: sources.map((source) {
+                          final bool selected = _selectedExternalSourceIds.contains(source.id);
+                          return FilterChip(
+                            label: Text(source.name),
+                            selected: selected,
+                            onSelected: (val) {
+                              setState(() {
+                                if (val) {
+                                  _selectedExternalSourceIds.add(source.id);
+                                } else {
+                                  _selectedExternalSourceIds.remove(source.id);
+                                }
+                              });
+                              _updateVisibleSpots();
+                            },
+                          );
+                        }).toList(),
+                      ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Set<Marker> _buildMarkers(List<Spot> spots) {
@@ -821,6 +994,10 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                 ],
                               ),
                             ),
+
+                            // Filters UI - only show when expanded
+                            if (_isBottomSheetOpen)
+                              _buildFilters(),
 
                             // Spots List - only show when expanded
                             if (_isBottomSheetOpen)
