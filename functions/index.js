@@ -720,7 +720,14 @@ exports.getSyncSources = onCall(
           query = query.where("isActive", "==", true);
         }
 
-        const snapshot = await query.orderBy("createdAt", "desc").get();
+        // Try to get sources with orderBy, but fallback to basic query if it fails
+        let snapshot;
+        try {
+          snapshot = await query.orderBy("createdAt", "desc").get();
+        } catch (orderByError) {
+          console.log("OrderBy failed, trying without orderBy:", orderByError.message);
+          snapshot = await query.get();
+        }
 
         const sources = snapshot.docs.map((doc) => ({
           id: doc.id,

@@ -69,14 +69,28 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   double _dragStartY = 0.0;
   bool _isDragging = false;
   // Filters
-  bool _onlyWithPictures = true; // Default: exclude spots without pictures
+  bool _includeSpotsWithoutPictures = false; // Default: exclude spots without pictures
   bool _includeParkourNative = true; // Spots created directly on parkour.spot (spotSource == null)
   bool _includeExternalSources = true; // Spots from external sources (spotSource != null)
-  final Set<String> _selectedExternalSourceIds = <String>{}; // Empty => include all external sources
+  final Set<String> _selectedExternalSourceIds = <String>{}; // Will be populated with all source IDs by default
+  bool _showFiltersDialog = false; // Controls filters dialog visibility
   SpotService? _spotServiceRef; // To attach a listener for spot updates
+  SyncSourceService? _syncSourceServiceRef; // To attach a listener for sync source updates
+  
   void _onSpotsChanged() {
     if (mounted) {
       _updateVisibleSpots();
+    }
+  }
+  
+  void _onSyncSourcesChanged() {
+    if (mounted && _syncSourceServiceRef != null) {
+      // Select all external sources by default when they're loaded
+      if (_syncSourceServiceRef!.sources.isNotEmpty && _selectedExternalSourceIds.isEmpty) {
+        _selectedExternalSourceIds.clear();
+        _selectedExternalSourceIds.addAll(_syncSourceServiceRef!.sources.map((s) => s.id));
+        _updateVisibleSpots();
+      }
     }
   }
 
@@ -109,9 +123,16 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
       _spotServiceRef = Provider.of<SpotService>(context, listen: false);
       _spotServiceRef!.addListener(_onSpotsChanged);
 
-      final syncSourceService = Provider.of<SyncSourceService>(context, listen: false);
-      if (syncSourceService.sources.isEmpty && !syncSourceService.isLoading) {
-        syncSourceService.fetchSyncSources(includeInactive: false);
+      // Listen to SyncSourceService changes to update selected sources
+      _syncSourceServiceRef = Provider.of<SyncSourceService>(context, listen: false);
+      _syncSourceServiceRef!.addListener(_onSyncSourcesChanged);
+
+      if (_syncSourceServiceRef!.sources.isEmpty && !_syncSourceServiceRef!.isLoading) {
+        _syncSourceServiceRef!.fetchSyncSources(includeInactive: false);
+      } else if (_syncSourceServiceRef!.sources.isNotEmpty) {
+        // If sources are already loaded, select all by default
+        _selectedExternalSourceIds.clear();
+        _selectedExternalSourceIds.addAll(_syncSourceServiceRef!.sources.map((s) => s.id));
       }
     });
   }
@@ -121,8 +142,9 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     _searchController.dispose();
     _bottomSheetAnimationController.dispose();
     _imagePageController.dispose();
-    // Remove SpotService listener
+    // Remove listeners
     _spotServiceRef?.removeListener(_onSpotsChanged);
+    _syncSourceServiceRef?.removeListener(_onSyncSourcesChanged);
     super.dispose();
   }
 
@@ -177,14 +199,15 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   void _updateVisibleSpots() {
     final spotService = Provider.of<SpotService>(context, listen: false);
     List<Spot> filteredSpots = spotService.spots;
+    
 
     // Apply search filter
     if (_searchQuery.isNotEmpty) {
       filteredSpots = spotService.searchSpots(_searchQuery);
     }
 
-    // Apply picture filter (default on)
-    if (_onlyWithPictures) {
+    // Apply picture filter (default: exclude spots without pictures)
+    if (!_includeSpotsWithoutPictures) {
       filteredSpots = filteredSpots.where((spot) => spot.imageUrls != null && spot.imageUrls!.isNotEmpty).toList();
     }
 
@@ -193,8 +216,13 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
       final bool isExternal = (spot.spotSource != null && spot.spotSource!.isNotEmpty);
 
       if (isExternal) {
-        if (!_includeExternalSources) return false; // exclude all external
-        if (_selectedExternalSourceIds.isEmpty) return true; // include all external when none selected
+        if (!_includeExternalSources) {
+          return false; // exclude all external
+        }
+        // If external sources are enabled, check if this specific source is selected
+        if (_selectedExternalSourceIds.isEmpty) {
+          return false; // exclude all external when none selected
+        }
         return _selectedExternalSourceIds.contains(spot.spotSource);
       } else {
         // Native Parkour.Spot (no spotSource)
@@ -232,24 +260,17 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     return Consumer<SyncSourceService>(
       builder: (context, syncService, child) {
         final sources = syncService.sources;
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Card(
-            elevation: 0,
-            color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Row 1: Only with pictures
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+                  // Row 1: Include spots without pictures
                   SwitchListTile.adaptive(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Only with pictures'),
-                    value: _onlyWithPictures,
+                    title: const Text('Include spots without pictures'),
+                    value: _includeSpotsWithoutPictures,
                     onChanged: (val) {
                       setState(() {
-                        _onlyWithPictures = val;
+                        _includeSpotsWithoutPictures = val;
                       });
                       _updateVisibleSpots();
                     },
@@ -298,7 +319,10 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                   setState(() {
                                     _selectedExternalSourceIds.clear();
                                   });
-                                  _updateVisibleSpots();
+                                  // Call _updateVisibleSpots after setState completes
+                                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                                    _updateVisibleSpots();
+                                  });
                                 },
                           child: const Text('Clear'),
                         ),
@@ -340,17 +364,17 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                   _selectedExternalSourceIds.remove(source.id);
                                 }
                               });
-                              _updateVisibleSpots();
+                              // Call _updateVisibleSpots after setState completes
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                _updateVisibleSpots();
+                              });
                             },
                           );
                         }).toList(),
                       ),
                   ],
                 ],
-              ),
-            ),
-          ),
-        );
+          );
       },
     );
   }
@@ -540,7 +564,9 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Consumer<SpotService>(
+      body: Stack(
+        children: [
+          Consumer<SpotService>(
         builder: (context, spotService, child) {
           if (spotService.isLoading) {
             return const Center(
@@ -665,24 +691,29 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                     decoration: InputDecoration(
                       hintText: 'Search spots...',
                       prefixIcon: const Icon(Icons.search),
-                      suffixIcon: _searchQuery.isNotEmpty
-                          ? IconButton(
+                      suffixIcon: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (_searchQuery.isNotEmpty)
+                            IconButton(
                               icon: const Icon(Icons.clear),
                               onPressed: () {
                                 _searchController.clear();
                               },
-                            )
-                          : IconButton(
-                              icon: ReliableIcon(
-                                icon: _isSatelliteView ? Icons.map : Icons.terrain,
-                              ),
-                              tooltip: _isSatelliteView ? 'Switch to Map' : 'Switch to Satellite',
-                              onPressed: () {
-                                setState(() {
-                                  _isSatelliteView = !_isSatelliteView;
-                                });
-                              },
                             ),
+                          IconButton(
+                            icon: const ReliableIcon(
+                              icon: Icons.filter_list,
+                            ),
+                            tooltip: 'Filters',
+                            onPressed: () {
+                              setState(() {
+                                _showFiltersDialog = true;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
@@ -995,10 +1026,6 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                               ),
                             ),
 
-                            // Filters UI - only show when expanded
-                            if (_isBottomSheetOpen)
-                              _buildFilters(),
-
                             // Spots List - only show when expanded
                             if (_isBottomSheetOpen)
                               Expanded(
@@ -1040,6 +1067,25 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                 ),
                 ),
 
+              // Map Type Toggle Button - Floating Action Button
+              if (!_isBottomSheetOpen && _selectedSpot == null)
+                Positioned(
+                  right: 16,
+                  bottom: MediaQuery.of(context).size.height * 0.09 + 80, // Position above location button
+                  child: FloatingActionButton(
+                    onPressed: () {
+                      setState(() {
+                        _isSatelliteView = !_isSatelliteView;
+                      });
+                    },
+                    mini: true,
+                    tooltip: _isSatelliteView ? 'Switch to Map' : 'Switch to Satellite',
+                    child: ReliableIcon(
+                      icon: _isSatelliteView ? Icons.map : Icons.terrain,
+                    ),
+                  ),
+                ),
+
               // Location Button - Floating Action Button (only show when bottom sheet is collapsed and no spot selected)
               if (!_isBottomSheetOpen && _selectedSpot == null)
                 Positioned(
@@ -1064,6 +1110,73 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
             ],
           );
         },
+      ),
+          // Filters Dialog
+          if (_showFiltersDialog)
+            _buildFiltersDialog(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFiltersDialog() {
+    return Dialog(
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+          maxWidth: MediaQuery.of(context).size.width * 0.9,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Filters',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      setState(() {
+                        _showFiltersDialog = false;
+                      });
+                    },
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Filters Content
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildFilters(),
+              ),
+            ),
+            
+            // Apply Button
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _showFiltersDialog = false;
+                    });
+                    _updateVisibleSpots();
+                  },
+                  child: const Text('Apply Filters'),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
