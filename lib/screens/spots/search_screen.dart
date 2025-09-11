@@ -712,6 +712,9 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                         ),
                       ),
                     );
+                  } else {
+                    // If no persisted camera, try to center on user's current location
+                    _getCurrentLocation();
                   }
                 },
                 onCameraMove: (CameraPosition position) {
