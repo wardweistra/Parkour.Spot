@@ -94,6 +94,15 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     }
   }
 
+  bool _hasActiveFilters() {
+    // Check if any filters are different from defaults
+    return !_includeSpotsWithoutPictures || // Default is false, so true means active
+           !_includeParkourNative || // Default is true, so false means active
+           !_includeExternalSources || // Default is true, so false means active
+           (_includeExternalSources && _selectedExternalSourceIds.isNotEmpty && 
+            _selectedExternalSourceIds.length != (_syncSourceServiceRef?.sources.length ?? 0)); // Not all sources selected
+  }
+
   @override
   void initState() {
     super.initState();
@@ -701,16 +710,35 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                 _searchController.clear();
                               },
                             ),
-                          IconButton(
-                            icon: const ReliableIcon(
-                              icon: Icons.filter_list,
-                            ),
-                            tooltip: 'Filters',
-                            onPressed: () {
-                              setState(() {
-                                _showFiltersDialog = true;
-                              });
-                            },
+                          Stack(
+                            children: [
+                              IconButton(
+                                icon: ReliableIcon(
+                                  icon: Icons.filter_list,
+                                  color: _showFiltersDialog ? Theme.of(context).colorScheme.primary : null,
+                                ),
+                                tooltip: 'Filters',
+                                onPressed: () {
+                                  setState(() {
+                                    _showFiltersDialog = !_showFiltersDialog;
+                                  });
+                                },
+                              ),
+                              // Show indicator when filters are active
+                              if (_hasActiveFilters())
+                                Positioned(
+                                  right: 8,
+                                  top: 8,
+                                  child: Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).colorScheme.primary,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                         ],
                       ),
@@ -778,130 +806,184 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                           ),
                         ],
                       ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
+                      child: Stack(
                         children: [
-                          // Spot image gallery
-                          if (_selectedSpot!.imageUrls != null && _selectedSpot!.imageUrls!.isNotEmpty)
-                            ClipRRect(
-                              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                              child: AspectRatio(
-                                aspectRatio: 16 / 9,
-                                child: Stack(
-                                  children: [
-                                    // Image Gallery with PageView
-                                    PageView.builder(
-                                      controller: _imagePageController,
-                                      itemCount: _selectedSpot!.imageUrls!.length,
-                                      onPageChanged: (index) {
-                                        setState(() {
-                                          _currentImageIndex = index;
-                                        });
-                                      },
-                                      itemBuilder: (context, index) {
-                                        return Image.network(
-                                          _selectedSpot!.imageUrls![index],
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) => Container(
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Spot image gallery or location marker
+                              ClipRRect(
+                                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                                child: AspectRatio(
+                                  aspectRatio: 16 / 9,
+                                  child: Stack(
+                                    children: [
+                                      if (_selectedSpot!.imageUrls != null && _selectedSpot!.imageUrls!.isNotEmpty) ...[
+                                        // Image Gallery with PageView
+                                        PageView.builder(
+                                          controller: _imagePageController,
+                                          itemCount: _selectedSpot!.imageUrls!.length,
+                                          onPageChanged: (index) {
+                                            setState(() {
+                                              _currentImageIndex = index;
+                                            });
+                                          },
+                                          itemBuilder: (context, index) {
+                                            return Image.network(
+                                              _selectedSpot!.imageUrls![index],
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) => Container(
+                                                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                                child: Icon(
+                                                  Icons.image_not_supported,
+                                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                        
+                                        // Page Indicator Dots (only show if multiple images)
+                                        if (_selectedSpot!.imageUrls!.length > 1)
+                                          Positioned(
+                                            bottom: 8,
+                                            left: 0,
+                                            right: 0,
+                                            child: Row(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: List.generate(
+                                                _selectedSpot!.imageUrls!.length,
+                                                (index) => Container(
+                                                  width: 6,
+                                                  height: 6,
+                                                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                                                  decoration: BoxDecoration(
+                                                    shape: BoxShape.circle,
+                                                    color: index == _currentImageIndex 
+                                                        ? Colors.white 
+                                                        : Colors.white.withValues(alpha: 0.5),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        
+                                        // Navigation arrows (left and right)
+                                        if (_selectedSpot!.imageUrls!.length > 1) ...[
+                                          // Left arrow
+                                          Positioned(
+                                            left: 8,
+                                            top: 0,
+                                            bottom: 0,
+                                            child: Center(
+                                              child: GestureDetector(
+                                                onTap: _previousImage,
+                                                child: Container(
+                                                  width: 40,
+                                                  height: 40,
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.black.withValues(alpha: 0.6),
+                                                    shape: BoxShape.circle,
+                                                    border: Border.all(
+                                                      color: Colors.white.withValues(alpha: 0.3),
+                                                      width: 1,
+                                                    ),
+                                                  ),
+                                                  child: Icon(
+                                                    Icons.chevron_left,
+                                                    color: Colors.white,
+                                                    size: 24,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          
+                                          // Right arrow
+                                          Positioned(
+                                            right: 8,
+                                            top: 0,
+                                            bottom: 0,
+                                            child: Center(
+                                              child: GestureDetector(
+                                                onTap: _nextImage,
+                                                child: Container(
+                                                  width: 40,
+                                                  height: 40,
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.black.withValues(alpha: 0.6),
+                                                    shape: BoxShape.circle,
+                                                    border: Border.all(
+                                                      color: Colors.white.withValues(alpha: 0.3),
+                                                      width: 1,
+                                                    ),
+                                                  ),
+                                                  child: Icon(
+                                                    Icons.chevron_right,
+                                                    color: Colors.white,
+                                                    size: 24,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ] else ...[
+                                        // Location marker when no images
+                                        Container(
+                                          decoration: BoxDecoration(
                                             color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                          ),
+                                          child: Center(
                                             child: Icon(
-                                              Icons.image_not_supported,
+                                              Icons.location_on,
+                                              size: 48,
                                               color: Theme.of(context).colorScheme.onSurfaceVariant,
                                             ),
                                           ),
-                                        );
-                                      },
-                                    ),
-                                    
-                                    // Page Indicator Dots (only show if multiple images)
-                                    if (_selectedSpot!.imageUrls!.length > 1)
-                                      Positioned(
-                                        bottom: 8,
-                                        left: 0,
-                                        right: 0,
-                                        child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: List.generate(
-                                            _selectedSpot!.imageUrls!.length,
-                                            (index) => Container(
-                                              width: 6,
-                                              height: 6,
-                                              margin: const EdgeInsets.symmetric(horizontal: 2),
-                                              decoration: BoxDecoration(
-                                                shape: BoxShape.circle,
-                                                color: index == _currentImageIndex 
-                                                    ? Colors.white 
-                                                    : Colors.white.withValues(alpha: 0.5),
-                                              ),
-                                            ),
-                                          ),
                                         ),
-                                      ),
-                                    
-                                    // Navigation arrows (left and right)
-                                    if (_selectedSpot!.imageUrls!.length > 1) ...[
-                                      // Left arrow
-                                      Positioned(
-                                        left: 8,
-                                        top: 0,
-                                        bottom: 0,
-                                        child: Center(
-                                          child: GestureDetector(
-                                            onTap: _previousImage,
-                                            child: Container(
-                                              width: 40,
-                                              height: 40,
-                                              decoration: BoxDecoration(
-                                                color: Colors.black.withValues(alpha: 0.6),
-                                                shape: BoxShape.circle,
-                                                border: Border.all(
-                                                  color: Colors.white.withValues(alpha: 0.3),
-                                                  width: 1,
-                                                ),
-                                              ),
-                                              child: Icon(
-                                                Icons.chevron_left,
-                                                color: Colors.white,
-                                                size: 24,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
+                                      ],
                                       
-                                      // Right arrow
-                                      Positioned(
-                                        right: 8,
-                                        top: 0,
-                                        bottom: 0,
-                                        child: Center(
-                                          child: GestureDetector(
-                                            onTap: _nextImage,
-                                            child: Container(
-                                              width: 40,
-                                              height: 40,
-                                              decoration: BoxDecoration(
-                                                color: Colors.black.withValues(alpha: 0.6),
-                                                shape: BoxShape.circle,
-                                                border: Border.all(
-                                                  color: Colors.white.withValues(alpha: 0.3),
-                                                  width: 1,
+                                      // External source indicator - positioned on the image/marker area
+                                      if (_selectedSpot!.spotSource != null)
+                                        Positioned(
+                                          top: 8,
+                                          right: 8,
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                            decoration: BoxDecoration(
+                                              color: Colors.black.withValues(alpha: 0.7),
+                                              borderRadius: BorderRadius.circular(10),
+                                              border: Border.all(
+                                                color: Colors.white.withValues(alpha: 0.3),
+                                                width: 1,
+                                              ),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                  Icons.source,
+                                                  size: 12,
+                                                  color: Colors.white,
                                                 ),
-                                              ),
-                                              child: Icon(
-                                                Icons.chevron_right,
-                                                color: Colors.white,
-                                                size: 24,
-                                              ),
+                                                const SizedBox(width: 3),
+                                                Text(
+                                                  'External',
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
                                         ),
-                                      ),
                                     ],
-                                  ],
+                                  ),
                                 ),
                               ),
-                            ),
                           
                           // Spot details
                           Padding(
@@ -966,6 +1048,8 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                 ),
                               ],
                             ),
+                          ),
+                            ],
                           ),
                         ],
                       ),
@@ -1120,15 +1204,39 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   }
 
   Widget _buildFiltersDialog() {
-    return Dialog(
+    return GestureDetector(
+      onTap: () {
+        // Close dialog when tapping outside
+        setState(() {
+          _showFiltersDialog = false;
+        });
+      },
       child: Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.8,
-          maxWidth: MediaQuery.of(context).size.width * 0.9,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+        color: Colors.black.withValues(alpha: 0.5), // Semi-transparent background
+        child: Center(
+          child: GestureDetector(
+            onTap: () {
+              // Prevent dialog from closing when tapping inside
+            },
+            child: Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.8,
+                maxWidth: MediaQuery.of(context).size.width * 0.9,
+              ),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
             // Header
             Padding(
               padding: const EdgeInsets.all(16),
@@ -1175,7 +1283,10 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                 ),
               ),
             ),
-          ],
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

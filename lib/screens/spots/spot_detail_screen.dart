@@ -54,7 +54,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     super.dispose();
   }
 
-  void _showImportedSpotInfo() {
+  void _showExternalSpotInfo() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -65,7 +65,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
               color: Theme.of(context).colorScheme.primary,
             ),
             const SizedBox(width: 8),
-            const Text('Imported Spot'),
+            const Text('External Spot'),
           ],
         ),
         content: Column(
@@ -73,12 +73,12 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'This spot was imported from an external source.',
+              'This spot comes from an external source.',
               style: Theme.of(context).textTheme.bodyLarge,
             ),
             const SizedBox(height: 12),
             Text(
-              'Imported spots:',
+              'External spots:',
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -273,10 +273,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                 ),
               ),
               actions: [
-                // Imported spot badge
+                // External spot badge
                 if (widget.spot.spotSource != null) ...[
                   GestureDetector(
-                    onTap: _showImportedSpotInfo,
+                    onTap: _showExternalSpotInfo,
                     child: Container(
                       margin: const EdgeInsets.only(right: 8),
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -298,7 +298,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            'Imported',
+                            'External',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 12,
