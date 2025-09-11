@@ -73,7 +73,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   bool _includeSpotsWithoutPictures = false; // Default: exclude spots without pictures
   bool _includeParkourNative = true; // Spots created directly on parkour.spot (spotSource == null)
   bool _includeExternalSources = true; // Spots from external sources (spotSource != null)
-  final Set<String> _selectedExternalSourceIds = <String>{}; // Will be populated with all source IDs by default
+  Set<String> _selectedExternalSourceIds = <String>{}; // Will be populated with all source IDs by default
   bool _showFiltersDialog = false; // Controls filters dialog visibility
   SpotService? _spotServiceRef; // To attach a listener for spot updates
   SyncSourceService? _syncSourceServiceRef; // To attach a listener for sync source updates
