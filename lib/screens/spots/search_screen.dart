@@ -688,12 +688,12 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                 mapType: _isSatelliteView ? MapType.satellite : MapType.normal,
                 markers: _markers,
                 myLocationEnabled: true,
-                myLocationButtonEnabled: !_isBottomSheetOpen, // Disable location button when expanded
+                myLocationButtonEnabled: !_isBottomSheetOpen && _selectedSpot == null, // Disable location button when expanded or spot detail is open
                 zoomControlsEnabled: false,
-                zoomGesturesEnabled: !_isBottomSheetOpen,
-                scrollGesturesEnabled: !_isBottomSheetOpen,
-                rotateGesturesEnabled: !_isBottomSheetOpen,
-                tiltGesturesEnabled: !_isBottomSheetOpen,
+                zoomGesturesEnabled: !_isBottomSheetOpen && _selectedSpot == null,
+                scrollGesturesEnabled: !_isBottomSheetOpen && _selectedSpot == null,
+                rotateGesturesEnabled: !_isBottomSheetOpen && _selectedSpot == null,
+                tiltGesturesEnabled: !_isBottomSheetOpen && _selectedSpot == null,
                 liteModeEnabled: kIsWeb,
                 compassEnabled: false,
                 onMapCreated: (GoogleMapController controller) {
