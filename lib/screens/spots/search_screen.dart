@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../services/spot_service.dart';
 import '../../services/sync_source_service.dart';
+import '../../services/search_state_service.dart';
 import '../../models/spot.dart';
 import '../../widgets/spot_card.dart';
 
@@ -85,10 +86,20 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   
   void _onSyncSourcesChanged() {
     if (mounted && _syncSourceServiceRef != null) {
-      // Select all external sources by default when they're loaded
+      // Select saved external sources if available, otherwise select all by default when they load
       if (_syncSourceServiceRef!.sources.isNotEmpty && _selectedExternalSourceIds.isEmpty) {
-        _selectedExternalSourceIds.clear();
-        _selectedExternalSourceIds.addAll(_syncSourceServiceRef!.sources.map((s) => s.id));
+        final searchState = Provider.of<SearchStateService>(context, listen: false);
+        final savedIds = searchState.selectedExternalSourceIds;
+        if (savedIds.isNotEmpty) {
+          final availableIds = _syncSourceServiceRef!.sources.map((s) => s.id).toSet();
+          _selectedExternalSourceIds.clear();
+          _selectedExternalSourceIds.addAll(savedIds.intersection(availableIds));
+        } else {
+          _selectedExternalSourceIds.clear();
+          _selectedExternalSourceIds.addAll(_syncSourceServiceRef!.sources.map((s) => s.id));
+        }
+        // Persist selected sources
+        searchState.setSelectedExternalSourceIds(_selectedExternalSourceIds);
         _updateVisibleSpots();
       }
     }
@@ -128,6 +139,18 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     // Preload external sync sources for filters
     // Safe to call with listen: false in initState
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Load persisted search state and apply to UI
+      final searchState = Provider.of<SearchStateService>(context, listen: false);
+      setState(() {
+        _isSatelliteView = searchState.isSatellite;
+        _includeSpotsWithoutPictures = searchState.includeSpotsWithoutPictures;
+        _includeParkourNative = searchState.includeParkourNative;
+        _includeExternalSources = searchState.includeExternalSources;
+        if (searchState.selectedExternalSourceIds.isNotEmpty) {
+          _selectedExternalSourceIds = {...searchState.selectedExternalSourceIds};
+        }
+      });
+
       // Listen to SpotService changes to refresh visible spots when data updates
       _spotServiceRef = Provider.of<SpotService>(context, listen: false);
       _spotServiceRef!.addListener(_onSpotsChanged);
@@ -139,9 +162,18 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
       if (_syncSourceServiceRef!.sources.isEmpty && !_syncSourceServiceRef!.isLoading) {
         _syncSourceServiceRef!.fetchSyncSources(includeInactive: false);
       } else if (_syncSourceServiceRef!.sources.isNotEmpty) {
-        // If sources are already loaded, select all by default
-        _selectedExternalSourceIds.clear();
-        _selectedExternalSourceIds.addAll(_syncSourceServiceRef!.sources.map((s) => s.id));
+        // If sources are already loaded, prefer saved selection; otherwise select all
+        final savedIds = searchState.selectedExternalSourceIds;
+        if (savedIds.isNotEmpty) {
+          final availableIds = _syncSourceServiceRef!.sources.map((s) => s.id).toSet();
+          _selectedExternalSourceIds
+            ..clear()
+            ..addAll(savedIds.intersection(availableIds));
+        } else {
+          _selectedExternalSourceIds
+            ..clear()
+            ..addAll(_syncSourceServiceRef!.sources.map((s) => s.id));
+        }
       }
     });
   }
@@ -281,6 +313,8 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                       setState(() {
                         _includeSpotsWithoutPictures = val;
                       });
+                      Provider.of<SearchStateService>(context, listen: false)
+                          .setIncludeSpotsWithoutPictures(val);
                       _updateVisibleSpots();
                     },
                   ),
@@ -294,6 +328,8 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                       setState(() {
                         _includeParkourNative = val;
                       });
+                      Provider.of<SearchStateService>(context, listen: false)
+                          .setIncludeParkourNative(val);
                       _updateVisibleSpots();
                     },
                   ),
@@ -307,6 +343,8 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                       setState(() {
                         _includeExternalSources = val;
                       });
+                      Provider.of<SearchStateService>(context, listen: false)
+                          .setIncludeExternalSources(val);
                       _updateVisibleSpots();
                     },
                   ),
@@ -328,6 +366,8 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                   setState(() {
                                     _selectedExternalSourceIds.clear();
                                   });
+                                  Provider.of<SearchStateService>(context, listen: false)
+                                      .setSelectedExternalSourceIds(_selectedExternalSourceIds);
                                   // Call _updateVisibleSpots after setState completes
                                   WidgetsBinding.instance.addPostFrameCallback((_) {
                                     _updateVisibleSpots();
@@ -373,6 +413,8 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                   _selectedExternalSourceIds.remove(source.id);
                                 }
                               });
+                              Provider.of<SearchStateService>(context, listen: false)
+                                  .setSelectedExternalSourceIds(_selectedExternalSourceIds);
                               // Call _updateVisibleSpots after setState completes
                               WidgetsBinding.instance.addPostFrameCallback((_) {
                                 _updateVisibleSpots();
@@ -426,9 +468,16 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     });
   }
 
-  void _onMapCameraMove() {
+  void _onMapCameraMove(CameraPosition position) {
     // Update visible spots when map moves
     _updateVisibleSpots();
+    // Persist camera position
+    final searchState = Provider.of<SearchStateService>(context, listen: false);
+    searchState.saveMapCamera(
+      position.target.latitude,
+      position.target.longitude,
+      position.zoom,
+    );
   }
 
   void _nextImage() {
@@ -616,12 +665,19 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
             );
           }
 
-          // Determine initial camera position - use first spot or default location
+          // Determine initial camera position - use persisted state, first spot, or default
+          final searchState = Provider.of<SearchStateService>(context);
+          LatLng initialTarget = spotService.spots.isNotEmpty
+              ? LatLng(spotService.spots.first.location.latitude, spotService.spots.first.location.longitude)
+              : const LatLng(37.7749, -122.4194);
+          double initialZoom = 14;
+          if (searchState.centerLat != null && searchState.centerLng != null && searchState.zoom != null) {
+            initialTarget = LatLng(searchState.centerLat!, searchState.centerLng!);
+            initialZoom = searchState.zoom!;
+          }
           final CameraPosition initialCameraPosition = CameraPosition(
-            target: spotService.spots.isNotEmpty
-                ? LatLng(spotService.spots.first.location.latitude, spotService.spots.first.location.longitude)
-                : const LatLng(37.7749, -122.4194), // Default to San Francisco
-            zoom: 14,
+            target: initialTarget,
+            zoom: initialZoom,
           );
 
           return Stack(
@@ -645,9 +701,21 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                   
                   // Initial update of visible spots
                   _updateVisibleSpots();
+                  // Restore persisted camera after map is ready (in case state loaded late)
+                  final state = Provider.of<SearchStateService>(context, listen: false);
+                  if (state.centerLat != null && state.centerLng != null && state.zoom != null) {
+                    controller.moveCamera(
+                      CameraUpdate.newCameraPosition(
+                        CameraPosition(
+                          target: LatLng(state.centerLat!, state.centerLng!),
+                          zoom: state.zoom!,
+                        ),
+                      ),
+                    );
+                  }
                 },
                 onCameraMove: (CameraPosition position) {
-                  _onMapCameraMove();
+                  _onMapCameraMove(position);
                 },
               ),
 
@@ -1161,6 +1229,8 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                       setState(() {
                         _isSatelliteView = !_isSatelliteView;
                       });
+                      final searchState = Provider.of<SearchStateService>(context, listen: false);
+                      searchState.setSatellite(_isSatelliteView);
                     },
                     mini: true,
                     tooltip: _isSatelliteView ? 'Switch to Map' : 'Switch to Satellite',
