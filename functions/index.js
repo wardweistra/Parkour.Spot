@@ -113,25 +113,53 @@ function extractKmlFromKmz(kmzBuffer) {
     yauzl.fromBuffer(kmzBuffer, {lazyEntries: true}, (err, zipfile) => {
       if (err) return reject(err);
 
+      let kmlFound = false;
+      const kmlFiles = [];
+
       zipfile.readEntry();
       zipfile.on("entry", (entry) => {
-        if (entry.fileName.endsWith(".kml")) {
-          zipfile.openReadStream(entry, (err, readStream) => {
-            if (err) return reject(err);
-
-            const chunks = [];
-            readStream.on("data", (chunk) => chunks.push(chunk));
-            readStream.on("end", () => {
-              resolve(Buffer.concat(chunks).toString("utf8"));
-            });
-            readStream.on("error", reject);
-          });
-        } else {
-          zipfile.readEntry();
+        // Look for KML files in the root or in any subfolder
+        if (entry.fileName.endsWith(".kml") && !entry.fileName.startsWith("__MACOSX/")) {
+          kmlFiles.push(entry.fileName);
         }
+        zipfile.readEntry();
       });
+      
       zipfile.on("end", () => {
-        reject(new Error("No KML file found in KMZ"));
+        if (kmlFiles.length === 0) {
+          reject(new Error("No KML file found in KMZ"));
+          return;
+        }
+
+        // If multiple KML files found, prefer the one in the root, otherwise use the first one
+        let kmlFileToUse = kmlFiles.find(file => !file.includes("/")) || kmlFiles[0];
+        
+        // Find the entry for the KML file we want to use
+        yauzl.fromBuffer(kmzBuffer, {lazyEntries: true}, (err, zipfile2) => {
+          if (err) return reject(err);
+
+          zipfile2.readEntry();
+          zipfile2.on("entry", (entry) => {
+            if (entry.fileName === kmlFileToUse) {
+              zipfile2.openReadStream(entry, (err, readStream) => {
+                if (err) return reject(err);
+
+                const chunks = [];
+                readStream.on("data", (chunk) => chunks.push(chunk));
+                readStream.on("end", () => {
+                  resolve(Buffer.concat(chunks).toString("utf8"));
+                });
+                readStream.on("error", reject);
+              });
+            } else {
+              zipfile2.readEntry();
+            }
+          });
+          zipfile2.on("end", () => {
+            reject(new Error(`KML file ${kmlFileToUse} not found in KMZ`));
+          });
+          zipfile2.on("error", reject);
+        });
       });
       zipfile.on("error", reject);
     });
@@ -328,9 +356,38 @@ function parseKmlPlacemarks(kmlContent) {
         }
       }
 
-      if (result.kml && result.kml.Document && result.kml.Document[0] &&
-          result.kml.Document[0].Folder) {
-        result.kml.Document[0].Folder.forEach(extractPlacemarksFromFolder);
+      if (result.kml && result.kml.Document && result.kml.Document[0]) {
+        const document = result.kml.Document[0];
+        
+        // Check for placemarks directly in Document
+        if (document.Placemark) {
+          document.Placemark.forEach((placemark) => {
+            const name = (placemark.name && placemark.name[0]) ||
+                "Unnamed Spot";
+            const description = (placemark.description &&
+                placemark.description[0]) || "";
+            const coordinates = (placemark.Point && placemark.Point[0] &&
+                placemark.Point[0].coordinates &&
+                placemark.Point[0].coordinates[0]);
+
+            if (coordinates) {
+              const [longitude, latitude, altitude] = coordinates
+                  .split(",").map(Number);
+              placemarks.push({
+                name: name,
+                description: description,
+                coordinates: {latitude, longitude, altitude: altitude || 0},
+                extendedData: (placemark.ExtendedData &&
+                    placemark.ExtendedData[0]) || {},
+              });
+            }
+          });
+        }
+        
+        // Check for placemarks in Folders
+        if (document.Folder) {
+          document.Folder.forEach(extractPlacemarksFromFolder);
+        }
       }
 
       resolve(placemarks);

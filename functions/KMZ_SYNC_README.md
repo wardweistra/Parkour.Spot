@@ -216,6 +216,36 @@ The sync functions automatically process images from placemark data:
 
 Images are stored in Firebase Storage under the path: `spots/{spot_name}_{timestamp}_{index}.{extension}`
 
+### KMZ Structure Support
+
+The sync functions support various KMZ file structures:
+
+1. **Simple KMZ**: KML file directly in the root of the KMZ archive
+   ```
+   myfile.kmz
+   └── myfile.kml
+   ```
+
+2. **KMZ with Custom Icons**: KML file in a subfolder with custom icon files
+   ```
+   myfile.kmz
+   ├── myfile.kml
+   └── files/
+       ├── icon1.png
+       ├── icon2.png
+       └── ...
+   ```
+
+3. **Multiple KML Files**: When multiple KML files are present, the function prefers:
+   - KML files in the root directory (highest priority)
+   - First available KML file if none in root
+
+4. **File Filtering**: Automatically filters out system files like `__MACOSX/` directories
+
+The `extractKmlFromKmz` function intelligently handles all these structures to ensure reliable KML extraction regardless of how the KMZ file was created.
+
+**Note**: The function also handles KML files where placemarks are directly in the Document element (not inside Folders), which is common in Google My Maps exports.
+
 ### HTML Cleaning
 
 The sync functions automatically clean HTML content from placemark descriptions:
@@ -250,11 +280,16 @@ The function includes comprehensive error handling for:
 
 ## Testing
 
-Use the provided test script:
+Use the provided test scripts:
 
 ```bash
 cd functions
+
+# Test KMZ sync functionality
 node test-kmz-sync.js
+
+# Test KMZ folder structure handling
+node test-kmz-folder-structure.js
 ```
 
 ## Dependencies
