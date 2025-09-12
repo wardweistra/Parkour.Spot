@@ -35,6 +35,77 @@
   <!-- Google Maps JavaScript API -->
   <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAAhFK9QYxOlbI3ySWTmoFIJKLAl8CL-qo&loading=async"></script>
 
+  <!-- Client-side geocoding helper accessible from Dart (Flutter web) -->
+  <script>
+    (function() {
+      function waitForGoogleMaps() {
+        return new Promise(function(resolve) {
+          if (window.google && window.google.maps && window.google.maps.Geocoder) {
+            resolve();
+            return;
+          }
+          var checkInterval = setInterval(function() {
+            if (window.google && window.google.maps && window.google.maps.Geocoder) {
+              clearInterval(checkInterval);
+              resolve();
+            }
+          }, 50);
+          // Safety timeout after 10s
+          setTimeout(function() {
+            clearInterval(checkInterval);
+            resolve();
+          }, 10000);
+        });
+      }
+
+      // Promise-returning function: geocode a place name to {lat, lng, viewport, formattedAddress}
+      window.geocodePlace = function(query) {
+        return new Promise(function(resolve, reject) {
+          if (!query || typeof query !== 'string' || !query.trim()) {
+            resolve(null);
+            return;
+          }
+          waitForGoogleMaps().then(function() {
+            if (!(window.google && window.google.maps && window.google.maps.Geocoder)) {
+              resolve(null);
+              return;
+            }
+            try {
+              var geocoder = new window.google.maps.Geocoder();
+              geocoder.geocode({ address: query.trim() }, function(results, status) {
+                if (status === 'OK' && results && results.length > 0) {
+                  var r = results[0];
+                  var loc = r.geometry && r.geometry.location ? r.geometry.location : null;
+                  if (!loc) {
+                    resolve(null);
+                    return;
+                  }
+                  var viewport = r.geometry && r.geometry.viewport ? r.geometry.viewport : null;
+                  var formatted = r.formatted_address || query.trim();
+                  resolve({
+                    lat: loc.lat(),
+                    lng: loc.lng(),
+                    viewport: viewport ? {
+                      south: viewport.getSouthWest().lat(),
+                      west: viewport.getSouthWest().lng(),
+                      north: viewport.getNorthEast().lat(),
+                      east: viewport.getNorthEast().lng()
+                    } : null,
+                    formattedAddress: formatted
+                  });
+                } else {
+                  resolve(null);
+                }
+              });
+            } catch (e) {
+              resolve(null);
+            }
+          });
+        });
+      }
+    })();
+  </script>
+
   <script>
     // The value below is injected by flutter build, do not touch.
     const serviceWorkerVersion = '{{flutter_service_worker_version}}';

@@ -9,6 +9,7 @@ import '../../services/sync_source_service.dart';
 import '../../services/search_state_service.dart';
 import '../../models/spot.dart';
 import '../../widgets/spot_card.dart';
+import '../../utils/geocoding_stub.dart' if (dart.library.html) '../../utils/geocoding_web.dart' as geocoding;
 
 // Helper widget to ensure icons render properly on mobile web
 class ReliableIcon extends StatelessWidget {
@@ -194,6 +195,30 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
       _searchQuery = _searchController.text;
     });
     _updateVisibleSpots();
+  }
+
+  Future<void> _onSearchSubmitted(String value) async {
+    if (!kIsWeb) {
+      return; // For now, only web geocoding is supported
+    }
+    if (_mapController == null) return;
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return;
+    final LatLng? target = await geocoding.geocodePlace(trimmed);
+    if (target != null && mounted) {
+      // If user is viewing spot detail, close it when navigating
+      setState(() {
+        _selectedSpot = null;
+      });
+      _mapController!.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(target: target, zoom: 12),
+        ),
+      );
+      // Persist camera position
+      final searchState = Provider.of<SearchStateService>(context, listen: false);
+      searchState.saveMapCamera(target.latitude, target.longitude, 12);
+    }
   }
 
   Future<void> _getCurrentLocation() async {
@@ -771,6 +796,8 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                     decoration: InputDecoration(
                       hintText: 'Search spots...',
                       prefixIcon: const Icon(Icons.search),
+                      // Allow pressing Enter to trigger place search on web
+                      // (keeps filtering behavior on change)
                       suffixIcon: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -822,6 +849,8 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                         vertical: 12,
                       ),
                     ),
+                    textInputAction: TextInputAction.search,
+                    onSubmitted: _onSearchSubmitted,
                   ),
                 ),
               ),
