@@ -8,6 +8,7 @@ import 'dart:typed_data';
 import '../../models/spot.dart';
 import '../../services/spot_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/geocoding_service.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/custom_button.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -32,8 +33,10 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
   List<Uint8List?> _selectedImageBytes = [];
   Position? _currentPosition;
   LatLng? _pickedLocation;
+  String? _currentAddress;
   bool _isLoading = false;
   bool _isGettingLocation = false;
+  bool _isGeocoding = false;
   GoogleMapController? _mapController;
   bool _isSatelliteView = false;
 
@@ -110,6 +113,8 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
         });
         // Center the map on the new current location
         _centerMapOnLocation();
+        // Geocode the coordinates to get address
+        _geocodeCurrentLocation();
       }
     } catch (e) {
       if (mounted) {
@@ -347,6 +352,8 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
       });
       // Center the map on the newly picked location
       _centerMapOnLocation();
+      // Geocode the picked location
+      _geocodeLocation(result.latitude, result.longitude);
     }
   }
 
@@ -361,6 +368,40 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
         _mapController!.animateCamera(
           CameraUpdate.newLatLng(targetLocation),
         );
+      }
+    }
+  }
+
+  Future<void> _geocodeCurrentLocation() async {
+    if (_currentPosition != null) {
+      await _geocodeLocation(_currentPosition!.latitude, _currentPosition!.longitude);
+    }
+  }
+
+  Future<void> _geocodeLocation(double latitude, double longitude) async {
+    setState(() {
+      _isGeocoding = true;
+    });
+
+    try {
+      final geocodingService = Provider.of<GeocodingService>(context, listen: false);
+      final address = await geocodingService.geocodeCoordinatesSilently(latitude, longitude);
+      
+      if (mounted) {
+        setState(() {
+          _currentAddress = address;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        debugPrint('Error geocoding location: $e');
+        // Don't show error to user as this is a background operation
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGeocoding = false;
+        });
       }
     }
   }
@@ -415,6 +456,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
         location: _pickedLocation != null 
           ? GeoPoint(_pickedLocation!.latitude, _pickedLocation!.longitude)
           : GeoPoint(_currentPosition!.latitude, _currentPosition!.longitude),
+        address: _currentAddress,
         tags: tags.isNotEmpty ? tags : null,
         createdBy: authService.currentUser?.uid,
         createdByName: authService.userProfile?.displayName ?? authService.currentUser?.email ?? authService.currentUser?.uid,
@@ -607,61 +649,233 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
                           ],
                         ),
                       ] else if (_pickedLocation != null) ...[
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.location_on,
-                              color: Theme.of(context).colorScheme.primary,
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                              width: 1,
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                '${_pickedLocation!.latitude.toStringAsFixed(6)}, ${_pickedLocation!.longitude.toStringAsFixed(6)}',
-                                style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.location_on,
+                                    color: Theme.of(context).colorScheme.primary,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: RichText(
+                                      text: TextSpan(
+                                        children: [
+                                          TextSpan(
+                                            text: '${_pickedLocation!.latitude.toStringAsFixed(6)}, ${_pickedLocation!.longitude.toStringAsFixed(6)}',
+                                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                              fontWeight: FontWeight.w500,
+                                              color: Theme.of(context).colorScheme.onSurface,
+                                            ),
+                                          ),
+                                          if (_currentAddress != null) ...[
+                                            TextSpan(
+                                              text: '\n$_currentAddress',
+                                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                                height: 1.3,
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Custom location selected',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.primary,
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  if (_isGeocoding) ...[
+                                    SizedBox(
+                                      width: 12,
+                                      height: 12,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Theme.of(context).colorScheme.primary,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Getting address...',
+                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: Theme.of(context).colorScheme.primary,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ] else ...[
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.check_circle,
+                                            size: 14,
+                                            color: Theme.of(context).colorScheme.primary,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'Custom location selected',
+                                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                              color: Theme.of(context).colorScheme.primary,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
                           ),
                         ),
                       ] else if (_currentPosition != null) ...[
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.location_on,
-                              color: Theme.of(context).colorScheme.primary,
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                              width: 1,
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                '${_currentPosition!.latitude.toStringAsFixed(6)}, ${_currentPosition!.longitude.toStringAsFixed(6)}',
-                                style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.location_on,
+                                    color: Theme.of(context).colorScheme.primary,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: RichText(
+                                      text: TextSpan(
+                                        children: [
+                                          TextSpan(
+                                            text: '${_currentPosition!.latitude.toStringAsFixed(6)}, ${_currentPosition!.longitude.toStringAsFixed(6)}',
+                                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                              fontWeight: FontWeight.w500,
+                                              color: Theme.of(context).colorScheme.onSurface,
+                                            ),
+                                          ),
+                                          if (_currentAddress != null) ...[
+                                            TextSpan(
+                                              text: '\n$_currentAddress',
+                                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                                height: 1.3,
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Location determined automatically',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  if (_isGeocoding) ...[
+                                    SizedBox(
+                                      width: 12,
+                                      height: 12,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Theme.of(context).colorScheme.primary,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Getting address...',
+                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: Theme.of(context).colorScheme.primary,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ] else ...[
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.3),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.gps_fixed,
+                                            size: 14,
+                                            color: Theme.of(context).colorScheme.secondary,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'Location determined automatically',
+                                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                              color: Theme.of(context).colorScheme.secondary,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
                           ),
                         ),
                       ] else ...[
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.location_off,
-                              color: Theme.of(context).colorScheme.error,
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.error.withValues(alpha: 0.2),
+                              width: 1,
                             ),
-                            const SizedBox(width: 8),
-                            const Text('Location not available'),
-                          ],
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.location_off,
+                                color: Theme.of(context).colorScheme.error,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Location not available',
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: Theme.of(context).colorScheme.error,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                       

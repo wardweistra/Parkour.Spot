@@ -801,3 +801,114 @@ exports.getSyncSources = onCall(
         throw new Error(`Failed to get sync sources: ${error.message}`);
       }
     });
+
+// Geocoding function to convert coordinates to address
+exports.geocodeCoordinates = onCall(
+    {region: "europe-west1", secrets: ["GOOGLE_MAPS_API_KEY"]},
+    async (request) => {
+      try {
+        const {latitude, longitude} = request.data;
+
+        if (latitude === undefined || longitude === undefined) {
+          throw new Error("latitude and longitude are required");
+        }
+
+        // Use Google Maps Geocoding API
+        const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+        if (!apiKey) {
+          throw new Error("Google Maps API key not configured");
+        }
+
+        const geocodingUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`;
+
+        const response = await new Promise((resolve, reject) => {
+          https.get(geocodingUrl, (res) => {
+            let data = "";
+            res.on("data", (chunk) => data += chunk);
+            res.on("end", () => {
+              try {
+                resolve(JSON.parse(data));
+              } catch (e) {
+                reject(e);
+              }
+            });
+          }).on("error", reject);
+        });
+
+        if (response.status === "OK" && response.results && response.results.length > 0) {
+          // Return the formatted address
+          const address = response.results[0].formatted_address;
+          return {
+            success: true,
+            address: address,
+          };
+        } else {
+          return {
+            success: false,
+            error: response.error_message || "No address found for coordinates",
+          };
+        }
+      } catch (error) {
+        console.error("Error geocoding coordinates:", error);
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+    });
+
+// Reverse geocoding function to convert address to coordinates
+exports.reverseGeocodeAddress = onCall(
+    {region: "europe-west1", secrets: ["GOOGLE_MAPS_API_KEY"]},
+    async (request) => {
+      try {
+        const {address} = request.data;
+
+        if (!address) {
+          throw new Error("address is required");
+        }
+
+        // Use Google Maps Geocoding API
+        const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+        if (!apiKey) {
+          throw new Error("Google Maps API key not configured");
+        }
+
+        const encodedAddress = encodeURIComponent(address);
+        const geocodingUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&key=${apiKey}`;
+
+        const response = await new Promise((resolve, reject) => {
+          https.get(geocodingUrl, (res) => {
+            let data = "";
+            res.on("data", (chunk) => data += chunk);
+            res.on("end", () => {
+              try {
+                resolve(JSON.parse(data));
+              } catch (e) {
+                reject(e);
+              }
+            });
+          }).on("error", reject);
+        });
+
+        if (response.status === "OK" && response.results && response.results.length > 0) {
+          const location = response.results[0].geometry.location;
+          return {
+            success: true,
+            latitude: location.lat,
+            longitude: location.lng,
+          };
+        } else {
+          return {
+            success: false,
+            error: response.error_message || "No coordinates found for address",
+          };
+        }
+      } catch (error) {
+        console.error("Error reverse geocoding address:", error);
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+    });
