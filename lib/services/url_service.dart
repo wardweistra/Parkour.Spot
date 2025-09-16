@@ -8,15 +8,20 @@ class UrlService {
   
   /// Generate a shareable URL for a spot
   /// Uses format: parkour.spot/nl/amsterdam/&lt;spot-id&gt;
-  static String generateSpotUrl(String spotId) {
-    // For now, using a default country/city combination
-    // In the future, this could be dynamic based on spot location
-    return '$_baseUrl/nl/amsterdam/$spotId';
+  static String generateSpotUrl(String spotId, {String? countryCode, String? city}) {
+    if (countryCode != null && countryCode.length == 2) {
+      final cc = countryCode.toLowerCase();
+      final citySegment = (city != null && city.trim().isNotEmpty)
+          ? _slugify(city)
+          : 'city';
+      return '$_baseUrl/$cc/$citySegment/$spotId';
+    }
+    return '$_baseUrl/spot/$spotId';
   }
   
   /// Share a spot URL using clipboard (web-compatible)
-  static Future<void> shareSpot(String spotId, String spotName) async {
-    final url = generateSpotUrl(spotId);
+  static Future<void> shareSpot(String spotId, String spotName, {String? countryCode, String? city}) async {
+    final url = generateSpotUrl(spotId, countryCode: countryCode, city: city);
     final text = 'Check out this parkour spot: $spotName\n\n$url';
     
     try {
@@ -37,14 +42,14 @@ class UrlService {
   }
   
   /// Copy spot URL to clipboard
-  static Future<void> copySpotUrl(String spotId) async {
-    final url = generateSpotUrl(spotId);
+  static Future<void> copySpotUrl(String spotId, {String? countryCode, String? city}) async {
+    final url = generateSpotUrl(spotId, countryCode: countryCode, city: city);
     await Clipboard.setData(ClipboardData(text: url));
   }
   
   /// Open spot URL in browser
-  static Future<void> openSpotInBrowser(String spotId) async {
-    final url = generateSpotUrl(spotId);
+  static Future<void> openSpotInBrowser(String spotId, {String? countryCode, String? city}) async {
+    final url = generateSpotUrl(spotId, countryCode: countryCode, city: city);
     final uri = Uri.parse(url);
     
     if (await canLaunchUrl(uri)) {
@@ -55,8 +60,8 @@ class UrlService {
   }
   
   /// Open spot URL in app (for deep linking)
-  static Future<void> openSpotInApp(String spotId) async {
-    final url = generateSpotUrl(spotId);
+  static Future<void> openSpotInApp(String spotId, {String? countryCode, String? city}) async {
+    final url = generateSpotUrl(spotId, countryCode: countryCode, city: city);
     final uri = Uri.parse(url);
     
     if (await canLaunchUrl(uri)) {
@@ -92,6 +97,14 @@ class UrlService {
   /// Check if URL is a valid spot URL
   static bool isValidSpotUrl(String url) {
     return extractSpotIdFromUrl(url) != null;
+  }
+
+  static String _slugify(String input) {
+    final lowered = input.toLowerCase();
+    final replaced = lowered
+        .replaceAll(RegExp(r"[^a-z0-9\s-_]", caseSensitive: false), '')
+        .replaceAll(RegExp(r"[\s_]+"), '-');
+    return replaced;
   }
   
   /// Open location in external maps app

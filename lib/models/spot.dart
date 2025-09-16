@@ -6,6 +6,8 @@ class Spot {
   final String description;
   final GeoPoint location;
   final String? address;
+  final String? city;
+  final String? countryCode;
   final List<String>? imageUrls;
   final String? createdBy;
   final String? createdByName;
@@ -21,6 +23,8 @@ class Spot {
     required this.description,
     required this.location,
     this.address,
+    this.city,
+    this.countryCode,
     this.imageUrls,
     this.createdBy,
     this.createdByName,
@@ -39,6 +43,8 @@ class Spot {
       description: data['description'] ?? '',
       location: data['location'] ?? const GeoPoint(0, 0),
       address: data['address'],
+      city: data['city'],
+      countryCode: data['countryCode'],
       imageUrls: data['imageUrls'] != null
           ? List<String>.from(data['imageUrls'])
           : (data['imageUrl'] != null ? [data['imageUrl']] : null),
@@ -58,6 +64,8 @@ class Spot {
       'description': description,
       'location': location,
       'address': address,
+      'city': city,
+      'countryCode': countryCode,
       'imageUrls': imageUrls,
       'createdBy': createdBy,
       'createdByName': createdByName,
@@ -75,6 +83,8 @@ class Spot {
     String? description,
     GeoPoint? location,
     String? address,
+    String? city,
+    String? countryCode,
     List<String>? imageUrls,
     String? createdBy,
     String? createdByName,
@@ -90,6 +100,8 @@ class Spot {
       description: description ?? this.description,
       location: location ?? this.location,
       address: address ?? this.address,
+      city: city ?? this.city,
+      countryCode: countryCode ?? this.countryCode,
       imageUrls: imageUrls ?? this.imageUrls,
       createdBy: createdBy ?? this.createdBy,
       createdByName: createdByName ?? this.createdByName,

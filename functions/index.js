@@ -802,7 +802,7 @@ exports.getSyncSources = onCall(
       }
     });
 
-// Geocoding function to convert coordinates to address
+// Geocoding function to convert coordinates to address and components
 exports.geocodeCoordinates = onCall(
     {region: "europe-west1", secrets: ["GOOGLE_MAPS_API_KEY"]},
     async (request) => {
@@ -836,11 +836,41 @@ exports.geocodeCoordinates = onCall(
         });
 
         if (response.status === "OK" && response.results && response.results.length > 0) {
-          // Return the formatted address
-          const address = response.results[0].formatted_address;
+          const result = response.results[0];
+          const address = result.formatted_address;
+
+          // Extract city and country code from address_components
+          let city = null;
+          let countryCode = null;
+          if (Array.isArray(result.address_components)) {
+            const components = result.address_components;
+            // Country code from component with type 'country' (short_name is 2-letter code)
+            const countryComp = components.find((c) => c.types && c.types.includes('country'));
+            if (countryComp && countryComp.short_name) {
+              countryCode = countryComp.short_name; // e.g., 'NL'
+            }
+
+            // City can be 'locality' or 'postal_town'; fallback to 'administrative_area_level_2' then level_1
+            const cityTypesPriority = [
+              'locality',
+              'postal_town',
+              'administrative_area_level_2',
+              'administrative_area_level_1',
+            ];
+            for (const t of cityTypesPriority) {
+              const comp = components.find((c) => c.types && c.types.includes(t));
+              if (comp && comp.long_name) {
+                city = comp.long_name;
+                break;
+              }
+            }
+          }
+
           return {
             success: true,
             address: address,
+            city: city,
+            countryCode: countryCode,
           };
         } else {
           return {

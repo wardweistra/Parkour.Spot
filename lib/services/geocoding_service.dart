@@ -62,6 +62,81 @@ class GeocodingService extends ChangeNotifier {
     }
   }
 
+  /// Geocodes coordinates and returns address details including city and country code
+  /// Notifies listeners during the operation
+  Future<Map<String, String?>> geocodeCoordinatesDetails(double latitude, double longitude) async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      final callable = _functions.httpsCallable('geocodeCoordinates');
+      final result = await callable.call({
+        'latitude': latitude,
+        'longitude': longitude,
+      });
+
+      if (result.data['success'] == true) {
+        return {
+          'address': result.data['address'] as String?,
+          'city': result.data['city'] as String?,
+          'countryCode': result.data['countryCode'] as String?,
+        };
+      } else {
+        _error = result.data['error'] ?? 'Failed to geocode coordinates';
+        return {
+          'address': null,
+          'city': null,
+          'countryCode': null,
+        };
+      }
+    } catch (e) {
+      _error = 'Failed to geocode coordinates: $e';
+      debugPrint('Error geocoding coordinates details: $e');
+      return {
+        'address': null,
+        'city': null,
+        'countryCode': null,
+      };
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Geocodes coordinates silently and returns address details including city and country code
+  Future<Map<String, String?>> geocodeCoordinatesDetailsSilently(double latitude, double longitude) async {
+    try {
+      final callable = _functions.httpsCallable('geocodeCoordinates');
+      final result = await callable.call({
+        'latitude': latitude,
+        'longitude': longitude,
+      });
+
+      if (result.data['success'] == true) {
+        return {
+          'address': result.data['address'] as String?,
+          'city': result.data['city'] as String?,
+          'countryCode': result.data['countryCode'] as String?,
+        };
+      } else {
+        debugPrint('Geocoding failed: ${result.data['error']}');
+        return {
+          'address': null,
+          'city': null,
+          'countryCode': null,
+        };
+      }
+    } catch (e) {
+      debugPrint('Error geocoding coordinates silently (details): $e');
+      return {
+        'address': null,
+        'city': null,
+        'countryCode': null,
+      };
+    }
+  }
+
   /// Reverse geocodes an address to coordinates
   /// Returns null if reverse geocoding fails
   Future<Map<String, double>?> reverseGeocodeAddress(String address) async {

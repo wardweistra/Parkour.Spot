@@ -156,7 +156,12 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                 setState(() {
                   _isShareModalOpen = false;
                 });
-                UrlService.shareSpot(widget.spot.id!, widget.spot.name);
+                UrlService.shareSpot(
+                  widget.spot.id!,
+                  widget.spot.name,
+                  countryCode: widget.spot.countryCode,
+                  city: widget.spot.city,
+                );
               },
             ),
             ListTile(
@@ -167,7 +172,11 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                 setState(() {
                   _isShareModalOpen = false;
                 });
-                await UrlService.copySpotUrl(widget.spot.id!);
+                await UrlService.copySpotUrl(
+                  widget.spot.id!,
+                  countryCode: widget.spot.countryCode,
+                  city: widget.spot.city,
+                );
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -186,7 +195,11 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                 setState(() {
                   _isShareModalOpen = false;
                 });
-                UrlService.openSpotInBrowser(widget.spot.id!);
+                UrlService.openSpotInBrowser(
+                  widget.spot.id!,
+                  countryCode: widget.spot.countryCode,
+                  city: widget.spot.city,
+                );
               },
             ),
           ],
