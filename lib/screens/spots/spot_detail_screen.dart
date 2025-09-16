@@ -632,6 +632,65 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       ),
                     ),
                     
+                    const SizedBox(height: 16),
+                    
+                    // Location Information
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                          width: 1,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.location_on,
+                                color: Theme.of(context).colorScheme.primary,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Location Details',
+                                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          RichText(
+                            text: TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: '${widget.spot.location.latitude.toStringAsFixed(6)}, ${widget.spot.location.longitude.toStringAsFixed(6)}',
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w500,
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                ),
+                                if (widget.spot.address != null) ...[
+                                  TextSpan(
+                                    text: '\n${widget.spot.address}',
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
 
                     
                     const SizedBox(height: 24),
