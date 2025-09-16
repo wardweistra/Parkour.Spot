@@ -70,7 +70,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   double _dragStartY = 0.0;
   bool _isDragging = false;
   // Filters
-  bool _includeSpotsWithoutPictures = false; // Default: exclude spots without pictures
+  bool _includeSpotsWithoutPictures = true; // Default: include spots without pictures
   bool _includeParkourNative = true; // Spots created directly on parkour.spot (spotSource == null)
   bool _includeExternalSources = true; // Spots from external sources (spotSource != null)
   Set<String> _selectedExternalSourceIds = <String>{}; // Will be populated with all source IDs by default
@@ -107,7 +107,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
 
   bool _hasActiveFilters() {
     // Check if any filters are different from defaults
-    return !_includeSpotsWithoutPictures || // Default is false, so true means active
+    return !_includeSpotsWithoutPictures || // Default is true, so false means active
            !_includeParkourNative || // Default is true, so false means active
            !_includeExternalSources || // Default is true, so false means active
            (_includeExternalSources && _selectedExternalSourceIds.isNotEmpty && 

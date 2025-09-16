@@ -17,7 +17,7 @@ class SearchStateService extends ChangeNotifier {
   double? _centerLng;
   double? _zoom;
   bool _isSatellite = false;
-  bool _includeSpotsWithoutPictures = false; // Default: exclude spots without pictures
+  bool _includeSpotsWithoutPictures = true; // Default: include spots without pictures
   bool _includeParkourNative = true;
   bool _includeExternalSources = true;
   Set<String> _selectedExternalSourceIds = <String>{};
@@ -39,7 +39,7 @@ class SearchStateService extends ChangeNotifier {
       _centerLng = prefs.getDouble(_keyCenterLng);
       _zoom = prefs.getDouble(_keyZoom);
       _isSatellite = prefs.getBool(_keyIsSatellite) ?? false;
-      _includeSpotsWithoutPictures = prefs.getBool(_keyIncludeWithoutPictures) ?? false;
+      _includeSpotsWithoutPictures = prefs.getBool(_keyIncludeWithoutPictures) ?? true;
       _includeParkourNative = prefs.getBool(_keyIncludeParkourNative) ?? true;
       _includeExternalSources = prefs.getBool(_keyIncludeExternalSources) ?? true;
       final savedSources = prefs.getStringList(_keySelectedExternalSourceIds);
