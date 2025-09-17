@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../services/spot_service.dart';
 import '../../services/sync_source_service.dart';
 import '../../services/search_state_service.dart';
+import '../../services/url_service.dart';
 import '../../models/spot.dart';
 import '../../widgets/spot_card.dart';
 
@@ -585,8 +586,13 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                   LatLng(spot.location.latitude, spot.location.longitude),
                 ),
               );
-              // Navigate to spot detail
-              context.go('/spot/${spot.id}');
+              // Navigate to spot detail using proper URL format
+              final navigationUrl = UrlService.generateNavigationUrl(
+                spot.id!,
+                countryCode: spot.countryCode,
+                city: spot.city,
+              );
+              context.go(navigationUrl);
             },
           );
         },
@@ -609,8 +615,13 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                     LatLng(spot.location.latitude, spot.location.longitude),
                   ),
                 );
-                // Navigate to spot detail
-                context.go('/spot/${spot.id}');
+                // Navigate to spot detail using proper URL format
+                final navigationUrl = UrlService.generateNavigationUrl(
+                  spot.id!,
+                  countryCode: spot.countryCode,
+                  city: spot.city,
+                );
+                context.go(navigationUrl);
               },
             ),
           );
@@ -859,8 +870,13 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                   child: Center(
                     child: GestureDetector(
                     onTap: () {
-                      // Navigate to spot detail
-                      context.go('/spot/${_selectedSpot!.id}');
+                      // Navigate to spot detail using proper URL format
+                      final navigationUrl = UrlService.generateNavigationUrl(
+                        _selectedSpot!.id!,
+                        countryCode: _selectedSpot!.countryCode,
+                        city: _selectedSpot!.city,
+                      );
+                      context.go(navigationUrl);
                     },
                     child: Container(
                       constraints: BoxConstraints(
@@ -1112,7 +1128,12 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                   width: double.infinity,
                                   child: ElevatedButton(
                                     onPressed: () {
-                                      context.go('/spot/${_selectedSpot!.id}');
+                                      final navigationUrl = UrlService.generateNavigationUrl(
+                                        _selectedSpot!.id!,
+                                        countryCode: _selectedSpot!.countryCode,
+                                        city: _selectedSpot!.city,
+                                      );
+                                      context.go(navigationUrl);
                                     },
                                     child: const Text('View Details'),
                                   ),

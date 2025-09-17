@@ -161,6 +161,19 @@ class UrlService {
     }
   }
   
+  /// Generate a navigation URL for a spot (for internal navigation)
+  /// Uses the same format as share URLs: /countryCode/city/spotId
+  static String generateNavigationUrl(String spotId, {String? countryCode, String? city}) {
+    if (countryCode != null && countryCode.length == 2) {
+      final cc = countryCode.toLowerCase();
+      final citySegment = (city != null && city.trim().isNotEmpty)
+          ? _slugify(city)
+          : 'city';
+      return '/$cc/$citySegment/$spotId';
+    }
+    return '/spot/$spotId';
+  }
+
   /// Check if the current device can open native maps apps
   static bool get canOpenNativeMaps {
     if (!kIsWeb) return true; // Native mobile apps can always open maps

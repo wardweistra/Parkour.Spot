@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../services/spot_service.dart';
-import '../../services/auth_service.dart';
+import '../../services/url_service.dart';
 import '../../models/spot.dart'; // ignore: unused_import
 import '../../widgets/spot_card.dart';
 
@@ -37,8 +37,6 @@ class _SpotsListScreenState extends State<SpotsListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authService = Provider.of<AuthService>(context, listen: false);
-    
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -199,8 +197,13 @@ class _SpotsListScreenState extends State<SpotsListScreen> {
                             return SpotCard(
                               spot: spot,
                               onTap: () {
-                                // Navigate to spot detail using GoRouter
-                                context.go('/spot/${spot.id}');
+                                // Navigate to spot detail using proper URL format
+                                final navigationUrl = UrlService.generateNavigationUrl(
+                                  spot.id!,
+                                  countryCode: spot.countryCode,
+                                  city: spot.city,
+                                );
+                                context.go(navigationUrl);
                               },
                             );
                           },
@@ -215,8 +218,13 @@ class _SpotsListScreenState extends State<SpotsListScreen> {
                               child: SpotCard(
                                 spot: spot,
                                 onTap: () {
-                                  // Navigate to spot detail using GoRouter
-                                  context.go('/spot/${spot.id}');
+                                  // Navigate to spot detail using proper URL format
+                                  final navigationUrl = UrlService.generateNavigationUrl(
+                                    spot.id!,
+                                    countryCode: spot.countryCode,
+                                    city: spot.city,
+                                  );
+                                  context.go(navigationUrl);
                                 },
                               ),
                             );

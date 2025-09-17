@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:parkour_spot/services/auth_service.dart';
 import 'package:parkour_spot/services/spot_service.dart';
 import 'package:parkour_spot/services/sync_source_service.dart';
@@ -13,6 +14,9 @@ import 'package:web/web.dart' as web;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Use path-based URLs instead of hash-based routing
+  usePathUrlStrategy();
   
   // Validate configuration before initializing Firebase
   AppConfig.validateConfiguration();
