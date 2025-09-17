@@ -34,6 +34,8 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
   Position? _currentPosition;
   LatLng? _pickedLocation;
   String? _currentAddress;
+  String? _currentCity;
+  String? _currentCountryCode;
   bool _isLoading = false;
   bool _isGettingLocation = false;
   bool _isGeocoding = false;
@@ -385,11 +387,13 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
 
     try {
       final geocodingService = Provider.of<GeocodingService>(context, listen: false);
-      final address = await geocodingService.geocodeCoordinatesSilently(latitude, longitude);
+      final details = await geocodingService.geocodeCoordinatesDetailsSilently(latitude, longitude);
       
       if (mounted) {
         setState(() {
-          _currentAddress = address;
+          _currentAddress = details['address'];
+          _currentCity = details['city'];
+          _currentCountryCode = details['countryCode'];
         });
       }
     } catch (e) {
@@ -457,6 +461,8 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
           ? GeoPoint(_pickedLocation!.latitude, _pickedLocation!.longitude)
           : GeoPoint(_currentPosition!.latitude, _currentPosition!.longitude),
         address: _currentAddress,
+        city: _currentCity,
+        countryCode: _currentCountryCode,
         tags: tags.isNotEmpty ? tags : null,
         createdBy: authService.currentUser?.uid,
         createdByName: authService.userProfile?.displayName ?? authService.currentUser?.email ?? authService.currentUser?.uid,
