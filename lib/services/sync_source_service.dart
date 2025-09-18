@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class SyncSource {
   final String id;
   final String name;
+  final String kmzUrl;
   final String? description;
   final bool isPublic;
   final bool isActive;
@@ -16,6 +17,7 @@ class SyncSource {
   SyncSource({
     required this.id,
     required this.name,
+    required this.kmzUrl,
     this.description,
     required this.isPublic,
     required this.isActive,
@@ -29,6 +31,7 @@ class SyncSource {
     return SyncSource(
       id: data['id'] ?? '',
       name: data['name'] ?? '',
+      kmzUrl: data['kmzUrl'] ?? '',
       description: data['description'],
       isPublic: data['isPublic'] ?? true,
       isActive: data['isActive'] ?? true,
@@ -105,6 +108,97 @@ class SyncSourceService extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<bool> createSource({
+    required String name,
+    required String kmzUrl,
+    String? description,
+    bool isPublic = true,
+    bool isActive = true,
+  }) async {
+    try {
+      final callable = _functions.httpsCallable('createSyncSource');
+      final result = await callable.call({
+        'name': name,
+        'kmzUrl': kmzUrl,
+        'description': description,
+        'isPublic': isPublic,
+        'isActive': isActive,
+      });
+      final success = result.data['success'] == true;
+      if (success) {
+        await fetchSyncSources(includeInactive: true);
+      }
+      return success;
+    } catch (e) {
+      _error = 'Failed to create source: $e';
+      debugPrint(_error);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateSource({
+    required String sourceId,
+    String? name,
+    String? kmzUrl,
+    String? description,
+    bool? isPublic,
+    bool? isActive,
+  }) async {
+    try {
+      final callable = _functions.httpsCallable('updateSyncSource');
+      final payload = <String, dynamic>{'sourceId': sourceId};
+      if (name != null) payload['name'] = name;
+      if (kmzUrl != null) payload['kmzUrl'] = kmzUrl;
+      if (description != null) payload['description'] = description;
+      if (isPublic != null) payload['isPublic'] = isPublic;
+      if (isActive != null) payload['isActive'] = isActive;
+      final result = await callable.call(payload);
+      final success = result.data['success'] == true;
+      if (success) {
+        await fetchSyncSources(includeInactive: true);
+      }
+      return success;
+    } catch (e) {
+      _error = 'Failed to update source: $e';
+      debugPrint(_error);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> deleteSource(String sourceId) async {
+    try {
+      final callable = _functions.httpsCallable('deleteSyncSource');
+      final result = await callable.call({'sourceId': sourceId});
+      final success = result.data['success'] == true;
+      if (success) {
+        _sources.removeWhere((s) => s.id == sourceId);
+        _sourceNameCache.remove(sourceId);
+        notifyListeners();
+      }
+      return success;
+    } catch (e) {
+      _error = 'Failed to delete source: $e';
+      debugPrint(_error);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> syncAllSources() async {
+    try {
+      final callable = _functions.httpsCallable('syncAllSources');
+      final result = await callable.call();
+      return result.data['success'] == true;
+    } catch (e) {
+      _error = 'Failed to sync all sources: $e';
+      debugPrint(_error);
+      notifyListeners();
+      return false;
     }
   }
 

@@ -8,6 +8,7 @@ class AuthService extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   
   User? get currentUser => _auth.currentUser;
+  bool get isAdmin => _userProfile?.isAdmin == true;
   bool get isAuthenticated {
     final user = _auth.currentUser;
     if (user == null) return false;
@@ -62,6 +63,7 @@ class AuthService extends ChangeNotifier {
           photoURL: _auth.currentUser?.photoURL,
           createdAt: DateTime.now(),
           lastLoginAt: DateTime.now(),
+          isAdmin: false,
         );
         await _firestore.collection('users').doc(uid).set(_userProfile!.toMap());
         debugPrint('New user profile created in Firestore');
@@ -131,6 +133,7 @@ class AuthService extends ChangeNotifier {
           displayName: displayName,
           createdAt: DateTime.now(),
           lastLoginAt: DateTime.now(),
+          isAdmin: false,
         );
         
         await _firestore.collection('users').doc(user.id).set(user.toMap());

@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../screens/splash_screen.dart';
 import '../screens/home_screen.dart';
+import '../screens/admin/admin_home_screen.dart';
+import '../screens/admin/sync_sources_screen.dart';
 import '../screens/spots/spot_detail_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../models/spot.dart';
@@ -85,6 +87,15 @@ class AppRouter {
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
+      ),
+      // Admin routes (screen will self-guard on admin status)
+      GoRoute(
+        path: '/admin',
+        builder: (context, state) => const AdminHomeScreen(),
+      ),
+      GoRoute(
+        path: '/admin/sources',
+        builder: (context, state) => const SyncSourcesScreen(),
       ),
       // Simple spot detail route: /spot/:spotId
       GoRoute(

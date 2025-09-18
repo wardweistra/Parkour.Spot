@@ -502,11 +502,29 @@ exports.syncKmzSpots = onCall(
       }
     });
 
-// Function to sync all sources from Firestore collection
+// Helper to ensure caller is admin (via custom claim or Firestore users/{uid}.isAdmin)
+async function ensureAdmin(request) {
+  const auth = request.auth;
+  if (!auth || !auth.uid) {
+    throw new Error("Authentication required");
+  }
+  // Prefer custom claims if set
+  if (auth.token && auth.token.admin === true) {
+    return;
+  }
+  // Fallback to Firestore user doc flag
+  const userDoc = await db.collection("users").doc(auth.uid).get();
+  if (!userDoc.exists || userDoc.data().isAdmin !== true) {
+    throw new Error("Admin privileges required");
+  }
+}
+
+// Function to sync all sources from Firestore collection (admin only)
 exports.syncAllSources = onCall(
     {region: "europe-west1"},
     async (request) => {
       try {
+        await ensureAdmin(request);
         console.log("Starting sync for all sources from Firestore");
 
         // Get all active sync sources
@@ -669,11 +687,12 @@ exports.syncAllSources = onCall(
       }
     });
 
-// Function to create a new sync source
+// Function to create a new sync source (admin only)
 exports.createSyncSource = onCall(
     {region: "europe-west1"},
     async (request) => {
       try {
+        await ensureAdmin(request);
         const {name, kmzUrl, description, isPublic = true,
           isActive = true} = request.data;
 
@@ -705,11 +724,12 @@ exports.createSyncSource = onCall(
       }
     });
 
-// Function to update a sync source
+// Function to update a sync source (admin only)
 exports.updateSyncSource = onCall(
     {region: "europe-west1"},
     async (request) => {
       try {
+        await ensureAdmin(request);
         const {sourceId, name, kmzUrl, description, isPublic,
           isActive} = request.data;
 
@@ -740,11 +760,12 @@ exports.updateSyncSource = onCall(
       }
     });
 
-// Function to delete a sync source
+// Function to delete a sync source (admin only)
 exports.deleteSyncSource = onCall(
     {region: "europe-west1"},
     async (request) => {
       try {
+        await ensureAdmin(request);
         const {sourceId} = request.data;
 
         if (!sourceId) {
@@ -764,12 +785,19 @@ exports.deleteSyncSource = onCall(
       }
     });
 
-// Function to get all sync sources
+// Function to get all sync sources. includeInactive allowed only for admins
 exports.getSyncSources = onCall(
     {region: "europe-west1"},
     async (request) => {
       try {
-        const {includeInactive = false} = request.data;
+        let {includeInactive = false} = request.data;
+
+        // Only admins may include inactive sources
+        try {
+          await ensureAdmin(request);
+        } catch (e) {
+          includeInactive = false;
+        }
 
         let query = db.collection("syncSources");
 
@@ -799,6 +827,43 @@ exports.getSyncSources = onCall(
       } catch (error) {
         console.error("Error getting sync sources:", error);
         throw new Error(`Failed to get sync sources: ${error.message}`);
+      }
+    });
+
+// Admin tool: set or unset a user's admin status
+exports.setUserAdmin = onCall(
+    {region: "europe-west1"},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const {targetUid, targetEmail, isAdmin} = request.data;
+        if (typeof isAdmin !== "boolean") {
+          throw new Error("isAdmin boolean is required");
+        }
+        let uid = targetUid;
+        if (!uid && targetEmail) {
+          const userRecord = await admin.auth().getUserByEmail(targetEmail);
+          uid = userRecord.uid;
+        }
+        if (!uid) {
+          throw new Error("targetUid or targetEmail is required");
+        }
+
+        // Update Firestore profile
+        await db.collection("users").doc(uid).set({isAdmin: isAdmin}, {merge: true});
+        // Update custom claims for faster checks (best-effort)
+        try {
+          const userRecord = await admin.auth().getUser(uid);
+          const existingClaims = userRecord.customClaims || {};
+          await admin.auth().setCustomUserClaims(uid, {...existingClaims, admin: isAdmin});
+        } catch (claimErr) {
+          console.warn("Failed to set custom claims:", claimErr.message);
+        }
+
+        return {success: true, uid: uid, isAdmin: isAdmin};
+      } catch (error) {
+        console.error("Error setting user admin:", error);
+        throw new Error(`Failed to set user admin: ${error.message}`);
       }
     });
 

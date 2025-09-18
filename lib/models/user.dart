@@ -7,6 +7,7 @@ class User {
   final DateTime? lastLoginAt;
   final List<String>? favoriteSpots;
   final bool isEmailVerified;
+  final bool isAdmin;
 
   User({
     required this.id,
@@ -17,6 +18,7 @@ class User {
     this.lastLoginAt,
     this.favoriteSpots,
     this.isEmailVerified = false,
+    this.isAdmin = false,
   });
 
   factory User.fromMap(Map<String, dynamic> map) {
@@ -31,6 +33,7 @@ class User {
           ? List<String>.from(map['favoriteSpots']) 
           : null,
       isEmailVerified: map['isEmailVerified'] ?? false,
+      isAdmin: map['isAdmin'] ?? false,
     );
   }
 
@@ -44,6 +47,7 @@ class User {
       'lastLoginAt': lastLoginAt,
       'favoriteSpots': favoriteSpots,
       'isEmailVerified': isEmailVerified,
+      'isAdmin': isAdmin,
     };
   }
 
@@ -56,6 +60,7 @@ class User {
     DateTime? lastLoginAt,
     List<String>? favoriteSpots,
     bool? isEmailVerified,
+    bool? isAdmin,
   }) {
     return User(
       id: id ?? this.id,
@@ -66,6 +71,7 @@ class User {
       lastLoginAt: lastLoginAt ?? this.lastLoginAt,
       favoriteSpots: favoriteSpots ?? this.favoriteSpots,
       isEmailVerified: isEmailVerified ?? this.isEmailVerified,
+      isAdmin: isAdmin ?? this.isAdmin,
     );
   }
 
