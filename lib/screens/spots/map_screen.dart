@@ -56,8 +56,11 @@ class _MapScreenState extends State<MapScreen> {
           // Move camera to user location if map is ready
           if (_mapController != null) {
             _mapController!.animateCamera(
-              CameraUpdate.newLatLng(
-                LatLng(position.latitude, position.longitude),
+              CameraUpdate.newCameraPosition(
+                CameraPosition(
+                  target: LatLng(position.latitude, position.longitude),
+                  zoom: 13.5,
+                ),
               ),
             );
           }
@@ -75,7 +78,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Set<Marker> _buildMarkers(List<Spot> spots) {
-    return spots.map((spot) {
+    final markers = spots.map((spot) {
       return Marker(
         markerId: MarkerId(spot.id ?? spot.name),
         position: LatLng(spot.location.latitude, spot.location.longitude),
@@ -85,6 +88,20 @@ class _MapScreenState extends State<MapScreen> {
         },
       );
     }).toSet();
+
+    // Add current user location marker if available
+    if (_currentPosition != null) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('current_location'),
+          position: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+          zIndex: 9999,
+        ),
+      );
+    }
+
+    return markers;
   }
 
   void _showSpotBottomSheet(Spot spot) {
@@ -248,8 +265,11 @@ class _MapScreenState extends State<MapScreen> {
                   // Move to user location if available
                   if (_currentPosition != null) {
                     controller.animateCamera(
-                      CameraUpdate.newLatLng(
-                        LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+                      CameraUpdate.newCameraPosition(
+                        CameraPosition(
+                          target: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+                          zoom: 13.5,
+                        ),
                       ),
                     );
                   }

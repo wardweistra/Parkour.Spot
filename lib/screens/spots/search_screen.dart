@@ -59,6 +59,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   bool _isGettingLocation = false;
   bool _isSatelliteView = false;
   bool _isBottomSheetOpen = false; // Start collapsed by default
+  Position? _currentPosition;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   List<Spot> _visibleSpots = [];
@@ -217,14 +218,22 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
         );
 
         if (mounted) {
+          setState(() {
+            _currentPosition = position;
+          });
           // Move camera to user location if map is ready
           if (_mapController != null) {
             _mapController!.animateCamera(
-              CameraUpdate.newLatLng(
-                LatLng(position.latitude, position.longitude),
+              CameraUpdate.newCameraPosition(
+                CameraPosition(
+                  target: LatLng(position.latitude, position.longitude),
+                  zoom: 13.5,
+                ),
               ),
             );
           }
+          // Refresh markers to include current location
+          _updateVisibleSpots();
         }
       }
     } catch (e) {
@@ -432,7 +441,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   }
 
   Set<Marker> _buildMarkers(List<Spot> spots) {
-    return spots.map((spot) {
+    final markers = spots.map((spot) {
       return Marker(
         markerId: MarkerId(spot.id ?? spot.name),
         position: LatLng(spot.location.latitude, spot.location.longitude),
@@ -452,6 +461,20 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
         },
       );
     }).toSet();
+
+    // Add current user location marker if available
+    if (_currentPosition != null) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('current_location'),
+          position: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+          zIndex: 9999,
+        ),
+      );
+    }
+
+    return markers;
   }
 
   void _toggleBottomSheet() {
