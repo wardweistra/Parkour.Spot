@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
@@ -22,11 +24,13 @@ class _MapScreenState extends State<MapScreen> {
   bool _isGettingLocation = false;
   bool _isSatelliteView = false;
   bool _isSpotSheetOpen = false;
+  BitmapDescriptor? _userLocationIcon;
   
   @override
   void initState() {
     super.initState();
     _getCurrentLocation();
+    _loadUserLocationIcon();
   }
 
   Future<void> _getCurrentLocation() async {
@@ -95,13 +99,49 @@ class _MapScreenState extends State<MapScreen> {
         Marker(
           markerId: const MarkerId('current_location'),
           position: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+          icon: _userLocationIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
           zIndex: 9999,
         ),
       );
     }
 
     return markers;
+  }
+
+  Future<void> _loadUserLocationIcon() async {
+    try {
+      final icon = await _createUserLocationIcon(size: 96, fillColor: Colors.blue);
+      if (mounted) {
+        setState(() {
+          _userLocationIcon = icon;
+        });
+      }
+    } catch (_) {
+      // Ignore icon errors silently
+    }
+  }
+
+  Future<BitmapDescriptor> _createUserLocationIcon({double size = 96, Color fillColor = Colors.blue}) async {
+    final ui.PictureRecorder recorder = ui.PictureRecorder();
+    final Canvas canvas = Canvas(recorder);
+    final double radius = size / 2;
+    final Offset center = Offset(radius, radius);
+
+    final Paint shadowPaint = Paint()..color = Colors.black.withValues(alpha: 0.2);
+    final Paint ringPaint = Paint()..color = Colors.white;
+    final Paint fillPaint = Paint()..color = fillColor;
+
+    // Shadow circle
+    canvas.drawCircle(center, radius, shadowPaint);
+    // Outer white ring
+    canvas.drawCircle(center, radius - 4, ringPaint);
+    // Inner fill
+    canvas.drawCircle(center, radius - 12, fillPaint);
+
+    final ui.Image image = await recorder.endRecording().toImage(size.toInt(), size.toInt());
+    final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    final Uint8List bytes = byteData!.buffer.asUint8List();
+    return BitmapDescriptor.fromBytes(bytes);
   }
 
   void _showSpotBottomSheet(Spot spot) {
