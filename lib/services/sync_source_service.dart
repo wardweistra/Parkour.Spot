@@ -202,6 +202,71 @@ class SyncSourceService extends ChangeNotifier {
     }
   }
 
+  Future<bool> syncSingleSource(String sourceId) async {
+    try {
+      final callable = _functions.httpsCallable('syncSingleSource');
+      final result = await callable.call({'sourceId': sourceId});
+      final success = result.data['success'] == true;
+      if (success) {
+        // Refresh the sources list to update last sync time
+        await fetchSyncSources(includeInactive: true);
+      }
+      return success;
+    } catch (e) {
+      _error = 'Failed to sync single source: $e';
+      debugPrint(_error);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<Map<String, dynamic>?> cleanupUnusedImages() async {
+    try {
+      final callable = _functions.httpsCallable('cleanupUnusedImages');
+      final result = await callable.call();
+      return result.data;
+    } catch (e) {
+      _error = 'Failed to cleanup unused images: $e';
+      debugPrint(_error);
+      notifyListeners();
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> findMissingImages() async {
+    try {
+      final callable = _functions.httpsCallable('findMissingImages');
+      final result = await callable.call();
+      return result.data;
+    } catch (e) {
+      _error = 'Failed to find missing images: $e';
+      debugPrint(_error);
+      notifyListeners();
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> uploadReplacementImage({
+    required String filename,
+    required String imageData,
+    String contentType = 'image/jpeg',
+  }) async {
+    try {
+      final callable = _functions.httpsCallable('uploadReplacementImage');
+      final result = await callable.call({
+        'filename': filename,
+        'imageData': imageData,
+        'contentType': contentType,
+      });
+      return result.data;
+    } catch (e) {
+      _error = 'Failed to upload replacement image: $e';
+      debugPrint(_error);
+      notifyListeners();
+      return null;
+    }
+  }
+
   // Get source name by ID (from cache or fetch if needed)
   Future<String?> getSourceName(String sourceId) async {
     // Check cache first

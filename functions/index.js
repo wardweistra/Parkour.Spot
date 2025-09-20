@@ -19,6 +19,7 @@ const yauzl = require("yauzl");
 const xml2js = require("xml2js");
 const https = require("https");
 const path = require("path");
+const crypto = require("crypto");
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -101,6 +102,55 @@ function downloadFile(url) {
       response.on("error", reject);
     }).on("error", reject);
   });
+}
+
+/**
+ * Generates a content-based hash for an image buffer
+ * @param {Buffer} imageBuffer - The image buffer
+ * @return {string} The SHA-256 hash of the image content
+ */
+function generateImageHash(imageBuffer) {
+  return crypto.createHash("sha256").update(imageBuffer).digest("hex");
+}
+
+/**
+ * Checks if an image with the given hash already exists in Firebase Storage
+ * @param {string} imageHash - The content hash of the image
+ * @return {Promise<string|null>} A promise that resolves to the existing file path or null
+ */
+async function checkImageExists(imageHash) {
+  try {
+    // List files in the spots folder with the hash prefix
+    const [files] = await bucket.getFiles({
+      prefix: `spots/`,
+      delimiter: "/",
+    });
+
+    for (const file of files) {
+      const fileName = file.name;
+      // Check if filename contains our hash (format: spots/name_hash_index.ext)
+      if (fileName.includes(`_${imageHash}_`)) {
+        // Verify the file still exists and is accessible
+        const [exists] = await file.exists();
+        if (exists) {
+          return fileName;
+        }
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error("Error checking if image exists:", error);
+    return null;
+  }
+}
+
+/**
+ * Gets the public URL for a file in Firebase Storage
+ * @param {string} fileName - The file name in Firebase Storage
+ * @return {string} The public URL for the file
+ */
+function getPublicUrl(fileName) {
+  return `https://storage.googleapis.com/${bucket.name}/${fileName}`;
 }
 
 /**
@@ -229,7 +279,7 @@ function extractImageUrls(placemark) {
 }
 
 /**
- * Downloads and uploads an image to Firebase Storage
+ * Downloads and uploads an image to Firebase Storage (with deduplication)
  * @param {string} imageUrl - The URL of the image to download
  * @param {string} spotName - The name of the spot for filename generation
  * @param {number} imageIndex - The index of the image for filename generation
@@ -237,17 +287,30 @@ function extractImageUrls(placemark) {
  *     or null
  */
 async function downloadAndUploadImage(imageUrl, spotName, imageIndex) {
+  let imageBuffer = null;
   try {
-    console.log(`Downloading image ${imageIndex + 1} for spot: ${spotName}`);
+    console.log(`Processing image ${imageIndex + 1} for spot: ${spotName}`);
 
     // Download image
-    const imageBuffer = await downloadFile(imageUrl);
+    imageBuffer = await downloadFile(imageUrl);
 
-    // Generate filename
-    const timestamp = Date.now();
+    // Generate content-based hash
+    const imageHash = generateImageHash(imageBuffer);
+    console.log(`Generated hash for image: ${imageHash.substring(0, 8)}...`);
+
+    // Check if image already exists
+    const existingFileName = await checkImageExists(imageHash);
+    if (existingFileName) {
+      console.log(`Image already exists, reusing: ${existingFileName}`);
+      // Clear buffer immediately if we're reusing existing image
+      imageBuffer = null;
+      return getPublicUrl(existingFileName);
+    }
+
+    // Generate filename with hash instead of timestamp
     const extension = path.extname(new URL(imageUrl).pathname) || ".jpg";
     const filename = `spots/${spotName.replace(/[^a-zA-Z0-9]/g, "_")}_` +
-        `${timestamp}_${imageIndex}${extension}`;
+        `${imageHash}_${imageIndex}${extension}`;
 
     // Upload to Firebase Storage
     const file = bucket.file(filename);
@@ -262,14 +325,19 @@ async function downloadAndUploadImage(imageUrl, spotName, imageIndex) {
     await file.makePublic();
 
     // Return public URL
-    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filename}`;
-    console.log(`Uploaded image to: ${publicUrl}`);
+    const publicUrl = getPublicUrl(filename);
+    console.log(`Uploaded new image to: ${publicUrl}`);
 
     return publicUrl;
   } catch (error) {
     console.error(`Failed to download/upload image ${imageIndex + 1} for ` +
         `${spotName}:`, error);
     return null;
+  } finally {
+    // Explicitly clear the buffer to free memory
+    if (imageBuffer) {
+      imageBuffer = null;
+    }
   }
 }
 
@@ -290,18 +358,18 @@ async function processPlacemarkImages(placemark) {
 
   const uploadedImageUrls = [];
 
-  // Process images in parallel (limit to 5 concurrent downloads)
-  const batchSize = 5;
-  for (let i = 0; i < imageUrls.length; i += batchSize) {
-    const batch = imageUrls.slice(i, i + batchSize);
-    const batchPromises = batch.map((url, index) =>
-      downloadAndUploadImage(url, placemark.name, i + index),
-    );
-
-    const batchResults = await Promise.all(batchPromises);
-    uploadedImageUrls.push(...batchResults.filter((url) =>
-      url !== null,
-    ));
+  // Process images sequentially to reduce memory usage
+  for (let i = 0; i < imageUrls.length; i++) {
+    const url = imageUrls[i];
+    const result = await downloadAndUploadImage(url, placemark.name, i);
+    if (result) {
+      uploadedImageUrls.push(result);
+    }
+    
+    // Force garbage collection hint after each image
+    if (global.gc) {
+      global.gc();
+    }
   }
 
   console.log(`Successfully uploaded ${uploadedImageUrls.length} images ` +
@@ -397,7 +465,7 @@ function parseKmlPlacemarks(kmlContent) {
 
 // Function to sync KMZ data to spots collection
 exports.syncKmzSpots = onCall(
-    {region: "europe-west1"},
+    {region: "europe-west1", memory: "512MiB", timeoutSeconds: 300},
     async (request) => {
       try {
         const {kmzUrl, spotSource} = request.data;
@@ -519,9 +587,270 @@ async function ensureAdmin(request) {
   }
 }
 
+/**
+ * Cleans up old unused images from Firebase Storage
+ * @param {number} daysOld - Number of days old to consider for cleanup (default: 30)
+ * @return {Promise<Object>} Cleanup statistics
+ */
+async function cleanupOldImages(daysOld = 30) {
+  try {
+    console.log(`Starting cleanup of images older than ${daysOld} days`);
+    
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysOld);
+    
+    // Get all spots to find which images are currently in use
+    const spotsSnapshot = await db.collection("spots").get();
+    const usedImageUrls = new Set();
+    
+    spotsSnapshot.forEach((doc) => {
+      const spotData = doc.data();
+      if (spotData.imageUrls && Array.isArray(spotData.imageUrls)) {
+        spotData.imageUrls.forEach((url) => {
+          // Extract filename from URL, handling both Firebase Storage URL formats
+          let filename;
+          try {
+            const urlObj = new URL(url);
+            const pathname = urlObj.pathname;
+            
+            // Handle Firebase Storage URLs with encoded paths
+            if (url.includes('firebasestorage.googleapis.com') && pathname.includes('/o/')) {
+              // Format: /v0/b/bucket-name/o/spots%2Ffilename.jpg
+              const encodedPath = pathname.split('/o/')[1];
+              const decodedPath = decodeURIComponent(encodedPath);
+              filename = decodedPath.split('/').pop();
+            } else {
+              // Format: /bucket-name/spots/filename.jpg
+              filename = pathname.split('/').pop();
+            }
+            
+            if (filename) {
+              usedImageUrls.add(filename);
+            }
+          } catch (urlError) {
+            console.warn(`Failed to parse URL: ${url}`, urlError);
+            // Fallback to simple extraction
+            const urlParts = url.split("/");
+            const lastPart = urlParts[urlParts.length - 1];
+            const filename = lastPart.split('?')[0]; // Remove query parameters
+            if (filename) {
+              usedImageUrls.add(filename);
+            }
+          }
+        });
+      }
+    });
+    
+    console.log(`Found ${usedImageUrls.size} images currently in use`);
+    console.log('Used image filenames:', Array.from(usedImageUrls).slice(0, 10)); // Log first 10 for debugging
+    
+    // List all files in the spots folder
+    const [files] = await bucket.getFiles({
+      prefix: "spots/",
+    });
+    
+    console.log(`Found ${files.length} total files in storage`);
+    
+    let deletedCount = 0;
+    let skippedCount = 0;
+    const deletedFiles = [];
+    
+    for (const file of files) {
+      const fileName = file.name;
+      const fileNameOnly = fileName.split("/").pop();
+      
+      // Skip if file is currently in use
+      if (usedImageUrls.has(fileNameOnly)) {
+        skippedCount++;
+        console.log(`Skipping used file: ${fileNameOnly}`);
+        continue;
+      }
+      
+      // Check file creation date
+      const [metadata] = await file.getMetadata();
+      const createdDate = new Date(metadata.timeCreated);
+      
+      console.log(`Checking file: ${fileNameOnly}, created: ${createdDate.toISOString()}, cutoff: ${cutoffDate.toISOString()}`);
+      
+      if (createdDate < cutoffDate) {
+        try {
+          await file.delete();
+          deletedCount++;
+          deletedFiles.push(fileName);
+          console.log(`Deleted old unused image: ${fileName}`);
+        } catch (deleteError) {
+          console.error(`Failed to delete file ${fileName}:`, deleteError);
+        }
+      } else {
+        skippedCount++;
+        console.log(`Skipping recent file: ${fileNameOnly} (created ${createdDate.toISOString()})`);
+      }
+    }
+    
+    const result = {
+      success: true,
+      deletedCount,
+      skippedCount,
+      totalFiles: files.length,
+      deletedFiles: deletedFiles.slice(0, 10), // Limit to first 10 for response size
+      message: `Cleanup completed. Deleted ${deletedCount} old unused images, skipped ${skippedCount} files.`,
+    };
+    
+    console.log("Cleanup completed:", result);
+    return result;
+  } catch (error) {
+    console.error("Error during image cleanup:", error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+}
+
+// Function to sync a single source by ID (admin only)
+exports.syncSingleSource = onCall(
+    {region: "europe-west1", memory: "1GiB", timeoutSeconds: 540},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const {sourceId} = request.data;
+
+        if (!sourceId) {
+          throw new Error("sourceId is required");
+        }
+
+        console.log(`Starting sync for single source: ${sourceId}`);
+
+        // Get the specific sync source
+        const sourceDoc = await db.collection("syncSources").doc(sourceId).get();
+
+        if (!sourceDoc.exists) {
+          throw new Error(`Sync source with ID ${sourceId} not found`);
+        }
+
+        const source = sourceDoc.data();
+
+        if (!source.isActive) {
+          throw new Error(`Sync source ${source.name} is not active`);
+        }
+
+        try {
+          console.log(`Processing source: ${source.name} (${sourceId})`);
+
+          // Download and process KMZ file
+          let kmzBuffer = await downloadFile(source.kmzUrl);
+          const kmlContent = await extractKmlFromKmz(kmzBuffer);
+          const placemarks = await parseKmlPlacemarks(kmlContent);
+          
+          // Clear KMZ buffer to free memory
+          kmzBuffer = null;
+
+          let created = 0;
+          let updated = 0;
+          const skipped = 0;
+
+          // Process each placemark
+          for (let i = 0; i < placemarks.length; i++) {
+            const placemark = placemarks[i];
+            const {name, description, coordinates} = placemark;
+
+            // Process images for this placemark
+            console.log(`Processing images for spot: ${name} ` +
+                `from source: ${source.name}`);
+            const imageUrls = await processPlacemarkImages(placemark);
+
+            // Clean the description to remove HTML
+            const cleanedDescription = cleanDescription(description);
+
+            // Check if spot already exists with same coordinates and source
+            const existingSpots = await db.collection("spots")
+                .where("spotSource", "==", sourceId)
+                .where("location", "==", new admin.firestore.GeoPoint(
+                    coordinates.latitude,
+                    coordinates.longitude,
+                ))
+                .get();
+
+            const spotData = {
+              name: name,
+              description: cleanedDescription,
+              location: new admin.firestore.GeoPoint(
+                  coordinates.latitude,
+                  coordinates.longitude,
+              ),
+              spotSource: sourceId,
+              isPublic: source.isPublic !== false, // Default to true
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            };
+
+            // Add image URLs if any were found
+            if (imageUrls.length > 0) {
+              spotData.imageUrls = imageUrls;
+            }
+
+            if (existingSpots.empty) {
+              // Create new spot
+              spotData.createdAt = admin.firestore.FieldValue
+                  .serverTimestamp();
+              await db.collection("spots").add(spotData);
+              created++;
+              console.log(`Created new spot: ${name} from source: ` +
+                  `${source.name} with ${imageUrls.length} images`);
+            } else {
+              // Update existing spot
+              const existingSpot = existingSpots.docs[0];
+              await existingSpot.ref.update(spotData);
+              updated++;
+              console.log(`Updated existing spot: ${name} from source: ` +
+                  `${source.name} with ${imageUrls.length} images`);
+            }
+            
+            // Force garbage collection after every 10 spots to free memory
+            if (i % 10 === 0 && global.gc) {
+              global.gc();
+              console.log(`Processed ${i + 1}/${placemarks.length} spots, forced GC`);
+            }
+          }
+
+          // Update source last sync time
+          await sourceDoc.ref.update({
+            lastSyncAt: admin.firestore.FieldValue.serverTimestamp(),
+            lastSyncStats: {
+              total: placemarks.length,
+              created: created,
+              updated: updated,
+              skipped: skipped,
+            },
+          });
+
+          const result = {
+            success: true,
+            message: `Sync completed for source: ${source.name}`,
+            sourceId: sourceId,
+            sourceName: source.name,
+            stats: {
+              total: placemarks.length,
+              created: created,
+              updated: updated,
+              skipped: skipped,
+            },
+          };
+
+          console.log(`Completed sync for source: ${source.name}`, result.stats);
+          return result;
+        } catch (sourceError) {
+          console.error(`Error processing source ${source.name}:`, sourceError);
+          throw new Error(`Failed to sync source ${source.name}: ${sourceError.message}`);
+        }
+      } catch (error) {
+        console.error("Error syncing single source:", error);
+        throw new Error(`Failed to sync single source: ${error.message}`);
+      }
+    });
+
 // Function to sync all sources from Firestore collection (admin only)
 exports.syncAllSources = onCall(
-    {region: "europe-west1"},
+    {region: "europe-west1", memory: "1GiB", timeoutSeconds: 540},
     async (request) => {
       try {
         await ensureAdmin(request);
@@ -554,16 +883,20 @@ exports.syncAllSources = onCall(
             console.log(`Processing source: ${source.name} (${sourceId})`);
 
             // Download and process KMZ file
-            const kmzBuffer = await downloadFile(source.kmzUrl);
+            let kmzBuffer = await downloadFile(source.kmzUrl);
             const kmlContent = await extractKmlFromKmz(kmzBuffer);
             const placemarks = await parseKmlPlacemarks(kmlContent);
+            
+            // Clear KMZ buffer to free memory
+            kmzBuffer = null;
 
             let created = 0;
             let updated = 0;
             const skipped = 0;
 
             // Process each placemark
-            for (const placemark of placemarks) {
+            for (let i = 0; i < placemarks.length; i++) {
+              const placemark = placemarks[i];
               const {name, description, coordinates} = placemark;
 
               // Process images for this placemark
@@ -615,6 +948,12 @@ exports.syncAllSources = onCall(
                 updated++;
                 console.log(`Updated existing spot: ${name} from source: ` +
                     `${source.name} with ${imageUrls.length} images`);
+              }
+              
+              // Force garbage collection after every 10 spots to free memory
+              if (i % 10 === 0 && global.gc) {
+                global.gc();
+                console.log(`Processed ${i + 1}/${placemarks.length} spots, forced GC`);
               }
             }
 
@@ -1007,3 +1346,342 @@ exports.reverseGeocodeAddress = onCall(
         };
       }
     });
+
+// Function to cleanup unused images by moving them to trash (admin only)
+exports.cleanupUnusedImages = onCall(
+    {region: "europe-west1", memory: "1GiB", timeoutSeconds: 540},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        
+        console.log("Starting unused images cleanup");
+        
+        // Get all spots to find which images are currently in use
+        const spotsSnapshot = await db.collection("spots").get();
+        const usedImageUrls = new Set();
+        
+        spotsSnapshot.forEach((doc) => {
+          const spotData = doc.data();
+          if (spotData.imageUrls && Array.isArray(spotData.imageUrls)) {
+            spotData.imageUrls.forEach((url) => {
+              // Extract filename from URL, handling both Firebase Storage URL formats
+              let filename;
+              try {
+                const urlObj = new URL(url);
+                const pathname = urlObj.pathname;
+                
+                // Handle Firebase Storage URLs with encoded paths
+                if (url.includes('firebasestorage.googleapis.com') && pathname.includes('/o/')) {
+                  // Format: /v0/b/bucket-name/o/spots%2Ffilename.jpg
+                  const encodedPath = pathname.split('/o/')[1];
+                  const decodedPath = decodeURIComponent(encodedPath);
+                  filename = decodedPath.split('/').pop();
+                } else {
+                  // Format: /bucket-name/spots/filename.jpg
+                  filename = pathname.split('/').pop();
+                }
+                
+                if (filename) {
+                  usedImageUrls.add(filename);
+                }
+              } catch (urlError) {
+                console.warn(`Failed to parse URL: ${url}`, urlError);
+                // Fallback to simple extraction
+                const urlParts = url.split("/");
+                const lastPart = urlParts[urlParts.length - 1];
+                const filename = lastPart.split('?')[0]; // Remove query parameters
+                if (filename) {
+                  usedImageUrls.add(filename);
+                }
+              }
+            });
+          }
+        });
+        
+        console.log(`Found ${usedImageUrls.size} images currently in use`);
+        console.log("Used image filenames:", 
+            Array.from(usedImageUrls).slice(0, 10)); // Log first 10 for debugging
+        
+        // List all files in the spots folder
+        const [files] = await bucket.getFiles({
+          prefix: "spots/",
+        });
+        
+        console.log(`Found ${files.length} total files in storage`);
+        
+        // Ensure trash folder exists by creating a placeholder if needed
+        const trashFolderExists = await bucket.file("spots/trash/.gitkeep").exists();
+        if (!trashFolderExists[0]) {
+          console.log("Creating trash folder...");
+          await bucket.file("spots/trash/.gitkeep").save("", {
+            metadata: {
+              contentType: "text/plain",
+            },
+          });
+          console.log("Trash folder created");
+        }
+        
+        let movedCount = 0;
+        let skippedCount = 0;
+        const movedFiles = [];
+        
+        for (const file of files) {
+          const fileName = file.name;
+          const fileNameOnly = fileName.split("/").pop();
+          
+          // Skip if file is currently in use
+          if (usedImageUrls.has(fileNameOnly)) {
+            skippedCount++;
+            console.log(`Skipping used file: ${fileNameOnly}`);
+            continue;
+          }
+          
+          // Skip if already in trash folder
+          if (fileName.startsWith("spots/trash/")) {
+            skippedCount++;
+            console.log(`Skipping file already in trash: ${fileNameOnly}`);
+            continue;
+          }
+          
+          try {
+            // Move file to trash folder
+            const trashFileName = `spots/trash/${fileNameOnly}`;
+            console.log(`Moving ${fileNameOnly} to ${trashFileName}`);
+            
+            // Copy to trash location
+            await file.copy(trashFileName);
+            console.log(`Copied ${fileNameOnly} to trash`);
+            
+            // Delete original file
+            await file.delete();
+            console.log(`Deleted original ${fileNameOnly}`);
+            
+            movedCount++;
+            movedFiles.push(fileName);
+            console.log(`Successfully moved unused file to trash: ${fileNameOnly}`);
+          } catch (moveError) {
+            console.error(`Failed to move file ${fileName} to trash:`, 
+                moveError);
+          }
+        }
+        
+        const result = {
+          success: true,
+          movedCount,
+          skippedCount,
+          totalFiles: files.length,
+          movedFiles: movedFiles.slice(0, 10), // Limit to first 10 for response size
+          message: `Cleanup completed. Moved ${movedCount} unused images to ` +
+              `trash, skipped ${skippedCount} files.`,
+        };
+        
+        console.log("Unused images cleanup completed:", result);
+        return result;
+      } catch (error) {
+        console.error("Error during unused images cleanup:", error);
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+    }
+);
+
+// Function to find missing images and provide upload URLs (admin only)
+exports.findMissingImages = onCall(
+    {region: "europe-west1", memory: "512MiB", timeoutSeconds: 300},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        
+        console.log("Starting missing images check");
+        
+        // Get all spots to find which images are referenced
+        const spotsSnapshot = await db.collection("spots").get();
+        const referencedImages = new Set();
+        const missingImages = [];
+        
+        spotsSnapshot.forEach((doc) => {
+          const spotData = doc.data();
+          if (spotData.imageUrls && Array.isArray(spotData.imageUrls)) {
+            spotData.imageUrls.forEach((url) => {
+              // Extract filename from URL, handling both Firebase Storage URL formats
+              let filename;
+              try {
+                const urlObj = new URL(url);
+                const pathname = urlObj.pathname;
+                
+                // Handle Firebase Storage URLs with encoded paths
+                if (url.includes('firebasestorage.googleapis.com') && pathname.includes('/o/')) {
+                  // Format: /v0/b/bucket-name/o/spots%2Ffilename.jpg
+                  const encodedPath = pathname.split('/o/')[1];
+                  const decodedPath = decodeURIComponent(encodedPath);
+                  filename = decodedPath.split('/').pop();
+                } else {
+                  // Format: /bucket-name/spots/filename.jpg
+                  filename = pathname.split('/').pop();
+                }
+                
+                if (filename) {
+                  referencedImages.add(filename);
+                }
+              } catch (urlError) {
+                console.warn(`Failed to parse URL: ${url}`, urlError);
+                // Fallback to simple extraction
+                const urlParts = url.split("/");
+                const lastPart = urlParts[urlParts.length - 1];
+                const filename = lastPart.split('?')[0]; // Remove query parameters
+                if (filename) {
+                  referencedImages.add(filename);
+                }
+              }
+            });
+          }
+        });
+        
+        console.log(`Found ${referencedImages.size} referenced images`);
+        
+        // List all files in the spots folder
+        const [files] = await bucket.getFiles({
+          prefix: "spots/",
+        });
+        
+        console.log(`Found ${files.length} total files in storage`);
+        
+        // Create a set of existing filenames
+        const existingFiles = new Set();
+        files.forEach(file => {
+          const fileName = file.name;
+          const fileNameOnly = fileName.split("/").pop();
+          existingFiles.add(fileNameOnly);
+        });
+        
+        // Find missing images
+        referencedImages.forEach(filename => {
+          if (!existingFiles.has(filename)) {
+            missingImages.push({
+              filename: filename,
+              spotId: null, // We'll populate this in the next step
+              spotName: null,
+              imageUrl: null,
+            });
+          }
+        });
+        
+        // Find which spots reference each missing image
+        const missingImagesWithSpots = [];
+        for (const missingImage of missingImages) {
+          const spotsWithThisImage = [];
+          
+          spotsSnapshot.forEach((doc) => {
+            const spotData = doc.data();
+            if (spotData.imageUrls && Array.isArray(spotData.imageUrls)) {
+              spotData.imageUrls.forEach((url) => {
+                let filename;
+                try {
+                  const urlObj = new URL(url);
+                  const pathname = urlObj.pathname;
+                  
+                  if (url.includes('firebasestorage.googleapis.com') && pathname.includes('/o/')) {
+                    const encodedPath = pathname.split('/o/')[1];
+                    const decodedPath = decodeURIComponent(encodedPath);
+                    filename = decodedPath.split('/').pop();
+                  } else {
+                    filename = pathname.split('/').pop();
+                  }
+                  
+                  if (filename === missingImage.filename) {
+                    spotsWithThisImage.push({
+                      spotId: doc.id,
+                      spotName: spotData.name || 'Unnamed Spot',
+                      imageUrl: url,
+                    });
+                  }
+                } catch (urlError) {
+                  // Skip invalid URLs
+                }
+              });
+            }
+          });
+          
+          if (spotsWithThisImage.length > 0) {
+            missingImagesWithSpots.push({
+              filename: missingImage.filename,
+              spots: spotsWithThisImage,
+            });
+          }
+        }
+        
+        const result = {
+          success: true,
+          totalReferencedImages: referencedImages.size,
+          totalExistingFiles: existingFiles.size,
+          missingImagesCount: missingImagesWithSpots.length,
+          missingImages: missingImagesWithSpots,
+          message: `Found ${missingImagesWithSpots.length} missing images referenced by ${spotsSnapshot.size} spots`,
+        };
+        
+        console.log("Missing images check completed:", result);
+        return result;
+      } catch (error) {
+        console.error("Error during missing images check:", error);
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+    }
+);
+
+// Function to upload replacement image (admin only)
+exports.uploadReplacementImage = onCall(
+    {region: "europe-west1", memory: "256MiB", timeoutSeconds: 60},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        
+        const {filename, imageData, contentType = 'image/jpeg'} = request.data;
+        
+        if (!filename || !imageData) {
+          throw new Error("filename and imageData are required");
+        }
+        
+        console.log(`Uploading replacement image: ${filename}`);
+        
+        // Convert base64 to buffer
+        const imageBuffer = Buffer.from(imageData, 'base64');
+        
+        // Upload to Firebase Storage
+        const fileName = `spots/${filename}`;
+        const file = bucket.file(fileName);
+        
+        await file.save(imageBuffer, {
+          metadata: {
+            contentType: contentType,
+            cacheControl: "public, max-age=31536000",
+          },
+        });
+        
+        // Make file publicly accessible
+        await file.makePublic();
+        
+        // Get public URL
+        const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+        
+        console.log(`Successfully uploaded replacement image: ${filename}`);
+        
+        return {
+          success: true,
+          filename: filename,
+          publicUrl: publicUrl,
+          message: `Successfully uploaded replacement image: ${filename}`,
+        };
+      } catch (error) {
+        console.error("Error uploading replacement image:", error);
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+    }
+);
