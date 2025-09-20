@@ -474,6 +474,15 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
           position: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
           icon: _userLocationIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
           zIndex: 9999,
+          onTap: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('This is your current location'),
+                duration: Duration(seconds: 2),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          },
         ),
       );
     }
@@ -483,7 +492,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
 
   Future<void> _loadUserLocationIcon() async {
     try {
-      final icon = await _createUserLocationIcon(size: 96, fillColor: Colors.blue);
+      final icon = await _createUserLocationIcon(size: 24, fillColor: Colors.blue);
       if (mounted) {
         setState(() {
           _userLocationIcon = icon;
@@ -494,7 +503,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     }
   }
 
-  Future<BitmapDescriptor> _createUserLocationIcon({double size = 96, Color fillColor = Colors.blue}) async {
+  Future<BitmapDescriptor> _createUserLocationIcon({double size = 24, Color fillColor = Colors.blue}) async {
     final ui.PictureRecorder recorder = ui.PictureRecorder();
     final Canvas canvas = Canvas(recorder);
     final double radius = size / 2;
@@ -504,12 +513,16 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     final Paint ringPaint = Paint()..color = Colors.white;
     final Paint fillPaint = Paint()..color = fillColor;
 
+    // Calculate proportional border thickness (was 4px for 96px icon, now scales)
+    final double borderThickness = size * 4 / 96; // Scale from 4px at 96px size
+    final double innerRadius = radius - borderThickness;
+
     // Shadow circle
     canvas.drawCircle(center, radius, shadowPaint);
     // Outer white ring
-    canvas.drawCircle(center, radius - 4, ringPaint);
+    canvas.drawCircle(center, innerRadius, ringPaint);
     // Inner fill
-    canvas.drawCircle(center, radius - 12, fillPaint);
+    canvas.drawCircle(center, innerRadius - borderThickness * 2, fillPaint);
 
     final ui.Image image = await recorder.endRecording().toImage(size.toInt(), size.toInt());
     final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
