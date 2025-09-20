@@ -174,4 +174,24 @@ class GeocodingService extends ChangeNotifier {
     _error = null;
     notifyListeners();
   }
+
+  /// Admin: Trigger geocoding for all spots missing address fields
+  Future<Map<String, dynamic>?> geocodeMissingSpotAddresses() async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      final callable = _functions.httpsCallable('geocodeMissingSpotAddresses');
+      final result = await callable.call();
+      return Map<String, dynamic>.from(result.data as Map);
+    } catch (e) {
+      _error = 'Failed to trigger geocoding: $e';
+      debugPrint('Error triggering geocoding of missing addresses: $e');
+      return null;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 }
