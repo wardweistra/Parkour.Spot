@@ -246,6 +246,38 @@ class ProfileScreen extends StatelessWidget {
           ),
           
           const SizedBox(height: 16),
+
+          if (authService.isAdmin) ...[
+            // Administrator Section
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Administrator',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildActionTile(
+                      context,
+                      Icons.admin_panel_settings,
+                      'Admin Tools',
+                      'Manage sources and administrative tasks',
+                      () {
+                        context.go('/admin');
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+          ],
           
           // App Info
           Card(
