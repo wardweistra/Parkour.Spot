@@ -292,10 +292,19 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
         final visibleSpots = filteredSpots.where((spot) {
           final lat = spot.location.latitude;
           final lng = spot.location.longitude;
-          return lat >= bounds.southwest.latitude &&
-                 lat <= bounds.northeast.latitude &&
-                 lng >= bounds.southwest.longitude &&
-                 lng <= bounds.northeast.longitude;
+          
+          // Check latitude bounds
+          final bool latInBounds = lat >= bounds.southwest.latitude &&
+                                  lat <= bounds.northeast.latitude;
+          
+          // Check longitude bounds (handle date line crossing)
+          final bool lngInBounds = _isLongitudeInBounds(
+            lng, 
+            bounds.southwest.longitude, 
+            bounds.northeast.longitude
+          );
+          
+          return latInBounds && lngInBounds;
         }).toList();
 
         setState(() {
@@ -311,6 +320,31 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
       });
     }
   }
+
+  /// Helper method to check if a longitude is within bounds, handling date line crossing
+  bool _isLongitudeInBounds(double lng, double southwestLng, double northeastLng) {
+    // Normalize longitude to [-180, 180] range
+    lng = _normalizeLongitude(lng);
+    southwestLng = _normalizeLongitude(southwestLng);
+    northeastLng = _normalizeLongitude(northeastLng);
+    
+    // If the bounds don't cross the date line (normal case)
+    if (southwestLng <= northeastLng) {
+      return lng >= southwestLng && lng <= northeastLng;
+    }
+    
+    // If the bounds cross the date line (e.g., southwestLng = 170, northeastLng = -170)
+    // The visible region spans from southwestLng to 180 and from -180 to northeastLng
+    return lng >= southwestLng || lng <= northeastLng;
+  }
+  
+  /// Normalize longitude to [-180, 180] range
+  double _normalizeLongitude(double lng) {
+    while (lng > 180) lng -= 360;
+    while (lng < -180) lng += 360;
+    return lng;
+  }
+  
 
   Widget _buildFilters() {
     return Consumer<SyncSourceService>(
