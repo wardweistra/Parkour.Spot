@@ -214,4 +214,64 @@ class GeocodingService extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  /// Google Places Autocomplete (server-key via backend function)
+  /// Returns list of suggestions with description and placeId
+  Future<List<Map<String, dynamic>>> placesAutocomplete({
+    required String input,
+    String? sessionToken,
+    double? biasLat,
+    double? biasLng,
+    int? radiusMeters,
+    String? language,
+  }) async {
+    try {
+      if (input.trim().isEmpty) return [];
+      final callable = _functions.httpsCallable('placesAutocomplete');
+      final result = await callable.call({
+        'input': input,
+        if (sessionToken != null) 'sessionToken': sessionToken,
+        if (biasLat != null && biasLng != null)
+          'location': {
+            'lat': biasLat,
+            'lng': biasLng,
+          },
+        if (radiusMeters != null) 'radiusMeters': radiusMeters,
+        if (language != null) 'language': language,
+        'types': 'geocode',
+      });
+
+      if (result.data['success'] == true && result.data['suggestions'] is List) {
+        return List<Map<String, dynamic>>.from(result.data['suggestions']);
+      }
+      return [];
+    } catch (e) {
+      debugPrint('Error fetching places autocomplete: $e');
+      return [];
+    }
+  }
+
+  /// Place Details to get coordinates and formatted address (server-key via backend)
+  /// Returns map with latitude, longitude, formattedAddress, city, countryCode
+  Future<Map<String, dynamic>?> placeDetails({
+    required String placeId,
+    String? sessionToken,
+    String? language,
+  }) async {
+    try {
+      final callable = _functions.httpsCallable('placeDetails');
+      final result = await callable.call({
+        'placeId': placeId,
+        if (sessionToken != null) 'sessionToken': sessionToken,
+        if (language != null) 'language': language,
+      });
+      if (result.data['success'] == true) {
+        return Map<String, dynamic>.from(result.data as Map);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error fetching place details: $e');
+      return null;
+    }
+  }
 }

@@ -58,6 +58,21 @@ GOOGLE_MAPS_API_KEY_ANDROID=your_android_maps_key_here
 GOOGLE_MAPS_API_KEY_IOS=your_ios_maps_key_here
 ```
 
+### Backend Google Maps API key
+
+The autocomplete and geocoding features use a server-side Google Maps API key via Firebase Functions secrets. Make sure to set the secret in your Firebase project:
+
+```bash
+firebase functions:secrets:set GOOGLE_MAPS_API_KEY
+```
+
+This key should have at least the following APIs enabled:
+
+- Places API
+- Geocoding API
+
+The Flutter client calls callable functions `placesAutocomplete`, `placeDetails`, `geocodeCoordinates`, and `reverseGeocodeAddress`, which proxy Google APIs securely using the backend key.
+
 ### 4. **Run the App**
 ```bash
 # Web

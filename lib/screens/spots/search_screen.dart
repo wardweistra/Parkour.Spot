@@ -6,10 +6,13 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:async';
+import 'package:uuid/uuid.dart';
 import '../../services/spot_service.dart';
 import '../../services/sync_source_service.dart';
 import '../../services/search_state_service.dart';
 import '../../services/url_service.dart';
+import '../../services/geocoding_service.dart';
 import '../../models/spot.dart';
 import '../../widgets/spot_card.dart';
 import '../../widgets/source_details_dialog.dart';
@@ -66,6 +69,10 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   BitmapDescriptor? _userLocationIcon;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  String? _placesSessionToken;
+  Timer? _autocompleteDebounce;
+  bool _isFetchingSuggestions = false;
+  List<Map<String, dynamic>> _autocompleteSuggestions = [];
   List<Spot> _visibleSpots = [];
   Set<Marker> _markers = {};
   Spot? _selectedSpot;
@@ -187,6 +194,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
 
   @override
   void dispose() {
+    _autocompleteDebounce?.cancel();
     _searchController.dispose();
     _bottomSheetAnimationController.dispose();
     _imagePageController.dispose();
@@ -201,6 +209,94 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
       _searchQuery = _searchController.text;
     });
     _updateVisibleSpots();
+    _debouncedFetchSuggestions();
+  }
+
+  void _debouncedFetchSuggestions() {
+    _autocompleteDebounce?.cancel();
+    if (_searchQuery.trim().isEmpty) {
+      setState(() {
+        _autocompleteSuggestions = [];
+      });
+      return;
+    }
+    _autocompleteDebounce = Timer(const Duration(milliseconds: 250), () async {
+      // Ensure a session token exists for billing/session affinity
+      _placesSessionToken ??= const Uuid().v4();
+      setState(() {
+        _isFetchingSuggestions = true;
+      });
+      try {
+        final geocoding = Provider.of<GeocodingService>(context, listen: false);
+        // Bias to current map center if available
+        LatLng? center;
+        if (_mapController != null) {
+          try {
+            final bounds = await _mapController!.getVisibleRegion();
+            center = LatLng(
+              (bounds.northeast.latitude + bounds.southwest.latitude) / 2,
+              (bounds.northeast.longitude + bounds.southwest.longitude) / 2,
+            );
+          } catch (_) {}
+        }
+        final suggestions = await geocoding.placesAutocomplete(
+          input: _searchQuery,
+          sessionToken: _placesSessionToken,
+          biasLat: center?.latitude,
+          biasLng: center?.longitude,
+          radiusMeters: 50000,
+        );
+        if (!mounted) return;
+        setState(() {
+          _autocompleteSuggestions = suggestions;
+        });
+      } catch (_) {
+        if (!mounted) return;
+        setState(() {
+          _autocompleteSuggestions = [];
+        });
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isFetchingSuggestions = false;
+          });
+        }
+      }
+    });
+  }
+
+  Future<void> _selectPlaceSuggestion(Map<String, dynamic> suggestion) async {
+    try {
+      final geocoding = Provider.of<GeocodingService>(context, listen: false);
+      final placeId = suggestion['placeId'] as String?;
+      if (placeId == null) return;
+      final details = await geocoding.placeDetails(
+        placeId: placeId,
+        sessionToken: _placesSessionToken,
+      );
+      // Reset session token after a selection per Google guidelines
+      _placesSessionToken = null;
+      if (details == null) return;
+      final double? lat = (details['latitude'] as num?)?.toDouble();
+      final double? lng = (details['longitude'] as num?)?.toDouble();
+      final String? formatted = details['formattedAddress'] as String? ?? details['formatted_address'] as String?;
+      if (lat != null && lng != null && _mapController != null) {
+        await _mapController!.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(
+          target: LatLng(lat, lng),
+          zoom: 13.5,
+        )));
+      }
+      // Update search field and clear suggestions
+      setState(() {
+        _searchController.text = formatted ?? (suggestion['description'] as String? ?? '');
+        _searchController.selection = TextSelection.fromPosition(TextPosition(offset: _searchController.text.length));
+        _autocompleteSuggestions = [];
+      });
+      // Trigger a refresh of visible spots for new area
+      _updateVisibleSpots();
+    } catch (_) {
+      // Ignore selection errors silently
+    }
   }
 
   Future<void> _getCurrentLocation() async {
@@ -893,62 +989,101 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                       ),
                     ],
                   ),
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: 'Search spots...',
-                      prefixIcon: const Icon(Icons.search),
-                      suffixIcon: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (_searchQuery.isNotEmpty)
-                            IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                _searchController.clear();
-                              },
-                            ),
-                          Stack(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextField(
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          hintText: 'Search spots or location…',
+                          prefixIcon: const Icon(Icons.search),
+                          suffixIcon: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              IconButton(
-                                icon: ReliableIcon(
-                                  icon: Icons.filter_list,
-                                  color: _showFiltersDialog ? Theme.of(context).colorScheme.primary : null,
-                                ),
-                                tooltip: 'Filters',
-                                onPressed: () {
-                                  setState(() {
-                                    _showFiltersDialog = !_showFiltersDialog;
-                                  });
-                                },
-                              ),
-                              // Show indicator when filters are active
-                              if (_hasActiveFilters())
-                                Positioned(
-                                  right: 8,
-                                  top: 8,
-                                  child: Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context).colorScheme.primary,
-                                      shape: BoxShape.circle,
-                                    ),
+                              if (_isFetchingSuggestions)
+                                const Padding(
+                                  padding: EdgeInsets.only(right: 8),
+                                  child: SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
                                   ),
                                 ),
+                              if (_searchQuery.isNotEmpty)
+                                IconButton(
+                                  icon: const Icon(Icons.clear),
+                                  tooltip: 'Clear',
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    setState(() {
+                                      _autocompleteSuggestions = [];
+                                    });
+                                  },
+                                ),
+                              Stack(
+                                children: [
+                                  IconButton(
+                                    icon: ReliableIcon(
+                                      icon: Icons.filter_list,
+                                      color: _showFiltersDialog ? Theme.of(context).colorScheme.primary : null,
+                                    ),
+                                    tooltip: 'Filters',
+                                    onPressed: () {
+                                      setState(() {
+                                        _showFiltersDialog = !_showFiltersDialog;
+                                      });
+                                    },
+                                  ),
+                                  if (_hasActiveFilters())
+                                    Positioned(
+                                      right: 8,
+                                      top: 8,
+                                      child: Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context).colorScheme.primary,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
                             ],
                           ),
-                        ],
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                        ),
                       ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                    ),
+                      if (_autocompleteSuggestions.isNotEmpty)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surface,
+                            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: _autocompleteSuggestions.take(7).map((s) {
+                              final desc = (s['structuredFormatting']?['main_text'] ?? s['description'])?.toString() ?? '';
+                              final secondary = (s['structuredFormatting']?['secondary_text'])?.toString();
+                              return ListTile(
+                                leading: const Icon(Icons.location_on_outlined),
+                                dense: true,
+                                title: Text(desc, maxLines: 1, overflow: TextOverflow.ellipsis),
+                                subtitle: secondary != null ? Text(secondary, maxLines: 1, overflow: TextOverflow.ellipsis) : null,
+                                onTap: () => _selectPlaceSuggestion(s),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),
