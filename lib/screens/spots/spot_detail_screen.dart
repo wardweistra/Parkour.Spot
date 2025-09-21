@@ -11,6 +11,7 @@ import '../../services/url_service.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../services/sync_source_service.dart';
 import '../../widgets/custom_button.dart';
+import '../../widgets/source_details_dialog.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 
 class SpotDetailScreen extends StatefulWidget {
@@ -54,86 +55,104 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     super.dispose();
   }
 
-  void _showExternalSpotInfo() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(
-              Icons.source,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(width: 8),
-            const Text('External Spot'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'This spot comes from an external source.',
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'External spots:',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
+  void _showExternalSpotInfo() async {
+    if (widget.spot.spotSource == null) return;
+    
+    try {
+      final syncSourceService = Provider.of<SyncSourceService>(context, listen: false);
+      
+      // Find the source by ID
+      final source = syncSourceService.sources.firstWhere(
+        (s) => s.id == widget.spot.spotSource,
+        orElse: () => throw Exception('Source not found'),
+      );
+      
+      showDialog(
+        context: context,
+        builder: (context) => SourceDetailsDialog(source: source),
+      );
+    } catch (e) {
+      // Fallback to simple info dialog if source not found
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Row(
+            children: [
+              Icon(
+                Icons.source,
+                color: Theme.of(context).colorScheme.primary,
               ),
-            ),
-            const SizedBox(height: 8),
-            ...[
-              '• May not have all features of native spots',
-              '• Could be removed if the source is unavailable',
-              '• May have limited editing capabilities',
-              '• Data accuracy depends on the original source',
-            ].map((item) => Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Text(
-                item,
-                style: Theme.of(context).textTheme.bodyMedium,
+              const SizedBox(width: 8),
+              const Text('External Spot'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'This spot comes from an external source.',
+                style: Theme.of(context).textTheme.bodyLarge,
               ),
-            )),
-            if (_sourceName != null) ...[
               const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(8),
+              Text(
+                'External spots:',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
                 ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      size: 16,
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Source: $_sourceName',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
+              const SizedBox(height: 8),
+              ...[
+                '• May not have all features of native spots',
+                '• Could be removed if the source is unavailable',
+                '• May have limited editing capabilities',
+                '• Data accuracy depends on the original source',
+              ].map((item) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  item,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              )),
+              if (_sourceName != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Source: $_sourceName',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Got it'),
+            ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Got it'),
-          ),
-        ],
-      ),
-    );
+      );
+    }
   }
 
   void _showShareOptions() {
@@ -933,23 +952,27 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         ),
                       ],
                       if (widget.spot.spotSource != null) ...[
-                        ListTile(
-                          leading: const Icon(Icons.source),
-                          title: const Text('Source'),
-                          subtitle: _isLoadingSourceName
-                              ? const Row(
-                                  children: [
-                                    SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
-                                    ),
-                                    SizedBox(width: 8),
-                                    Text('Loading...'),
-                                  ],
-                                )
-                              : Text(_sourceName ?? 'Unknown Source'),
-                          contentPadding: EdgeInsets.zero,
+                        GestureDetector(
+                          onTap: _showExternalSpotInfo,
+                          child: ListTile(
+                            leading: const Icon(Icons.source),
+                            title: const Text('Source'),
+                            subtitle: _isLoadingSourceName
+                                ? const Row(
+                                    children: [
+                                      SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text('Loading...'),
+                                    ],
+                                  )
+                                : Text(_sourceName ?? 'Unknown Source'),
+                            contentPadding: EdgeInsets.zero,
+                            trailing: const Icon(Icons.info_outline, size: 16),
+                          ),
                         ),
                       ],
                       if (widget.spot.createdAt != null) ...[

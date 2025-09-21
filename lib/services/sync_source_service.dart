@@ -7,6 +7,7 @@ class SyncSource {
   final String name;
   final String kmzUrl;
   final String? description;
+  final String? publicUrl;
   final bool isPublic;
   final bool isActive;
   final DateTime? createdAt;
@@ -19,6 +20,7 @@ class SyncSource {
     required this.name,
     required this.kmzUrl,
     this.description,
+    this.publicUrl,
     required this.isPublic,
     required this.isActive,
     this.createdAt,
@@ -33,6 +35,7 @@ class SyncSource {
       name: data['name'] ?? '',
       kmzUrl: data['kmzUrl'] ?? '',
       description: data['description'],
+      publicUrl: data['publicUrl'],
       isPublic: data['isPublic'] ?? true,
       isActive: data['isActive'] ?? true,
       createdAt: _parseTimestamp(data['createdAt']),
@@ -119,6 +122,7 @@ class SyncSourceService extends ChangeNotifier {
     required String name,
     required String kmzUrl,
     String? description,
+    String? publicUrl,
     bool isPublic = true,
     bool isActive = true,
   }) async {
@@ -128,6 +132,7 @@ class SyncSourceService extends ChangeNotifier {
         'name': name,
         'kmzUrl': kmzUrl,
         'description': description,
+        'publicUrl': publicUrl,
         'isPublic': isPublic,
         'isActive': isActive,
       });
@@ -149,6 +154,7 @@ class SyncSourceService extends ChangeNotifier {
     String? name,
     String? kmzUrl,
     String? description,
+    String? publicUrl,
     bool? isPublic,
     bool? isActive,
   }) async {
@@ -158,6 +164,7 @@ class SyncSourceService extends ChangeNotifier {
       if (name != null) payload['name'] = name;
       if (kmzUrl != null) payload['kmzUrl'] = kmzUrl;
       if (description != null) payload['description'] = description;
+      if (publicUrl != null) payload['publicUrl'] = publicUrl;
       if (isPublic != null) payload['isPublic'] = isPublic;
       if (isActive != null) payload['isActive'] = isActive;
       final result = await callable.call(payload);

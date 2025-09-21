@@ -251,6 +251,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
     final nameCtrl = TextEditingController(text: source?.name ?? '');
     final urlCtrl = TextEditingController(text: source?.kmzUrl ?? '');
     final descCtrl = TextEditingController(text: source?.description ?? '');
+    final publicUrlCtrl = TextEditingController(text: source?.publicUrl ?? '');
     bool isPublic = source?.isPublic ?? true;
     bool isActive = source?.isActive ?? true;
 
@@ -278,6 +279,11 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                   controller: descCtrl,
                   decoration: const InputDecoration(labelText: 'Description (optional)'),
                   maxLines: 3,
+                ),
+                TextFormField(
+                  controller: publicUrlCtrl,
+                  decoration: const InputDecoration(labelText: 'Public URL (optional)'),
+                  keyboardType: TextInputType.url,
                 ),
                 const SizedBox(height: 8),
                 Row(
@@ -316,6 +322,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                   name: nameCtrl.text.trim(),
                   kmzUrl: urlCtrl.text.trim(),
                   description: descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
+                  publicUrl: publicUrlCtrl.text.trim().isEmpty ? null : publicUrlCtrl.text.trim(),
                   isPublic: isPublic,
                   isActive: isActive,
                 );
@@ -325,6 +332,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                   name: nameCtrl.text.trim(),
                   kmzUrl: urlCtrl.text.trim(),
                   description: descCtrl.text.trim(),
+                  publicUrl: publicUrlCtrl.text.trim(),
                   isPublic: isPublic,
                   isActive: isActive,
                 );

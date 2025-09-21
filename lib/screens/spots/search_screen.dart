@@ -12,6 +12,7 @@ import '../../services/search_state_service.dart';
 import '../../services/url_service.dart';
 import '../../models/spot.dart';
 import '../../widgets/spot_card.dart';
+import '../../widgets/source_details_dialog.dart';
 
 // Helper widget to ensure icons render properly on mobile web
 class ReliableIcon extends StatelessWidget {
@@ -373,21 +374,44 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                 color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                               ),
                         ),
-                        TextButton(
-                          onPressed: _selectedExternalSourceIds.isEmpty
-                              ? null
-                              : () {
-                                  setState(() {
-                                    _selectedExternalSourceIds.clear();
-                                  });
-                                  Provider.of<SearchStateService>(context, listen: false)
-                                      .setSelectedExternalSourceIds(_selectedExternalSourceIds);
-                                  // Call _updateVisibleSpots after setState completes
-                                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                                    _updateVisibleSpots();
-                                  });
-                                },
-                          child: const Text('Clear'),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            TextButton(
+                              onPressed: _selectedExternalSourceIds.length == (_syncSourceServiceRef?.sources.length ?? 0)
+                                  ? null
+                                  : () {
+                                      setState(() {
+                                        _selectedExternalSourceIds.clear();
+                                        _selectedExternalSourceIds.addAll(_syncSourceServiceRef!.sources.map((s) => s.id));
+                                      });
+                                      Provider.of<SearchStateService>(context, listen: false)
+                                          .setSelectedExternalSourceIds(_selectedExternalSourceIds);
+                                      // Call _updateVisibleSpots after setState completes
+                                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                                        _updateVisibleSpots();
+                                      });
+                                    },
+                              child: const Text('Show All'),
+                            ),
+                            const SizedBox(width: 8),
+                            TextButton(
+                              onPressed: _selectedExternalSourceIds.isEmpty
+                                  ? null
+                                  : () {
+                                      setState(() {
+                                        _selectedExternalSourceIds.clear();
+                                      });
+                                      Provider.of<SearchStateService>(context, listen: false)
+                                          .setSelectedExternalSourceIds(_selectedExternalSourceIds);
+                                      // Call _updateVisibleSpots after setState completes
+                                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                                        _updateVisibleSpots();
+                                      });
+                                    },
+                              child: const Text('Show None'),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -416,25 +440,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                         runSpacing: 8,
                         children: sources.map((source) {
                           final bool selected = _selectedExternalSourceIds.contains(source.id);
-                          return FilterChip(
-                            label: Text(source.name),
-                            selected: selected,
-                            onSelected: (val) {
-                              setState(() {
-                                if (val) {
-                                  _selectedExternalSourceIds.add(source.id);
-                                } else {
-                                  _selectedExternalSourceIds.remove(source.id);
-                                }
-                              });
-                              Provider.of<SearchStateService>(context, listen: false)
-                                  .setSelectedExternalSourceIds(_selectedExternalSourceIds);
-                              // Call _updateVisibleSpots after setState completes
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                _updateVisibleSpots();
-                              });
-                            },
-                          );
+                          return _buildSourceChipWithInfo(context, source, selected);
                         }).toList(),
                       ),
                   ],
@@ -1459,6 +1465,54 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSourceChipWithInfo(BuildContext context, SyncSource source, bool selected) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        FilterChip(
+          label: Text(source.name),
+          selected: selected,
+          onSelected: (val) {
+            setState(() {
+              if (val) {
+                _selectedExternalSourceIds.add(source.id);
+              } else {
+                _selectedExternalSourceIds.remove(source.id);
+              }
+            });
+            Provider.of<SearchStateService>(context, listen: false)
+                .setSelectedExternalSourceIds(_selectedExternalSourceIds);
+            // Call _updateVisibleSpots after setState completes
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _updateVisibleSpots();
+            });
+          },
+        ),
+        const SizedBox(width: 4),
+        GestureDetector(
+          onTap: () {
+            showDialog(
+              context: context,
+              builder: (context) => SourceDetailsDialog(source: source),
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.info_outline,
+              size: 16,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

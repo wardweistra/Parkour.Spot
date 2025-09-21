@@ -1144,7 +1144,7 @@ exports.createSyncSource = onCall(
     async (request) => {
       try {
         await ensureAdmin(request);
-        const {name, kmzUrl, description, isPublic = true,
+        const {name, kmzUrl, description, publicUrl, isPublic = true,
           isActive = true} = request.data;
 
         if (!name || !kmzUrl) {
@@ -1155,6 +1155,7 @@ exports.createSyncSource = onCall(
           name: name,
           kmzUrl: kmzUrl,
           description: description || "",
+          publicUrl: publicUrl || "",
           isPublic: isPublic,
           isActive: isActive,
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -1181,7 +1182,7 @@ exports.updateSyncSource = onCall(
     async (request) => {
       try {
         await ensureAdmin(request);
-        const {sourceId, name, kmzUrl, description, isPublic,
+        const {sourceId, name, kmzUrl, description, publicUrl, isPublic,
           isActive} = request.data;
 
         if (!sourceId) {
@@ -1195,6 +1196,7 @@ exports.updateSyncSource = onCall(
         if (name !== undefined) updateData.name = name;
         if (kmzUrl !== undefined) updateData.kmzUrl = kmzUrl;
         if (description !== undefined) updateData.description = description;
+        if (publicUrl !== undefined) updateData.publicUrl = publicUrl;
         if (isPublic !== undefined) updateData.isPublic = isPublic;
         if (isActive !== undefined) updateData.isActive = isActive;
 
