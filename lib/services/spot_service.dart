@@ -94,25 +94,6 @@ class SpotService extends ChangeNotifier {
     }
   }
 
-  // Search spots by name or description
-  List<Spot> searchSpots(String query) {
-    try {
-      if (query.isEmpty) {
-        return _spots;
-      }
-
-      final lowercaseQuery = query.toLowerCase();
-      return _spots.where((spot) {
-        return spot.name.toLowerCase().contains(lowercaseQuery) ||
-               spot.description.toLowerCase().contains(lowercaseQuery) ||
-               (spot.tags?.any((tag) => tag.toLowerCase().contains(lowercaseQuery)) ?? false);
-      }).toList();
-    } catch (e) {
-      debugPrint('Error searching spots: $e');
-      return [];
-    }
-  }
-
   // Create a new spot
   Future<String?> createSpot(Spot spot, {File? imageFile, Uint8List? imageBytes, List<File>? imageFiles, List<Uint8List>? imageBytesList}) async {
     try {

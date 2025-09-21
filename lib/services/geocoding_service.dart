@@ -227,6 +227,7 @@ class GeocodingService extends ChangeNotifier {
   }) async {
     try {
       if (input.trim().isEmpty) return [];
+      
       final callable = _functions.httpsCallable('placesAutocomplete');
       final result = await callable.call({
         'input': input,
@@ -240,7 +241,7 @@ class GeocodingService extends ChangeNotifier {
         if (language != null) 'language': language,
         'types': 'geocode',
       });
-
+      
       if (result.data['success'] == true && result.data['suggestions'] is List) {
         return List<Map<String, dynamic>>.from(result.data['suggestions']);
       }

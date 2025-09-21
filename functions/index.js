@@ -1490,7 +1490,7 @@ exports.placeDetails = onCall(
 
         const params = new URLSearchParams();
         params.append("place_id", placeId);
-        params.append("fields", "geometry,formatted_address,address_component");
+        params.append("fields", "geometry,formatted_address,address_component,types");
         params.append("key", apiKey);
         if (sessionToken) params.append("sessiontoken", sessionToken);
         if (language) params.append("language", language);
@@ -1535,6 +1535,7 @@ exports.placeDetails = onCall(
             city,
             countryCode,
             viewport,
+            types: r.types || [],
           };
         }
 

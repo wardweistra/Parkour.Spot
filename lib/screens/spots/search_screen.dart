@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:provider/provider.dart';
@@ -68,6 +69,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   Position? _currentPosition;
   BitmapDescriptor? _userLocationIcon;
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   String _searchQuery = '';
   String? _placesSessionToken;
   Timer? _autocompleteDebounce;
@@ -196,6 +198,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   void dispose() {
     _autocompleteDebounce?.cancel();
     _searchController.dispose();
+    _searchFocusNode.dispose();
     _bottomSheetAnimationController.dispose();
     _imagePageController.dispose();
     // Remove listeners
@@ -208,9 +211,10 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     setState(() {
       _searchQuery = _searchController.text;
     });
-    _updateVisibleSpots();
+    // Only fetch location suggestions, don't filter spots by name
     _debouncedFetchSuggestions();
   }
+
 
   void _debouncedFetchSuggestions() {
     _autocompleteDebounce?.cancel();
@@ -249,7 +253,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
         if (!mounted) return;
         setState(() {
           _autocompleteSuggestions = suggestions;
-        });
+});
       } catch (_) {
         if (!mounted) return;
         setState(() {
@@ -265,11 +269,54 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     });
   }
 
+  double _getZoomLevelForPlace(Map<String, dynamic> details) {
+    // Get place types from the place details
+    final types = details['types'] as List<dynamic>? ?? [];
+    
+    // Country level - zoom out significantly
+    if (types.contains('country')) {
+      return 6.0;
+    }
+    
+    // Administrative area level 1 (state/province) - moderate zoom
+    if (types.contains('administrative_area_level_1')) {
+      return 8.0;
+    }
+    
+    // Administrative area level 2 (county) - closer zoom
+    if (types.contains('administrative_area_level_2')) {
+      return 10.0;
+    }
+    
+    // City level - closer zoom
+    if (types.contains('locality') || types.contains('administrative_area_level_3')) {
+      return 12.0;
+    }
+    
+    // Neighborhood level - close zoom
+    if (types.contains('sublocality') || types.contains('neighborhood')) {
+      return 13.0;
+    }
+    
+    // Specific places (restaurants, businesses, etc.) - very close zoom
+    if (types.contains('establishment') || types.contains('point_of_interest')) {
+      return 15.0;
+    }
+    
+    // Default zoom level for other types
+    return 13.5;
+  }
+
   Future<void> _selectPlaceSuggestion(Map<String, dynamic> suggestion) async {
+    print('_selectPlaceSuggestion called with: ${suggestion['description']}'); // Debug print
+    
     try {
       final geocoding = Provider.of<GeocodingService>(context, listen: false);
       final placeId = suggestion['placeId'] as String?;
-      if (placeId == null) return;
+      if (placeId == null) {
+        print('No placeId found in suggestion');
+        return;
+      }
       final details = await geocoding.placeDetails(
         placeId: placeId,
         sessionToken: _placesSessionToken,
@@ -281,9 +328,10 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
       final double? lng = (details['longitude'] as num?)?.toDouble();
       final String? formatted = details['formattedAddress'] as String? ?? details['formatted_address'] as String?;
       if (lat != null && lng != null && _mapController != null) {
+        final zoomLevel = _getZoomLevelForPlace(details);
         await _mapController!.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(
           target: LatLng(lat, lng),
-          zoom: 13.5,
+          zoom: zoomLevel,
         )));
       }
       // Update search field and clear suggestions
@@ -294,8 +342,13 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
       });
       // Trigger a refresh of visible spots for new area
       _updateVisibleSpots();
-    } catch (_) {
-      // Ignore selection errors silently
+      print('Selection completed successfully');
+    } catch (e) {
+      // Log errors for debugging
+      print('Error selecting place: $e');
+      setState(() {
+        _autocompleteSuggestions = [];
+      });
     }
   }
 
@@ -352,11 +405,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     final spotService = Provider.of<SpotService>(context, listen: false);
     List<Spot> filteredSpots = spotService.spots;
     
-
-    // Apply search filter
-    if (_searchQuery.isNotEmpty) {
-      filteredSpots = spotService.searchSpots(_searchQuery);
-    }
+    // Note: Search query is now only used for location autocomplete, not spot name filtering
 
     // Apply picture filter (default: exclude spots without pictures)
     if (!_includeSpotsWithoutPictures) {
@@ -992,97 +1041,147 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      TextField(
-                        controller: _searchController,
-                        decoration: InputDecoration(
-                          hintText: 'Search spots or location…',
-                          prefixIcon: const Icon(Icons.search),
-                          suffixIcon: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (_isFetchingSuggestions)
-                                const Padding(
-                                  padding: EdgeInsets.only(right: 8),
-                                  child: SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  ),
-                                ),
-                              if (_searchQuery.isNotEmpty)
-                                IconButton(
-                                  icon: const Icon(Icons.clear),
-                                  tooltip: 'Clear',
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    setState(() {
-                                      _autocompleteSuggestions = [];
-                                    });
-                                  },
-                                ),
-                              Stack(
+                      Autocomplete<Map<String, dynamic>>(
+                        optionsBuilder: (TextEditingValue textEditingValue) async {
+                          if (textEditingValue.text.isEmpty) {
+                            return const Iterable<Map<String, dynamic>>.empty();
+                          }
+                          
+                          // Update search query and trigger debounced fetch
+                          setState(() {
+                            _searchQuery = textEditingValue.text;
+                          });
+                          _debouncedFetchSuggestions();
+                          
+                          return _autocompleteSuggestions;
+                        },
+                        onSelected: (Map<String, dynamic> suggestion) async {
+                          await _selectPlaceSuggestion(suggestion);
+                        },
+                        displayStringForOption: (Map<String, dynamic> option) {
+                          return option['description'] as String? ?? '';
+                        },
+                        fieldViewBuilder: (BuildContext context, TextEditingController textEditingController, FocusNode focusNode, VoidCallback onFieldSubmitted) {
+                          return TextField(
+                            controller: textEditingController,
+                            focusNode: focusNode,
+                            decoration: InputDecoration(
+                              hintText: 'Search location…',
+                              prefixIcon: const Icon(Icons.search),
+                              suffixIcon: Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  IconButton(
-                                    icon: ReliableIcon(
-                                      icon: Icons.filter_list,
-                                      color: _showFiltersDialog ? Theme.of(context).colorScheme.primary : null,
-                                    ),
-                                    tooltip: 'Filters',
-                                    onPressed: () {
-                                      setState(() {
-                                        _showFiltersDialog = !_showFiltersDialog;
-                                      });
-                                    },
-                                  ),
-                                  if (_hasActiveFilters())
-                                    Positioned(
-                                      right: 8,
-                                      top: 8,
-                                      child: Container(
-                                        width: 8,
-                                        height: 8,
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(context).colorScheme.primary,
-                                          shape: BoxShape.circle,
-                                        ),
+                                  if (_isFetchingSuggestions)
+                                    const Padding(
+                                      padding: EdgeInsets.only(right: 8),
+                                      child: SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(strokeWidth: 2),
                                       ),
                                     ),
+                                  if (textEditingController.text.isNotEmpty)
+                                    IconButton(
+                                      icon: const Icon(Icons.clear),
+                                      tooltip: 'Clear',
+                                      onPressed: () {
+                                        textEditingController.clear();
+                                        setState(() {
+                                          _autocompleteSuggestions = [];
+                                        });
+                                      },
+                                    ),
+                                  Stack(
+                                    children: [
+                                      IconButton(
+                                        icon: ReliableIcon(
+                                          icon: Icons.filter_list,
+                                          color: _showFiltersDialog ? Theme.of(context).colorScheme.primary : null,
+                                        ),
+                                        tooltip: 'Filters',
+                                        onPressed: () {
+                                          setState(() {
+                                            _showFiltersDialog = !_showFiltersDialog;
+                                          });
+                                        },
+                                      ),
+                                      if (_hasActiveFilters())
+                                        Positioned(
+                                          right: 8,
+                                          top: 8,
+                                          child: Container(
+                                            width: 8,
+                                            height: 8,
+                                            decoration: BoxDecoration(
+                                              color: Theme.of(context).colorScheme.primary,
+                                              shape: BoxShape.circle,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
                                 ],
                               ),
-                            ],
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                        ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                            ),
+                            onChanged: (value) {
+                              setState(() {
+                                _searchQuery = value;
+                              });
+                            },
+                          );
+                        },
+                        optionsViewBuilder: (BuildContext context, AutocompleteOnSelected<Map<String, dynamic>> onSelected, Iterable<Map<String, dynamic>> options) {
+                          return Align(
+                            alignment: Alignment.topLeft,
+                            child: Material(
+                              elevation: 4.0,
+                              borderRadius: BorderRadius.circular(8),
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(maxHeight: 200),
+                                child: ListView.builder(
+                                  padding: EdgeInsets.zero,
+                                  shrinkWrap: true,
+                                  itemCount: options.length,
+                                  itemBuilder: (context, index) {
+                                    final option = options.elementAt(index);
+                                    final description = option['description'] as String? ?? '';
+                                    final secondary = option['secondary'] as String?;
+                                    
+                                    return ListTile(
+                                      leading: Icon(
+                                        Icons.location_on_outlined,
+                                        color: Theme.of(context).colorScheme.primary,
+                                      ),
+                                      dense: true,
+                                      title: Text(
+                                        description,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      subtitle: secondary != null ? Text(
+                                        secondary,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ) : null,
+                                      onTap: () {
+                                        onSelected(option);
+                                      },
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          );
+                        },
                       ),
-                      if (_autocompleteSuggestions.isNotEmpty)
-                        Container(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surface,
-                            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: _autocompleteSuggestions.take(7).map((s) {
-                              final desc = (s['structuredFormatting']?['main_text'] ?? s['description'])?.toString() ?? '';
-                              final secondary = (s['structuredFormatting']?['secondary_text'])?.toString();
-                              return ListTile(
-                                leading: const Icon(Icons.location_on_outlined),
-                                dense: true,
-                                title: Text(desc, maxLines: 1, overflow: TextOverflow.ellipsis),
-                                subtitle: secondary != null ? Text(secondary, maxLines: 1, overflow: TextOverflow.ellipsis) : null,
-                                onTap: () => _selectPlaceSuggestion(s),
-                              );
-                            }).toList(),
-                          ),
-                        ),
                     ],
                   ),
                 ),
@@ -1685,3 +1784,4 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     );
   }
 }
+
