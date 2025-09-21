@@ -1405,6 +1405,150 @@ exports.geocodeCoordinates = onCall(
       }
     });
 
+// Places Autocomplete (addresses, cities, countries)
+exports.placesAutocomplete = onCall(
+    {region: "europe-west1", secrets: ["GOOGLE_MAPS_API_KEY"]},
+    async (request) => {
+      try {
+        const {input, sessionToken, location, radiusMeters, types = "geocode", language} = request.data || {};
+
+        if (!input || typeof input !== "string") {
+          throw new Error("input is required");
+        }
+
+        const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+        if (!apiKey) {
+          throw new Error("Google Maps API key not configured");
+        }
+
+        // Build Places Autocomplete URL
+        const params = new URLSearchParams();
+        params.append("input", input);
+        params.append("key", apiKey);
+        if (sessionToken) params.append("sessiontoken", sessionToken);
+        if (types) params.append("types", types); // geocode to bias addresses
+        if (language) params.append("language", language);
+        if (location && typeof location.lat === "number" && typeof location.lng === "number") {
+          params.append("location", `${location.lat},${location.lng}`);
+          if (typeof radiusMeters === "number") {
+            params.append("radius", String(radiusMeters));
+          }
+        }
+
+        const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?${params.toString()}`;
+
+        const response = await new Promise((resolve, reject) => {
+          https.get(url, (res) => {
+            let data = "";
+            res.on("data", (chunk) => data += chunk);
+            res.on("end", () => {
+              try {
+                resolve(JSON.parse(data));
+              } catch (e) {
+                reject(e);
+              }
+            });
+          }).on("error", reject);
+        });
+
+        if (response.status === "OK" && Array.isArray(response.predictions)) {
+          const suggestions = response.predictions.map((p) => ({
+            description: p.description,
+            placeId: p.place_id,
+            types: p.types || [],
+            matchedSubstrings: p.matched_substrings || [],
+            structuredFormatting: p.structured_formatting || null,
+          }));
+          return {success: true, suggestions};
+        }
+
+        return {
+          success: false,
+          error: response.error_message || response.status || "No suggestions",
+        };
+      } catch (error) {
+        console.error("Error in placesAutocomplete:", error);
+        return {success: false, error: error.message};
+      }
+    }
+);
+
+// Place Details to get coordinates and formatted address
+exports.placeDetails = onCall(
+    {region: "europe-west1", secrets: ["GOOGLE_MAPS_API_KEY"]},
+    async (request) => {
+      try {
+        const {placeId, sessionToken, language} = request.data || {};
+        if (!placeId) {
+          throw new Error("placeId is required");
+        }
+
+        const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+        if (!apiKey) {
+          throw new Error("Google Maps API key not configured");
+        }
+
+        const params = new URLSearchParams();
+        params.append("place_id", placeId);
+        params.append("fields", "geometry,formatted_address,address_component");
+        params.append("key", apiKey);
+        if (sessionToken) params.append("sessiontoken", sessionToken);
+        if (language) params.append("language", language);
+
+        const url = `https://maps.googleapis.com/maps/api/place/details/json?${params.toString()}`;
+
+        const response = await new Promise((resolve, reject) => {
+          https.get(url, (res) => {
+            let data = "";
+            res.on("data", (chunk) => data += chunk);
+            res.on("end", () => {
+              try {
+                resolve(JSON.parse(data));
+              } catch (e) {
+                reject(e);
+              }
+            });
+          }).on("error", reject);
+        });
+
+        if (response.status === "OK" && response.result) {
+          const r = response.result;
+          const loc = r.geometry && r.geometry.location;
+          const viewport = r.geometry && r.geometry.viewport;
+          let city = null;
+          let countryCode = null;
+          if (Array.isArray(r.address_components)) {
+            const components = r.address_components;
+            const countryComp = components.find((c) => c.types && c.types.includes('country'));
+            if (countryComp && countryComp.short_name) countryCode = countryComp.short_name;
+            const cityTypesPriority = ['locality','postal_town','administrative_area_level_2','administrative_area_level_1'];
+            for (const t of cityTypesPriority) {
+              const comp = components.find((c) => c.types && c.types.includes(t));
+              if (comp && comp.long_name) { city = comp.long_name; break; }
+            }
+          }
+          return {
+            success: true,
+            latitude: loc?.lat,
+            longitude: loc?.lng,
+            formattedAddress: r.formatted_address || null,
+            city,
+            countryCode,
+            viewport,
+          };
+        }
+
+        return {
+          success: false,
+          error: response.error_message || response.status || "No details found",
+        };
+      } catch (error) {
+        console.error("Error in placeDetails:", error);
+        return {success: false, error: error.message};
+      }
+    }
+);
+
 // Reverse geocoding function to convert address to coordinates
 exports.reverseGeocodeAddress = onCall(
     {region: "europe-west1", secrets: ["GOOGLE_MAPS_API_KEY"]},
