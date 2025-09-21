@@ -47,6 +47,16 @@ class AdminHomeScreen extends StatelessWidget {
               onTap: () => context.go('/admin/sources'),
             ),
           ),
+          const SizedBox(height: 8),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.place),
+              title: const Text('Geocode Missing Addresses'),
+              subtitle: const Text('Fill address, city, country for spots with empty fields'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () => context.go('/admin/geocoding'),
+            ),
+          ),
         ],
       ),
     );

@@ -1685,3 +1685,153 @@ exports.uploadReplacementImage = onCall(
       }
     }
 );
+
+// Admin tool: Geocode all spots missing address fields (address, city, or countryCode)
+exports.geocodeMissingSpotAddresses = onCall(
+    {region: "europe-west1", memory: "512MiB", timeoutSeconds: 540, secrets: ["GOOGLE_MAPS_API_KEY"]},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+
+        const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+        if (!apiKey) {
+          throw new Error("Google Maps API key not configured");
+        }
+
+        // Helper: perform geocoding for given lat/lng
+        async function geocodeLatLng(latitude, longitude) {
+          const geocodingUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`;
+          const response = await new Promise((resolve, reject) => {
+            https.get(geocodingUrl, (res) => {
+              let data = "";
+              res.on("data", (chunk) => data += chunk);
+              res.on("end", () => {
+                try {
+                  resolve(JSON.parse(data));
+                } catch (e) {
+                  reject(e);
+                }
+              });
+            }).on("error", reject);
+          });
+
+          if (response.status === "OK" && response.results && response.results.length > 0) {
+            const result = response.results[0];
+            const address = result.formatted_address;
+
+            let city = null;
+            let countryCode = null;
+            if (Array.isArray(result.address_components)) {
+              const components = result.address_components;
+              const countryComp = components.find((c) => c.types && c.types.includes('country'));
+              if (countryComp && countryComp.short_name) {
+                countryCode = countryComp.short_name;
+              }
+              const cityTypesPriority = [
+                'locality',
+                'postal_town',
+                'administrative_area_level_2',
+                'administrative_area_level_1',
+              ];
+              for (const t of cityTypesPriority) {
+                const comp = components.find((c) => c.types && c.types.includes(t));
+                if (comp && comp.long_name) {
+                  city = comp.long_name;
+                  break;
+                }
+              }
+            }
+
+            return {success: true, address, city, countryCode};
+          }
+
+          return {
+            success: false,
+            error: response.error_message || "No address found for coordinates",
+          };
+        }
+
+        // Build set of candidate spot docs where at least one field is missing/empty
+        const candidateDocs = new Map(); // id -> docRef
+
+        async function addQuery(query) {
+          const snap = await query.get();
+          snap.forEach((doc) => candidateDocs.set(doc.id, doc));
+        }
+
+        const spotsCol = db.collection("spots");
+        await addQuery(spotsCol.where("address", "==", null));
+        await addQuery(spotsCol.where("address", "==", ""));
+        await addQuery(spotsCol.where("city", "==", null));
+        await addQuery(spotsCol.where("city", "==", ""));
+        await addQuery(spotsCol.where("countryCode", "==", null));
+        await addQuery(spotsCol.where("countryCode", "==", ""));
+
+        const totalCandidates = candidateDocs.size;
+        console.log(`Found ${totalCandidates} spots missing address fields`);
+
+        let processed = 0;
+        let updated = 0;
+        let failed = 0;
+        let skipped = 0;
+
+        for (const [id, doc] of candidateDocs.entries()) {
+          try {
+            const data = doc.data();
+            const location = data && data.location;
+            if (!location || typeof location.latitude !== 'number' || typeof location.longitude !== 'number') {
+              skipped++;
+              console.warn(`Skipping spot ${id}: invalid or missing location`);
+              continue;
+            }
+
+            const latitude = location.latitude;
+            const longitude = location.longitude;
+            const result = await geocodeLatLng(latitude, longitude);
+
+            if (result.success) {
+              await doc.ref.update({
+                address: result.address || null,
+                city: result.city || null,
+                countryCode: result.countryCode || null,
+                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+              });
+              updated++;
+            } else {
+              console.warn(`Geocoding failed for spot ${id}: ${result.error}`);
+              failed++;
+            }
+          } catch (err) {
+            console.error(`Error processing spot ${id}:`, err);
+            failed++;
+          } finally {
+            processed++;
+            if (processed % 25 === 0 && global.gc) {
+              global.gc();
+              console.log(`Processed ${processed}/${totalCandidates} spots (GC)`);
+            }
+          }
+        }
+
+        const response = {
+          success: true,
+          message: `Geocoding completed`,
+          stats: {
+            totalCandidates,
+            processed,
+            updated,
+            failed,
+            skipped,
+          },
+        };
+        console.log("Geocode missing addresses result:", response);
+        return response;
+      } catch (error) {
+        console.error("Error geocoding missing spot addresses:", error);
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+    }
+);
