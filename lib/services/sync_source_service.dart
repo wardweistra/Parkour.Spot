@@ -74,9 +74,9 @@ class SyncSourceService extends ChangeNotifier {
   List<SyncSource> _sources = [];
   bool _isLoading = false;
   bool _isSyncingAll = false;
-  Set<String> _syncingSources = <String>{};
+  final Set<String> _syncingSources = <String>{};
   String? _error;
-  Map<String, String> _sourceNameCache = {};
+  final Map<String, String> _sourceNameCache = {};
 
   List<SyncSource> get sources => _sources;
   bool get isLoading => _isLoading;

@@ -72,7 +72,9 @@ class SearchStateService extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_keyIsSatellite, isSatellite);
-    } catch (e) {}
+    } catch (e) {
+      // Ignore SharedPreferences errors - settings will not persist but app continues to work
+    }
   }
 
   Future<void> setIncludeSpotsWithoutPictures(bool value) async {
@@ -81,7 +83,9 @@ class SearchStateService extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_keyIncludeWithoutPictures, value);
-    } catch (e) {}
+    } catch (e) {
+      // Ignore SharedPreferences errors - settings will not persist but app continues to work
+    }
   }
 
   Future<void> setIncludeParkourNative(bool value) async {
@@ -90,7 +94,9 @@ class SearchStateService extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_keyIncludeParkourNative, value);
-    } catch (e) {}
+    } catch (e) {
+      // Ignore SharedPreferences errors - settings will not persist but app continues to work
+    }
   }
 
   Future<void> setIncludeExternalSources(bool value) async {
@@ -99,7 +105,9 @@ class SearchStateService extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_keyIncludeExternalSources, value);
-    } catch (e) {}
+    } catch (e) {
+      // Ignore SharedPreferences errors - settings will not persist but app continues to work
+    }
   }
 
   Future<void> setSelectedExternalSourceIds(Set<String> ids) async {
@@ -108,7 +116,9 @@ class SearchStateService extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList(_keySelectedExternalSourceIds, ids.toList());
-    } catch (e) {}
+    } catch (e) {
+      // Ignore SharedPreferences errors - settings will not persist but app continues to work
+    }
   }
 }
 

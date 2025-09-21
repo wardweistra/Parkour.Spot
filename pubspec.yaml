@@ -42,6 +42,8 @@ dependencies:
   
   # Web
   web: ^1.1.0
+  flutter_web_plugins:
+    sdk: flutter
   shared_preferences: ^2.2.3
 
 dev_dependencies:

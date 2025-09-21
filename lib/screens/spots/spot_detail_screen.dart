@@ -1443,11 +1443,12 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
               Navigator.pop(context);
               try {
                 final spotService = Provider.of<SpotService>(context, listen: false);
+                final scaffoldMessenger = ScaffoldMessenger.of(context);
                 final success = await spotService.deleteSpot(widget.spot.id!);
                 
                 if (success && mounted) {
                   // Show success message first
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  scaffoldMessenger.showSnackBar(
                     const SnackBar(
                       content: Text('Spot deleted successfully'),
                       backgroundColor: Colors.green,
@@ -1458,7 +1459,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                   // Use replace to ensure we don't go back to the deleted spot
                   context.replace('/home');
                 } else if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  scaffoldMessenger.showSnackBar(
                     const SnackBar(
                       content: Text('Failed to delete spot'),
                       backgroundColor: Colors.red,

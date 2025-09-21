@@ -49,14 +49,16 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                     : const Icon(Icons.sync),
                 tooltip: 'Sync All',
                 onPressed: service.isSyncingAll ? null : () async {
-                  final result = await context.read<SyncSourceService>().syncAllSources();
+                  final syncService = context.read<SyncSourceService>();
+                  final scaffoldMessenger = ScaffoldMessenger.of(context);
+                  final result = await syncService.syncAllSources();
                   if (mounted) {
                     if (result != null) {
                       final stats = result['totalStats'] as Map<String, dynamic>?;
                       final message = stats != null 
                           ? 'Sync completed! Created: ${stats['created']}, Updated: ${stats['updated']}, Geocoded: ${stats['geocoded']}'
                           : 'Sync completed successfully';
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      scaffoldMessenger.showSnackBar(
                         SnackBar(
                           content: Text(message),
                           backgroundColor: Colors.green,
@@ -64,9 +66,9 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                         ),
                       );
                     } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      scaffoldMessenger.showSnackBar(
                         SnackBar(
-                          content: Text(service.error ?? 'Sync failed'),
+                          content: Text(syncService.error ?? 'Sync failed'),
                           backgroundColor: Colors.red,
                         ),
                       );
@@ -150,14 +152,16 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                                   : const Icon(Icons.sync),
                               tooltip: 'Sync this source',
                               onPressed: isThisSourceSyncing ? null : () async {
-                                final result = await context.read<SyncSourceService>().syncSingleSource(s.id);
+                                final syncService = context.read<SyncSourceService>();
+                                final scaffoldMessenger = ScaffoldMessenger.of(context);
+                                final result = await syncService.syncSingleSource(s.id);
                                 if (mounted) {
                                   if (result != null) {
                                     final stats = result['stats'] as Map<String, dynamic>?;
                                     final message = stats != null 
                                         ? '${s.name} sync completed! Created: ${stats['created']}, Updated: ${stats['updated']}, Geocoded: ${stats['geocoded']}'
                                         : '${s.name} sync completed successfully';
-                                    ScaffoldMessenger.of(context).showSnackBar(
+                                    scaffoldMessenger.showSnackBar(
                                       SnackBar(
                                         content: Text(message),
                                         backgroundColor: Colors.green,
@@ -165,9 +169,9 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                                       ),
                                     );
                                   } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
+                                    scaffoldMessenger.showSnackBar(
                                       SnackBar(
-                                        content: Text(service.error ?? 'Sync failed for ${s.name}'),
+                                        content: Text(syncService.error ?? 'Sync failed for ${s.name}'),
                                         backgroundColor: Colors.red,
                                       ),
                                     );
@@ -179,12 +183,13 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                         ),
                       PopupMenuButton<String>(
                         onSelected: (v) async {
+                          final syncService = context.read<SyncSourceService>();
                           switch (v) {
                             case 'edit':
                               _openEditDialog(context, source: s);
                               break;
                             case 'toggleActive':
-                              await context.read<SyncSourceService>().updateSource(
+                              await syncService.updateSource(
                                 sourceId: s.id,
                                 isActive: !s.isActive,
                               );
@@ -202,7 +207,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                                 ),
                               );
                               if (confirmed == true) {
-                                await context.read<SyncSourceService>().deleteSource(s.id);
+                                await syncService.deleteSource(s.id);
                               }
                               break;
                           }
@@ -222,7 +227,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
               // Loading overlay when syncing all sources
               if (service.isSyncingAll && service.sources.isNotEmpty)
                 Container(
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withValues(alpha: 0.3),
                   child: const Center(
                     child: Card(
                       child: Padding(
@@ -351,7 +356,8 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
     );
 
     if (saved == true) {
-      await context.read<SyncSourceService>().fetchSyncSources(includeInactive: true);
+      final syncService = context.read<SyncSourceService>();
+      await syncService.fetchSyncSources(includeInactive: true);
     }
   }
 
@@ -416,17 +422,20 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
       );
 
       try {
-        final cleanupResult = await context.read<SyncSourceService>().cleanupUnusedImages();
+        final syncService = context.read<SyncSourceService>();
+        final scaffoldMessenger = ScaffoldMessenger.of(context);
+        final navigator = Navigator.of(context);
+        final cleanupResult = await syncService.cleanupUnusedImages();
         
         if (mounted) {
-          Navigator.pop(context); // Close loading dialog
+          navigator.pop(); // Close loading dialog
           
           if (cleanupResult != null && cleanupResult['success'] == true) {
             final movedCount = cleanupResult['movedCount'] ?? 0;
             final skippedCount = cleanupResult['skippedCount'] ?? 0;
             final totalFiles = cleanupResult['totalFiles'] ?? 0;
             
-            ScaffoldMessenger.of(context).showSnackBar(
+            scaffoldMessenger.showSnackBar(
               SnackBar(
                 content: Text(
                   'Cleanup completed: $movedCount images moved to trash, $skippedCount skipped (out of $totalFiles total)',
@@ -435,7 +444,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
               ),
             );
           } else {
-            ScaffoldMessenger.of(context).showSnackBar(
+            scaffoldMessenger.showSnackBar(
               SnackBar(
                 content: Text(
                   'Cleanup failed: ${cleanupResult?['error'] ?? 'Unknown error'}',
@@ -447,7 +456,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
         }
       } catch (e) {
         if (mounted) {
-          Navigator.pop(context); // Close loading dialog
+          Navigator.of(context).pop(); // Close loading dialog
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Cleanup failed: $e'),
@@ -477,10 +486,13 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
     );
 
     try {
-      final result = await context.read<SyncSourceService>().findMissingImages();
+      final syncService = context.read<SyncSourceService>();
+      final scaffoldMessenger = ScaffoldMessenger.of(context);
+      final navigator = Navigator.of(context);
+      final result = await syncService.findMissingImages();
       
       if (mounted) {
-        Navigator.pop(context); // Close loading dialog
+        navigator.pop(); // Close loading dialog
         
         if (result != null && result['success'] == true) {
           final missingImages = result['missingImages'] as List<dynamic>? ?? [];
@@ -489,7 +501,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
           final missingCount = result['missingImagesCount'] ?? 0;
           
           if (missingCount == 0) {
-            ScaffoldMessenger.of(context).showSnackBar(
+            scaffoldMessenger.showSnackBar(
               const SnackBar(
                 content: Text('No missing images found! All referenced images exist.'),
                 backgroundColor: Colors.green,
@@ -497,8 +509,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
             );
           } else {
             // Navigate to missing images screen
-            Navigator.push(
-              context,
+            navigator.push(
               MaterialPageRoute(
                 builder: (context) => MissingImagesScreen(
                   missingImages: missingImages,
@@ -509,7 +520,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
             );
           }
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
+          scaffoldMessenger.showSnackBar(
             SnackBar(
               content: Text('Failed to check missing images: ${result?['error'] ?? 'Unknown error'}'),
               backgroundColor: Colors.red,
@@ -519,7 +530,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
       }
     } catch (e) {
       if (mounted) {
-        Navigator.pop(context); // Close loading dialog
+        Navigator.of(context).pop(); // Close loading dialog
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to check missing images: $e'),
@@ -647,12 +658,14 @@ class _MissingImagesScreenState extends State<MissingImagesScreen> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to select image: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to select image: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -666,12 +679,13 @@ class _MissingImagesScreenState extends State<MissingImagesScreen> {
     int successCount = 0;
     int failCount = 0;
 
+    final syncService = context.read<SyncSourceService>();
     for (final entry in _selectedImages.entries) {
       if (entry.value == null) continue;
       
       try {
         final base64Image = base64Encode(entry.value!);
-        final result = await context.read<SyncSourceService>().uploadReplacementImage(
+        final result = await syncService.uploadReplacementImage(
           filename: entry.key,
           imageData: base64Image,
         );

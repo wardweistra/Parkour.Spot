@@ -63,11 +63,13 @@ class _LoginScreenState extends State<LoginScreen> {
               onPressed: () async {
                 if (!formKey.currentState!.validate()) return;
                 try {
-                  await Provider.of<AuthService>(context, listen: false)
-                      .resetPassword(emailController.text.trim());
+                  final authService = Provider.of<AuthService>(context, listen: false);
+                  final navigator = Navigator.of(context);
+                  final scaffoldMessenger = ScaffoldMessenger.of(context);
+                  await authService.resetPassword(emailController.text.trim());
                   if (mounted) {
-                    Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    navigator.pop();
+                    scaffoldMessenger.showSnackBar(
                       const SnackBar(
                         content: Text('Password reset email sent if the address exists.'),
                         backgroundColor: Colors.green,

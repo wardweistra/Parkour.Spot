@@ -479,7 +479,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
           markerId: const MarkerId('current_location'),
           position: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
           icon: _userLocationIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-          zIndex: 9999,
+          zIndexInt: 9999,
           onTap: () {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -533,7 +533,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     final ui.Image image = await recorder.endRecording().toImage(size.toInt(), size.toInt());
     final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     final Uint8List bytes = byteData!.buffer.asUint8List();
-    return BitmapDescriptor.fromBytes(bytes);
+    return BitmapDescriptor.bytes(bytes);
   }
 
   void _toggleBottomSheet() {
