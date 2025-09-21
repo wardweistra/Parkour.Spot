@@ -70,11 +70,15 @@ class SyncSourceService extends ChangeNotifier {
   
   List<SyncSource> _sources = [];
   bool _isLoading = false;
+  bool _isSyncingAll = false;
+  Set<String> _syncingSources = <String>{};
   String? _error;
   Map<String, String> _sourceNameCache = {};
 
   List<SyncSource> get sources => _sources;
   bool get isLoading => _isLoading;
+  bool get isSyncingAll => _isSyncingAll;
+  Set<String> get syncingSources => _syncingSources;
   String? get error => _error;
 
   // Get all sync sources
@@ -189,34 +193,63 @@ class SyncSourceService extends ChangeNotifier {
     }
   }
 
-  Future<bool> syncAllSources() async {
+  Future<Map<String, dynamic>?> syncAllSources() async {
     try {
+      _isSyncingAll = true;
+      _error = null;
+      notifyListeners();
+
       final callable = _functions.httpsCallable('syncAllSources');
       final result = await callable.call();
-      return result.data['success'] == true;
+      
+      _isSyncingAll = false;
+      notifyListeners();
+      
+      if (result.data['success'] == true) {
+        // Refresh the sources list to update last sync time
+        await fetchSyncSources(includeInactive: true);
+        return Map<String, dynamic>.from(result.data as Map);
+      } else {
+        _error = 'Sync failed: ${result.data['error'] ?? 'Unknown error'}';
+        notifyListeners();
+        return null;
+      }
     } catch (e) {
+      _isSyncingAll = false;
       _error = 'Failed to sync all sources: $e';
       debugPrint(_error);
       notifyListeners();
-      return false;
+      return null;
     }
   }
 
-  Future<bool> syncSingleSource(String sourceId) async {
+  Future<Map<String, dynamic>?> syncSingleSource(String sourceId) async {
     try {
+      _syncingSources.add(sourceId);
+      _error = null;
+      notifyListeners();
+
       final callable = _functions.httpsCallable('syncSingleSource');
       final result = await callable.call({'sourceId': sourceId});
-      final success = result.data['success'] == true;
-      if (success) {
+      
+      _syncingSources.remove(sourceId);
+      notifyListeners();
+      
+      if (result.data['success'] == true) {
         // Refresh the sources list to update last sync time
         await fetchSyncSources(includeInactive: true);
+        return Map<String, dynamic>.from(result.data as Map);
+      } else {
+        _error = 'Sync failed: ${result.data['error'] ?? 'Unknown error'}';
+        notifyListeners();
+        return null;
       }
-      return success;
     } catch (e) {
+      _syncingSources.remove(sourceId);
       _error = 'Failed to sync single source: $e';
       debugPrint(_error);
       notifyListeners();
-      return false;
+      return null;
     }
   }
 

@@ -37,16 +37,43 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
       appBar: AppBar(
         title: const Text('Sync Sources'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.sync),
-            tooltip: 'Sync All',
-            onPressed: () async {
-              final ok = await context.read<SyncSourceService>().syncAllSources();
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(ok ? 'Sync started' : 'Failed to start sync')),
-                );
-              }
+          Consumer<SyncSourceService>(
+            builder: (context, service, child) {
+              return IconButton(
+                icon: service.isSyncingAll 
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.sync),
+                tooltip: 'Sync All',
+                onPressed: service.isSyncingAll ? null : () async {
+                  final result = await context.read<SyncSourceService>().syncAllSources();
+                  if (mounted) {
+                    if (result != null) {
+                      final stats = result['totalStats'] as Map<String, dynamic>?;
+                      final message = stats != null 
+                          ? 'Sync completed! Created: ${stats['created']}, Updated: ${stats['updated']}, Geocoded: ${stats['geocoded']}'
+                          : 'Sync completed successfully';
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(message),
+                          backgroundColor: Colors.green,
+                          duration: const Duration(seconds: 4),
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(service.error ?? 'Sync failed'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                },
+              );
             },
           ),
           IconButton(
@@ -75,7 +102,9 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
             return Center(child: Text(service.error!));
           }
           final sources = service.sources;
-          return ListView.separated(
+          return Stack(
+            children: [
+              ListView.separated(
             padding: const EdgeInsets.all(16),
             itemCount: sources.length,
             separatorBuilder: (_, __) => const SizedBox(height: 8),
@@ -108,16 +137,44 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (s.isActive)
-                        IconButton(
-                          icon: const Icon(Icons.sync),
-                          tooltip: 'Sync this source',
-                          onPressed: () async {
-                            final ok = await context.read<SyncSourceService>().syncSingleSource(s.id);
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(ok ? 'Sync started for ${s.name}' : 'Failed to start sync for ${s.name}')),
-                              );
-                            }
+                        Consumer<SyncSourceService>(
+                          builder: (context, service, child) {
+                            final isThisSourceSyncing = service.syncingSources.contains(s.id);
+                            return IconButton(
+                              icon: isThisSourceSyncing 
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    )
+                                  : const Icon(Icons.sync),
+                              tooltip: 'Sync this source',
+                              onPressed: isThisSourceSyncing ? null : () async {
+                                final result = await context.read<SyncSourceService>().syncSingleSource(s.id);
+                                if (mounted) {
+                                  if (result != null) {
+                                    final stats = result['stats'] as Map<String, dynamic>?;
+                                    final message = stats != null 
+                                        ? '${s.name} sync completed! Created: ${stats['created']}, Updated: ${stats['updated']}, Geocoded: ${stats['geocoded']}'
+                                        : '${s.name} sync completed successfully';
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(message),
+                                        backgroundColor: Colors.green,
+                                        duration: const Duration(seconds: 4),
+                                      ),
+                                    );
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(service.error ?? 'Sync failed for ${s.name}'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                            );
                           },
                         ),
                       PopupMenuButton<String>(
@@ -161,6 +218,28 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                 ),
               );
             },
+          ),
+              // Loading overlay when syncing all sources
+              if (service.isSyncingAll && service.sources.isNotEmpty)
+                Container(
+                  color: Colors.black.withOpacity(0.3),
+                  child: const Center(
+                    child: Card(
+                      child: Padding(
+                        padding: EdgeInsets.all(20),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircularProgressIndicator(),
+                            SizedBox(height: 16),
+                            Text('Syncing all sources...', style: TextStyle(fontSize: 16)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           );
         },
       ),

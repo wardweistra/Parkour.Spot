@@ -279,17 +279,97 @@ function extractImageUrls(placemark) {
 }
 
 /**
- * Downloads and uploads an image to Firebase Storage (with deduplication)
+ * Checks if an image URL has already been processed and cached
+ * @param {string} imageUrl - The URL of the image to check
+ * @return {Promise<string|null>} A promise that resolves to the cached public URL or null
+ */
+async function checkImageUrlCache(imageUrl) {
+  try {
+    const imageCacheRef = db.collection("imageCache").doc(encodeURIComponent(imageUrl));
+    const imageCacheDoc = await imageCacheRef.get();
+    
+    if (imageCacheDoc.exists) {
+      const cacheData = imageCacheDoc.data();
+      const {hash, publicUrl, lastChecked} = cacheData;
+      
+      // Check if the cached image still exists in storage
+      const existingFileName = await checkImageExists(hash);
+      if (existingFileName) {
+        console.log(`Found cached image for URL: ${imageUrl.substring(0, 50)}...`);
+        return publicUrl;
+      } else {
+        // Cached image no longer exists in storage, remove from cache
+        console.log(`Cached image no longer exists, removing from cache: ${imageUrl.substring(0, 50)}...`);
+        await imageCacheRef.delete();
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error("Error checking image URL cache:", error);
+    return null;
+  }
+}
+
+/**
+ * Caches image metadata for future lookups
+ * @param {string} imageUrl - The original URL of the image
+ * @param {string} imageHash - The content hash of the image
+ * @param {string} publicUrl - The public URL of the uploaded image
+ */
+async function cacheImageMetadata(imageUrl, imageHash, publicUrl) {
+  try {
+    const imageCacheRef = db.collection("imageCache").doc(encodeURIComponent(imageUrl));
+    await imageCacheRef.set({
+      url: imageUrl,
+      hash: imageHash,
+      publicUrl: publicUrl,
+      lastChecked: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    console.log(`Cached image metadata for: ${imageUrl.substring(0, 50)}...`);
+  } catch (error) {
+    console.error("Error caching image metadata:", error);
+  }
+}
+
+/**
+ * Downloads and uploads an image to Firebase Storage (with URL-based deduplication and hash validation)
  * @param {string} imageUrl - The URL of the image to download
  * @param {string} spotName - The name of the spot for filename generation
  * @param {number} imageIndex - The index of the image for filename generation
- * @return {Promise<string|null>} A promise that resolves to the public URL
- *     or null
+ * @param {string|null} storedHash - Previously stored hash for this image (if available)
+ * @return {Promise<Object|null>} A promise that resolves to {url, hash} or null
  */
-async function downloadAndUploadImage(imageUrl, spotName, imageIndex) {
+async function downloadAndUploadImage(imageUrl, spotName, imageIndex, storedHash = null) {
   let imageBuffer = null;
   try {
     console.log(`Processing image ${imageIndex + 1} for spot: ${spotName}`);
+
+    // First, check if we've already processed this URL
+    const cachedPublicUrl = await checkImageUrlCache(imageUrl);
+    if (cachedPublicUrl) {
+      console.log(`Using cached image for URL: ${imageUrl.substring(0, 50)}...`);
+      // Get the hash from cache
+      const imageCacheRef = db.collection("imageCache").doc(encodeURIComponent(imageUrl));
+      const imageCacheDoc = await imageCacheRef.get();
+      const cachedHash = imageCacheDoc.exists ? imageCacheDoc.data().hash : null;
+      return { url: cachedPublicUrl, hash: cachedHash };
+    }
+
+    // If we have a stored hash, check if the image still exists by that hash
+    if (storedHash) {
+      const existingFileName = await checkImageExists(storedHash);
+      if (existingFileName) {
+        console.log(`Using stored hash for existing image: ${storedHash.substring(0, 8)}...`);
+        const publicUrl = getPublicUrl(existingFileName);
+        
+        // Cache this URL-to-hash mapping for future use
+        await cacheImageMetadata(imageUrl, storedHash, publicUrl);
+        
+        return { url: publicUrl, hash: storedHash };
+      } else {
+        console.log(`Stored hash no longer valid, will download and recalculate: ${storedHash.substring(0, 8)}...`);
+      }
+    }
 
     // Download image
     imageBuffer = await downloadFile(imageUrl);
@@ -298,13 +378,24 @@ async function downloadAndUploadImage(imageUrl, spotName, imageIndex) {
     const imageHash = generateImageHash(imageBuffer);
     console.log(`Generated hash for image: ${imageHash.substring(0, 8)}...`);
 
-    // Check if image already exists
+    // Validate against stored hash if available
+    if (storedHash && storedHash !== imageHash) {
+      console.warn(`Hash mismatch! Stored: ${storedHash.substring(0, 8)}..., Calculated: ${imageHash.substring(0, 8)}...`);
+      console.warn(`Image may have changed, using new hash`);
+    }
+
+    // Check if image already exists by hash
     const existingFileName = await checkImageExists(imageHash);
     if (existingFileName) {
       console.log(`Image already exists, reusing: ${existingFileName}`);
+      const publicUrl = getPublicUrl(existingFileName);
+      
+      // Cache this URL-to-hash mapping for future use
+      await cacheImageMetadata(imageUrl, imageHash, publicUrl);
+      
       // Clear buffer immediately if we're reusing existing image
       imageBuffer = null;
-      return getPublicUrl(existingFileName);
+      return { url: publicUrl, hash: imageHash };
     }
 
     // Generate filename with hash instead of timestamp
@@ -324,11 +415,14 @@ async function downloadAndUploadImage(imageUrl, spotName, imageIndex) {
     // Make file publicly accessible
     await file.makePublic();
 
-    // Return public URL
+    // Return public URL and hash
     const publicUrl = getPublicUrl(filename);
     console.log(`Uploaded new image to: ${publicUrl}`);
 
-    return publicUrl;
+    // Cache this URL-to-hash mapping for future use
+    await cacheImageMetadata(imageUrl, imageHash, publicUrl);
+
+    return { url: publicUrl, hash: imageHash };
   } catch (error) {
     console.error(`Failed to download/upload image ${imageIndex + 1} for ` +
         `${spotName}:`, error);
@@ -344,26 +438,38 @@ async function downloadAndUploadImage(imageUrl, spotName, imageIndex) {
 /**
  * Processes images for a placemark by downloading and uploading them
  * @param {Object} placemark - The placemark data containing image URLs
- * @return {Promise<string[]>} A promise that resolves to an array of
- *     uploaded image URLs
+ * @param {Object} existingSpotData - Existing spot data (if updating)
+ * @return {Promise<Object>} A promise that resolves to an object containing
+ *     imageUrls and imageHashes arrays
  */
-async function processPlacemarkImages(placemark) {
+async function processPlacemarkImages(placemark, existingSpotData = null) {
   const imageUrls = extractImageUrls(placemark);
 
   if (imageUrls.length === 0) {
-    return [];
+    return { imageUrls: [], imageHashes: [] };
   }
 
   console.log(`Found ${imageUrls.length} images for spot: ${placemark.name}`);
 
   const uploadedImageUrls = [];
+  const imageHashes = [];
+  const existingImageHashes = existingSpotData?.imageHashes || [];
 
   // Process images sequentially to reduce memory usage
   for (let i = 0; i < imageUrls.length; i++) {
     const url = imageUrls[i];
-    const result = await downloadAndUploadImage(url, placemark.name, i);
+    
+    // Check if we have a stored hash for this image URL
+    let storedHash = null;
+    if (existingSpotData && existingImageHashes[i]) {
+      storedHash = existingImageHashes[i];
+      console.log(`Found stored hash for image ${i + 1}: ${storedHash.substring(0, 8)}...`);
+    }
+    
+    const result = await downloadAndUploadImage(url, placemark.name, i, storedHash);
     if (result) {
-      uploadedImageUrls.push(result);
+      uploadedImageUrls.push(result.url);
+      imageHashes.push(result.hash);
     }
     
     // Force garbage collection hint after each image
@@ -372,9 +478,72 @@ async function processPlacemarkImages(placemark) {
     }
   }
 
-  console.log(`Successfully uploaded ${uploadedImageUrls.length} images ` +
+  console.log(`Successfully processed ${uploadedImageUrls.length} images ` +
       `for spot: ${placemark.name}`);
-  return uploadedImageUrls;
+  return { imageUrls: uploadedImageUrls, imageHashes };
+}
+
+/**
+ * Cleans up the image cache by removing entries for images that no longer exist in storage
+ * @return {Promise<Object>} A promise that resolves to cleanup statistics
+ */
+async function cleanupImageCache() {
+  try {
+    console.log("Starting image cache cleanup...");
+    
+    const imageCacheSnapshot = await db.collection("imageCache").get();
+    let totalEntries = imageCacheSnapshot.size;
+    let removedEntries = 0;
+    let validEntries = 0;
+    
+    console.log(`Found ${totalEntries} entries in image cache`);
+    
+    // Process in batches to avoid memory issues
+    const BATCH_SIZE = 50;
+    const batches = [];
+    
+    for (let i = 0; i < imageCacheSnapshot.docs.length; i += BATCH_SIZE) {
+      batches.push(imageCacheSnapshot.docs.slice(i, i + BATCH_SIZE));
+    }
+    
+    for (const batch of batches) {
+      const batchPromises = batch.map(async (doc) => {
+        const cacheData = doc.data();
+        const {hash, url} = cacheData;
+        
+        // Check if the image still exists in storage
+        const existingFileName = await checkImageExists(hash);
+        if (existingFileName) {
+          validEntries++;
+          return;
+        } else {
+          // Image no longer exists, remove from cache
+          await doc.ref.delete();
+          removedEntries++;
+          console.log(`Removed cache entry for missing image: ${url.substring(0, 50)}...`);
+        }
+      });
+      
+      await Promise.all(batchPromises);
+    }
+    
+    const result = {
+      totalEntries,
+      validEntries,
+      removedEntries,
+      message: `Image cache cleanup completed. Removed ${removedEntries} invalid entries, kept ${validEntries} valid entries.`
+    };
+    
+    console.log(result.message);
+    return result;
+    
+  } catch (error) {
+    console.error("Error during image cache cleanup:", error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
 }
 
 /**
@@ -548,13 +717,6 @@ async function processSyncSource(source, sourceId, apiKey) {
     const placemark = placemarks[i];
     const {name, description, coordinates} = placemark;
 
-    // Process images for this placemark
-    console.log(`Processing images for spot: ${name} from source: ${source.name}`);
-    const imageUrls = await processPlacemarkImages(placemark);
-
-    // Clean the description to remove HTML
-    const cleanedDescription = cleanDescription(description);
-
     // Check if spot already exists with same coordinates and source
     const existingSpots = await db.collection("spots")
         .where("spotSource", "==", sourceId)
@@ -567,6 +729,7 @@ async function processSyncSource(source, sourceId, apiKey) {
     let address = null;
     let city = null;
     let countryCode = null;
+    let existingSpotData = null;
 
     if (existingSpots.empty) {
       // Only geocode for NEW spots
@@ -592,12 +755,19 @@ async function processSyncSource(source, sourceId, apiKey) {
     } else {
       // For existing spots, keep their current address data
       const existingSpot = existingSpots.docs[0];
-      const existingData = existingSpot.data();
-      address = existingData.address;
-      city = existingData.city;
-      countryCode = existingData.countryCode;
+      existingSpotData = existingSpot.data();
+      address = existingSpotData.address;
+      city = existingSpotData.city;
+      countryCode = existingSpotData.countryCode;
       console.log(`Keeping existing address data for spot: ${name}`);
     }
+
+    // Process images for this placemark (with existing data for hash optimization)
+    console.log(`Processing images for spot: ${name} from source: ${source.name}`);
+    const imageResult = await processPlacemarkImages(placemark, existingSpotData);
+
+    // Clean the description to remove HTML
+    const cleanedDescription = cleanDescription(description);
 
     const spotData = {
       name: name,
@@ -614,9 +784,10 @@ async function processSyncSource(source, sourceId, apiKey) {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
-    // Add image URLs if any were found
-    if (imageUrls.length > 0) {
-      spotData.imageUrls = imageUrls;
+    // Add image URLs and hashes if any were found
+    if (imageResult.imageUrls.length > 0) {
+      spotData.imageUrls = imageResult.imageUrls;
+      spotData.imageHashes = imageResult.imageHashes;
     }
 
     if (existingSpots.empty) {
@@ -624,13 +795,13 @@ async function processSyncSource(source, sourceId, apiKey) {
       spotData.createdAt = admin.firestore.FieldValue.serverTimestamp();
       await db.collection("spots").add(spotData);
       created++;
-      console.log(`Created new spot: ${name} from source: ${source.name} with ${imageUrls.length} images and geocoded address`);
+      console.log(`Created new spot: ${name} from source: ${source.name} with ${imageResult.imageUrls.length} images and geocoded address`);
     } else {
       // Update existing spot
       const existingSpot = existingSpots.docs[0];
       await existingSpot.ref.update(spotData);
       updated++;
-      console.log(`Updated existing spot: ${name} from source: ${source.name} with ${imageUrls.length} images`);
+      console.log(`Updated existing spot: ${name} from source: ${source.name} with ${imageResult.imageUrls.length} images`);
     }
     
     // Force garbage collection after every 10 spots to free memory
@@ -1420,6 +1591,27 @@ exports.cleanupUnusedImages = onCall(
         return result;
       } catch (error) {
         console.error("Error during unused images cleanup:", error);
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+    }
+);
+
+// Function to cleanup image cache by removing entries for images that no longer exist (admin only)
+exports.cleanupImageCache = onCall(
+    {region: "europe-west1", memory: "512MiB", timeoutSeconds: 540},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const result = await cleanupImageCache();
+        return {
+          success: true,
+          ...result,
+        };
+      } catch (error) {
+        console.error("Error in cleanupImageCache:", error);
         return {
           success: false,
           error: error.message,
