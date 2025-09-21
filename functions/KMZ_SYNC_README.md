@@ -30,8 +30,8 @@ firebase deploy --only functions
 ### 1. `syncAllSources` - Sync all active sources
 Syncs all active sources from the `syncSources` collection.
 
-### 2. `syncKmzSpots` - Sync individual source
-Syncs a specific KMZ file with a given source ID.
+### 2. `syncSingleSource` - Sync individual source
+Syncs a specific source by its ID.
 
 ### 3. `createSyncSource` - Create new source
 Creates a new sync source in the database.

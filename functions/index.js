@@ -463,112 +463,214 @@ function parseKmlPlacemarks(kmlContent) {
   });
 }
 
-// Function to sync KMZ data to spots collection
-exports.syncKmzSpots = onCall(
-    {region: "europe-west1", memory: "512MiB", timeoutSeconds: 300},
-    async (request) => {
-      try {
-        const {kmzUrl, spotSource} = request.data;
 
-        if (!kmzUrl) {
-          throw new Error("kmzUrl is required");
-        }
-
-        if (!spotSource) {
-          throw new Error("spotSource is required");
-        }
-
-        console.log(`Starting KMZ sync from: ${kmzUrl}`);
-
-        // Download KMZ file
-        const kmzBuffer = await downloadFile(kmzUrl);
-        console.log(`Downloaded KMZ file, size: ${kmzBuffer.length} bytes`);
-
-        // Extract KML from KMZ
-        const kmlContent = await extractKmlFromKmz(kmzBuffer);
-        console.log(`Extracted KML content, length: ` +
-            `${kmlContent.length} characters`);
-
-        // Parse KML and extract placemarks
-        const placemarks = await parseKmlPlacemarks(kmlContent);
-        console.log(`Found ${placemarks.length} placemarks`);
-
-        let created = 0;
-        let updated = 0;
-        const skipped = 0;
-
-        // Process each placemark
-        for (const placemark of placemarks) {
-          const {name, description, coordinates} = placemark;
-
-          // Process images for this placemark
-          console.log(`Processing images for spot: ${name}`);
-          const imageUrls = await processPlacemarkImages(placemark);
-
-          // Clean the description to remove HTML
-          const cleanedDescription = cleanDescription(description);
-
-          // Check if spot already exists with same coordinates and source
-          const existingSpots = await db.collection("spots")
-              .where("spotSource", "==", spotSource)
-              .where("location", "==", new admin.firestore.GeoPoint(
-                  coordinates.latitude,
-                  coordinates.longitude,
-              ))
-              .get();
-
-          const spotData = {
-            name: name,
-            description: cleanedDescription,
-            location: new admin.firestore.GeoPoint(
-                coordinates.latitude,
-                coordinates.longitude,
-            ),
-            spotSource: spotSource,
-            isPublic: true,
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-          };
-
-          // Add image URLs if any were found
-          if (imageUrls.length > 0) {
-            spotData.imageUrls = imageUrls;
+// Helper function to geocode coordinates and return address details
+async function geocodeCoordinates(latitude, longitude, apiKey) {
+  try {
+    const geocodingUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`;
+    const response = await new Promise((resolve, reject) => {
+      https.get(geocodingUrl, (res) => {
+        let data = "";
+        res.on("data", (chunk) => data += chunk);
+        res.on("end", () => {
+          try {
+            resolve(JSON.parse(data));
+          } catch (e) {
+            reject(e);
           }
-
-          if (existingSpots.empty) {
-            // Create new spot
-            spotData.createdAt = admin.firestore.FieldValue.serverTimestamp();
-            await db.collection("spots").add(spotData);
-            created++;
-            console.log(`Created new spot: ${name} with ` +
-                `${imageUrls.length} images`);
-          } else {
-            // Update existing spot
-            const existingSpot = existingSpots.docs[0];
-            await existingSpot.ref.update(spotData);
-            updated++;
-            console.log(`Updated existing spot: ${name} (ID: ` +
-                `${existingSpot.id}) with ${imageUrls.length} images`);
-          }
-        }
-
-        const result = {
-          success: true,
-          message: `KMZ sync completed successfully`,
-          stats: {
-            total: placemarks.length,
-            created: created,
-            updated: updated,
-            skipped: skipped,
-          },
-        };
-
-        console.log("KMZ sync result:", result);
-        return result;
-      } catch (error) {
-        console.error("Error syncing KMZ spots:", error);
-        throw new Error(`Failed to sync KMZ spots: ${error.message}`);
-      }
+        });
+      }).on("error", reject);
     });
+
+    if (response.status === "OK" && response.results && response.results.length > 0) {
+      const result = response.results[0];
+      const address = result.formatted_address;
+
+      let city = null;
+      let countryCode = null;
+      if (Array.isArray(result.address_components)) {
+        const components = result.address_components;
+        const countryComp = components.find((c) => c.types && c.types.includes('country'));
+        if (countryComp && countryComp.short_name) {
+          countryCode = countryComp.short_name;
+        }
+        const cityTypesPriority = [
+          'locality',
+          'postal_town',
+          'administrative_area_level_2',
+          'administrative_area_level_1',
+        ];
+        for (const t of cityTypesPriority) {
+          const comp = components.find((c) => c.types && c.types.includes(t));
+          if (comp && comp.long_name) {
+            city = comp.long_name;
+            break;
+          }
+        }
+      }
+
+      return {success: true, address, city, countryCode};
+    }
+
+    return {
+      success: false,
+      error: response.error_message || "No address found for coordinates",
+    };
+  } catch (error) {
+    console.warn(`Geocoding error for ${latitude}, ${longitude}:`, error);
+    return {
+      success: false,
+      error: error.message || "Geocoding request failed",
+    };
+  }
+}
+
+// Helper function to process a single sync source with geocoding
+async function processSyncSource(source, sourceId, apiKey) {
+  console.log(`Processing source: ${source.name} (${sourceId})`);
+
+  // Download and process KMZ file
+  let kmzBuffer = await downloadFile(source.kmzUrl);
+  const kmlContent = await extractKmlFromKmz(kmzBuffer);
+  const placemarks = await parseKmlPlacemarks(kmlContent);
+  
+  // Clear KMZ buffer to free memory
+  kmzBuffer = null;
+
+  let created = 0;
+  let updated = 0;
+  let geocoded = 0;
+  let geocodingFailed = 0;
+  const skipped = 0;
+
+  // Process each placemark
+  for (let i = 0; i < placemarks.length; i++) {
+    const placemark = placemarks[i];
+    const {name, description, coordinates} = placemark;
+
+    // Process images for this placemark
+    console.log(`Processing images for spot: ${name} from source: ${source.name}`);
+    const imageUrls = await processPlacemarkImages(placemark);
+
+    // Clean the description to remove HTML
+    const cleanedDescription = cleanDescription(description);
+
+    // Check if spot already exists with same coordinates and source
+    const existingSpots = await db.collection("spots")
+        .where("spotSource", "==", sourceId)
+        .where("location", "==", new admin.firestore.GeoPoint(
+            coordinates.latitude,
+            coordinates.longitude,
+        ))
+        .get();
+
+    let address = null;
+    let city = null;
+    let countryCode = null;
+
+    if (existingSpots.empty) {
+      // Only geocode for NEW spots
+      console.log(`Geocoding new spot: ${name} at ${coordinates.latitude}, ${coordinates.longitude}`);
+      
+      // Add small delay to respect API rate limits
+      if (i > 0) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
+      const geocodeResult = await geocodeCoordinates(coordinates.latitude, coordinates.longitude, apiKey);
+      
+      if (geocodeResult.success) {
+        address = geocodeResult.address;
+        city = geocodeResult.city;
+        countryCode = geocodeResult.countryCode;
+        geocoded++;
+        console.log(`✓ Geocoded new spot: ${name} - ${address}`);
+      } else {
+        geocodingFailed++;
+        console.warn(`✗ Geocoding failed for new spot: ${name} - ${geocodeResult.error}`);
+      }
+    } else {
+      // For existing spots, keep their current address data
+      const existingSpot = existingSpots.docs[0];
+      const existingData = existingSpot.data();
+      address = existingData.address;
+      city = existingData.city;
+      countryCode = existingData.countryCode;
+      console.log(`Keeping existing address data for spot: ${name}`);
+    }
+
+    const spotData = {
+      name: name,
+      description: cleanedDescription,
+      location: new admin.firestore.GeoPoint(
+          coordinates.latitude,
+          coordinates.longitude,
+      ),
+      address: address,
+      city: city,
+      countryCode: countryCode,
+      spotSource: sourceId,
+      isPublic: source.isPublic !== false, // Default to true
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    // Add image URLs if any were found
+    if (imageUrls.length > 0) {
+      spotData.imageUrls = imageUrls;
+    }
+
+    if (existingSpots.empty) {
+      // Create new spot
+      spotData.createdAt = admin.firestore.FieldValue.serverTimestamp();
+      await db.collection("spots").add(spotData);
+      created++;
+      console.log(`Created new spot: ${name} from source: ${source.name} with ${imageUrls.length} images and geocoded address`);
+    } else {
+      // Update existing spot
+      const existingSpot = existingSpots.docs[0];
+      await existingSpot.ref.update(spotData);
+      updated++;
+      console.log(`Updated existing spot: ${name} from source: ${source.name} with ${imageUrls.length} images`);
+    }
+    
+    // Force garbage collection after every 10 spots to free memory
+    if (i % 10 === 0 && global.gc) {
+      global.gc();
+      console.log(`Processed ${i + 1}/${placemarks.length} spots, forced GC`);
+    }
+  }
+
+  // Update source last sync time
+  const sourceDoc = await db.collection("syncSources").doc(sourceId).get();
+  if (sourceDoc.exists) {
+    await sourceDoc.ref.update({
+      lastSyncAt: admin.firestore.FieldValue.serverTimestamp(),
+      lastSyncStats: {
+        total: placemarks.length,
+        created: created,
+        updated: updated,
+        skipped: skipped,
+        geocoded: geocoded,
+        geocodingFailed: geocodingFailed,
+        geocodingSuccessRate: placemarks.length > 0 ? ((geocoded / placemarks.length) * 100).toFixed(1) + '%' : '0%',
+      },
+    });
+  }
+
+  return {
+    sourceId: sourceId,
+    sourceName: source.name,
+    stats: {
+      total: placemarks.length,
+      created: created,
+      updated: updated,
+      skipped: skipped,
+      geocoded: geocoded,
+      geocodingFailed: geocodingFailed,
+      geocodingSuccessRate: placemarks.length > 0 ? ((geocoded / placemarks.length) * 100).toFixed(1) + '%' : '0%',
+    },
+  };
+}
 
 // Helper to ensure caller is admin (via custom claim or Firestore users/{uid}.isAdmin)
 async function ensureAdmin(request) {
@@ -709,7 +811,7 @@ async function cleanupOldImages(daysOld = 30) {
 
 // Function to sync a single source by ID (admin only)
 exports.syncSingleSource = onCall(
-    {region: "europe-west1", memory: "1GiB", timeoutSeconds: 540},
+    {region: "europe-west1", memory: "1GiB", timeoutSeconds: 540, secrets: ["GOOGLE_MAPS_API_KEY"]},
     async (request) => {
       try {
         await ensureAdmin(request);
@@ -717,6 +819,11 @@ exports.syncSingleSource = onCall(
 
         if (!sourceId) {
           throw new Error("sourceId is required");
+        }
+
+        const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+        if (!apiKey) {
+          throw new Error("Google Maps API key not configured");
         }
 
         console.log(`Starting sync for single source: ${sourceId}`);
@@ -735,109 +842,19 @@ exports.syncSingleSource = onCall(
         }
 
         try {
-          console.log(`Processing source: ${source.name} (${sourceId})`);
+          // Use the shared helper function
+          const result = await processSyncSource(source, sourceId, apiKey);
 
-          // Download and process KMZ file
-          let kmzBuffer = await downloadFile(source.kmzUrl);
-          const kmlContent = await extractKmlFromKmz(kmzBuffer);
-          const placemarks = await parseKmlPlacemarks(kmlContent);
-          
-          // Clear KMZ buffer to free memory
-          kmzBuffer = null;
-
-          let created = 0;
-          let updated = 0;
-          const skipped = 0;
-
-          // Process each placemark
-          for (let i = 0; i < placemarks.length; i++) {
-            const placemark = placemarks[i];
-            const {name, description, coordinates} = placemark;
-
-            // Process images for this placemark
-            console.log(`Processing images for spot: ${name} ` +
-                `from source: ${source.name}`);
-            const imageUrls = await processPlacemarkImages(placemark);
-
-            // Clean the description to remove HTML
-            const cleanedDescription = cleanDescription(description);
-
-            // Check if spot already exists with same coordinates and source
-            const existingSpots = await db.collection("spots")
-                .where("spotSource", "==", sourceId)
-                .where("location", "==", new admin.firestore.GeoPoint(
-                    coordinates.latitude,
-                    coordinates.longitude,
-                ))
-                .get();
-
-            const spotData = {
-              name: name,
-              description: cleanedDescription,
-              location: new admin.firestore.GeoPoint(
-                  coordinates.latitude,
-                  coordinates.longitude,
-              ),
-              spotSource: sourceId,
-              isPublic: source.isPublic !== false, // Default to true
-              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-            };
-
-            // Add image URLs if any were found
-            if (imageUrls.length > 0) {
-              spotData.imageUrls = imageUrls;
-            }
-
-            if (existingSpots.empty) {
-              // Create new spot
-              spotData.createdAt = admin.firestore.FieldValue
-                  .serverTimestamp();
-              await db.collection("spots").add(spotData);
-              created++;
-              console.log(`Created new spot: ${name} from source: ` +
-                  `${source.name} with ${imageUrls.length} images`);
-            } else {
-              // Update existing spot
-              const existingSpot = existingSpots.docs[0];
-              await existingSpot.ref.update(spotData);
-              updated++;
-              console.log(`Updated existing spot: ${name} from source: ` +
-                  `${source.name} with ${imageUrls.length} images`);
-            }
-            
-            // Force garbage collection after every 10 spots to free memory
-            if (i % 10 === 0 && global.gc) {
-              global.gc();
-              console.log(`Processed ${i + 1}/${placemarks.length} spots, forced GC`);
-            }
-          }
-
-          // Update source last sync time
-          await sourceDoc.ref.update({
-            lastSyncAt: admin.firestore.FieldValue.serverTimestamp(),
-            lastSyncStats: {
-              total: placemarks.length,
-              created: created,
-              updated: updated,
-              skipped: skipped,
-            },
-          });
-
-          const result = {
+          const response = {
             success: true,
-            message: `Sync completed for source: ${source.name}`,
-            sourceId: sourceId,
-            sourceName: source.name,
-            stats: {
-              total: placemarks.length,
-              created: created,
-              updated: updated,
-              skipped: skipped,
-            },
+            message: `Sync completed for source: ${source.name} with geocoding`,
+            sourceId: result.sourceId,
+            sourceName: result.sourceName,
+            stats: result.stats,
           };
 
           console.log(`Completed sync for source: ${source.name}`, result.stats);
-          return result;
+          return response;
         } catch (sourceError) {
           console.error(`Error processing source ${source.name}:`, sourceError);
           throw new Error(`Failed to sync source ${source.name}: ${sourceError.message}`);
@@ -850,10 +867,16 @@ exports.syncSingleSource = onCall(
 
 // Function to sync all sources from Firestore collection (admin only)
 exports.syncAllSources = onCall(
-    {region: "europe-west1", memory: "1GiB", timeoutSeconds: 540},
+    {region: "europe-west1", memory: "1GiB", timeoutSeconds: 540, secrets: ["GOOGLE_MAPS_API_KEY"]},
     async (request) => {
       try {
         await ensureAdmin(request);
+        
+        const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+        if (!apiKey) {
+          throw new Error("Google Maps API key not configured");
+        }
+        
         console.log("Starting sync for all sources from Firestore");
 
         // Get all active sync sources
@@ -873,6 +896,8 @@ exports.syncAllSources = onCall(
         let totalCreated = 0;
         let totalUpdated = 0;
         let totalSkipped = 0;
+        let totalGeocoded = 0;
+        let totalGeocodingFailed = 0;
 
         // Process each source
         for (const sourceDoc of sourcesSnapshot.docs) {
@@ -880,117 +905,26 @@ exports.syncAllSources = onCall(
           const sourceId = sourceDoc.id;
 
           try {
-            console.log(`Processing source: ${source.name} (${sourceId})`);
-
-            // Download and process KMZ file
-            let kmzBuffer = await downloadFile(source.kmzUrl);
-            const kmlContent = await extractKmlFromKmz(kmzBuffer);
-            const placemarks = await parseKmlPlacemarks(kmlContent);
-            
-            // Clear KMZ buffer to free memory
-            kmzBuffer = null;
-
-            let created = 0;
-            let updated = 0;
-            const skipped = 0;
-
-            // Process each placemark
-            for (let i = 0; i < placemarks.length; i++) {
-              const placemark = placemarks[i];
-              const {name, description, coordinates} = placemark;
-
-              // Process images for this placemark
-              console.log(`Processing images for spot: ${name} ` +
-                  `from source: ${source.name}`);
-              const imageUrls = await processPlacemarkImages(placemark);
-
-              // Clean the description to remove HTML
-              const cleanedDescription = cleanDescription(description);
-
-              // Check if spot already exists with same coordinates and source
-              const existingSpots = await db.collection("spots")
-                  .where("spotSource", "==", sourceId)
-                  .where("location", "==", new admin.firestore.GeoPoint(
-                      coordinates.latitude,
-                      coordinates.longitude,
-                  ))
-                  .get();
-
-              const spotData = {
-                name: name,
-                description: cleanedDescription,
-                location: new admin.firestore.GeoPoint(
-                    coordinates.latitude,
-                    coordinates.longitude,
-                ),
-                spotSource: sourceId,
-                isPublic: source.isPublic !== false, // Default to true
-                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-              };
-
-              // Add image URLs if any were found
-              if (imageUrls.length > 0) {
-                spotData.imageUrls = imageUrls;
-              }
-
-              if (existingSpots.empty) {
-                // Create new spot
-                spotData.createdAt = admin.firestore.FieldValue
-                    .serverTimestamp();
-                await db.collection("spots").add(spotData);
-                created++;
-                console.log(`Created new spot: ${name} from source: ` +
-                    `${source.name} with ${imageUrls.length} images`);
-              } else {
-                // Update existing spot
-                const existingSpot = existingSpots.docs[0];
-                await existingSpot.ref.update(spotData);
-                updated++;
-                console.log(`Updated existing spot: ${name} from source: ` +
-                    `${source.name} with ${imageUrls.length} images`);
-              }
-              
-              // Force garbage collection after every 10 spots to free memory
-              if (i % 10 === 0 && global.gc) {
-                global.gc();
-                console.log(`Processed ${i + 1}/${placemarks.length} spots, forced GC`);
-              }
-            }
-
-            // Update source last sync time
-            await sourceDoc.ref.update({
-              lastSyncAt: admin.firestore.FieldValue.serverTimestamp(),
-              lastSyncStats: {
-                total: placemarks.length,
-                created: created,
-                updated: updated,
-                skipped: skipped,
-              },
-            });
+            // Use the shared helper function
+            const result = await processSyncSource(source, sourceId, apiKey);
 
             const sourceResult = {
-              sourceId: sourceId,
-              sourceName: source.name,
+              sourceId: result.sourceId,
+              sourceName: result.sourceName,
               success: true,
-              stats: {
-                total: placemarks.length,
-                created: created,
-                updated: updated,
-                skipped: skipped,
-              },
+              stats: result.stats,
             };
 
             results.push(sourceResult);
-            totalCreated += created;
-            totalUpdated += updated;
-            totalSkipped += skipped;
+            totalCreated += result.stats.created;
+            totalUpdated += result.stats.updated;
+            totalSkipped += result.stats.skipped;
+            totalGeocoded += result.stats.geocoded;
+            totalGeocodingFailed += result.stats.geocodingFailed;
 
-            console.log(`Completed sync for source: ` +
-                `${source.name}`, sourceResult.stats);
+            console.log(`Completed sync for source: ${source.name}`, result.stats);
           } catch (sourceError) {
-            console.error(`Error processing source ${source.name}:`,
-                sourceError);
-
+            console.error(`Error processing source ${source.name}:`, sourceError);
             results.push({
               sourceId: sourceId,
               sourceName: source.name,
@@ -1001,6 +935,9 @@ exports.syncAllSources = onCall(
                 created: 0,
                 updated: 0,
                 skipped: 0,
+                geocoded: 0,
+                geocodingFailed: 0,
+                geocodingSuccessRate: '0%',
               },
             });
           }
@@ -1008,12 +945,16 @@ exports.syncAllSources = onCall(
 
         const overallResult = {
           success: true,
-          message: `Sync completed for ${results.length} sources`,
+          message: `Sync completed for ${results.length} sources with geocoding`,
           totalStats: {
             total: totalCreated + totalUpdated + totalSkipped,
             created: totalCreated,
             updated: totalUpdated,
             skipped: totalSkipped,
+            geocoded: totalGeocoded,
+            geocodingFailed: totalGeocodingFailed,
+            geocodingSuccessRate: (totalGeocoded + totalGeocodingFailed) > 0 ? 
+              ((totalGeocoded / (totalGeocoded + totalGeocodingFailed)) * 100).toFixed(1) + '%' : '0%',
           },
           results: results,
         };
