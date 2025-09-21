@@ -452,18 +452,6 @@ class _SpotCardState extends State<SpotCard> {
     }
   }
 
-  void _goToImage(int index) {
-    if (index >= 0 && index < widget.spot.imageUrls!.length) {
-      setState(() {
-        _currentPage = index;
-      });
-      _pageController.animateToPage(
-        index,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    }
-  }
 
   Future<void> _loadRatingStats() async {
     try {
