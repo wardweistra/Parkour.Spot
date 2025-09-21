@@ -1686,12 +1686,48 @@ exports.uploadReplacementImage = onCall(
     }
 );
 
-// Admin tool: Geocode all spots missing address fields (address, city, or countryCode)
-exports.geocodeMissingSpotAddresses = onCall(
-    {region: "europe-west1", memory: "512MiB", timeoutSeconds: 540, secrets: ["GOOGLE_MAPS_API_KEY"]},
+// Test function to check spots in database
+exports.testSpotsCount = onCall(
+    {region: "europe-west1"},
     async (request) => {
       try {
         await ensureAdmin(request);
+        const spotsSnapshot = await db.collection("spots").get();
+        console.log(`Total spots in database: ${spotsSnapshot.size}`);
+        
+        // Check a few sample spots
+        let sampleCount = 0;
+        spotsSnapshot.forEach((doc) => {
+          if (sampleCount < 3) {
+            const data = doc.data();
+            console.log(`Spot ${doc.id}: address="${data.address}", city="${data.city}", countryCode="${data.countryCode}"`);
+            sampleCount++;
+          }
+        });
+        
+        return {
+          success: true,
+          totalSpots: spotsSnapshot.size,
+          message: `Found ${spotsSnapshot.size} total spots in database`
+        };
+      } catch (error) {
+        console.error("Error testing spots count:", error);
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+    }
+);
+
+// Admin tool: Geocode all spots missing address fields (address, city, or countryCode)
+exports.geocodeMissingSpotAddresses = onCall(
+    {region: "europe-west1", memory: "1GiB", timeoutSeconds: 900, secrets: ["GOOGLE_MAPS_API_KEY"]},
+    async (request) => {
+      try {
+        console.log("geocodeMissingSpotAddresses function called");
+        await ensureAdmin(request);
+        console.log("Admin check passed");
 
         const apiKey = process.env.GOOGLE_MAPS_API_KEY;
         if (!apiKey) {
@@ -1751,83 +1787,163 @@ exports.geocodeMissingSpotAddresses = onCall(
           };
         }
 
-        // Build set of candidate spot docs where at least one field is missing/empty
-        const candidateDocs = new Map(); // id -> docRef
-
-        async function addQuery(query) {
-          const snap = await query.get();
-          snap.forEach((doc) => candidateDocs.set(doc.id, doc));
-        }
-
-        const spotsCol = db.collection("spots");
-        await addQuery(spotsCol.where("address", "==", null));
-        await addQuery(spotsCol.where("address", "==", ""));
-        await addQuery(spotsCol.where("city", "==", null));
-        await addQuery(spotsCol.where("city", "==", ""));
-        await addQuery(spotsCol.where("countryCode", "==", null));
-        await addQuery(spotsCol.where("countryCode", "==", ""));
-
-        const totalCandidates = candidateDocs.size;
-        console.log(`Found ${totalCandidates} spots missing address fields`);
-
+        // Process spots in batches to avoid timeout
+        const BATCH_SIZE = 50; // Process 50 spots at a time
+        const API_DELAY = 100; // 100ms delay between API calls to respect rate limits
+        
+        let totalCandidates = 0;
         let processed = 0;
         let updated = 0;
         let failed = 0;
         let skipped = 0;
-
-        for (const [id, doc] of candidateDocs.entries()) {
-          try {
+        let lastDoc = null;
+        
+        // First, get total count of all spots and candidates
+        console.log("Scanning all spots to count candidates...");
+        const allSpotsSnapshot = await db.collection("spots").get();
+        const totalSpots = allSpotsSnapshot.size;
+        let totalCandidatesCount = 0;
+        
+        allSpotsSnapshot.forEach((doc) => {
+          const data = doc.data();
+          const address = data.address;
+          const city = data.city;
+          const countryCode = data.countryCode;
+          
+          const isMissingAddress = !address || address.trim() === "";
+          const isMissingCity = !city || city.trim() === "";
+          const isMissingCountryCode = !countryCode || countryCode.trim() === "";
+          
+          if (isMissingAddress || isMissingCity || isMissingCountryCode) {
+            totalCandidatesCount++;
+          }
+        });
+        
+        console.log(`Database scan complete: ${totalSpots} total spots, ${totalCandidatesCount} candidates for geocoding`);
+        
+        // Now process in batches
+        console.log("Starting batch processing of candidates...");
+        let batchNumber = 0;
+        
+        while (true) {
+          batchNumber++;
+          console.log(`Processing batch ${batchNumber}...`);
+          
+          // Build query for next batch
+          let query = db.collection("spots").limit(BATCH_SIZE);
+          if (lastDoc) {
+            query = query.startAfter(lastDoc);
+          }
+          
+          const batchSnapshot = await query.get();
+          if (batchSnapshot.empty) {
+            console.log(`No more spots to process. Completed ${batchNumber - 1} batches.`);
+            break;
+          }
+          
+          console.log(`Batch ${batchNumber}: Processing ${batchSnapshot.size} spots...`);
+          
+          // Filter spots in this batch that need geocoding
+          const batchCandidates = [];
+          batchSnapshot.forEach((doc) => {
             const data = doc.data();
-            const location = data && data.location;
-            if (!location || typeof location.latitude !== 'number' || typeof location.longitude !== 'number') {
-              skipped++;
-              console.warn(`Skipping spot ${id}: invalid or missing location`);
-              continue;
+            const address = data.address;
+            const city = data.city;
+            const countryCode = data.countryCode;
+            
+            // Check if any of the address fields are missing or empty
+            const isMissingAddress = !address || address.trim() === "";
+            const isMissingCity = !city || city.trim() === "";
+            const isMissingCountryCode = !countryCode || countryCode.trim() === "";
+            
+            if (isMissingAddress || isMissingCity || isMissingCountryCode) {
+              batchCandidates.push(doc);
             }
+          });
+          
+          totalCandidates += batchCandidates.length;
+          console.log(`Batch ${batchNumber}: Found ${batchCandidates.length} candidates (${totalCandidates}/${totalCandidatesCount} total)`);
+          
+          // Process each candidate in this batch
+          for (const doc of batchCandidates) {
+            try {
+              const data = doc.data();
+              const location = data && data.location;
+              if (!location || typeof location.latitude !== 'number' || typeof location.longitude !== 'number') {
+                skipped++;
+                console.warn(`Skipping spot ${doc.id}: invalid or missing location`);
+                continue;
+              }
 
-            const latitude = location.latitude;
-            const longitude = location.longitude;
-            const result = await geocodeLatLng(latitude, longitude);
+              const latitude = location.latitude;
+              const longitude = location.longitude;
+              
+              // Add delay to respect API rate limits
+              if (processed > 0) {
+                await new Promise(resolve => setTimeout(resolve, API_DELAY));
+              }
+              
+              const result = await geocodeLatLng(latitude, longitude);
 
-            if (result.success) {
-              await doc.ref.update({
-                address: result.address || null,
-                city: result.city || null,
-                countryCode: result.countryCode || null,
-                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-              });
-              updated++;
-            } else {
-              console.warn(`Geocoding failed for spot ${id}: ${result.error}`);
+              if (result.success) {
+                await doc.ref.update({
+                  address: result.address || null,
+                  city: result.city || null,
+                  countryCode: result.countryCode || null,
+                  updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                });
+                updated++;
+                console.log(`✓ Updated spot ${doc.id}: ${result.address}`);
+              } else {
+                console.warn(`✗ Geocoding failed for spot ${doc.id}: ${result.error}`);
+                failed++;
+              }
+            } catch (err) {
+              console.error(`✗ Error processing spot ${doc.id}:`, err);
               failed++;
-            }
-          } catch (err) {
-            console.error(`Error processing spot ${id}:`, err);
-            failed++;
-          } finally {
-            processed++;
-            if (processed % 25 === 0 && global.gc) {
-              global.gc();
-              console.log(`Processed ${processed}/${totalCandidates} spots (GC)`);
+            } finally {
+              processed++;
+              
+              // Log progress every 5 spots
+              if (processed % 5 === 0) {
+                const progress = ((processed / totalCandidatesCount) * 100).toFixed(1);
+                console.log(`Progress: ${processed}/${totalCandidatesCount} (${progress}%) - Updated: ${updated}, Failed: ${failed}, Skipped: ${skipped}`);
+              }
             }
           }
+          
+          // Update lastDoc for pagination
+          lastDoc = batchSnapshot.docs[batchSnapshot.docs.length - 1];
+          
+          // Force garbage collection after each batch
+          if (global.gc) {
+            global.gc();
+            console.log(`Batch ${batchNumber} completed. Processed: ${processed}, Updated: ${updated}, Failed: ${failed}, Skipped: ${skipped}`);
+          }
         }
+        
+        console.log(`Batch processing completed!`);
+        console.log(`Final results: ${totalSpots} total spots, ${totalCandidatesCount} candidates, ${processed} processed, ${updated} updated, ${failed} failed, ${skipped} skipped`);
 
         const response = {
           success: true,
-          message: `Geocoding completed`,
+          message: `Geocoding completed successfully! Processed ${processed} spots out of ${totalCandidatesCount} candidates from ${totalSpots} total spots.`,
           stats: {
-            totalCandidates,
+            totalSpots,
+            totalCandidates: totalCandidatesCount,
             processed,
             updated,
             failed,
             skipped,
+            successRate: totalCandidatesCount > 0 ? ((updated / totalCandidatesCount) * 100).toFixed(1) + '%' : '0%',
           },
         };
         console.log("Geocode missing addresses result:", response);
+        console.log("Returning response from geocodeMissingSpotAddresses");
         return response;
       } catch (error) {
         console.error("Error geocoding missing spot addresses:", error);
+        console.log("Error details:", error.stack);
         return {
           success: false,
           error: error.message,

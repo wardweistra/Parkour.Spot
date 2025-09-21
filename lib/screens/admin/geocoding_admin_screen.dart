@@ -82,46 +82,169 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Last run', style: TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 8),
-                      Text(_lastResult!['message']?.toString() ?? ''),
-                      const SizedBox(height: 8),
-                      if (_lastResult!['stats'] is Map)
-                        Wrap(
-                          spacing: 12,
-                          runSpacing: 8,
-                          children: [
-                            _StatChip(label: 'Candidates', value: _lastResult!['stats']['totalCandidates']),
-                            _StatChip(label: 'Processed', value: _lastResult!['stats']['processed']),
-                            _StatChip(label: 'Updated', value: _lastResult!['stats']['updated']),
-                            _StatChip(label: 'Failed', value: _lastResult!['stats']['failed']),
-                            _StatChip(label: 'Skipped', value: _lastResult!['stats']['skipped']),
-                          ],
+                      const Text('Last run', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                      const SizedBox(height: 12),
+                      Text(
+                        _lastResult!['message']?.toString() ?? '',
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                      const SizedBox(height: 16),
+                      if (_lastResult!['stats'] is Map) ...[
+                        // Overview stats
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Overview', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _StatCard(
+                                      label: 'Total Spots',
+                                      value: _lastResult!['stats']['totalSpots']?.toString() ?? '0',
+                                      color: Colors.blue,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: _StatCard(
+                                      label: 'Candidates',
+                                      value: _lastResult!['stats']['totalCandidates']?.toString() ?? '0',
+                                      color: Colors.orange,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
+                        const SizedBox(height: 16),
+                        // Processing results
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Processing Results', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 12,
+                                runSpacing: 8,
+                                children: [
+                                  _StatChip(
+                                    label: 'Processed',
+                                    value: _lastResult!['stats']['processed']?.toString() ?? '0',
+                                    color: Colors.blue,
+                                  ),
+                                  _StatChip(
+                                    label: 'Updated',
+                                    value: _lastResult!['stats']['updated']?.toString() ?? '0',
+                                    color: Colors.green,
+                                  ),
+                                  _StatChip(
+                                    label: 'Failed',
+                                    value: _lastResult!['stats']['failed']?.toString() ?? '0',
+                                    color: Colors.red,
+                                  ),
+                                  _StatChip(
+                                    label: 'Skipped',
+                                    value: _lastResult!['stats']['skipped']?.toString() ?? '0',
+                                    color: Colors.orange,
+                                  ),
+                                ],
+                              ),
+                              if (_lastResult!['stats']['successRate'] != null) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Success Rate: ${_lastResult!['stats']['successRate']}',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
               ),
             ],
             const Spacer(),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _running ? null : _startGeocoding,
-                icon: _running
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.play_arrow),
-                label: Text(_running ? 'Running...' : 'Run geocoding'),
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _running ? null : _testSpotsCount,
+                    icon: const Icon(Icons.info),
+                    label: const Text('Test DB'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _running ? null : _startGeocoding,
+                    icon: _running
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.play_arrow),
+                    label: Text(_running ? 'Running...' : 'Run geocoding'),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _testSpotsCount() async {
+    setState(() {
+      _running = true;
+    });
+    try {
+      final result = await context.read<GeocodingService>().testSpotsCount();
+      if (!mounted) return;
+      setState(() {
+        _lastResult = result;
+      });
+      if (result != null && result['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Test completed: ${result['message']}')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Test failed: ${result?['error'] ?? 'Unknown error'}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _running = false;
+        });
+      }
+    }
   }
 
   Future<void> _startGeocoding() async {
@@ -164,13 +287,67 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
 class _StatChip extends StatelessWidget {
   final String label;
   final dynamic value;
+  final Color? color;
 
-  const _StatChip({required this.label, required this.value});
+  const _StatChip({required this.label, required this.value, this.color});
 
   @override
   Widget build(BuildContext context) {
     return Chip(
-      label: Text('$label: ${value ?? '-'}'),
+      backgroundColor: color?.withOpacity(0.2),
+      label: Text(
+        '$label: ${value ?? '-'}',
+        style: TextStyle(
+          color: color ?? Colors.black87,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+
+  const _StatCard({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: color.withOpacity(0.8),
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 }

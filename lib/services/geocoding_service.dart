@@ -175,6 +175,26 @@ class GeocodingService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Test function to check spots count in database
+  Future<Map<String, dynamic>?> testSpotsCount() async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      final callable = _functions.httpsCallable('testSpotsCount');
+      final result = await callable.call();
+      return Map<String, dynamic>.from(result.data as Map);
+    } catch (e) {
+      _error = 'Failed to test spots count: $e';
+      debugPrint('Error testing spots count: $e');
+      return null;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   /// Admin: Trigger geocoding for all spots missing address fields
   Future<Map<String, dynamic>?> geocodeMissingSpotAddresses() async {
     try {
