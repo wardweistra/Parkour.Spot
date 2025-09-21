@@ -103,7 +103,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
           if (service.error != null && service.sources.isEmpty) {
             return Center(child: Text(service.error!));
           }
-          final sources = service.sources;
+          final sources = service.sources..sort((a, b) => a.name.compareTo(b.name));
           return Stack(
             children: [
               ListView.separated(

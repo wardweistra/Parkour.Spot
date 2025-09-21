@@ -349,7 +349,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   Widget _buildFilters() {
     return Consumer<SyncSourceService>(
       builder: (context, syncService, child) {
-        final sources = syncService.sources;
+        final sources = syncService.sources..sort((a, b) => a.name.compareTo(b.name));
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
