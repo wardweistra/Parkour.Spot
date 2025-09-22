@@ -5,8 +5,8 @@ class Spot {
   final String name;
   final String description;
   final GeoPoint location;
-  final double? latitude;
-  final double? longitude;
+  final double latitude;
+  final double longitude;
   final String? address;
   final String? city;
   final String? countryCode;
@@ -18,15 +18,14 @@ class Spot {
   final List<String>? tags;
   final bool? isPublic;
   final String? spotSource;
-  final String? geohash;
 
   Spot({
     this.id,
     required this.name,
     required this.description,
     required this.location,
-    this.latitude,
-    this.longitude,
+    required this.latitude,
+    required this.longitude,
     this.address,
     this.city,
     this.countryCode,
@@ -38,18 +37,18 @@ class Spot {
     this.tags,
     this.isPublic = true,
     this.spotSource,
-    this.geohash,
   });
 
   factory Spot.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    final location = data['location'] ?? const GeoPoint(0, 0);
     return Spot(
       id: doc.id,
       name: data['name'] ?? '',
       description: data['description'] ?? '',
-      location: data['location'] ?? const GeoPoint(0, 0),
-      latitude: data['latitude']?.toDouble(),
-      longitude: data['longitude']?.toDouble(),
+      location: location,
+      latitude: data['latitude']?.toDouble() ?? location.latitude,
+      longitude: data['longitude']?.toDouble() ?? location.longitude,
       address: data['address'],
       city: data['city'],
       countryCode: data['countryCode'],
@@ -63,7 +62,6 @@ class Spot {
       tags: data['tags'] != null ? List<String>.from(data['tags']) : null,
       isPublic: data['isPublic'] ?? true,
       spotSource: data['spotSource'],
-      geohash: data['geohash'],
     );
   }
 
@@ -85,7 +83,6 @@ class Spot {
       'tags': tags,
       'isPublic': isPublic,
       'spotSource': spotSource,
-      'geohash': geohash,
     };
   }
 
@@ -107,7 +104,6 @@ class Spot {
     List<String>? tags,
     bool? isPublic,
     String? spotSource,
-    String? geohash,
   }) {
     return Spot(
       id: id ?? this.id,
@@ -127,13 +123,8 @@ class Spot {
       tags: tags ?? this.tags,
       isPublic: isPublic ?? this.isPublic,
       spotSource: spotSource ?? this.spotSource,
-      geohash: geohash ?? this.geohash,
     );
   }
-
-  // Convenience getters to get latitude and longitude from location if not explicitly set
-  double get effectiveLatitude => latitude ?? location.latitude;
-  double get effectiveLongitude => longitude ?? location.longitude;
 
   // Method to ensure latitude and longitude are populated from location
   Spot withLatLngFromLocation() {

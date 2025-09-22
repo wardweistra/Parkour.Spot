@@ -17,8 +17,7 @@
     "firebase-admin": "^12.6.0",
     "firebase-functions": "^6.0.1",
     "yauzl": "^3.0.0",
-    "xml2js": "^0.6.2",
-    "ngeohash": "^0.6.0"
+    "xml2js": "^0.6.2"
   },
   "devDependencies": {
     "eslint": "^8.15.0",

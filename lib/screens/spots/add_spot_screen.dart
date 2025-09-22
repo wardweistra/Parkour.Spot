@@ -454,12 +454,16 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
           .toList();
 
       // Create spot
+      final location = _pickedLocation != null 
+          ? GeoPoint(_pickedLocation!.latitude, _pickedLocation!.longitude)
+          : GeoPoint(_currentPosition!.latitude, _currentPosition!.longitude);
+      
       final spot = Spot(
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
-        location: _pickedLocation != null 
-          ? GeoPoint(_pickedLocation!.latitude, _pickedLocation!.longitude)
-          : GeoPoint(_currentPosition!.latitude, _currentPosition!.longitude),
+        location: location,
+        latitude: location.latitude,
+        longitude: location.longitude,
         address: _currentAddress,
         city: _currentCity,
         countryCode: _currentCountryCode,

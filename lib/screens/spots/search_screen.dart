@@ -645,7 +645,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     final markers = spots.map((spot) {
       return Marker(
         markerId: MarkerId(spot.id ?? spot.name),
-        position: LatLng(spot.effectiveLatitude, spot.effectiveLongitude),
+        position: LatLng(spot.latitude, spot.longitude),
         onTap: () {
           // Select the spot and show detail card
           setState(() {
@@ -656,7 +656,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
           // Center map on selected spot
           _mapController?.animateCamera(
             CameraUpdate.newLatLng(
-              LatLng(spot.effectiveLatitude, spot.effectiveLongitude),
+              LatLng(spot.latitude, spot.longitude),
             ),
           );
         },

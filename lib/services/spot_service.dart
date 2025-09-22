@@ -5,7 +5,6 @@ import 'dart:io';
 import 'dart:math';
 import '../models/spot.dart';
 import '../models/rating.dart';
-import '../utils/geohash_utils.dart';
 
 class SpotService extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -68,8 +67,8 @@ class SpotService extends ChangeNotifier {
         final distance = _calculateDistance(
           latitude,
           longitude,
-          spot.effectiveLatitude,
-          spot.effectiveLongitude,
+        spot.latitude,
+        spot.longitude,
         );
         return distance <= radiusKm;
       }).toList();
@@ -127,16 +126,10 @@ class SpotService extends ChangeNotifier {
         imageUrls = await _uploadImagesBytes(imageBytesList);
       }
 
-      // Calculate geohash for the spot location
-      final geohash = GeohashUtils.calculateGeohashFromGeoPoint(spot.location);
-
       final spotWithImages = spot.copyWith(
         imageUrls: imageUrls,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
-        geohash: geohash,
-        latitude: spot.location.latitude,
-        longitude: spot.location.longitude,
       );
 
       final docRef = await _firestore.collection('spots').add(spotWithImages.toFirestore());
@@ -177,15 +170,9 @@ class SpotService extends ChangeNotifier {
         ];
       }
 
-      // Recalculate geohash if location might have changed
-      final geohash = GeohashUtils.calculateGeohashFromGeoPoint(spot.location);
-
       final updatedSpot = spot.copyWith(
         imageUrls: imageUrls,
         updatedAt: DateTime.now(),
-        geohash: geohash,
-        latitude: spot.location.latitude,
-        longitude: spot.location.longitude,
       );
 
       await _firestore.collection('spots').doc(spot.id).update(updatedSpot.toFirestore());
@@ -465,8 +452,8 @@ class SpotService extends ChangeNotifier {
         final distance = _calculateDistance(
           latitude,
           longitude,
-          spot.effectiveLatitude,
-          spot.effectiveLongitude,
+        spot.latitude,
+        spot.longitude,
         );
         return distance <= radiusKm;
       }).toList();
@@ -474,9 +461,9 @@ class SpotService extends ChangeNotifier {
       // Sort by distance
       filteredSpots.sort((a, b) {
         final distanceA = _calculateDistance(
-          latitude, longitude, a.effectiveLatitude, a.effectiveLongitude);
+          latitude, longitude, a.latitude, a.longitude);
         final distanceB = _calculateDistance(
-          latitude, longitude, b.effectiveLatitude, b.effectiveLongitude);
+          latitude, longitude, b.latitude, b.longitude);
         return distanceA.compareTo(distanceB);
       });
       
@@ -576,8 +563,8 @@ class SpotService extends ChangeNotifier {
         for (int i = 0; i < allSpots.length && i < 3; i++) {
           final spot = allSpots[i];
           debugPrint('   Spot $i: ${spot.name}');
-          debugPrint('     - latitude: ${spot.effectiveLatitude}');
-          debugPrint('     - longitude: ${spot.effectiveLongitude}');
+          debugPrint('     - latitude: ${spot.latitude}');
+          debugPrint('     - longitude: ${spot.longitude}');
           debugPrint('     - isPublic: ${spot.isPublic}');
         }
       }
@@ -612,7 +599,7 @@ class SpotService extends ChangeNotifier {
       
       debugPrint('📍 SpotService.loadSpotsForMapView retrieved ${spots.length} spots');
       if (spots.isNotEmpty) {
-        debugPrint('   First spot: ${spots.first.name} at (${spots.first.effectiveLatitude}, ${spots.first.effectiveLongitude})');
+        debugPrint('   First spot: ${spots.first.name} at (${spots.first.latitude}, ${spots.first.longitude})');
       }
       
       // Update the local spots list with the new spots

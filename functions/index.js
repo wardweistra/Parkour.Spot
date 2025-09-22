@@ -18,7 +18,6 @@ const admin = require("firebase-admin");
 const yauzl = require("yauzl");
 const xml2js = require("xml2js");
 const https = require("https");
-const ngeohash = require("ngeohash");
 const path = require("path");
 const crypto = require("crypto");
 
@@ -770,9 +769,6 @@ async function processSyncSource(source, sourceId, apiKey) {
     // Clean the description to remove HTML
     const cleanedDescription = cleanDescription(description);
 
-    // Calculate geohash for the spot location
-    const geohash = ngeohash.encode(coordinates.latitude, coordinates.longitude, 12);
-
     const spotData = {
       name: name,
       description: cleanedDescription,
@@ -787,7 +783,6 @@ async function processSyncSource(source, sourceId, apiKey) {
       countryCode: countryCode,
       spotSource: sourceId,
       isPublic: source.isPublic !== false, // Default to true
-      geohash: geohash,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
@@ -1982,12 +1977,6 @@ exports.testSpotsCount = onCall(
         const spotsSnapshot = await db.collection("spots").get();
         console.log(`Total spots in database: ${spotsSnapshot.size}`);
         
-        // Count spots missing geohash (field doesn't exist or is null/undefined)
-        const spotsMissingGeohash = spotsSnapshot.docs.filter(doc => {
-          const data = doc.data();
-          return !data.hasOwnProperty('geohash') || data.geohash === null || data.geohash === undefined;
-        });
-        console.log(`Spots missing geohash: ${spotsMissingGeohash.length}`);
         
         // Count spots missing latitude/longitude (field doesn't exist or is null/undefined)
         const spotsMissingLatLng = spotsSnapshot.docs.filter(doc => {
@@ -2002,7 +1991,7 @@ exports.testSpotsCount = onCall(
         spotsSnapshot.forEach((doc) => {
           if (sampleCount < 3) {
             const data = doc.data();
-            console.log(`Spot ${doc.id}: address="${data.address}", city="${data.city}", countryCode="${data.countryCode}", geohash="${data.geohash}", lat="${data.latitude}", lng="${data.longitude}"`);
+            console.log(`Spot ${doc.id}: address="${data.address}", city="${data.city}", countryCode="${data.countryCode}", lat="${data.latitude}", lng="${data.longitude}"`);
             sampleCount++;
           }
         });
@@ -2010,9 +1999,8 @@ exports.testSpotsCount = onCall(
         return {
           success: true,
           totalSpots: spotsSnapshot.size,
-          missingGeohash: spotsMissingGeohash.length,
           missingLatLng: spotsMissingLatLng.length,
-          message: `Found ${spotsSnapshot.size} total spots, ${spotsMissingGeohash.length} missing geohash, ${spotsMissingLatLng.length} missing lat/lng`
+          message: `Found ${spotsSnapshot.size} total spots, ${spotsMissingLatLng.length} missing lat/lng`
         };
       } catch (error) {
         console.error("Error testing spots count:", error);
@@ -2251,139 +2239,6 @@ exports.geocodeMissingSpotAddresses = onCall(
         return {
           success: false,
           error: error.message,
-        };
-      }
-    }
-);
-
-// Admin tool: Calculate geohash for all spots missing geohash field
-exports.calculateMissingSpotGeohashes = onCall(
-    {region: "europe-west1", memory: "1GiB", timeoutSeconds: 900},
-    async (request) => {
-      try {
-        console.log("calculateMissingSpotGeohashes function called");
-        await ensureAdmin(request);
-        console.log("Admin check passed");
-
-        let processed = 0;
-        let updated = 0;
-        let failed = 0;
-        let skipped = 0;
-        let totalCandidatesCount = 0;
-
-        // First, count total spots missing geohash
-        console.log("Counting spots missing geohash...");
-        
-        // Get all spots and filter for those missing geohash field
-        const allSpotsSnapshot = await db.collection("spots").get();
-        const spotsMissingGeohash = allSpotsSnapshot.docs.filter(doc => {
-          const data = doc.data();
-          return !data.hasOwnProperty('geohash') || data.geohash === null || data.geohash === undefined;
-        });
-        
-        totalCandidatesCount = spotsMissingGeohash.length;
-        console.log(`Found ${totalCandidatesCount} spots missing geohash out of ${allSpotsSnapshot.size} total spots`);
-
-        if (totalCandidatesCount === 0) {
-          return {
-            success: true,
-            message: "All spots already have geohash values",
-            stats: {
-              total: 0,
-              processed: 0,
-              updated: 0,
-              failed: 0,
-              skipped: 0,
-            }
-          };
-        }
-
-        let batchNumber = 0;
-        const batchSize = 50;
-        
-        // Process spots in batches
-        for (let i = 0; i < spotsMissingGeohash.length; i += batchSize) {
-          batchNumber++;
-          console.log(`\n--- Batch ${batchNumber} ---`);
-          
-          const batchCandidates = spotsMissingGeohash.slice(i, i + batchSize);
-          console.log(`Batch ${batchNumber}: Processing ${batchCandidates.length} candidates (${i + 1}-${Math.min(i + batchSize, spotsMissingGeohash.length)} of ${totalCandidatesCount} total)`);
-          
-          // Process each candidate in this batch
-          for (const doc of batchCandidates) {
-            try {
-              const data = doc.data();
-              const location = data && data.location;
-              if (!location || typeof location.latitude !== 'number' || typeof location.longitude !== 'number') {
-                skipped++;
-                console.warn(`Skipping spot ${doc.id}: invalid or missing location`);
-                continue;
-              }
-
-              const latitude = location.latitude;
-              const longitude = location.longitude;
-              
-              // Calculate geohash
-              const geohash = ngeohash.encode(latitude, longitude, 12);
-              
-              // Update the spot with geohash
-              await doc.ref.update({
-                geohash: geohash,
-                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-              });
-              
-              updated++;
-              console.log(`✓ Updated spot ${doc.id} with geohash: ${geohash}`);
-              
-            } catch (err) {
-              console.error(`✗ Error processing spot ${doc.id}:`, err);
-              failed++;
-            } finally {
-              processed++;
-              
-              // Log progress every 10 spots
-              if (processed % 10 === 0) {
-                const progress = ((processed / totalCandidatesCount) * 100).toFixed(1);
-                console.log(`Progress: ${processed}/${totalCandidatesCount} (${progress}%) - Updated: ${updated}, Failed: ${failed}, Skipped: ${skipped}`);
-              }
-            }
-          }
-        }
-
-        const successRate = processed > 0 ? ((updated / processed) * 100).toFixed(1) + '%' : '0%';
-        
-        console.log(`\n=== Geohash calculation completed ===`);
-        console.log(`Total processed: ${processed}`);
-        console.log(`Successfully updated: ${updated}`);
-        console.log(`Failed: ${failed}`);
-        console.log(`Skipped: ${skipped}`);
-        console.log(`Success rate: ${successRate}`);
-
-        return {
-          success: true,
-          message: `Geohash calculation completed. Updated ${updated} spots.`,
-          stats: {
-            total: totalCandidatesCount,
-            processed: processed,
-            updated: updated,
-            failed: failed,
-            skipped: skipped,
-            successRate: successRate,
-          }
-        };
-
-      } catch (error) {
-        console.error("Error in calculateMissingSpotGeohashes:", error);
-        return {
-          success: false,
-          error: error.message || "Unknown error occurred",
-          stats: {
-            total: 0,
-            processed: 0,
-            updated: 0,
-            failed: 0,
-            skipped: 0,
-          }
         };
       }
     }

@@ -215,25 +215,6 @@ class GeocodingService extends ChangeNotifier {
     }
   }
 
-  /// Admin: Calculate geohash for all spots missing geohash field
-  Future<Map<String, dynamic>?> calculateMissingSpotGeohashes() async {
-    try {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
-      final callable = _functions.httpsCallable('calculateMissingSpotGeohashes');
-      final result = await callable.call();
-      return Map<String, dynamic>.from(result.data as Map);
-    } catch (e) {
-      _error = 'Failed to trigger geohash calculation: $e';
-      debugPrint('Error triggering geohash calculation: $e');
-      return null;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
 
   /// Admin: Migrate existing spots to include latitude and longitude fields
   Future<Map<String, dynamic>?> migrateSpotsLatLng() async {
