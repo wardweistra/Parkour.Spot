@@ -1,0 +1,7 @@
+---
+description: This is where you find up to date Flutter documentation
+globs:
+alwaysApply: true
+---
+
+Whenever you need the latest Flutter documentation use the Context7 MCP with the context7CompatibleLibraryID value of '/flutter/website'.

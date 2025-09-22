@@ -194,6 +194,8 @@ Spots are stored in Firestore with the following structure:
     "latitude": 40.7128,
     "longitude": -74.0060
   },
+  "latitude": 40.7128,
+  "longitude": -74.0060,
   "imageUrls": [
     "https://storage.googleapis.com/your-bucket/spots/spot_name_1234567890_0.jpg",
     "https://storage.googleapis.com/your-bucket/spots/spot_name_1234567890_1.jpg"

@@ -78,6 +78,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   List<Spot> _visibleSpots = [];
   Set<Marker> _markers = {};
   Spot? _selectedSpot;
+  bool _isLoadingSpotsForView = false; // Loading state for spots within current view
   late AnimationController _bottomSheetAnimationController;
   late Animation<double> _bottomSheetAnimation;
   late PageController _imagePageController;
@@ -197,6 +198,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   @override
   void dispose() {
     _autocompleteDebounce?.cancel();
+    _cameraMoveDebounce?.cancel();
     _searchController.dispose();
     _searchFocusNode.dispose();
     _bottomSheetAnimationController.dispose();
@@ -401,18 +403,70 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     }
   }
 
+  // Load spots for the current map view
+  Future<void> _loadSpotsForCurrentView() async {
+    if (_mapController == null) {
+      debugPrint('🚫 _loadSpotsForCurrentView: Map controller is null, skipping');
+      return;
+    }
+    
+    debugPrint('🔄 _loadSpotsForCurrentView: Starting to load spots for current view');
+    
+    setState(() {
+      _isLoadingSpotsForView = true;
+    });
+
+    try {
+      final bounds = await _mapController!.getVisibleRegion();
+      debugPrint('🗺️ Map bounds retrieved:');
+      debugPrint('   Southwest: (${bounds.southwest.latitude}, ${bounds.southwest.longitude})');
+      debugPrint('   Northeast: (${bounds.northeast.latitude}, ${bounds.northeast.longitude})');
+      
+      final spotService = Provider.of<SpotService>(context, listen: false);
+      
+      // Load spots within the current map bounds
+      final spots = await spotService.loadSpotsForMapView(
+        bounds.southwest.latitude,
+        bounds.northeast.latitude,
+        bounds.southwest.longitude,
+        bounds.northeast.longitude,
+      );
+      
+      debugPrint('📋 _loadSpotsForCurrentView: Received ${spots.length} spots from SpotService');
+      
+      // Apply filters to the loaded spots
+      _updateVisibleSpots();
+      
+      debugPrint('✅ _loadSpotsForCurrentView: Completed successfully');
+    } catch (e) {
+      debugPrint('❌ Error loading spots for current view: $e');
+      debugPrint('   Stack trace: ${StackTrace.current}');
+    } finally {
+      setState(() {
+        _isLoadingSpotsForView = false;
+      });
+    }
+  }
+
   void _updateVisibleSpots() {
+    debugPrint('🔍 _updateVisibleSpots: Starting to filter spots');
+    
     final spotService = Provider.of<SpotService>(context, listen: false);
     List<Spot> filteredSpots = spotService.spots;
+    
+    debugPrint('📊 _updateVisibleSpots: Starting with ${filteredSpots.length} spots from SpotService');
     
     // Note: Search query is now only used for location autocomplete, not spot name filtering
 
     // Apply picture filter (default: exclude spots without pictures)
     if (!_includeSpotsWithoutPictures) {
+      final beforeCount = filteredSpots.length;
       filteredSpots = filteredSpots.where((spot) => spot.imageUrls != null && spot.imageUrls!.isNotEmpty).toList();
+      debugPrint('🖼️ Picture filter: ${beforeCount} -> ${filteredSpots.length} spots (excluded ${beforeCount - filteredSpots.length} spots without pictures)');
     }
 
     // Apply source filters
+    final beforeSourceCount = filteredSpots.length;
     filteredSpots = filteredSpots.where((spot) {
       final bool isExternal = (spot.spotSource != null && spot.spotSource!.isNotEmpty);
 
@@ -430,65 +484,23 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
         return _includeParkourNative;
       }
     }).toList();
-
-    // Filter spots within visible map bounds
-    if (_mapController != null) {
-      _mapController!.getVisibleRegion().then((bounds) {
-        final visibleSpots = filteredSpots.where((spot) {
-          final lat = spot.location.latitude;
-          final lng = spot.location.longitude;
-          
-          // Check latitude bounds
-          final bool latInBounds = lat >= bounds.southwest.latitude &&
-                                  lat <= bounds.northeast.latitude;
-          
-          // Check longitude bounds (handle date line crossing)
-          final bool lngInBounds = _isLongitudeInBounds(
-            lng, 
-            bounds.southwest.longitude, 
-            bounds.northeast.longitude
-          );
-          
-          return latInBounds && lngInBounds;
-        }).toList();
-
-        setState(() {
-          _visibleSpots = visibleSpots;
-          _markers = _buildMarkers(visibleSpots);
-        });
-      });
-    } else {
-      // If map not ready, show all filtered spots
-      setState(() {
-        _visibleSpots = filteredSpots;
-        _markers = _buildMarkers(filteredSpots);
-      });
-    }
-  }
-
-  /// Helper method to check if a longitude is within bounds, handling date line crossing
-  bool _isLongitudeInBounds(double lng, double southwestLng, double northeastLng) {
-    // Normalize longitude to [-180, 180] range
-    lng = _normalizeLongitude(lng);
-    southwestLng = _normalizeLongitude(southwestLng);
-    northeastLng = _normalizeLongitude(northeastLng);
     
-    // If the bounds don't cross the date line (normal case)
-    if (southwestLng <= northeastLng) {
-      return lng >= southwestLng && lng <= northeastLng;
-    }
+    debugPrint('🏷️ Source filter: ${beforeSourceCount} -> ${filteredSpots.length} spots (excluded ${beforeSourceCount - filteredSpots.length} spots by source filter)');
+    debugPrint('🎯 Final filtered spots: ${filteredSpots.length}');
     
-    // If the bounds cross the date line (e.g., southwestLng = 170, northeastLng = -170)
-    // The visible region spans from southwestLng to 180 and from -180 to northeastLng
-    return lng >= southwestLng || lng <= northeastLng;
+    if (filteredSpots.isNotEmpty) {
+      debugPrint('   First filtered spot: ${filteredSpots.first.name} at (${filteredSpots.first.location.latitude}, ${filteredSpots.first.location.longitude})');
+    }
+
+    // Update visible spots and markers
+    setState(() {
+      _visibleSpots = filteredSpots;
+      _markers = _buildMarkers(filteredSpots);
+    });
+    
+    debugPrint('📍 _updateVisibleSpots: Created ${_markers.length} markers');
   }
-  
-  /// Normalize longitude to [-180, 180] range
-  double _normalizeLongitude(double lng) {
-    while (lng > 180) lng -= 360;
-    while (lng < -180) lng += 360;
-    return lng;
-  }
+
   
 
   Widget _buildFilters() {
@@ -633,7 +645,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     final markers = spots.map((spot) {
       return Marker(
         markerId: MarkerId(spot.id ?? spot.name),
-        position: LatLng(spot.location.latitude, spot.location.longitude),
+        position: LatLng(spot.effectiveLatitude, spot.effectiveLongitude),
         onTap: () {
           // Select the spot and show detail card
           setState(() {
@@ -644,7 +656,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
           // Center map on selected spot
           _mapController?.animateCamera(
             CameraUpdate.newLatLng(
-              LatLng(spot.location.latitude, spot.location.longitude),
+              LatLng(spot.effectiveLatitude, spot.effectiveLongitude),
             ),
           );
         },
@@ -730,9 +742,11 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     });
   }
 
+  Timer? _cameraMoveDebounce;
+  
   void _onMapCameraMove(CameraPosition position) {
-    // Update visible spots when map moves
-    _updateVisibleSpots();
+    debugPrint('📷 Camera moved to: (${position.target.latitude}, ${position.target.longitude}) zoom: ${position.zoom}');
+    
     // Persist camera position
     final searchState = Provider.of<SearchStateService>(context, listen: false);
     searchState.saveMapCamera(
@@ -740,6 +754,14 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
       position.target.longitude,
       position.zoom,
     );
+    
+    // Debounce loading spots to avoid too many requests while user is panning
+    _cameraMoveDebounce?.cancel();
+    debugPrint('⏱️ Starting 1-second debounce timer for spot loading');
+    _cameraMoveDebounce = Timer(const Duration(milliseconds: 1000), () {
+      debugPrint('⏱️ Debounce timer completed, loading spots for new view');
+      _loadSpotsForCurrentView();
+    });
   }
 
   void _nextImage() {
@@ -896,61 +918,27 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     return Scaffold(
       body: Stack(
         children: [
-          Consumer<SpotService>(
-        builder: (context, spotService, child) {
-          if (spotService.isLoading) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
-
-          if (spotService.error != null) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: Theme.of(context).colorScheme.error,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Error loading spots',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    spotService.error!,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => spotService.fetchSpots(),
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          // Determine initial camera position - use persisted state, first spot, or default
-          final searchState = Provider.of<SearchStateService>(context);
-          LatLng initialTarget = spotService.spots.isNotEmpty
-              ? LatLng(spotService.spots.first.location.latitude, spotService.spots.first.location.longitude)
-              : const LatLng(37.7749, -122.4194);
-          double initialZoom = 14;
-          if (searchState.centerLat != null && searchState.centerLng != null && searchState.zoom != null) {
-            initialTarget = LatLng(searchState.centerLat!, searchState.centerLng!);
-            initialZoom = searchState.zoom!;
-          }
-          final CameraPosition initialCameraPosition = CameraPosition(
-            target: initialTarget,
-            zoom: initialZoom,
-          );
+          // Determine initial camera position - use persisted state, user location, or default
+          Consumer<SearchStateService>(
+            builder: (context, searchState, child) {
+              LatLng initialTarget = const LatLng(37.7749, -122.4194); // Default to San Francisco
+              double initialZoom = 14;
+              
+              // Use persisted camera position if available
+              if (searchState.centerLat != null && searchState.centerLng != null && searchState.zoom != null) {
+                initialTarget = LatLng(searchState.centerLat!, searchState.centerLng!);
+                initialZoom = searchState.zoom!;
+              }
+              // Otherwise try to use current user location
+              else if (_currentPosition != null) {
+                initialTarget = LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
+                initialZoom = 15;
+              }
+              
+              final CameraPosition initialCameraPosition = CameraPosition(
+                target: initialTarget,
+                zoom: initialZoom,
+              );
 
           return Stack(
             children: [
@@ -969,13 +957,20 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                 liteModeEnabled: kIsWeb,
                 compassEnabled: false,
                 onMapCreated: (GoogleMapController controller) {
+                  debugPrint('🗺️ Map created successfully');
                   _mapController = controller;
                   
-                  // Initial update of visible spots
-                  _updateVisibleSpots();
+                  // Load spots for the current view after a short delay to ensure map is ready
+                  debugPrint('⏰ Scheduling spot loading in 500ms...');
+                  Future.delayed(const Duration(milliseconds: 500), () {
+                    debugPrint('⏰ Timer triggered, loading spots for current view');
+                    _loadSpotsForCurrentView();
+                  });
+                  
                   // Restore persisted camera after map is ready (in case state loaded late)
                   final state = Provider.of<SearchStateService>(context, listen: false);
                   if (state.centerLat != null && state.centerLng != null && state.zoom != null) {
+                    debugPrint('📍 Restoring persisted camera position: (${state.centerLat}, ${state.centerLng}) zoom: ${state.zoom}');
                     controller.moveCamera(
                       CameraUpdate.newCameraPosition(
                         CameraPosition(
@@ -985,6 +980,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                       ),
                     );
                   } else {
+                    debugPrint('📍 No persisted camera position, trying to get current location');
                     // If no persisted camera, try to center on user's current location
                     _getCurrentLocation();
                   }
@@ -1591,6 +1587,33 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                     );
                   },
                 ),
+                ),
+
+              // Refresh Spots Button - Floating Action Button
+              if (!_isBottomSheetOpen && _selectedSpot == null)
+                Positioned(
+                  right: 16,
+                  bottom: MediaQuery.of(context).size.height * 0.09 + 144, // Position above map/satellite button
+                  child: FloatingActionButton(
+                    onPressed: _isLoadingSpotsForView ? null : () {
+                      debugPrint('🔄 Refresh button pressed');
+                      _loadSpotsForCurrentView();
+                    },
+                    mini: true,
+                    tooltip: 'Refresh spots in current view',
+                    child: _isLoadingSpotsForView
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const ReliableIcon(
+                            icon: Icons.refresh,
+                          ),
+                  ),
                 ),
 
               // Map Type Toggle Button - Floating Action Button

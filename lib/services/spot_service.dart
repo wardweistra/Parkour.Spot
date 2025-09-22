@@ -45,23 +45,40 @@ class SpotService extends ChangeNotifier {
     }
   }
 
-  // Get spots by location (within radius)
+  // Get spots by location (within radius) - Modern efficient approach
   Future<List<Spot>> getSpotsNearby(
     double latitude, 
     double longitude, 
     double radiusKm
   ) async {
     try {
-      // Firestore doesn't support native geospatial queries
-      // We'll fetch all spots and filter by distance
-      await fetchSpots();
+      // Calculate bounding box for the search area
+      final bounds = _calculateBoundingBox(latitude, longitude, radiusKm);
       
-      return _spots.where((spot) {
+      // Use Firestore's multi-field range queries (available since March 2024)
+      // This is much more efficient than fetching all spots
+      final querySnapshot = await _firestore
+          .collection('spots')
+          .where('isPublic', isEqualTo: true)
+          .where('latitude', isGreaterThanOrEqualTo: bounds['minLat'])
+          .where('latitude', isLessThanOrEqualTo: bounds['maxLat'])
+          .where('longitude', isGreaterThanOrEqualTo: bounds['minLng'])
+          .where('longitude', isLessThanOrEqualTo: bounds['maxLng'])
+          .orderBy('longitude') // Optimize index scanning
+          .orderBy('latitude')
+          .get();
+      
+      // Filter by actual distance (smaller dataset now)
+      final candidates = querySnapshot.docs
+          .map((doc) => Spot.fromFirestore(doc))
+          .toList();
+      
+      return candidates.where((spot) {
         final distance = _calculateDistance(
           latitude,
           longitude,
-          spot.location.latitude,
-          spot.location.longitude,
+          spot.effectiveLatitude,
+          spot.effectiveLongitude,
         );
         return distance <= radiusKm;
       }).toList();
@@ -127,6 +144,8 @@ class SpotService extends ChangeNotifier {
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
         geohash: geohash,
+        latitude: spot.location.latitude,
+        longitude: spot.location.longitude,
       );
 
       final docRef = await _firestore.collection('spots').add(spotWithImages.toFirestore());
@@ -174,6 +193,8 @@ class SpotService extends ChangeNotifier {
         imageUrls: imageUrls,
         updatedAt: DateTime.now(),
         geohash: geohash,
+        latitude: spot.location.latitude,
+        longitude: spot.location.longitude,
       );
 
       await _firestore.collection('spots').doc(spot.id).update(updatedSpot.toFirestore());
@@ -292,6 +313,26 @@ class SpotService extends ChangeNotifier {
     return degrees * (3.14159265359 / 180);
   }
 
+  // Calculate bounding box for geo queries
+  Map<String, double> _calculateBoundingBox(
+    double latitude, 
+    double longitude, 
+    double radiusKm
+  ) {
+    const double earthRadius = 6371; // Earth's radius in kilometers
+    
+    // Convert radius to degrees
+    final latDelta = radiusKm / earthRadius * (180 / 3.14159265359);
+    final lngDelta = radiusKm / (earthRadius * cos(latitude * 3.14159265359 / 180)) * (180 / 3.14159265359);
+    
+    return {
+      'minLat': latitude - latDelta,
+      'maxLat': latitude + latDelta,
+      'minLng': longitude - lngDelta,
+      'maxLng': longitude + lngDelta,
+    };
+  }
+
   // Rate a spot
   Future<bool> rateSpot(String spotId, double rating, String userId) async {
     try {
@@ -405,6 +446,161 @@ class SpotService extends ChangeNotifier {
         'ratingCount': 0,
         'ratingDistribution': <int, int>{},
       };
+    }
+  }
+
+  // Get spots with pagination for large result sets
+  Future<List<Spot>> getSpotsNearbyPaginated(
+    double latitude,
+    double longitude,
+    double radiusKm, {
+    int limit = 20,
+    DocumentSnapshot? startAfter,
+  }) async {
+    try {
+      final bounds = _calculateBoundingBox(latitude, longitude, radiusKm);
+      
+      Query query = _firestore
+          .collection('spots')
+          .where('isPublic', isEqualTo: true)
+          .where('latitude', isGreaterThanOrEqualTo: bounds['minLat'])
+          .where('latitude', isLessThanOrEqualTo: bounds['maxLat'])
+          .where('longitude', isGreaterThanOrEqualTo: bounds['minLng'])
+          .where('longitude', isLessThanOrEqualTo: bounds['maxLng'])
+          .orderBy('longitude')
+          .orderBy('latitude')
+          .limit(limit);
+      
+      if (startAfter != null) {
+        query = query.startAfterDocument(startAfter);
+      }
+      
+      final querySnapshot = await query.get();
+      final candidates = querySnapshot.docs
+          .map((doc) => Spot.fromFirestore(doc))
+          .toList();
+      
+      // Filter by actual distance and sort by distance
+      final filteredSpots = candidates.where((spot) {
+        final distance = _calculateDistance(
+          latitude,
+          longitude,
+          spot.effectiveLatitude,
+          spot.effectiveLongitude,
+        );
+        return distance <= radiusKm;
+      }).toList();
+      
+      // Sort by distance
+      filteredSpots.sort((a, b) {
+        final distanceA = _calculateDistance(
+          latitude, longitude, a.effectiveLatitude, a.effectiveLongitude);
+        final distanceB = _calculateDistance(
+          latitude, longitude, b.effectiveLatitude, b.effectiveLongitude);
+        return distanceA.compareTo(distanceB);
+      });
+      
+      return filteredSpots;
+    } catch (e) {
+      debugPrint('Error getting nearby spots paginated: $e');
+      return [];
+    }
+  }
+
+  // Get spots within a specific area (useful for map bounds)
+  Future<List<Spot>> getSpotsInBounds(
+    double minLat,
+    double maxLat,
+    double minLng,
+    double maxLng,
+  ) async {
+    try {
+      debugPrint('🔍 SpotService.getSpotsInBounds called with bounds:');
+      debugPrint('   minLat: $minLat, maxLat: $maxLat');
+      debugPrint('   minLng: $minLng, maxLng: $maxLng');
+      
+      final querySnapshot = await _firestore
+          .collection('spots')
+          .where('isPublic', isEqualTo: true)
+          .where('latitude', isGreaterThanOrEqualTo: minLat)
+          .where('latitude', isLessThanOrEqualTo: maxLat)
+          .where('longitude', isGreaterThanOrEqualTo: minLng)
+          .where('longitude', isLessThanOrEqualTo: maxLng)
+          .orderBy('longitude')
+          .orderBy('latitude')
+          .get();
+      
+      debugPrint('📊 Firestore query executed:');
+      debugPrint('   - Collection: spots');
+      debugPrint('   - isPublic: true');
+      debugPrint('   - latitude range: $minLat to $maxLat (field: latitude)');
+      debugPrint('   - longitude range: $minLng to $maxLng (field: longitude)');
+      debugPrint('   - Documents returned: ${querySnapshot.docs.length}');
+      
+      if (querySnapshot.docs.isEmpty) {
+        debugPrint('⚠️ No documents found in Firestore for these bounds');
+      } else {
+        debugPrint('✅ Found ${querySnapshot.docs.length} documents');
+        for (int i = 0; i < querySnapshot.docs.length && i < 3; i++) {
+          final doc = querySnapshot.docs[i];
+          final data = doc.data();
+          debugPrint('   Document $i: ${doc.id}');
+          debugPrint('     - name: ${data['name']}');
+          debugPrint('     - latitude: ${data['latitude']}');
+          debugPrint('     - longitude: ${data['longitude']}');
+          debugPrint('     - location: ${data['location']}');
+          debugPrint('     - isPublic: ${data['isPublic']}');
+        }
+      }
+      
+      final spots = querySnapshot.docs
+          .map((doc) => Spot.fromFirestore(doc))
+          .toList();
+      
+      debugPrint('🎯 Converted to ${spots.length} Spot objects');
+      
+      return spots;
+    } catch (e) {
+      debugPrint('❌ Error getting spots in bounds: $e');
+      debugPrint('   Stack trace: ${StackTrace.current}');
+      return [];
+    }
+  }
+
+  // Load spots for map view with loading state management
+  Future<List<Spot>> loadSpotsForMapView(
+    double minLat,
+    double maxLat,
+    double minLng,
+    double maxLng,
+  ) async {
+    try {
+      debugPrint('🗺️ SpotService.loadSpotsForMapView called with bounds:');
+      debugPrint('   minLat: $minLat, maxLat: $maxLat');
+      debugPrint('   minLng: $minLng, maxLng: $maxLng');
+      
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      final spots = await getSpotsInBounds(minLat, maxLat, minLng, maxLng);
+      
+      debugPrint('📍 SpotService.loadSpotsForMapView retrieved ${spots.length} spots');
+      if (spots.isNotEmpty) {
+        debugPrint('   First spot: ${spots.first.name} at (${spots.first.effectiveLatitude}, ${spots.first.effectiveLongitude})');
+      }
+      
+      // Update the local spots list with the new spots
+      _spots = spots;
+      
+      return spots;
+    } catch (e) {
+      _error = 'Failed to load spots for map view: $e';
+      debugPrint('❌ Error loading spots for map view: $e');
+      return [];
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 

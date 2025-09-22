@@ -780,6 +780,8 @@ async function processSyncSource(source, sourceId, apiKey) {
           coordinates.latitude,
           coordinates.longitude,
       ),
+      latitude: coordinates.latitude,
+      longitude: coordinates.longitude,
       address: address,
       city: city,
       countryCode: countryCode,
@@ -1987,12 +1989,20 @@ exports.testSpotsCount = onCall(
         });
         console.log(`Spots missing geohash: ${spotsMissingGeohash.length}`);
         
+        // Count spots missing latitude/longitude (field doesn't exist or is null/undefined)
+        const spotsMissingLatLng = spotsSnapshot.docs.filter(doc => {
+          const data = doc.data();
+          return !data.hasOwnProperty('latitude') || data.latitude === null || data.latitude === undefined ||
+                 !data.hasOwnProperty('longitude') || data.longitude === null || data.longitude === undefined;
+        });
+        console.log(`Spots missing latitude/longitude: ${spotsMissingLatLng.length}`);
+        
         // Check a few sample spots
         let sampleCount = 0;
         spotsSnapshot.forEach((doc) => {
           if (sampleCount < 3) {
             const data = doc.data();
-            console.log(`Spot ${doc.id}: address="${data.address}", city="${data.city}", countryCode="${data.countryCode}", geohash="${data.geohash}"`);
+            console.log(`Spot ${doc.id}: address="${data.address}", city="${data.city}", countryCode="${data.countryCode}", geohash="${data.geohash}", lat="${data.latitude}", lng="${data.longitude}"`);
             sampleCount++;
           }
         });
@@ -2001,7 +2011,8 @@ exports.testSpotsCount = onCall(
           success: true,
           totalSpots: spotsSnapshot.size,
           missingGeohash: spotsMissingGeohash.length,
-          message: `Found ${spotsSnapshot.size} total spots, ${spotsMissingGeohash.length} missing geohash`
+          missingLatLng: spotsMissingLatLng.length,
+          message: `Found ${spotsSnapshot.size} total spots, ${spotsMissingGeohash.length} missing geohash, ${spotsMissingLatLng.length} missing lat/lng`
         };
       } catch (error) {
         console.error("Error testing spots count:", error);
@@ -2372,6 +2383,123 @@ exports.calculateMissingSpotGeohashes = onCall(
             updated: 0,
             failed: 0,
             skipped: 0,
+          }
+        };
+      }
+    }
+);
+
+// Admin function to migrate existing spots to include latitude and longitude fields
+exports.migrateSpotsLatLng = onCall(
+    {region: "europe-west1"},
+    async (request) => {
+      try {
+        console.log("Starting latitude/longitude migration for existing spots...");
+        
+        // Get all spots that have location but missing latitude or longitude
+        const spotsSnapshot = await db.collection("spots")
+            .where("location", "!=", null)
+            .get();
+        
+        console.log(`Found ${spotsSnapshot.docs.length} spots to check`);
+        
+        let processed = 0;
+        let updated = 0;
+        let skipped = 0;
+        let failed = 0;
+        const batch = db.batch();
+        let batchCount = 0;
+        const BATCH_SIZE = 500; // Firestore batch limit
+        
+        for (const doc of spotsSnapshot.docs) {
+          try {
+            const data = doc.data();
+            const location = data.location;
+            
+            // Skip if already has latitude and longitude
+            if (data.latitude !== undefined && data.longitude !== undefined) {
+              skipped++;
+              continue;
+            }
+            
+            // Skip if location is not a GeoPoint
+            if (!location || typeof location.latitude !== 'number' || typeof location.longitude !== 'number') {
+              console.log(`Skipping spot ${doc.id}: invalid location data`);
+              skipped++;
+              continue;
+            }
+            
+            // Add latitude and longitude to batch update
+            batch.update(doc.ref, {
+              latitude: location.latitude,
+              longitude: location.longitude,
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+            
+            batchCount++;
+            updated++;
+            
+            // Commit batch when it reaches the limit
+            if (batchCount >= BATCH_SIZE) {
+              await batch.commit();
+              console.log(`Committed batch of ${batchCount} updates`);
+              batchCount = 0;
+            }
+            
+            processed++;
+            
+            // Log progress every 100 spots
+            if (processed % 100 === 0) {
+              console.log(`Processed ${processed}/${spotsSnapshot.docs.length} spots`);
+            }
+            
+          } catch (docError) {
+            console.error(`Error processing spot ${doc.id}:`, docError);
+            failed++;
+          }
+        }
+        
+        // Commit remaining updates
+        if (batchCount > 0) {
+          await batch.commit();
+          console.log(`Committed final batch of ${batchCount} updates`);
+        }
+        
+        const successRate = processed > 0 ? ((updated / processed) * 100).toFixed(2) : 0;
+        
+        console.log("Migration completed:");
+        console.log(`Total spots checked: ${spotsSnapshot.docs.length}`);
+        console.log(`Processed: ${processed}`);
+        console.log(`Updated: ${updated}`);
+        console.log(`Skipped: ${skipped}`);
+        console.log(`Failed: ${failed}`);
+        console.log(`Success rate: ${successRate}%`);
+        
+        return {
+          success: true,
+          message: `Latitude/longitude migration completed. Updated ${updated} spots.`,
+          stats: {
+            total: spotsSnapshot.docs.length,
+            processed: processed,
+            updated: updated,
+            failed: failed,
+            skipped: skipped,
+            successRate: parseFloat(successRate),
+          }
+        };
+        
+      } catch (error) {
+        console.error("Error in migrateSpotsLatLng:", error);
+        return {
+          success: false,
+          error: error.message || "Unknown error occurred",
+          stats: {
+            total: 0,
+            processed: 0,
+            updated: 0,
+            failed: 0,
+            skipped: 0,
+            successRate: 0,
           }
         };
       }

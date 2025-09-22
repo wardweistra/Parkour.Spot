@@ -5,6 +5,8 @@ class Spot {
   final String name;
   final String description;
   final GeoPoint location;
+  final double? latitude;
+  final double? longitude;
   final String? address;
   final String? city;
   final String? countryCode;
@@ -23,6 +25,8 @@ class Spot {
     required this.name,
     required this.description,
     required this.location,
+    this.latitude,
+    this.longitude,
     this.address,
     this.city,
     this.countryCode,
@@ -44,6 +48,8 @@ class Spot {
       name: data['name'] ?? '',
       description: data['description'] ?? '',
       location: data['location'] ?? const GeoPoint(0, 0),
+      latitude: data['latitude']?.toDouble(),
+      longitude: data['longitude']?.toDouble(),
       address: data['address'],
       city: data['city'],
       countryCode: data['countryCode'],
@@ -66,6 +72,8 @@ class Spot {
       'name': name,
       'description': description,
       'location': location,
+      'latitude': latitude,
+      'longitude': longitude,
       'address': address,
       'city': city,
       'countryCode': countryCode,
@@ -86,6 +94,8 @@ class Spot {
     String? name,
     String? description,
     GeoPoint? location,
+    double? latitude,
+    double? longitude,
     String? address,
     String? city,
     String? countryCode,
@@ -104,6 +114,8 @@ class Spot {
       name: name ?? this.name,
       description: description ?? this.description,
       location: location ?? this.location,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
       address: address ?? this.address,
       city: city ?? this.city,
       countryCode: countryCode ?? this.countryCode,
@@ -116,6 +128,18 @@ class Spot {
       isPublic: isPublic ?? this.isPublic,
       spotSource: spotSource ?? this.spotSource,
       geohash: geohash ?? this.geohash,
+    );
+  }
+
+  // Convenience getters to get latitude and longitude from location if not explicitly set
+  double get effectiveLatitude => latitude ?? location.latitude;
+  double get effectiveLongitude => longitude ?? location.longitude;
+
+  // Method to ensure latitude and longitude are populated from location
+  Spot withLatLngFromLocation() {
+    return copyWith(
+      latitude: location.latitude,
+      longitude: location.longitude,
     );
   }
 

@@ -241,8 +241,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   void _openInMaps() async {
     try {
       await UrlService.openLocationInMaps(
-        widget.spot.location.latitude,
-        widget.spot.location.longitude,
+        widget.spot.effectiveLatitude,
+        widget.spot.effectiveLongitude,
         label: widget.spot.name,
       );
     } catch (e) {
@@ -578,8 +578,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                           GoogleMap(
                             initialCameraPosition: CameraPosition(
                               target: LatLng(
-                                widget.spot.location.latitude,
-                                widget.spot.location.longitude,
+                                widget.spot.effectiveLatitude,
+                                widget.spot.effectiveLongitude,
                               ),
                               zoom: 16,
                             ),
@@ -588,8 +588,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                               Marker(
                                 markerId: MarkerId(widget.spot.id ?? 'spot'),
                                 position: LatLng(
-                                  widget.spot.location.latitude,
-                                  widget.spot.location.longitude,
+                                  widget.spot.effectiveLatitude,
+                                  widget.spot.effectiveLongitude,
                                 ),
                                 // Disable marker interactions
                                 onTap: null,
@@ -702,7 +702,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             text: TextSpan(
                               children: [
                                 TextSpan(
-                                  text: '${widget.spot.location.latitude.toStringAsFixed(6)}, ${widget.spot.location.longitude.toStringAsFixed(6)}',
+                                  text: '${widget.spot.effectiveLatitude.toStringAsFixed(6)}, ${widget.spot.effectiveLongitude.toStringAsFixed(6)}',
                                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     fontWeight: FontWeight.w500,
                                     color: Theme.of(context).colorScheme.onSurface,

@@ -67,6 +67,16 @@ class AdminHomeScreen extends StatelessWidget {
               onTap: () => context.go('/admin/geohash'),
             ),
           ),
+          const SizedBox(height: 8),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.my_location),
+              title: const Text('Migrate Latitude/Longitude'),
+              subtitle: const Text('Add latitude and longitude fields to existing spots'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () => context.go('/admin/lat-lng-migration'),
+            ),
+          ),
         ],
       ),
     );
