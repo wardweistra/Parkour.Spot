@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import '../../models/spot.dart';
@@ -454,16 +453,11 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
           .toList();
 
       // Create spot
-      final location = _pickedLocation != null 
-          ? GeoPoint(_pickedLocation!.latitude, _pickedLocation!.longitude)
-          : GeoPoint(_currentPosition!.latitude, _currentPosition!.longitude);
-      
       final spot = Spot(
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
-        location: location,
-        latitude: location.latitude,
-        longitude: location.longitude,
+        latitude: _pickedLocation?.latitude ?? _currentPosition!.latitude,
+        longitude: _pickedLocation?.longitude ?? _currentPosition!.longitude,
         address: _currentAddress,
         city: _currentCity,
         countryCode: _currentCountryCode,

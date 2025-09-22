@@ -489,7 +489,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     debugPrint('🎯 Final filtered spots: ${filteredSpots.length}');
     
     if (filteredSpots.isNotEmpty) {
-      debugPrint('   First filtered spot: ${filteredSpots.first.name} at (${filteredSpots.first.location.latitude}, ${filteredSpots.first.location.longitude})');
+      debugPrint('   First filtered spot: ${filteredSpots.first.name} at (${filteredSpots.first.latitude}, ${filteredSpots.first.longitude})');
     }
 
     // Update visible spots and markers
@@ -866,7 +866,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
               // Center map on selected spot
               _mapController?.animateCamera(
                 CameraUpdate.newLatLng(
-                  LatLng(spot.location.latitude, spot.location.longitude),
+                  LatLng(spot.latitude, spot.longitude),
                 ),
               );
               // Navigate to spot detail using proper URL format
@@ -895,7 +895,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                 // Center map on selected spot
                 _mapController?.animateCamera(
                   CameraUpdate.newLatLng(
-                    LatLng(spot.location.latitude, spot.location.longitude),
+                    LatLng(spot.latitude, spot.longitude),
                   ),
                 );
                 // Navigate to spot detail using proper URL format

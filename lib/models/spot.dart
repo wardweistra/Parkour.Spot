@@ -4,7 +4,6 @@ class Spot {
   final String? id;
   final String name;
   final String description;
-  final GeoPoint location;
   final double latitude;
   final double longitude;
   final String? address;
@@ -23,7 +22,6 @@ class Spot {
     this.id,
     required this.name,
     required this.description,
-    required this.location,
     required this.latitude,
     required this.longitude,
     this.address,
@@ -41,14 +39,12 @@ class Spot {
 
   factory Spot.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-    final location = data['location'] ?? const GeoPoint(0, 0);
     return Spot(
       id: doc.id,
       name: data['name'] ?? '',
       description: data['description'] ?? '',
-      location: location,
-      latitude: data['latitude']?.toDouble() ?? location.latitude,
-      longitude: data['longitude']?.toDouble() ?? location.longitude,
+      latitude: data['latitude']?.toDouble() ?? 0.0,
+      longitude: data['longitude']?.toDouble() ?? 0.0,
       address: data['address'],
       city: data['city'],
       countryCode: data['countryCode'],
@@ -69,7 +65,6 @@ class Spot {
     return {
       'name': name,
       'description': description,
-      'location': location,
       'latitude': latitude,
       'longitude': longitude,
       'address': address,
@@ -90,7 +85,6 @@ class Spot {
     String? id,
     String? name,
     String? description,
-    GeoPoint? location,
     double? latitude,
     double? longitude,
     String? address,
@@ -109,7 +103,6 @@ class Spot {
       id: id ?? this.id,
       name: name ?? this.name,
       description: description ?? this.description,
-      location: location ?? this.location,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       address: address ?? this.address,
@@ -126,16 +119,9 @@ class Spot {
     );
   }
 
-  // Method to ensure latitude and longitude are populated from location
-  Spot withLatLngFromLocation() {
-    return copyWith(
-      latitude: location.latitude,
-      longitude: location.longitude,
-    );
-  }
 
   @override
   String toString() {
-    return 'Spot(id: $id, name: $name, description: $description, location: $location)';
+    return 'Spot(id: $id, name: $name, description: $description, lat: $latitude, lng: $longitude)';
   }
 }

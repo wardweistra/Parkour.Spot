@@ -216,25 +216,6 @@ class GeocodingService extends ChangeNotifier {
   }
 
 
-  /// Admin: Migrate existing spots to include latitude and longitude fields
-  Future<Map<String, dynamic>?> migrateSpotsLatLng() async {
-    try {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
-      final callable = _functions.httpsCallable('migrateSpotsLatLng');
-      final result = await callable.call();
-      return Map<String, dynamic>.from(result.data as Map);
-    } catch (e) {
-      _error = 'Failed to trigger latitude/longitude migration: $e';
-      debugPrint('Error triggering latitude/longitude migration: $e');
-      return null;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
 
   /// Google Places Autocomplete (server-key via backend function)
   /// Returns list of suggestions with description and placeId
