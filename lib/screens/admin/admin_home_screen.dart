@@ -57,6 +57,16 @@ class AdminHomeScreen extends StatelessWidget {
               onTap: () => context.go('/admin/geocoding'),
             ),
           ),
+          const SizedBox(height: 8),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.location_on),
+              title: const Text('Calculate Missing Geohashes'),
+              subtitle: const Text('Calculate geohash for spots missing this field'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () => context.go('/admin/geohash'),
+            ),
+          ),
         ],
       ),
     );

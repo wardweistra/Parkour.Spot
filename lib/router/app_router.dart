@@ -7,6 +7,7 @@ import '../screens/home_screen.dart';
 import '../screens/admin/admin_home_screen.dart';
 import '../screens/admin/sync_sources_screen.dart';
 import '../screens/admin/geocoding_admin_screen.dart';
+import '../screens/admin/geohash_admin_screen.dart';
 import '../screens/spots/spot_detail_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../models/spot.dart';
@@ -101,6 +102,10 @@ class AppRouter {
       GoRoute(
         path: '/admin/geocoding',
         builder: (context, state) => const GeocodingAdminScreen(),
+      ),
+      GoRoute(
+        path: '/admin/geohash',
+        builder: (context, state) => const GeohashAdminScreen(),
       ),
       // Simple spot detail route: /spot/:spotId
       GoRoute(

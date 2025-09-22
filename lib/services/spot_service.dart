@@ -5,6 +5,7 @@ import 'dart:io';
 import 'dart:math';
 import '../models/spot.dart';
 import '../models/rating.dart';
+import '../utils/geohash_utils.dart';
 
 class SpotService extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -118,10 +119,14 @@ class SpotService extends ChangeNotifier {
         imageUrls = await _uploadImagesBytes(imageBytesList);
       }
 
+      // Calculate geohash for the spot location
+      final geohash = GeohashUtils.calculateGeohashFromGeoPoint(spot.location);
+
       final spotWithImages = spot.copyWith(
         imageUrls: imageUrls,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
+        geohash: geohash,
       );
 
       final docRef = await _firestore.collection('spots').add(spotWithImages.toFirestore());
@@ -162,9 +167,13 @@ class SpotService extends ChangeNotifier {
         ];
       }
 
+      // Recalculate geohash if location might have changed
+      final geohash = GeohashUtils.calculateGeohashFromGeoPoint(spot.location);
+
       final updatedSpot = spot.copyWith(
         imageUrls: imageUrls,
         updatedAt: DateTime.now(),
+        geohash: geohash,
       );
 
       await _firestore.collection('spots').doc(spot.id).update(updatedSpot.toFirestore());

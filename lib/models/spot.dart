@@ -16,6 +16,7 @@ class Spot {
   final List<String>? tags;
   final bool? isPublic;
   final String? spotSource;
+  final String? geohash;
 
   Spot({
     this.id,
@@ -33,6 +34,7 @@ class Spot {
     this.tags,
     this.isPublic = true,
     this.spotSource,
+    this.geohash,
   });
 
   factory Spot.fromFirestore(DocumentSnapshot doc) {
@@ -55,6 +57,7 @@ class Spot {
       tags: data['tags'] != null ? List<String>.from(data['tags']) : null,
       isPublic: data['isPublic'] ?? true,
       spotSource: data['spotSource'],
+      geohash: data['geohash'],
     );
   }
 
@@ -74,6 +77,7 @@ class Spot {
       'tags': tags,
       'isPublic': isPublic,
       'spotSource': spotSource,
+      'geohash': geohash,
     };
   }
 
@@ -93,6 +97,7 @@ class Spot {
     List<String>? tags,
     bool? isPublic,
     String? spotSource,
+    String? geohash,
   }) {
     return Spot(
       id: id ?? this.id,
@@ -110,6 +115,7 @@ class Spot {
       tags: tags ?? this.tags,
       isPublic: isPublic ?? this.isPublic,
       spotSource: spotSource ?? this.spotSource,
+      geohash: geohash ?? this.geohash,
     );
   }
 
