@@ -55,24 +55,15 @@ class SpotService extends ChangeNotifier {
       // Calculate bounding box for the search area
       final bounds = _calculateBoundingBox(latitude, longitude, radiusKm);
       
-      // Use Firestore's multi-field range queries (available since March 2024)
-      // This is much more efficient than fetching all spots
-      final querySnapshot = await _firestore
-          .collection('spots')
-          .where('isPublic', isEqualTo: true)
-          .where('latitude', isGreaterThanOrEqualTo: bounds['minLat'])
-          .where('latitude', isLessThanOrEqualTo: bounds['maxLat'])
-          .where('longitude', isGreaterThanOrEqualTo: bounds['minLng'])
-          .where('longitude', isLessThanOrEqualTo: bounds['maxLng'])
-          .orderBy('longitude') // Optimize index scanning
-          .orderBy('latitude')
-          .get();
+      // Use the dateline-aware getSpotsInBounds method
+      final candidates = await getSpotsInBounds(
+        bounds['minLat']!,
+        bounds['maxLat']!,
+        bounds['minLng']!,
+        bounds['maxLng']!,
+      );
       
       // Filter by actual distance (smaller dataset now)
-      final candidates = querySnapshot.docs
-          .map((doc) => Spot.fromFirestore(doc))
-          .toList();
-      
       return candidates.where((spot) {
         final distance = _calculateDistance(
           latitude,
@@ -460,25 +451,14 @@ class SpotService extends ChangeNotifier {
     try {
       final bounds = _calculateBoundingBox(latitude, longitude, radiusKm);
       
-      Query query = _firestore
-          .collection('spots')
-          .where('isPublic', isEqualTo: true)
-          .where('latitude', isGreaterThanOrEqualTo: bounds['minLat'])
-          .where('latitude', isLessThanOrEqualTo: bounds['maxLat'])
-          .where('longitude', isGreaterThanOrEqualTo: bounds['minLng'])
-          .where('longitude', isLessThanOrEqualTo: bounds['maxLng'])
-          .orderBy('longitude')
-          .orderBy('latitude')
-          .limit(limit);
-      
-      if (startAfter != null) {
-        query = query.startAfterDocument(startAfter);
-      }
-      
-      final querySnapshot = await query.get();
-      final candidates = querySnapshot.docs
-          .map((doc) => Spot.fromFirestore(doc))
-          .toList();
+      // For pagination with dateline crossing, we need to handle it differently
+      // For now, use the non-paginated approach and apply pagination after filtering
+      final candidates = await getSpotsInBounds(
+        bounds['minLat']!,
+        bounds['maxLat']!,
+        bounds['minLng']!,
+        bounds['maxLng']!,
+      );
       
       // Filter by actual distance and sort by distance
       final filteredSpots = candidates.where((spot) {
@@ -519,47 +499,92 @@ class SpotService extends ChangeNotifier {
       debugPrint('   minLat: $minLat, maxLat: $maxLat');
       debugPrint('   minLng: $minLng, maxLng: $maxLng');
       
-      final querySnapshot = await _firestore
-          .collection('spots')
-          .where('isPublic', isEqualTo: true)
-          .where('latitude', isGreaterThanOrEqualTo: minLat)
-          .where('latitude', isLessThanOrEqualTo: maxLat)
-          .where('longitude', isGreaterThanOrEqualTo: minLng)
-          .where('longitude', isLessThanOrEqualTo: maxLng)
-          .orderBy('longitude')
-          .orderBy('latitude')
-          .get();
+      // Check if the bounds cross the dateline
+      final crossesDateline = minLng > maxLng;
+      debugPrint('🌍 Dateline crossing: $crossesDateline');
       
-      debugPrint('📊 Firestore query executed:');
-      debugPrint('   - Collection: spots');
-      debugPrint('   - isPublic: true');
-      debugPrint('   - latitude range: $minLat to $maxLat (field: latitude)');
-      debugPrint('   - longitude range: $minLng to $maxLng (field: longitude)');
-      debugPrint('   - Documents returned: ${querySnapshot.docs.length}');
+      List<Spot> allSpots = [];
       
-      if (querySnapshot.docs.isEmpty) {
+      if (crossesDateline) {
+        debugPrint('🌊 Handling dateline crossing with two queries');
+        
+        // Query 1: From minLng to 180
+        final query1 = await _firestore
+            .collection('spots')
+            .where('isPublic', isEqualTo: true)
+            .where('latitude', isGreaterThanOrEqualTo: minLat)
+            .where('latitude', isLessThanOrEqualTo: maxLat)
+            .where('longitude', isGreaterThanOrEqualTo: minLng)
+            .where('longitude', isLessThanOrEqualTo: 180)
+            .orderBy('longitude')
+            .orderBy('latitude')
+            .get();
+        
+        debugPrint('📊 Query 1 (${minLng} to 180): ${query1.docs.length} documents');
+        
+        // Query 2: From -180 to maxLng
+        final query2 = await _firestore
+            .collection('spots')
+            .where('isPublic', isEqualTo: true)
+            .where('latitude', isGreaterThanOrEqualTo: minLat)
+            .where('latitude', isLessThanOrEqualTo: maxLat)
+            .where('longitude', isGreaterThanOrEqualTo: -180)
+            .where('longitude', isLessThanOrEqualTo: maxLng)
+            .orderBy('longitude')
+            .orderBy('latitude')
+            .get();
+        
+        debugPrint('📊 Query 2 (-180 to ${maxLng}): ${query2.docs.length} documents');
+        
+        // Combine results
+        allSpots = [
+          ...query1.docs.map((doc) => Spot.fromFirestore(doc)),
+          ...query2.docs.map((doc) => Spot.fromFirestore(doc)),
+        ];
+        
+        debugPrint('📊 Total combined results: ${allSpots.length} documents');
+      } else {
+        debugPrint('🌍 Normal query (no dateline crossing)');
+        
+        final querySnapshot = await _firestore
+            .collection('spots')
+            .where('isPublic', isEqualTo: true)
+            .where('latitude', isGreaterThanOrEqualTo: minLat)
+            .where('latitude', isLessThanOrEqualTo: maxLat)
+            .where('longitude', isGreaterThanOrEqualTo: minLng)
+            .where('longitude', isLessThanOrEqualTo: maxLng)
+            .orderBy('longitude')
+            .orderBy('latitude')
+            .get();
+        
+        debugPrint('📊 Firestore query executed:');
+        debugPrint('   - Collection: spots');
+        debugPrint('   - isPublic: true');
+        debugPrint('   - latitude range: $minLat to $maxLat (field: latitude)');
+        debugPrint('   - longitude range: $minLng to $maxLng (field: longitude)');
+        debugPrint('   - Documents returned: ${querySnapshot.docs.length}');
+        
+        allSpots = querySnapshot.docs
+            .map((doc) => Spot.fromFirestore(doc))
+            .toList();
+      }
+      
+      if (allSpots.isEmpty) {
         debugPrint('⚠️ No documents found in Firestore for these bounds');
       } else {
-        debugPrint('✅ Found ${querySnapshot.docs.length} documents');
-        for (int i = 0; i < querySnapshot.docs.length && i < 3; i++) {
-          final doc = querySnapshot.docs[i];
-          final data = doc.data();
-          debugPrint('   Document $i: ${doc.id}');
-          debugPrint('     - name: ${data['name']}');
-          debugPrint('     - latitude: ${data['latitude']}');
-          debugPrint('     - longitude: ${data['longitude']}');
-          debugPrint('     - location: ${data['location']}');
-          debugPrint('     - isPublic: ${data['isPublic']}');
+        debugPrint('✅ Found ${allSpots.length} documents');
+        for (int i = 0; i < allSpots.length && i < 3; i++) {
+          final spot = allSpots[i];
+          debugPrint('   Spot $i: ${spot.name}');
+          debugPrint('     - latitude: ${spot.effectiveLatitude}');
+          debugPrint('     - longitude: ${spot.effectiveLongitude}');
+          debugPrint('     - isPublic: ${spot.isPublic}');
         }
       }
       
-      final spots = querySnapshot.docs
-          .map((doc) => Spot.fromFirestore(doc))
-          .toList();
+      debugPrint('🎯 Converted to ${allSpots.length} Spot objects');
       
-      debugPrint('🎯 Converted to ${spots.length} Spot objects');
-      
-      return spots;
+      return allSpots;
     } catch (e) {
       debugPrint('❌ Error getting spots in bounds: $e');
       debugPrint('   Stack trace: ${StackTrace.current}');
