@@ -391,8 +391,23 @@ class SpotService extends ChangeNotifier {
   // Get calculated rating statistics for a spot
   Future<Map<String, dynamic>> getSpotRatingStats(String spotId) async {
     try {
+      // Prefer aggregated fields on the spot document for speed
+      final doc = await _firestore.collection('spots').doc(spotId).get();
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        final avg = (data['averageRating'] ?? 0).toDouble();
+        final count = (data['ratingCount'] ?? 0) as int;
+        if (count > 0) {
+          return {
+            'averageRating': avg,
+            'ratingCount': count,
+            'ratingDistribution': <int, int>{}, // optional, not stored
+          };
+        }
+      }
+
+      // Fallback to live calculation (legacy) if aggregates missing
       final ratings = await getSpotRatings(spotId);
-      
       if (ratings.isEmpty) {
         return {
           'averageRating': 0.0,
@@ -400,18 +415,16 @@ class SpotService extends ChangeNotifier {
           'ratingDistribution': <int, int>{},
         };
       }
-      
+
       double totalRating = 0;
       Map<int, int> ratingDistribution = {};
-      
       for (final rating in ratings) {
         totalRating += rating.rating;
         final ratingInt = rating.rating.toInt();
         ratingDistribution[ratingInt] = (ratingDistribution[ratingInt] ?? 0) + 1;
       }
-      
+
       final averageRating = totalRating / ratings.length;
-      
       return {
         'averageRating': averageRating,
         'ratingCount': ratings.length,

@@ -17,6 +17,9 @@ class Spot {
   final List<String>? tags;
   final bool? isPublic;
   final String? spotSource;
+  final double? averageRating;
+  final int? ratingCount;
+  final double? wilsonLowerBound;
 
   Spot({
     this.id,
@@ -35,6 +38,9 @@ class Spot {
     this.tags,
     this.isPublic = true,
     this.spotSource,
+    this.averageRating,
+    this.ratingCount,
+    this.wilsonLowerBound,
   });
 
   factory Spot.fromFirestore(DocumentSnapshot doc) {
@@ -58,6 +64,9 @@ class Spot {
       tags: data['tags'] != null ? List<String>.from(data['tags']) : null,
       isPublic: data['isPublic'] ?? true,
       spotSource: data['spotSource'],
+      averageRating: data['averageRating'] != null ? (data['averageRating'] as num).toDouble() : null,
+      ratingCount: data['ratingCount'],
+      wilsonLowerBound: data['wilsonLowerBound'] != null ? (data['wilsonLowerBound'] as num).toDouble() : null,
     );
   }
 
@@ -78,6 +87,9 @@ class Spot {
       'tags': tags,
       'isPublic': isPublic,
       'spotSource': spotSource,
+      if (averageRating != null) 'averageRating': averageRating,
+      if (ratingCount != null) 'ratingCount': ratingCount,
+      if (wilsonLowerBound != null) 'wilsonLowerBound': wilsonLowerBound,
     };
   }
 
@@ -98,6 +110,9 @@ class Spot {
     List<String>? tags,
     bool? isPublic,
     String? spotSource,
+    double? averageRating,
+    int? ratingCount,
+    double? wilsonLowerBound,
   }) {
     return Spot(
       id: id ?? this.id,
@@ -116,6 +131,9 @@ class Spot {
       tags: tags ?? this.tags,
       isPublic: isPublic ?? this.isPublic,
       spotSource: spotSource ?? this.spotSource,
+      averageRating: averageRating ?? this.averageRating,
+      ratingCount: ratingCount ?? this.ratingCount,
+      wilsonLowerBound: wilsonLowerBound ?? this.wilsonLowerBound,
     );
   }
 
