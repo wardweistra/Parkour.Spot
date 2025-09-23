@@ -12,7 +12,7 @@
  */
 
 const {onCall} = require("firebase-functions/v2/https");
-const {onDocumentCreated, onDocumentUpdated} = require(
+const {onDocumentCreated, onDocumentUpdated, onDocumentDeleted} = require(
     "firebase-functions/v2/firestore");
 const admin = require("firebase-admin");
 const yauzl = require("yauzl");
@@ -25,6 +25,143 @@ const crypto = require("crypto");
 admin.initializeApp();
 const db = admin.firestore();
 const bucket = admin.storage().bucket();
+
+// ========== Ratings Aggregation Helpers ==========
+/**
+ * Recomputes rating aggregates for a spot and updates the spot document.
+ * averageRating: mean of ratings (0..5)
+ * ratingCount: number of ratings
+ * wilsonLowerBound: Wilson score lower bound over normalized stars (0..5)
+ * @param {string} spotId
+ */
+async function recomputeSpotRatingAggregates(spotId) {
+  try {
+    if (!spotId) return;
+    const ratingsSnap = await db.collection('ratings')
+      .where('spotId', '==', spotId)
+      .get();
+
+    const count = ratingsSnap.size;
+
+    if (count === 0) {
+      await db.collection('spots').doc(spotId).set({
+        averageRating: 0,
+        ratingCount: 0,
+        wilsonLowerBound: 0,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
+      return;
+    }
+
+    let sum = 0;
+    ratingsSnap.forEach(doc => {
+      const data = doc.data();
+      const r = typeof data.rating === 'number' ? data.rating : 0;
+      // Clamp ratings to [0,5]
+      const clamped = Math.max(0, Math.min(5, r));
+      sum += clamped;
+    });
+
+    const average = sum / count;
+
+    // Compute Wilson lower bound on normalized ratings (treat each star as Bernoulli success)
+    // successes = total stars awarded = sum (rating), trials = max stars per rating (5) * count
+    const z = 1.96; // 95% confidence
+    const trials = 5 * count;
+    const successes = sum; // since ratings already clamped 0..5
+    const p = successes / trials;
+    const denom = 1 + (z * z) / trials;
+    const center = p + (z * z) / (2 * trials);
+    const margin = z * Math.sqrt((p * (1 - p) + (z * z) / (4 * trials)) / trials);
+    const lowerBoundProportion = (center - margin) / denom;
+    const wilsonLowerBound = Math.max(0, Math.min(1, lowerBoundProportion)) * 5;
+
+    await db.collection('spots').doc(spotId).set({
+      averageRating: Number(average.toFixed(4)),
+      ratingCount: count,
+      wilsonLowerBound: Number(wilsonLowerBound.toFixed(4)),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
+  } catch (err) {
+    console.error('Failed to recompute rating aggregates for spot', spotId, err);
+  }
+}
+
+// ========== Rating Triggers ==========
+exports.onRatingCreated = onDocumentCreated(
+  { document: 'ratings/{ratingId}', region: 'europe-west1' },
+  async (event) => {
+    try {
+      const data = event.data.data();
+      const spotId = data && data.spotId;
+      await recomputeSpotRatingAggregates(spotId);
+    } catch (e) {
+      console.error('onRatingCreated error', e);
+    }
+  }
+);
+
+// Admin callable to backfill rating aggregates for all spots
+exports.backfillSpotRatingAggregates = onCall(
+  { region: 'europe-west1' },
+  async (request) => {
+    try {
+      await ensureAdmin(request);
+
+      const spotsSnap = await db.collection('spots').get();
+      let processed = 0;
+      for (const doc of spotsSnap.docs) {
+        const spotId = doc.id;
+        await recomputeSpotRatingAggregates(spotId);
+        processed++;
+        if (processed % 25 === 0 && global.gc) {
+          global.gc();
+        }
+      }
+      return { success: true, processed };
+    } catch (e) {
+      console.error('backfillSpotRatingAggregates error', e);
+      return { success: false, error: e.message };
+    }
+  }
+);
+
+exports.onRatingUpdated = onDocumentUpdated(
+  { document: 'ratings/{ratingId}', region: 'europe-west1' },
+  async (event) => {
+    try {
+      const before = event.data.before.data();
+      const after = event.data.after.data();
+      const beforeSpotId = before && before.spotId;
+      const afterSpotId = after && after.spotId;
+
+      // If spotId changed (unlikely), recompute both
+      if (beforeSpotId && beforeSpotId !== afterSpotId) {
+        await Promise.all([
+          recomputeSpotRatingAggregates(beforeSpotId),
+          recomputeSpotRatingAggregates(afterSpotId),
+        ]);
+      } else {
+        await recomputeSpotRatingAggregates(afterSpotId);
+      }
+    } catch (e) {
+      console.error('onRatingUpdated error', e);
+    }
+  }
+);
+
+exports.onRatingDeleted = onDocumentDeleted(
+  { document: 'ratings/{ratingId}', region: 'europe-west1' },
+  async (event) => {
+    try {
+      const before = event.data?.data();
+      const spotId = before && before.spotId;
+      await recomputeSpotRatingAggregates(spotId);
+    } catch (e) {
+      console.error('onRatingDeleted error', e);
+    }
+  }
+);
 
 // Example function that can be called from your Flutter app
 exports.helloWorld = onCall(
