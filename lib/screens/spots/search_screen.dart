@@ -1405,7 +1405,9 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                                 ),
                                                 const SizedBox(width: 3),
                                                 Text(
-                                                  'External',
+                                                  Provider.of<SyncSourceService>(context, listen: false)
+                                                          .getSourceNameSync(_selectedSpot!.spotSource!) ??
+                                                      _selectedSpot!.spotSource!,
                                                   style: TextStyle(
                                                     color: Colors.white,
                                                     fontSize: 10,

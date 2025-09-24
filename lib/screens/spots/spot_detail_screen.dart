@@ -329,7 +329,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            'External',
+                            Provider.of<SyncSourceService>(context, listen: false)
+                                    .getSourceNameSync(widget.spot.spotSource!) ??
+                                widget.spot.spotSource!,
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 12,
