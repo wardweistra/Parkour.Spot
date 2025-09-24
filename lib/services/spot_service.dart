@@ -556,21 +556,6 @@ class SpotService extends ChangeNotifier {
     }
   }
 
-  // Get count of spots for a specific source
-  Future<int> getSpotCountForSource(String sourceId) async {
-    try {
-      final querySnapshot = await _firestore
-          .collection('spots')
-          .where('isPublic', isEqualTo: true)
-          .where('spotSource', isEqualTo: sourceId)
-          .get();
-      
-      return querySnapshot.docs.length;
-    } catch (e) {
-      debugPrint('Error getting spot count for source: $e');
-      return 0;
-    }
-  }
 
   // Clear error
   void clearError() {
