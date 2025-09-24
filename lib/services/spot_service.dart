@@ -10,39 +10,11 @@ class SpotService extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
   
-  List<Spot> _spots = [];
   bool _isLoading = false;
   String? _error;
 
-  List<Spot> get spots => _spots;
   bool get isLoading => _isLoading;
   String? get error => _error;
-
-  // Get all spots
-  Future<void> fetchSpots() async {
-    try {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
-      final querySnapshot = await _firestore
-          .collection('spots')
-          .where('isPublic', isEqualTo: true)
-          .orderBy('createdAt', descending: true)
-          .get();
-
-      _spots = querySnapshot.docs
-          .map((doc) => Spot.fromFirestore(doc))
-          .toList();
-
-    } catch (e) {
-      _error = 'Failed to fetch spots: $e';
-      debugPrint('Error fetching spots: $e');
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
 
   // Get spots by location (within radius) - Modern efficient approach
   Future<List<Spot>> getSpotsNearby(
@@ -81,24 +53,14 @@ class SpotService extends ChangeNotifier {
   // Get a single spot by ID
   Future<Spot?> getSpotById(String spotId) async {
     try {
-      // First check if we have it in local cache
-      final localSpot = _spots.firstWhere(
-        (spot) => spot.id == spotId,
-        orElse: () => throw Exception('Spot not found locally'),
-      );
-      return localSpot;
-    } catch (e) {
-      // If not in local cache, fetch from Firestore
-      try {
-        final doc = await _firestore.collection('spots').doc(spotId).get();
-        if (doc.exists) {
-          return Spot.fromFirestore(doc);
-        }
-        return null;
-      } catch (e) {
-        debugPrint('Error fetching spot by ID: $e');
-        return null;
+      final doc = await _firestore.collection('spots').doc(spotId).get();
+      if (doc.exists) {
+        return Spot.fromFirestore(doc);
       }
+      return null;
+    } catch (e) {
+      debugPrint('Error fetching spot by ID: $e');
+      return null;
     }
   }
 
@@ -133,10 +95,6 @@ class SpotService extends ChangeNotifier {
       );
 
       final docRef = await _firestore.collection('spots').add(spotWithImages.toFirestore());
-      
-      // Add the new spot to the local list
-      final newSpot = spotWithImages.copyWith(id: docRef.id);
-      _spots.insert(0, newSpot);
       
       return docRef.id; // Return the spot ID
     } catch (e) {
@@ -177,12 +135,6 @@ class SpotService extends ChangeNotifier {
 
       await _firestore.collection('spots').doc(spot.id).update(updatedSpot.toFirestore());
       
-      // Update the spot in the local list
-      final index = _spots.indexWhere((s) => s.id == spot.id);
-      if (index != -1) {
-        _spots[index] = updatedSpot;
-      }
-      
       return true;
     } catch (e) {
       _error = 'Failed to update spot: $e';
@@ -201,9 +153,6 @@ class SpotService extends ChangeNotifier {
       notifyListeners();
 
       await _firestore.collection('spots').doc(spotId).delete();
-      
-      // Remove the spot from the local list
-      _spots.removeWhere((spot) => spot.id == spotId);
       
       return true;
     } catch (e) {
@@ -596,9 +545,6 @@ class SpotService extends ChangeNotifier {
         debugPrint('   First spot: ${spots.first.name} at (${spots.first.latitude}, ${spots.first.longitude})');
       }
       
-      // Update the local spots list with the new spots
-      _spots = spots;
-      
       return spots;
     } catch (e) {
       _error = 'Failed to load spots for map view: $e';
@@ -607,6 +553,22 @@ class SpotService extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  // Get count of spots for a specific source
+  Future<int> getSpotCountForSource(String sourceId) async {
+    try {
+      final querySnapshot = await _firestore
+          .collection('spots')
+          .where('isPublic', isEqualTo: true)
+          .where('spotSource', isEqualTo: sourceId)
+          .get();
+      
+      return querySnapshot.docs.length;
+    } catch (e) {
+      debugPrint('Error getting spot count for source: $e');
+      return 0;
     }
   }
 

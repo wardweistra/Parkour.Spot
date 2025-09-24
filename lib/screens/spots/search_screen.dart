@@ -76,6 +76,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   bool _isFetchingSuggestions = false;
   List<Map<String, dynamic>> _autocompleteSuggestions = [];
   List<Spot> _visibleSpots = [];
+  List<Spot> _loadedSpots = []; // Spots loaded for the current map view
   Set<Marker> _markers = {};
   Spot? _selectedSpot;
   bool _isLoadingSpotsForView = false; // Loading state for spots within current view
@@ -434,6 +435,9 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
       
       debugPrint('📋 _loadSpotsForCurrentView: Received ${spots.length} spots from SpotService');
       
+      // Store the loaded spots
+      _loadedSpots = spots;
+      
       // Apply filters to the loaded spots
       _updateVisibleSpots();
       
@@ -451,10 +455,9 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   void _updateVisibleSpots() {
     debugPrint('🔍 _updateVisibleSpots: Starting to filter spots');
     
-    final spotService = Provider.of<SpotService>(context, listen: false);
-    List<Spot> filteredSpots = spotService.spots;
+    List<Spot> filteredSpots = List.from(_loadedSpots);
     
-    debugPrint('📊 _updateVisibleSpots: Starting with ${filteredSpots.length} spots from SpotService');
+    debugPrint('📊 _updateVisibleSpots: Starting with ${filteredSpots.length} spots from loaded spots');
     
     // Note: Search query is now only used for location autocomplete, not spot name filtering
 

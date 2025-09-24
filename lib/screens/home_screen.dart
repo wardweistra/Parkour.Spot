@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 
-import '../services/spot_service.dart';
 import '../services/auth_service.dart';
 import 'spots/search_screen.dart';
 import 'spots/add_spot_screen.dart';
@@ -27,10 +26,8 @@ class _HomeScreenState extends State<HomeScreen> {
     _currentIndex = widget.initialTab;
     _pageController = PageController(initialPage: _currentIndex);
     
-    // Load spots when the app starts
+    // Initialize page controller position if needed
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<SpotService>(context, listen: false).fetchSpots();
-      
       // If we have an initial tab that's not 0, ensure the page controller is at the right position
       if (widget.initialTab != 0 && _pageController.hasClients) {
         _pageController.jumpToPage(widget.initialTab);

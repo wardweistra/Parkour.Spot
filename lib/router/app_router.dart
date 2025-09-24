@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../screens/splash_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/admin/admin_home_screen.dart';
@@ -174,35 +173,13 @@ class SpotDetailRoute extends StatelessWidget {
   
   const SpotDetailRoute({super.key, required this.spotId});
 
-  /// Fetch a spot directly from Firestore without loading all spots first
-  Future<Spot?> _fetchSpotDirectly(String spotId) async {
-    try {
-      final doc = await FirebaseFirestore.instance.collection('spots').doc(spotId).get();
-      if (doc.exists) {
-        return Spot.fromFirestore(doc);
-      }
-      return null;
-    } catch (e) {
-      debugPrint('Error fetching spot directly: $e');
-      return null;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<SpotService>(
       builder: (context, spotService, child) {
-        // For direct URL access, fetch the individual spot directly
-        // Only load all spots if we're navigating from within the app and spots are already being loaded
-        Future<Spot?> spotFuture;
-        
-        if (spotService.spots.isEmpty && !spotService.isLoading) {
-          // Direct URL access - fetch individual spot directly
-          spotFuture = _fetchSpotDirectly(spotId);
-        } else {
-          // Spots are already loaded or loading - use the existing method
-          spotFuture = spotService.getSpotById(spotId);
-        }
+        // Always fetch the individual spot directly since we no longer maintain a global spots list
+        Future<Spot?> spotFuture = spotService.getSpotById(spotId);
         
         return FutureBuilder<Spot?>(
           future: spotFuture,
@@ -210,7 +187,7 @@ class SpotDetailRoute extends StatelessWidget {
             // Debug logging
             if (kDebugMode) {
               print('SpotDetailRoute: connectionState=${snapshot.connectionState}, hasData=${snapshot.hasData}, hasError=${snapshot.hasError}');
-              print('SpotDetailRoute: spots count=${spotService.spots.length}, isLoading=${spotService.isLoading}');
+              print('SpotDetailRoute: isLoading=${spotService.isLoading}');
             }
             
             if (snapshot.connectionState == ConnectionState.waiting) {
