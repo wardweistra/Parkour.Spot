@@ -464,6 +464,9 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
         tags: tags.isNotEmpty ? tags : null,
         createdBy: authService.currentUser?.uid,
         createdByName: authService.userProfile?.displayName ?? authService.currentUser?.email ?? authService.currentUser?.uid,
+        averageRating: 0.0,
+        ratingCount: 0,
+        wilsonLowerBound: 0.0,
       );
 
       final spotId = await spotService.createSpot(

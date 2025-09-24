@@ -101,30 +101,6 @@ exports.onRatingCreated = onDocumentCreated(
   }
 );
 
-// Admin callable to backfill rating aggregates for all spots
-exports.backfillSpotRatingAggregates = onCall(
-  { region: 'europe-west1' },
-  async (request) => {
-    try {
-      await ensureAdmin(request);
-
-      const spotsSnap = await db.collection('spots').get();
-      let processed = 0;
-      for (const doc of spotsSnap.docs) {
-        const spotId = doc.id;
-        await recomputeSpotRatingAggregates(spotId);
-        processed++;
-        if (processed % 25 === 0 && global.gc) {
-          global.gc();
-        }
-      }
-      return { success: true, processed };
-    } catch (e) {
-      console.error('backfillSpotRatingAggregates error', e);
-      return { success: false, error: e.message };
-    }
-  }
-);
 
 exports.onRatingUpdated = onDocumentUpdated(
   { document: 'ratings/{ratingId}', region: 'europe-west1' },
@@ -914,6 +890,9 @@ async function processSyncSource(source, sourceId, apiKey) {
       countryCode: countryCode,
       spotSource: sourceId,
       isPublic: source.isPublic !== false, // Default to true
+      averageRating: 0,
+      ratingCount: 0,
+      wilsonLowerBound: 0,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 

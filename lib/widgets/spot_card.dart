@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:provider/provider.dart';
 import '../models/spot.dart';
-import '../services/spot_service.dart';
 
 class SpotCard extends StatefulWidget {
   final Spot spot;
@@ -24,17 +22,11 @@ class _SpotCardState extends State<SpotCard> {
   late PageController _pageController;
   int _currentPage = 0;
   
-  // Add rating cache variables
-  Map<String, dynamic>? _cachedRatingStats;
-  bool _isLoadingRatingStats = false;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
-    if (widget.showRating) {
-      _loadRatingStats(); // Load rating stats once on init
-    }
   }
 
   @override
@@ -227,32 +219,26 @@ class _SpotCardState extends State<SpotCard> {
                               ),
                             ),
                             if (widget.showRating) ...[
-                              // Rating display using cached data
-                              _isLoadingRatingStats
-                                  ? const SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
+                              // Rating display using Spot model fields directly
+                              widget.spot.ratingCount != null && widget.spot.ratingCount! > 0
+                                  ? Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.star,
+                                          size: 16,
+                                          color: Colors.amber,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          (widget.spot.averageRating ?? 0.0).toStringAsFixed(1),
+                                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
                                     )
-                                  : _cachedRatingStats != null && _cachedRatingStats!['ratingCount'] > 0
-                                      ? Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(
-                                              Icons.star,
-                                              size: 16,
-                                              color: Colors.amber,
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              _cachedRatingStats!['averageRating'].toStringAsFixed(1),
-                                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ],
-                                        )
-                                      : const SizedBox.shrink(),
+                                  : const SizedBox.shrink(),
                             ],
                           ],
                         ),
@@ -453,26 +439,4 @@ class _SpotCardState extends State<SpotCard> {
   }
 
 
-  Future<void> _loadRatingStats() async {
-    try {
-      setState(() {
-        _isLoadingRatingStats = true;
-      });
-      final spotService = Provider.of<SpotService>(context, listen: false);
-      final ratingStats = await spotService.getSpotRatingStats(widget.spot.id!);
-      if (mounted) {
-        setState(() {
-          _cachedRatingStats = ratingStats;
-          _isLoadingRatingStats = false;
-        });
-      }
-    } catch (e) {
-      debugPrint('Error loading rating stats: $e');
-      if (mounted) {
-        setState(() {
-          _isLoadingRatingStats = false;
-        });
-      }
-    }
-  }
 }
