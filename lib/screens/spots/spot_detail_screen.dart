@@ -10,7 +10,6 @@ import '../../services/auth_service.dart';
 import '../../services/url_service.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../services/sync_source_service.dart';
-import '../../widgets/custom_button.dart';
 import '../../widgets/source_details_dialog.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 
@@ -816,12 +815,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                       children: [
                                         ...List.generate(5, (index) {
                                           return GestureDetector(
-                                            onTap: () {
-                                              setState(() {
-                                                _userRating = index + 1.0;
-                                                _hasRated = true;
-                                              });
-                                            },
+                                            onTap: () => _submitRatingDirectly(index + 1.0),
                                             child: Icon(
                                               index < _userRating ? Icons.star : Icons.star_border,
                                               color: Colors.amber,
@@ -829,13 +823,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                             ),
                                           );
                                         }),
-                                        const SizedBox(width: 16),
-                                        if (_shouldShowSubmitButton())
-                                          CustomButton(
-                                            onPressed: _submitRating,
-                                            text: 'Submit Rating',
-                                            isLoading: false,
-                                          ),
                                       ],
                                     ),
                                     const SizedBox(height: 24),
@@ -860,12 +847,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                 children: [
                                   ...List.generate(5, (index) {
                                     return GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          _userRating = index + 1.0;
-                                          _hasRated = true;
-                                        });
-                                      },
+                                      onTap: () => _submitRatingDirectly(index + 1.0),
                                       child: Icon(
                                         index < _userRating ? Icons.star : Icons.star_border,
                                         color: Colors.amber,
@@ -873,13 +855,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                       ),
                                     );
                                   }),
-                                  const SizedBox(width: 16),
-                                  if (_shouldShowSubmitButton())
-                                    CustomButton(
-                                      onPressed: _submitRating,
-                                      text: 'Submit Rating',
-                                      isLoading: false,
-                                    ),
                                 ],
                               ),
                               const SizedBox(height: 24),
@@ -1275,57 +1250,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     }
   }
 
-  Future<void> _submitRating() async {
-    try {
-      final authService = Provider.of<AuthService>(context, listen: false);
-      if (authService.userProfile == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('You must be logged in to rate spots'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
-      
-      // Store the current rating stats before submitting
-      final currentRatingCount = _cachedRatingStats?['ratingCount'] ?? 0;
-      final currentAverageRating = _cachedRatingStats?['averageRating'] ?? 0.0;
-      
-      final spotService = Provider.of<SpotService>(context, listen: false);
-      final success = await spotService.rateSpot(
-        widget.spot.id!, 
-        _userRating, 
-        authService.userProfile!.id
-      );
-      
-      if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Rating submitted successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        setState(() {
-          _hasRated = false;
-          _previousRating = _userRating; // Update the previous rating to the submitted rating
-        });
-        
-        // Refresh the spot data to show updated rating
-        // Retry a few times to allow Cloud Functions to update the spot aggregates
-        await _refreshSpotDataWithRetry(currentRatingCount, currentAverageRating);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error submitting rating: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
 
   Future<double?> _loadUserRatingFuture() async {
     try {
@@ -1349,12 +1273,85 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     }
   }
 
-  /// Determines whether to show the submit button based on rating changes
-  bool _shouldShowSubmitButton() {
-    // Show button if user has selected a rating AND either:
-    // 1. It's their first rating (previousRating == 0)
-    // 2. It's different from their previous rating
-    return _hasRated && (_previousRating == 0 || _userRating != _previousRating);
+  /// Submits a rating directly when a star is clicked (only if different from previous rating)
+  Future<void> _submitRatingDirectly(double rating) async {
+    try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      if (authService.userProfile == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You must be logged in to rate spots'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      
+      // Check if this is the same rating as before - if so, don't submit
+      if (rating == _previousRating && _hasRated) {
+        // Just update the UI to show the selected star without submitting
+        setState(() {
+          _userRating = rating;
+        });
+        return;
+      }
+      
+      // Store the current rating stats before submitting
+      final currentRatingCount = _cachedRatingStats?['ratingCount'] ?? 0;
+      final currentAverageRating = _cachedRatingStats?['averageRating'] ?? 0.0;
+      
+      // Update UI immediately for better UX
+      setState(() {
+        _userRating = rating;
+        _hasRated = true;
+        _previousRating = rating;
+      });
+      
+      final spotService = Provider.of<SpotService>(context, listen: false);
+      final success = await spotService.rateSpot(
+        widget.spot.id!, 
+        rating, 
+        authService.userProfile!.id
+      );
+      
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Rating ${rating.toInt()} star${rating == 1 ? '' : 's'} submitted!'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        
+        // Refresh the spot data to show updated rating
+        // Retry a few times to allow Cloud Functions to update the spot aggregates
+        await _refreshSpotDataWithRetry(currentRatingCount, currentAverageRating);
+      } else if (mounted) {
+        // Revert UI changes if submission failed
+        setState(() {
+          _userRating = _previousRating;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to submit rating. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        // Revert UI changes if submission failed
+        setState(() {
+          _userRating = _previousRating;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error submitting rating: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _loadRatingStats() async {
