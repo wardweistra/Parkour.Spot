@@ -1288,6 +1288,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         return;
       }
       
+      // Store the current rating stats before submitting
+      final currentRatingCount = _cachedRatingStats?['ratingCount'] ?? 0;
+      final currentAverageRating = _cachedRatingStats?['averageRating'] ?? 0.0;
+      
       final spotService = Provider.of<SpotService>(context, listen: false);
       final success = await spotService.rateSpot(
         widget.spot.id!, 
@@ -1308,7 +1312,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         });
         
         // Refresh the spot data to show updated rating
-        await _refreshSpotData();
+        // Retry a few times to allow Cloud Functions to update the spot aggregates
+        await _refreshSpotDataWithRetry(currentRatingCount, currentAverageRating);
       }
     } catch (e) {
       if (mounted) {
@@ -1386,6 +1391,35 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       }
     } catch (e) {
       debugPrint('Error refreshing spot data: $e');
+    }
+  }
+
+  Future<void> _refreshSpotDataWithRetry(int currentRatingCount, double currentAverageRating) async {
+    const maxRetries = 5;
+    const retryDelay = Duration(milliseconds: 1000);
+    
+    for (int attempt = 0; attempt < maxRetries; attempt++) {
+      await _refreshSpotData();
+      
+      // Check if the rating aggregates have changed (indicating the Cloud Function has updated the spot)
+      final newRatingCount = _cachedRatingStats?['ratingCount'] ?? 0;
+      final newAverageRating = _cachedRatingStats?['averageRating'] ?? 0.0;
+      
+      // Consider it updated if either count or average has changed
+      final countChanged = newRatingCount != currentRatingCount;
+      final averageChanged = (newAverageRating - currentAverageRating).abs() > 0.01; // Allow for small floating point differences
+      
+      if (countChanged || averageChanged) {
+        debugPrint('Rating aggregates updated successfully. Count: $currentRatingCount -> $newRatingCount, Average: ${currentAverageRating.toStringAsFixed(2)} -> ${newAverageRating.toStringAsFixed(2)}');
+        break; // Success - rating aggregates have been updated
+      }
+      
+      debugPrint('Attempt ${attempt + 1}: Rating aggregates unchanged (Count: $newRatingCount, Average: ${newAverageRating.toStringAsFixed(2)})');
+      
+      // If not the last attempt, wait before retrying
+      if (attempt < maxRetries - 1) {
+        await Future.delayed(retryDelay);
+      }
     }
   }
 
