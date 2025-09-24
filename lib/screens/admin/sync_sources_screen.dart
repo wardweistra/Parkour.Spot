@@ -257,8 +257,14 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
     final urlCtrl = TextEditingController(text: source?.kmzUrl ?? '');
     final descCtrl = TextEditingController(text: source?.description ?? '');
     final publicUrlCtrl = TextEditingController(text: source?.publicUrl ?? '');
+    final includeFoldersCtrl = TextEditingController(
+      text: (source?.includeFolders == null || source!.includeFolders!.isEmpty)
+          ? ''
+          : source.includeFolders!.join(', '),
+    );
     bool isPublic = source?.isPublic ?? true;
     bool isActive = source?.isActive ?? true;
+    bool recordFolderName = source?.recordFolderName ?? false;
 
     final saved = await showDialog<bool>(
       context: context,
@@ -291,6 +297,14 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                   keyboardType: TextInputType.url,
                 ),
                 const SizedBox(height: 8),
+                TextFormField(
+                  controller: includeFoldersCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Include Folders (optional)',
+                    helperText: 'Comma-separated list of folder names to include when importing',
+                  ),
+                ),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     Expanded(
@@ -311,6 +325,13 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                     ),
                   ],
                 ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Record Folder Name on Spots'),
+                  subtitle: const Text('If enabled, store the KML folder name on each imported spot'),
+                  value: recordFolderName,
+                  onChanged: (v) => setState(() => recordFolderName = v),
+                ),
               ],
             ),
           ),
@@ -330,6 +351,14 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                   publicUrl: publicUrlCtrl.text.trim().isEmpty ? null : publicUrlCtrl.text.trim(),
                   isPublic: isPublic,
                   isActive: isActive,
+                  includeFolders: includeFoldersCtrl.text.trim().isEmpty
+                      ? null
+                      : includeFoldersCtrl.text
+                          .split(',')
+                          .map((s) => s.trim())
+                          .where((s) => s.isNotEmpty)
+                          .toList(),
+                  recordFolderName: recordFolderName,
                 );
               } else {
                 ok = await service.updateSource(
@@ -340,6 +369,14 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                   publicUrl: publicUrlCtrl.text.trim(),
                   isPublic: isPublic,
                   isActive: isActive,
+                  includeFolders: includeFoldersCtrl.text.trim().isEmpty
+                      ? <String>[]
+                      : includeFoldersCtrl.text
+                          .split(',')
+                          .map((s) => s.trim())
+                          .where((s) => s.isNotEmpty)
+                          .toList(),
+                  recordFolderName: recordFolderName,
                 );
               }
               if (context.mounted) {

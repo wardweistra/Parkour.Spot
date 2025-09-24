@@ -10,6 +10,8 @@ class SyncSource {
   final String? publicUrl;
   final bool isPublic;
   final bool isActive;
+  final List<String>? includeFolders; // Optional list of folders to include
+  final bool? recordFolderName; // Whether to store folder name on spots
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final DateTime? lastSyncAt;
@@ -23,6 +25,8 @@ class SyncSource {
     this.publicUrl,
     required this.isPublic,
     required this.isActive,
+    this.includeFolders,
+    this.recordFolderName,
     this.createdAt,
     this.updatedAt,
     this.lastSyncAt,
@@ -38,6 +42,10 @@ class SyncSource {
       publicUrl: data['publicUrl'],
       isPublic: data['isPublic'] ?? true,
       isActive: data['isActive'] ?? true,
+      includeFolders: data['includeFolders'] != null
+          ? List<String>.from((data['includeFolders'] as List).map((e) => e.toString()))
+          : null,
+      recordFolderName: data['recordFolderName'] is bool ? data['recordFolderName'] as bool : null,
       createdAt: _parseTimestamp(data['createdAt']),
       updatedAt: _parseTimestamp(data['updatedAt']),
       lastSyncAt: _parseTimestamp(data['lastSyncAt']),
@@ -125,6 +133,8 @@ class SyncSourceService extends ChangeNotifier {
     String? publicUrl,
     bool isPublic = true,
     bool isActive = true,
+    List<String>? includeFolders,
+    bool? recordFolderName,
   }) async {
     try {
       final callable = _functions.httpsCallable('createSyncSource');
@@ -135,6 +145,8 @@ class SyncSourceService extends ChangeNotifier {
         'publicUrl': publicUrl,
         'isPublic': isPublic,
         'isActive': isActive,
+        if (includeFolders != null) 'includeFolders': includeFolders,
+        if (recordFolderName != null) 'recordFolderName': recordFolderName,
       });
       final success = result.data['success'] == true;
       if (success) {
@@ -157,6 +169,8 @@ class SyncSourceService extends ChangeNotifier {
     String? publicUrl,
     bool? isPublic,
     bool? isActive,
+    List<String>? includeFolders,
+    bool? recordFolderName,
   }) async {
     try {
       final callable = _functions.httpsCallable('updateSyncSource');
@@ -167,6 +181,8 @@ class SyncSourceService extends ChangeNotifier {
       if (publicUrl != null) payload['publicUrl'] = publicUrl;
       if (isPublic != null) payload['isPublic'] = isPublic;
       if (isActive != null) payload['isActive'] = isActive;
+      if (includeFolders != null) payload['includeFolders'] = includeFolders;
+      if (recordFolderName != null) payload['recordFolderName'] = recordFolderName;
       final result = await callable.call(payload);
       final success = result.data['success'] == true;
       if (success) {
