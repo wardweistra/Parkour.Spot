@@ -442,11 +442,11 @@ class SpotService extends ChangeNotifier {
         final query1 = await _firestore
             .collection('spots')
             .where('isPublic', isEqualTo: true)
+            .orderBy('longitude')
             .where('latitude', isGreaterThanOrEqualTo: minLat)
             .where('latitude', isLessThanOrEqualTo: maxLat)
             .where('longitude', isGreaterThanOrEqualTo: minLng)
             .where('longitude', isLessThanOrEqualTo: 180)
-            .orderBy('longitude')
             .orderBy('latitude')
             .get();
         
@@ -456,11 +456,11 @@ class SpotService extends ChangeNotifier {
         final query2 = await _firestore
             .collection('spots')
             .where('isPublic', isEqualTo: true)
+            .orderBy('longitude')
             .where('latitude', isGreaterThanOrEqualTo: minLat)
             .where('latitude', isLessThanOrEqualTo: maxLat)
             .where('longitude', isGreaterThanOrEqualTo: -180)
             .where('longitude', isLessThanOrEqualTo: maxLng)
-            .orderBy('longitude')
             .orderBy('latitude')
             .get();
         
@@ -479,11 +479,11 @@ class SpotService extends ChangeNotifier {
         final querySnapshot = await _firestore
             .collection('spots')
             .where('isPublic', isEqualTo: true)
+            .orderBy('longitude')
             .where('latitude', isGreaterThanOrEqualTo: minLat)
             .where('latitude', isLessThanOrEqualTo: maxLat)
             .where('longitude', isGreaterThanOrEqualTo: minLng)
             .where('longitude', isLessThanOrEqualTo: maxLng)
-            .orderBy('longitude')
             .orderBy('latitude')
             .get();
         
