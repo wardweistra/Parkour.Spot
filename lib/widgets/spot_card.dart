@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:provider/provider.dart';
+import '../services/sync_source_service.dart';
 import '../models/spot.dart';
 
 class SpotCard extends StatefulWidget {
@@ -322,7 +324,9 @@ class _SpotCardState extends State<SpotCard> {
                       ),
                       const SizedBox(width: 3),
                       Text(
-                        'External',
+                        Provider.of<SyncSourceService>(context, listen: false)
+                                .getSourceNameSync(widget.spot.spotSource!) ??
+                            widget.spot.spotSource!,
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 10,
