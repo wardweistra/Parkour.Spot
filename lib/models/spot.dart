@@ -10,6 +10,7 @@ class Spot {
   final String? city;
   final String? countryCode;
   final List<String>? imageUrls;
+  final String? folderName;
   final String? createdBy;
   final String? createdByName;
   final DateTime? createdAt;
@@ -31,6 +32,7 @@ class Spot {
     this.city,
     this.countryCode,
     this.imageUrls,
+    this.folderName,
     this.createdBy,
     this.createdByName,
     this.createdAt,
@@ -57,6 +59,7 @@ class Spot {
       imageUrls: data['imageUrls'] != null
           ? List<String>.from(data['imageUrls'])
           : (data['imageUrl'] != null ? [data['imageUrl']] : null),
+      folderName: data['folderName'],
       createdBy: data['createdBy'],
       createdByName: data['createdByName'],
       createdAt: data['createdAt']?.toDate(),
@@ -80,6 +83,7 @@ class Spot {
       'city': city,
       'countryCode': countryCode,
       'imageUrls': imageUrls,
+      'folderName': folderName,
       'createdBy': createdBy,
       'createdByName': createdByName,
       'createdAt': createdAt,
@@ -103,6 +107,7 @@ class Spot {
     String? city,
     String? countryCode,
     List<String>? imageUrls,
+    String? folderName,
     String? createdBy,
     String? createdByName,
     DateTime? createdAt,
@@ -124,6 +129,7 @@ class Spot {
       city: city ?? this.city,
       countryCode: countryCode ?? this.countryCode,
       imageUrls: imageUrls ?? this.imageUrls,
+      folderName: folderName ?? this.folderName,
       createdBy: createdBy ?? this.createdBy,
       createdByName: createdByName ?? this.createdByName,
       createdAt: createdAt ?? this.createdAt,

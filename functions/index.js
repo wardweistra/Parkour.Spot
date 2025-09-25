@@ -660,7 +660,7 @@ async function cleanupImageCache() {
 }
 
 /**
- * Parses KML and extracts Placemarks
+ * Parses KML and extracts Placemarks, including folder hierarchy when present
  * @param {string} kmlContent - The KML content
  * @return {Promise<Object[]>} A promise that resolves to the Placemarks
  */
@@ -676,7 +676,14 @@ function parseKmlPlacemarks(kmlContent) {
        * Recursively extracts placemarks from a folder structure
        * @param {Object} folder - The folder containing placemarks
        */
-      function extractPlacemarksFromFolder(folder) {
+      function extractPlacemarksFromFolder(folder, folderPath = []) {
+        // Current folder name if available
+        let currentFolderName = null;
+        if (folder.name && Array.isArray(folder.name) && folder.name[0]) {
+          currentFolderName = String(folder.name[0]);
+        }
+        const nextFolderPath = currentFolderName ? [...folderPath, currentFolderName] : [...folderPath];
+
         if (folder.Placemark) {
           folder.Placemark.forEach((placemark) => {
             const name = (placemark.name && placemark.name[0]) ||
@@ -696,13 +703,15 @@ function parseKmlPlacemarks(kmlContent) {
                 coordinates: {latitude, longitude, altitude: altitude || 0},
                 extendedData: (placemark.ExtendedData &&
                     placemark.ExtendedData[0]) || {},
+                folderPath: nextFolderPath,
+                folderName: nextFolderPath.length > 0 ? nextFolderPath[nextFolderPath.length - 1] : null,
               });
             }
           });
         }
 
         if (folder.Folder) {
-          folder.Folder.forEach(extractPlacemarksFromFolder);
+          folder.Folder.forEach((sub) => extractPlacemarksFromFolder(sub, nextFolderPath));
         }
       }
 
@@ -729,6 +738,8 @@ function parseKmlPlacemarks(kmlContent) {
                 coordinates: {latitude, longitude, altitude: altitude || 0},
                 extendedData: (placemark.ExtendedData &&
                     placemark.ExtendedData[0]) || {},
+                folderPath: [],
+                folderName: null,
               });
             }
           });
@@ -736,7 +747,7 @@ function parseKmlPlacemarks(kmlContent) {
         
         // Check for placemarks in Folders
         if (document.Folder) {
-          document.Folder.forEach(extractPlacemarksFromFolder);
+          document.Folder.forEach((f) => extractPlacemarksFromFolder(f, []));
         }
       }
 
@@ -814,7 +825,28 @@ async function processSyncSource(source, sourceId, apiKey) {
   // Download and process KMZ file
   let kmzBuffer = await downloadFile(source.kmzUrl);
   const kmlContent = await extractKmlFromKmz(kmzBuffer);
-  const placemarks = await parseKmlPlacemarks(kmlContent);
+  let placemarks = await parseKmlPlacemarks(kmlContent);
+  
+  // Normalize includeFolders from source configuration
+  let includeFolders = [];
+  if (Array.isArray(source.includeFolders)) {
+    includeFolders = source.includeFolders;
+  } else if (typeof source.includeFolders === 'string') {
+    includeFolders = source.includeFolders.split(',');
+  }
+  includeFolders = includeFolders
+    .map((s) => (typeof s === 'string' ? s.trim() : ''))
+    .filter((s) => s.length > 0);
+
+  if (includeFolders.length > 0) {
+    const includeSetLower = new Set(includeFolders.map((f) => f.toLowerCase()));
+    const beforeCount = placemarks.length;
+    placemarks = placemarks.filter((p) => {
+      const path = Array.isArray(p.folderPath) ? p.folderPath : [];
+      return path.some((seg) => includeSetLower.has(String(seg).toLowerCase()));
+    });
+    console.log(`Applied folder filter for source ${source.name}: ${placemarks.length}/${beforeCount} placemarks kept`);
+  }
   
   // Clear KMZ buffer to free memory
   kmzBuffer = null;
@@ -895,6 +927,15 @@ async function processSyncSource(source, sourceId, apiKey) {
       wilsonLowerBound: 0,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
+
+    // Optionally record folder name on spot if configured and available
+    if (source.recordFolderName === true) {
+      if (placemark.folderName) {
+        spotData.folderName = placemark.folderName;
+      } else {
+        spotData.folderName = null;
+      }
+    }
 
     // Add image URLs and hashes if any were found
     if (imageResult.imageUrls.length > 0) {
@@ -1257,7 +1298,7 @@ exports.createSyncSource = onCall(
       try {
         await ensureAdmin(request);
         const {name, kmzUrl, description, publicUrl, isPublic = true,
-          isActive = true} = request.data;
+          isActive = true, includeFolders, recordFolderName} = request.data;
 
         if (!name || !kmzUrl) {
           throw new Error("name and kmzUrl are required");
@@ -1270,6 +1311,13 @@ exports.createSyncSource = onCall(
           publicUrl: publicUrl || "",
           isPublic: isPublic,
           isActive: isActive,
+          // Optional folder config
+          includeFolders: Array.isArray(includeFolders)
+            ? includeFolders
+            : (typeof includeFolders === 'string' && includeFolders.trim().length > 0
+              ? includeFolders.split(',').map((s) => s.trim()).filter((s) => s.length > 0)
+              : undefined),
+          recordFolderName: typeof recordFolderName === 'boolean' ? recordFolderName : undefined,
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         };
@@ -1295,7 +1343,7 @@ exports.updateSyncSource = onCall(
       try {
         await ensureAdmin(request);
         const {sourceId, name, kmzUrl, description, publicUrl, isPublic,
-          isActive} = request.data;
+          isActive, includeFolders, recordFolderName} = request.data;
 
         if (!sourceId) {
           throw new Error("sourceId is required");
@@ -1311,6 +1359,23 @@ exports.updateSyncSource = onCall(
         if (publicUrl !== undefined) updateData.publicUrl = publicUrl;
         if (isPublic !== undefined) updateData.isPublic = isPublic;
         if (isActive !== undefined) updateData.isActive = isActive;
+        if (includeFolders !== undefined) {
+          if (Array.isArray(includeFolders)) {
+            updateData.includeFolders = includeFolders;
+          } else if (typeof includeFolders === 'string') {
+            const list = includeFolders.split(',').map((s) => s.trim()).filter((s) => s.length > 0);
+            updateData.includeFolders = list;
+          } else if (includeFolders === null) {
+            updateData.includeFolders = admin.firestore.FieldValue.delete();
+          }
+        }
+        if (recordFolderName !== undefined) {
+          if (typeof recordFolderName === 'boolean') {
+            updateData.recordFolderName = recordFolderName;
+          } else if (recordFolderName === null) {
+            updateData.recordFolderName = admin.firestore.FieldValue.delete();
+          }
+        }
 
         await db.collection("syncSources").doc(sourceId).update(updateData);
 
