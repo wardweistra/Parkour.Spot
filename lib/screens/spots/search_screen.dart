@@ -1388,10 +1388,10 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                           child: Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                                             decoration: BoxDecoration(
-                                              color: Colors.black.withValues(alpha: 0.7),
+                                              color: Colors.black.withValues(alpha: 0.4),
                                               borderRadius: BorderRadius.circular(10),
                                               border: Border.all(
-                                                color: Colors.white.withValues(alpha: 0.3),
+                                                color: Colors.white.withValues(alpha: 0.2),
                                                 width: 1,
                                               ),
                                             ),
