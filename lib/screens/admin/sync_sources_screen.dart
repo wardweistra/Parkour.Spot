@@ -252,144 +252,9 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
   }
 
   Future<void> _openEditDialog(BuildContext context, {SyncSource? source}) async {
-    final formKey = GlobalKey<FormState>();
-    final nameCtrl = TextEditingController(text: source?.name ?? '');
-    final urlCtrl = TextEditingController(text: source?.kmzUrl ?? '');
-    final descCtrl = TextEditingController(text: source?.description ?? '');
-    final publicUrlCtrl = TextEditingController(text: source?.publicUrl ?? '');
-    final includeFoldersCtrl = TextEditingController(
-      text: (source?.includeFolders == null || source!.includeFolders!.isEmpty)
-          ? ''
-          : source.includeFolders!.join(', '),
-    );
-    bool isPublic = source?.isPublic ?? true;
-    bool isActive = source?.isActive ?? true;
-    bool recordFolderName = source?.recordFolderName ?? false;
-
     final saved = await showDialog<bool>(
       context: context,
-      builder: (c) => AlertDialog(
-        title: Text(source == null ? 'Add Source' : 'Edit Source'),
-        content: SingleChildScrollView(
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: nameCtrl,
-                  decoration: const InputDecoration(labelText: 'Name'),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
-                ),
-                TextFormField(
-                  controller: urlCtrl,
-                  decoration: const InputDecoration(labelText: 'KMZ URL'),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
-                ),
-                TextFormField(
-                  controller: descCtrl,
-                  decoration: const InputDecoration(labelText: 'Description (optional)'),
-                  maxLines: 3,
-                ),
-                TextFormField(
-                  controller: publicUrlCtrl,
-                  decoration: const InputDecoration(labelText: 'Public URL (optional)'),
-                  keyboardType: TextInputType.url,
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: includeFoldersCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Include Folders (optional)',
-                    helperText: 'Comma-separated list of folder names to include when importing',
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Public'),
-                        value: isPublic,
-                        onChanged: (v) => setState(() => isPublic = v),
-                      ),
-                    ),
-                    Expanded(
-                      child: SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Active'),
-                        value: isActive,
-                        onChanged: (v) => setState(() => isActive = v),
-                      ),
-                    ),
-                  ],
-                ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Record Folder Name on Spots'),
-                  subtitle: const Text('If enabled, store the KML folder name on each imported spot'),
-                  value: recordFolderName,
-                  onChanged: (v) => setState(() => recordFolderName = v),
-                ),
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
-          TextButton(
-            onPressed: () async {
-              if (!formKey.currentState!.validate()) return;
-              final service = context.read<SyncSourceService>();
-              bool ok;
-              if (source == null) {
-                ok = await service.createSource(
-                  name: nameCtrl.text.trim(),
-                  kmzUrl: urlCtrl.text.trim(),
-                  description: descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
-                  publicUrl: publicUrlCtrl.text.trim().isEmpty ? null : publicUrlCtrl.text.trim(),
-                  isPublic: isPublic,
-                  isActive: isActive,
-                  includeFolders: includeFoldersCtrl.text.trim().isEmpty
-                      ? null
-                      : includeFoldersCtrl.text
-                          .split(',')
-                          .map((s) => s.trim())
-                          .where((s) => s.isNotEmpty)
-                          .toList(),
-                  recordFolderName: recordFolderName,
-                );
-              } else {
-                ok = await service.updateSource(
-                  sourceId: source.id,
-                  name: nameCtrl.text.trim(),
-                  kmzUrl: urlCtrl.text.trim(),
-                  description: descCtrl.text.trim(),
-                  publicUrl: publicUrlCtrl.text.trim(),
-                  isPublic: isPublic,
-                  isActive: isActive,
-                  includeFolders: includeFoldersCtrl.text.trim().isEmpty
-                      ? <String>[]
-                      : includeFoldersCtrl.text
-                          .split(',')
-                          .map((s) => s.trim())
-                          .where((s) => s.isNotEmpty)
-                          .toList(),
-                  recordFolderName: recordFolderName,
-                );
-              }
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(ok ? 'Saved' : 'Failed to save')),
-                );
-              }
-              Navigator.pop(c, ok);
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+      builder: (c) => SyncSourceEditDialog(source: source),
     );
 
     if (saved == true) {
@@ -576,6 +441,180 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
         );
       }
     }
+  }
+}
+
+class SyncSourceEditDialog extends StatefulWidget {
+  final SyncSource? source;
+
+  const SyncSourceEditDialog({super.key, this.source});
+
+  @override
+  State<SyncSourceEditDialog> createState() => _SyncSourceEditDialogState();
+}
+
+class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
+  final formKey = GlobalKey<FormState>();
+  late final TextEditingController nameCtrl;
+  late final TextEditingController urlCtrl;
+  late final TextEditingController descCtrl;
+  late final TextEditingController publicUrlCtrl;
+  late final TextEditingController includeFoldersCtrl;
+  late bool isPublic;
+  late bool isActive;
+  late bool recordFolderName;
+
+  @override
+  void initState() {
+    super.initState();
+    nameCtrl = TextEditingController(text: widget.source?.name ?? '');
+    urlCtrl = TextEditingController(text: widget.source?.kmzUrl ?? '');
+    descCtrl = TextEditingController(text: widget.source?.description ?? '');
+    publicUrlCtrl = TextEditingController(text: widget.source?.publicUrl ?? '');
+    includeFoldersCtrl = TextEditingController(
+      text: (widget.source?.includeFolders == null || widget.source?.includeFolders?.isEmpty == true)
+          ? ''
+          : widget.source!.includeFolders!.join(', '),
+    );
+    isPublic = widget.source?.isPublic ?? true;
+    isActive = widget.source?.isActive ?? true;
+    recordFolderName = widget.source?.recordFolderName ?? false;
+  }
+
+  @override
+  void dispose() {
+    nameCtrl.dispose();
+    urlCtrl.dispose();
+    descCtrl.dispose();
+    publicUrlCtrl.dispose();
+    includeFoldersCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.source == null ? 'Add Source' : 'Edit Source'),
+      content: SingleChildScrollView(
+        child: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: 'Name'),
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+              ),
+              TextFormField(
+                controller: urlCtrl,
+                decoration: const InputDecoration(labelText: 'KMZ URL'),
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+              ),
+              TextFormField(
+                controller: descCtrl,
+                decoration: const InputDecoration(labelText: 'Description (optional)'),
+                maxLines: 3,
+              ),
+              TextFormField(
+                controller: publicUrlCtrl,
+                decoration: const InputDecoration(labelText: 'Public URL (optional)'),
+                keyboardType: TextInputType.url,
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: includeFoldersCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Include Folders (optional)',
+                  helperText: 'Comma-separated list of folder names to include when importing',
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Public'),
+                      value: isPublic,
+                      onChanged: (v) => setState(() => isPublic = v),
+                    ),
+                  ),
+                  Expanded(
+                    child: SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Active'),
+                      value: isActive,
+                      onChanged: (v) => setState(() => isActive = v),
+                    ),
+                  ),
+                ],
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Record Folder Name on Spots'),
+                subtitle: const Text('If enabled, store the KML folder name on each imported spot'),
+                value: recordFolderName,
+                onChanged: (v) => setState(() => recordFolderName = v),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+        TextButton(
+          onPressed: () async {
+            if (!formKey.currentState!.validate()) return;
+            final service = context.read<SyncSourceService>();
+            bool ok;
+            if (widget.source == null) {
+              ok = await service.createSource(
+                name: nameCtrl.text.trim(),
+                kmzUrl: urlCtrl.text.trim(),
+                description: descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
+                publicUrl: publicUrlCtrl.text.trim().isEmpty ? null : publicUrlCtrl.text.trim(),
+                isPublic: isPublic,
+                isActive: isActive,
+                includeFolders: includeFoldersCtrl.text.trim().isEmpty
+                    ? null
+                    : includeFoldersCtrl.text
+                        .split(',')
+                        .map((s) => s.trim())
+                        .where((s) => s.isNotEmpty)
+                        .toList(),
+                recordFolderName: recordFolderName,
+              );
+            } else {
+              ok = await service.updateSource(
+                sourceId: widget.source!.id,
+                name: nameCtrl.text.trim(),
+                kmzUrl: urlCtrl.text.trim(),
+                description: descCtrl.text.trim(),
+                publicUrl: publicUrlCtrl.text.trim(),
+                isPublic: isPublic,
+                isActive: isActive,
+                includeFolders: includeFoldersCtrl.text.trim().isEmpty
+                    ? <String>[]
+                    : includeFoldersCtrl.text
+                        .split(',')
+                        .map((s) => s.trim())
+                        .where((s) => s.isNotEmpty)
+                        .toList(),
+                recordFolderName: recordFolderName,
+              );
+            }
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(ok ? 'Saved' : 'Failed to save')),
+              );
+            }
+            Navigator.pop(context, ok);
+          },
+          child: const Text('Save'),
+        ),
+      ],
+    );
   }
 }
 
