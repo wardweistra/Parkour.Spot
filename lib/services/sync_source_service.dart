@@ -12,6 +12,7 @@ class SyncSource {
   final bool isActive;
   final List<String>? includeFolders; // Optional list of folders to include
   final bool? recordFolderName; // Whether to store folder name on spots
+  final List<String>? allFolders; // List of all folders found during sync (when recordFolderName is true)
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final DateTime? lastSyncAt;
@@ -27,6 +28,7 @@ class SyncSource {
     required this.isActive,
     this.includeFolders,
     this.recordFolderName,
+    this.allFolders,
     this.createdAt,
     this.updatedAt,
     this.lastSyncAt,
@@ -46,6 +48,9 @@ class SyncSource {
           ? List<String>.from((data['includeFolders'] as List).map((e) => e.toString()))
           : null,
       recordFolderName: data['recordFolderName'] is bool ? data['recordFolderName'] as bool : null,
+      allFolders: data['allFolders'] != null
+          ? List<String>.from((data['allFolders'] as List).map((e) => e.toString()))
+          : null,
       createdAt: _parseTimestamp(data['createdAt']),
       updatedAt: _parseTimestamp(data['updatedAt']),
       lastSyncAt: _parseTimestamp(data['lastSyncAt']),

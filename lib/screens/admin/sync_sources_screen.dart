@@ -132,6 +132,20 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                           ],
                         ],
                       ),
+                      if (s.allFolders != null && s.allFolders!.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Wrap(
+                          spacing: 4,
+                          runSpacing: 2,
+                          children: [
+                            const Text('Folders:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                            ...s.allFolders!.map((folder) => Chip(
+                              label: Text(folder, style: const TextStyle(fontSize: 11)),
+                              backgroundColor: Colors.blue.shade100,
+                            )),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                   isThreeLine: true,

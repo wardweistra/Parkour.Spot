@@ -329,9 +329,11 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            Provider.of<SyncSourceService>(context, listen: false)
-                                    .getSourceNameSync(widget.spot.spotSource!) ??
-                                widget.spot.spotSource!,
+                            widget.spot.folderName != null
+                                ? '${Provider.of<SyncSourceService>(context, listen: false).getSourceNameSync(widget.spot.spotSource!) ?? widget.spot.spotSource!} - ${widget.spot.folderName!}'
+                                : Provider.of<SyncSourceService>(context, listen: false)
+                                        .getSourceNameSync(widget.spot.spotSource!) ??
+                                    widget.spot.spotSource!,
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 12,
@@ -946,7 +948,11 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                       Text('Loading...'),
                                     ],
                                   )
-                                : Text(_sourceName ?? 'Unknown Source'),
+                                : Text(
+                                    widget.spot.folderName != null
+                                        ? '${_sourceName ?? 'Unknown Source'} - ${widget.spot.folderName!}'
+                                        : _sourceName ?? 'Unknown Source',
+                                  ),
                             contentPadding: EdgeInsets.zero,
                             trailing: const Icon(Icons.info_outline, size: 16),
                           ),

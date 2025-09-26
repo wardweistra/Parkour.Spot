@@ -130,7 +130,7 @@ exports.onRatingDeleted = onDocumentDeleted(
   { document: 'ratings/{ratingId}', region: 'europe-west1' },
   async (event) => {
     try {
-      const before = event.data?.data();
+      const before = event.data && event.data.data();
       const spotId = before && before.spotId;
       await recomputeSpotRatingAggregates(spotId);
     } catch (e) {
@@ -680,7 +680,7 @@ function parseKmlPlacemarks(kmlContent) {
         // Current folder name if available
         let currentFolderName = null;
         if (folder.name && Array.isArray(folder.name) && folder.name[0]) {
-          currentFolderName = String(folder.name[0]);
+          currentFolderName = String(folder.name[0]).trim();
         }
         const nextFolderPath = currentFolderName ? [...folderPath, currentFolderName] : [...folderPath];
 
@@ -704,7 +704,7 @@ function parseKmlPlacemarks(kmlContent) {
                 extendedData: (placemark.ExtendedData &&
                     placemark.ExtendedData[0]) || {},
                 folderPath: nextFolderPath,
-                folderName: nextFolderPath.length > 0 ? nextFolderPath[nextFolderPath.length - 1] : null,
+                folderName: nextFolderPath.length > 0 ? nextFolderPath[nextFolderPath.length - 1].trim() : null,
               });
             }
           });
@@ -839,13 +839,48 @@ async function processSyncSource(source, sourceId, apiKey) {
     .filter((s) => s.length > 0);
 
   if (includeFolders.length > 0) {
+    console.log(`[FOLDER FILTER] Applying folder filter for source: ${source.name}`);
+    console.log(`[FOLDER FILTER] Total placemarks before filter: ${placemarks.length}`);
+    console.log(`[FOLDER FILTER] Include folders: [${includeFolders.join(', ')}]`);
+
+    // Log all folder names found in placemarks before processing
+    const foldersInPlacemarks = new Set();
+    placemarks.forEach(placemark => {
+      if (placemark.folderName) {
+        foldersInPlacemarks.add(placemark.folderName);
+      }
+    });
+    console.log(`[FOLDER FILTER] Folders found in placemarks: [${Array.from(foldersInPlacemarks).join(', ')}]`);
+    
     const includeSetLower = new Set(includeFolders.map((f) => f.toLowerCase()));
     const beforeCount = placemarks.length;
     placemarks = placemarks.filter((p) => {
       const path = Array.isArray(p.folderPath) ? p.folderPath : [];
       return path.some((seg) => includeSetLower.has(String(seg).toLowerCase()));
     });
-    console.log(`Applied folder filter for source ${source.name}: ${placemarks.length}/${beforeCount} placemarks kept`);
+    
+    // Sort placemarks by the order specified in includeFolders
+    placemarks.sort((a, b) => {
+      const aFolderName = a.folderName ? a.folderName.toLowerCase() : '';
+      const bFolderName = b.folderName ? b.folderName.toLowerCase() : '';
+      
+      const aIndex = includeFolders.findIndex(folder => folder.toLowerCase() === aFolderName);
+      const bIndex = includeFolders.findIndex(folder => folder.toLowerCase() === bFolderName);
+      
+      // If both folders are in includeFolders, sort by their order
+      if (aIndex !== -1 && bIndex !== -1) {
+        return aIndex - bIndex;
+      }
+      
+      // If only one folder is in includeFolders, prioritize it
+      if (aIndex !== -1) return -1;
+      if (bIndex !== -1) return 1;
+      
+      // If neither folder is in includeFolders, maintain original order
+      return 0;
+    });
+    
+    console.log(`Applied folder filter and ordering for source ${source.name}: ${placemarks.length}/${beforeCount} placemarks kept`);
   }
   
   // Clear KMZ buffer to free memory
@@ -856,11 +891,32 @@ async function processSyncSource(source, sourceId, apiKey) {
   let geocoded = 0;
   let geocodingFailed = 0;
   const skipped = 0;
+  
+  // Collect all unique folder names from successfully processed spots if recordFolderName is enabled
+  const allFolders = new Set();
+  
+  if (source.recordFolderName === true) {
+    console.log(`[FOLDER COLLECTION] Starting folder collection for source: ${source.name}`);
+    console.log(`[FOLDER COLLECTION] Total placemarks to process: ${placemarks.length}`);
+    
+    // Log all folder names found in placemarks before processing
+    const foldersInPlacemarks = new Set();
+    placemarks.forEach(placemark => {
+      if (placemark.folderName) {
+        foldersInPlacemarks.add(placemark.folderName);
+      }
+    });
+    console.log(`[FOLDER COLLECTION] Folders found in placemarks: [${Array.from(foldersInPlacemarks).join(', ')}]`);
+  }
 
   // Process each placemark
   for (let i = 0; i < placemarks.length; i++) {
     const placemark = placemarks[i];
     const {name, description, coordinates} = placemark;
+    
+    if (source.recordFolderName === true) {
+      console.log(`[FOLDER COLLECTION] Processing spot "${name}" with folder: ${placemark.folderName || 'null'}`);
+    }
 
     // Check if spot already exists with same coordinates and source
     const existingSpots = await db.collection("spots")
@@ -957,6 +1013,15 @@ async function processSyncSource(source, sourceId, apiKey) {
       console.log(`Updated existing spot: ${name} from source: ${source.name} with ${imageResult.imageUrls.length} images`);
     }
     
+    // Collect folder name from successfully processed spot if recordFolderName is enabled
+    if (source.recordFolderName === true && placemark.folderName) {
+      const wasNew = !allFolders.has(placemark.folderName);
+      allFolders.add(placemark.folderName);
+      console.log(`[FOLDER COLLECTION] Added folder "${placemark.folderName}" from spot "${name}" ${wasNew ? '(NEW)' : '(EXISTING)'}`);
+    } else if (source.recordFolderName === true) {
+      console.log(`[FOLDER COLLECTION] Spot "${name}" has no folder name`);
+    }
+    
     // Force garbage collection after every 10 spots to free memory
     if (i % 10 === 0 && global.gc) {
       global.gc();
@@ -964,10 +1029,10 @@ async function processSyncSource(source, sourceId, apiKey) {
     }
   }
 
-  // Update source last sync time
+  // Update source last sync time and folder information
   const sourceDoc = await db.collection("syncSources").doc(sourceId).get();
   if (sourceDoc.exists) {
-    await sourceDoc.ref.update({
+    const updateData = {
       lastSyncAt: admin.firestore.FieldValue.serverTimestamp(),
       lastSyncStats: {
         total: placemarks.length,
@@ -978,7 +1043,35 @@ async function processSyncSource(source, sourceId, apiKey) {
         geocodingFailed: geocodingFailed,
         geocodingSuccessRate: placemarks.length > 0 ? ((geocoded / placemarks.length) * 100).toFixed(1) + '%' : '0%',
       },
-    });
+    };
+    
+    // Update allFolders if recordFolderName is enabled
+    if (source.recordFolderName === true) {
+      console.log(`[FOLDER COLLECTION] Final allFolders before sorting: [${Array.from(allFolders).join(', ')}]`);
+      
+      // Sort folders by the order specified in includeFolders, then alphabetically for any not in includeFolders
+      const sortedFolders = Array.from(allFolders).sort((a, b) => {
+        const aIndex = includeFolders.findIndex(folder => folder.toLowerCase() === a.toLowerCase());
+        const bIndex = includeFolders.findIndex(folder => folder.toLowerCase() === b.toLowerCase());
+        
+        // If both folders are in includeFolders, sort by their order
+        if (aIndex !== -1 && bIndex !== -1) {
+          return aIndex - bIndex;
+        }
+        
+        // If only one folder is in includeFolders, prioritize it
+        if (aIndex !== -1) return -1;
+        if (bIndex !== -1) return 1;
+        
+        // If neither folder is in includeFolders, sort alphabetically
+        return a.localeCompare(b);
+      });
+      
+      console.log(`[FOLDER COLLECTION] Final sorted allFolders: [${sortedFolders.join(', ')}]`);
+      updateData.allFolders = sortedFolders;
+    }
+    
+    await sourceDoc.ref.update(updateData);
   }
 
   return {
@@ -1313,7 +1406,7 @@ exports.createSyncSource = onCall(
           isActive: isActive,
           // Optional folder config
           includeFolders: Array.isArray(includeFolders)
-            ? includeFolders
+            ? includeFolders.map((s) => s.trim()).filter((s) => s.length > 0)
             : (typeof includeFolders === 'string' && includeFolders.trim().length > 0
               ? includeFolders.split(',').map((s) => s.trim()).filter((s) => s.length > 0)
               : undefined),
@@ -1361,7 +1454,7 @@ exports.updateSyncSource = onCall(
         if (isActive !== undefined) updateData.isActive = isActive;
         if (includeFolders !== undefined) {
           if (Array.isArray(includeFolders)) {
-            updateData.includeFolders = includeFolders;
+            updateData.includeFolders = includeFolders.map((s) => s.trim()).filter((s) => s.length > 0);
           } else if (typeof includeFolders === 'string') {
             const list = includeFolders.split(',').map((s) => s.trim()).filter((s) => s.length > 0);
             updateData.includeFolders = list;
