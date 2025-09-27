@@ -17,10 +17,13 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
   @override
   void initState() {
     super.initState();
-    final service = context.read<SyncSourceService>();
-    if (service.sources.isEmpty && !service.isLoading) {
-      service.fetchSyncSources(includeInactive: true);
-    }
+    // Defer the fetch call until after the build phase is complete
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final service = context.read<SyncSourceService>();
+      if (service.sources.isEmpty && !service.isLoading) {
+        service.fetchSyncSources(includeInactive: true);
+      }
+    });
   }
 
   @override
