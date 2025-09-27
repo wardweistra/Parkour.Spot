@@ -1405,16 +1405,20 @@ exports.createSyncSource = onCall(
           instagramHandle: instagramHandle || "",
           isPublic: isPublic,
           isActive: isActive,
-          // Optional folder config
-          includeFolders: Array.isArray(includeFolders)
-            ? includeFolders.map((s) => s.trim()).filter((s) => s.length > 0)
-            : (typeof includeFolders === 'string' && includeFolders.trim().length > 0
-              ? includeFolders.split(',').map((s) => s.trim()).filter((s) => s.length > 0)
-              : undefined),
-          recordFolderName: typeof recordFolderName === 'boolean' ? recordFolderName : undefined,
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         };
+
+        // Add optional folder config only if they have values
+        if (Array.isArray(includeFolders) && includeFolders.length > 0) {
+          sourceData.includeFolders = includeFolders.map((s) => s.trim()).filter((s) => s.length > 0);
+        } else if (typeof includeFolders === 'string' && includeFolders.trim().length > 0) {
+          sourceData.includeFolders = includeFolders.split(',').map((s) => s.trim()).filter((s) => s.length > 0);
+        }
+
+        if (typeof recordFolderName === 'boolean') {
+          sourceData.recordFolderName = recordFolderName;
+        }
 
         const docRef = await db.collection("syncSources").add(sourceData);
 
