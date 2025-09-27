@@ -789,6 +789,7 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
   late final TextEditingController urlCtrl;
   late final TextEditingController descCtrl;
   late final TextEditingController publicUrlCtrl;
+  late final TextEditingController instagramHandleCtrl;
   late final TextEditingController includeFoldersCtrl;
   late bool isPublic;
   late bool isActive;
@@ -801,6 +802,7 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
     urlCtrl = TextEditingController(text: widget.source?.kmzUrl ?? '');
     descCtrl = TextEditingController(text: widget.source?.description ?? '');
     publicUrlCtrl = TextEditingController(text: widget.source?.publicUrl ?? '');
+    instagramHandleCtrl = TextEditingController(text: widget.source?.instagramHandle ?? '');
     includeFoldersCtrl = TextEditingController(
       text: (widget.source?.includeFolders == null || widget.source?.includeFolders?.isEmpty == true)
           ? ''
@@ -817,6 +819,7 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
     urlCtrl.dispose();
     descCtrl.dispose();
     publicUrlCtrl.dispose();
+    instagramHandleCtrl.dispose();
     includeFoldersCtrl.dispose();
     super.dispose();
   }
@@ -850,6 +853,13 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                 controller: publicUrlCtrl,
                 decoration: const InputDecoration(labelText: 'Public URL (optional)'),
                 keyboardType: TextInputType.url,
+              ),
+              TextFormField(
+                controller: instagramHandleCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Instagram Handle (optional)',
+                  helperText: 'Instagram username without @ symbol (e.g., parkour_spots)',
+                ),
               ),
               const SizedBox(height: 8),
               TextFormField(
@@ -904,6 +914,7 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                 kmzUrl: urlCtrl.text.trim(),
                 description: descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
                 publicUrl: publicUrlCtrl.text.trim().isEmpty ? null : publicUrlCtrl.text.trim(),
+                instagramHandle: instagramHandleCtrl.text.trim().isEmpty ? null : instagramHandleCtrl.text.trim(),
                 isPublic: isPublic,
                 isActive: isActive,
                 includeFolders: includeFoldersCtrl.text.trim().isEmpty
@@ -922,6 +933,7 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                 kmzUrl: urlCtrl.text.trim(),
                 description: descCtrl.text.trim(),
                 publicUrl: publicUrlCtrl.text.trim(),
+                instagramHandle: instagramHandleCtrl.text.trim(),
                 isPublic: isPublic,
                 isActive: isActive,
                 includeFolders: includeFoldersCtrl.text.trim().isEmpty

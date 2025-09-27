@@ -22,6 +22,7 @@ dependencies:
   
   # UI Components
   cupertino_icons: ^1.0.8
+  font_awesome_flutter: ^10.7.0
   google_maps_flutter: ^2.12.0
   image_picker: ^1.1.2
   cached_network_image: ^3.4.1

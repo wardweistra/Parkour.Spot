@@ -8,6 +8,7 @@ class SyncSource {
   final String kmzUrl;
   final String? description;
   final String? publicUrl;
+  final String? instagramHandle; // Instagram handle for the source owner
   final bool isPublic;
   final bool isActive;
   final List<String>? includeFolders; // Optional list of folders to include
@@ -24,6 +25,7 @@ class SyncSource {
     required this.kmzUrl,
     this.description,
     this.publicUrl,
+    this.instagramHandle,
     required this.isPublic,
     required this.isActive,
     this.includeFolders,
@@ -42,6 +44,7 @@ class SyncSource {
       kmzUrl: data['kmzUrl'] ?? '',
       description: data['description'],
       publicUrl: data['publicUrl'],
+      instagramHandle: data['instagramHandle'],
       isPublic: data['isPublic'] ?? true,
       isActive: data['isActive'] ?? true,
       includeFolders: data['includeFolders'] != null
@@ -136,6 +139,7 @@ class SyncSourceService extends ChangeNotifier {
     required String kmzUrl,
     String? description,
     String? publicUrl,
+    String? instagramHandle,
     bool isPublic = true,
     bool isActive = true,
     List<String>? includeFolders,
@@ -148,6 +152,7 @@ class SyncSourceService extends ChangeNotifier {
         'kmzUrl': kmzUrl,
         'description': description,
         'publicUrl': publicUrl,
+        'instagramHandle': instagramHandle,
         'isPublic': isPublic,
         'isActive': isActive,
         if (includeFolders != null) 'includeFolders': includeFolders,
@@ -172,6 +177,7 @@ class SyncSourceService extends ChangeNotifier {
     String? kmzUrl,
     String? description,
     String? publicUrl,
+    String? instagramHandle,
     bool? isPublic,
     bool? isActive,
     List<String>? includeFolders,
@@ -184,6 +190,7 @@ class SyncSourceService extends ChangeNotifier {
       if (kmzUrl != null) payload['kmzUrl'] = kmzUrl;
       if (description != null) payload['description'] = description;
       if (publicUrl != null) payload['publicUrl'] = publicUrl;
+      if (instagramHandle != null) payload['instagramHandle'] = instagramHandle;
       if (isPublic != null) payload['isPublic'] = isPublic;
       if (isActive != null) payload['isActive'] = isActive;
       if (includeFolders != null) payload['includeFolders'] = includeFolders;

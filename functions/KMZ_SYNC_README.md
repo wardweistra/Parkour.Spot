@@ -120,6 +120,8 @@ const createResult = await createSource({
   name: 'My Parkour Spots',
   kmzUrl: 'https://example.com/spots.kmz',
   description: 'My personal collection',
+  publicUrl: 'https://example.com/my-spots',
+  instagramHandle: 'parkour_spots',
   isPublic: true,
   isActive: true
 });
@@ -139,6 +141,8 @@ The `syncSources` collection stores source configurations:
   "name": "Google Maps Parkour Spots",
   "kmzUrl": "https://www.google.com/maps/d/u/0/kml?mid=1F8PHbPAtHhj4RaCQzbsw6Ko6FE0",
   "description": "Parkour spots from Google My Maps",
+  "publicUrl": "https://www.google.com/maps/d/u/0/viewer?mid=1F8PHbPAtHhj4RaCQzbsw6Ko6FE0",
+  "instagramHandle": "parkour_spots",
   "isPublic": true,
   "isActive": true,
   "createdAt": "2024-01-01T00:00:00Z",

@@ -1390,7 +1390,7 @@ exports.createSyncSource = onCall(
     async (request) => {
       try {
         await ensureAdmin(request);
-        const {name, kmzUrl, description, publicUrl, isPublic = true,
+        const {name, kmzUrl, description, publicUrl, instagramHandle, isPublic = true,
           isActive = true, includeFolders, recordFolderName} = request.data;
 
         if (!name || !kmzUrl) {
@@ -1402,6 +1402,7 @@ exports.createSyncSource = onCall(
           kmzUrl: kmzUrl,
           description: description || "",
           publicUrl: publicUrl || "",
+          instagramHandle: instagramHandle || "",
           isPublic: isPublic,
           isActive: isActive,
           // Optional folder config
@@ -1435,7 +1436,7 @@ exports.updateSyncSource = onCall(
     async (request) => {
       try {
         await ensureAdmin(request);
-        const {sourceId, name, kmzUrl, description, publicUrl, isPublic,
+        const {sourceId, name, kmzUrl, description, publicUrl, instagramHandle, isPublic,
           isActive, includeFolders, recordFolderName} = request.data;
 
         if (!sourceId) {
@@ -1450,6 +1451,7 @@ exports.updateSyncSource = onCall(
         if (kmzUrl !== undefined) updateData.kmzUrl = kmzUrl;
         if (description !== undefined) updateData.description = description;
         if (publicUrl !== undefined) updateData.publicUrl = publicUrl;
+        if (instagramHandle !== undefined) updateData.instagramHandle = instagramHandle;
         if (isPublic !== undefined) updateData.isPublic = isPublic;
         if (isActive !== undefined) updateData.isActive = isActive;
         if (includeFolders !== undefined) {
