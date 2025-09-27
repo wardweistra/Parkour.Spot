@@ -311,13 +311,10 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   }
 
   Future<void> _selectPlaceSuggestion(Map<String, dynamic> suggestion) async {
-    print('_selectPlaceSuggestion called with: ${suggestion['description']}'); // Debug print
-    
     try {
       final geocoding = Provider.of<GeocodingService>(context, listen: false);
       final placeId = suggestion['placeId'] as String?;
       if (placeId == null) {
-        print('No placeId found in suggestion');
         return;
       }
       final details = await geocoding.placeDetails(
@@ -345,10 +342,9 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
       });
       // Trigger a refresh of visible spots for new area
       _updateVisibleSpots();
-      print('Selection completed successfully');
     } catch (e) {
       // Log errors for debugging
-      print('Error selecting place: $e');
+      debugPrint('Error selecting place: $e');
       setState(() {
         _autocompleteSuggestions = [];
       });
@@ -407,11 +403,8 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   // Load spots for the current map view
   Future<void> _loadSpotsForCurrentView() async {
     if (_mapController == null) {
-      debugPrint('🚫 _loadSpotsForCurrentView: Map controller is null, skipping');
       return;
     }
-    
-    debugPrint('🔄 _loadSpotsForCurrentView: Starting to load spots for current view');
     
     setState(() {
       _isLoadingSpotsForView = true;
@@ -419,9 +412,6 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
 
     try {
       final bounds = await _mapController!.getVisibleRegion();
-      debugPrint('🗺️ Map bounds retrieved:');
-      debugPrint('   Southwest: (${bounds.southwest.latitude}, ${bounds.southwest.longitude})');
-      debugPrint('   Northeast: (${bounds.northeast.latitude}, ${bounds.northeast.longitude})');
       
       final spotService = Provider.of<SpotService>(context, listen: false);
       
@@ -433,18 +423,13 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
         bounds.northeast.longitude,
       );
       
-      debugPrint('📋 _loadSpotsForCurrentView: Received ${spots.length} spots from SpotService');
-      
       // Store the loaded spots
       _loadedSpots = spots;
       
       // Apply filters to the loaded spots
       _updateVisibleSpots();
-      
-      debugPrint('✅ _loadSpotsForCurrentView: Completed successfully');
     } catch (e) {
-      debugPrint('❌ Error loading spots for current view: $e');
-      debugPrint('   Stack trace: ${StackTrace.current}');
+      debugPrint('Error loading spots for current view: $e');
     } finally {
       setState(() {
         _isLoadingSpotsForView = false;
@@ -453,23 +438,16 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   }
 
   void _updateVisibleSpots() {
-    debugPrint('🔍 _updateVisibleSpots: Starting to filter spots');
-    
     List<Spot> filteredSpots = List.from(_loadedSpots);
-    
-    debugPrint('📊 _updateVisibleSpots: Starting with ${filteredSpots.length} spots from loaded spots');
     
     // Note: Search query is now only used for location autocomplete, not spot name filtering
 
     // Apply picture filter (default: exclude spots without pictures)
     if (!_includeSpotsWithoutPictures) {
-      final beforeCount = filteredSpots.length;
       filteredSpots = filteredSpots.where((spot) => spot.imageUrls != null && spot.imageUrls!.isNotEmpty).toList();
-      debugPrint('🖼️ Picture filter: ${beforeCount} -> ${filteredSpots.length} spots (excluded ${beforeCount - filteredSpots.length} spots without pictures)');
     }
 
     // Apply source filters
-    final beforeSourceCount = filteredSpots.length;
     filteredSpots = filteredSpots.where((spot) {
       final bool isExternal = (spot.spotSource != null && spot.spotSource!.isNotEmpty);
 
@@ -487,21 +465,12 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
         return _includeParkourNative;
       }
     }).toList();
-    
-    debugPrint('🏷️ Source filter: ${beforeSourceCount} -> ${filteredSpots.length} spots (excluded ${beforeSourceCount - filteredSpots.length} spots by source filter)');
-    debugPrint('🎯 Final filtered spots: ${filteredSpots.length}');
-    
-    if (filteredSpots.isNotEmpty) {
-      debugPrint('   First filtered spot: ${filteredSpots.first.name} at (${filteredSpots.first.latitude}, ${filteredSpots.first.longitude})');
-    }
 
     // Update visible spots and markers
     setState(() {
       _visibleSpots = filteredSpots;
       _markers = _buildMarkers(filteredSpots);
     });
-    
-    debugPrint('📍 _updateVisibleSpots: Created ${_markers.length} markers');
   }
 
   
@@ -748,8 +717,6 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   Timer? _cameraMoveDebounce;
   
   void _onMapCameraMove(CameraPosition position) {
-    debugPrint('📷 Camera moved to: (${position.target.latitude}, ${position.target.longitude}) zoom: ${position.zoom}');
-    
     // Persist camera position
     final searchState = Provider.of<SearchStateService>(context, listen: false);
     searchState.saveMapCamera(
@@ -760,9 +727,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     
     // Debounce loading spots to avoid too many requests while user is panning
     _cameraMoveDebounce?.cancel();
-    debugPrint('⏱️ Starting 1-second debounce timer for spot loading');
     _cameraMoveDebounce = Timer(const Duration(milliseconds: 1000), () {
-      debugPrint('⏱️ Debounce timer completed, loading spots for new view');
       _loadSpotsForCurrentView();
     });
   }
@@ -960,20 +925,16 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                 liteModeEnabled: kIsWeb,
                 compassEnabled: false,
                 onMapCreated: (GoogleMapController controller) {
-                  debugPrint('🗺️ Map created successfully');
                   _mapController = controller;
                   
                   // Load spots for the current view after a short delay to ensure map is ready
-                  debugPrint('⏰ Scheduling spot loading in 500ms...');
                   Future.delayed(const Duration(milliseconds: 500), () {
-                    debugPrint('⏰ Timer triggered, loading spots for current view');
                     _loadSpotsForCurrentView();
                   });
                   
                   // Restore persisted camera after map is ready (in case state loaded late)
                   final state = Provider.of<SearchStateService>(context, listen: false);
                   if (state.centerLat != null && state.centerLng != null && state.zoom != null) {
-                    debugPrint('📍 Restoring persisted camera position: (${state.centerLat}, ${state.centerLng}) zoom: ${state.zoom}');
                     controller.moveCamera(
                       CameraUpdate.newCameraPosition(
                         CameraPosition(
@@ -983,7 +944,6 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                       ),
                     );
                   } else {
-                    debugPrint('📍 No persisted camera position, trying to get current location');
                     // If no persisted camera, try to center on user's current location
                     _getCurrentLocation();
                   }
@@ -1601,7 +1561,6 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                   bottom: MediaQuery.of(context).size.height * 0.09 + 144, // Position above map/satellite button
                   child: FloatingActionButton(
                     onPressed: _isLoadingSpotsForView ? null : () {
-                      debugPrint('🔄 Refresh button pressed');
                       _loadSpotsForCurrentView();
                     },
                     mini: true,
