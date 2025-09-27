@@ -89,6 +89,11 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
             onPressed: () => _showMissingImagesDialog(context),
           ),
           IconButton(
+            icon: const Icon(Icons.link_off),
+            tooltip: 'Find Orphaned Spots',
+            onPressed: () => _showOrphanedSpotsDialog(context),
+          ),
+          IconButton(
             icon: const Icon(Icons.add),
             tooltip: 'Add Source',
             onPressed: () => _openEditDialog(context),
@@ -450,6 +455,317 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to check missing images: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _showOrphanedSpotsDialog(BuildContext context) async {
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (c) => const AlertDialog(
+        content: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 16),
+            Text('Checking for orphaned spots...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      final syncService = context.read<SyncSourceService>();
+      final scaffoldMessenger = ScaffoldMessenger.of(context);
+      final navigator = Navigator.of(context);
+      final result = await syncService.findOrphanedSpots();
+      
+      if (mounted) {
+        navigator.pop(); // Close loading dialog
+        
+        if (result != null && result['success'] == true) {
+          final orphanedSpots = result['orphanedSpots'] as List<dynamic>? ?? [];
+          final totalSpotsWithSource = result['totalSpotsWithSource'] ?? 0;
+          final orphanedCount = result['orphanedSpotsCount'] ?? 0;
+          
+          if (orphanedCount == 0) {
+            scaffoldMessenger.showSnackBar(
+              const SnackBar(
+                content: Text('No orphaned spots found! All spots have valid sources.'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          } else {
+            // Show detailed dialog with orphaned spots
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Orphaned Spots Found'),
+                content: SizedBox(
+                  width: double.maxFinite,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Found $orphanedCount orphaned spots out of $totalSpotsWithSource spots with spotSource field.'),
+                      const SizedBox(height: 16),
+                      const Text('Orphaned spots:', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      Flexible(
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: orphanedSpots.length,
+                          itemBuilder: (context, index) {
+                            final spot = orphanedSpots[index];
+                            return Card(
+                              margin: const EdgeInsets.symmetric(vertical: 4),
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                spot['spotName'] ?? 'Unnamed Spot',
+                                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                              ),
+                                              Text('ID: ${spot['spotId']}'),
+                                              Text('Source: ${spot['spotSource']}'),
+                                              if (spot['address'] != null) Text('Address: ${spot['address']}'),
+                                              if (spot['city'] != null) Text('City: ${spot['city']}'),
+                                            ],
+                                          ),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.delete, color: Colors.red),
+                                          tooltip: 'Delete Spot',
+                                          onPressed: () => _confirmDeleteSpot(context, spot),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  if (orphanedCount > 0)
+                    TextButton(
+                      onPressed: () => _confirmDeleteAllSpots(context, orphanedSpots),
+                      style: TextButton.styleFrom(foregroundColor: Colors.red),
+                      child: const Text('Delete All'),
+                    ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Close'),
+                  ),
+                ],
+              ),
+            );
+          }
+        } else {
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: Text('Failed to check orphaned spots: ${result?['error'] ?? 'Unknown error'}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context).pop(); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to check orphaned spots: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _confirmDeleteSpot(BuildContext context, Map<String, dynamic> spot) async {
+    final spotName = spot['spotName'] ?? 'Unnamed Spot';
+    final spotId = spot['spotId'];
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Spot'),
+        content: Text('Are you sure you want to delete "$spotName"?\n\nThis action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      await _deleteSpot(context, spotId);
+    }
+  }
+
+  Future<void> _deleteSpot(BuildContext context, String spotId) async {
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (c) => const AlertDialog(
+          content: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Deleting spot...'),
+            ],
+          ),
+        ),
+      );
+
+      // Delete the spot using cloud function
+      final syncService = context.read<SyncSourceService>();
+      final result = await syncService.deleteSpot(spotId);
+
+      if (mounted) {
+        Navigator.of(context).pop(); // Close loading dialog
+        
+        if (result != null && result['success'] == true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message'] ?? 'Spot deleted successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+
+          // Refresh the orphaned spots dialog
+          Navigator.of(context).pop(); // Close the orphaned spots dialog
+          _showOrphanedSpotsDialog(context); // Reopen to show updated list
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to delete spot: ${result?['error'] ?? 'Unknown error'}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context).pop(); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete spot: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _confirmDeleteAllSpots(BuildContext context, List<dynamic> orphanedSpots) async {
+    final count = orphanedSpots.length;
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete All Orphaned Spots'),
+        content: Text('Are you sure you want to delete all $count orphaned spots?\n\nThis action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete All'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      await _deleteAllSpots(context, orphanedSpots);
+    }
+  }
+
+  Future<void> _deleteAllSpots(BuildContext context, List<dynamic> orphanedSpots) async {
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (c) => const AlertDialog(
+          content: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Deleting all orphaned spots...'),
+            ],
+          ),
+        ),
+      );
+
+      // Extract spot IDs
+      final spotIds = orphanedSpots.map((spot) => spot['spotId'] as String).toList();
+
+      // Delete all spots using cloud function
+      final syncService = context.read<SyncSourceService>();
+      final result = await syncService.deleteSpots(spotIds);
+
+      if (mounted) {
+        Navigator.of(context).pop(); // Close loading dialog
+        
+        if (result != null && result['success'] == true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message'] ?? 'Successfully deleted ${orphanedSpots.length} orphaned spots'),
+              backgroundColor: Colors.green,
+            ),
+          );
+
+          // Close the orphaned spots dialog
+          Navigator.of(context).pop();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to delete spots: ${result?['error'] ?? 'Unknown error'}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context).pop(); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete spots: $e'),
             backgroundColor: Colors.red,
           ),
         );

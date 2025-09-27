@@ -2280,6 +2280,161 @@ exports.testSpotsCount = onCall(
     }
 );
 
+// Function to find and log spots linked to non-existent spot sources (admin only)
+exports.findOrphanedSpots = onCall(
+    {region: "europe-west1", memory: "512MiB", timeoutSeconds: 300},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        
+        console.log("Starting orphaned spots check...");
+        
+        // Get all spots that have a spotSource field
+        const spotsSnapshot = await db.collection("spots")
+            .where("spotSource", "!=", null)
+            .get();
+        
+        console.log(`Found ${spotsSnapshot.size} spots with spotSource field`);
+        
+        // Get all sync source IDs
+        const syncSourcesSnapshot = await db.collection("syncSources").get();
+        const validSourceIds = new Set();
+        
+        syncSourcesSnapshot.forEach((doc) => {
+          validSourceIds.add(doc.id);
+        });
+        
+        console.log(`Found ${validSourceIds.size} valid sync sources`);
+        
+        // Find orphaned spots
+        const orphanedSpots = [];
+        let validSpotsCount = 0;
+        
+        spotsSnapshot.forEach((doc) => {
+          const spotData = doc.data();
+          const spotSource = spotData.spotSource;
+          
+          if (spotSource && !validSourceIds.has(spotSource)) {
+            orphanedSpots.push({
+              spotId: doc.id,
+              spotName: spotData.name || 'Unnamed Spot',
+              spotSource: spotSource,
+              latitude: spotData.latitude,
+              longitude: spotData.longitude,
+              address: spotData.address,
+              city: spotData.city,
+              countryCode: spotData.countryCode,
+              createdAt: spotData.createdAt,
+              updatedAt: spotData.updatedAt,
+            });
+            
+            console.log(`ORPHANED SPOT: ${doc.id} - "${spotData.name || 'Unnamed Spot'}" references non-existent source: ${spotSource}`);
+          } else {
+            validSpotsCount++;
+          }
+        });
+        
+        const result = {
+          success: true,
+          totalSpotsWithSource: spotsSnapshot.size,
+          validSpotsCount: validSpotsCount,
+          orphanedSpotsCount: orphanedSpots.length,
+          orphanedSpots: orphanedSpots,
+          validSourceIds: Array.from(validSourceIds),
+          message: `Found ${orphanedSpots.length} orphaned spots out of ${spotsSnapshot.size} spots with spotSource field`,
+        };
+        
+        console.log("Orphaned spots check completed:", result);
+        return result;
+      } catch (error) {
+        console.error("Error during orphaned spots check:", error);
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+    }
+);
+
+// Function to delete a spot (admin only)
+exports.deleteSpot = onCall(
+    {region: "europe-west1"},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const {spotId} = request.data;
+
+        if (!spotId) {
+          throw new Error("spotId is required");
+        }
+
+        // Get spot data first to log what we're deleting
+        const spotDoc = await db.collection("spots").doc(spotId).get();
+        if (!spotDoc.exists) {
+          throw new Error(`Spot with ID ${spotId} not found`);
+        }
+
+        const spotData = spotDoc.data();
+        const spotName = spotData.name || 'Unnamed Spot';
+
+        // Delete the spot
+        await db.collection("spots").doc(spotId).delete();
+
+        console.log(`Admin deleted spot: ${spotName} (${spotId})`);
+
+        return {
+          success: true,
+          message: `Spot "${spotName}" deleted successfully`,
+          spotId: spotId,
+        };
+      } catch (error) {
+        console.error("Error deleting spot:", error);
+        throw new Error(`Failed to delete spot: ${error.message}`);
+      }
+    }
+);
+
+// Function to delete multiple spots (admin only)
+exports.deleteSpots = onCall(
+    {region: "europe-west1", memory: "512MiB", timeoutSeconds: 300},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const {spotIds} = request.data;
+
+        if (!Array.isArray(spotIds) || spotIds.length === 0) {
+          throw new Error("spotIds array is required");
+        }
+
+        console.log(`Admin deleting ${spotIds.length} spots`);
+
+        // Delete spots in batch
+        const batch = db.batch();
+        const deletedSpots = [];
+
+        for (const spotId of spotIds) {
+          const spotRef = db.collection("spots").doc(spotId);
+          batch.delete(spotRef);
+          deletedSpots.push(spotId);
+        }
+
+        await batch.commit();
+
+        console.log(`Admin successfully deleted ${deletedSpots.length} spots`);
+
+        return {
+          success: true,
+          message: `Successfully deleted ${deletedSpots.length} spots`,
+          deletedCount: deletedSpots.length,
+          deletedSpotIds: deletedSpots,
+        };
+      } catch (error) {
+        console.error("Error deleting spots:", error);
+        throw new Error(`Failed to delete spots: ${error.message}`);
+      }
+    }
+);
+
 // Admin tool: Geocode all spots missing address fields (address, city, or countryCode)
 exports.geocodeMissingSpotAddresses = onCall(
     {region: "europe-west1", memory: "1GiB", timeoutSeconds: 900, secrets: ["GOOGLE_MAPS_API_KEY"]},

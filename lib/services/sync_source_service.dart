@@ -307,6 +307,45 @@ class SyncSourceService extends ChangeNotifier {
     }
   }
 
+  Future<Map<String, dynamic>?> findOrphanedSpots() async {
+    try {
+      final callable = _functions.httpsCallable('findOrphanedSpots');
+      final result = await callable.call({});
+      return result.data;
+    } catch (e) {
+      _error = 'Failed to find orphaned spots: $e';
+      debugPrint(_error);
+      notifyListeners();
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> deleteSpot(String spotId) async {
+    try {
+      final callable = _functions.httpsCallable('deleteSpot');
+      final result = await callable.call({'spotId': spotId});
+      return result.data;
+    } catch (e) {
+      _error = 'Failed to delete spot: $e';
+      debugPrint(_error);
+      notifyListeners();
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> deleteSpots(List<String> spotIds) async {
+    try {
+      final callable = _functions.httpsCallable('deleteSpots');
+      final result = await callable.call({'spotIds': spotIds});
+      return result.data;
+    } catch (e) {
+      _error = 'Failed to delete spots: $e';
+      debugPrint(_error);
+      notifyListeners();
+      return null;
+    }
+  }
+
   Future<Map<String, dynamic>?> uploadReplacementImage({
     required String filename,
     required String imageData,
