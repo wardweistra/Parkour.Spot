@@ -127,11 +127,20 @@ class SourceDetailsDialog extends StatelessWidget {
             if (source.createdAt != null) ...[
               const SizedBox(height: 16),
               const Text(
-                'Created',
+                'Added',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
               Text(_formatDateTime(source.createdAt!)),
+            ],
+            if (source.lastSyncAt != null) ...[
+              const SizedBox(height: 16),
+              const Text(
+                'Last Imported',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              Text(_formatDateTime(source.lastSyncAt!)),
             ],
           ],
         ),
