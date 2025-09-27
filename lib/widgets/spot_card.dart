@@ -249,10 +249,15 @@ class _SpotCardState extends State<SpotCard> {
                         
                         // Description - Removed fixed height constraints
                         Text(
-                          widget.spot.description,
+                          widget.spot.description.trim().isEmpty 
+                              ? 'No description provided'
+                              : widget.spot.description,
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                             height: 1.4, // Better line height for readability
+                            fontStyle: widget.spot.description.trim().isEmpty 
+                                ? FontStyle.italic 
+                                : FontStyle.normal,
                           ),
                           maxLines: 3, // Keep at 3 lines
                           overflow: TextOverflow.ellipsis,

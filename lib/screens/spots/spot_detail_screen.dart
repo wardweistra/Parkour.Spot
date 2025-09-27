@@ -485,8 +485,17 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      widget.spot.description,
-                      style: Theme.of(context).textTheme.bodyLarge,
+                      widget.spot.description.trim().isEmpty 
+                          ? 'No description provided'
+                          : widget.spot.description,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        fontStyle: widget.spot.description.trim().isEmpty 
+                            ? FontStyle.italic 
+                            : FontStyle.normal,
+                        color: widget.spot.description.trim().isEmpty 
+                            ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)
+                            : null,
+                      ),
                     ),
                     
                     const SizedBox(height: 24),

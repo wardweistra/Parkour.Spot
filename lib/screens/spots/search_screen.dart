@@ -1415,9 +1415,14 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  _selectedSpot!.description,
+                                  _selectedSpot!.description.trim().isEmpty 
+                                      ? 'No description provided'
+                                      : _selectedSpot!.description,
                                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                    fontStyle: _selectedSpot!.description.trim().isEmpty 
+                                        ? FontStyle.italic 
+                                        : FontStyle.normal,
                                   ),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
