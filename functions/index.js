@@ -26,6 +26,158 @@ admin.initializeApp();
 const db = admin.firestore();
 const bucket = admin.storage().bucket();
 
+// ========== Ranked Spots within Bounds ==========
+/**
+ * Returns the top N spots within given map bounds ranked by Wilson score, along with total count.
+ * Ordering rules:
+ *  - Spots with ratingCount > 0 and wilsonLowerBound > average go first (desc by wilsonLowerBound)
+ *  - Spots without ratings next (treated as average); secondary sort by createdAt desc then name
+ *  - Spots with ratingCount > 0 and wilsonLowerBound <= average last (desc by wilsonLowerBound)
+ */
+exports.getTopSpotsInBounds = onCall(
+  { region: 'europe-west1', timeoutSeconds: 60, memory: '512MiB' },
+  async (request) => {
+    try {
+      const {
+        minLat,
+        maxLat,
+        minLng,
+        maxLng,
+        limit = 100,
+      } = request.data || {};
+
+      if (
+        typeof minLat !== 'number' || typeof maxLat !== 'number' ||
+        typeof minLng !== 'number' || typeof maxLng !== 'number'
+      ) {
+        throw new Error('minLat, maxLat, minLng, maxLng are required numbers');
+      }
+
+      // Handle dateline crossing
+      const crossesDateline = minLng > maxLng;
+
+      // Fields to return to reduce payload size
+      const projection = [
+        'name', 'description', 'latitude', 'longitude', 'address', 'city',
+        'countryCode', 'imageUrls', 'tags', 'isPublic', 'spotSource',
+        'averageRating', 'ratingCount', 'wilsonLowerBound', 'createdAt', 'updatedAt'
+      ];
+
+      async function runQuery(lngMin, lngMax) {
+        // Note: Firestore requires we orderBy fields used in range filters
+        // Using the same structure as client code to respect composite index
+        let q = db
+          .collection('spots')
+          .where('isPublic', '==', true)
+          .orderBy('longitude')
+          .where('latitude', '>=', minLat)
+          .where('latitude', '<=', maxLat)
+          .where('longitude', '>=', lngMin)
+          .where('longitude', '<=', lngMax)
+          .orderBy('latitude');
+
+        // Apply projection to limit fields
+        q = q.select(...projection);
+
+        const snap = await q.get();
+        return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      }
+
+      let spots = [];
+      if (crossesDateline) {
+        const [left, right] = await Promise.all([
+          runQuery(minLng, 180),
+          runQuery(-180, maxLng),
+        ]);
+        spots = [...left, ...right];
+      } else {
+        spots = await runQuery(minLng, maxLng);
+      }
+
+      const totalCount = spots.length;
+
+      // Compute average Wilson among rated spots
+      const rated = spots.filter((s) => (s.ratingCount || 0) > 0);
+      const averageWilson = rated.length > 0
+        ? rated.reduce((acc, s) => acc + (typeof s.wilsonLowerBound === 'number' ? s.wilsonLowerBound : 0), 0) / rated.length
+        : 0;
+
+      // Partition
+      const above = [];
+      const unrated = [];
+      const below = [];
+      for (const s of spots) {
+        const rc = typeof s.ratingCount === 'number' ? s.ratingCount : 0;
+        const wl = typeof s.wilsonLowerBound === 'number' ? s.wilsonLowerBound : 0;
+        if (rc === 0) {
+          unrated.push(s);
+        } else if (wl > averageWilson) {
+          above.push(s);
+        } else {
+          below.push(s);
+        }
+      }
+
+      // Sort groups
+      above.sort((a, b) => {
+        const wlA = typeof a.wilsonLowerBound === 'number' ? a.wilsonLowerBound : 0;
+        const wlB = typeof b.wilsonLowerBound === 'number' ? b.wilsonLowerBound : 0;
+        if (wlB !== wlA) return wlB - wlA;
+        const rcA = typeof a.ratingCount === 'number' ? a.ratingCount : 0;
+        const rcB = typeof b.ratingCount === 'number' ? b.ratingCount : 0;
+        if (rcB !== rcA) return rcB - rcA;
+        const arA = typeof a.averageRating === 'number' ? a.averageRating : 0;
+        const arB = typeof b.averageRating === 'number' ? b.averageRating : 0;
+        return arB - arA;
+      });
+
+      unrated.sort((a, b) => {
+        const ca = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate() : a.createdAt;
+        const cb = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate() : b.createdAt;
+        const ta = ca instanceof Date ? ca.getTime() : 0;
+        const tb = cb instanceof Date ? cb.getTime() : 0;
+        if (tb !== ta) return tb - ta;
+        const na = (a.name || '').toString();
+        const nb = (b.name || '').toString();
+        return na.localeCompare(nb);
+      });
+
+      below.sort((a, b) => {
+        const wlA = typeof a.wilsonLowerBound === 'number' ? a.wilsonLowerBound : 0;
+        const wlB = typeof b.wilsonLowerBound === 'number' ? b.wilsonLowerBound : 0;
+        if (wlB !== wlA) return wlB - wlA;
+        const rcA = typeof a.ratingCount === 'number' ? a.ratingCount : 0;
+        const rcB = typeof b.ratingCount === 'number' ? b.ratingCount : 0;
+        if (rcB !== rcA) return rcB - rcA;
+        const arA = typeof a.averageRating === 'number' ? a.averageRating : 0;
+        const arB = typeof b.averageRating === 'number' ? b.averageRating : 0;
+        return arB - arA;
+      });
+
+      const combined = [...above, ...unrated, ...below];
+      const top = combined.slice(0, Math.max(0, Math.min(200, Number(limit) || 100)));
+
+      // Normalize Firestore Timestamp fields to ISO strings for client
+      const normalize = (s) => {
+        const createdAt = s.createdAt && s.createdAt.toDate ? s.createdAt.toDate().toISOString() : (s.createdAt || null);
+        const updatedAt = s.updatedAt && s.updatedAt.toDate ? s.updatedAt.toDate().toISOString() : (s.updatedAt || null);
+        return { ...s, createdAt, updatedAt };
+      };
+
+      return {
+        success: true,
+        totalCount,
+        averageWilson,
+        shownCount: top.length,
+        spots: top.map(normalize),
+      };
+    } catch (error) {
+      console.error('getTopSpotsInBounds error', error);
+      return { success: false, error: error.message };
+    }
+  }
+);
+
 // ========== Ratings Aggregation Helpers ==========
 /**
  * Recomputes rating aggregates for a spot and updates the spot document.
