@@ -450,7 +450,7 @@ class SpotService extends ChangeNotifier {
             .orderBy('latitude')
             .get();
         
-        debugPrint('📊 Query 1 (${minLng} to 180): ${query1.docs.length} documents');
+        debugPrint('📊 Query 1 ($minLng to 180): ${query1.docs.length} documents');
         
         // Query 2: From -180 to maxLng
         final query2 = await _firestore
@@ -464,7 +464,7 @@ class SpotService extends ChangeNotifier {
             .orderBy('latitude')
             .get();
         
-        debugPrint('📊 Query 2 (-180 to ${maxLng}): ${query2.docs.length} documents');
+        debugPrint('📊 Query 2 (-180 to $maxLng): ${query2.docs.length} documents');
         
         // Combine results
         allSpots = [

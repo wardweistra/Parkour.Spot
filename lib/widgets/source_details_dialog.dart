@@ -115,7 +115,7 @@ class SourceDetailsDialog extends StatelessWidget {
                     FontAwesomeIcons.instagram,
                     size: 18,
                   ),
-                  label: Text('@${source.instagramHandle!}'),
+                  label: Text(source.instagramHandle!),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFE4405F), // Instagram brand color
                     foregroundColor: Colors.white,
