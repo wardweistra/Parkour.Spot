@@ -319,26 +319,15 @@ class _SpotCardState extends State<SpotCard> {
                       width: 1,
                     ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.source,
-                        size: 12,
-                        color: Colors.white,
-                      ),
-                      const SizedBox(width: 3),
-                      Text(
-                        Provider.of<SyncSourceService>(context, listen: false)
-                                .getSourceNameSync(widget.spot.spotSource!) ??
-                            widget.spot.spotSource!,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    Provider.of<SyncSourceService>(context, listen: false)
+                            .getSourceNameSync(widget.spot.spotSource!) ??
+                        widget.spot.spotSource!,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ),
