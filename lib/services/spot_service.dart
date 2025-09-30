@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'dart:io';
 import 'dart:math';
 import '../models/spot.dart';
@@ -519,6 +520,48 @@ class SpotService extends ChangeNotifier {
       debugPrint('❌ Error getting spots in bounds: $e');
       debugPrint('   Stack trace: ${StackTrace.current}');
       return [];
+    }
+  }
+
+  // Get top ranked spots within bounds using backend Wilson logic
+  Future<Map<String, dynamic>> getTopRankedSpotsInBounds(
+    double minLat,
+    double maxLat,
+    double minLng,
+    double maxLng, {
+    int limit = 100,
+  }) async {
+    try {
+      final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
+      final callable = functions.httpsCallable('getTopSpotsInBounds');
+      final result = await callable.call({
+        'minLat': minLat,
+        'maxLat': maxLat,
+        'minLng': minLng,
+        'maxLng': maxLng,
+        'limit': limit,
+      });
+
+      final data = result.data as Map<String, dynamic>?;
+      if (data == null || data['success'] != true) {
+        throw Exception(data != null && data['error'] is String ? data['error'] : 'Unknown error');
+      }
+
+      final List<dynamic> items = (data['spots'] as List<dynamic>? ?? <dynamic>[]);
+      final spots = items
+          .whereType<Map<String, dynamic>>()
+          .map((m) => Spot.fromMap(m))
+          .toList();
+
+      return {
+        'spots': spots,
+        'totalCount': (data['totalCount'] as num?)?.toInt() ?? spots.length,
+        'shownCount': (data['shownCount'] as num?)?.toInt() ?? spots.length,
+        'averageWilson': (data['averageWilson'] as num?)?.toDouble() ?? 0.0,
+      };
+    } catch (e) {
+      debugPrint('Error getting top ranked spots in bounds: $e');
+      return {'spots': <Spot>[], 'totalCount': 0, 'shownCount': 0, 'averageWilson': 0.0};
     }
   }
 

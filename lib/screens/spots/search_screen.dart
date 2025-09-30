@@ -79,6 +79,8 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   Set<Marker> _markers = {};
   Spot? _selectedSpot;
   bool _isLoadingSpotsForView = false; // Loading state for spots within current view
+  int? _totalSpotsInView; // Total unfiltered spots in current bounds
+  int? _bestShownCount; // Number of ranked spots returned (up to 100)
   late AnimationController _bottomSheetAnimationController;
   late Animation<double> _bottomSheetAnimation;
   late PageController _imagePageController;
@@ -414,16 +416,18 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
       
       final spotService = Provider.of<SpotService>(context, listen: false);
       
-      // Load spots within the current map bounds
-      final spots = await spotService.loadSpotsForMapView(
+      // Load ranked top spots within the current map bounds (and total count)
+      final ranked = await spotService.getTopRankedSpotsInBounds(
         bounds.southwest.latitude,
         bounds.northeast.latitude,
         bounds.southwest.longitude,
         bounds.northeast.longitude,
+        limit: 100,
       );
-      
-      // Store the loaded spots
-      _loadedSpots = spots;
+
+      _loadedSpots = (ranked['spots'] as List<Spot>?) ?? <Spot>[];
+      _totalSpotsInView = ranked['totalCount'] as int?;
+      _bestShownCount = ranked['shownCount'] as int?;
       
       // Apply filters to the loaded spots
       _updateVisibleSpots();
@@ -1489,8 +1493,10 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                   Text(
-                                     '${_visibleSpots.length} ${_visibleSpots.length == 1 ? 'spot' : 'spots'} found',
+                                  Text(
+                                     _totalSpotsInView != null && _bestShownCount != null
+                                         ? '${_totalSpotsInView} spots (${_bestShownCount} best shown)'
+                                         : '${_visibleSpots.length} ${_visibleSpots.length == 1 ? 'spot' : 'spots'} found',
                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                        fontWeight: FontWeight.bold,
                                      ),

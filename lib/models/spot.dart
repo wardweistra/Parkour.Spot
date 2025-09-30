@@ -73,6 +73,46 @@ class Spot {
     );
   }
 
+  factory Spot.fromMap(Map<String, dynamic> data) {
+    DateTime? parseDate(dynamic v) {
+      if (v == null) return null;
+      if (v is Timestamp) return v.toDate();
+      if (v is String) {
+        try {
+          return DateTime.tryParse(v);
+        } catch (_) {
+          return null;
+        }
+      }
+      return null;
+    }
+
+    return Spot(
+      id: data['id'] as String?,
+      name: (data['name'] ?? '') as String,
+      description: (data['description'] ?? '') as String,
+      latitude: (data['latitude'] as num?)?.toDouble() ?? 0.0,
+      longitude: (data['longitude'] as num?)?.toDouble() ?? 0.0,
+      address: data['address'] as String?,
+      city: data['city'] as String?,
+      countryCode: data['countryCode'] as String?,
+      imageUrls: data['imageUrls'] is List
+          ? List<String>.from(data['imageUrls'])
+          : (data['imageUrl'] != null ? [data['imageUrl'] as String] : null),
+      folderName: data['folderName'] as String?,
+      createdBy: data['createdBy'] as String?,
+      createdByName: data['createdByName'] as String?,
+      createdAt: parseDate(data['createdAt']),
+      updatedAt: parseDate(data['updatedAt']),
+      tags: data['tags'] is List ? List<String>.from(data['tags']) : null,
+      isPublic: data['isPublic'] as bool? ?? true,
+      spotSource: data['spotSource'] as String?,
+      averageRating: (data['averageRating'] as num?)?.toDouble(),
+      ratingCount: (data['ratingCount'] is int) ? data['ratingCount'] as int : (data['ratingCount'] as num?)?.toInt(),
+      wilsonLowerBound: (data['wilsonLowerBound'] as num?)?.toDouble(),
+    );
+  }
+
   Map<String, dynamic> toFirestore() {
     return {
       'name': name,

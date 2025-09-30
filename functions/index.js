@@ -26,6 +26,187 @@ admin.initializeApp();
 const db = admin.firestore();
 const bucket = admin.storage().bucket();
 
+// ========== Ranked Spots within Bounds ==========
+/**
+ * Returns the top N spots within given map bounds ranked by Wilson score, along with total count.
+ * Ordering rules:
+ *  - Spots with ratingCount > 0 and wilsonLowerBound > average go first (desc by wilsonLowerBound)
+ *  - Spots without ratings next (treated as average); secondary sort by createdAt desc then name
+ *  - Spots with ratingCount > 0 and wilsonLowerBound <= average last (desc by wilsonLowerBound)
+ */
+exports.getTopSpotsInBounds = onCall(
+  { region: 'europe-west1', timeoutSeconds: 60, memory: '512MiB' },
+  async (request) => {
+    try {
+      const {
+        minLat,
+        maxLat,
+        minLng,
+        maxLng,
+        limit = 100,
+      } = request.data || {};
+
+      if (
+        typeof minLat !== 'number' || typeof maxLat !== 'number' ||
+        typeof minLng !== 'number' || typeof maxLng !== 'number'
+      ) {
+        throw new Error('minLat, maxLat, minLng, maxLng are required numbers');
+      }
+
+      // Handle dateline crossing
+      const crossesDateline = minLng > maxLng;
+
+      // Fetch precomputed average wilson from settings
+      let averageWilson = 0;
+      try {
+        const settingsSnap = await db
+          .collection('settings')
+          .where('name', '==', 'wilsonLowerBoundAvg')
+          .limit(1)
+          .get();
+        if (!settingsSnap.empty) {
+          const v = settingsSnap.docs[0].data().value;
+          if (typeof v === 'number') averageWilson = v;
+          else if (v && typeof v === 'object' && typeof v.toNumber === 'function') averageWilson = v.toNumber();
+        }
+      } catch (avgErr) {
+        console.warn('Failed to load wilsonLowerBoundAvg from settings, defaulting to 0', avgErr);
+      }
+
+      // Fields to return to reduce payload size
+      const projection = [
+        'name', 'description', 'latitude', 'longitude', 'address', 'city',
+        'countryCode', 'imageUrls', 'tags', 'isPublic', 'spotSource',
+        'averageRating', 'ratingCount', 'wilsonLowerBound', 'createdAt', 'updatedAt'
+      ];
+
+      function baseQuery(lngMin, lngMax) {
+        let q = db
+          .collection('spots')
+          .where('isPublic', '==', true)
+          .orderBy('longitude')
+          .where('latitude', '>=', minLat)
+          .where('latitude', '<=', maxLat)
+          .where('longitude', '>=', lngMin)
+          .where('longitude', '<=', lngMax)
+          .orderBy('latitude');
+        q = q.select(...projection);
+        return q;
+      }
+
+      async function runSegmentedQuery(type, remaining) {
+        if (remaining <= 0) return [];
+        const perSide = crossesDateline ? Math.max(1, Math.ceil(remaining / 2)) : remaining;
+
+        const build = (lngMin, lngMax) => {
+          let q = baseQuery(lngMin, lngMax);
+          if (type === 'above') {
+            q = q.where('wilsonLowerBound', '>', averageWilson);
+          } else if (type === 'zero') {
+            q = q.where('wilsonLowerBound', '==', 0);
+          } else if (type === 'below') {
+            // strictly below average and greater than zero to avoid duplicates from zero group
+            q = q.where('wilsonLowerBound', '>', 0).where('wilsonLowerBound', '<=', averageWilson);
+          }
+          return q.limit(perSide);
+        };
+
+        if (crossesDateline) {
+          const [q1, q2] = await Promise.all([
+            build(minLng, 180).get(),
+            build(-180, maxLng).get(),
+          ]);
+          return [
+            ...q1.docs.map((d) => ({ id: d.id, ...d.data() })),
+            ...q2.docs.map((d) => ({ id: d.id, ...d.data() })),
+          ];
+        } else {
+          const snap = await build(minLng, maxLng).get();
+          return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        }
+      }
+
+      async function getTotalCount() {
+        const build = (lngMin, lngMax) => db
+          .collection('spots')
+          .where('isPublic', '==', true)
+          .orderBy('longitude')
+          .where('latitude', '>=', minLat)
+          .where('latitude', '<=', maxLat)
+          .where('longitude', '>=', lngMin)
+          .where('longitude', '<=', lngMax)
+          .orderBy('latitude');
+        try {
+          if (crossesDateline) {
+            const [c1, c2] = await Promise.all([
+              build(minLng, 180).count().get(),
+              build(-180, maxLng).count().get(),
+            ]);
+            const n1 = c1.data().count || 0;
+            const n2 = c2.data().count || 0;
+            return n1 + n2;
+          } else {
+            const c = await build(minLng, maxLng).count().get();
+            return c.data().count || 0;
+          }
+        } catch (e) {
+          // Fallback: if count aggregates are unavailable, return -1 to indicate unknown
+          console.warn('Count aggregate failed, returning unknown total', e);
+          return -1;
+        }
+      }
+
+      const totalCount = await getTotalCount();
+
+      const maxItems = Math.max(0, Math.min(200, Number(limit) || 100));
+      const collected = [];
+      const seen = new Set();
+
+      // 1) Above average
+      const above = await runSegmentedQuery('above', maxItems);
+      for (const s of above) {
+        if (!seen.has(s.id) && collected.length < maxItems) { seen.add(s.id); collected.push(s); }
+      }
+      let remaining = maxItems - collected.length;
+
+      // 2) Unrated (wilsonLowerBound == 0)
+      if (remaining > 0) {
+        const zeros = await runSegmentedQuery('zero', remaining);
+        for (const s of zeros) {
+          if (!seen.has(s.id) && collected.length < maxItems) { seen.add(s.id); collected.push(s); }
+        }
+        remaining = maxItems - collected.length;
+      }
+
+      // 3) Below average (and > 0)
+      if (remaining > 0) {
+        const below = await runSegmentedQuery('below', remaining);
+        for (const s of below) {
+          if (!seen.has(s.id) && collected.length < maxItems) { seen.add(s.id); collected.push(s); }
+        }
+      }
+
+      // Normalize Firestore Timestamp fields to ISO strings for client
+      const normalize = (s) => {
+        const createdAt = s.createdAt && s.createdAt.toDate ? s.createdAt.toDate().toISOString() : (s.createdAt || null);
+        const updatedAt = s.updatedAt && s.updatedAt.toDate ? s.updatedAt.toDate().toISOString() : (s.updatedAt || null);
+        return { ...s, createdAt, updatedAt };
+      };
+
+      return {
+        success: true,
+        totalCount,
+        averageWilson,
+        shownCount: collected.length,
+        spots: collected.map(normalize),
+      };
+    } catch (error) {
+      console.error('getTopSpotsInBounds error', error);
+      return { success: false, error: error.message };
+    }
+  }
+);
+
 // ========== Ratings Aggregation Helpers ==========
 /**
  * Recomputes rating aggregates for a spot and updates the spot document.
