@@ -982,7 +982,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
 
               // Top Search Bar
               Positioned(
-                top: MediaQuery.of(context).padding.top + 8,
+                top: MediaQuery.of(context).padding.top + 16,
                 left: 16,
                 right: 16,
                 child: Container(
