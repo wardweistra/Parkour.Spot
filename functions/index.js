@@ -56,6 +56,23 @@ exports.getTopSpotsInBounds = onCall(
       // Handle dateline crossing
       const crossesDateline = minLng > maxLng;
 
+      // Fetch precomputed average wilson from settings
+      let averageWilson = 0;
+      try {
+        const settingsSnap = await db
+          .collection('settings')
+          .where('name', '==', 'wilsonLowerBoundAvg')
+          .limit(1)
+          .get();
+        if (!settingsSnap.empty) {
+          const v = settingsSnap.docs[0].data().value;
+          if (typeof v === 'number') averageWilson = v;
+          else if (v && typeof v === 'object' && typeof v.toNumber === 'function') averageWilson = v.toNumber();
+        }
+      } catch (avgErr) {
+        console.warn('Failed to load wilsonLowerBoundAvg from settings, defaulting to 0', avgErr);
+      }
+
       // Fields to return to reduce payload size
       const projection = [
         'name', 'description', 'latitude', 'longitude', 'address', 'city',
@@ -63,9 +80,7 @@ exports.getTopSpotsInBounds = onCall(
         'averageRating', 'ratingCount', 'wilsonLowerBound', 'createdAt', 'updatedAt'
       ];
 
-      async function runQuery(lngMin, lngMax) {
-        // Note: Firestore requires we orderBy fields used in range filters
-        // Using the same structure as client code to respect composite index
+      function baseQuery(lngMin, lngMax) {
         let q = db
           .collection('spots')
           .where('isPublic', '==', true)
@@ -75,87 +90,101 @@ exports.getTopSpotsInBounds = onCall(
           .where('longitude', '>=', lngMin)
           .where('longitude', '<=', lngMax)
           .orderBy('latitude');
-
-        // Apply projection to limit fields
         q = q.select(...projection);
-
-        const snap = await q.get();
-        return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        return q;
       }
 
-      let spots = [];
-      if (crossesDateline) {
-        const [left, right] = await Promise.all([
-          runQuery(minLng, 180),
-          runQuery(-180, maxLng),
-        ]);
-        spots = [...left, ...right];
-      } else {
-        spots = await runQuery(minLng, maxLng);
-      }
+      async function runSegmentedQuery(type, remaining) {
+        if (remaining <= 0) return [];
+        const perSide = crossesDateline ? Math.max(1, Math.ceil(remaining / 2)) : remaining;
 
-      const totalCount = spots.length;
+        const build = (lngMin, lngMax) => {
+          let q = baseQuery(lngMin, lngMax);
+          if (type === 'above') {
+            q = q.where('wilsonLowerBound', '>', averageWilson);
+          } else if (type === 'zero') {
+            q = q.where('wilsonLowerBound', '==', 0);
+          } else if (type === 'below') {
+            // strictly below average and greater than zero to avoid duplicates from zero group
+            q = q.where('wilsonLowerBound', '>', 0).where('wilsonLowerBound', '<=', averageWilson);
+          }
+          return q.limit(perSide);
+        };
 
-      // Compute average Wilson among rated spots
-      const rated = spots.filter((s) => (s.ratingCount || 0) > 0);
-      const averageWilson = rated.length > 0
-        ? rated.reduce((acc, s) => acc + (typeof s.wilsonLowerBound === 'number' ? s.wilsonLowerBound : 0), 0) / rated.length
-        : 0;
-
-      // Partition
-      const above = [];
-      const unrated = [];
-      const below = [];
-      for (const s of spots) {
-        const rc = typeof s.ratingCount === 'number' ? s.ratingCount : 0;
-        const wl = typeof s.wilsonLowerBound === 'number' ? s.wilsonLowerBound : 0;
-        if (rc === 0) {
-          unrated.push(s);
-        } else if (wl > averageWilson) {
-          above.push(s);
+        if (crossesDateline) {
+          const [q1, q2] = await Promise.all([
+            build(minLng, 180).get(),
+            build(-180, maxLng).get(),
+          ]);
+          return [
+            ...q1.docs.map((d) => ({ id: d.id, ...d.data() })),
+            ...q2.docs.map((d) => ({ id: d.id, ...d.data() })),
+          ];
         } else {
-          below.push(s);
+          const snap = await build(minLng, maxLng).get();
+          return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
         }
       }
 
-      // Sort groups
-      above.sort((a, b) => {
-        const wlA = typeof a.wilsonLowerBound === 'number' ? a.wilsonLowerBound : 0;
-        const wlB = typeof b.wilsonLowerBound === 'number' ? b.wilsonLowerBound : 0;
-        if (wlB !== wlA) return wlB - wlA;
-        const rcA = typeof a.ratingCount === 'number' ? a.ratingCount : 0;
-        const rcB = typeof b.ratingCount === 'number' ? b.ratingCount : 0;
-        if (rcB !== rcA) return rcB - rcA;
-        const arA = typeof a.averageRating === 'number' ? a.averageRating : 0;
-        const arB = typeof b.averageRating === 'number' ? b.averageRating : 0;
-        return arB - arA;
-      });
+      async function getTotalCount() {
+        const build = (lngMin, lngMax) => db
+          .collection('spots')
+          .where('isPublic', '==', true)
+          .orderBy('longitude')
+          .where('latitude', '>=', minLat)
+          .where('latitude', '<=', maxLat)
+          .where('longitude', '>=', lngMin)
+          .where('longitude', '<=', lngMax)
+          .orderBy('latitude');
+        try {
+          if (crossesDateline) {
+            const [c1, c2] = await Promise.all([
+              build(minLng, 180).count().get(),
+              build(-180, maxLng).count().get(),
+            ]);
+            const n1 = c1.data().count || 0;
+            const n2 = c2.data().count || 0;
+            return n1 + n2;
+          } else {
+            const c = await build(minLng, maxLng).count().get();
+            return c.data().count || 0;
+          }
+        } catch (e) {
+          // Fallback: if count aggregates are unavailable, return -1 to indicate unknown
+          console.warn('Count aggregate failed, returning unknown total', e);
+          return -1;
+        }
+      }
 
-      unrated.sort((a, b) => {
-        const ca = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate() : a.createdAt;
-        const cb = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate() : b.createdAt;
-        const ta = ca instanceof Date ? ca.getTime() : 0;
-        const tb = cb instanceof Date ? cb.getTime() : 0;
-        if (tb !== ta) return tb - ta;
-        const na = (a.name || '').toString();
-        const nb = (b.name || '').toString();
-        return na.localeCompare(nb);
-      });
+      const totalCount = await getTotalCount();
 
-      below.sort((a, b) => {
-        const wlA = typeof a.wilsonLowerBound === 'number' ? a.wilsonLowerBound : 0;
-        const wlB = typeof b.wilsonLowerBound === 'number' ? b.wilsonLowerBound : 0;
-        if (wlB !== wlA) return wlB - wlA;
-        const rcA = typeof a.ratingCount === 'number' ? a.ratingCount : 0;
-        const rcB = typeof b.ratingCount === 'number' ? b.ratingCount : 0;
-        if (rcB !== rcA) return rcB - rcA;
-        const arA = typeof a.averageRating === 'number' ? a.averageRating : 0;
-        const arB = typeof b.averageRating === 'number' ? b.averageRating : 0;
-        return arB - arA;
-      });
+      const maxItems = Math.max(0, Math.min(200, Number(limit) || 100));
+      const collected = [];
+      const seen = new Set();
 
-      const combined = [...above, ...unrated, ...below];
-      const top = combined.slice(0, Math.max(0, Math.min(200, Number(limit) || 100)));
+      // 1) Above average
+      const above = await runSegmentedQuery('above', maxItems);
+      for (const s of above) {
+        if (!seen.has(s.id) && collected.length < maxItems) { seen.add(s.id); collected.push(s); }
+      }
+      let remaining = maxItems - collected.length;
+
+      // 2) Unrated (wilsonLowerBound == 0)
+      if (remaining > 0) {
+        const zeros = await runSegmentedQuery('zero', remaining);
+        for (const s of zeros) {
+          if (!seen.has(s.id) && collected.length < maxItems) { seen.add(s.id); collected.push(s); }
+        }
+        remaining = maxItems - collected.length;
+      }
+
+      // 3) Below average (and > 0)
+      if (remaining > 0) {
+        const below = await runSegmentedQuery('below', remaining);
+        for (const s of below) {
+          if (!seen.has(s.id) && collected.length < maxItems) { seen.add(s.id); collected.push(s); }
+        }
+      }
 
       // Normalize Firestore Timestamp fields to ISO strings for client
       const normalize = (s) => {
@@ -168,8 +197,8 @@ exports.getTopSpotsInBounds = onCall(
         success: true,
         totalCount,
         averageWilson,
-        shownCount: top.length,
-        spots: top.map(normalize),
+        shownCount: collected.length,
+        spots: collected.map(normalize),
       };
     } catch (error) {
       console.error('getTopSpotsInBounds error', error);
