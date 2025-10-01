@@ -21,6 +21,7 @@ class Spot {
   final double? averageRating;
   final int? ratingCount;
   final double? wilsonLowerBound;
+  final double? random;
 
   Spot({
     this.id,
@@ -43,6 +44,7 @@ class Spot {
     this.averageRating,
     this.ratingCount,
     this.wilsonLowerBound,
+    this.random,
   });
 
   factory Spot.fromFirestore(DocumentSnapshot doc) {
@@ -70,6 +72,7 @@ class Spot {
       averageRating: data['averageRating'] != null ? (data['averageRating'] as num).toDouble() : null,
       ratingCount: data['ratingCount'],
       wilsonLowerBound: data['wilsonLowerBound'] != null ? (data['wilsonLowerBound'] as num).toDouble() : null,
+      random: data['random'] != null ? (data['random'] as num).toDouble() : null,
     );
   }
 
@@ -110,6 +113,7 @@ class Spot {
       averageRating: (data['averageRating'] as num?)?.toDouble(),
       ratingCount: (data['ratingCount'] is int) ? data['ratingCount'] as int : (data['ratingCount'] as num?)?.toInt(),
       wilsonLowerBound: (data['wilsonLowerBound'] as num?)?.toDouble(),
+      random: (data['random'] as num?)?.toDouble(),
     );
   }
 
@@ -134,6 +138,7 @@ class Spot {
       if (averageRating != null) 'averageRating': averageRating,
       if (ratingCount != null) 'ratingCount': ratingCount,
       if (wilsonLowerBound != null) 'wilsonLowerBound': wilsonLowerBound,
+      if (random != null) 'random': random,
     };
   }
 
@@ -158,6 +163,7 @@ class Spot {
     double? averageRating,
     int? ratingCount,
     double? wilsonLowerBound,
+    double? random,
   }) {
     return Spot(
       id: id ?? this.id,
@@ -180,6 +186,7 @@ class Spot {
       averageRating: averageRating ?? this.averageRating,
       ratingCount: ratingCount ?? this.ratingCount,
       wilsonLowerBound: wilsonLowerBound ?? this.wilsonLowerBound,
+      random: random ?? this.random,
     );
   }
 
