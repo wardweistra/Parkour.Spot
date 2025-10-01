@@ -1162,6 +1162,7 @@ async function processSyncSource(source, sourceId, apiKey) {
       averageRating: 0,
       ratingCount: 0,
       wilsonLowerBound: 0,
+      random: Math.random(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 

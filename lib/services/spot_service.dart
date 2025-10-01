@@ -93,6 +93,7 @@ class SpotService extends ChangeNotifier {
         imageUrls: imageUrls,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
+        random: spot.random ?? Random().nextDouble(),
       );
 
       final docRef = await _firestore.collection('spots').add(spotWithImages.toFirestore());
@@ -165,6 +166,7 @@ class SpotService extends ChangeNotifier {
       notifyListeners();
     }
   }
+
 
   // Upload single image to Firebase Storage
   Future<String> _uploadImage(File imageFile) async {

@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:math';
 import '../../models/spot.dart';
 import '../../services/spot_service.dart';
 import '../../services/auth_service.dart';
@@ -467,6 +468,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
         averageRating: 0.0,
         ratingCount: 0,
         wilsonLowerBound: 0.0,
+        random: Random().nextDouble(),
       );
 
       final spotId = await spotService.createSpot(

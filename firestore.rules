@@ -1,11 +1,18 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Spots collection - users can read public spots, authenticated users can create, owners can edit/delete, admins can delete any spot
+    // Spots collection - users can read public spots, authenticated users can create, owners can edit/delete, admins can read/delete any spot
     match /spots/{spotId} {
-      allow read: if resource.data.isPublic == true;
+      allow read: if resource.data.isPublic == true || 
+        (request.auth != null && 
+         exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
       allow create: if request.auth != null;
-      allow update: if request.auth != null && request.auth.uid == resource.data.createdBy;
+      allow update: if request.auth != null && (
+        request.auth.uid == resource.data.createdBy ||
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true
+      );
       allow delete: if request.auth != null && (
         request.auth.uid == resource.data.createdBy || 
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
