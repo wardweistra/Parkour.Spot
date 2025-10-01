@@ -1493,12 +1493,27 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                     _totalSpotsInView != null && _bestShownCount != null
-                                         ? '${_totalSpotsInView} spots (${_bestShownCount} best shown)'
-                                         : '${_visibleSpots.length} ${_visibleSpots.length == 1 ? 'spot' : 'spots'} found',
-                                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                       fontWeight: FontWeight.bold,
+                                  RichText(
+                                     text: TextSpan(
+                                       children: [
+                                         TextSpan(
+                                           text: _totalSpotsInView != null && _bestShownCount != null
+                                               ? '${_totalSpotsInView} spots'
+                                               : '${_visibleSpots.length} ${_visibleSpots.length == 1 ? 'spot' : 'spots'} found',
+                                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                             fontWeight: FontWeight.bold,
+                                             color: Theme.of(context).colorScheme.onSurface,
+                                           ),
+                                         ),
+                                         if (_totalSpotsInView != null && _bestShownCount != null && _bestShownCount! < _totalSpotsInView!)
+                                           TextSpan(
+                                             text: ' (${_bestShownCount} best shown)',
+                                             style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                               fontWeight: FontWeight.normal,
+                                               color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                             ),
+                                           ),
+                                       ],
                                      ),
                                    ),
                                   IconButton(
