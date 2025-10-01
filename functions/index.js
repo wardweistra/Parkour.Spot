@@ -77,19 +77,32 @@ exports.getTopSpotsInBounds = onCall(
       const projection = [
         'name', 'description', 'latitude', 'longitude', 'address', 'city',
         'countryCode', 'imageUrls', 'tags', 'isPublic', 'spotSource',
-        'averageRating', 'ratingCount', 'wilsonLowerBound', 'createdAt', 'updatedAt'
+        'averageRating', 'ratingCount', 'wilsonLowerBound', 'createdAt', 'updatedAt', 'random'
       ];
 
-      function baseQuery(lngMin, lngMax) {
+      function baseQuery(lngMin, lngMax, type = null) {
         let q = db
           .collection('spots')
-          .where('isPublic', '==', true)
-          .orderBy('longitude')
-          .where('latitude', '>=', minLat)
+          .where('isPublic', '==', true);
+        
+        // For spots without ratings (type 'zero'), order by random field for better distribution
+        if (type === 'zero') {
+          q = q.orderBy('random');
+        } else {
+          // For other types, use the original longitude/latitude ordering
+          q = q.orderBy('longitude');
+        }
+        
+        q = q.where('latitude', '>=', minLat)
           .where('latitude', '<=', maxLat)
           .where('longitude', '>=', lngMin)
-          .where('longitude', '<=', lngMax)
-          .orderBy('latitude');
+          .where('longitude', '<=', lngMax);
+        
+        // Add latitude ordering for non-zero types
+        if (type !== 'zero') {
+          q = q.orderBy('latitude');
+        }
+        
         q = q.select(...projection);
         return q;
       }
@@ -99,7 +112,7 @@ exports.getTopSpotsInBounds = onCall(
         const perSide = crossesDateline ? Math.max(1, Math.ceil(remaining / 2)) : remaining;
 
         const build = (lngMin, lngMax) => {
-          let q = baseQuery(lngMin, lngMax);
+          let q = baseQuery(lngMin, lngMax, type);
           if (type === 'above') {
             q = q.where('wilsonLowerBound', '>', averageWilson);
           } else if (type === 'zero') {
