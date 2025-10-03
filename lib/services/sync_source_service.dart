@@ -5,7 +5,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class SyncSource {
   final String id;
   final String name;
-  final String kmzUrl;
+  final String sourceType; // KMZ, GEOJSON, UMAP_GEOJSON
+  final String? kmzUrl;
+  final String? geojsonUrl;
   final String? description;
   final String? publicUrl;
   final String? instagramHandle; // Instagram handle for the source owner
@@ -22,7 +24,9 @@ class SyncSource {
   SyncSource({
     required this.id,
     required this.name,
-    required this.kmzUrl,
+    required this.sourceType,
+    this.kmzUrl,
+    this.geojsonUrl,
     this.description,
     this.publicUrl,
     this.instagramHandle,
@@ -38,10 +42,13 @@ class SyncSource {
   });
 
   factory SyncSource.fromMap(Map<String, dynamic> data) {
+    final String type = (data['sourceType'] ?? 'KMZ').toString();
     return SyncSource(
       id: data['id'] ?? '',
       name: data['name'] ?? '',
-      kmzUrl: data['kmzUrl'] ?? '',
+      sourceType: type,
+      kmzUrl: data['kmzUrl'],
+      geojsonUrl: data['geojsonUrl'],
       description: data['description'],
       publicUrl: data['publicUrl'],
       instagramHandle: data['instagramHandle'],
@@ -136,7 +143,9 @@ class SyncSourceService extends ChangeNotifier {
 
   Future<bool> createSource({
     required String name,
-    required String kmzUrl,
+    required String sourceType, // 'KMZ' | 'GEOJSON' | 'UMAP_GEOJSON'
+    String? kmzUrl,
+    String? geojsonUrl,
     String? description,
     String? publicUrl,
     String? instagramHandle,
@@ -147,9 +156,9 @@ class SyncSourceService extends ChangeNotifier {
   }) async {
     try {
       final callable = _functions.httpsCallable('createSyncSource');
-      final result = await callable.call({
+      final payload = <String, dynamic>{
         'name': name,
-        'kmzUrl': kmzUrl,
+        'sourceType': sourceType,
         'description': description,
         'publicUrl': publicUrl,
         'instagramHandle': instagramHandle,
@@ -157,7 +166,13 @@ class SyncSourceService extends ChangeNotifier {
         'isActive': isActive,
         if (includeFolders != null) 'includeFolders': includeFolders,
         if (recordFolderName != null) 'recordFolderName': recordFolderName,
-      });
+      };
+      if (sourceType.toUpperCase() == 'KMZ') {
+        payload['kmzUrl'] = kmzUrl;
+      } else {
+        payload['geojsonUrl'] = geojsonUrl;
+      }
+      final result = await callable.call(payload);
       final success = result.data['success'] == true;
       if (success) {
         await fetchSyncSources(includeInactive: true);
@@ -175,6 +190,8 @@ class SyncSourceService extends ChangeNotifier {
     required String sourceId,
     String? name,
     String? kmzUrl,
+    String? geojsonUrl,
+    String? sourceType,
     String? description,
     String? publicUrl,
     String? instagramHandle,
@@ -189,6 +206,8 @@ class SyncSourceService extends ChangeNotifier {
       if (name != null) payload['name'] = name;
       if (kmzUrl != null) payload['kmzUrl'] = kmzUrl;
       if (description != null) payload['description'] = description;
+      if (geojsonUrl != null) payload['geojsonUrl'] = geojsonUrl;
+      if (sourceType != null) payload['sourceType'] = sourceType;
       if (publicUrl != null) payload['publicUrl'] = publicUrl;
       if (instagramHandle != null) payload['instagramHandle'] = instagramHandle;
       if (isPublic != null) payload['isPublic'] = isPublic;

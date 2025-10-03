@@ -579,9 +579,9 @@ function extractImageUrls(placemark) {
     }
   }
 
-  // Remove duplicates and filter out invalid URLs
+  // Remove duplicates and filter out invalid URLs (allow any http/https host)
   return [...new Set(imageUrls)].filter((url) =>
-    url && url.startsWith("http") && url.includes("google.com"),
+    url && (url.startsWith("http://") || url.startsWith("https://")),
   );
 }
 
@@ -950,6 +950,128 @@ function parseKmlPlacemarks(kmlContent) {
   });
 }
 
+/**
+ * Parses a GeoJSON FeatureCollection into placemark-like objects
+ * @param {Object} featureCollection - GeoJSON FeatureCollection
+ * @param {string|null} defaultFolderName - Optional folder name to assign
+ * @return {Object[]} Array of placemark-like objects
+ */
+function parseGeojsonFeatureCollection(featureCollection, defaultFolderName = null) {
+  if (!featureCollection || featureCollection.type !== 'FeatureCollection' || !Array.isArray(featureCollection.features)) {
+    return [];
+  }
+  const folderNameFromCollection = (typeof featureCollection.name === 'string' && featureCollection.name.trim().length > 0)
+    ? featureCollection.name.trim()
+    : (typeof featureCollection.title === 'string' && featureCollection.title.trim().length > 0 ? featureCollection.title.trim() : null);
+
+  const placemarks = [];
+  for (const feature of featureCollection.features) {
+    if (!feature || !feature.geometry || feature.geometry.type !== 'Point') continue;
+    const coords = feature.geometry.coordinates;
+    if (!Array.isArray(coords) || coords.length < 2) continue;
+    const longitude = Number(coords[0]);
+    const latitude = Number(coords[1]);
+    if (!isFinite(latitude) || !isFinite(longitude)) continue;
+
+    const props = feature.properties || {};
+    const name = (props.name || props.title || 'Unnamed Spot');
+    const description = (props.description || props.desc || props.popupContent || '');
+
+    const folderName = props.layer || props.folder || folderNameFromCollection || defaultFolderName || null;
+    const folderPath = folderName ? [folderName] : [];
+
+    placemarks.push({
+      name,
+      description,
+      coordinates: { latitude, longitude, altitude: 0 },
+      extendedData: {},
+      folderPath,
+      folderName,
+    });
+  }
+  return placemarks;
+}
+
+/**
+ * Attempts to parse uMap map or datalayer GeoJSON. Supports:
+ * - Direct FeatureCollection URL (datalayer)
+ * - uMap map JSON that contains datalayer URLs
+ * @param {string} geojsonUrl
+ * @return {Promise<Object[]>} placemarks
+ */
+async function parseUmapGeojsonSource(geojsonUrl) {
+  try {
+    const buffer = await downloadFile(geojsonUrl);
+    const text = buffer.toString('utf8');
+    let json;
+    try {
+      json = JSON.parse(text);
+    } catch (e) {
+      throw new Error(`Invalid JSON at ${geojsonUrl}`);
+    }
+
+    // If it's a FeatureCollection, parse directly
+    if (json && json.type === 'FeatureCollection' && Array.isArray(json.features)) {
+      return parseGeojsonFeatureCollection(json, null);
+    }
+
+    // Otherwise, search for datalayer URLs inside the document (absolute or relative)
+    const urls = new Set();
+    const origin = (() => { try { return new URL(geojsonUrl).origin; } catch { return null; } })();
+    const absoluteMatches = text.match(/https?:\/\/[^"\s']*\/datalayer\/[^"\s']*/g) || [];
+    absoluteMatches.forEach(u => urls.add(u));
+    const relativeMatches = text.match(/"(\/[^"\s']*\/datalayer\/[^"\s']*)"/g) || [];
+    relativeMatches.forEach(m => {
+      const rel = m.slice(1, -1);
+      if (origin) {
+        try {
+          const abs = new URL(rel, origin).toString();
+          urls.add(abs);
+        } catch {}
+      }
+    });
+
+    if (urls.size === 0) {
+      // Try to find embedded FeatureCollections anywhere within json
+      const nestedPlacemarks = [];
+      (function walk(node) {
+        if (!node || typeof node !== 'object') return;
+        if (node.type === 'FeatureCollection' && Array.isArray(node.features)) {
+          nestedPlacemarks.push(...parseGeojsonFeatureCollection(node, node && typeof node.name === 'string' ? node.name : null));
+          return; // do not descend further into this FC
+        }
+        for (const key of Object.keys(node)) {
+          try { walk(node[key]); } catch {}
+        }
+      })(json);
+      return nestedPlacemarks;
+    }
+
+    // Fetch each datalayer and aggregate
+    const allPlacemarks = [];
+    for (const url of urls) {
+      try {
+        const layerBuf = await downloadFile(url);
+        const layerText = layerBuf.toString('utf8');
+        const layerJson = JSON.parse(layerText);
+        if (layerJson && layerJson.type === 'FeatureCollection') {
+          // Attempt to derive a folder name from layer metadata
+          const folderName = (typeof layerJson.name === 'string' && layerJson.name.trim().length > 0)
+            ? layerJson.name.trim()
+            : (typeof layerJson.title === 'string' && layerJson.title.trim().length > 0 ? layerJson.title.trim() : (url.split('/').slice(-1)[0] || null));
+          allPlacemarks.push(...parseGeojsonFeatureCollection(layerJson, folderName));
+        }
+      } catch (e) {
+        console.warn(`Failed to parse datalayer ${url}:`, e.message || e);
+      }
+    }
+    return allPlacemarks;
+  } catch (err) {
+    console.error('Failed to parse uMap GeoJSON source:', err);
+    throw err;
+  }
+}
+
 
 // Helper function to geocode coordinates and return address details
 async function geocodeCoordinates(latitude, longitude, apiKey) {
@@ -1015,11 +1137,23 @@ async function geocodeCoordinates(latitude, longitude, apiKey) {
 // Helper function to process a single sync source with geocoding
 async function processSyncSource(source, sourceId, apiKey) {
   console.log(`Processing source: ${source.name} (${sourceId})`);
+  
+  // Determine source type (default to KMZ for backward compatibility)
+  const sourceType = (source.sourceType || 'KMZ').toUpperCase();
 
-  // Download and process KMZ file
-  let kmzBuffer = await downloadFile(source.kmzUrl);
-  const kmlContent = await extractKmlFromKmz(kmzBuffer);
-  let placemarks = await parseKmlPlacemarks(kmlContent);
+  let placemarks = [];
+  if (sourceType === 'KMZ') {
+    // Download and process KMZ file
+    let kmzBuffer = await downloadFile(source.kmzUrl);
+    const kmlContent = await extractKmlFromKmz(kmzBuffer);
+    placemarks = await parseKmlPlacemarks(kmlContent);
+    // Clear KMZ buffer to free memory
+    kmzBuffer = null;
+  } else if (sourceType === 'GEOJSON' || sourceType === 'UMAP_GEOJSON') {
+    placemarks = await parseUmapGeojsonSource(source.geojsonUrl);
+  } else {
+    throw new Error(`Unsupported sourceType: ${sourceType}`);
+  }
   
   // Normalize includeFolders from source configuration
   let includeFolders = [];
@@ -1077,8 +1211,7 @@ async function processSyncSource(source, sourceId, apiKey) {
     console.log(`Applied folder filter and ordering for source ${source.name}: ${placemarks.length}/${beforeCount} placemarks kept`);
   }
   
-  // Clear KMZ buffer to free memory
-  kmzBuffer = null;
+  // Note: KMZ buffer cleared above when applicable
 
   let created = 0;
   let updated = 0;
@@ -1585,16 +1718,24 @@ exports.createSyncSource = onCall(
     async (request) => {
       try {
         await ensureAdmin(request);
-        const {name, kmzUrl, description, publicUrl, instagramHandle, isPublic = true,
+        const {name, kmzUrl, geojsonUrl, sourceType = 'KMZ', description, publicUrl, instagramHandle, isPublic = true,
           isActive = true, includeFolders, recordFolderName} = request.data;
 
-        if (!name || !kmzUrl) {
-          throw new Error("name and kmzUrl are required");
+        if (!name) {
+          throw new Error("name is required");
+        }
+        const normalizedType = String(sourceType || 'KMZ').toUpperCase();
+        if (normalizedType === 'KMZ') {
+          if (!kmzUrl) throw new Error("kmzUrl is required for KMZ sourceType");
+        } else if (normalizedType === 'GEOJSON' || normalizedType === 'UMAP_GEOJSON') {
+          if (!geojsonUrl) throw new Error("geojsonUrl is required for GEOJSON/UMAP_GEOJSON sourceType");
+        } else {
+          throw new Error(`Unsupported sourceType: ${normalizedType}`);
         }
 
         const sourceData = {
           name: name,
-          kmzUrl: kmzUrl,
+          sourceType: normalizedType,
           description: description || "",
           publicUrl: publicUrl || "",
           instagramHandle: instagramHandle || "",
@@ -1603,6 +1744,12 @@ exports.createSyncSource = onCall(
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         };
+
+        if (normalizedType === 'KMZ') {
+          sourceData.kmzUrl = kmzUrl;
+        } else {
+          sourceData.geojsonUrl = geojsonUrl;
+        }
 
         // Add optional folder config only if they have values
         if (Array.isArray(includeFolders) && includeFolders.length > 0) {
@@ -1635,7 +1782,7 @@ exports.updateSyncSource = onCall(
     async (request) => {
       try {
         await ensureAdmin(request);
-        const {sourceId, name, kmzUrl, description, publicUrl, instagramHandle, isPublic,
+        const {sourceId, name, kmzUrl, geojsonUrl, sourceType, description, publicUrl, instagramHandle, isPublic,
           isActive, includeFolders, recordFolderName} = request.data;
 
         if (!sourceId) {
@@ -1648,6 +1795,8 @@ exports.updateSyncSource = onCall(
 
         if (name !== undefined) updateData.name = name;
         if (kmzUrl !== undefined) updateData.kmzUrl = kmzUrl;
+        if (geojsonUrl !== undefined) updateData.geojsonUrl = geojsonUrl;
+        if (sourceType !== undefined) updateData.sourceType = String(sourceType).toUpperCase();
         if (description !== undefined) updateData.description = description;
         if (publicUrl !== undefined) updateData.publicUrl = publicUrl;
         if (instagramHandle !== undefined) updateData.instagramHandle = instagramHandle;

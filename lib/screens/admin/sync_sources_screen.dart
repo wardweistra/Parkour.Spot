@@ -126,7 +126,19 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(s.kmzUrl, maxLines: 1, overflow: TextOverflow.ellipsis),
+                      Text(
+                        () {
+                          final type = (s as dynamic).sourceType?.toString().toUpperCase() ?? 'KMZ';
+                          if (type == 'KMZ') {
+                            return s.kmzUrl ?? '';
+                          } else {
+                            final geo = (s as dynamic).geojsonUrl as String?;
+                            return geo ?? '';
+                          }
+                        }(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                       if (s.description != null && s.description!.isNotEmpty)
                         Text(s.description!),
                       Row(
@@ -790,6 +802,7 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
   final formKey = GlobalKey<FormState>();
   late final TextEditingController nameCtrl;
   late final TextEditingController urlCtrl;
+  late final TextEditingController geojsonCtrl;
   late final TextEditingController descCtrl;
   late final TextEditingController publicUrlCtrl;
   late final TextEditingController instagramHandleCtrl;
@@ -797,12 +810,18 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
   late bool isPublic;
   late bool isActive;
   late bool recordFolderName;
+  String sourceType = 'KMZ';
 
   @override
   void initState() {
     super.initState();
     nameCtrl = TextEditingController(text: widget.source?.name ?? '');
-    urlCtrl = TextEditingController(text: widget.source?.kmzUrl ?? '');
+    // Prefer dynamic reads to avoid tight coupling with model changes
+    final dynamic src = widget.source;
+    final String initialType = (src?.sourceType?.toString().toUpperCase()) ?? 'KMZ';
+    sourceType = initialType;
+    urlCtrl = TextEditingController(text: src?.kmzUrl ?? '');
+    geojsonCtrl = TextEditingController(text: src?.geojsonUrl ?? '');
     descCtrl = TextEditingController(text: widget.source?.description ?? '');
     publicUrlCtrl = TextEditingController(text: widget.source?.publicUrl ?? '');
     instagramHandleCtrl = TextEditingController(text: widget.source?.instagramHandle ?? '');
@@ -820,6 +839,7 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
   void dispose() {
     nameCtrl.dispose();
     urlCtrl.dispose();
+    geojsonCtrl.dispose();
     descCtrl.dispose();
     publicUrlCtrl.dispose();
     instagramHandleCtrl.dispose();
@@ -842,11 +862,35 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                 decoration: const InputDecoration(labelText: 'Name'),
                 validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
               ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: sourceType,
+                items: const [
+                  DropdownMenuItem(value: 'KMZ', child: Text('KMZ/KML (Google Maps)')),
+                  DropdownMenuItem(value: 'UMAP_GEOJSON', child: Text('uMap GeoJSON')),
+                  DropdownMenuItem(value: 'GEOJSON', child: Text('Generic GeoJSON')),
+                ],
+                onChanged: (v) {
+                  if (v != null) setState(() => sourceType = v);
+                },
+                decoration: const InputDecoration(labelText: 'Source Type'),
+              ),
               TextFormField(
                 controller: urlCtrl,
                 decoration: const InputDecoration(labelText: 'KMZ URL'),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                validator: (v) {
+                  if (sourceType == 'KMZ') {
+                    return (v == null || v.trim().isEmpty) ? 'Required' : null;
+                  }
+                  return null;
+                },
               ),
+              if (sourceType != 'KMZ')
+                TextFormField(
+                  controller: geojsonCtrl,
+                  decoration: const InputDecoration(labelText: 'GeoJSON URL'),
+                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                ),
               TextFormField(
                 controller: descCtrl,
                 decoration: const InputDecoration(labelText: 'Description (optional)'),
@@ -914,7 +958,9 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
             if (widget.source == null) {
               ok = await service.createSource(
                 name: nameCtrl.text.trim(),
-                kmzUrl: urlCtrl.text.trim(),
+                sourceType: sourceType,
+                kmzUrl: sourceType == 'KMZ' ? urlCtrl.text.trim() : null,
+                geojsonUrl: sourceType == 'KMZ' ? null : geojsonCtrl.text.trim(),
                 description: descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
                 publicUrl: publicUrlCtrl.text.trim().isEmpty ? null : publicUrlCtrl.text.trim(),
                 instagramHandle: instagramHandleCtrl.text.trim().isEmpty ? null : instagramHandleCtrl.text.trim(),
@@ -934,6 +980,8 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                 sourceId: widget.source!.id,
                 name: nameCtrl.text.trim(),
                 kmzUrl: urlCtrl.text.trim(),
+                geojsonUrl: geojsonCtrl.text.trim().isEmpty ? null : geojsonCtrl.text.trim(),
+                sourceType: sourceType,
                 description: descCtrl.text.trim(),
                 publicUrl: publicUrlCtrl.text.trim(),
                 instagramHandle: instagramHandleCtrl.text.trim(),
