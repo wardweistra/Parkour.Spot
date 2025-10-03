@@ -9,6 +9,7 @@ class AuthService extends ChangeNotifier {
   
   User? get currentUser => _auth.currentUser;
   bool get isAdmin => _userProfile?.isAdmin == true;
+  bool get isModerator => _userProfile?.isModerator == true;
   bool get isAuthenticated {
     final user = _auth.currentUser;
     if (user == null) return false;
@@ -59,6 +60,7 @@ class AuthService extends ChangeNotifier {
           createdAt: DateTime.now(),
           lastLoginAt: DateTime.now(),
           isAdmin: false,
+          isModerator: false,
         );
         await _firestore.collection('users').doc(uid).set(_userProfile!.toMap());
       }

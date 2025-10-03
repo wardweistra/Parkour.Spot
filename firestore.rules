@@ -1,28 +1,33 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Spots collection - users can read public spots, authenticated users can create, owners can edit/delete, admins can read/delete any spot
+    // Spots collection - users can read public spots, authenticated users can create, only admins/moderators can edit/delete any spot
     match /spots/{spotId} {
       allow read: if resource.data.isPublic == true || 
         (request.auth != null && 
          exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
+         (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isModerator == true));
       allow create: if request.auth != null;
-      allow update: if request.auth != null && (
-        request.auth.uid == resource.data.createdBy ||
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true
-      );
-      allow delete: if request.auth != null && (
-        request.auth.uid == resource.data.createdBy || 
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true
-      );
+      allow update: if request.auth != null && exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isModerator == true);
+      allow delete: if request.auth != null && exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isModerator == true);
     }
     
     // Users collection - users can only manage their own profile
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && request.auth.uid == userId;
+      // Allow create only for self and forbid setting privileged flags
+      allow create: if request.auth != null && request.auth.uid == userId &&
+        request.resource.data.isAdmin == false &&
+        request.resource.data.isModerator == false;
+      // Allow update for self but prevent privilege escalation on admin/moderator flags
+      allow update: if request.auth != null && request.auth.uid == userId &&
+        request.resource.data.isAdmin == resource.data.isAdmin &&
+        request.resource.data.isModerator == resource.data.isModerator;
     }
     
     // Ratings collection - users can read all ratings, authenticated users can create their own

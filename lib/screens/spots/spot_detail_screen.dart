@@ -356,7 +356,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                   ),
                   const SizedBox(width: 8),
                 ],
-                // Edit and Delete buttons - only show after auth state is restored
+                // Moderation actions - only show after auth state is restored
                 Consumer<AuthService>(
                   builder: (context, authService, child) {
                     // Wait for auth state to be restored before checking ownership
@@ -380,10 +380,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       );
                     }
                     
-                    // Check if current user owns this spot
-                    if (authService.isAuthenticated && 
-                        authService.userProfile != null &&
-                        widget.spot.createdBy == authService.userProfile!.id) {
+                    // Show delete for admins or moderators only
+                    if (authService.isAuthenticated && authService.userProfile != null &&
+                        (authService.isAdmin || authService.isModerator)) {
                       return Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
