@@ -12,6 +12,7 @@ import '../../services/mobile_detection_service.dart';
 import '../../services/sync_source_service.dart';
 import '../../widgets/source_details_dialog.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
 class SpotDetailScreen extends StatefulWidget {
   final Spot spot;
@@ -30,6 +31,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   late final ScrollController _scrollController;
   bool _isSatelliteView = false;
   bool _isShareModalOpen = false; // Add this state variable
+  late final List<YoutubePlayerController> _ytControllers;
   
   // Add rating cache variables
   Map<String, dynamic>? _cachedRatingStats;
@@ -46,11 +48,29 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     _loadRatingStats(); // Load rating stats once on init
     _loadSourceName(); // Load source name if spot has a source
     // Note: User rating will be loaded when auth state is restored via FutureBuilder
+
+    // Initialize YouTube controllers if any videos are present
+    _ytControllers = (widget.spot.youtubeVideoIds ?? const <String>[]) 
+        .where((id) => id.trim().isNotEmpty)
+        .map((id) => YoutubePlayerController.fromVideoId(
+              videoId: id,
+              params: const YoutubePlayerParams(
+                showFullscreenButton: true,
+                autoPlay: false,
+                enableCaption: true,
+                showControls: true,
+                strictRelatedVideos: true,
+              ),
+            ))
+        .toList();
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
+    for (final controller in _ytControllers) {
+      controller.close();
+    }
     super.dispose();
   }
 
@@ -488,6 +508,43 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     
                     const SizedBox(height: 24),
                     
+                  // YouTube Videos Section
+                  if (widget.spot.youtubeVideoIds != null && widget.spot.youtubeVideoIds!.isNotEmpty) ...[
+                    Text(
+                      'Videos',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: List.generate(_ytControllers.length, (index) {
+                        final controller = _ytControllers[index];
+                        return Padding(
+                          padding: EdgeInsets.only(bottom: index == _ytControllers.length - 1 ? 0 : 12),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                border: Border.all(
+                                  color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: AspectRatio(
+                                aspectRatio: 16 / 9,
+                                child: YoutubePlayer(controller: controller),
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+
                     // Tags
                     if (widget.spot.tags != null && widget.spot.tags!.isNotEmpty) ...[
                       Text(
