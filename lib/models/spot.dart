@@ -51,7 +51,7 @@ class Spot {
 
   factory Spot.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-    String? _extractYoutubeId(String input) {
+    String? extractYoutubeId(String input) {
       final trimmed = input.trim();
       if (trimmed.isEmpty) return null;
       // If it's already a likely ID, return as-is (11 chars typical)
@@ -81,18 +81,18 @@ class Spot {
       } catch (_) {}
       return trimmed; // Fallback to raw value
     }
-    List<String>? _extractYoutubeIdsList(dynamic value) {
+    List<String>? extractYoutubeIdsList(dynamic value) {
       if (value == null) return null;
       if (value is List) {
         return value
             .whereType<dynamic>()
             .map((e) => e.toString())
-            .map((s) => _extractYoutubeId(s))
+            .map((s) => extractYoutubeId(s))
             .whereType<String>()
             .toList();
       }
       if (value is String) {
-        final id = _extractYoutubeId(value);
+        final id = extractYoutubeId(value);
         return id == null ? null : <String>[id];
       }
       return null;
@@ -109,7 +109,7 @@ class Spot {
       imageUrls: data['imageUrls'] != null
           ? List<String>.from(data['imageUrls'])
           : (data['imageUrl'] != null ? [data['imageUrl']] : null),
-      youtubeVideoIds: _extractYoutubeIdsList(
+      youtubeVideoIds: extractYoutubeIdsList(
         data['youtubeVideoIds'] ?? data['youtubeUrls'] ?? data['youtube'] ?? data['videos'],
       ),
       folderName: data['folderName'],
@@ -128,7 +128,7 @@ class Spot {
   }
 
   factory Spot.fromMap(Map<String, dynamic> data) {
-    String? _extractYoutubeId(String input) {
+    String? extractYoutubeId(String input) {
       final trimmed = input.trim();
       if (trimmed.isEmpty) return null;
       if (RegExp(r'^[a-zA-Z0-9_-]{6,}$').hasMatch(trimmed) && !trimmed.contains('/')) {
@@ -153,18 +153,18 @@ class Spot {
       } catch (_) {}
       return trimmed;
     }
-    List<String>? _extractYoutubeIdsList(dynamic value) {
+    List<String>? extractYoutubeIdsList(dynamic value) {
       if (value == null) return null;
       if (value is List) {
         return value
             .whereType<dynamic>()
             .map((e) => e.toString())
-            .map((s) => _extractYoutubeId(s))
+            .map((s) => extractYoutubeId(s))
             .whereType<String>()
             .toList();
       }
       if (value is String) {
-        final id = _extractYoutubeId(value);
+        final id = extractYoutubeId(value);
         return id == null ? null : <String>[id];
       }
       return null;
@@ -194,7 +194,7 @@ class Spot {
       imageUrls: data['imageUrls'] is List
           ? List<String>.from(data['imageUrls'])
           : (data['imageUrl'] != null ? [data['imageUrl'] as String] : null),
-      youtubeVideoIds: _extractYoutubeIdsList(
+      youtubeVideoIds: extractYoutubeIdsList(
         data['youtubeVideoIds'] ?? data['youtubeUrls'] ?? data['youtube'] ?? data['videos'],
       ),
       folderName: data['folderName'] as String?,
