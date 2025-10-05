@@ -10,6 +10,7 @@ class Spot {
   final String? city;
   final String? countryCode;
   final List<String>? imageUrls;
+  final List<String>? youtubeVideoIds;
   final String? folderName;
   final String? createdBy;
   final String? createdByName;
@@ -33,6 +34,7 @@ class Spot {
     this.city,
     this.countryCode,
     this.imageUrls,
+    this.youtubeVideoIds,
     this.folderName,
     this.createdBy,
     this.createdByName,
@@ -49,6 +51,52 @@ class Spot {
 
   factory Spot.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    String? _extractYoutubeId(String input) {
+      final trimmed = input.trim();
+      if (trimmed.isEmpty) return null;
+      // If it's already a likely ID, return as-is (11 chars typical)
+      if (RegExp(r'^[a-zA-Z0-9_-]{6,}$').hasMatch(trimmed) && !trimmed.contains('/')) {
+        return trimmed;
+      }
+      try {
+        final uri = Uri.parse(trimmed);
+        // youtu.be/<id>
+        if (uri.host.contains('youtu.be')) {
+          final seg = uri.pathSegments.isNotEmpty ? uri.pathSegments.last : null;
+          if (seg != null && seg.isNotEmpty) return seg;
+        }
+        // youtube.com/watch?v=<id>
+        final vParam = uri.queryParameters['v'];
+        if (vParam != null && vParam.isNotEmpty) return vParam;
+        // youtube.com/embed/<id>
+        final embedIndex = uri.pathSegments.indexOf('embed');
+        if (embedIndex != -1 && embedIndex + 1 < uri.pathSegments.length) {
+          return uri.pathSegments[embedIndex + 1];
+        }
+        // youtube.com/shorts/<id>
+        final shortsIndex = uri.pathSegments.indexOf('shorts');
+        if (shortsIndex != -1 && shortsIndex + 1 < uri.pathSegments.length) {
+          return uri.pathSegments[shortsIndex + 1];
+        }
+      } catch (_) {}
+      return trimmed; // Fallback to raw value
+    }
+    List<String>? _extractYoutubeIdsList(dynamic value) {
+      if (value == null) return null;
+      if (value is List) {
+        return value
+            .whereType<dynamic>()
+            .map((e) => e.toString())
+            .map((s) => _extractYoutubeId(s))
+            .whereType<String>()
+            .toList();
+      }
+      if (value is String) {
+        final id = _extractYoutubeId(value);
+        return id == null ? null : <String>[id];
+      }
+      return null;
+    }
     return Spot(
       id: doc.id,
       name: data['name'] ?? '',
@@ -61,6 +109,9 @@ class Spot {
       imageUrls: data['imageUrls'] != null
           ? List<String>.from(data['imageUrls'])
           : (data['imageUrl'] != null ? [data['imageUrl']] : null),
+      youtubeVideoIds: _extractYoutubeIdsList(
+        data['youtubeVideoIds'] ?? data['youtubeUrls'] ?? data['youtube'] ?? data['videos'],
+      ),
       folderName: data['folderName'],
       createdBy: data['createdBy'],
       createdByName: data['createdByName'],
@@ -77,6 +128,47 @@ class Spot {
   }
 
   factory Spot.fromMap(Map<String, dynamic> data) {
+    String? _extractYoutubeId(String input) {
+      final trimmed = input.trim();
+      if (trimmed.isEmpty) return null;
+      if (RegExp(r'^[a-zA-Z0-9_-]{6,}$').hasMatch(trimmed) && !trimmed.contains('/')) {
+        return trimmed;
+      }
+      try {
+        final uri = Uri.parse(trimmed);
+        if (uri.host.contains('youtu.be')) {
+          final seg = uri.pathSegments.isNotEmpty ? uri.pathSegments.last : null;
+          if (seg != null && seg.isNotEmpty) return seg;
+        }
+        final vParam = uri.queryParameters['v'];
+        if (vParam != null && vParam.isNotEmpty) return vParam;
+        final embedIndex = uri.pathSegments.indexOf('embed');
+        if (embedIndex != -1 && embedIndex + 1 < uri.pathSegments.length) {
+          return uri.pathSegments[embedIndex + 1];
+        }
+        final shortsIndex = uri.pathSegments.indexOf('shorts');
+        if (shortsIndex != -1 && shortsIndex + 1 < uri.pathSegments.length) {
+          return uri.pathSegments[shortsIndex + 1];
+        }
+      } catch (_) {}
+      return trimmed;
+    }
+    List<String>? _extractYoutubeIdsList(dynamic value) {
+      if (value == null) return null;
+      if (value is List) {
+        return value
+            .whereType<dynamic>()
+            .map((e) => e.toString())
+            .map((s) => _extractYoutubeId(s))
+            .whereType<String>()
+            .toList();
+      }
+      if (value is String) {
+        final id = _extractYoutubeId(value);
+        return id == null ? null : <String>[id];
+      }
+      return null;
+    }
     DateTime? parseDate(dynamic v) {
       if (v == null) return null;
       if (v is Timestamp) return v.toDate();
@@ -102,6 +194,9 @@ class Spot {
       imageUrls: data['imageUrls'] is List
           ? List<String>.from(data['imageUrls'])
           : (data['imageUrl'] != null ? [data['imageUrl'] as String] : null),
+      youtubeVideoIds: _extractYoutubeIdsList(
+        data['youtubeVideoIds'] ?? data['youtubeUrls'] ?? data['youtube'] ?? data['videos'],
+      ),
       folderName: data['folderName'] as String?,
       createdBy: data['createdBy'] as String?,
       createdByName: data['createdByName'] as String?,
@@ -127,6 +222,7 @@ class Spot {
       'city': city,
       'countryCode': countryCode,
       'imageUrls': imageUrls,
+      if (youtubeVideoIds != null) 'youtubeVideoIds': youtubeVideoIds,
       'folderName': folderName,
       'createdBy': createdBy,
       'createdByName': createdByName,
@@ -152,6 +248,7 @@ class Spot {
     String? city,
     String? countryCode,
     List<String>? imageUrls,
+    List<String>? youtubeVideoIds,
     String? folderName,
     String? createdBy,
     String? createdByName,
@@ -175,6 +272,7 @@ class Spot {
       city: city ?? this.city,
       countryCode: countryCode ?? this.countryCode,
       imageUrls: imageUrls ?? this.imageUrls,
+      youtubeVideoIds: youtubeVideoIds ?? this.youtubeVideoIds,
       folderName: folderName ?? this.folderName,
       createdBy: createdBy ?? this.createdBy,
       createdByName: createdByName ?? this.createdByName,
