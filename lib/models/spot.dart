@@ -110,7 +110,7 @@ class Spot {
           ? List<String>.from(data['imageUrls'])
           : (data['imageUrl'] != null ? [data['imageUrl']] : null),
       youtubeVideoIds: extractYoutubeIdsList(
-        data['youtubeVideoIds'] ?? data['youtubeUrls'] ?? data['youtube'] ?? data['videos'],
+        data['youtubeVideoIds'],
       ),
       folderName: data['folderName'],
       createdBy: data['createdBy'],
@@ -195,7 +195,7 @@ class Spot {
           ? List<String>.from(data['imageUrls'])
           : (data['imageUrl'] != null ? [data['imageUrl'] as String] : null),
       youtubeVideoIds: extractYoutubeIdsList(
-        data['youtubeVideoIds'] ?? data['youtubeUrls'] ?? data['youtube'] ?? data['videos'],
+        data['youtubeVideoIds'],
       ),
       folderName: data['folderName'] as String?,
       createdBy: data['createdBy'] as String?,
