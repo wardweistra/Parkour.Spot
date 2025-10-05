@@ -40,13 +40,15 @@ dependencies:
   # Deep Linking & Navigation
   url_launcher: ^6.3.1
   go_router: ^14.2.7
-  youtube_player_iframe: ^5.1.3
+  youtube_player_iframe: ^5.2.2
   
   # Web
   web: ^1.1.0
   flutter_web_plugins:
     sdk: flutter
   shared_preferences: ^2.2.3
+  webview_flutter: ^4.2.4
+  webview_flutter_web: ^0.2.3+4
 
 dev_dependencies:
   flutter_test:

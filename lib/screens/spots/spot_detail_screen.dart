@@ -13,6 +13,7 @@ import '../../services/sync_source_service.dart';
 import '../../widgets/source_details_dialog.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SpotDetailScreen extends StatefulWidget {
   final Spot spot;
@@ -50,19 +51,23 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     // Note: User rating will be loaded when auth state is restored via FutureBuilder
 
     // Initialize YouTube controllers if any videos are present
-    _ytControllers = (widget.spot.youtubeVideoIds ?? const <String>[]) 
-        .where((id) => id.trim().isNotEmpty)
-        .map((id) => YoutubePlayerController.fromVideoId(
-              videoId: id,
-              params: const YoutubePlayerParams(
-                showFullscreenButton: true,
-                autoPlay: false,
-                enableCaption: true,
-                showControls: true,
-                strictRelatedVideos: true,
-              ),
-            ))
-        .toList();
+    if (kIsWeb && MobileDetectionService.isMobileDevice) {
+      // On mobile web, avoid initializing embedded players due to stability issues.
+      _ytControllers = <YoutubePlayerController>[];
+    } else {
+      _ytControllers = (widget.spot.youtubeVideoIds ?? const <String>[]) 
+          .where((id) => id.trim().isNotEmpty)
+          .map((id) => YoutubePlayerController.fromVideoId(
+                videoId: id,
+                params: const YoutubePlayerParams(
+                  showFullscreenButton: true,
+                  enableCaption: true,
+                  showControls: true,
+                  strictRelatedVideos: true,
+                ),
+              ))
+          .toList();
+    }
   }
 
   @override
@@ -510,38 +515,96 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     
                   // YouTube Videos Section
                   if (widget.spot.youtubeVideoIds != null && widget.spot.youtubeVideoIds!.isNotEmpty) ...[
-                    Text(
-                      'Videos',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                    const SizedBox(height: 8),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: List.generate(_ytControllers.length, (index) {
-                        final controller = _ytControllers[index];
-                        return Padding(
-                          padding: EdgeInsets.only(bottom: index == _ytControllers.length - 1 ? 0 : 12),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                                border: Border.all(
-                                  color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                    if (kIsWeb && MobileDetectionService.isMobileDevice)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: List.generate(widget.spot.youtubeVideoIds!.length, (index) {
+                          final id = widget.spot.youtubeVideoIds![index];
+                          return Padding(
+                            padding: EdgeInsets.only(bottom: index == widget.spot.youtubeVideoIds!.length - 1 ? 0 : 12),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: InkWell(
+                                onTap: () async {
+                                  final uri = Uri.parse('https://www.youtube.com/watch?v=$id');
+                                  if (await canLaunchUrl(uri)) {
+                                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                  }
+                                },
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    AspectRatio(
+                                      aspectRatio: 16 / 9,
+                                      child: Image.network(
+                                        'https://img.youtube.com/vi/$id/hqdefault.jpg',
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                    Container(
+                                      width: 64,
+                                      height: 64,
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withValues(alpha: 0.6),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(Icons.play_arrow, color: Colors.white, size: 40),
+                                    ),
+                                  ],
                                 ),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: AspectRatio(
-                                aspectRatio: 16 / 9,
-                                child: YoutubePlayer(controller: controller),
                               ),
                             ),
-                          ),
-                        );
-                      }),
-                    ),
+                          );
+                        }),
+                      )
+                    else
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: List.generate(_ytControllers.length, (index) {
+                          final controller = _ytControllers[index];
+                          return Padding(
+                            padding: EdgeInsets.only(bottom: index == _ytControllers.length - 1 ? 0 : 12),
+                            child: (kIsWeb && !MobileDetectionService.isMobileDevice)
+                                ? Center(
+                                    child: ConstrainedBox(
+                                      constraints: const BoxConstraints(maxWidth: 800),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                            border: Border.all(
+                                              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                                            ),
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: AspectRatio(
+                                            aspectRatio: 16 / 9,
+                                            child: YoutubePlayer(controller: controller),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                : ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                        border: Border.all(
+                                          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: AspectRatio(
+                                        aspectRatio: 16 / 9,
+                                        child: YoutubePlayer(controller: controller),
+                                      ),
+                                    ),
+                                  ),
+                          );
+                        }),
+                      ),
                     const SizedBox(height: 24),
                   ],
 
