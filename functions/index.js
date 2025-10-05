@@ -532,7 +532,7 @@ function cleanDescription(description) {
   if (!description) return "";
 
   // Remove HTML tags but preserve line breaks
-  const cleaned = description
+  let cleaned = description
       .replace(/<br\s*\/?>/gi, "\n") // Convert <br> tags to newlines
       .replace(/<img[^>]*>/gi, "") // Remove <img> tags
       .replace(/<[^>]*>/g, "") // Remove all other HTML tags
@@ -546,7 +546,73 @@ function cleanDescription(description) {
       .replace(/\n\s*\n/g, "\n\n") // Replace 2+ newlines with 2
       .trim(); // Remove leading/trailing whitespace
 
+  // Remove YouTube URLs since we extract video IDs separately
+  cleaned = cleaned
+      .replace(/https?:\/\/(www\.)?youtube\.com\/watch\?v=[^\s\n]+/g, "") // Remove watch URLs
+      .replace(/https?:\/\/(www\.)?youtube\.com\/embed\/[^\s\n]+/g, "") // Remove embed URLs
+      .replace(/https?:\/\/(www\.)?youtube\.com\/shorts\/[^\s\n]+/g, "") // Remove shorts URLs
+      .replace(/https?:\/\/youtu\.be\/[^\s\n]+/g, "") // Remove youtu.be URLs
+      .replace(/\]\]>/g, "") // Remove CDATA closing tags
+      .replace(/\n\s*\n\s*\n/g, "\n\n") // Clean up extra newlines again
+      .replace(/\n\s*\n/g, "\n\n") // Replace 2+ newlines with 2
+      .trim(); // Remove leading/trailing whitespace
+
   return cleaned;
+}
+
+/**
+ * Extract YouTube video IDs from an HTML/text description
+ * Supports urls like:
+ *  - youtu.be/<id>
+ *  - youtube.com/watch?v=<id>
+ *  - youtube.com/embed/<id>
+ *  - youtube.com/shorts/<id>
+ * @param {string} description
+ * @return {string[]} unique list of video IDs
+ */
+function extractYoutubeVideoIdsFromDescription(description) {
+  if (!description) return [];
+  const ids = new Set();
+
+  // Generic URL matcher to scan the description - more precise
+  const urlRegex = /(https?:\/\/[^\s"'<>)]+)/g;
+  let match;
+  while ((match = urlRegex.exec(description)) !== null) { // eslint-disable-line no-cond-assign
+    const url = match[1];
+    try {
+      const uri = new URL(url);
+      const host = uri.hostname.toLowerCase();
+      const segments = uri.pathname.split("/").filter(Boolean);
+
+      if (host.includes("youtu.be")) {
+        const last = segments[segments.length - 1];
+        if (last) ids.add(last);
+        continue;
+      }
+
+      if (host.includes("youtube.com") || host.includes("www.youtube.com")) {
+        const v = uri.searchParams.get("v");
+        if (v) {
+          ids.add(v);
+          continue;
+        }
+        const embedIdx = segments.indexOf("embed");
+        if (embedIdx !== -1 && embedIdx + 1 < segments.length) {
+          ids.add(segments[embedIdx + 1]);
+          continue;
+        }
+        const shortsIdx = segments.indexOf("shorts");
+        if (shortsIdx !== -1 && shortsIdx + 1 < segments.length) {
+          ids.add(segments[shortsIdx + 1]);
+          continue;
+        }
+      }
+    } catch (_) {
+      // Ignore parse errors
+    }
+  }
+
+  return Array.from(ids);
 }
 
 /**
@@ -565,24 +631,68 @@ function extractImageUrls(placemark) {
     imageUrls.push(match[1]);
   }
 
+  // Also add YouTube thumbnails for any YouTube links present in the description
+  const youtubeIds = extractYoutubeVideoIdsFromDescription(description);
+  for (const vid of youtubeIds) {
+    // Check if we already have a YouTube thumbnail for this video ID
+    const existingThumbnail = imageUrls.find(url => 
+      url.includes(`img.youtube.com/vi/${vid}/`) && 
+      (url.includes('hqdefault.jpg') || url.includes('mqdefault.jpg') || url.includes('default.jpg'))
+    );
+    
+    if (existingThumbnail) {
+      // Replace the existing lower quality thumbnail with maxresdefault
+      const index = imageUrls.indexOf(existingThumbnail);
+      imageUrls[index] = `https://img.youtube.com/vi/${vid}/maxresdefault.jpg`;
+      console.log(`DEBUG: Replaced YouTube thumbnail for ${vid}`);
+    } else {
+      // Add maxresdefault thumbnail if no existing YouTube thumbnail found
+      imageUrls.push(`https://img.youtube.com/vi/${vid}/maxresdefault.jpg`);
+      console.log(`DEBUG: Added YouTube thumbnail for ${vid}`);
+    }
+  }
+
   // Extract from ExtendedData gx_media_links
   const extendedData = placemark.extendedData || {};
+  console.log(`DEBUG: ExtendedData structure:`, JSON.stringify(extendedData, null, 2));
   if (extendedData.Data) {
     const mediaData = extendedData.Data.find((data) =>
       data.$ && data.$.name === "gx_media_links",
     );
+    console.log(`DEBUG: Found mediaData:`, mediaData);
     if (mediaData && mediaData.value && mediaData.value[0]) {
       const mediaUrls = mediaData.value[0].split(" ").filter((url) =>
         url.trim(),
       );
+      console.log(`DEBUG: Found ${mediaUrls.length} URLs from ExtendedData:`, mediaUrls);
       imageUrls.push(...mediaUrls);
     }
   }
 
   // Remove duplicates and filter out invalid URLs
-  return [...new Set(imageUrls)].filter((url) =>
-    url && url.startsWith("http") && url.includes("google.com"),
-  );
+  console.log(`DEBUG: Before filtering, found ${imageUrls.length} URLs:`, imageUrls);
+  const filteredUrls = [...new Set(imageUrls)].filter((url) => {
+    if (!url || !url.startsWith("http")) {
+      console.log(`DEBUG: Filtered out invalid URL: ${url}`);
+      return false;
+    }
+    try {
+      const host = new URL(url).hostname.toLowerCase();
+      const isValid = host.includes("google.com") || 
+             host.includes("googleusercontent.com") ||
+             host.includes("img.youtube.com") || 
+             host.includes("ytimg.com");
+      if (!isValid) {
+        console.log(`DEBUG: Filtered out URL with host ${host}: ${url}`);
+      }
+      return isValid;
+    } catch (_) {
+      console.log(`DEBUG: Filtered out malformed URL: ${url}`);
+      return false;
+    }
+  });
+  console.log(`DEBUG: After filtering, found ${filteredUrls.length} URLs:`, filteredUrls);
+  return filteredUrls;
 }
 
 /**
@@ -760,17 +870,25 @@ async function processPlacemarkImages(placemark, existingSpotData = null) {
 
   const uploadedImageUrls = [];
   const imageHashes = [];
-  const existingImageHashes = existingSpotData?.imageHashes || [];
+
+  // Create URL-to-hash mapping from existing spot data
+  const urlToHashMap = new Map();
+  if (existingSpotData && existingSpotData.imageUrls && existingSpotData.imageHashes) {
+    for (let i = 0; i < existingSpotData.imageUrls.length; i++) {
+      if (existingSpotData.imageUrls[i] && existingSpotData.imageHashes[i]) {
+        urlToHashMap.set(existingSpotData.imageUrls[i], existingSpotData.imageHashes[i]);
+      }
+    }
+  }
 
   // Process images sequentially to reduce memory usage
   for (let i = 0; i < imageUrls.length; i++) {
     const url = imageUrls[i];
     
-    // Check if we have a stored hash for this image URL
+    // Check if we have a stored hash for this specific image URL
     let storedHash = null;
-    if (existingSpotData && existingImageHashes[i]) {
-      storedHash = existingImageHashes[i];
-      console.log(`Found stored hash for image ${i + 1}: ${storedHash.substring(0, 8)}...`);
+    if (urlToHashMap.has(url)) {
+      storedHash = urlToHashMap.get(url);
     }
     
     const result = await downloadAndUploadImage(url, placemark.name, i, storedHash);
@@ -1159,6 +1277,9 @@ async function processSyncSource(source, sourceId, apiKey) {
     console.log(`Processing images for spot: ${name} from source: ${source.name}`);
     const imageResult = await processPlacemarkImages(placemark, existingSpotData);
 
+    // Extract YouTube IDs from the raw description for storage and thumbnails
+    const youtubeVideoIds = extractYoutubeVideoIdsFromDescription(description || "");
+
     // Clean the description to remove HTML
     const cleanedDescription = cleanDescription(description);
 
@@ -1186,6 +1307,11 @@ async function processSyncSource(source, sourceId, apiKey) {
       } else {
         spotData.folderName = null;
       }
+    }
+
+    // Add YouTube video IDs if found
+    if (youtubeVideoIds.length > 0) {
+      spotData.youtubeVideoIds = youtubeVideoIds;
     }
 
     // Add image URLs and hashes if any were found
@@ -2000,8 +2126,8 @@ exports.placeDetails = onCall(
           }
           return {
             success: true,
-            latitude: loc?.lat,
-            longitude: loc?.lng,
+            latitude: loc && loc.lat,
+            longitude: loc && loc.lng,
             formattedAddress: r.formatted_address || null,
             city,
             countryCode,
