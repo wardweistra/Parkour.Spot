@@ -71,9 +71,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   final FocusNode _searchFocusNode = FocusNode();
   String _searchQuery = '';
   String? _placesSessionToken;
-  Timer? _autocompleteDebounce;
-  bool _isFetchingSuggestions = false;
-  List<Map<String, dynamic>> _autocompleteSuggestions = [];
+  // Autocomplete is fetched live in optionsBuilder; no debounce field needed
   List<Spot> _visibleSpots = [];
   List<Spot> _loadedSpots = []; // Spots loaded for the current map view
   Set<Marker> _markers = {};
@@ -199,7 +197,6 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
 
   @override
   void dispose() {
-    _autocompleteDebounce?.cancel();
     _cameraMoveDebounce?.cancel();
     _searchController.dispose();
     _searchFocusNode.dispose();
@@ -215,63 +212,10 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     setState(() {
       _searchQuery = _searchController.text;
     });
-    // Only fetch location suggestions, don't filter spots by name
-    _debouncedFetchSuggestions();
+    // Suggestions are fetched directly by Autocomplete.optionsBuilder
   }
 
-
-  void _debouncedFetchSuggestions() {
-    _autocompleteDebounce?.cancel();
-    if (_searchQuery.trim().isEmpty) {
-      setState(() {
-        _autocompleteSuggestions = [];
-      });
-      return;
-    }
-    _autocompleteDebounce = Timer(const Duration(milliseconds: 250), () async {
-      // Ensure a session token exists for billing/session affinity
-      _placesSessionToken ??= const Uuid().v4();
-      setState(() {
-        _isFetchingSuggestions = true;
-      });
-      try {
-        final geocoding = Provider.of<GeocodingService>(context, listen: false);
-        // Bias to current map center if available
-        LatLng? center;
-        if (_mapController != null) {
-          try {
-            final bounds = await _mapController!.getVisibleRegion();
-            center = LatLng(
-              (bounds.northeast.latitude + bounds.southwest.latitude) / 2,
-              (bounds.northeast.longitude + bounds.southwest.longitude) / 2,
-            );
-          } catch (_) {}
-        }
-        final suggestions = await geocoding.placesAutocomplete(
-          input: _searchQuery,
-          sessionToken: _placesSessionToken,
-          biasLat: center?.latitude,
-          biasLng: center?.longitude,
-          radiusMeters: 50000,
-        );
-        if (!mounted) return;
-        setState(() {
-          _autocompleteSuggestions = suggestions;
-});
-      } catch (_) {
-        if (!mounted) return;
-        setState(() {
-          _autocompleteSuggestions = [];
-        });
-      } finally {
-        if (mounted) {
-          setState(() {
-            _isFetchingSuggestions = false;
-          });
-        }
-      }
-    });
-  }
+  // Removed debounce-based suggestion fetching; Autocomplete.optionsBuilder now fetches live
 
   double _getZoomLevelForPlace(Map<String, dynamic> details) {
     // Get place types from the place details
@@ -313,6 +257,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
 
   Future<void> _selectPlaceSuggestion(Map<String, dynamic> suggestion) async {
     try {
+      
       final geocoding = Provider.of<GeocodingService>(context, listen: false);
       final placeId = suggestion['placeId'] as String?;
       if (placeId == null) {
@@ -328,6 +273,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
       final double? lat = (details['latitude'] as num?)?.toDouble();
       final double? lng = (details['longitude'] as num?)?.toDouble();
       final String? formatted = details['formattedAddress'] as String? ?? details['formatted_address'] as String?;
+      
       if (lat != null && lng != null && _mapController != null) {
         final zoomLevel = _getZoomLevelForPlace(details);
         await _mapController!.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(
@@ -335,20 +281,17 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
           zoom: zoomLevel,
         )));
       }
-      // Update search field and clear suggestions
+      // Update search field
       setState(() {
         _searchController.text = formatted ?? (suggestion['description'] as String? ?? '');
         _searchController.selection = TextSelection.fromPosition(TextPosition(offset: _searchController.text.length));
-        _autocompleteSuggestions = [];
       });
       // Trigger a refresh of visible spots for new area
       _updateVisibleSpots();
     } catch (e) {
       // Log errors for debugging
       debugPrint('Error selecting place: $e');
-      setState(() {
-        _autocompleteSuggestions = [];
-      });
+      // No-op: suggestions list is now built live by optionsBuilder
     }
   }
 
@@ -1005,17 +948,49 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                     children: [
                       Autocomplete<Map<String, dynamic>>(
                         optionsBuilder: (TextEditingValue textEditingValue) async {
-                          if (textEditingValue.text.isEmpty) {
+                          final query = textEditingValue.text.trim();
+                          if (query.isEmpty) {
                             return const Iterable<Map<String, dynamic>>.empty();
                           }
+
+                          // Keep _searchQuery in sync (without triggering external fetches)
+                          if (_searchQuery != query) {
+                            setState(() {
+                              _searchQuery = query;
+                            });
+                          }
+
+                          // Ensure session token
+                          _placesSessionToken ??= const Uuid().v4();
+
+                          // Compute map center bias if possible
+                          LatLng? center;
+                          if (_mapController != null) {
+                            try {
+                              final bounds = await _mapController!.getVisibleRegion();
+                              center = LatLng(
+                                (bounds.northeast.latitude + bounds.southwest.latitude) / 2,
+                                (bounds.northeast.longitude + bounds.southwest.longitude) / 2,
+                              );
+                            } catch (_) {}
+                          }
+
                           
-                          // Update search query and trigger debounced fetch
-                          setState(() {
-                            _searchQuery = textEditingValue.text;
-                          });
-                          _debouncedFetchSuggestions();
-                          
-                          return _autocompleteSuggestions;
+                          try {
+                            final geocoding = Provider.of<GeocodingService>(context, listen: false);
+                            final results = await geocoding.placesAutocomplete(
+                              input: query,
+                              sessionToken: _placesSessionToken,
+                              biasLat: center?.latitude,
+                              biasLng: center?.longitude,
+                              radiusMeters: 50000,
+                            );
+                            
+                            return results;
+                          } catch (e) {
+                            
+                            return const Iterable<Map<String, dynamic>>.empty();
+                          }
                         },
                         onSelected: (Map<String, dynamic> suggestion) async {
                           await _selectPlaceSuggestion(suggestion);
@@ -1033,24 +1008,15 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                               suffixIcon: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  if (_isFetchingSuggestions)
-                                    const Padding(
-                                      padding: EdgeInsets.only(right: 8),
-                                      child: SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(strokeWidth: 2),
-                                      ),
-                                    ),
+                                  // Loading indicator removed; optionsBuilder fetches live
                                   if (textEditingController.text.isNotEmpty)
                                     IconButton(
                                       icon: const Icon(Icons.clear),
                                       tooltip: 'Clear',
                                       onPressed: () {
                                         textEditingController.clear();
-                                        setState(() {
-                                          _autocompleteSuggestions = [];
-                                        });
+                                        // optionsBuilder will return empty for empty query
+                                        setState(() {});
                                       },
                                     ),
                                   Stack(
