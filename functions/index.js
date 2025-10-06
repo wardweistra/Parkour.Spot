@@ -595,6 +595,24 @@ function getPublicUrl(fileName) {
 }
 
 /**
+ * Determines whether a given image URL belongs to an ephemeral Google host
+ * whose links are unstable and should not be cached by original URL.
+ * @param {string} imageUrl
+ * @return {boolean}
+ */
+function isEphemeralImageHost(imageUrl) {
+  try {
+    const host = new URL(imageUrl).hostname.toLowerCase();
+    return (
+      host === "mymaps.usercontent.google.com" ||
+      host === "lh3.googleusercontent.com"
+    );
+  } catch (_) {
+    return false;
+  }
+}
+
+/**
  * Extracts KML from KMZ
  * @param {Buffer} kmzBuffer - The KMZ buffer
  * @return {Promise<string>} A promise that resolves to the KML content
@@ -833,6 +851,10 @@ function extractImageUrls(placemark) {
  */
 async function checkImageUrlCache(imageUrl) {
   try {
+    // Skip URL-based cache for ephemeral Google URLs
+    if (isEphemeralImageHost(imageUrl)) {
+      return null;
+    }
     const imageCacheRef = db
         .collection("imageCache")
         .doc(encodeURIComponent(imageUrl));
@@ -872,6 +894,10 @@ async function checkImageUrlCache(imageUrl) {
  */
 async function cacheImageMetadata(imageUrl, imageHash, publicUrl) {
   try {
+    // Skip storing cache entries for ephemeral Google URLs
+    if (isEphemeralImageHost(imageUrl)) {
+      return;
+    }
     const imageCacheRef = db
         .collection("imageCache")
         .doc(encodeURIComponent(imageUrl));
@@ -1714,7 +1740,7 @@ exports.syncSingleSource = onCall(
     {
       region: "europe-west1",
       memory: "1GiB",
-      timeoutSeconds: 540,
+      timeoutSeconds: 1200,
       secrets: ["GOOGLE_MAPS_API_KEY"],
     },
     async (request) => {
