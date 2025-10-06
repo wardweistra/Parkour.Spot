@@ -903,10 +903,12 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
               // Map clickable overlay when bottom sheet is expanded
               if (_isBottomSheetOpen)
                 Positioned.fill(
-                  child: GestureDetector(
-                    onTap: _toggleBottomSheet, // Collapse sheet when map is tapped
-                    child: Container(
-                      color: Colors.transparent,
+                  child: PointerInterceptor(
+                    child: GestureDetector(
+                      onTap: _toggleBottomSheet, // Collapse sheet when map is tapped
+                      child: Container(
+                        color: Colors.transparent,
+                      ),
                     ),
                   ),
                 ),
@@ -914,15 +916,17 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
               // Map clickable overlay when spot detail card is shown
               if (_selectedSpot != null && !_isBottomSheetOpen)
                 Positioned.fill(
-                  child: GestureDetector(
-                    onTap: () {
-                      // Clear selected spot when map is tapped
-                      setState(() {
-                        _selectedSpot = null;
-                      });
-                    },
-                    child: Container(
-                      color: Colors.transparent,
+                  child: PointerInterceptor(
+                    child: GestureDetector(
+                      onTap: () {
+                        // Clear selected spot when map is tapped
+                        setState(() {
+                          _selectedSpot = null;
+                        });
+                      },
+                      child: Container(
+                        color: Colors.transparent,
+                      ),
                     ),
                   ),
                 ),
