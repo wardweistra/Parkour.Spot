@@ -1518,9 +1518,6 @@ async function processSyncSource(source, sourceId, apiKey) {
       countryCode: countryCode,
       spotSource: sourceId,
       isPublic: source.isPublic !== false, // Default to true
-      averageRating: 0,
-      ratingCount: 0,
-      wilsonLowerBound: 0,
       random: Math.random(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
@@ -1546,7 +1543,10 @@ async function processSyncSource(source, sourceId, apiKey) {
     }
 
     if (existingSpots.empty) {
-      // Create new spot
+      // Create new spot - initialize rating fields to 0
+      spotData.averageRating = 0;
+      spotData.ratingCount = 0;
+      spotData.wilsonLowerBound = 0;
       spotData.createdAt = admin.firestore.FieldValue.serverTimestamp();
       await db.collection("spots").add(spotData);
       created++;
@@ -1554,12 +1554,25 @@ async function processSyncSource(source, sourceId, apiKey) {
           `Created new spot: ${name} from source: ${source.name} with ${imageResult.imageUrls.length} images and geocoded address`,
       );
     } else {
-      // Update existing spot
+      // Update existing spot - preserve existing rating fields
       const existingSpot = existingSpots.docs[0];
+      const existingData = existingSpot.data();
+      
+      // Preserve existing rating fields if they exist
+      if (existingData.averageRating !== undefined) {
+        spotData.averageRating = existingData.averageRating;
+      }
+      if (existingData.ratingCount !== undefined) {
+        spotData.ratingCount = existingData.ratingCount;
+      }
+      if (existingData.wilsonLowerBound !== undefined) {
+        spotData.wilsonLowerBound = existingData.wilsonLowerBound;
+      }
+      
       await existingSpot.ref.update(spotData);
       updated++;
       console.log(
-          `Updated existing spot: ${name} from source: ${source.name} with ${imageResult.imageUrls.length} images`,
+          `Updated existing spot: ${name} from source: ${source.name} with ${imageResult.imageUrls.length} images (preserved rating: ${existingData.averageRating || 0}, count: ${existingData.ratingCount || 0})`,
       );
     }
 
