@@ -368,6 +368,50 @@ async function recomputeSpotRatingAggregates(spotId) {
   }
 }
 
+// ========== Admin Callable: Recompute aggregates for all rated spots ==========
+exports.recomputeAllRatedSpots = onCall(
+    {region: "europe-west1", memory: "512MiB", timeoutSeconds: 540},
+    async (_request) => {
+      try {
+        // Collect unique spotIds from ratings
+        const ratingsSnap = await db.collection("ratings").get();
+        const uniqueSpotIds = new Set();
+        ratingsSnap.forEach((doc) => {
+          const data = doc.data();
+          const spotId = data && data.spotId;
+          if (typeof spotId === "string" && spotId.length > 0) {
+            uniqueSpotIds.add(spotId);
+          }
+        });
+
+        const spotIds = Array.from(uniqueSpotIds);
+        let successCount = 0;
+        let failCount = 0;
+
+        // Process sequentially to be gentle on Firestore
+        for (const spotId of spotIds) {
+          try {
+            await recomputeSpotRatingAggregates(spotId);
+            successCount++;
+          } catch (e) {
+            console.error("Failed recomputing for", spotId, e);
+            failCount++;
+          }
+        }
+
+        return {
+          success: true,
+          processed: spotIds.length,
+          updated: successCount,
+          failed: failCount,
+        };
+      } catch (error) {
+        console.error("recomputeAllRatedSpots error", error);
+        return {success: false, error: error.message};
+      }
+    },
+);
+
 // ========== Rating Triggers ==========
 exports.onRatingCreated = onDocumentCreated(
     {document: "ratings/{ratingId}", region: "europe-west1"},

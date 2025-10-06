@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
+import '../../services/spot_service.dart';
 
 class AdminHomeScreen extends StatelessWidget {
   const AdminHomeScreen({super.key});
@@ -55,6 +56,55 @@ class AdminHomeScreen extends StatelessWidget {
               subtitle: const Text('Fill address, city, country for spots with empty fields'),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: () => context.go('/admin/geocoding'),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.star_rate),
+              title: const Text('Recompute Ratings for Rated Spots'),
+              subtitle: const Text('Recalculate average, count, and Wilson lower bound from ratings'),
+              onTap: () async {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Recompute Ratings'),
+                    content: const Text('This will recompute rating aggregates for all spots that have ratings. Continue?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(false),
+                        child: const Text('Cancel'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => Navigator.of(ctx).pop(true),
+                        child: const Text('Run'),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (confirmed != true) return;
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Recomputing ratings...')),
+                );
+
+                try {
+                  final spotService = Provider.of<SpotService>(context, listen: false);
+                  final result = await spotService.recomputeAllRatedSpots();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Done. Processed ${result['processed']}, updated ${result['updated']}, failed ${result['failed']}')),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: $e')),
+                    );
+                  }
+                }
+              },
             ),
           ),
         ],

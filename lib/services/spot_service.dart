@@ -373,6 +373,25 @@ class SpotService extends ChangeNotifier {
     }
   }
 
+  // Admin: Recompute rating aggregates for all spots that have ratings
+  Future<Map<String, dynamic>> recomputeAllRatedSpots() async {
+    try {
+      final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
+      final callable = functions.httpsCallable(
+        'recomputeAllRatedSpots',
+        options: HttpsCallableOptions(
+          timeout: const Duration(minutes: 9),
+        ),
+      );
+      final result = await callable.call();
+      final data = result.data as Map<String, dynamic>;
+      return data;
+    } catch (e) {
+      debugPrint('Error recomputing all rated spots: $e');
+      rethrow;
+    }
+  }
+
   // Get spots with pagination for large result sets
   Future<List<Spot>> getSpotsNearbyPaginated(
     double latitude,
