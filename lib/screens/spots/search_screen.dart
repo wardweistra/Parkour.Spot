@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:async';
 import 'package:uuid/uuid.dart';
+import 'package:pointer_interceptor/pointer_interceptor.dart';
 import '../../services/spot_service.dart';
 import '../../services/sync_source_service.dart';
 import '../../services/search_state_service.dart';
@@ -931,7 +932,8 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                 top: MediaQuery.of(context).padding.top + 16,
                 left: 16,
                 right: 16,
-                child: Container(
+                child: PointerInterceptor(
+                  child: Container(
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(12),
@@ -1069,41 +1071,43 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                         optionsViewBuilder: (BuildContext context, AutocompleteOnSelected<Map<String, dynamic>> onSelected, Iterable<Map<String, dynamic>> options) {
                           return Align(
                             alignment: Alignment.topLeft,
-                            child: Material(
-                              elevation: 4.0,
-                              borderRadius: BorderRadius.circular(8),
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(maxHeight: 200),
-                                child: ListView.builder(
-                                  padding: EdgeInsets.zero,
-                                  shrinkWrap: true,
-                                  itemCount: options.length,
-                                  itemBuilder: (context, index) {
-                                    final option = options.elementAt(index);
-                                    final description = option['description'] as String? ?? '';
-                                    final secondary = option['secondary'] as String?;
-                                    
-                                    return ListTile(
-                                      leading: Icon(
-                                        Icons.location_on_outlined,
-                                        color: Theme.of(context).colorScheme.primary,
-                                      ),
-                                      dense: true,
-                                      title: Text(
-                                        description,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      subtitle: secondary != null ? Text(
-                                        secondary,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ) : null,
-                                      onTap: () {
-                                        onSelected(option);
-                                      },
-                                    );
-                                  },
+                            child: PointerInterceptor(
+                              child: Material(
+                                elevation: 4.0,
+                                borderRadius: BorderRadius.circular(8),
+                                child: ConstrainedBox(
+                                  constraints: const BoxConstraints(maxHeight: 200),
+                                  child: ListView.builder(
+                                    padding: EdgeInsets.zero,
+                                    shrinkWrap: true,
+                                    itemCount: options.length,
+                                    itemBuilder: (context, index) {
+                                      final option = options.elementAt(index);
+                                      final description = option['description'] as String? ?? '';
+                                      final secondary = option['secondary'] as String?;
+                                      
+                                      return ListTile(
+                                        leading: Icon(
+                                          Icons.location_on_outlined,
+                                          color: Theme.of(context).colorScheme.primary,
+                                        ),
+                                        dense: true,
+                                        title: Text(
+                                          description,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        subtitle: secondary != null ? Text(
+                                          secondary,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ) : null,
+                                        onTap: () {
+                                          onSelected(option);
+                                        },
+                                      );
+                                    },
+                                  ),
                                 ),
                               ),
                             ),
@@ -1112,6 +1116,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                       ),
                     ],
                   ),
+                ),
                 ),
               ),
 
@@ -1146,17 +1151,18 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                   right: 16,
                   bottom: 16,
                   child: Center(
-                    child: GestureDetector(
-                    onTap: () {
-                      // Navigate to spot detail using proper URL format
-                      final navigationUrl = UrlService.generateNavigationUrl(
-                        _selectedSpot!.id!,
-                        countryCode: _selectedSpot!.countryCode,
-                        city: _selectedSpot!.city,
-                      );
-                      context.go(navigationUrl);
-                    },
-                    child: Container(
+                    child: PointerInterceptor(
+                      child: GestureDetector(
+                      onTap: () {
+                        // Navigate to spot detail using proper URL format
+                        final navigationUrl = UrlService.generateNavigationUrl(
+                          _selectedSpot!.id!,
+                          countryCode: _selectedSpot!.countryCode,
+                          city: _selectedSpot!.city,
+                        );
+                        context.go(navigationUrl);
+                      },
+                      child: Container(
                       constraints: BoxConstraints(
                         maxWidth: MediaQuery.of(context).size.width >= 600 ? 400 : double.infinity,
                       ),
@@ -1421,6 +1427,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                       ),
                     ),
                     ),
+                    ),
                   ),
                 ),
 
@@ -1433,100 +1440,102 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                   child: AnimatedBuilder(
                     animation: _bottomSheetAnimation,
                     builder: (context, child) {
-                    return GestureDetector(
-                      onTap: _isBottomSheetOpen ? null : _toggleBottomSheet, // Only clickable when collapsed
-                      onPanStart: _handleDragStart, // Always enable drag gestures
-                      onPanUpdate: _handleDragUpdate,
-                      onPanEnd: _handleDragEnd,
-                      child: Container(
-                        height: MediaQuery.of(context).size.height * _bottomSheetAnimation.value,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface,
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 8,
-                              offset: const Offset(0, -2),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            // Header with spot count
-                            Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  RichText(
-                                     text: TextSpan(
-                                       children: [
-                                         TextSpan(
-                                           text: _totalSpotsInView != null && _bestShownCount != null
-                                               ? '$_totalSpotsInView spots'
-                                               : '${_visibleSpots.length} ${_visibleSpots.length == 1 ? 'spot' : 'spots'} found',
-                                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                             fontWeight: FontWeight.bold,
-                                             color: Theme.of(context).colorScheme.onSurface,
-                                           ),
-                                         ),
-                                         if (_totalSpotsInView != null && _bestShownCount != null && _bestShownCount! < _totalSpotsInView!)
+                    return PointerInterceptor(
+                      child: GestureDetector(
+                        onTap: _isBottomSheetOpen ? null : _toggleBottomSheet, // Only clickable when collapsed
+                        onPanStart: _handleDragStart, // Always enable drag gestures
+                        onPanUpdate: _handleDragUpdate,
+                        onPanEnd: _handleDragEnd,
+                        child: Container(
+                          height: MediaQuery.of(context).size.height * _bottomSheetAnimation.value,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surface,
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.1),
+                                blurRadius: 8,
+                                offset: const Offset(0, -2),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            children: [
+                              // Header with spot count
+                              Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    RichText(
+                                       text: TextSpan(
+                                         children: [
                                            TextSpan(
-                                             text: ' ($_bestShownCount best shown)',
+                                             text: _totalSpotsInView != null && _bestShownCount != null
+                                                 ? '$_totalSpotsInView spots'
+                                                 : '${_visibleSpots.length} ${_visibleSpots.length == 1 ? 'spot' : 'spots'} found',
                                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                               fontWeight: FontWeight.normal,
-                                               color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                               fontWeight: FontWeight.bold,
+                                               color: Theme.of(context).colorScheme.onSurface,
                                              ),
                                            ),
-                                       ],
+                                           if (_totalSpotsInView != null && _bestShownCount != null && _bestShownCount! < _totalSpotsInView!)
+                                             TextSpan(
+                                               text: ' ($_bestShownCount best shown)',
+                                               style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                                 fontWeight: FontWeight.normal,
+                                                 color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                               ),
+                                             ),
+                                         ],
+                                       ),
                                      ),
-                                   ),
-                                  IconButton(
-                                    onPressed: _toggleBottomSheet,
-                                    tooltip: _isBottomSheetOpen ? 'Collapse' : 'Expand',
-                                    icon: ReliableIcon(
-                                      icon: _isBottomSheetOpen ? Icons.expand_more : Icons.expand_less,
+                                    IconButton(
+                                      onPressed: _toggleBottomSheet,
+                                      tooltip: _isBottomSheetOpen ? 'Collapse' : 'Expand',
+                                      icon: ReliableIcon(
+                                        icon: _isBottomSheetOpen ? Icons.expand_more : Icons.expand_less,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
 
-                            // Spots List - only show when expanded
-                            if (_isBottomSheetOpen)
-                              Expanded(
-                                child: _visibleSpots.isEmpty
-                                    ? Center(
-                                        child: Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              _searchQuery.isNotEmpty ? Icons.search_off : Icons.location_off,
-                                              size: 64,
-                                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-                                            ),
-                                            const SizedBox(height: 16),
-                                            Text(
-                                              _searchQuery.isNotEmpty ? 'No spots found' : 'No spots in this area',
-                                              style: Theme.of(context).textTheme.headlineSmall,
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              _searchQuery.isNotEmpty
-                                                  ? 'Try adjusting your search terms'
-                                                  : 'Move the map to explore different areas',
-                                              textAlign: TextAlign.center,
-                                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                              // Spots List - only show when expanded
+                              if (_isBottomSheetOpen)
+                                Expanded(
+                                  child: _visibleSpots.isEmpty
+                                      ? Center(
+                                          child: Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                _searchQuery.isNotEmpty ? Icons.search_off : Icons.location_off,
+                                                size: 64,
+                                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                                               ),
-                                            ),
-                                          ],
-                                        ),
-                                      )
-                                    : _buildSpotsList(),
-                              ),
-                          ],
+                                              const SizedBox(height: 16),
+                                              Text(
+                                                _searchQuery.isNotEmpty ? 'No spots found' : 'No spots in this area',
+                                                style: Theme.of(context).textTheme.headlineSmall,
+                                              ),
+                                              const SizedBox(height: 8),
+                                              Text(
+                                                _searchQuery.isNotEmpty
+                                                    ? 'Try adjusting your search terms'
+                                                    : 'Move the map to explore different areas',
+                                                textAlign: TextAlign.center,
+                                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        )
+                                      : _buildSpotsList(),
+                                ),
+                            ],
+                          ),
                         ),
                       ),
                     );
@@ -1625,11 +1634,12 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
       child: Container(
         color: Colors.black.withValues(alpha: 0.5), // Semi-transparent background
         child: Center(
-          child: GestureDetector(
-            onTap: () {
-              // Prevent dialog from closing when tapping inside
-            },
-            child: Container(
+          child: PointerInterceptor(
+            child: GestureDetector(
+              onTap: () {
+                // Prevent dialog from closing when tapping inside
+              },
+              child: Container(
               constraints: BoxConstraints(
                 maxHeight: MediaQuery.of(context).size.height * 0.8,
                 maxWidth: MediaQuery.of(context).size.width * 0.9,
@@ -1696,6 +1706,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
             ),
                 ],
               ),
+            ),
             ),
           ),
         ),
