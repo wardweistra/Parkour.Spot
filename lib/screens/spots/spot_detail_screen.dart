@@ -28,7 +28,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   double _previousRating = 0; // Track the user's previous rating
   bool _hasRated = false;
   int _currentImageIndex = 0;
+  int _currentVideoIndex = 0;
   late final ScrollController _scrollController;
+  late final PageController _videoPageController;
   bool _isSatelliteView = false;
   bool _isShareModalOpen = false; // Add this state variable
   
@@ -44,6 +46,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   void initState() {
     super.initState();
     _scrollController = ScrollController();
+    _videoPageController = PageController();
     _loadRatingStats(); // Load rating stats once on init
     _loadSourceName(); // Load source name if spot has a source
     // Note: User rating will be loaded when auth state is restored via FutureBuilder
@@ -54,6 +57,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _videoPageController.dispose();
     // No controllers to dispose
     super.dispose();
   }
@@ -492,48 +496,195 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     
                     const SizedBox(height: 24),
                     
-                  // YouTube Videos Section - always show clickable thumbnails
+                  // YouTube Videos Section - show clickable thumbnails, with carousel when multiple
                   if (widget.spot.youtubeVideoIds != null && widget.spot.youtubeVideoIds!.isNotEmpty) ...[
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: List.generate(widget.spot.youtubeVideoIds!.length, (index) {
-                        final id = widget.spot.youtubeVideoIds![index];
-                        return Padding(
-                          padding: EdgeInsets.only(bottom: index == widget.spot.youtubeVideoIds!.length - 1 ? 0 : 12),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: InkWell(
-                              onTap: () async {
-                                final uri = Uri.parse('https://www.youtube.com/watch?v=$id');
-                                if (await canLaunchUrl(uri)) {
-                                  await launchUrl(uri, mode: LaunchMode.externalApplication);
-                                }
-                              },
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  AspectRatio(
+                    Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 900),
+                        child: Builder(
+                          builder: (context) {
+                            final videoIds = widget.spot.youtubeVideoIds!;
+                            if (videoIds.length == 1) {
+                              final id = videoIds.first;
+                              return ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: InkWell(
+                                  onTap: () async {
+                                    final uri = Uri.parse('https://www.youtube.com/watch?v=$id');
+                                    if (await canLaunchUrl(uri)) {
+                                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                    }
+                                  },
+                                  child: AspectRatio(
                                     aspectRatio: 16 / 9,
-                                    child: Image.network(
-                                      'https://img.youtube.com/vi/$id/hqdefault.jpg',
-                                      fit: BoxFit.cover,
+                                    child: Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        Image.network(
+                                          'https://img.youtube.com/vi/$id/hqdefault.jpg',
+                                          fit: BoxFit.cover,
+                                          width: double.infinity,
+                                          height: double.infinity,
+                                        ),
+                                        Container(
+                                          width: 64,
+                                          height: 64,
+                                          decoration: BoxDecoration(
+                                            color: Colors.black.withValues(alpha: 0.6),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(Icons.play_arrow, color: Colors.white, size: 40),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  Container(
-                                    width: 64,
-                                    height: 64,
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withValues(alpha: 0.6),
-                                      shape: BoxShape.circle,
+                                ),
+                              );
+                            }
+
+                            // Multiple videos -> carousel
+                            return Stack(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: AspectRatio(
+                                    aspectRatio: 16 / 9,
+                                    child: PageView.builder(
+                                      controller: _videoPageController,
+                                      itemCount: videoIds.length,
+                                      onPageChanged: (i) {
+                                        setState(() {
+                                          _currentVideoIndex = i;
+                                        });
+                                      },
+                                      itemBuilder: (context, index) {
+                                        final id = videoIds[index];
+                                        return InkWell(
+                                          onTap: () async {
+                                            final uri = Uri.parse('https://www.youtube.com/watch?v=$id');
+                                            if (await canLaunchUrl(uri)) {
+                                              await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                            }
+                                          },
+                                          child: Stack(
+                                            alignment: Alignment.center,
+                                            children: [
+                                              Image.network(
+                                                'https://img.youtube.com/vi/$id/hqdefault.jpg',
+                                                fit: BoxFit.cover,
+                                                width: double.infinity,
+                                                height: double.infinity,
+                                              ),
+                                              Container(
+                                                width: 64,
+                                                height: 64,
+                                                decoration: BoxDecoration(
+                                                  color: Colors.black.withValues(alpha: 0.6),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: const Icon(Icons.play_arrow, color: Colors.white, size: 40),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
                                     ),
-                                    child: const Icon(Icons.play_arrow, color: Colors.white, size: 40),
                                   ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      }),
+                                ),
+
+                                // Left arrow
+                                Positioned(
+                                  left: 8,
+                                  top: 0,
+                                  bottom: 0,
+                                  child: Center(
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        final prev = _currentVideoIndex - 1;
+                                        final target = prev < 0 ? videoIds.length - 1 : prev;
+                                        _videoPageController.animateToPage(
+                                          target,
+                                          duration: const Duration(milliseconds: 250),
+                                          curve: Curves.easeOut,
+                                        );
+                                      },
+                                      child: Container(
+                                        width: 40,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withValues(alpha: 0.6),
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: Colors.white.withValues(alpha: 0.3),
+                                          ),
+                                        ),
+                                        child: const Icon(Icons.chevron_left, color: Colors.white),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                                // Right arrow
+                                Positioned(
+                                  right: 8,
+                                  top: 0,
+                                  bottom: 0,
+                                  child: Center(
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        final next = (_currentVideoIndex + 1) % videoIds.length;
+                                        _videoPageController.animateToPage(
+                                          next,
+                                          duration: const Duration(milliseconds: 250),
+                                          curve: Curves.easeOut,
+                                        );
+                                      },
+                                      child: Container(
+                                        width: 40,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withValues(alpha: 0.6),
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: Colors.white.withValues(alpha: 0.3),
+                                          ),
+                                        ),
+                                        child: const Icon(Icons.chevron_right, color: Colors.white),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                                // Dots indicator
+                                Positioned(
+                                  bottom: 8,
+                                  left: 0,
+                                  right: 0,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: List.generate(videoIds.length, (index) {
+                                      final isActive = index == _currentVideoIndex;
+                                      return AnimatedContainer(
+                                        duration: const Duration(milliseconds: 200),
+                                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                                        width: isActive ? 8 : 6,
+                                        height: isActive ? 8 : 6,
+                                        decoration: BoxDecoration(
+                                          color: isActive ? Colors.white : Colors.white54,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: Colors.white.withValues(alpha: 0.3),
+                                          ),
+                                        ),
+                                      );
+                                    }),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 24),
                   ],
