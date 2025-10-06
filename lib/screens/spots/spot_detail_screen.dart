@@ -12,7 +12,6 @@ import '../../services/mobile_detection_service.dart';
 import '../../services/sync_source_service.dart';
 import '../../widgets/source_details_dialog.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
-import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SpotDetailScreen extends StatefulWidget {
@@ -32,7 +31,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   late final ScrollController _scrollController;
   bool _isSatelliteView = false;
   bool _isShareModalOpen = false; // Add this state variable
-  late final List<YoutubePlayerController> _ytControllers;
   
   // Add rating cache variables
   Map<String, dynamic>? _cachedRatingStats;
@@ -50,32 +48,13 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     _loadSourceName(); // Load source name if spot has a source
     // Note: User rating will be loaded when auth state is restored via FutureBuilder
 
-    // Initialize YouTube controllers if any videos are present
-    if (kIsWeb && MobileDetectionService.isMobileDevice) {
-      // On mobile web, avoid initializing embedded players due to stability issues.
-      _ytControllers = <YoutubePlayerController>[];
-    } else {
-      _ytControllers = (widget.spot.youtubeVideoIds ?? const <String>[]) 
-          .where((id) => id.trim().isNotEmpty)
-          .map((id) => YoutubePlayerController.fromVideoId(
-                videoId: id,
-                params: const YoutubePlayerParams(
-                  showFullscreenButton: true,
-                  enableCaption: true,
-                  showControls: true,
-                  strictRelatedVideos: true,
-                ),
-              ))
-          .toList();
-    }
+    // We no longer initialize embedded YouTube players; thumbnails/links only
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
-    for (final controller in _ytControllers) {
-      controller.close();
-    }
+    // No controllers to dispose
     super.dispose();
   }
 
@@ -513,98 +492,49 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     
                     const SizedBox(height: 24),
                     
-                  // YouTube Videos Section
+                  // YouTube Videos Section - always show clickable thumbnails
                   if (widget.spot.youtubeVideoIds != null && widget.spot.youtubeVideoIds!.isNotEmpty) ...[
-                    if (kIsWeb && MobileDetectionService.isMobileDevice)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: List.generate(widget.spot.youtubeVideoIds!.length, (index) {
-                          final id = widget.spot.youtubeVideoIds![index];
-                          return Padding(
-                            padding: EdgeInsets.only(bottom: index == widget.spot.youtubeVideoIds!.length - 1 ? 0 : 12),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: InkWell(
-                                onTap: () async {
-                                  final uri = Uri.parse('https://www.youtube.com/watch?v=$id');
-                                  if (await canLaunchUrl(uri)) {
-                                    await launchUrl(uri, mode: LaunchMode.externalApplication);
-                                  }
-                                },
-                                child: Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    AspectRatio(
-                                      aspectRatio: 16 / 9,
-                                      child: Image.network(
-                                        'https://img.youtube.com/vi/$id/hqdefault.jpg',
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                    Container(
-                                      width: 64,
-                                      height: 64,
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withValues(alpha: 0.6),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(Icons.play_arrow, color: Colors.white, size: 40),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        }),
-                      )
-                    else
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: List.generate(_ytControllers.length, (index) {
-                          final controller = _ytControllers[index];
-                          return Padding(
-                            padding: EdgeInsets.only(bottom: index == _ytControllers.length - 1 ? 0 : 12),
-                            child: (kIsWeb && !MobileDetectionService.isMobileDevice)
-                                ? Center(
-                                    child: ConstrainedBox(
-                                      constraints: const BoxConstraints(maxWidth: 800),
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(12),
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                                            border: Border.all(
-                                              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
-                                            ),
-                                            borderRadius: BorderRadius.circular(12),
-                                          ),
-                                          child: AspectRatio(
-                                            aspectRatio: 16 / 9,
-                                            child: YoutubePlayer(controller: controller),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  )
-                                : ClipRRect(
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                                        border: Border.all(
-                                          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
-                                        ),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: AspectRatio(
-                                        aspectRatio: 16 / 9,
-                                        child: YoutubePlayer(controller: controller),
-                                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: List.generate(widget.spot.youtubeVideoIds!.length, (index) {
+                        final id = widget.spot.youtubeVideoIds![index];
+                        return Padding(
+                          padding: EdgeInsets.only(bottom: index == widget.spot.youtubeVideoIds!.length - 1 ? 0 : 12),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: InkWell(
+                              onTap: () async {
+                                final uri = Uri.parse('https://www.youtube.com/watch?v=$id');
+                                if (await canLaunchUrl(uri)) {
+                                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                }
+                              },
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  AspectRatio(
+                                    aspectRatio: 16 / 9,
+                                    child: Image.network(
+                                      'https://img.youtube.com/vi/$id/hqdefault.jpg',
+                                      fit: BoxFit.cover,
                                     ),
                                   ),
-                          );
-                        }),
-                      ),
+                                  Container(
+                                    width: 64,
+                                    height: 64,
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withValues(alpha: 0.6),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.play_arrow, color: Colors.white, size: 40),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
                     const SizedBox(height: 24),
                   ],
 
@@ -683,7 +613,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     
                     const SizedBox(height: 8),
                     
-                    // Small map widget
+                    // Small map widget (web-safe placeholder on web)
                     Container(
                       height: 200,
                       decoration: BoxDecoration(
@@ -694,94 +624,85 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       ),
                       clipBehavior: Clip.antiAlias,
                       child: Stack(
-                        children: [
-                          GoogleMap(
-                            initialCameraPosition: CameraPosition(
-                              target: LatLng(
-                                widget.spot.latitude,
-                                widget.spot.longitude,
-                              ),
-                              zoom: 16,
-                            ),
-                            mapType: _isSatelliteView ? MapType.satellite : MapType.normal,
-                            markers: {
-                              Marker(
-                                markerId: MarkerId(widget.spot.id ?? 'spot'),
-                                position: LatLng(
-                                  widget.spot.latitude,
-                                  widget.spot.longitude,
-                                ),
-                                // Disable marker interactions
-                                onTap: null,
-                                consumeTapEvents: true,
-                                // Remove info window to prevent popup
-                                infoWindow: InfoWindow.noText,
-                              ),
-                            },
-                            zoomControlsEnabled: false,
-                            myLocationButtonEnabled: false,
-                            mapToolbarEnabled: false,
-                            liteModeEnabled: kIsWeb,
-                            compassEnabled: false,
-                            // Completely disable all map interactions for preview purposes
-                            zoomGesturesEnabled: false,
-                            scrollGesturesEnabled: false,
-                            tiltGesturesEnabled: false,
-                            rotateGesturesEnabled: false,
-                            // Disable any other potential interactions
-                            indoorViewEnabled: false,
-                            trafficEnabled: false,
-                            // Note: onTap is handled by the InkWell overlay below
-                          ),
-                          // Interactive overlay with subtle hint
-                          if (!_isShareModalOpen)
-                            Positioned.fill(
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  onTap: () => _openInMaps(),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            ),
-                          // Enhanced hint positioned at bottom right
-                          if (!_isShareModalOpen)
-                            Positioned(
-                              bottom: 8,
-                              right: 8,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.7),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      kIsWeb && MobileDetectionService.isMobileDevice 
-                                        ? Icons.phone_android 
-                                        : Icons.touch_app,
-                                      color: Colors.white,
-                                      size: 14,
+                              children: [
+                                GoogleMap(
+                                  initialCameraPosition: CameraPosition(
+                                    target: LatLng(
+                                      widget.spot.latitude,
+                                      widget.spot.longitude,
                                     ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      kIsWeb && MobileDetectionService.isMobileDevice
-                                        ? 'Tap to open in ${MobileDetectionService.preferredMapsApp == 'apple_maps' ? 'Apple Maps' : 'Google Maps'}'
-                                        : 'Tap to open map',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w500,
+                                    zoom: 16,
+                                  ),
+                                  mapType: _isSatelliteView ? MapType.satellite : MapType.normal,
+                                  markers: {
+                                    Marker(
+                                      markerId: MarkerId(widget.spot.id ?? 'spot'),
+                                      position: LatLng(
+                                        widget.spot.latitude,
+                                        widget.spot.longitude,
+                                      ),
+                                      onTap: null,
+                                      consumeTapEvents: true,
+                                      infoWindow: InfoWindow.noText,
+                                    ),
+                                  },
+                                  zoomControlsEnabled: false,
+                                  myLocationButtonEnabled: false,
+                                  mapToolbarEnabled: false,
+                                  liteModeEnabled: kIsWeb,
+                                  compassEnabled: false,
+                                  zoomGesturesEnabled: false,
+                                  scrollGesturesEnabled: false,
+                                  tiltGesturesEnabled: false,
+                                  rotateGesturesEnabled: false,
+                                  indoorViewEnabled: false,
+                                  trafficEnabled: false,
+                                ),
+                                if (!_isShareModalOpen)
+                                  Positioned.fill(
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      child: InkWell(
+                                        onTap: () => _openInMaps(),
+                                        borderRadius: BorderRadius.circular(12),
                                       ),
                                     ),
-                                  ],
-                                ),
-                              ),
+                                  ),
+                                if (!_isShareModalOpen)
+                                  Positioned(
+                                    bottom: 8,
+                                    right: 8,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withValues(alpha: 0.7),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            MobileDetectionService.isMobileDevice 
+                                              ? Icons.phone_android 
+                                              : Icons.touch_app,
+                                            color: Colors.white,
+                                            size: 14,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'Tap to open map',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
-                        ],
-                      ),
                     ),
                     
                     const SizedBox(height: 16),
