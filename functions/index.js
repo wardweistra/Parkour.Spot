@@ -786,45 +786,29 @@ function extractImageUrls(placemark) {
       // Replace the existing lower quality thumbnail with maxresdefault
       const index = imageUrls.indexOf(existingThumbnail);
       imageUrls[index] = `https://img.youtube.com/vi/${vid}/maxresdefault.jpg`;
-      console.log(`DEBUG: Replaced YouTube thumbnail for ${vid}`);
     } else {
       // Add maxresdefault thumbnail if no existing YouTube thumbnail found
       imageUrls.push(`https://img.youtube.com/vi/${vid}/maxresdefault.jpg`);
-      console.log(`DEBUG: Added YouTube thumbnail for ${vid}`);
     }
   }
 
   // Extract from ExtendedData gx_media_links
   const extendedData = placemark.extendedData || {};
-  console.log(
-      `DEBUG: ExtendedData structure:`,
-      JSON.stringify(extendedData, null, 2),
-  );
   if (extendedData.Data) {
     const mediaData = extendedData.Data.find(
         (data) => data.$ && data.$.name === "gx_media_links",
     );
-    console.log(`DEBUG: Found mediaData:`, mediaData);
     if (mediaData && mediaData.value && mediaData.value[0]) {
       const mediaUrls = mediaData.value[0]
           .split(" ")
           .filter((url) => url.trim());
-      console.log(
-          `DEBUG: Found ${mediaUrls.length} URLs from ExtendedData:`,
-          mediaUrls,
-      );
       imageUrls.push(...mediaUrls);
     }
   }
 
   // Remove duplicates and filter out invalid URLs
-  console.log(
-      `DEBUG: Before filtering, found ${imageUrls.length} URLs:`,
-      imageUrls,
-  );
   const filteredUrls = [...new Set(imageUrls)].filter((url) => {
     if (!url || !url.startsWith("http")) {
-      console.log(`DEBUG: Filtered out invalid URL: ${url}`);
       return false;
     }
     try {
@@ -834,19 +818,11 @@ function extractImageUrls(placemark) {
         host.includes("googleusercontent.com") ||
         host.includes("img.youtube.com") ||
         host.includes("ytimg.com");
-      if (!isValid) {
-        console.log(`DEBUG: Filtered out URL with host ${host}: ${url}`);
-      }
       return isValid;
     } catch (_) {
-      console.log(`DEBUG: Filtered out malformed URL: ${url}`);
       return false;
     }
   });
-  console.log(
-      `DEBUG: After filtering, found ${filteredUrls.length} URLs:`,
-      filteredUrls,
-  );
   return filteredUrls;
 }
 
