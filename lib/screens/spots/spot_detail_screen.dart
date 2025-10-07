@@ -811,11 +811,13 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                 ),
                                 if (!_isShareModalOpen)
                                   Positioned.fill(
-                                    child: Material(
-                                      color: Colors.transparent,
-                                      child: InkWell(
-                                        onTap: () => _openInMaps(),
-                                        borderRadius: BorderRadius.circular(12),
+                                    child: PointerInterceptor(
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        child: InkWell(
+                                          onTap: () => _openInMaps(),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -823,32 +825,34 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                   Positioned(
                                     bottom: 8,
                                     right: 8,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withValues(alpha: 0.7),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            MobileDetectionService.isMobileDevice 
-                                              ? Icons.phone_android 
-                                              : Icons.touch_app,
-                                            color: Colors.white,
-                                            size: 14,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            'Tap to open map',
-                                            style: const TextStyle(
+                                    child: PointerInterceptor(
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withValues(alpha: 0.7),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              MobileDetectionService.isMobileDevice 
+                                                ? Icons.phone_android 
+                                                : Icons.touch_app,
                                               color: Colors.white,
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w500,
+                                              size: 14,
                                             ),
-                                          ),
-                                        ],
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              'Tap to open map',
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   ),

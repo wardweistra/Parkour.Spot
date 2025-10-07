@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../services/sync_source_service.dart';
 
@@ -16,7 +17,8 @@ class SourceDetailsDialog extends StatelessWidget {
     // Get spot count from lastSyncStats.total
     final spotCount = source.lastSyncStats?['total'] ?? 0;
     
-    return AlertDialog(
+    return PointerInterceptor(
+      child: AlertDialog(
       title: Text(source.name),
       content: SingleChildScrollView(
         child: Column(
@@ -151,6 +153,7 @@ class SourceDetailsDialog extends StatelessWidget {
           child: const Text('Close'),
         ),
       ],
+    ),
     );
   }
 

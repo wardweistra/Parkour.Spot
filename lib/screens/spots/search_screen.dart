@@ -1129,20 +1129,22 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                 Positioned(
                   top: MediaQuery.of(context).padding.top + 80,
                   right: 16,
-                  child: Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                          const SizedBox(width: 8),
-                          const Text('Finding location...'),
-                        ],
+                  child: PointerInterceptor(
+                    child: Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                            const SizedBox(width: 8),
+                            const Text('Finding location...'),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -1552,24 +1554,26 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                 Positioned(
                   right: 16,
                   bottom: MediaQuery.of(context).size.height * 0.09 + 144, // Position above map/satellite button
-                  child: FloatingActionButton(
-                    onPressed: _isLoadingSpotsForView ? null : () {
-                      _loadSpotsForCurrentView();
-                    },
-                    mini: true,
-                    tooltip: 'Refresh spots in current view',
-                    child: _isLoadingSpotsForView
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  child: PointerInterceptor(
+                    child: FloatingActionButton(
+                      onPressed: _isLoadingSpotsForView ? null : () {
+                        _loadSpotsForCurrentView();
+                      },
+                      mini: true,
+                      tooltip: 'Refresh spots in current view',
+                      child: _isLoadingSpotsForView
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : const ReliableIcon(
+                              icon: Icons.refresh,
                             ),
-                          )
-                        : const ReliableIcon(
-                            icon: Icons.refresh,
-                          ),
+                    ),
                   ),
                 ),
 
@@ -1578,18 +1582,20 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                 Positioned(
                   right: 16,
                   bottom: MediaQuery.of(context).size.height * 0.09 + 80, // Position above location button
-                  child: FloatingActionButton(
-                    onPressed: () {
-                      setState(() {
-                        _isSatelliteView = !_isSatelliteView;
-                      });
-                      final searchState = Provider.of<SearchStateService>(context, listen: false);
-                      searchState.setSatellite(_isSatelliteView);
-                    },
-                    mini: true,
-                    tooltip: _isSatelliteView ? 'Switch to Map' : 'Switch to Satellite',
-                    child: ReliableIcon(
-                      icon: _isSatelliteView ? Icons.map : Icons.terrain,
+                  child: PointerInterceptor(
+                    child: FloatingActionButton(
+                      onPressed: () {
+                        setState(() {
+                          _isSatelliteView = !_isSatelliteView;
+                        });
+                        final searchState = Provider.of<SearchStateService>(context, listen: false);
+                        searchState.setSatellite(_isSatelliteView);
+                      },
+                      mini: true,
+                      tooltip: _isSatelliteView ? 'Switch to Map' : 'Switch to Satellite',
+                      child: ReliableIcon(
+                        icon: _isSatelliteView ? Icons.map : Icons.terrain,
+                      ),
                     ),
                   ),
                 ),
@@ -1599,20 +1605,22 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                 Positioned(
                   right: 16,
                   bottom: MediaQuery.of(context).size.height * 0.09 + 16, // Position above bottom sheet
-                  child: FloatingActionButton(
-                    onPressed: _getCurrentLocation,
-                    mini: true,
-                    tooltip: 'Center on my location',
-                    child: _isGettingLocation
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : const Icon(Icons.my_location),
+                  child: PointerInterceptor(
+                    child: FloatingActionButton(
+                      onPressed: _getCurrentLocation,
+                      mini: true,
+                      tooltip: 'Center on my location',
+                      child: _isGettingLocation
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : const Icon(Icons.my_location),
+                    ),
                   ),
                 ),
             ],
@@ -1635,7 +1643,9 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
           _showFiltersDialog = false;
         });
       },
-      child: Container(
+      child: PointerInterceptor(
+        // Intercept pointer events on the full-screen barrier area
+        child: Container(
         color: Colors.black.withValues(alpha: 0.5), // Semi-transparent background
         child: Center(
           child: PointerInterceptor(
@@ -1714,6 +1724,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
             ),
           ),
         ),
+      ),
       ),
     );
   }
