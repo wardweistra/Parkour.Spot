@@ -88,6 +88,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   late PageController _imagePageController;
   double _dragStartY = 0.0;
   bool _isDragging = false;
+  double _lastKnownZoom = 14.0;
   // Filters
   bool _includeSpotsWithoutPictures = true; // Default: include spots without pictures
   bool _includeParkourNative = true; // Spots created directly on parkour.spot (spotSource == null)
@@ -332,6 +333,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                 ),
               ),
             );
+            _lastKnownZoom = 13.5;
           }
           // Refresh markers to include current location
           _updateVisibleSpots();
@@ -699,6 +701,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
       position.target.longitude,
       position.zoom,
     );
+    _lastKnownZoom = position.zoom;
     
     // Debounce loading spots to avoid too many requests while user is panning
     _cameraMoveDebounce?.cancel();
@@ -739,6 +742,44 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     _isDragging = false;
   }
 
+  Future<void> _locateSpot(Spot spot) async {
+    // Collapse bottom sheet if open
+    if (_isBottomSheetOpen) {
+      await _bottomSheetAnimationController.reverse();
+      if (mounted) {
+        setState(() {
+          _isBottomSheetOpen = false;
+        });
+      }
+    }
+
+    // Center map on spot with fluid zoom-in (no zoom-out)
+    if (_mapController != null) {
+      const double desiredZoom = 15.0;
+      final double targetZoom = _lastKnownZoom < desiredZoom ? desiredZoom : _lastKnownZoom;
+      // Step 1: pan to target at current zoom (smoother motion)
+      await _mapController!.animateCamera(
+        CameraUpdate.newLatLng(
+          LatLng(spot.latitude, spot.longitude),
+        ),
+      );
+      // Step 2: if we need to zoom in, do that as a separate animation
+      if (_lastKnownZoom < targetZoom) {
+        await _mapController!.animateCamera(
+          CameraUpdate.zoomTo(targetZoom),
+        );
+      }
+    }
+
+    // Select the spot and refresh markers to show detail card overlay
+    if (mounted) {
+      setState(() {
+        _selectedSpot = spot;
+        _markers = _buildMarkers(_visibleSpots);
+      });
+    }
+  }
+
   Widget _buildSpotsList() {
     final screenWidth = MediaQuery.of(context).size.width;
     final useGrid = screenWidth >= 600; // Use grid layout on wider screens
@@ -776,6 +817,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
               );
               context.go(navigationUrl);
             },
+            onLocate: () => _locateSpot(spot),
           );
         },
       );
@@ -805,6 +847,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                 );
                 context.go(navigationUrl);
               },
+              onLocate: () => _locateSpot(spot),
             ),
           );
         },
@@ -857,6 +900,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                 compassEnabled: false,
                 onMapCreated: (GoogleMapController controller) {
                   _mapController = controller;
+                  _lastKnownZoom = initialCameraPosition.zoom;
                   
                   // Load spots for the current view after a short delay to ensure map is ready
                   Future.delayed(const Duration(milliseconds: 500), () {

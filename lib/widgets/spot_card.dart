@@ -14,6 +14,7 @@ enum SpotCardVariant {
 class SpotCard extends StatefulWidget {
   final Spot spot;
   final VoidCallback? onTap;
+  final VoidCallback? onLocate;
   final bool showRating;
   final SpotCardVariant variant;
   final VoidCallback? onClose; // For overlay variant
@@ -24,6 +25,7 @@ class SpotCard extends StatefulWidget {
     super.key,
     required this.spot,
     this.onTap,
+    this.onLocate,
     this.showRating = true,
     this.variant = SpotCardVariant.list,
     this.onClose,
@@ -301,6 +303,29 @@ class _SpotCardState extends State<SpotCard> {
                   ),
                 ),
               ],
+            ),
+
+            // Locate button (bottom-right)
+            Positioned(
+              right: 12,
+              bottom: 12,
+              child: Material(
+                color: Theme.of(context).colorScheme.primary,
+                shape: const CircleBorder(),
+                elevation: 2,
+                child: InkWell(
+                  onTap: widget.onLocate,
+                  customBorder: const CircleBorder(),
+                  child: Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Icon(
+                      Icons.my_location,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                    ),
+                  ),
+                ),
+              ),
             ),
             
             // Tags positioned above "Added by" text
