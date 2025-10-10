@@ -581,6 +581,10 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
         position: LatLng(spot.latitude, spot.longitude),
         icon: icon,
         onTap: () {
+          // Don't select spot if bottom sheet is open
+          if (_isBottomSheetOpen) {
+            return;
+          }
           // Select the spot and show detail card
           setState(() {
             _selectedSpot = spot;
