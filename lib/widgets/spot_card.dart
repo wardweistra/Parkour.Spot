@@ -565,24 +565,29 @@ class _SpotCardState extends State<SpotCard> {
                           Positioned(
                             top: 8,
                             left: 8,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.4),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Text(
-                                Provider.of<SyncSourceService>(context, listen: false)
-                                        .getSourceNameSync(widget.spot.spotSource!) ??
-                                    widget.spot.spotSource!,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w500,
+                            child: SizedBox(
+                              height: 32, // match close button size for vertical centering
+                              child: Center(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.4),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: Colors.white.withValues(alpha: 0.2),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    Provider.of<SyncSourceService>(context, listen: false)
+                                            .getSourceNameSync(widget.spot.spotSource!) ??
+                                        widget.spot.spotSource!,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
