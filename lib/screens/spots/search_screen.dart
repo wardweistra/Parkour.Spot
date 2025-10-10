@@ -925,6 +925,16 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                 onCameraMove: (CameraPosition position) {
                   _onMapCameraMove(position);
                 },
+                onTap: (LatLng position) {
+                  // Dismiss spot detail card when map is tapped (but not when markers are tapped)
+                  if (_selectedSpot != null && !_isBottomSheetOpen) {
+                    setState(() {
+                      _selectedSpot = null;
+                      // Rebuild markers to clear selection color
+                      _markers = _buildMarkers(_visibleSpots);
+                    });
+                  }
+                },
               ),
 
               // Map clickable overlay when bottom sheet is expanded
@@ -933,26 +943,6 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                   child: PointerInterceptor(
                     child: GestureDetector(
                       onTap: _toggleBottomSheet, // Collapse sheet when map is tapped
-                      child: Container(
-                        color: Colors.transparent,
-                      ),
-                    ),
-                  ),
-                ),
-
-              // Map clickable overlay when spot detail card is shown
-              if (_selectedSpot != null && !_isBottomSheetOpen)
-                Positioned.fill(
-                  child: PointerInterceptor(
-                    child: GestureDetector(
-                      onTap: () {
-                        // Clear selected spot when map is tapped
-                        setState(() {
-                          _selectedSpot = null;
-                          // Rebuild markers to clear selection color
-                          _markers = _buildMarkers(_visibleSpots);
-                        });
-                      },
                       child: Container(
                         color: Colors.transparent,
                       ),
