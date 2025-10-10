@@ -296,20 +296,23 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
               backgroundColor: Colors.transparent,
               surfaceTintColor: Colors.transparent,
               elevation: 0,
-              leading: CircleAvatar(
-                backgroundColor: Colors.black.withValues(alpha: 0.5),
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () {
-                    // Check if we can pop back to a previous page
-                    if (Navigator.canPop(context)) {
-                      // If there's a previous page, go back to it
-                      Navigator.pop(context);
-                    } else {
-                      // If no previous page (direct link), go to home
-                      context.go('/home');
-                    }
-                  },
+              leading: IconButton(
+                onPressed: () {
+                  // Check if we can pop back to a previous page
+                  if (Navigator.canPop(context)) {
+                    // If there's a previous page, go back to it
+                    Navigator.pop(context);
+                  } else {
+                    // If no previous page (direct link), go to home
+                    context.go('/home');
+                  }
+                },
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black.withValues(alpha: 0.5),
+                  shape: const CircleBorder(),
+                  fixedSize: const Size(40, 40),
+                  padding: EdgeInsets.zero,
                 ),
               ),
               actions: [
