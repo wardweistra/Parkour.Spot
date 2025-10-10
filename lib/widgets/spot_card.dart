@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import '../services/sync_source_service.dart';
 import '../models/spot.dart';
+import '../services/mobile_detection_service.dart';
 
 enum SpotCardVariant {
   list,      // For list view (original SpotCard behavior)
@@ -141,7 +142,7 @@ class _SpotCardState extends State<SpotCard> {
                             ),
                           
                           // Navigation arrows (left and right)
-                          if (widget.spot.imageUrls!.length > 1) ...[
+                          if (widget.spot.imageUrls!.length > 1 && !MobileDetectionService.isMobileDevice) ...[
                             // Left arrow
                             Positioned(
                               left: 8,
@@ -484,7 +485,7 @@ class _SpotCardState extends State<SpotCard> {
                             ),
                           
                           // Navigation arrows (left and right)
-                          if (widget.spot.imageUrls!.length > 1) ...[
+                          if (widget.spot.imageUrls!.length > 1 && !MobileDetectionService.isMobileDevice) ...[
                             // Left arrow
                             Positioned(
                               left: 8,
