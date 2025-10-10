@@ -594,7 +594,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                 ),
 
                                 // Left arrow
-                                Positioned(
+                                if (!MobileDetectionService.isMobileDevice)
+                                  Positioned(
                                   left: 8,
                                   top: 0,
                                   bottom: 0,
@@ -626,7 +627,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                 ),
 
                                 // Right arrow
-                                Positioned(
+                                if (!MobileDetectionService.isMobileDevice)
+                                  Positioned(
                                   right: 8,
                                   top: 0,
                                   bottom: 0,
