@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pointer_interceptor/pointer_interceptor.dart';
 import '../../models/spot.dart';
 import '../../services/spot_service.dart';
 import '../../services/auth_service.dart';
