@@ -68,6 +68,8 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   bool _isBottomSheetOpen = false; // Start collapsed by default
   Position? _currentPosition;
   BitmapDescriptor? _userLocationIcon;
+  BitmapDescriptor? _spotDefaultIcon; // Web fallback
+  BitmapDescriptor? _spotSelectedIcon; // Web fallback
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   String _searchQuery = '';
@@ -137,6 +139,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     // Removed automatic location fetching - now user-controlled
     _searchController.addListener(_onSearchChanged);
     _loadUserLocationIcon();
+    _loadSpotIcons();
     
     // Initialize bottom sheet animation
     _bottomSheetAnimationController = AnimationController(
@@ -562,22 +565,29 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
 
   Set<Marker> _buildMarkers(List<Spot> spots) {
     final markers = spots.map((spot) {
+      final bool isSelected = _selectedSpot?.id != null
+          ? _selectedSpot!.id == spot.id
+          : _selectedSpot?.name == spot.name;
+      // On web, use generated icons because hue-based markers are not supported.
+      final BitmapDescriptor icon = kIsWeb
+          ? (isSelected
+              ? (_spotSelectedIcon ?? BitmapDescriptor.defaultMarker)
+              : (_spotDefaultIcon ?? BitmapDescriptor.defaultMarker))
+          : (isSelected
+              ? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose)
+              : BitmapDescriptor.defaultMarker);
       return Marker(
         markerId: MarkerId(spot.id ?? spot.name),
         position: LatLng(spot.latitude, spot.longitude),
+        icon: icon,
         onTap: () {
           // Select the spot and show detail card
           setState(() {
             _selectedSpot = spot;
             _currentImageIndex = 0; // Reset to first image
+            // Rebuild markers to reflect selection color
+            _markers = _buildMarkers(_visibleSpots);
           });
-          
-          // Center map on selected spot
-          _mapController?.animateCamera(
-            CameraUpdate.newLatLng(
-              LatLng(spot.latitude, spot.longitude),
-            ),
-          );
         },
       );
     }).toSet();
@@ -644,6 +654,23 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     final Uint8List bytes = byteData!.buffer.asUint8List();
     return BitmapDescriptor.bytes(bytes);
+  }
+
+  Future<void> _loadSpotIcons() async {
+    try {
+      // Simple circular icons to ensure consistent coloring on web
+      final BitmapDescriptor defaultIcon = await _createUserLocationIcon(size: 22, fillColor: Colors.red);
+      // Make selected more distinct and smaller
+      final BitmapDescriptor selectedIcon = await _createUserLocationIcon(size: 22, fillColor: Color(0xFFFF8A80));
+      if (mounted) {
+        setState(() {
+          _spotDefaultIcon = defaultIcon;
+          _spotSelectedIcon = selectedIcon;
+        });
+      }
+    } catch (_) {
+      // Ignore icon errors silently
+    }
   }
 
   void _toggleBottomSheet() {
@@ -922,6 +949,8 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                         // Clear selected spot when map is tapped
                         setState(() {
                           _selectedSpot = null;
+                          // Rebuild markers to clear selection color
+                          _markers = _buildMarkers(_visibleSpots);
                         });
                       },
                       child: Container(
@@ -1376,6 +1405,8 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                                       onPressed: () {
                                         setState(() {
                                           _selectedSpot = null;
+                                          // Rebuild markers to clear selection color
+                                          _markers = _buildMarkers(_visibleSpots);
                                         });
                                       },
                                       icon: const Icon(Icons.close),
