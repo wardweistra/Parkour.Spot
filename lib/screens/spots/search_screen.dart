@@ -14,6 +14,7 @@ import '../../services/sync_source_service.dart';
 import '../../services/search_state_service.dart';
 import '../../services/url_service.dart';
 import '../../services/geocoding_service.dart';
+import '../../services/mobile_detection_service.dart';
 import '../../models/spot.dart';
 import '../../widgets/spot_card.dart';
 import '../../widgets/source_details_dialog.dart';
@@ -85,7 +86,6 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   late AnimationController _bottomSheetAnimationController;
   late Animation<double> _bottomSheetAnimation;
   late PageController _imagePageController;
-  int _currentImageIndex = 0;
   double _dragStartY = 0.0;
   bool _isDragging = false;
   // Filters
@@ -423,8 +423,6 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     });
   }
 
-  
-
   Widget _buildFilters() {
     return Consumer<SyncSourceService>(
       builder: (context, syncService, child) {
@@ -581,14 +579,13 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
         position: LatLng(spot.latitude, spot.longitude),
         icon: icon,
         onTap: () {
-          // Don't select spot if bottom sheet is open
-          if (_isBottomSheetOpen) {
+          // Don't select spot if bottom sheet or filter dialog is open
+          if (_isBottomSheetOpen || _showFiltersDialog) {
             return;
           }
           // Select the spot and show detail card
           setState(() {
             _selectedSpot = spot;
-            _currentImageIndex = 0; // Reset to first image
             // Rebuild markers to reflect selection color
             _markers = _buildMarkers(_visibleSpots);
           });
@@ -710,51 +707,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     });
   }
 
-  void _nextImage() {
-    if (_selectedSpot?.imageUrls != null && _currentImageIndex < _selectedSpot!.imageUrls!.length - 1) {
-      setState(() {
-        _currentImageIndex++;
-      });
-      _imagePageController.animateToPage(
-        _currentImageIndex,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    } else if (_selectedSpot?.imageUrls != null && _selectedSpot!.imageUrls!.isNotEmpty) {
-      // Loop to first image
-      setState(() {
-        _currentImageIndex = 0;
-      });
-      _imagePageController.animateToPage(
-        0,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    }
-  }
-
-  void _previousImage() {
-    if (_selectedSpot?.imageUrls != null && _currentImageIndex > 0) {
-      setState(() {
-        _currentImageIndex--;
-      });
-      _imagePageController.animateToPage(
-        _currentImageIndex,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    } else if (_selectedSpot?.imageUrls != null && _selectedSpot!.imageUrls!.isNotEmpty) {
-      // Loop to last image
-      setState(() {
-        _currentImageIndex = _selectedSpot!.imageUrls!.length - 1;
-      });
-      _imagePageController.animateToPage(
-        _selectedSpot!.imageUrls!.length - 1,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    }
-  }
+  // Removed: _nextImage and _previousImage – image paging handled inside SpotCard
 
   void _handleDragStart(DragStartDetails details) {
     _dragStartY = details.globalPosition.dy;
@@ -896,10 +849,10 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                 myLocationEnabled: true,
                 myLocationButtonEnabled: !_isBottomSheetOpen && _selectedSpot == null && !_showFiltersDialog, // Disable location button when expanded, spot detail is open, or filters dialog is open
                 zoomControlsEnabled: false,
-                zoomGesturesEnabled: !_isBottomSheetOpen && _selectedSpot == null && !_showFiltersDialog,
-                scrollGesturesEnabled: !_isBottomSheetOpen && _selectedSpot == null && !_showFiltersDialog,
-                rotateGesturesEnabled: !_isBottomSheetOpen && _selectedSpot == null && !_showFiltersDialog,
-                tiltGesturesEnabled: !_isBottomSheetOpen && _selectedSpot == null && !_showFiltersDialog,
+                zoomGesturesEnabled: !_isBottomSheetOpen && !_showFiltersDialog && (_selectedSpot == null || !MobileDetectionService.isMobileDevice), // Allow zooming when spot detail card is open on non-mobile
+                scrollGesturesEnabled: !_isBottomSheetOpen && !_showFiltersDialog && (_selectedSpot == null || !MobileDetectionService.isMobileDevice), // Allow panning when spot detail card is open on non-mobile
+                rotateGesturesEnabled: !_isBottomSheetOpen && !_showFiltersDialog && (_selectedSpot == null || !MobileDetectionService.isMobileDevice), // Allow rotation when spot detail card is open on non-mobile
+                tiltGesturesEnabled: !_isBottomSheetOpen && !_showFiltersDialog && (_selectedSpot == null || !MobileDetectionService.isMobileDevice), // Allow tilting when spot detail card is open on non-mobile
                 liteModeEnabled: kIsWeb,
                 compassEnabled: false,
                 onMapCreated: (GoogleMapController controller) {
@@ -1177,289 +1130,65 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
               if (_selectedSpot != null && !_isBottomSheetOpen)
                 Positioned(
                   left: 16,
-                  right: 16,
+                  right: MediaQuery.of(context).size.width >= 600 ? null : 16,
                   bottom: 16,
-                  child: Center(
-                    child: PointerInterceptor(
-                      child: GestureDetector(
-                      onTap: () {
-                        // Navigate to spot detail using proper URL format
-                        final navigationUrl = UrlService.generateNavigationUrl(
-                          _selectedSpot!.id!,
-                          countryCode: _selectedSpot!.countryCode,
-                          city: _selectedSpot!.city,
-                        );
-                        context.go(navigationUrl);
-                      },
-                      child: Container(
-                      constraints: BoxConstraints(
-                        maxWidth: MediaQuery.of(context).size.width >= 600 ? 400 : double.infinity,
+                  child: MediaQuery.of(context).size.width >= 600 
+                    ? SpotCard(
+                        spot: _selectedSpot!,
+                        variant: SpotCardVariant.overlay,
+                        maxWidth: 400,
+                        onTap: () {
+                          final navigationUrl = UrlService.generateNavigationUrl(
+                            _selectedSpot!.id!,
+                            countryCode: _selectedSpot!.countryCode,
+                            city: _selectedSpot!.city,
+                          );
+                          context.go(navigationUrl);
+                        },
+                        onViewDetails: () {
+                          final navigationUrl = UrlService.generateNavigationUrl(
+                            _selectedSpot!.id!,
+                            countryCode: _selectedSpot!.countryCode,
+                            city: _selectedSpot!.city,
+                          );
+                          context.go(navigationUrl);
+                        },
+                        onClose: () {
+                          setState(() {
+                            _selectedSpot = null;
+                            _markers = _buildMarkers(_visibleSpots);
+                          });
+                        },
+                      )
+                    : Center(
+                        child: SpotCard(
+                          spot: _selectedSpot!,
+                          variant: SpotCardVariant.overlay,
+                          maxWidth: double.infinity,
+                          onTap: () {
+                            final navigationUrl = UrlService.generateNavigationUrl(
+                              _selectedSpot!.id!,
+                              countryCode: _selectedSpot!.countryCode,
+                              city: _selectedSpot!.city,
+                            );
+                            context.go(navigationUrl);
+                          },
+                          onViewDetails: () {
+                            final navigationUrl = UrlService.generateNavigationUrl(
+                              _selectedSpot!.id!,
+                              countryCode: _selectedSpot!.countryCode,
+                              city: _selectedSpot!.city,
+                            );
+                            context.go(navigationUrl);
+                          },
+                          onClose: () {
+                            setState(() {
+                              _selectedSpot = null;
+                              _markers = _buildMarkers(_visibleSpots);
+                            });
+                          },
+                        ),
                       ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Stack(
-                        children: [
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // Spot image gallery or location marker
-                              ClipRRect(
-                                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                                child: AspectRatio(
-                                  aspectRatio: 16 / 9,
-                                  child: Stack(
-                                    children: [
-                                      if (_selectedSpot!.imageUrls != null && _selectedSpot!.imageUrls!.isNotEmpty) ...[
-                                        // Image Gallery with PageView
-                                        PageView.builder(
-                                          controller: _imagePageController,
-                                          itemCount: _selectedSpot!.imageUrls!.length,
-                                          onPageChanged: (index) {
-                                            setState(() {
-                                              _currentImageIndex = index;
-                                            });
-                                          },
-                                          itemBuilder: (context, index) {
-                                            return Image.network(
-                                              _selectedSpot!.imageUrls![index],
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (context, error, stackTrace) => Container(
-                                                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                                                child: Icon(
-                                                  Icons.image_not_supported,
-                                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                                ),
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                        
-                                        // Page Indicator Dots (only show if multiple images)
-                                        if (_selectedSpot!.imageUrls!.length > 1)
-                                          Positioned(
-                                            bottom: 8,
-                                            left: 0,
-                                            right: 0,
-                                            child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              children: List.generate(
-                                                _selectedSpot!.imageUrls!.length,
-                                                (index) => Container(
-                                                  width: 6,
-                                                  height: 6,
-                                                  margin: const EdgeInsets.symmetric(horizontal: 2),
-                                                  decoration: BoxDecoration(
-                                                    shape: BoxShape.circle,
-                                                    color: index == _currentImageIndex 
-                                                        ? Colors.white 
-                                                        : Colors.white.withValues(alpha: 0.5),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        
-                                        // Navigation arrows (left and right)
-                                        if (_selectedSpot!.imageUrls!.length > 1) ...[
-                                          // Left arrow
-                                          Positioned(
-                                            left: 8,
-                                            top: 0,
-                                            bottom: 0,
-                                            child: Center(
-                                              child: GestureDetector(
-                                                onTap: _previousImage,
-                                                child: Container(
-                                                  width: 40,
-                                                  height: 40,
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.black.withValues(alpha: 0.6),
-                                                    shape: BoxShape.circle,
-                                                    border: Border.all(
-                                                      color: Colors.white.withValues(alpha: 0.3),
-                                                      width: 1,
-                                                    ),
-                                                  ),
-                                                  child: Icon(
-                                                    Icons.chevron_left,
-                                                    color: Colors.white,
-                                                    size: 24,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          
-                                          // Right arrow
-                                          Positioned(
-                                            right: 8,
-                                            top: 0,
-                                            bottom: 0,
-                                            child: Center(
-                                              child: GestureDetector(
-                                                onTap: _nextImage,
-                                                child: Container(
-                                                  width: 40,
-                                                  height: 40,
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.black.withValues(alpha: 0.6),
-                                                    shape: BoxShape.circle,
-                                                    border: Border.all(
-                                                      color: Colors.white.withValues(alpha: 0.3),
-                                                      width: 1,
-                                                    ),
-                                                  ),
-                                                  child: Icon(
-                                                    Icons.chevron_right,
-                                                    color: Colors.white,
-                                                    size: 24,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ] else ...[
-                                        // Location marker when no images
-                                        Container(
-                                          decoration: BoxDecoration(
-                                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                                          ),
-                                          child: Center(
-                                            child: Icon(
-                                              Icons.location_on,
-                                              size: 48,
-                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                      
-                                      // External source indicator - positioned on the image/marker area
-                                      if (_selectedSpot!.spotSource != null)
-                                        Positioned(
-                                          top: 8,
-                                          right: 8,
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                                            decoration: BoxDecoration(
-                                              color: Colors.black.withValues(alpha: 0.4),
-                                              borderRadius: BorderRadius.circular(10),
-                                              border: Border.all(
-                                                color: Colors.white.withValues(alpha: 0.2),
-                                                width: 1,
-                                              ),
-                                            ),
-                                            child: Text(
-                                              Provider.of<SyncSourceService>(context, listen: false)
-                                                      .getSourceNameSync(_selectedSpot!.spotSource!) ??
-                                                  _selectedSpot!.spotSource!,
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                          
-                          // Spot details
-                          Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        _selectedSpot!.name,
-                                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    IconButton(
-                                      onPressed: () {
-                                        setState(() {
-                                          _selectedSpot = null;
-                                          // Rebuild markers to clear selection color
-                                          _markers = _buildMarkers(_visibleSpots);
-                                        });
-                                      },
-                                      icon: const Icon(Icons.close),
-                                      tooltip: 'Close',
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  _selectedSpot!.description.trim().isEmpty 
-                                      ? 'No description provided'
-                                      : _selectedSpot!.description,
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                                    fontStyle: _selectedSpot!.description.trim().isEmpty 
-                                        ? FontStyle.italic 
-                                        : FontStyle.normal,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                if (_selectedSpot!.tags != null && _selectedSpot!.tags!.isNotEmpty) ...[
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    _selectedSpot!.tags!.join(', '),
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Theme.of(context).colorScheme.primary,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                                const SizedBox(height: 12),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: ElevatedButton(
-                                    onPressed: () {
-                                      final navigationUrl = UrlService.generateNavigationUrl(
-                                        _selectedSpot!.id!,
-                                        countryCode: _selectedSpot!.countryCode,
-                                        city: _selectedSpot!.city,
-                                      );
-                                      context.go(navigationUrl);
-                                    },
-                                    child: const Text('View Details'),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    ),
-                    ),
-                  ),
                 ),
 
               // Bottom Sheet with Spots List - hide when spot detail card is visible

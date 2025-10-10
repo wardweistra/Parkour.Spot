@@ -1,19 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
+import 'package:pointer_interceptor/pointer_interceptor.dart';
 import '../services/sync_source_service.dart';
 import '../models/spot.dart';
+
+enum SpotCardVariant {
+  list,      // For list view (original SpotCard behavior)
+  overlay,   // For map overlay (current _buildSpotDetailCard behavior)
+}
 
 class SpotCard extends StatefulWidget {
   final Spot spot;
   final VoidCallback? onTap;
   final bool showRating;
+  final SpotCardVariant variant;
+  final VoidCallback? onClose; // For overlay variant
+  final VoidCallback? onViewDetails; // For overlay variant
+  final double? maxWidth; // For overlay variant
 
   const SpotCard({
     super.key,
     required this.spot,
     this.onTap,
     this.showRating = true,
+    this.variant = SpotCardVariant.list,
+    this.onClose,
+    this.onViewDetails,
+    this.maxWidth,
   });
 
   @override
@@ -39,6 +53,14 @@ class _SpotCardState extends State<SpotCard> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.variant == SpotCardVariant.overlay) {
+      return _buildOverlayCard(context);
+    } else {
+      return _buildListCard(context);
+    }
+  }
+
+  Widget _buildListCard(BuildContext context) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -183,17 +205,19 @@ class _SpotCardState extends State<SpotCard> {
                     ),
                   )
                 else
-                  Container(
-                    height: 120,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        Icons.location_on,
-                        size: 48,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                    child: AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: Container(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        child: Center(
+                          child: Icon(
+                            Icons.location_on,
+                            size: 48,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -308,7 +332,7 @@ class _SpotCardState extends State<SpotCard> {
             if (widget.spot.spotSource != null)
               Positioned(
                 top: 8,
-                right: 8,
+                left: 8,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                   decoration: BoxDecoration(
@@ -372,7 +396,316 @@ class _SpotCardState extends State<SpotCard> {
     );
   }
 
-  String _formatDate(DateTime date) {
+  Widget _buildOverlayCard(BuildContext context) {
+    return PointerInterceptor(
+      child: GestureDetector(
+      onTap: widget.onTap,
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: widget.maxWidth ?? double.infinity,
+        ),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Spot image gallery or location marker
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                  child: AspectRatio(
+                    aspectRatio: 16 / 9,
+                    child: Stack(
+                      children: [
+                        if (widget.spot.imageUrls != null && widget.spot.imageUrls!.isNotEmpty) ...[
+                          // Image Gallery with PageView
+                          PageView.builder(
+                            controller: _pageController,
+                            itemCount: widget.spot.imageUrls!.length,
+                            onPageChanged: (index) {
+                              setState(() {
+                                _currentPage = index;
+                              });
+                            },
+                            itemBuilder: (context, index) {
+                              return CachedNetworkImage(
+                                imageUrl: widget.spot.imageUrls![index],
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => Container(
+                                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                  child: const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                ),
+                                errorWidget: (context, url, error) => Container(
+                                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                  child: Icon(
+                                    Icons.image_not_supported,
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          
+                          // Page Indicator Dots (only show if multiple images)
+                          if (widget.spot.imageUrls!.length > 1)
+                            Positioned(
+                              bottom: 8,
+                              left: 0,
+                              right: 0,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: List.generate(
+                                  widget.spot.imageUrls!.length,
+                                  (index) => Container(
+                                    width: 6,
+                                    height: 6,
+                                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: index == _currentPage 
+                                          ? Colors.white 
+                                          : Colors.white.withValues(alpha: 0.5),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          
+                          // Navigation arrows (left and right)
+                          if (widget.spot.imageUrls!.length > 1) ...[
+                            // Left arrow
+                            Positioned(
+                              left: 8,
+                              top: 0,
+                              bottom: 0,
+                              child: Center(
+                                child: GestureDetector(
+                                  onTap: _previousImage,
+                                  child: Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withValues(alpha: 0.6),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white.withValues(alpha: 0.3),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      Icons.chevron_left,
+                                      color: Colors.white,
+                                      size: 24,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            
+                            // Right arrow
+                            Positioned(
+                              right: 8,
+                              top: 0,
+                              bottom: 0,
+                              child: Center(
+                                child: GestureDetector(
+                                  onTap: _nextImage,
+                                  child: Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withValues(alpha: 0.6),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white.withValues(alpha: 0.3),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      Icons.chevron_right,
+                                      color: Colors.white,
+                                      size: 24,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ] else ...[
+                          // Location marker when no images
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                            ),
+                            child: Center(
+                              child: Icon(
+                                Icons.location_on,
+                                size: 48,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ],
+                        
+                        // External source indicator - positioned on the image/marker area
+                        if (widget.spot.spotSource != null)
+                          Positioned(
+                            top: 8,
+                            left: 8,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.4),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Text(
+                                Provider.of<SyncSourceService>(context, listen: false)
+                                        .getSourceNameSync(widget.spot.spotSource!) ??
+                                    widget.spot.spotSource!,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                
+                // Spot details
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Title and Rating Row (same as list)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              widget.spot.name,
+                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          // Always show ratings in overlay like list style
+                          widget.spot.ratingCount != null && widget.spot.ratingCount! > 0
+                              ? Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.star,
+                                      size: 16,
+                                      color: Colors.amber,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      (widget.spot.averageRating ?? 0.0).toStringAsFixed(1),
+                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : const SizedBox.shrink(),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        widget.spot.description.trim().isEmpty 
+                            ? 'No description provided'
+                            : widget.spot.description,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                          fontStyle: widget.spot.description.trim().isEmpty 
+                              ? FontStyle.italic 
+                              : FontStyle.normal,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (widget.spot.tags != null && widget.spot.tags!.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          widget.spot.tags!.join(', '),
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: widget.onViewDetails,
+                          child: const Text('View Details'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            
+            // Close button positioned at top right of entire card
+            if (widget.onClose != null)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: GestureDetector(
+                  onTap: widget.onClose,
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.6),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+String _formatDate(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
     
