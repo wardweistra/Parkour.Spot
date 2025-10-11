@@ -62,6 +62,20 @@
           "order": "ASCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "spots",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "spotSource",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updatedAt",
+          "order": "DESCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []

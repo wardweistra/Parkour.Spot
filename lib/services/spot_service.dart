@@ -621,6 +621,86 @@ class SpotService extends ChangeNotifier {
   }
 
 
+  // Get spots by source and timestamp (admin function)
+  Future<List<Spot>> getSpotsBySourceAndTimestamp(
+    String sourceId,
+    DateTime timestamp,
+  ) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      debugPrint('🔍 Searching spots for source: $sourceId');
+      debugPrint('📅 Last updated before: $timestamp');
+
+      Query query = _firestore.collection('spots');
+
+      // Filter by source
+      if (sourceId.isNotEmpty) {
+        query = query.where('spotSource', isEqualTo: sourceId);
+      } else {
+        // If sourceId is empty, get spots with no source (native spots)
+        query = query.where('spotSource', isNull: true);
+      }
+
+      // Filter by last updated date - spots updated before the selected timestamp
+      query = query
+          .where('updatedAt', isLessThan: Timestamp.fromDate(timestamp))
+          .orderBy('updatedAt', descending: true);
+
+      final querySnapshot = await query.get();
+      
+      final spots = querySnapshot.docs
+          .map((doc) => Spot.fromFirestore(doc))
+          .toList();
+
+      debugPrint('✅ Found ${spots.length} spots for source $sourceId last updated before ${timestamp.day}/${timestamp.month}/${timestamp.year}');
+
+      return spots;
+    } catch (e) {
+      _error = 'Failed to fetch spots by source and timestamp: $e';
+      debugPrint('Error fetching spots by source and timestamp: $e');
+      return [];
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Delete multiple spots (admin function)
+  Future<Map<String, int>> deleteSpots(List<String> spotIds) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      int deletedCount = 0;
+      int failedCount = 0;
+
+      for (final spotId in spotIds) {
+        try {
+          await _firestore.collection('spots').doc(spotId).delete();
+          deletedCount++;
+          debugPrint('✅ Deleted spot: $spotId');
+        } catch (e) {
+          failedCount++;
+          debugPrint('❌ Failed to delete spot $spotId: $e');
+        }
+      }
+
+      return {
+        'deleted': deletedCount,
+        'failed': failedCount,
+      };
+    } catch (e) {
+      _error = 'Failed to delete spots: $e';
+      debugPrint('Error deleting spots: $e');
+      return {'deleted': 0, 'failed': spotIds.length};
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   // Clear error
   void clearError() {
     _error = null;
