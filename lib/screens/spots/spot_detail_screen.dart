@@ -37,10 +37,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   // Add rating cache variables
   Map<String, dynamic>? _cachedRatingStats;
   bool _isLoadingRatingStats = false;
-  
-  // Add source name variables
-  String? _sourceName;
-  bool _isLoadingSourceName = false;
 
   @override
   void initState() {
@@ -48,7 +44,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     _scrollController = ScrollController();
     _videoPageController = PageController();
     _loadRatingStats(); // Load rating stats once on init
-    _loadSourceName(); // Load source name if spot has a source
     // Note: User rating will be loaded when auth state is restored via FutureBuilder
 
     // We no longer initialize embedded YouTube players; thumbnails/links only
@@ -121,7 +116,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
               )),
-              if (_sourceName != null) ...[
+              if (widget.spot.spotSourceName != null) ...[
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(8),
@@ -139,7 +134,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Source: $_sourceName',
+                          'Source: ${widget.spot.spotSourceName}',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                           ),
@@ -285,10 +280,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       ),
                       child: Text(
                         widget.spot.folderName != null
-                            ? '${Provider.of<SyncSourceService>(context, listen: false).getSourceNameSync(widget.spot.spotSource!) ?? widget.spot.spotSource!} - ${widget.spot.folderName!}'
-                            : Provider.of<SyncSourceService>(context, listen: false)
-                                    .getSourceNameSync(widget.spot.spotSource!) ??
-                                widget.spot.spotSource!,
+                            ? '${widget.spot.spotSourceName ?? widget.spot.spotSource!} - ${widget.spot.folderName!}'
+                            : widget.spot.spotSourceName ?? widget.spot.spotSource!,
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 12,
@@ -1085,22 +1078,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                           child: ListTile(
                             leading: const Icon(Icons.source),
                             title: const Text('Source'),
-                            subtitle: _isLoadingSourceName
-                                ? const Row(
-                                    children: [
-                                      SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(strokeWidth: 2),
-                                      ),
-                                      SizedBox(width: 8),
-                                      Text('Loading...'),
-                                    ],
-                                  )
-                                : Text(
+                            subtitle: Text(
                                     widget.spot.folderName != null
-                                        ? '${_sourceName ?? 'Unknown Source'} - ${widget.spot.folderName!}'
-                                        : _sourceName ?? 'Unknown Source',
+                                        ? '${widget.spot.spotSourceName ?? 'Unknown Source'} - ${widget.spot.folderName!}'
+                                        : widget.spot.spotSourceName ?? 'Unknown Source',
                                   ),
                             contentPadding: EdgeInsets.zero,
                             trailing: const Icon(Icons.info_outline, size: 16),
@@ -1573,44 +1554,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       // If not the last attempt, wait before retrying
       if (attempt < maxRetries - 1) {
         await Future.delayed(retryDelay);
-      }
-    }
-  }
-
-  Future<void> _loadSourceName() async {
-    if (widget.spot.spotSource == null) return;
-    
-    try {
-      if (mounted) {
-        setState(() {
-          _isLoadingSourceName = true;
-        });
-      }
-      
-      final syncSourceService = Provider.of<SyncSourceService>(context, listen: false);
-      final sourceName = await syncSourceService.getSourceName(widget.spot.spotSource!);
-      
-      // Use WidgetsBinding to ensure this runs after the current build cycle
-      if (mounted) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            setState(() {
-              _sourceName = sourceName;
-              _isLoadingSourceName = false;
-            });
-          }
-        });
-      }
-    } catch (e) {
-      debugPrint('Error loading source name: $e');
-      if (mounted) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            setState(() {
-              _isLoadingSourceName = false;
-            });
-          }
-        });
       }
     }
   }

@@ -19,6 +19,7 @@ class Spot {
   final List<String>? tags;
   final bool? isPublic;
   final String? spotSource;
+  final String? spotSourceName;
   final double? averageRating;
   final int? ratingCount;
   final double? wilsonLowerBound;
@@ -43,6 +44,7 @@ class Spot {
     this.tags,
     this.isPublic = true,
     this.spotSource,
+    this.spotSourceName,
     this.averageRating,
     this.ratingCount,
     this.wilsonLowerBound,
@@ -120,6 +122,7 @@ class Spot {
       tags: data['tags'] != null ? List<String>.from(data['tags']) : null,
       isPublic: data['isPublic'] ?? true,
       spotSource: data['spotSource'],
+      spotSourceName: data['spotSourceName'],
       averageRating: data['averageRating'] != null ? (data['averageRating'] as num).toDouble() : null,
       ratingCount: data['ratingCount'],
       wilsonLowerBound: data['wilsonLowerBound'] != null ? (data['wilsonLowerBound'] as num).toDouble() : null,
@@ -205,6 +208,7 @@ class Spot {
       tags: data['tags'] is List ? List<String>.from(data['tags']) : null,
       isPublic: data['isPublic'] as bool? ?? true,
       spotSource: data['spotSource'] as String?,
+      spotSourceName: data['spotSourceName'] as String?,
       averageRating: (data['averageRating'] as num?)?.toDouble(),
       ratingCount: (data['ratingCount'] is int) ? data['ratingCount'] as int : (data['ratingCount'] as num?)?.toInt(),
       wilsonLowerBound: (data['wilsonLowerBound'] as num?)?.toDouble(),
@@ -231,6 +235,7 @@ class Spot {
       'tags': tags,
       'isPublic': isPublic,
       'spotSource': spotSource,
+      'spotSourceName': spotSourceName,
       if (averageRating != null) 'averageRating': averageRating,
       if (ratingCount != null) 'ratingCount': ratingCount,
       if (wilsonLowerBound != null) 'wilsonLowerBound': wilsonLowerBound,
@@ -257,6 +262,7 @@ class Spot {
     List<String>? tags,
     bool? isPublic,
     String? spotSource,
+    String? spotSourceName,
     double? averageRating,
     int? ratingCount,
     double? wilsonLowerBound,
@@ -281,6 +287,7 @@ class Spot {
       tags: tags ?? this.tags,
       isPublic: isPublic ?? this.isPublic,
       spotSource: spotSource ?? this.spotSource,
+      spotSourceName: spotSourceName ?? this.spotSourceName,
       averageRating: averageRating ?? this.averageRating,
       ratingCount: ratingCount ?? this.ratingCount,
       wilsonLowerBound: wilsonLowerBound ?? this.wilsonLowerBound,

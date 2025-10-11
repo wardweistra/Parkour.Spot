@@ -97,6 +97,11 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
             onPressed: () => _showOrphanedSpotsDialog(context),
           ),
           IconButton(
+            icon: const Icon(Icons.update),
+            tooltip: 'Update Spot Source Names',
+            onPressed: () => _showUpdateSourceNamesDialog(context),
+          ),
+          IconButton(
             icon: const Icon(Icons.add),
             tooltip: 'Add Source',
             onPressed: () => _openEditDialog(context),
@@ -775,6 +780,150 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
       }
     }
   }
+
+  Future<void> _showUpdateSourceNamesDialog(BuildContext context) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Update Spot Source Names'),
+          content: const Text(
+            'This will update the cached source names for all spots. '
+            'This is useful for spots created before the source name caching feature was added.\n\n'
+            'Do you want to update all spots or select a specific source?'
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('All Sources'),
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await _updateSpotSourceNames(context, null);
+              },
+            ),
+            TextButton(
+              child: const Text('Select Source'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _showSourceSelectionDialog(context);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showSourceSelectionDialog(BuildContext context) async {
+    final syncService = context.read<SyncSourceService>();
+    
+    return showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Select Source'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: syncService.sources.length,
+              itemBuilder: (context, index) {
+                final source = syncService.sources[index];
+                return ListTile(
+                  title: Text(source.name),
+                  subtitle: Text(source.id),
+                  onTap: () async {
+                    Navigator.of(context).pop();
+                    await _updateSpotSourceNames(context, source.id);
+                  },
+                );
+              },
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _updateSpotSourceNames(BuildContext context, String? sourceId) async {
+    final syncService = context.read<SyncSourceService>();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    
+    // Show loading dialog and store the navigator context
+    late NavigatorState navigator;
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        navigator = Navigator.of(dialogContext);
+        return const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Updating spot source names...'),
+            ],
+          ),
+        );
+      },
+    );
+
+    try {
+      final result = await syncService.updateSpotSourceNames(sourceId: sourceId);
+      
+      // Close loading dialog using the stored navigator
+      navigator.pop();
+      
+      if (mounted) {
+        if (result != null && result['success'] == true) {
+          final stats = result['stats'] as Map<String, dynamic>?;
+          final message = stats != null 
+              ? 'Update completed! Total: ${stats['totalSpots']}, Updated: ${stats['updated']}, Skipped: ${stats['skipped']}'
+              : 'Update completed successfully';
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: Text(message),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        } else {
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: Text(syncService.error ?? 'Update failed'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Close loading dialog using the stored navigator
+      navigator.pop();
+      
+      if (mounted) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text('Update failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 }
 
 class SyncSourceEditDialog extends StatefulWidget {
@@ -1137,4 +1286,3 @@ class _MissingImagesScreenState extends State<MissingImagesScreen> {
     }
   }
 }
-

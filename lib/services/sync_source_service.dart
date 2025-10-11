@@ -396,6 +396,21 @@ class SyncSourceService extends ChangeNotifier {
     return _sourceNameCache[sourceId];
   }
 
+  Future<Map<String, dynamic>?> updateSpotSourceNames({String? sourceId}) async {
+    try {
+      final callable = _functions.httpsCallable('updateSpotSourceNames');
+      final result = await callable.call({
+        if (sourceId != null) 'sourceId': sourceId,
+      });
+      return result.data;
+    } catch (e) {
+      _error = 'Failed to update spot source names: $e';
+      debugPrint(_error);
+      notifyListeners();
+      return null;
+    }
+  }
+
   // Fetch sync sources without notifying listeners (for internal use)
   Future<void> _fetchSyncSourcesSilently({bool includeInactive = false}) async {
     try {

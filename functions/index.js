@@ -106,6 +106,7 @@ exports.getTopSpotsInBounds = onCall(
           "tags",
           "isPublic",
           "spotSource",
+          "spotSourceName",
           "averageRating",
           "ratingCount",
           "wilsonLowerBound",
@@ -1555,14 +1556,15 @@ async function processSyncSource(source, sourceId, apiKey) {
     const cleanedDescription = cleanDescription(description);
 
     const spotData = {
-      name: name,
-      description: cleanedDescription,
+      name: name.trim(),
+      description: cleanedDescription.trim(),
       latitude: coordinates.latitude,
       longitude: coordinates.longitude,
       address: address,
       city: city,
       countryCode: countryCode,
       spotSource: sourceId,
+      spotSourceName: source.name,
       isPublic: source.isPublic !== false, // Default to true
       random: Math.random(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -2168,6 +2170,96 @@ exports.setUserAdmin = onCall({region: "europe-west1"}, async (request) => {
     throw new Error(`Failed to set user admin: ${error.message}`);
   }
 });
+
+// Admin function to update spot source names for existing spots
+exports.updateSpotSourceNames = onCall(
+    {region: "europe-west1"},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const {sourceId} = request.data;
+
+        console.log(`Starting spot source name update${sourceId ? ` for source: ${sourceId}` : ' for all sources'}`);
+
+        // Get all sync sources to build a mapping
+        const sourcesSnapshot = await db.collection("syncSources").get();
+        const sourceMap = new Map();
+        
+        sourcesSnapshot.docs.forEach((doc) => {
+          const data = doc.data();
+          sourceMap.set(doc.id, data.name);
+        });
+
+        console.log(`Found ${sourceMap.size} sync sources`);
+
+        // Build query for spots
+        let spotsQuery = db.collection("spots");
+        
+        // If specific sourceId provided, filter by that source
+        if (sourceId) {
+          spotsQuery = spotsQuery.where("spotSource", "==", sourceId);
+        }
+
+        const spotsSnapshot = await spotsQuery.get();
+        console.log(`Found ${spotsSnapshot.size} spots to process`);
+
+        let updatedCount = 0;
+        let skippedCount = 0;
+        const batch = db.batch();
+
+        spotsSnapshot.docs.forEach((doc) => {
+          const spotData = doc.data();
+          const spotSourceId = spotData.spotSource;
+          
+          if (!spotSourceId) {
+            console.log(`Skipping spot ${doc.id}: no spotSource`);
+            skippedCount++;
+            return;
+          }
+
+          const sourceName = sourceMap.get(spotSourceId);
+          if (!sourceName) {
+            console.log(`Skipping spot ${doc.id}: source ${spotSourceId} not found`);
+            skippedCount++;
+            return;
+          }
+
+          // Only update if spotSourceName is missing or different
+          if (!spotData.spotSourceName || spotData.spotSourceName !== sourceName) {
+            batch.update(doc.ref, {
+              spotSourceName: sourceName,
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+            updatedCount++;
+            console.log(`Queued update for spot ${doc.id}: ${spotData.name} -> source: ${sourceName}`);
+          } else {
+            skippedCount++;
+            console.log(`Skipping spot ${doc.id}: spotSourceName already correct`);
+          }
+        });
+
+        // Commit the batch update
+        if (updatedCount > 0) {
+          await batch.commit();
+          console.log(`Successfully updated ${updatedCount} spots`);
+        }
+
+        return {
+          success: true,
+          message: `Spot source names update completed`,
+          stats: {
+            totalSpots: spotsSnapshot.size,
+            updated: updatedCount,
+            skipped: skippedCount,
+            sourcesProcessed: sourceMap.size,
+          },
+        };
+      } catch (error) {
+        console.error("Error updating spot source names:", error);
+        throw new Error(`Failed to update spot source names: ${error.message}`);
+      }
+    },
+);
 
 // Geocoding function to convert coordinates to address and components
 exports.geocodeCoordinates = onCall(

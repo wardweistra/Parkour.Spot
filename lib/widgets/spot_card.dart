@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:provider/provider.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
-import '../services/sync_source_service.dart';
 import '../models/spot.dart';
 import '../services/mobile_detection_service.dart';
 
@@ -370,9 +368,7 @@ class _SpotCardState extends State<SpotCard> {
                     ),
                   ),
                   child: Text(
-                    Provider.of<SyncSourceService>(context, listen: false)
-                            .getSourceNameSync(widget.spot.spotSource!) ??
-                        widget.spot.spotSource!,
+                    widget.spot.spotSourceName ?? widget.spot.spotSource!,
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 10,
@@ -604,9 +600,7 @@ class _SpotCardState extends State<SpotCard> {
                                     ),
                                   ),
                                   child: Text(
-                                    Provider.of<SyncSourceService>(context, listen: false)
-                                            .getSourceNameSync(widget.spot.spotSource!) ??
-                                        widget.spot.spotSource!,
+                                    widget.spot.spotSourceName ?? widget.spot.spotSource!,
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 10,
