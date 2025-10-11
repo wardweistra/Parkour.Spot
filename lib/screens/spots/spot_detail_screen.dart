@@ -33,7 +33,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   late final ScrollController _scrollController;
   late final PageController _videoPageController;
   bool _isSatelliteView = false;
-  bool _isShareModalOpen = false; // Add this state variable
   
   // Add rating cache variables
   Map<String, dynamic>? _cachedRatingStats;
@@ -163,83 +162,36 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     }
   }
 
-  void _showShareOptions() {
-    setState(() {
-      _isShareModalOpen = true;
-    });
-    
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.share),
-              title: const Text('Share Spot'),
-              onTap: () {
-                Navigator.pop(context);
-                setState(() {
-                  _isShareModalOpen = false;
-                });
-                UrlService.shareSpot(
-                  widget.spot.id!,
-                  widget.spot.name,
-                  countryCode: widget.spot.countryCode,
-                  city: widget.spot.city,
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.copy),
-              title: const Text('Copy Link'),
-              onTap: () async {
-                Navigator.pop(context);
-                setState(() {
-                  _isShareModalOpen = false;
-                });
-                await UrlService.copySpotUrl(
-                  widget.spot.id!,
-                  countryCode: widget.spot.countryCode,
-                  city: widget.spot.city,
-                );
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Link copied to clipboard!'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                }
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.open_in_browser),
-              title: const Text('Open in Browser'),
-              onTap: () {
-                Navigator.pop(context);
-                setState(() {
-                  _isShareModalOpen = false;
-                });
-                UrlService.openSpotInBrowser(
-                  widget.spot.id!,
-                  countryCode: widget.spot.countryCode,
-                  city: widget.spot.city,
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    ).whenComplete(() {
-      // Ensure the state is reset when modal is dismissed
+  void _copySpotToClipboard() async {
+    try {
+      final url = UrlService.generateSpotUrl(
+        widget.spot.id!,
+        countryCode: widget.spot.countryCode,
+        city: widget.spot.city,
+      );
+      final text = '${widget.spot.name.trim()}: $url';
+      
+      await Clipboard.setData(ClipboardData(text: text));
+      
       if (mounted) {
-        setState(() {
-          _isShareModalOpen = false;
-        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Spot copied to clipboard!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
       }
-    });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to copy spot: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
 
@@ -351,7 +303,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                   backgroundColor: Colors.black.withValues(alpha: 0.5),
                   child: IconButton(
                     icon: const Icon(Icons.share, color: Colors.white),
-                    onPressed: _showShareOptions,
+                    onPressed: _copySpotToClipboard,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -815,53 +767,51 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                   indoorViewEnabled: false,
                                   trafficEnabled: false,
                                 ),
-                                if (!_isShareModalOpen)
-                                  Positioned.fill(
-                                    child: PointerInterceptor(
-                                      child: Material(
-                                        color: Colors.transparent,
-                                        child: InkWell(
-                                          onTap: () => _openInMaps(),
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
+                                Positioned.fill(
+                                  child: PointerInterceptor(
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      child: InkWell(
+                                        onTap: () => _openInMaps(),
+                                        borderRadius: BorderRadius.circular(12),
                                       ),
                                     ),
                                   ),
-                                if (!_isShareModalOpen)
-                                  Positioned(
-                                    bottom: 8,
-                                    right: 8,
-                                    child: PointerInterceptor(
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                        decoration: BoxDecoration(
-                                          color: Colors.black.withValues(alpha: 0.7),
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(
-                                              MobileDetectionService.isMobileDevice 
-                                                ? Icons.phone_android 
-                                                : Icons.touch_app,
+                                ),
+                                Positioned(
+                                  bottom: 8,
+                                  right: 8,
+                                  child: PointerInterceptor(
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withValues(alpha: 0.7),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            MobileDetectionService.isMobileDevice 
+                                              ? Icons.phone_android 
+                                              : Icons.touch_app,
+                                            color: Colors.white,
+                                            size: 14,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'Tap to open map',
+                                            style: const TextStyle(
                                               color: Colors.white,
-                                              size: 14,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w500,
                                             ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              'Tap to open map',
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ),
+                                ),
                               ],
                             ),
                     ),
