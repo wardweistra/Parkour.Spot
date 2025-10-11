@@ -342,6 +342,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       controller: _displayNameController,
                       labelText: 'Display Name',
                       prefixIcon: Icons.person,
+                      textCapitalization: TextCapitalization.words,
                       autofillHints: const [AutofillHints.name],
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {

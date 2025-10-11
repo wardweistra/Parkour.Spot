@@ -595,6 +595,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
                 controller: _nameController,
                 labelText: 'Spot Name *',
                 prefixIcon: Icons.location_on,
+                textCapitalization: TextCapitalization.words,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Please enter a spot name';
@@ -611,6 +612,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
                 labelText: 'Description *',
                 prefixIcon: Icons.description,
                 maxLines: 3,
+                textCapitalization: TextCapitalization.sentences,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Please enter a description';
