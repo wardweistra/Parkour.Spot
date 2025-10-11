@@ -546,6 +546,36 @@ function downloadFile(url) {
 }
 
 /**
+ * Detects import format based on URL and file buffer
+ * @param {Buffer} buffer - The downloaded file buffer
+ * @param {string} url - The original URL
+ * @return {"kmz"|"kml"|"geojson"} The detected format
+ */
+function detectImportFormat(buffer, url) {
+  const lowerUrl = (url || "").toLowerCase();
+  // URL-based hints first
+  if (lowerUrl.endsWith(".kmz")) return "kmz";
+  if (lowerUrl.endsWith(".kml")) return "kml";
+  if (lowerUrl.endsWith(".json") || lowerUrl.includes("/geojson")) {
+    return "geojson";
+  }
+
+  // Content-based detection
+  if (buffer && buffer.length >= 4) {
+    // PK\x03\x04 -> ZIP (KMZ)
+    if (buffer[0] === 0x50 && buffer[1] === 0x4b && buffer[2] === 0x03 && buffer[3] === 0x04) {
+      return "kmz";
+    }
+    const text = buffer.slice(0, 256).toString("utf8").trimStart();
+    if (text.startsWith("<")) return "kml"; // assume XML KML
+    if (text.startsWith("{") || text.startsWith("[")) return "geojson";
+  }
+
+  // Default to GeoJSON since uMap often serves without extension
+  return "geojson";
+}
+
+/**
  * Generates a content-based hash for an image buffer
  * @param {Buffer} imageBuffer - The image buffer
  * @return {string} The SHA-256 hash of the image content
@@ -678,6 +708,83 @@ function extractKmlFromKmz(kmzBuffer) {
       zipfile.on("error", reject);
     });
   });
+}
+
+/**
+ * Parses GeoJSON text and extracts point features as placemarks
+ * Supports uMap layers and plain FeatureCollections
+ * @param {string} geojsonText
+ * @return {Object[]} placemarks compatible with KML flow
+ */
+function parseGeoJsonFeatures(geojsonText) {
+  try {
+    const json = JSON.parse(geojsonText);
+
+    // uMap may return a single FeatureCollection or an object with 'type'/'features'
+    // Normalize into an array of features
+    let features = [];
+    if (Array.isArray(json)) {
+      // Rare case: array of features
+      features = json;
+    } else if (json && json.type === 'FeatureCollection' && Array.isArray(json.features)) {
+      features = json.features;
+    } else if (json && json.type === 'Feature') {
+      features = [json];
+    } else if (json && json._umap_options && Array.isArray(json.features)) {
+      // Some uMap exports include extra metadata
+      features = json.features;
+    }
+
+    const placemarks = [];
+    for (const feature of features) {
+      if (!feature || feature.type !== 'Feature' || !feature.geometry) continue;
+      const geom = feature.geometry;
+
+      // Only import Point features for spots
+      if (geom.type !== 'Point' || !Array.isArray(geom.coordinates) || geom.coordinates.length < 2) {
+        continue;
+      }
+
+      const [longitude, latitude, altitudeRaw] = geom.coordinates;
+      const altitude = Number.isFinite(altitudeRaw) ? Number(altitudeRaw) : 0;
+
+      const props = feature.properties || {};
+      const name = String(props.name || props.title || props.label || 'Unnamed Spot');
+      const description = String(props.description || props.desc || props.popupContent || '')
+        // uMap often stores HTML in descriptions; keep KML cleaning consistent later
+        .trim();
+
+      // uMap folder/layer name often in properties._umap_options.name or properties._umap_options.label,
+      // but each feature may also carry a 'layer' or 'category'
+      let folderName = null;
+      if (props._umap_options && (props._umap_options.name || props._umap_options.label)) {
+        folderName = String(props._umap_options.name || props._umap_options.label).trim();
+      } else if (props.layer) {
+        folderName = String(props.layer).trim();
+      } else if (props.category) {
+        folderName = String(props.category).trim();
+      }
+
+      const folderPath = folderName ? [folderName] : [];
+
+      // Try to extract images from common uMap props: 'pictures', 'icon', 'image'
+      // We'll pass through 'description' and rely on existing image extraction for HTML images.
+
+      placemarks.push({
+        name,
+        description,
+        coordinates: { latitude: Number(latitude), longitude: Number(longitude), altitude },
+        extendedData: {},
+        folderPath,
+        folderName,
+      });
+    }
+
+    return placemarks;
+  } catch (e) {
+    console.error('Failed to parse GeoJSON:', e);
+    return [];
+  }
 }
 
 /**
@@ -1368,10 +1475,23 @@ async function geocodeCoordinates(latitude, longitude, apiKey) {
 async function processSyncSource(source, sourceId, apiKey) {
   console.log(`Processing source: ${source.name} (${sourceId})`);
 
-  // Download and process KMZ file
-  let kmzBuffer = await downloadFile(source.kmzUrl);
-  const kmlContent = await extractKmlFromKmz(kmzBuffer);
-  let placemarks = await parseKmlPlacemarks(kmlContent);
+  // Download and process based on detected format (KMZ/KML/GeoJSON)
+  let fileBuffer = await downloadFile(source.kmzUrl);
+  const format = detectImportFormat(fileBuffer, source.kmzUrl);
+  console.log(`Detected import format: ${format}`);
+
+  let placemarks = [];
+  if (format === "kmz") {
+    const kmlContent = await extractKmlFromKmz(fileBuffer);
+    placemarks = await parseKmlPlacemarks(kmlContent);
+  } else if (format === "kml") {
+    const kmlContent = fileBuffer.toString("utf8");
+    placemarks = await parseKmlPlacemarks(kmlContent);
+  } else {
+    // GeoJSON (uMap) support
+    const geojsonText = fileBuffer.toString("utf8");
+    placemarks = parseGeoJsonFeatures(geojsonText);
+  }
 
   // Normalize includeFolders from source configuration
   let includeFolders = [];
@@ -1443,8 +1563,8 @@ async function processSyncSource(source, sourceId, apiKey) {
     );
   }
 
-  // Clear KMZ buffer to free memory
-  kmzBuffer = null;
+  // Clear file buffer to free memory
+  fileBuffer = null;
 
   let created = 0;
   let updated = 0;
