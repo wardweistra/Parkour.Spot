@@ -711,6 +711,78 @@ function extractKmlFromKmz(kmzBuffer) {
 }
 
 /**
+ * Checks if GeoJSON contains uMap metadata with datalayers
+ * @param {Object} json - Parsed JSON object
+ * @return {boolean} True if this is uMap metadata
+ */
+function isUMapMetadata(json) {
+  return json &&
+         json.type === "Feature" &&
+         json.properties &&
+         json.properties.datalayers &&
+         Array.isArray(json.properties.datalayers) &&
+         json.properties.datalayers.length > 0;
+}
+
+/**
+ * Extracts datalayer URLs from uMap metadata
+ * @param {Object} json - Parsed uMap metadata JSON
+ * @param {string} baseUrl - Original URL to extract map ID from
+ * @return {string[]} Array of datalayer URLs
+ */
+function extractDatalayerUrls(json, baseUrl) {
+  const urls = [];
+
+  // Extract map ID from URL (e.g., 640485 from /en/map/640485/geojson/)
+  const mapIdMatch = baseUrl.match(/\/map\/(\d+)\//);
+  if (!mapIdMatch) {
+    console.error("Could not extract map ID from URL:", baseUrl);
+    return urls;
+  }
+
+  const mapId = mapIdMatch[1];
+  const baseDomain = baseUrl.split("/").slice(0, 3).join("/");
+
+  for (const datalayer of json.properties.datalayers) {
+    if (datalayer.id) {
+      const datalayerUrl = `${baseDomain}/en/datalayer/${mapId}/` +
+        `${datalayer.id}/`;
+      urls.push(datalayerUrl);
+      console.log(`Found datalayer: ${datalayer.name || "Unnamed"} -> ` +
+        `${datalayerUrl}`);
+    }
+  }
+
+  return urls;
+}
+
+/**
+ * Downloads and processes a single datalayer GeoJSON
+ * @param {string} datalayerUrl - URL to the datalayer GeoJSON
+ * @param {string} datalayerName - Name of the datalayer for folder organization
+ * @return {Promise<Object[]>} Array of placemarks
+ */
+async function processDatalayer(datalayerUrl, datalayerName) {
+  try {
+    console.log(`Processing datalayer: ${datalayerName} from ` +
+      `${datalayerUrl}`);
+    const fileBuffer = await downloadFile(datalayerUrl);
+    const geojsonText = fileBuffer.toString("utf8");
+    const placemarks = parseGeoJsonFeatures(geojsonText);
+
+    // Add datalayer name as folder for all placemarks
+    return placemarks.map((placemark) => ({
+      ...placemark,
+      folderPath: [datalayerName],
+      folderName: datalayerName,
+    }));
+  } catch (error) {
+    console.error(`Failed to process datalayer ${datalayerName}:`, error);
+    return [];
+  }
+}
+
+/**
  * Parses GeoJSON text and extracts point features as placemarks
  * Supports uMap layers and plain FeatureCollections
  * @param {string} geojsonText
@@ -726,9 +798,10 @@ function parseGeoJsonFeatures(geojsonText) {
     if (Array.isArray(json)) {
       // Rare case: array of features
       features = json;
-    } else if (json && json.type === 'FeatureCollection' && Array.isArray(json.features)) {
+    } else if (json && json.type === "FeatureCollection" &&
+               Array.isArray(json.features)) {
       features = json.features;
-    } else if (json && json.type === 'Feature') {
+    } else if (json && json.type === "Feature") {
       features = [json];
     } else if (json && json._umap_options && Array.isArray(json.features)) {
       // Some uMap exports include extra metadata
@@ -737,11 +810,12 @@ function parseGeoJsonFeatures(geojsonText) {
 
     const placemarks = [];
     for (const feature of features) {
-      if (!feature || feature.type !== 'Feature' || !feature.geometry) continue;
+      if (!feature || feature.type !== "Feature" || !feature.geometry) continue;
       const geom = feature.geometry;
 
       // Only import Point features for spots
-      if (geom.type !== 'Point' || !Array.isArray(geom.coordinates) || geom.coordinates.length < 2) {
+      if (geom.type !== "Point" || !Array.isArray(geom.coordinates) ||
+          geom.coordinates.length < 2) {
         continue;
       }
 
@@ -749,16 +823,21 @@ function parseGeoJsonFeatures(geojsonText) {
       const altitude = Number.isFinite(altitudeRaw) ? Number(altitudeRaw) : 0;
 
       const props = feature.properties || {};
-      const name = String(props.name || props.title || props.label || 'Unnamed Spot');
-      const description = String(props.description || props.desc || props.popupContent || '')
+      const name = String(props.name || props.title || props.label ||
+        "Unnamed Spot");
+      const description = String(props.description || props.desc ||
+        props.popupContent || "")
         // uMap often stores HTML in descriptions; keep KML cleaning consistent later
         .trim();
 
-      // uMap folder/layer name often in properties._umap_options.name or properties._umap_options.label,
-      // but each feature may also carry a 'layer' or 'category'
+      // uMap folder/layer name often in properties._umap_options.name or
+      // properties._umap_options.label, but each feature may also carry a
+      // 'layer' or 'category'
       let folderName = null;
-      if (props._umap_options && (props._umap_options.name || props._umap_options.label)) {
-        folderName = String(props._umap_options.name || props._umap_options.label).trim();
+      if (props._umap_options && (props._umap_options.name ||
+          props._umap_options.label)) {
+        folderName = String(props._umap_options.name ||
+          props._umap_options.label).trim();
       } else if (props.layer) {
         folderName = String(props.layer).trim();
       } else if (props.category) {
@@ -767,13 +846,15 @@ function parseGeoJsonFeatures(geojsonText) {
 
       const folderPath = folderName ? [folderName] : [];
 
-      // Try to extract images from common uMap props: 'pictures', 'icon', 'image'
-      // We'll pass through 'description' and rely on existing image extraction for HTML images.
+      // Try to extract images from common uMap props: 'pictures', 'icon',
+      // 'image'. We'll pass through 'description' and rely on existing image
+      // extraction for HTML images.
 
       placemarks.push({
         name,
         description,
-        coordinates: { latitude: Number(latitude), longitude: Number(longitude), altitude },
+        coordinates: {latitude: Number(latitude),
+          longitude: Number(longitude), altitude},
         extendedData: {},
         folderPath,
         folderName,
@@ -782,7 +863,7 @@ function parseGeoJsonFeatures(geojsonText) {
 
     return placemarks;
   } catch (e) {
-    console.error('Failed to parse GeoJSON:', e);
+    console.error("Failed to parse GeoJSON:", e);
     return [];
   }
 }
@@ -1490,7 +1571,45 @@ async function processSyncSource(source, sourceId, apiKey) {
   } else {
     // GeoJSON (uMap) support
     const geojsonText = fileBuffer.toString("utf8");
-    placemarks = parseGeoJsonFeatures(geojsonText);
+    const json = JSON.parse(geojsonText);
+    
+    console.log("Parsed GeoJSON structure:", {
+      type: json.type,
+      hasProperties: !!json.properties,
+      hasDatalayers: !!(json.properties && json.properties.datalayers),
+      datalayersCount: json.properties && json.properties.datalayers ? json.properties.datalayers.length : 0,
+      propertiesName: json.properties ? json.properties.name : null
+    });
+
+    if (isUMapMetadata(json)) {
+      console.log("Detected uMap metadata with datalayers, " +
+        "processing each datalayer separately");
+
+      // Extract datalayer URLs
+      const datalayerUrls = extractDatalayerUrls(json, source.kmzUrl);
+
+      if (datalayerUrls.length === 0) {
+        console.warn("No datalayer URLs found in uMap metadata");
+        placemarks = [];
+      } else {
+        // Process each datalayer
+        const allPlacemarks = [];
+        for (let i = 0; i < datalayerUrls.length; i++) {
+          const datalayerUrl = datalayerUrls[i];
+          const datalayerName = json.properties.datalayers[i].name || `Datalayer ${i + 1}`;
+
+          const datalayerPlacemarks = await processDatalayer(
+            datalayerUrl, datalayerName);
+          allPlacemarks.push(...datalayerPlacemarks);
+        }
+        placemarks = allPlacemarks;
+        console.log(`Processed ${datalayerUrls.length} datalayers, ` +
+          `found ${placemarks.length} total placemarks`);
+      }
+    } else {
+      // Regular GeoJSON processing
+      placemarks = parseGeoJsonFeatures(geojsonText);
+    }
   }
 
   // Normalize includeFolders from source configuration
