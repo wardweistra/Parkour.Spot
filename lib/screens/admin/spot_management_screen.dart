@@ -206,7 +206,7 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
                   Consumer<SyncSourceService>(
                     builder: (context, syncSourceService, child) {
                       return DropdownButtonFormField<String?>(
-                        value: _selectedSourceId,
+                        initialValue: _selectedSourceId,
                         decoration: const InputDecoration(
                           labelText: 'Select Source',
                           border: OutlineInputBorder(),
