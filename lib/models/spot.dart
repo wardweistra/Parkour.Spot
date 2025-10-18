@@ -24,6 +24,10 @@ class Spot {
   final int? ratingCount;
   final double? wilsonLowerBound;
   final double? random;
+  final String? spotAccess;
+  final List<String>? spotFeatures;
+  final List<String>? spotFacilities;
+  final List<String>? goodFor;
 
   Spot({
     this.id,
@@ -49,6 +53,10 @@ class Spot {
     this.ratingCount,
     this.wilsonLowerBound,
     this.random,
+    this.spotAccess,
+    this.spotFeatures,
+    this.spotFacilities,
+    this.goodFor,
   });
 
   factory Spot.fromFirestore(DocumentSnapshot doc) {
@@ -127,6 +135,10 @@ class Spot {
       ratingCount: data['ratingCount'],
       wilsonLowerBound: data['wilsonLowerBound'] != null ? (data['wilsonLowerBound'] as num).toDouble() : null,
       random: data['random'] != null ? (data['random'] as num).toDouble() : null,
+      spotAccess: data['spotAccess'],
+      spotFeatures: data['spotFeatures'] != null ? List<String>.from(data['spotFeatures']) : null,
+      spotFacilities: data['spotFacilities'] != null ? List<String>.from(data['spotFacilities']) : null,
+      goodFor: data['goodFor'] != null ? List<String>.from(data['goodFor']) : null,
     );
   }
 
@@ -213,6 +225,10 @@ class Spot {
       ratingCount: (data['ratingCount'] is int) ? data['ratingCount'] as int : (data['ratingCount'] as num?)?.toInt(),
       wilsonLowerBound: (data['wilsonLowerBound'] as num?)?.toDouble(),
       random: (data['random'] as num?)?.toDouble(),
+      spotAccess: data['spotAccess'] as String?,
+      spotFeatures: data['spotFeatures'] is List ? List<String>.from(data['spotFeatures']) : null,
+      spotFacilities: data['spotFacilities'] is List ? List<String>.from(data['spotFacilities']) : null,
+      goodFor: data['goodFor'] is List ? List<String>.from(data['goodFor']) : null,
     );
   }
 
@@ -240,6 +256,10 @@ class Spot {
       if (ratingCount != null) 'ratingCount': ratingCount,
       if (wilsonLowerBound != null) 'wilsonLowerBound': wilsonLowerBound,
       if (random != null) 'random': random,
+      if (spotAccess != null) 'spotAccess': spotAccess,
+      if (spotFeatures != null) 'spotFeatures': spotFeatures,
+      if (spotFacilities != null) 'spotFacilities': spotFacilities,
+      if (goodFor != null) 'goodFor': goodFor,
     };
   }
 
@@ -267,6 +287,10 @@ class Spot {
     int? ratingCount,
     double? wilsonLowerBound,
     double? random,
+    String? spotAccess,
+    List<String>? spotFeatures,
+    List<String>? spotFacilities,
+    List<String>? goodFor,
   }) {
     return Spot(
       id: id ?? this.id,
@@ -292,6 +316,10 @@ class Spot {
       ratingCount: ratingCount ?? this.ratingCount,
       wilsonLowerBound: wilsonLowerBound ?? this.wilsonLowerBound,
       random: random ?? this.random,
+      spotAccess: spotAccess ?? this.spotAccess,
+      spotFeatures: spotFeatures ?? this.spotFeatures,
+      spotFacilities: spotFacilities ?? this.spotFacilities,
+      goodFor: goodFor ?? this.goodFor,
     );
   }
 

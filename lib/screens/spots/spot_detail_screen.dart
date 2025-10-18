@@ -665,6 +665,76 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       const SizedBox(height: 24),
                     ],
                     
+                    // Spot Access
+                    if (widget.spot.spotAccess != null) ...[
+                      Text(
+                        'Access',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildAccessChip(widget.spot.spotAccess!),
+                      const SizedBox(height: 24),
+                    ],
+                    
+                    // Spot Features
+                    if (widget.spot.spotFeatures != null && widget.spot.spotFeatures!.isNotEmpty) ...[
+                      Text(
+                        'Features',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: widget.spot.spotFeatures!.map((feature) {
+                          return _buildFeatureChip(feature);
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                    
+                    // Spot Facilities
+                    if (widget.spot.spotFacilities != null && widget.spot.spotFacilities!.isNotEmpty) ...[
+                      Text(
+                        'Facilities',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: widget.spot.spotFacilities!.map((facility) {
+                          return _buildFacilityChip(facility);
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                    
+                    // Good For
+                    if (widget.spot.goodFor != null && widget.spot.goodFor!.isNotEmpty) ...[
+                      Text(
+                        'Good For',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: widget.spot.goodFor!.map((skill) {
+                          return _buildGoodForChip(skill);
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                    
                                         // Map view toggle and mobile detection info
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1620,5 +1690,184 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year} at ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+  }
+
+  Widget _buildAccessChip(String access) {
+    IconData icon;
+    Color backgroundColor;
+    Color textColor;
+    
+    switch (access) {
+      case 'Public':
+        icon = Icons.lock_open;
+        backgroundColor = Colors.green.withValues(alpha: 0.1);
+        textColor = Colors.green.shade700;
+        break;
+      case 'Restricted':
+        icon = Icons.lock;
+        backgroundColor = Colors.orange.withValues(alpha: 0.1);
+        textColor = Colors.orange.shade700;
+        break;
+      case 'Paid':
+        icon = Icons.payments;
+        backgroundColor = Colors.blue.withValues(alpha: 0.1);
+        textColor = Colors.blue.shade700;
+        break;
+      default:
+        icon = Icons.info;
+        backgroundColor = Theme.of(context).colorScheme.surfaceContainerHighest;
+        textColor = Theme.of(context).colorScheme.onSurface;
+    }
+    
+    return Chip(
+      avatar: Icon(icon, size: 16, color: textColor),
+      label: Text(access),
+      backgroundColor: backgroundColor,
+      labelStyle: TextStyle(color: textColor, fontWeight: FontWeight.w500),
+    );
+  }
+
+  Widget _buildFeatureChip(String feature) {
+    IconData icon;
+    Color backgroundColor;
+    Color textColor;
+    
+    if (feature.startsWith('Walls')) {
+      icon = Icons.square;
+      backgroundColor = Colors.brown.withValues(alpha: 0.1);
+      textColor = Colors.brown.shade700;
+    } else if (feature.startsWith('Bars')) {
+      icon = Icons.horizontal_rule;
+      backgroundColor = Colors.grey.withValues(alpha: 0.1);
+      textColor = Colors.grey.shade700;
+    } else if (feature == 'Climbing tree') {
+      icon = Icons.park;
+      backgroundColor = Colors.green.withValues(alpha: 0.1);
+      textColor = Colors.green.shade700;
+    } else if (feature == 'Rocks') {
+      icon = Icons.landscape;
+      backgroundColor = Colors.grey.withValues(alpha: 0.1);
+      textColor = Colors.grey.shade700;
+    } else if (feature == 'Soft landing pit') {
+      icon = Icons.safety_divider;
+      backgroundColor = Colors.purple.withValues(alpha: 0.1);
+      textColor = Colors.purple.shade700;
+    } else {
+      icon = Icons.info;
+      backgroundColor = Theme.of(context).colorScheme.surfaceContainerHighest;
+      textColor = Theme.of(context).colorScheme.onSurface;
+    }
+    
+    return Chip(
+      avatar: Icon(icon, size: 16, color: textColor),
+      label: Text(feature),
+      backgroundColor: backgroundColor,
+      labelStyle: TextStyle(color: textColor, fontWeight: FontWeight.w500),
+    );
+  }
+
+  Widget _buildFacilityChip(String facility) {
+    IconData icon;
+    Color backgroundColor;
+    Color textColor;
+    
+    switch (facility) {
+      case 'Covered':
+        icon = Icons.roofing;
+        backgroundColor = Colors.blue.withValues(alpha: 0.1);
+        textColor = Colors.blue.shade700;
+        break;
+      case 'Lighting':
+        icon = Icons.lightbulb;
+        backgroundColor = Colors.yellow.withValues(alpha: 0.1);
+        textColor = Colors.yellow.shade700;
+        break;
+      case 'Water tap':
+        icon = Icons.water_drop;
+        backgroundColor = Colors.cyan.withValues(alpha: 0.1);
+        textColor = Colors.cyan.shade700;
+        break;
+      case 'Toilet':
+        icon = Icons.wc;
+        backgroundColor = Colors.teal.withValues(alpha: 0.1);
+        textColor = Colors.teal.shade700;
+        break;
+      case 'Parking':
+        icon = Icons.local_parking;
+        backgroundColor = Colors.indigo.withValues(alpha: 0.1);
+        textColor = Colors.indigo.shade700;
+        break;
+      default:
+        icon = Icons.info;
+        backgroundColor = Theme.of(context).colorScheme.surfaceContainerHighest;
+        textColor = Theme.of(context).colorScheme.onSurface;
+    }
+    
+    return Chip(
+      avatar: Icon(icon, size: 16, color: textColor),
+      label: Text(facility),
+      backgroundColor: backgroundColor,
+      labelStyle: TextStyle(color: textColor, fontWeight: FontWeight.w500),
+    );
+  }
+
+  Widget _buildGoodForChip(String skill) {
+    IconData icon;
+    Color backgroundColor;
+    Color textColor;
+    
+    switch (skill) {
+      case 'Vaults':
+        icon = Icons.directions_run;
+        backgroundColor = Colors.red.withValues(alpha: 0.1);
+        textColor = Colors.red.shade700;
+        break;
+      case 'Balance':
+        icon = Icons.balance;
+        backgroundColor = Colors.purple.withValues(alpha: 0.1);
+        textColor = Colors.purple.shade700;
+        break;
+      case 'Ascend':
+        icon = Icons.arrow_upward;
+        backgroundColor = Colors.green.withValues(alpha: 0.1);
+        textColor = Colors.green.shade700;
+        break;
+      case 'Decent':
+        icon = Icons.arrow_downward;
+        backgroundColor = Colors.orange.withValues(alpha: 0.1);
+        textColor = Colors.orange.shade700;
+        break;
+      case 'Speed run':
+        icon = Icons.speed;
+        backgroundColor = Colors.pink.withValues(alpha: 0.1);
+        textColor = Colors.pink.shade700;
+        break;
+      case 'Water challenges':
+        icon = Icons.water;
+        backgroundColor = Colors.cyan.withValues(alpha: 0.1);
+        textColor = Colors.cyan.shade700;
+        break;
+      case 'Roof gap':
+        icon = Icons.roofing;
+        backgroundColor = Colors.brown.withValues(alpha: 0.1);
+        textColor = Colors.brown.shade700;
+        break;
+      case 'Pole slide':
+        icon = Icons.arrow_downward_outlined;
+        backgroundColor = Colors.deepPurple.withValues(alpha: 0.1);
+        textColor = Colors.deepPurple.shade700;
+        break;
+      default:
+        icon = Icons.info;
+        backgroundColor = Theme.of(context).colorScheme.surfaceContainerHighest;
+        textColor = Theme.of(context).colorScheme.onSurface;
+    }
+    
+    return Chip(
+      avatar: Icon(icon, size: 16, color: textColor),
+      label: Text(skill),
+      backgroundColor: backgroundColor,
+      labelStyle: TextStyle(color: textColor, fontWeight: FontWeight.w500),
+    );
   }
 }

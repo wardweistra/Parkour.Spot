@@ -41,6 +41,12 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
   bool _isGeocoding = false;
   GoogleMapController? _mapController;
   bool _isSatelliteView = false;
+  
+  // New spot attributes
+  String? _selectedAccess;
+  final Set<String> _selectedFeatures = <String>{};
+  final Set<String> _selectedFacilities = <String>{};
+  final Set<String> _selectedGoodFor = <String>{};
 
   @override
   void initState() {
@@ -469,6 +475,10 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
         ratingCount: 0,
         wilsonLowerBound: 0.0,
         random: Random().nextDouble(),
+        spotAccess: _selectedAccess,
+        spotFeatures: _selectedFeatures.isNotEmpty ? _selectedFeatures.toList() : null,
+        spotFacilities: _selectedFacilities.isNotEmpty ? _selectedFacilities.toList() : null,
+        goodFor: _selectedGoodFor.isNotEmpty ? _selectedGoodFor.toList() : null,
       );
 
       final spotId = await spotService.createSpot(
@@ -491,6 +501,10 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
           _selectedImages = [];
           _selectedImageBytes = [];
           _pickedLocation = null;
+          _selectedAccess = null;
+          _selectedFeatures.clear();
+          _selectedFacilities.clear();
+          _selectedGoodFor.clear();
         });
         
         // Navigate to the newly created spot detail page
@@ -632,6 +646,414 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
                 labelText: 'Tags (comma-separated)',
                 prefixIcon: Icons.label,
                 hintText: 'e.g., beginner, advanced, urban, natural',
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Spot Access Section
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Spot Access',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Column(
+                        children: [
+                          RadioListTile<String>(
+                            title: const Text('Public'),
+                            subtitle: const Text('Open to everyone'),
+                            value: 'Public',
+                            groupValue: _selectedAccess,
+                            onChanged: (String? value) {
+                              setState(() {
+                                _selectedAccess = value;
+                              });
+                            },
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                          RadioListTile<String>(
+                            title: const Text('Restricted'),
+                            subtitle: const Text('Limited access or permission required'),
+                            value: 'Restricted',
+                            groupValue: _selectedAccess,
+                            onChanged: (String? value) {
+                              setState(() {
+                                _selectedAccess = value;
+                              });
+                            },
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                          RadioListTile<String>(
+                            title: const Text('Paid'),
+                            subtitle: const Text('Requires payment or membership'),
+                            value: 'Paid',
+                            groupValue: _selectedAccess,
+                            onChanged: (String? value) {
+                              setState(() {
+                                _selectedAccess = value;
+                              });
+                            },
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Spot Features Section
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Spot Features',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      // Walls
+                      Text(
+                        'Walls',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CheckboxListTile(
+                              title: const Text('Low'),
+                              value: _selectedFeatures.contains('Walls - Low'),
+                              onChanged: (bool? value) {
+                                setState(() {
+                                  if (value == true) {
+                                    _selectedFeatures.add('Walls - Low');
+                                  } else {
+                                    _selectedFeatures.remove('Walls - Low');
+                                  }
+                                });
+                              },
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ),
+                          Expanded(
+                            child: CheckboxListTile(
+                              title: const Text('Medium'),
+                              value: _selectedFeatures.contains('Walls - Medium'),
+                              onChanged: (bool? value) {
+                                setState(() {
+                                  if (value == true) {
+                                    _selectedFeatures.add('Walls - Medium');
+                                  } else {
+                                    _selectedFeatures.remove('Walls - Medium');
+                                  }
+                                });
+                              },
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ),
+                          Expanded(
+                            child: CheckboxListTile(
+                              title: const Text('High'),
+                              value: _selectedFeatures.contains('Walls - High'),
+                              onChanged: (bool? value) {
+                                setState(() {
+                                  if (value == true) {
+                                    _selectedFeatures.add('Walls - High');
+                                  } else {
+                                    _selectedFeatures.remove('Walls - High');
+                                  }
+                                });
+                              },
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      // Bars
+                      Text(
+                        'Bars',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CheckboxListTile(
+                              title: const Text('Low'),
+                              value: _selectedFeatures.contains('Bars - Low'),
+                              onChanged: (bool? value) {
+                                setState(() {
+                                  if (value == true) {
+                                    _selectedFeatures.add('Bars - Low');
+                                  } else {
+                                    _selectedFeatures.remove('Bars - Low');
+                                  }
+                                });
+                              },
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ),
+                          Expanded(
+                            child: CheckboxListTile(
+                              title: const Text('Medium'),
+                              value: _selectedFeatures.contains('Bars - Medium'),
+                              onChanged: (bool? value) {
+                                setState(() {
+                                  if (value == true) {
+                                    _selectedFeatures.add('Bars - Medium');
+                                  } else {
+                                    _selectedFeatures.remove('Bars - Medium');
+                                  }
+                                });
+                              },
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ),
+                          Expanded(
+                            child: CheckboxListTile(
+                              title: const Text('High'),
+                              value: _selectedFeatures.contains('Bars - High'),
+                              onChanged: (bool? value) {
+                                setState(() {
+                                  if (value == true) {
+                                    _selectedFeatures.add('Bars - High');
+                                  } else {
+                                    _selectedFeatures.remove('Bars - High');
+                                  }
+                                });
+                              },
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      // Other features
+                      Text(
+                        'Other Features',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      CheckboxListTile(
+                        title: const Text('Climbing tree'),
+                        value: _selectedFeatures.contains('Climbing tree'),
+                        onChanged: (bool? value) {
+                          setState(() {
+                            if (value == true) {
+                              _selectedFeatures.add('Climbing tree');
+                            } else {
+                              _selectedFeatures.remove('Climbing tree');
+                            }
+                          });
+                        },
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      CheckboxListTile(
+                        title: const Text('Rocks'),
+                        value: _selectedFeatures.contains('Rocks'),
+                        onChanged: (bool? value) {
+                          setState(() {
+                            if (value == true) {
+                              _selectedFeatures.add('Rocks');
+                            } else {
+                              _selectedFeatures.remove('Rocks');
+                            }
+                          });
+                        },
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      CheckboxListTile(
+                        title: const Text('Soft landing pit'),
+                        value: _selectedFeatures.contains('Soft landing pit'),
+                        onChanged: (bool? value) {
+                          setState(() {
+                            if (value == true) {
+                              _selectedFeatures.add('Soft landing pit');
+                            } else {
+                              _selectedFeatures.remove('Soft landing pit');
+                            }
+                          });
+                        },
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Spot Facilities Section
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Spot Facilities',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      CheckboxListTile(
+                        title: const Text('Covered'),
+                        subtitle: const Text('Protected from weather'),
+                        value: _selectedFacilities.contains('Covered'),
+                        onChanged: (bool? value) {
+                          setState(() {
+                            if (value == true) {
+                              _selectedFacilities.add('Covered');
+                            } else {
+                              _selectedFacilities.remove('Covered');
+                            }
+                          });
+                        },
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      CheckboxListTile(
+                        title: const Text('Lighting'),
+                        subtitle: const Text('Good lighting for evening sessions'),
+                        value: _selectedFacilities.contains('Lighting'),
+                        onChanged: (bool? value) {
+                          setState(() {
+                            if (value == true) {
+                              _selectedFacilities.add('Lighting');
+                            } else {
+                              _selectedFacilities.remove('Lighting');
+                            }
+                          });
+                        },
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      CheckboxListTile(
+                        title: const Text('Water tap'),
+                        subtitle: const Text('Access to drinking water'),
+                        value: _selectedFacilities.contains('Water tap'),
+                        onChanged: (bool? value) {
+                          setState(() {
+                            if (value == true) {
+                              _selectedFacilities.add('Water tap');
+                            } else {
+                              _selectedFacilities.remove('Water tap');
+                            }
+                          });
+                        },
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      CheckboxListTile(
+                        title: const Text('Toilet'),
+                        subtitle: const Text('Restroom facilities available'),
+                        value: _selectedFacilities.contains('Toilet'),
+                        onChanged: (bool? value) {
+                          setState(() {
+                            if (value == true) {
+                              _selectedFacilities.add('Toilet');
+                            } else {
+                              _selectedFacilities.remove('Toilet');
+                            }
+                          });
+                        },
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      CheckboxListTile(
+                        title: const Text('Parking'),
+                        subtitle: const Text('Parking available nearby'),
+                        value: _selectedFacilities.contains('Parking'),
+                        onChanged: (bool? value) {
+                          setState(() {
+                            if (value == true) {
+                              _selectedFacilities.add('Parking');
+                            } else {
+                              _selectedFacilities.remove('Parking');
+                            }
+                          });
+                        },
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Good For Section
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Good For',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'What parkour skills can be practiced here?',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        children: [
+                          'Vaults',
+                          'Balance',
+                          'Ascend',
+                          'Decent',
+                          'Speed run',
+                          'Water challenges',
+                          'Roof gap',
+                          'Pole slide',
+                        ].map((skill) {
+                          return SizedBox(
+                            width: MediaQuery.of(context).size.width / 2 - 24,
+                            child: CheckboxListTile(
+                              title: Text(skill),
+                              value: _selectedGoodFor.contains(skill),
+                              onChanged: (bool? value) {
+                                setState(() {
+                                  if (value == true) {
+                                    _selectedGoodFor.add(skill);
+                                  } else {
+                                    _selectedGoodFor.remove(skill);
+                                  }
+                                });
+                              },
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
+                ),
               ),
               
               const SizedBox(height: 16),
