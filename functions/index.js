@@ -1361,6 +1361,69 @@ async function cleanupImageCache() {
 }
 
 /**
+ * Extracts address information from a KML placemark
+ * @param {Object} placemark - The KML placemark object
+ * @return {string|null} The address string or null if no address found
+ */
+function extractAddressFromPlacemark(placemark) {
+  // Check for direct address element first
+  if (placemark.address && placemark.address[0]) {
+    return placemark.address[0].trim();
+  }
+  
+  // Check ExtendedData for address information
+  if (placemark.ExtendedData && placemark.ExtendedData[0]) {
+    const extendedData = placemark.ExtendedData[0];
+    
+    // Check for Data elements with address-related names
+    if (extendedData.Data) {
+      for (const data of extendedData.Data) {
+        if (data.$ && data.$.name) {
+          const name = data.$.name.toLowerCase();
+          if (name.includes('adresse') || name.includes('address') || name.includes('location') || 
+              name.includes('place') || name.includes('street')) {
+            if (data.value && data.value[0]) {
+              return data.value[0].trim();
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // Check description for address information
+  if (placemark.description && placemark.description[0]) {
+    const description = placemark.description[0];
+    // Look for common address patterns in description
+    const addressPatterns = [
+      /adresse complète[:\s]+([^\n\r<]+)/i,
+      /address[:\s]+([^\n\r<]+)/i,
+      /location[:\s]+([^\n\r<]+)/i,
+      /place[:\s]+([^\n\r<]+)/i,
+      /street[:\s]+([^\n\r<]+)/i,
+    ];
+    
+    for (const pattern of addressPatterns) {
+      const match = description.match(pattern);
+      if (match && match[1]) {
+        return match[1].trim();
+      }
+    }
+  }
+  
+  // Check name for address information (sometimes the name itself is an address)
+  if (placemark.name && placemark.name[0]) {
+    const name = placemark.name[0];
+    // If name looks like an address (contains street numbers, common address words)
+    if (name.match(/\d+.*(street|st|avenue|ave|road|rd|boulevard|blvd|way|drive|dr|lane|ln|place|pl)/i)) {
+      return name.trim();
+    }
+  }
+  
+  return null;
+}
+
+/**
  * Parses KML and extracts Placemarks, including folder hierarchy when present
  * @param {string} kmlContent - The KML content
  * @return {Promise<Object[]>} A promise that resolves to the Placemarks
@@ -1401,6 +1464,7 @@ function parseKmlPlacemarks(kmlContent) {
               placemark.Point[0].coordinates[0];
 
             if (coordinates) {
+              // Placemark has coordinates - process normally
               const [longitude, latitude, altitude] = coordinates
                   .split(",")
                   .map(Number);
@@ -1416,6 +1480,24 @@ function parseKmlPlacemarks(kmlContent) {
                     nextFolderPath[nextFolderPath.length - 1].trim() :
                     null,
               });
+            } else {
+              // Placemark has no coordinates - check for address information
+              const address = extractAddressFromPlacemark(placemark);
+              if (address) {
+                placemarks.push({
+                  name: name,
+                  description: description,
+                  coordinates: null, // Will be geocoded later
+                  address: address,
+                  extendedData:
+                    (placemark.ExtendedData && placemark.ExtendedData[0]) || {},
+                  folderPath: nextFolderPath,
+                  folderName:
+                    nextFolderPath.length > 0 ?
+                      nextFolderPath[nextFolderPath.length - 1].trim() :
+                      null,
+                });
+              }
             }
           });
         }
@@ -1444,6 +1526,7 @@ function parseKmlPlacemarks(kmlContent) {
               placemark.Point[0].coordinates[0];
 
             if (coordinates) {
+              // Placemark has coordinates - process normally
               const [longitude, latitude, altitude] = coordinates
                   .split(",")
                   .map(Number);
@@ -1456,6 +1539,21 @@ function parseKmlPlacemarks(kmlContent) {
                 folderPath: [],
                 folderName: null,
               });
+            } else {
+              // Placemark has no coordinates - check for address information
+              const address = extractAddressFromPlacemark(placemark);
+              if (address) {
+                placemarks.push({
+                  name: name,
+                  description: description,
+                  coordinates: null, // Will be geocoded later
+                  address: address,
+                  extendedData:
+                    (placemark.ExtendedData && placemark.ExtendedData[0]) || {},
+                  folderPath: [],
+                  folderName: null,
+                });
+              }
             }
           });
         }
@@ -1469,6 +1567,59 @@ function parseKmlPlacemarks(kmlContent) {
       resolve(placemarks);
     });
   });
+}
+
+/**
+ * Helper function to reverse geocode an address to coordinates
+ * @param {string} address - The address to geocode
+ * @param {string} apiKey - The Google Maps API key
+ * @return {Promise<Object>} Reverse geocoding result with coordinates
+ */
+async function reverseGeocodeAddress(address, apiKey) {
+  try {
+    const encodedAddress = encodeURIComponent(address);
+    const geocodingUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&key=${apiKey}`;
+    
+    const response = await new Promise((resolve, reject) => {
+      https
+          .get(geocodingUrl, (res) => {
+            let data = "";
+            res.on("data", (chunk) => (data += chunk));
+            res.on("end", () => {
+              try {
+                resolve(JSON.parse(data));
+              } catch (e) {
+                reject(e);
+              }
+            });
+          })
+          .on("error", reject);
+    });
+
+    if (
+      response.status === "OK" &&
+      response.results &&
+      response.results.length > 0
+    ) {
+      const location = response.results[0].geometry.location;
+      return {
+        success: true,
+        latitude: location.lat,
+        longitude: location.lng,
+      };
+    } else {
+      return {
+        success: false,
+        error: response.error_message || "No coordinates found for address",
+      };
+    }
+  } catch (error) {
+    console.warn(`Reverse geocoding error for ${address}:`, error);
+    return {
+      success: false,
+      error: error.message || "Reverse geocoding request failed",
+    };
+  }
 }
 
 /**
@@ -1717,7 +1868,7 @@ async function processSyncSource(source, sourceId, apiKey) {
   // Process each placemark
   for (let i = 0; i < placemarks.length; i++) {
     const placemark = placemarks[i];
-    const {name, description, coordinates} = placemark;
+    const {name, description, coordinates, address: placemarkAddress} = placemark;
 
     if (source.recordFolderName === true) {
       console.log(
@@ -1725,47 +1876,96 @@ async function processSyncSource(source, sourceId, apiKey) {
       );
     }
 
-    // Check if spot already exists with same coordinates and source
-    const existingSpots = await db
-        .collection("spots")
-        .where("spotSource", "==", sourceId)
-        .where("latitude", "==", coordinates.latitude)
-        .where("longitude", "==", coordinates.longitude)
-        .get();
-
-    let address = null;
+    let finalCoordinates = coordinates;
+    let address = placemarkAddress;
     let city = null;
     let countryCode = null;
     let existingSpotData = null;
 
-    if (existingSpots.empty) {
-      // Only geocode for NEW spots
-      console.log(
-          `Geocoding new spot: ${name} at ${coordinates.latitude}, ${coordinates.longitude}`,
-      );
-
+    // If placemark has no coordinates but has an address, geocode the address
+    if (!coordinates && placemarkAddress) {
+      console.log(`Reverse geocoding address for spot: ${name} - ${placemarkAddress}`);
+      
       // Add small delay to respect API rate limits
       if (i > 0) {
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
 
-      const geocodeResult = await geocodeCoordinates(
-          coordinates.latitude,
-          coordinates.longitude,
-          apiKey,
-      );
-
-      if (geocodeResult.success) {
-        address = geocodeResult.address;
-        city = geocodeResult.city;
-        countryCode = geocodeResult.countryCode;
+      const reverseGeocodeResult = await reverseGeocodeAddress(placemarkAddress, apiKey);
+      
+      if (reverseGeocodeResult.success) {
+        finalCoordinates = {
+          latitude: reverseGeocodeResult.latitude,
+          longitude: reverseGeocodeResult.longitude,
+          altitude: 0
+        };
+        address = placemarkAddress; // Use the original address
         geocoded++;
-        console.log(`✓ Geocoded new spot: ${name} - ${address}`);
+        console.log(`✓ Reverse geocoded spot: ${name} - ${placemarkAddress} -> ${finalCoordinates.latitude}, ${finalCoordinates.longitude}`);
       } else {
         geocodingFailed++;
-        console.warn(
-            `✗ Geocoding failed for new spot: ${name} - ${geocodeResult.error}`,
+        console.warn(`✗ Reverse geocoding failed for spot: ${name} - ${reverseGeocodeResult.error}`);
+        continue; // Skip this placemark if we can't get coordinates
+      }
+    }
+
+    // Check if spot already exists with same coordinates and source
+    const existingSpots = await db
+        .collection("spots")
+        .where("spotSource", "==", sourceId)
+        .where("latitude", "==", finalCoordinates.latitude)
+        .where("longitude", "==", finalCoordinates.longitude)
+        .get();
+
+    if (existingSpots.empty) {
+      // Only geocode for NEW spots (if we don't already have address from reverse geocoding)
+      if (!address) {
+        console.log(
+            `Geocoding new spot: ${name} at ${finalCoordinates.latitude}, ${finalCoordinates.longitude}`,
         );
+
+        // Add small delay to respect API rate limits
+        if (i > 0) {
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+
+        const geocodeResult = await geocodeCoordinates(
+            finalCoordinates.latitude,
+            finalCoordinates.longitude,
+            apiKey,
+        );
+
+        if (geocodeResult.success) {
+          address = geocodeResult.address;
+          city = geocodeResult.city;
+          countryCode = geocodeResult.countryCode;
+          geocoded++;
+          console.log(`✓ Geocoded new spot: ${name} - ${address}`);
+        } else {
+          geocodingFailed++;
+          console.warn(
+              `✗ Geocoding failed for new spot: ${name} - ${geocodeResult.error}`,
+          );
+        }
+      } else {
+        // We have address from reverse geocoding, now get city and country
+        console.log(`Getting city/country for spot: ${name} at ${finalCoordinates.latitude}, ${finalCoordinates.longitude}`);
+        
+        const geocodeResult = await geocodeCoordinates(
+            finalCoordinates.latitude,
+            finalCoordinates.longitude,
+            apiKey,
+        );
+
+        if (geocodeResult.success) {
+          city = geocodeResult.city;
+          countryCode = geocodeResult.countryCode;
+          geocoded++;
+          console.log(`✓ Got city/country for spot: ${name} - ${city}, ${countryCode}`);
+        } else {
+          geocodingFailed++;
+          console.warn(`✗ Failed to get city/country for spot: ${name} - ${geocodeResult.error}`);
+        }
       }
     } else {
       // For existing spots, keep their current address data
@@ -1797,8 +1997,8 @@ async function processSyncSource(source, sourceId, apiKey) {
     const spotData = {
       name: name.trim(),
       description: cleanedDescription.trim(),
-      latitude: coordinates.latitude,
-      longitude: coordinates.longitude,
+      latitude: finalCoordinates.latitude,
+      longitude: finalCoordinates.longitude,
       address: address,
       city: city,
       countryCode: countryCode,
@@ -1981,7 +2181,7 @@ exports.syncSingleSource = onCall(
     {
       region: "europe-west1",
       memory: "1GiB",
-      timeoutSeconds: 1200,
+      timeoutSeconds: 1800,
       secrets: ["GOOGLE_MAPS_API_KEY"],
     },
     async (request) => {
@@ -2045,7 +2245,7 @@ exports.syncAllSources = onCall(
     {
       region: "europe-west1",
       memory: "1GiB",
-      timeoutSeconds: 540,
+      timeoutSeconds: 1800,
       secrets: ["GOOGLE_MAPS_API_KEY"],
     },
     async (request) => {
