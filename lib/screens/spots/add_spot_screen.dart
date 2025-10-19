@@ -11,6 +11,7 @@ import '../../services/auth_service.dart';
 import '../../services/geocoding_service.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/custom_button.dart';
+import '../../constants/spot_attributes.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'location_picker_screen.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -27,7 +28,6 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _tagsController = TextEditingController();
   
   List<File?> _selectedImages = [];
   List<Uint8List?> _selectedImageBytes = [];
@@ -45,8 +45,11 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
   // New spot attributes
   String? _selectedAccess;
   final Set<String> _selectedFeatures = <String>{};
-  final Set<String> _selectedFacilities = <String>{};
+  final Map<String, String> _selectedFacilities = <String, String>{};
   final Set<String> _selectedGoodFor = <String>{};
+  
+  // Track which sections are expanded on narrow screens
+  final Map<String, bool> _expandedSections = <String, bool>{};
 
   @override
   void initState() {
@@ -67,7 +70,6 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
-    _tagsController.dispose();
     super.dispose();
   }
 
@@ -452,13 +454,6 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
         throw Exception('User not authenticated');
       }
 
-      // Parse tags
-      final tags = _tagsController.text
-          .split(',')
-          .map((tag) => tag.trim())
-          .where((tag) => tag.isNotEmpty)
-          .toList();
-
       // Create spot
       final spot = Spot(
         name: _nameController.text.trim(),
@@ -468,7 +463,6 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
         address: _currentAddress,
         city: _currentCity,
         countryCode: _currentCountryCode,
-        tags: tags.isNotEmpty ? tags : null,
         createdBy: authService.currentUser?.uid,
         createdByName: authService.userProfile?.displayName ?? authService.currentUser?.email ?? authService.currentUser?.uid,
         averageRating: 0.0,
@@ -477,7 +471,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
         random: Random().nextDouble(),
         spotAccess: _selectedAccess,
         spotFeatures: _selectedFeatures.isNotEmpty ? _selectedFeatures.toList() : null,
-        spotFacilities: _selectedFacilities.isNotEmpty ? _selectedFacilities.toList() : null,
+        spotFacilities: _selectedFacilities.isNotEmpty ? _selectedFacilities : null,
         goodFor: _selectedGoodFor.isNotEmpty ? _selectedGoodFor.toList() : null,
       );
 
@@ -546,7 +540,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Image Section
+              // Location Section
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -556,7 +550,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
                       Row(
                         children: [
                           Text(
-                            'Spot Images',
+                            'Location',
                             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w600,
                             ),
@@ -570,506 +564,6 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
                             ),
                           ),
                         ],
-                      ),
-                      const SizedBox(height: 12),
-                      
-                      if (_selectedImages.isNotEmpty || _selectedImageBytes.isNotEmpty) ...[
-                        _buildCrossPlatformImage(),
-                        const SizedBox(height: 12),
-                      ],
-                      
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: _pickImagesFromGallery,
-                              icon: const Icon(Icons.photo_library),
-                              label: const Text('Gallery'),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: _takePhoto,
-                              icon: const Icon(Icons.camera_alt),
-                              label: const Text('Camera'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Name Field
-              CustomTextField(
-                controller: _nameController,
-                labelText: 'Spot Name *',
-                prefixIcon: Icons.location_on,
-                textCapitalization: TextCapitalization.words,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a spot name';
-                  }
-                  return null;
-                },
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Description Field
-              CustomTextField(
-                controller: _descriptionController,
-                labelText: 'Description *',
-                prefixIcon: Icons.description,
-                maxLines: 3,
-                textCapitalization: TextCapitalization.sentences,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a description';
-                  }
-                  if (value.trim().length < 10) {
-                    return 'Description must be at least 10 characters';
-                  }
-                  return null;
-                },
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Tags Field
-              CustomTextField(
-                controller: _tagsController,
-                labelText: 'Tags (comma-separated)',
-                prefixIcon: Icons.label,
-                hintText: 'e.g., beginner, advanced, urban, natural',
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Spot Access Section
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Spot Access',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Column(
-                        children: [
-                          RadioListTile<String>(
-                            title: const Text('Public'),
-                            subtitle: const Text('Open to everyone'),
-                            value: 'Public',
-                            groupValue: _selectedAccess,
-                            onChanged: (String? value) {
-                              setState(() {
-                                _selectedAccess = value;
-                              });
-                            },
-                            contentPadding: EdgeInsets.zero,
-                          ),
-                          RadioListTile<String>(
-                            title: const Text('Restricted'),
-                            subtitle: const Text('Limited access or permission required'),
-                            value: 'Restricted',
-                            groupValue: _selectedAccess,
-                            onChanged: (String? value) {
-                              setState(() {
-                                _selectedAccess = value;
-                              });
-                            },
-                            contentPadding: EdgeInsets.zero,
-                          ),
-                          RadioListTile<String>(
-                            title: const Text('Paid'),
-                            subtitle: const Text('Requires payment or membership'),
-                            value: 'Paid',
-                            groupValue: _selectedAccess,
-                            onChanged: (String? value) {
-                              setState(() {
-                                _selectedAccess = value;
-                              });
-                            },
-                            contentPadding: EdgeInsets.zero,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Spot Features Section
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Spot Features',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      // Walls
-                      Text(
-                        'Walls',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: CheckboxListTile(
-                              title: const Text('Low'),
-                              value: _selectedFeatures.contains('Walls - Low'),
-                              onChanged: (bool? value) {
-                                setState(() {
-                                  if (value == true) {
-                                    _selectedFeatures.add('Walls - Low');
-                                  } else {
-                                    _selectedFeatures.remove('Walls - Low');
-                                  }
-                                });
-                              },
-                              contentPadding: EdgeInsets.zero,
-                            ),
-                          ),
-                          Expanded(
-                            child: CheckboxListTile(
-                              title: const Text('Medium'),
-                              value: _selectedFeatures.contains('Walls - Medium'),
-                              onChanged: (bool? value) {
-                                setState(() {
-                                  if (value == true) {
-                                    _selectedFeatures.add('Walls - Medium');
-                                  } else {
-                                    _selectedFeatures.remove('Walls - Medium');
-                                  }
-                                });
-                              },
-                              contentPadding: EdgeInsets.zero,
-                            ),
-                          ),
-                          Expanded(
-                            child: CheckboxListTile(
-                              title: const Text('High'),
-                              value: _selectedFeatures.contains('Walls - High'),
-                              onChanged: (bool? value) {
-                                setState(() {
-                                  if (value == true) {
-                                    _selectedFeatures.add('Walls - High');
-                                  } else {
-                                    _selectedFeatures.remove('Walls - High');
-                                  }
-                                });
-                              },
-                              contentPadding: EdgeInsets.zero,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      // Bars
-                      Text(
-                        'Bars',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: CheckboxListTile(
-                              title: const Text('Low'),
-                              value: _selectedFeatures.contains('Bars - Low'),
-                              onChanged: (bool? value) {
-                                setState(() {
-                                  if (value == true) {
-                                    _selectedFeatures.add('Bars - Low');
-                                  } else {
-                                    _selectedFeatures.remove('Bars - Low');
-                                  }
-                                });
-                              },
-                              contentPadding: EdgeInsets.zero,
-                            ),
-                          ),
-                          Expanded(
-                            child: CheckboxListTile(
-                              title: const Text('Medium'),
-                              value: _selectedFeatures.contains('Bars - Medium'),
-                              onChanged: (bool? value) {
-                                setState(() {
-                                  if (value == true) {
-                                    _selectedFeatures.add('Bars - Medium');
-                                  } else {
-                                    _selectedFeatures.remove('Bars - Medium');
-                                  }
-                                });
-                              },
-                              contentPadding: EdgeInsets.zero,
-                            ),
-                          ),
-                          Expanded(
-                            child: CheckboxListTile(
-                              title: const Text('High'),
-                              value: _selectedFeatures.contains('Bars - High'),
-                              onChanged: (bool? value) {
-                                setState(() {
-                                  if (value == true) {
-                                    _selectedFeatures.add('Bars - High');
-                                  } else {
-                                    _selectedFeatures.remove('Bars - High');
-                                  }
-                                });
-                              },
-                              contentPadding: EdgeInsets.zero,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      // Other features
-                      Text(
-                        'Other Features',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      CheckboxListTile(
-                        title: const Text('Climbing tree'),
-                        value: _selectedFeatures.contains('Climbing tree'),
-                        onChanged: (bool? value) {
-                          setState(() {
-                            if (value == true) {
-                              _selectedFeatures.add('Climbing tree');
-                            } else {
-                              _selectedFeatures.remove('Climbing tree');
-                            }
-                          });
-                        },
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                      CheckboxListTile(
-                        title: const Text('Rocks'),
-                        value: _selectedFeatures.contains('Rocks'),
-                        onChanged: (bool? value) {
-                          setState(() {
-                            if (value == true) {
-                              _selectedFeatures.add('Rocks');
-                            } else {
-                              _selectedFeatures.remove('Rocks');
-                            }
-                          });
-                        },
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                      CheckboxListTile(
-                        title: const Text('Soft landing pit'),
-                        value: _selectedFeatures.contains('Soft landing pit'),
-                        onChanged: (bool? value) {
-                          setState(() {
-                            if (value == true) {
-                              _selectedFeatures.add('Soft landing pit');
-                            } else {
-                              _selectedFeatures.remove('Soft landing pit');
-                            }
-                          });
-                        },
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Spot Facilities Section
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Spot Facilities',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      CheckboxListTile(
-                        title: const Text('Covered'),
-                        subtitle: const Text('Protected from weather'),
-                        value: _selectedFacilities.contains('Covered'),
-                        onChanged: (bool? value) {
-                          setState(() {
-                            if (value == true) {
-                              _selectedFacilities.add('Covered');
-                            } else {
-                              _selectedFacilities.remove('Covered');
-                            }
-                          });
-                        },
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                      CheckboxListTile(
-                        title: const Text('Lighting'),
-                        subtitle: const Text('Good lighting for evening sessions'),
-                        value: _selectedFacilities.contains('Lighting'),
-                        onChanged: (bool? value) {
-                          setState(() {
-                            if (value == true) {
-                              _selectedFacilities.add('Lighting');
-                            } else {
-                              _selectedFacilities.remove('Lighting');
-                            }
-                          });
-                        },
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                      CheckboxListTile(
-                        title: const Text('Water tap'),
-                        subtitle: const Text('Access to drinking water'),
-                        value: _selectedFacilities.contains('Water tap'),
-                        onChanged: (bool? value) {
-                          setState(() {
-                            if (value == true) {
-                              _selectedFacilities.add('Water tap');
-                            } else {
-                              _selectedFacilities.remove('Water tap');
-                            }
-                          });
-                        },
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                      CheckboxListTile(
-                        title: const Text('Toilet'),
-                        subtitle: const Text('Restroom facilities available'),
-                        value: _selectedFacilities.contains('Toilet'),
-                        onChanged: (bool? value) {
-                          setState(() {
-                            if (value == true) {
-                              _selectedFacilities.add('Toilet');
-                            } else {
-                              _selectedFacilities.remove('Toilet');
-                            }
-                          });
-                        },
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                      CheckboxListTile(
-                        title: const Text('Parking'),
-                        subtitle: const Text('Parking available nearby'),
-                        value: _selectedFacilities.contains('Parking'),
-                        onChanged: (bool? value) {
-                          setState(() {
-                            if (value == true) {
-                              _selectedFacilities.add('Parking');
-                            } else {
-                              _selectedFacilities.remove('Parking');
-                            }
-                          });
-                        },
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Good For Section
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Good For',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'What parkour skills can be practiced here?',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        children: [
-                          'Vaults',
-                          'Balance',
-                          'Ascend',
-                          'Decent',
-                          'Speed run',
-                          'Water challenges',
-                          'Roof gap',
-                          'Pole slide',
-                        ].map((skill) {
-                          return SizedBox(
-                            width: MediaQuery.of(context).size.width / 2 - 24,
-                            child: CheckboxListTile(
-                              title: Text(skill),
-                              value: _selectedGoodFor.contains(skill),
-                              onChanged: (bool? value) {
-                                setState(() {
-                                  if (value == true) {
-                                    _selectedGoodFor.add(skill);
-                                  } else {
-                                    _selectedGoodFor.remove(skill);
-                                  }
-                                });
-                              },
-                              contentPadding: EdgeInsets.zero,
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Location Section
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Location',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
                       ),
                       const SizedBox(height: 12),
                       
@@ -1437,6 +931,414 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
                 ),
               ),
               
+              const SizedBox(height: 16),
+              
+              // Image Section
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            'Spot Images',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '*',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      
+                      if (_selectedImages.isNotEmpty || _selectedImageBytes.isNotEmpty) ...[
+                        _buildCrossPlatformImage(),
+                        const SizedBox(height: 12),
+                      ],
+                      
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: _pickImagesFromGallery,
+                              icon: const Icon(Icons.photo_library),
+                              label: const Text('Gallery'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: _takePhoto,
+                              icon: const Icon(Icons.camera_alt),
+                              label: const Text('Camera'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Name Field
+              CustomTextField(
+                controller: _nameController,
+                labelText: 'Spot Name *',
+                prefixIcon: Icons.location_on,
+                textCapitalization: TextCapitalization.words,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter a spot name';
+                  }
+                  return null;
+                },
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Description Field
+              CustomTextField(
+                controller: _descriptionController,
+                labelText: 'Description *',
+                prefixIcon: Icons.description,
+                maxLines: 3,
+                textCapitalization: TextCapitalization.sentences,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter a description';
+                  }
+                  if (value.trim().length < 10) {
+                    return 'Description must be at least 10 characters';
+                  }
+                  return null;
+                },
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Attributes Grid Section
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWideScreen = constraints.maxWidth > 600;
+                  
+                  if (isWideScreen) {
+                    // 2x2 Grid for wide screens
+                    return SizedBox(
+                      height: 700, // Reduced height - still accommodates all content
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Left Column: Good For and Features
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      // Good For Section
+                                      Expanded(
+                                        child: Card(
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(16.0),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  'Good For',
+                                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 8),
+                                                Text(
+                                                  'What parkour skills can be practiced here?',
+                                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 12),
+                                                Expanded(
+                                                  child: SingleChildScrollView(
+                                                    child: Wrap(
+                                                      spacing: 8,
+                                                      runSpacing: 8,
+                                                      children: SpotAttributes.getKeys('goodFor').map((skill) {
+                                                        return _buildGoodForChip(skill);
+                                                      }).toList(),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      // Features Section
+                                      Expanded(
+                                        child: Card(
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(16.0),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  'Spot Features',
+                                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 12),
+                                                Expanded(
+                                                  child: SingleChildScrollView(
+                                                    child: Wrap(
+                                                      spacing: 8,
+                                                      runSpacing: 8,
+                                                      children: SpotAttributes.getKeys('features').map((feature) {
+                                                        return _buildFeatureChip(feature);
+                                                      }).toList(),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                // Right Column: Access and Facilities
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      // Access Section
+                                      Expanded(
+                                        child: Card(
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(16.0),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  'Spot Access',
+                                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 12),
+                                                Row(
+                                                  children: SpotAttributes.getKeys('access').map((access) {
+                                                    return Padding(
+                                                      padding: const EdgeInsets.only(right: 8),
+                                                      child: _buildAccessChip(access, SpotAttributes.getIcon('access', access)),
+                                                    );
+                                                  }).toList(),
+                                                ),
+                                                if (_selectedAccess != null) ...[
+                                                  const SizedBox(height: 12),
+                                                  Container(
+                                                    padding: const EdgeInsets.all(12),
+                                                    decoration: BoxDecoration(
+                                                      color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
+                                                      borderRadius: BorderRadius.circular(8),
+                                                      border: Border.all(
+                                                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                                                        width: 1,
+                                                      ),
+                                                    ),
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(
+                                                          _getAccessIcon(_selectedAccess!),
+                                                          size: 16,
+                                                          color: Theme.of(context).colorScheme.primary,
+                                                        ),
+                                                        const SizedBox(width: 8),
+                                                        Expanded(
+                                                          child: Text(
+                                                            _getAccessDescription(_selectedAccess!),
+                                                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                                const Spacer(),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      // Facilities Section
+                                      Expanded(
+                                        child: Card(
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(16.0),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  'Spot Facilities',
+                                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 12),
+                                            Expanded(
+                                              child: SingleChildScrollView(
+                                                child: Column(
+                                                  children: SpotAttributes.getKeys('facilities').map((facility) {
+                                                    return Padding(
+                                                      padding: const EdgeInsets.only(bottom: 12),
+                                                      child: _buildFacilitySelector(facility, SpotAttributes.getIcon('facilities', facility)),
+                                                    );
+                                                  }).toList(),
+                                                ),
+                                              ),
+                                            ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  } else {
+                    // Single column for narrow screens
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Good For Section
+                        _buildCollapsibleSection(
+                          title: 'Good For',
+                          subtitle: 'What parkour skills can be practiced here?',
+                          sectionKey: 'goodFor',
+                          content: Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: SpotAttributes.getKeys('goodFor').map((skill) {
+                              return _buildGoodForChip(skill);
+                            }).toList(),
+                          ),
+                        ),
+                        
+                        const SizedBox(height: 16),
+                        
+                        // Features Section
+                        _buildCollapsibleSection(
+                          title: 'Spot Features',
+                          subtitle: 'What physical features does this spot have?',
+                          sectionKey: 'features',
+                          content: Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: SpotAttributes.getKeys('features').map((feature) {
+                              return _buildFeatureChip(feature);
+                            }).toList(),
+                          ),
+                        ),
+                        
+                        const SizedBox(height: 16),
+                        
+                        // Access Section
+                        _buildCollapsibleSection(
+                          title: 'Spot Access',
+                          subtitle: 'What type of access does this spot have?',
+                          sectionKey: 'access',
+                          content: Column(
+                            children: [
+                              Row(
+                                children: SpotAttributes.getKeys('access').map((access) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(right: 8),
+                                    child: _buildAccessChip(access, SpotAttributes.getIcon('access', access)),
+                                  );
+                                }).toList(),
+                              ),
+                              if (_selectedAccess != null) ...[
+                                const SizedBox(height: 12),
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        _getAccessIcon(_selectedAccess!),
+                                        size: 16,
+                                        color: Theme.of(context).colorScheme.primary,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          _getAccessDescription(_selectedAccess!),
+                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        
+                        const SizedBox(height: 16),
+                        
+                        // Facilities Section
+                        _buildCollapsibleSection(
+                          title: 'Spot Facilities',
+                          subtitle: 'What facilities are available at this spot?',
+                          sectionKey: 'facilities',
+                          content: Column(
+                            children: SpotAttributes.getKeys('facilities').map((facility) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: _buildFacilitySelector(facility, SpotAttributes.getIcon('facilities', facility)),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+                },
+              ),
+              
               const SizedBox(height: 24),
               
               // Submit Button
@@ -1450,6 +1352,339 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
                 icon: Icons.add_location,
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAccessChip(String accessKey, IconData icon) {
+    final label = SpotAttributes.getLabel('access', accessKey);
+    final isSelected = _selectedAccess == accessKey;
+    
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          if (isSelected) {
+            _selectedAccess = null; // Deselect if already selected
+          } else {
+            _selectedAccess = accessKey;
+          }
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected 
+            ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.2)
+            : Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected 
+              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)
+              : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected 
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected 
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData _getAccessIcon(String accessType) {
+    switch (accessType) {
+      case 'Public':
+        return Icons.lock_open;
+      case 'Restricted':
+        return Icons.lock;
+      case 'Paid':
+        return Icons.payments;
+      default:
+        return Icons.info;
+    }
+  }
+
+  String _getAccessDescription(String accessKey) {
+    return SpotAttributes.getDescription('access', accessKey);
+  }
+
+  Widget _buildCollapsibleSection({
+    required String title,
+    required String subtitle,
+    required Widget content,
+    required String sectionKey,
+  }) {
+    final isExpanded = _expandedSections[sectionKey] ?? false;
+    
+    return Card(
+      child: Column(
+        children: [
+          InkWell(
+            onTap: () {
+              setState(() {
+                _expandedSections[sectionKey] = !isExpanded;
+              });
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    isExpanded ? Icons.expand_less : Icons.expand_more,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (isExpanded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 16.0),
+              child: content,
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeatureChip(String featureKey) {
+    final icon = SpotAttributes.getIcon('features', featureKey);
+    final label = SpotAttributes.getLabel('features', featureKey);
+    final description = SpotAttributes.getDescription('features', featureKey);
+    final isSelected = _selectedFeatures.contains(featureKey);
+    
+    return Tooltip(
+      message: description,
+      child: GestureDetector(
+        onTap: () {
+        setState(() {
+          if (isSelected) {
+            _selectedFeatures.remove(featureKey);
+          } else {
+            _selectedFeatures.add(featureKey);
+          }
+        });
+        },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected 
+            ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.2)
+            : Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected 
+              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)
+              : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected 
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected 
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+    );
+  }
+
+  Widget _buildGoodForChip(String skillKey) {
+    final icon = SpotAttributes.getIcon('goodFor', skillKey);
+    final label = SpotAttributes.getLabel('goodFor', skillKey);
+    final isSelected = _selectedGoodFor.contains(skillKey);
+    
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          if (isSelected) {
+            _selectedGoodFor.remove(skillKey);
+          } else {
+            _selectedGoodFor.add(skillKey);
+          }
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected 
+            ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.2)
+            : Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected 
+              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)
+              : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected 
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected 
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFacilitySelector(String facilityKey, IconData icon) {
+    final label = SpotAttributes.getLabel('facilities', facilityKey);
+    final currentValue = _selectedFacilities[facilityKey];
+    
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 20,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        _buildFacilityChip(facilityKey, 'yes', 'Yes', currentValue == 'yes'),
+        const SizedBox(width: 8),
+        _buildFacilityChip(facilityKey, 'no', 'No', currentValue == 'no'),
+        const SizedBox(width: 8),
+        _buildFacilityChip(facilityKey, null, 'Don\'t Know', currentValue == null),
+      ],
+    );
+  }
+
+  Widget _buildFacilityChip(String facilityKey, String? value, String label, bool isSelected) {
+    Color backgroundColor;
+    Color textColor;
+    
+    if (isSelected) {
+      if (value == 'yes') {
+        backgroundColor = Colors.green.withValues(alpha: 0.2);
+        textColor = Colors.green.shade700;
+      } else if (value == 'no') {
+        backgroundColor = Colors.red.withValues(alpha: 0.2);
+        textColor = Colors.red.shade700;
+      } else {
+        backgroundColor = Colors.grey.withValues(alpha: 0.2);
+        textColor = Colors.grey.shade700;
+      }
+    } else {
+      backgroundColor = Theme.of(context).colorScheme.surfaceContainerHighest;
+      textColor = Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7);
+    }
+    
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          if (value == null) {
+            // "Don't Know" - remove from map
+            _selectedFacilities.remove(facilityKey);
+          } else {
+            // "Yes" or "No" - add/update in map
+            _selectedFacilities[facilityKey] = value;
+          }
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected 
+              ? textColor.withValues(alpha: 0.5)
+              : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: textColor,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+            fontSize: 12,
           ),
         ),
       ),

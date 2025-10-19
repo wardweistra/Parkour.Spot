@@ -292,9 +292,8 @@ class _SpotCardState extends State<SpotCard> {
                         
                         const SizedBox(height: 16),
                         
-                        // Add bottom padding to make room for the tags and "Added by" text
-                        if (widget.spot.tags != null && widget.spot.tags!.isNotEmpty || 
-                            widget.spot.createdBy != null || widget.spot.createdByName != null)
+                        // Add bottom padding to make room for the "Added by" text
+                        if (widget.spot.createdBy != null || widget.spot.createdByName != null)
                           const SizedBox(height: 60),
                       ],
                     ),
@@ -325,32 +324,6 @@ class _SpotCardState extends State<SpotCard> {
                 ),
               ),
             ),
-            
-            // Tags positioned above "Added by" text
-            if (widget.spot.tags != null && widget.spot.tags!.isNotEmpty)
-              Positioned(
-                bottom: 40,
-                left: 16,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.label,
-                      size: 14,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      widget.spot.tags!.take(2).join(', '),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
             
             // External source indicator - positioned at top right
             if (widget.spot.spotSource != null)
@@ -671,18 +644,6 @@ class _SpotCardState extends State<SpotCard> {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      if (widget.spot.tags != null && widget.spot.tags!.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          widget.spot.tags!.join(', '),
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
                       const SizedBox(height: 12),
                       SizedBox(
                         width: double.infinity,

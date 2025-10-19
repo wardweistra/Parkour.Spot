@@ -16,7 +16,6 @@ class Spot {
   final String? createdByName;
   final DateTime? createdAt;
   final DateTime? updatedAt;
-  final List<String>? tags;
   final bool? isPublic;
   final String? spotSource;
   final String? spotSourceName;
@@ -26,7 +25,7 @@ class Spot {
   final double? random;
   final String? spotAccess;
   final List<String>? spotFeatures;
-  final List<String>? spotFacilities;
+  final Map<String, String>? spotFacilities;
   final List<String>? goodFor;
 
   Spot({
@@ -45,7 +44,6 @@ class Spot {
     this.createdByName,
     this.createdAt,
     this.updatedAt,
-    this.tags,
     this.isPublic = true,
     this.spotSource,
     this.spotSourceName,
@@ -127,7 +125,6 @@ class Spot {
       createdByName: data['createdByName'],
       createdAt: data['createdAt']?.toDate(),
       updatedAt: data['updatedAt']?.toDate(),
-      tags: data['tags'] != null ? List<String>.from(data['tags']) : null,
       isPublic: data['isPublic'] ?? true,
       spotSource: data['spotSource'],
       spotSourceName: data['spotSourceName'],
@@ -137,7 +134,7 @@ class Spot {
       random: data['random'] != null ? (data['random'] as num).toDouble() : null,
       spotAccess: data['spotAccess'],
       spotFeatures: data['spotFeatures'] != null ? List<String>.from(data['spotFeatures']) : null,
-      spotFacilities: data['spotFacilities'] != null ? List<String>.from(data['spotFacilities']) : null,
+      spotFacilities: data['spotFacilities'] != null ? Map<String, String>.from(data['spotFacilities']) : null,
       goodFor: data['goodFor'] != null ? List<String>.from(data['goodFor']) : null,
     );
   }
@@ -217,7 +214,6 @@ class Spot {
       createdByName: data['createdByName'] as String?,
       createdAt: parseDate(data['createdAt']),
       updatedAt: parseDate(data['updatedAt']),
-      tags: data['tags'] is List ? List<String>.from(data['tags']) : null,
       isPublic: data['isPublic'] as bool? ?? true,
       spotSource: data['spotSource'] as String?,
       spotSourceName: data['spotSourceName'] as String?,
@@ -227,7 +223,7 @@ class Spot {
       random: (data['random'] as num?)?.toDouble(),
       spotAccess: data['spotAccess'] as String?,
       spotFeatures: data['spotFeatures'] is List ? List<String>.from(data['spotFeatures']) : null,
-      spotFacilities: data['spotFacilities'] is List ? List<String>.from(data['spotFacilities']) : null,
+      spotFacilities: data['spotFacilities'] is Map ? Map<String, String>.from(data['spotFacilities']) : null,
       goodFor: data['goodFor'] is List ? List<String>.from(data['goodFor']) : null,
     );
   }
@@ -248,7 +244,6 @@ class Spot {
       'createdByName': createdByName,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
-      'tags': tags,
       'isPublic': isPublic,
       'spotSource': spotSource,
       'spotSourceName': spotSourceName,
@@ -279,7 +274,6 @@ class Spot {
     String? createdByName,
     DateTime? createdAt,
     DateTime? updatedAt,
-    List<String>? tags,
     bool? isPublic,
     String? spotSource,
     String? spotSourceName,
@@ -289,7 +283,7 @@ class Spot {
     double? random,
     String? spotAccess,
     List<String>? spotFeatures,
-    List<String>? spotFacilities,
+    Map<String, String>? spotFacilities,
     List<String>? goodFor,
   }) {
     return Spot(
@@ -308,7 +302,6 @@ class Spot {
       createdByName: createdByName ?? this.createdByName,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      tags: tags ?? this.tags,
       isPublic: isPublic ?? this.isPublic,
       spotSource: spotSource ?? this.spotSource,
       spotSourceName: spotSourceName ?? this.spotSourceName,
