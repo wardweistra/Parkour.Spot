@@ -18,6 +18,7 @@ const {
   onDocumentDeleted,
 } = require("firebase-functions/v2/firestore");
 const admin = require("firebase-admin");
+const sharp = require("sharp");
 const yauzl = require("yauzl");
 const xml2js = require("xml2js");
 const https = require("https");
@@ -28,6 +29,21 @@ const crypto = require("crypto");
 admin.initializeApp();
 const db = admin.firestore();
 const bucket = admin.storage().bucket();
+
+/**
+ * Removes undefined values from an object to make it Firestore-safe
+ * @param {Object} obj - The object to clean
+ * @return {Object} The cleaned object
+ */
+function cleanUndefinedValues(obj) {
+  const cleaned = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      cleaned[key] = value;
+    }
+  }
+  return cleaned;
+}
 
 // ========== Ranked Spots within Bounds ==========
 /**
@@ -1103,6 +1119,49 @@ async function cacheImageMetadata(imageUrl, imageHash, publicUrl) {
 }
 
 /**
+ * Optimizes an image buffer using Sharp for better performance and smaller file sizes
+ * @param {Buffer} imageBuffer - The original image buffer
+ * @return {Promise<Buffer>} A promise that resolves to the optimized image buffer
+ */
+async function optimizeImage(imageBuffer) {
+  try {
+    // Get image metadata
+    const metadata = await sharp(imageBuffer).metadata();
+    
+    // Set maximum dimensions to reduce file size while maintaining quality
+    const maxWidth = 1920;
+    const maxHeight = 1920;
+    
+    let sharpInstance = sharp(imageBuffer);
+    
+    // Resize if image is too large
+    if (metadata.width > maxWidth || metadata.height > maxHeight) {
+      sharpInstance = sharpInstance.resize(maxWidth, maxHeight, {
+        fit: 'inside',
+        withoutEnlargement: true
+      });
+    }
+    
+    // Convert to JPEG with optimization
+    const optimizedBuffer = await sharpInstance
+      .jpeg({
+        quality: 85, // Good balance between quality and file size
+        progressive: true, // Progressive JPEG for better loading
+        mozjpeg: true // Use mozjpeg encoder for better compression
+      })
+      .toBuffer();
+    
+    console.log(`Image optimized: ${imageBuffer.length} bytes -> ${optimizedBuffer.length} bytes (${((1 - optimizedBuffer.length / imageBuffer.length) * 100).toFixed(1)}% reduction)`);
+    
+    return optimizedBuffer;
+  } catch (error) {
+    console.error("Error optimizing image:", error);
+    // Return original buffer if optimization fails
+    return imageBuffer;
+  }
+}
+
+/**
  * Downloads and uploads an image to Firebase Storage (with URL-based deduplication and hash validation)
  * @param {string} imageUrl - The URL of the image to download
  * @param {string} spotName - The name of the spot for filename generation
@@ -1192,9 +1251,15 @@ async function downloadAndUploadImage(
       `spots/${spotName.replace(/[^a-zA-Z0-9]/g, "_")}_` +
       `${imageHash}_${imageIndex}${extension}`;
 
-    // Upload to Firebase Storage
+    // Optimize the image before uploading
+    const optimizedImageBuffer = await optimizeImage(imageBuffer);
+    
+    // Clear original buffer to free memory
+    imageBuffer = null;
+
+    // Upload optimized image to Firebase Storage
     const file = bucket.file(filename);
-    await file.save(imageBuffer, {
+    await file.save(optimizedImageBuffer, {
       metadata: {
         contentType: "image/jpeg",
         cacheControl: "public, max-age=31536000",
@@ -1262,31 +1327,49 @@ async function processPlacemarkImages(placemark, existingSpotData = null) {
     }
   }
 
-  // Process images sequentially to reduce memory usage
-  for (let i = 0; i < imageUrls.length; i++) {
-    const url = imageUrls[i];
+  // Process images in parallel batches to reduce total processing time
+  const BATCH_SIZE = 3; // Process 3 images at a time to balance speed and memory usage
 
-    // Check if we have a stored hash for this specific image URL
-    let storedHash = null;
-    if (urlToHashMap.has(url)) {
-      storedHash = urlToHashMap.get(url);
-    }
+  for (let i = 0; i < imageUrls.length; i += BATCH_SIZE) {
+    const batch = imageUrls.slice(i, i + BATCH_SIZE);
+    console.log(`Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(imageUrls.length / BATCH_SIZE)} (${batch.length} images)`);
+    
+    const batchPromises = batch.map(async (url, batchIndex) => {
+      const globalIndex = i + batchIndex;
+      
+      // Check if we have a stored hash for this specific image URL
+      let storedHash = null;
+      if (urlToHashMap.has(url)) {
+        storedHash = urlToHashMap.get(url);
+      }
 
-    const result = await downloadAndUploadImage(
-        url,
-        placemark.name,
-        i,
-        storedHash,
-    );
-    if (result) {
-      uploadedImageUrls.push(result.url);
-      imageHashes.push(result.hash);
-    }
+      const result = await downloadAndUploadImage(
+          url,
+          placemark.name,
+          globalIndex,
+          storedHash,
+      );
+      
+      // Force garbage collection hint after each image
+      if (global.gc) {
+        global.gc();
+      }
+      
+      return result;
+    });
 
-    // Force garbage collection hint after each image
-    if (global.gc) {
-      global.gc();
-    }
+    // Wait for all images in this batch to complete
+    const batchResults = await Promise.all(batchPromises);
+    
+    // Add successful results to our arrays
+    batchResults.forEach(result => {
+      if (result) {
+        uploadedImageUrls.push(result.url);
+        imageHashes.push(result.hash);
+      }
+    });
+    
+    console.log(`Completed batch ${Math.floor(i / BATCH_SIZE) + 1}, processed ${batchResults.filter(r => r).length}/${batch.length} images successfully`);
   }
 
   console.log(
@@ -2035,7 +2118,7 @@ async function processSyncSource(source, sourceId, apiKey) {
       spotData.ratingCount = 0;
       spotData.wilsonLowerBound = 0;
       spotData.createdAt = admin.firestore.FieldValue.serverTimestamp();
-      await db.collection("spots").add(spotData);
+      await db.collection("spots").add(cleanUndefinedValues(spotData));
       created++;
       console.log(
           `Created new spot: ${name} from source: ${source.name} with ${imageResult.imageUrls.length} images and geocoded address`,
@@ -2056,7 +2139,7 @@ async function processSyncSource(source, sourceId, apiKey) {
         spotData.wilsonLowerBound = existingData.wilsonLowerBound;
       }
       
-      await existingSpot.ref.update(spotData);
+      await existingSpot.ref.update(cleanUndefinedValues(spotData));
       updated++;
       console.log(
           `Updated existing spot: ${name} from source: ${source.name} with ${imageResult.imageUrls.length} images (preserved rating: ${existingData.averageRating || 0}, count: ${existingData.ratingCount || 0})`,
@@ -2181,7 +2264,7 @@ exports.syncSingleSource = onCall(
     {
       region: "europe-west1",
       memory: "1GiB",
-      timeoutSeconds: 1800,
+      timeoutSeconds: 3600,
       secrets: ["GOOGLE_MAPS_API_KEY"],
     },
     async (request) => {
@@ -2245,7 +2328,7 @@ exports.syncAllSources = onCall(
     {
       region: "europe-west1",
       memory: "1GiB",
-      timeoutSeconds: 1800,
+      timeoutSeconds: 3600,
       secrets: ["GOOGLE_MAPS_API_KEY"],
     },
     async (request) => {

@@ -16,6 +16,7 @@
   "dependencies": {
     "firebase-admin": "^12.6.0",
     "firebase-functions": "^6.0.1",
+    "sharp": "^0.33.0",
     "yauzl": "^3.0.0",
     "xml2js": "^0.6.2"
   },
