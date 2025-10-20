@@ -1930,16 +1930,13 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         textColor = Theme.of(context).colorScheme.onSurface;
     }
     
-    return Tooltip(
-      message: description,
-      child: GestureDetector(
-        onTap: () => _showDescriptionDialog(label, description, icon),
-        child: Chip(
-          avatar: Icon(icon, size: 16, color: textColor),
-          label: Text(label),
-          backgroundColor: backgroundColor,
-          labelStyle: TextStyle(color: textColor, fontWeight: FontWeight.w500),
-        ),
+    return GestureDetector(
+      onTap: () => _showDescriptionDialog(label, description, icon),
+      child: Chip(
+        avatar: Icon(icon, size: 16, color: textColor),
+        label: Text(label),
+        backgroundColor: backgroundColor,
+        labelStyle: TextStyle(color: textColor, fontWeight: FontWeight.w500),
       ),
     );
   }
@@ -1949,18 +1946,15 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     final label = SpotAttributes.getLabel('features', featureKey);
     final description = SpotAttributes.getDescription('features', featureKey);
     
-    return Tooltip(
-      message: description,
-      child: GestureDetector(
-        onTap: () => _showDescriptionDialog(label, description, icon),
-        child: Chip(
-          avatar: Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
-          label: Text(label),
-          backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
-          labelStyle: TextStyle(
-            color: Theme.of(context).colorScheme.onPrimaryContainer,
-            fontWeight: FontWeight.w500,
-          ),
+    return GestureDetector(
+      onTap: () => _showDescriptionDialog(label, description, icon),
+      child: Chip(
+        avatar: Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
+        label: Text(label),
+        backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
+        labelStyle: TextStyle(
+          color: Theme.of(context).colorScheme.onPrimaryContainer,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );
@@ -1989,23 +1983,20 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       statusIcon = Icons.info;
     }
     
-    return Tooltip(
-      message: description,
-      child: GestureDetector(
-        onTap: () => _showDescriptionDialog(label, description, icon),
-        child: Chip(
-          avatar: Icon(icon, size: 16, color: textColor),
-          label: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(label),
-              const SizedBox(width: 4),
-              Icon(statusIcon, size: 14, color: textColor),
-            ],
-          ),
-          backgroundColor: backgroundColor,
-          labelStyle: TextStyle(color: textColor, fontWeight: FontWeight.w500),
+    return GestureDetector(
+      onTap: () => _showDescriptionDialog(label, description, icon),
+      child: Chip(
+        avatar: Icon(icon, size: 16, color: textColor),
+        label: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(label),
+            const SizedBox(width: 4),
+            Icon(statusIcon, size: 14, color: textColor),
+          ],
         ),
+        backgroundColor: backgroundColor,
+        labelStyle: TextStyle(color: textColor, fontWeight: FontWeight.w500),
       ),
     );
   }
@@ -2107,18 +2098,15 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     final label = SpotAttributes.getLabel('goodFor', skillKey);
     final description = SpotAttributes.getDescription('goodFor', skillKey);
     
-    return Tooltip(
-      message: description,
-      child: GestureDetector(
-        onTap: () => _showDescriptionDialog(label, description, icon),
-        child: Chip(
-          avatar: Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
-          label: Text(label),
-          backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
-          labelStyle: TextStyle(
-            color: Theme.of(context).colorScheme.onPrimaryContainer,
-            fontWeight: FontWeight.w500,
-          ),
+    return GestureDetector(
+      onTap: () => _showDescriptionDialog(label, description, icon),
+      child: Chip(
+        avatar: Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
+        label: Text(label),
+        backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
+        labelStyle: TextStyle(
+          color: Theme.of(context).colorScheme.onPrimaryContainer,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );
