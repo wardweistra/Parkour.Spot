@@ -341,18 +341,91 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       );
                     }
                     
-                    // Show delete for admins or moderators only
+                    // Show moderator menu for admins or moderators only
                     if (authService.isAuthenticated && authService.userProfile != null &&
                         (authService.isAdmin || authService.isModerator)) {
                       return Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          CircleAvatar(
-                            backgroundColor: Colors.red.withValues(alpha: 0.8),
-                            child: IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.white),
-                              onPressed: _showDeleteDialog,
+                          PopupMenuButton<String>(
+                            icon: CircleAvatar(
+                              backgroundColor: Colors.black.withValues(alpha: 0.5),
+                              child: const Icon(Icons.more_vert, color: Colors.white),
                             ),
+                            onSelected: (value) {
+                              if (value == 'edit') {
+                                context.push('/spot/${widget.spot.id}/edit', extra: widget.spot);
+                              } else if (value == 'delete') {
+                                _showDeleteDialog();
+                              }
+                            },
+                            itemBuilder: (context) => [
+                              PopupMenuItem<String>(
+                                value: 'edit',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.edit,
+                                      color: Theme.of(context).colorScheme.primary,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          'Edit Spot',
+                                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Moderator only',
+                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem<String>(
+                                value: 'delete',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.delete,
+                                      color: Colors.red,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          'Delete Spot',
+                                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                            fontWeight: FontWeight.w500,
+                                            color: Colors.red,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Moderator only',
+                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(width: 16),
                         ],

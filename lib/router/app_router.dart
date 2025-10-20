@@ -9,6 +9,7 @@ import '../screens/admin/sync_sources_screen.dart';
 import '../screens/admin/geocoding_admin_screen.dart';
 import '../screens/admin/spot_management_screen.dart';
 import '../screens/spots/spot_detail_screen.dart';
+import '../screens/spots/edit_spot_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../models/spot.dart';
 import '../services/spot_service.dart';
@@ -114,6 +115,16 @@ class AppRouter {
           final spotId = state.pathParameters['spotId']!;
           return SpotDetailRoute(spotId: spotId);
         },
+        routes: [
+          // Edit route: /spot/:spotId/edit
+          GoRoute(
+            path: 'edit',
+            builder: (context, state) {
+              final spot = state.extra as Spot;
+              return EditSpotScreen(spot: spot);
+            },
+          ),
+        ],
       ),
       // Spot detail route: /nl/amsterdam/&lt;spot-id&gt; or any /&lt;xx&gt;/&lt;anything&gt;/&lt;spot-id&gt;
       GoRoute(
@@ -132,6 +143,16 @@ class AppRouter {
           
           return SpotDetailRoute(spotId: spotId);
         },
+        routes: [
+          // Edit route: /:countryCode/:city/:spotId/edit
+          GoRoute(
+            path: 'edit',
+            builder: (context, state) {
+              final spot = state.extra as Spot;
+              return EditSpotScreen(spot: spot);
+            },
+          ),
+        ],
       ),
     ],
     errorBuilder: (context, state) => Scaffold(
