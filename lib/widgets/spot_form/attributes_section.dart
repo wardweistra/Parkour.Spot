@@ -100,45 +100,49 @@ class SpotAttributesSection extends StatelessWidget {
                 children: SpotAttributes.getKeys('goodFor').map((key) {
                   final label = SpotAttributes.getLabel('goodFor', key);
                   final icon = SpotAttributes.getIcon('goodFor', key);
+                  final description = SpotAttributes.getDescription('goodFor', key);
                   final selected = selectedGoodFor.contains(key);
-                  return GestureDetector(
-                    onTap: () => onToggleGoodFor(key, !selected),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: selected 
-                            ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
-                            : Theme.of(context).colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
+                  return Tooltip(
+                    message: description,
+                    child: GestureDetector(
+                      onTap: () => onToggleGoodFor(key, !selected),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
                           color: selected 
-                              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)
-                              : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            icon, 
-                            size: 16, 
+                              ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
+                              : Theme.of(context).colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
                             color: selected 
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)
+                                : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                            width: 1,
                           ),
-                          const SizedBox(width: 6),
-                          Text(
-                            label,
-                            style: TextStyle(
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              icon, 
+                              size: 16, 
                               color: selected 
                                   ? Theme.of(context).colorScheme.primary
                                   : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                              fontWeight: FontWeight.w500,
-                              fontSize: 14,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 6),
+                            Text(
+                              label,
+                              style: TextStyle(
+                                color: selected 
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                fontWeight: FontWeight.w500,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   );
@@ -246,6 +250,7 @@ class SpotAttributesSection extends StatelessWidget {
               children: keys.map((key) {
                 final label = SpotAttributes.getLabel('access', key);
                 final icon = SpotAttributes.getIcon('access', key);
+                final description = SpotAttributes.getDescription('access', key);
                 final selected = selectedAccess == key;
                 
                 // Use same colors as Spot Detail Screen
@@ -277,36 +282,39 @@ class SpotAttributesSection extends StatelessWidget {
                 
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
-                  child: GestureDetector(
-                    onTap: () => onAccessChanged(selected ? null : key),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: backgroundColor,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: textColor.withValues(alpha: 0.3),
-                          width: 1,
+                  child: Tooltip(
+                    message: description,
+                    child: GestureDetector(
+                      onTap: () => onAccessChanged(selected ? null : key),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: backgroundColor,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: textColor.withValues(alpha: 0.3),
+                            width: 1,
+                          ),
                         ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            icon, 
-                            size: 16, 
-                            color: textColor,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            label,
-                            style: TextStyle(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              icon, 
+                              size: 16, 
                               color: textColor,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 14,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 6),
+                            Text(
+                              label,
+                              style: TextStyle(
+                                color: textColor,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -400,6 +408,7 @@ class SpotAttributesSection extends StatelessWidget {
                 children: entries.keys.map((key) {
                   final label = SpotAttributes.getLabel('facilities', key);
                   final icon = SpotAttributes.getIcon('facilities', key);
+                  final description = SpotAttributes.getDescription('facilities', key);
                   final current = selectedFacilities[key] ?? 'unknown';
                   
                   Color backgroundColor;
@@ -421,37 +430,40 @@ class SpotAttributesSection extends StatelessWidget {
                     statusIcon = Icons.help_outline;
                   }
                   
-                  return GestureDetector(
-                    onTap: () {
-                      final next = current == 'yes' ? 'no' : current == 'no' ? 'unknown' : 'yes';
-                      onFacilityChanged(key, next);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: backgroundColor,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: textColor.withValues(alpha: 0.3),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(icon, size: 16, color: textColor),
-                          const SizedBox(width: 6),
-                          Text(
-                            label,
-                            style: TextStyle(
-                              color: textColor,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 14,
-                            ),
+                  return Tooltip(
+                    message: description,
+                    child: GestureDetector(
+                      onTap: () {
+                        final next = current == 'yes' ? 'no' : current == 'no' ? 'unknown' : 'yes';
+                        onFacilityChanged(key, next);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: backgroundColor,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: textColor.withValues(alpha: 0.3),
+                            width: 1,
                           ),
-                          const SizedBox(width: 4),
-                          Icon(statusIcon, size: 14, color: textColor),
-                        ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(icon, size: 16, color: textColor),
+                            const SizedBox(width: 6),
+                            Text(
+                              label,
+                              style: TextStyle(
+                                color: textColor,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(statusIcon, size: 14, color: textColor),
+                          ],
+                        ),
                       ),
                     ),
                   );
