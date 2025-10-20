@@ -247,6 +247,34 @@ class SpotAttributesSection extends StatelessWidget {
                 final label = SpotAttributes.getLabel('access', key);
                 final icon = SpotAttributes.getIcon('access', key);
                 final selected = selectedAccess == key;
+                
+                // Use same colors as Spot Detail Screen
+                Color backgroundColor;
+                Color textColor;
+                
+                if (selected) {
+                  switch (key) {
+                    case 'public':
+                      backgroundColor = Colors.green.withValues(alpha: 0.1);
+                      textColor = Colors.green.shade700;
+                      break;
+                    case 'restricted':
+                      backgroundColor = Colors.orange.withValues(alpha: 0.1);
+                      textColor = Colors.orange.shade700;
+                      break;
+                    case 'paid':
+                      backgroundColor = Colors.blue.withValues(alpha: 0.1);
+                      textColor = Colors.blue.shade700;
+                      break;
+                    default:
+                      backgroundColor = Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3);
+                      textColor = Theme.of(context).colorScheme.primary;
+                  }
+                } else {
+                  backgroundColor = Theme.of(context).colorScheme.surfaceContainerHighest;
+                  textColor = Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6);
+                }
+                
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: GestureDetector(
@@ -254,14 +282,10 @@ class SpotAttributesSection extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: selected 
-                            ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
-                            : Theme.of(context).colorScheme.surfaceContainerHighest,
+                        color: backgroundColor,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: selected 
-                              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)
-                              : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                          color: textColor.withValues(alpha: 0.3),
                           width: 1,
                         ),
                       ),
@@ -271,17 +295,13 @@ class SpotAttributesSection extends StatelessWidget {
                           Icon(
                             icon, 
                             size: 16, 
-                            color: selected 
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                            color: textColor,
                           ),
                           const SizedBox(width: 6),
                           Text(
                             label,
                             style: TextStyle(
-                              color: selected 
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                              color: textColor,
                               fontWeight: FontWeight.w500,
                               fontSize: 14,
                             ),
@@ -295,35 +315,61 @@ class SpotAttributesSection extends StatelessWidget {
             ),
             if (selectedAccess != null) ...[
               const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      SpotAttributes.getIcon('access', selectedAccess!),
-                      size: 16,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        SpotAttributes.getDescription('access', selectedAccess!),
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
+              Builder(
+                builder: (context) {
+                  // Use same colors as Spot Detail Screen for description container
+                  Color backgroundColor;
+                  Color textColor;
+                  
+                  switch (selectedAccess!) {
+                    case 'public':
+                      backgroundColor = Colors.green.withValues(alpha: 0.1);
+                      textColor = Colors.green.shade700;
+                      break;
+                    case 'restricted':
+                      backgroundColor = Colors.orange.withValues(alpha: 0.1);
+                      textColor = Colors.orange.shade700;
+                      break;
+                    case 'paid':
+                      backgroundColor = Colors.blue.withValues(alpha: 0.1);
+                      textColor = Colors.blue.shade700;
+                      break;
+                    default:
+                      backgroundColor = Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1);
+                      textColor = Theme.of(context).colorScheme.primary;
+                  }
+                  
+                  return Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: backgroundColor,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: textColor.withValues(alpha: 0.2),
+                        width: 1,
                       ),
                     ),
-                  ],
-                ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          SpotAttributes.getIcon('access', selectedAccess!),
+                          size: 16,
+                          color: textColor,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            SpotAttributes.getDescription('access', selectedAccess!),
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w500,
+                              color: textColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ],
           ],
