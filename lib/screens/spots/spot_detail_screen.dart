@@ -1908,6 +1908,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   Widget _buildAccessChip(String accessKey) {
     final icon = SpotAttributes.getIcon('access', accessKey);
     final label = SpotAttributes.getLabel('access', accessKey);
+    final description = SpotAttributes.getDescription('access', accessKey);
     Color backgroundColor;
     Color textColor;
     
@@ -1929,11 +1930,14 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         textColor = Theme.of(context).colorScheme.onSurface;
     }
     
-    return Chip(
-      avatar: Icon(icon, size: 16, color: textColor),
-      label: Text(label),
-      backgroundColor: backgroundColor,
-      labelStyle: TextStyle(color: textColor, fontWeight: FontWeight.w500),
+    return Tooltip(
+      message: description,
+      child: Chip(
+        avatar: Icon(icon, size: 16, color: textColor),
+        label: Text(label),
+        backgroundColor: backgroundColor,
+        labelStyle: TextStyle(color: textColor, fontWeight: FontWeight.w500),
+      ),
     );
   }
 
@@ -1959,6 +1963,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   Widget _buildFacilityChip(String facilityKey, String status) {
     final icon = SpotAttributes.getIcon('facilities', facilityKey);
     final label = SpotAttributes.getLabel('facilities', facilityKey);
+    final description = SpotAttributes.getDescription('facilities', facilityKey);
     Color backgroundColor;
     Color textColor;
     IconData statusIcon;
@@ -1978,18 +1983,21 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       statusIcon = Icons.info;
     }
     
-    return Chip(
-      avatar: Icon(icon, size: 16, color: textColor),
-      label: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(label),
-          const SizedBox(width: 4),
-          Icon(statusIcon, size: 14, color: textColor),
-        ],
+    return Tooltip(
+      message: description,
+      child: Chip(
+        avatar: Icon(icon, size: 16, color: textColor),
+        label: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(label),
+            const SizedBox(width: 4),
+            Icon(statusIcon, size: 14, color: textColor),
+          ],
+        ),
+        backgroundColor: backgroundColor,
+        labelStyle: TextStyle(color: textColor, fontWeight: FontWeight.w500),
       ),
-      backgroundColor: backgroundColor,
-      labelStyle: TextStyle(color: textColor, fontWeight: FontWeight.w500),
     );
   }
 
@@ -2088,14 +2096,18 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   Widget _buildGoodForChip(String skillKey) {
     final icon = SpotAttributes.getIcon('goodFor', skillKey);
     final label = SpotAttributes.getLabel('goodFor', skillKey);
+    final description = SpotAttributes.getDescription('goodFor', skillKey);
     
-    return Chip(
-      avatar: Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
-      label: Text(label),
-      backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
-      labelStyle: TextStyle(
-        color: Theme.of(context).colorScheme.onPrimaryContainer,
-        fontWeight: FontWeight.w500,
+    return Tooltip(
+      message: description,
+      child: Chip(
+        avatar: Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
+        label: Text(label),
+        backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
+        labelStyle: TextStyle(
+          color: Theme.of(context).colorScheme.onPrimaryContainer,
+          fontWeight: FontWeight.w500,
+        ),
       ),
     );
   }
