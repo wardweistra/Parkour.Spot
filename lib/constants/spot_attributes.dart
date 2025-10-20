@@ -19,17 +19,17 @@ class SpotAttributes {
       'description': 'Walking on narrow surfaces',
     },
     'ascend': {
-      'label': 'Ascend',
+      'label': 'Ascents',
       'icon': Icons.arrow_upward,
       'description': 'Climbing up structures',
     },
     'descend': {
-      'label': 'Descend',
+      'label': 'Descents',
       'icon': Icons.arrow_downward,
       'description': 'Controlled descent techniques',
     },
     'speed_run': {
-      'label': 'Speed run',
+      'label': 'Speed runs',
       'icon': Icons.speed,
       'description': 'Fast-paced movement sequences',
     },
@@ -39,7 +39,7 @@ class SpotAttributes {
       'description': 'Water-based obstacles',
     },
     'pole_slide': {
-      'label': 'Pole slide',
+      'label': 'Pole slides',
       'icon': Icons.arrow_downward_outlined,
       'description': 'Sliding down poles',
     },
@@ -49,7 +49,7 @@ class SpotAttributes {
       'description': 'Precise landing techniques',
     },
     'wall_runs': {
-      'label': 'Wall Runs',
+      'label': 'Wall runs',
       'icon': Icons.directions_run,
       'description': 'Running up vertical surfaces',
     },
@@ -64,7 +64,7 @@ class SpotAttributes {
       'description': 'Rolling techniques for safe landings',
     },
     'cats': {
-      'label': 'Cats',
+      'label': 'Cat leaps',
       'icon': Icons.pets,
       'description': 'Cat-like climbing and hanging movements',
     },
@@ -78,39 +78,44 @@ class SpotAttributes {
       'icon': Icons.refresh,
       'description': 'Aerial rotations and acrobatic movements',
     },
+    'swings': {
+      'label': 'Swings',
+      'icon': Icons.sync,
+      'description': 'Swinging movements on bars and structures',
+    },
   };
 
   /// Spot features configuration
   static const Map<String, Map<String, dynamic>> spotFeatures = {
     'walls_low': {
-      'label': 'Walls - Low (<1m)',
+      'label': 'Wall - Low (<1m/3\')',
       'icon': Icons.view_in_ar,
-      'description': 'Low walls for vaulting (up to 1 meter)',
+      'description': 'Low walls for vaulting (up to 1 meter / 3 feet)',
     },
     'walls_medium': {
-      'label': 'Walls - Medium (1-2m)',
+      'label': 'Wall - Medium (1-2m/3-7\')',
       'icon': Icons.view_in_ar,
-      'description': 'Medium height walls (1 to 2 meters)',
+      'description': 'Medium height walls (1 to 2 meters / 3-7 feet)',
     },
     'walls_high': {
-      'label': 'Walls - High (>2m)',
+      'label': 'Wall - High (>2m/7\')',
       'icon': Icons.view_in_ar,
-      'description': 'High walls for climbing (above 2 meters)',
+      'description': 'High walls for climbing (above 2 meters / 7 feet)',
     },
     'bars_low': {
-      'label': 'Bars - Low (<1m)',
+      'label': 'Bar - Low (<1m/3\')',
       'icon': Icons.horizontal_rule,
-      'description': 'Low bars for swinging (up to 1 meter)',
+      'description': 'Low bars for vaulting and stepping over (up to 1 meter / 3 feet)',
     },
     'bars_medium': {
-      'label': 'Bars - Medium (1-2m)',
+      'label': 'Bar - Medium (1-2m/3-7\')',
       'icon': Icons.horizontal_rule,
-      'description': 'Medium height bars (1 to 2 meters)',
+      'description': 'Medium height bars (1 to 2 meters / 3-7 feet)',
     },
     'bars_high': {
-      'label': 'Bars - High (>2m)',
+      'label': 'Bar - High (>2m / 7\')',
       'icon': Icons.horizontal_rule,
-      'description': 'High bars for advanced moves (above 2 meters)',
+      'description': 'High bars for advanced moves (above 2 meters / 7 feet)',
     },
     'climbing_tree': {
       'label': 'Climbing tree',
@@ -124,7 +129,7 @@ class SpotAttributes {
     },
     'soft_landing_pit': {
       'label': 'Soft landing pit',
-      'icon': Icons.toys,
+      'icon': Icons.bed,
       'description': 'Soft surface for safe landings',
     },
     'roof_gap': {
@@ -133,7 +138,7 @@ class SpotAttributes {
       'description': 'Jumping between rooftops',
     },
     'bouncy_equipment': {
-      'label': 'Bouncy Equipment',
+      'label': 'Bouncy equipment',
       'icon': Icons.sports_gymnastics,
       'description': 'Airtrack, trampoline, spring floor, or similar bouncy surfaces',
     },
