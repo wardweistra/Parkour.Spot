@@ -1932,11 +1932,14 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     
     return Tooltip(
       message: description,
-      child: Chip(
-        avatar: Icon(icon, size: 16, color: textColor),
-        label: Text(label),
-        backgroundColor: backgroundColor,
-        labelStyle: TextStyle(color: textColor, fontWeight: FontWeight.w500),
+      child: GestureDetector(
+        onTap: () => _showDescriptionDialog(label, description, icon),
+        child: Chip(
+          avatar: Icon(icon, size: 16, color: textColor),
+          label: Text(label),
+          backgroundColor: backgroundColor,
+          labelStyle: TextStyle(color: textColor, fontWeight: FontWeight.w500),
+        ),
       ),
     );
   }
@@ -1948,13 +1951,16 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     
     return Tooltip(
       message: description,
-      child: Chip(
-        avatar: Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
-        label: Text(label),
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
-        labelStyle: TextStyle(
-          color: Theme.of(context).colorScheme.onPrimaryContainer,
-          fontWeight: FontWeight.w500,
+      child: GestureDetector(
+        onTap: () => _showDescriptionDialog(label, description, icon),
+        child: Chip(
+          avatar: Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
+          label: Text(label),
+          backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
+          labelStyle: TextStyle(
+            color: Theme.of(context).colorScheme.onPrimaryContainer,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ),
     );
@@ -1985,18 +1991,21 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     
     return Tooltip(
       message: description,
-      child: Chip(
-        avatar: Icon(icon, size: 16, color: textColor),
-        label: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(label),
-            const SizedBox(width: 4),
-            Icon(statusIcon, size: 14, color: textColor),
-          ],
+      child: GestureDetector(
+        onTap: () => _showDescriptionDialog(label, description, icon),
+        child: Chip(
+          avatar: Icon(icon, size: 16, color: textColor),
+          label: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(label),
+              const SizedBox(width: 4),
+              Icon(statusIcon, size: 14, color: textColor),
+            ],
+          ),
+          backgroundColor: backgroundColor,
+          labelStyle: TextStyle(color: textColor, fontWeight: FontWeight.w500),
         ),
-        backgroundColor: backgroundColor,
-        labelStyle: TextStyle(color: textColor, fontWeight: FontWeight.w500),
       ),
     );
   }
@@ -2100,15 +2109,42 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     
     return Tooltip(
       message: description,
-      child: Chip(
-        avatar: Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
-        label: Text(label),
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
-        labelStyle: TextStyle(
-          color: Theme.of(context).colorScheme.onPrimaryContainer,
-          fontWeight: FontWeight.w500,
+      child: GestureDetector(
+        onTap: () => _showDescriptionDialog(label, description, icon),
+        child: Chip(
+          avatar: Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
+          label: Text(label),
+          backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
+          labelStyle: TextStyle(
+            color: Theme.of(context).colorScheme.onPrimaryContainer,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ),
+    );
+  }
+
+  void _showDescriptionDialog(String title, String description, IconData icon) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(icon, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 8),
+              Expanded(child: Text(title)),
+            ],
+          ),
+          content: Text(description),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

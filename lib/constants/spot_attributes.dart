@@ -11,77 +11,77 @@ class SpotAttributes {
     'vaults': {
       'label': 'Vaults',
       'icon': Icons.directions_run,
-      'description': 'Jumping over obstacles',
+      'description': 'Good for different ways of vaulting over obstacles',
     },
     'balance': {
       'label': 'Balance',
       'icon': Icons.balance,
-      'description': 'Walking on narrow surfaces',
+      'description': 'Good for balancing on rails or narrow surfaces',
     },
     'ascend': {
       'label': 'Ascents',
       'icon': Icons.arrow_upward,
-      'description': 'Climbing up structures',
+      'description': 'Good for climbing up structures',
     },
     'descend': {
       'label': 'Descents',
       'icon': Icons.arrow_downward,
-      'description': 'Controlled descent techniques',
+      'description': 'Good for climbing down structures',
     },
     'speed_run': {
       'label': 'Speed runs',
       'icon': Icons.speed,
-      'description': 'Fast-paced movement sequences',
+      'description': 'Good for fast-paced lines of movement',
     },
     'water_challenges': {
       'label': 'Water challenges',
       'icon': Icons.water,
-      'description': 'Water-based obstacles',
+      'description': 'Good for challenges over water',
     },
     'pole_slide': {
       'label': 'Pole slides',
       'icon': Icons.arrow_downward_outlined,
-      'description': 'Sliding down poles',
+      'description': 'Good for sliding down poles',
     },
     'precisions': {
       'label': 'Precisions',
       'icon': Icons.center_focus_strong,
-      'description': 'Precise landing techniques',
+      'description': 'Good for precise landing techniques',
     },
     'wall_runs': {
       'label': 'Wall runs',
       'icon': Icons.directions_run,
-      'description': 'Running up vertical surfaces',
+      'description': 'Good for running up vertical or slanted surfaces',
     },
     'strides': {
       'label': 'Strides',
       'icon': Icons.open_in_full,
-      'description': 'Long jumping movements',
+      'description': 'Good for one-footed jumping lines over obstacles',
     },
     'rolls': {
       'label': 'Rolls',
       'icon': Icons.refresh,
-      'description': 'Rolling techniques for safe landings',
+      'description': 'Good for rolling techniques on the ground or on obstacles',
     },
     'cats': {
       'label': 'Cat leaps',
       'icon': Icons.pets,
-      'description': 'Cat-like climbing and hanging movements',
+      'description': 'Good for hanging or jumping towards hanging off obstacles',
     },
     'flow': {
       'label': 'Flow',
       'icon': Icons.waves,
-      'description': 'Smooth, continuous movement sequences',
+      'description': 'Good for smooth, continuous movement sequences',
     },
     'flips': {
       'label': 'Flips',
       'icon': Icons.refresh,
-      'description': 'Aerial rotations and acrobatic movements',
+      'description': 'Good for aerial rotations and acrobatic movements',
     },
     'swings': {
       'label': 'Swings',
       'icon': Icons.sync,
-      'description': 'Swinging movements on bars and structures',
+      'description': 'Good for swinging movements on bars and structures',
     },
   };
 
@@ -90,57 +90,57 @@ class SpotAttributes {
     'walls_low': {
       'label': 'Wall - Low (<1m/3\')',
       'icon': Icons.view_in_ar,
-      'description': 'Low walls for vaulting (up to 1 meter / 3 feet)',
+      'description': 'The spot has low walls, up to 1 meter or 3 feet high',
     },
     'walls_medium': {
       'label': 'Wall - Medium (1-2m/3-7\')',
       'icon': Icons.view_in_ar,
-      'description': 'Medium height walls (1 to 2 meters / 3-7 feet)',
+      'description': 'The spot has medium height walls, 1 to 2 meters or 3-7 feet high',
     },
     'walls_high': {
       'label': 'Wall - High (>2m/7\')',
       'icon': Icons.view_in_ar,
-      'description': 'High walls for climbing (above 2 meters / 7 feet)',
+      'description': 'The spot has high walls, above 2 meters or 7 feet high',
     },
     'bars_low': {
       'label': 'Bar - Low (<1m/3\')',
       'icon': Icons.horizontal_rule,
-      'description': 'Low bars for vaulting and stepping over (up to 1 meter / 3 feet)',
+      'description': 'The spot has low bars, up to 1 meter or 3 feet high',
     },
     'bars_medium': {
       'label': 'Bar - Medium (1-2m/3-7\')',
       'icon': Icons.horizontal_rule,
-      'description': 'Medium height bars (1 to 2 meters / 3-7 feet)',
+      'description': 'The spot has medium height bars, 1 meter or 3 feet to 2 meters or 7 feet high',
     },
     'bars_high': {
       'label': 'Bar - High (>2m / 7\')',
       'icon': Icons.horizontal_rule,
-      'description': 'High bars for advanced moves (above 2 meters / 7 feet)',
+      'description': 'The spot has high bars, above 2 meters or 7 feet high',
     },
     'climbing_tree': {
       'label': 'Climbing tree',
       'icon': Icons.park,
-      'description': 'Tree suitable for climbing',
+      'description': 'The spot has a tree suitable for climbing',
     },
     'rocks': {
       'label': 'Rocks',
       'icon': Icons.terrain,
-      'description': 'Natural rock formations',
+      'description': 'The spot has natural rock formations',
     },
     'soft_landing_pit': {
       'label': 'Soft landing pit',
       'icon': Icons.bed,
-      'description': 'Soft surface for safe landings',
+      'description': 'The spot has a soft surface for safe landings, like for example a sandpit or foam pit',
     },
     'roof_gap': {
       'label': 'Roof gap',
       'icon': Icons.roofing,
-      'description': 'Jumping between rooftops',
+      'description': 'The spot has a roof gap, allowing you to jump between rooftops',
     },
     'bouncy_equipment': {
       'label': 'Bouncy equipment',
       'icon': Icons.sports_gymnastics,
-      'description': 'Airtrack, trampoline, spring floor, or similar bouncy surfaces',
+      'description': 'The spot has bouncy equipment, like an airtrack, trampoline, spring floor, or similar',
     },
   };
 
@@ -149,17 +149,17 @@ class SpotAttributes {
     'public': {
       'label': 'Public',
       'icon': Icons.lock_open,
-      'description': 'Open to everyone, no restrictions',
+      'description': 'The spot is open to everyone, no restrictions',
     },
     'restricted': {
       'label': 'Restricted',
       'icon': Icons.lock,
-      'description': 'Limited access, may require permission',
+      'description': 'The spot has limited access and may require permission from the owner',
     },
     'paid': {
       'label': 'Paid',
       'icon': Icons.payments,
-      'description': 'Requires payment or membership',
+      'description': 'The spot requires payment or a membership to access, like for example a commercial parkour gym or park',
     },
   };
 
@@ -168,27 +168,27 @@ class SpotAttributes {
     'covered': {
       'label': 'Covered',
       'icon': Icons.roofing,
-      'description': 'Shelter from weather',
+      'description': 'Whether the spot has a roof or cover from the weather, making it possible to train in rain or harsh sunshine',
     },
     'lighting': {
       'label': 'Lighting',
       'icon': Icons.lightbulb,
-      'description': 'Artificial lighting available',
+      'description': 'Whether the spot has artificial lighting, making it possible to train at night',
     },
     'water_tap': {
       'label': 'Water tap',
       'icon': Icons.water_drop,
-      'description': 'Access to drinking water',
+      'description': 'Whether the spot has a water tap available',
     },
     'toilet': {
       'label': 'Toilet',
       'icon': Icons.wc,
-      'description': 'Restroom facilities',
+      'description': 'Whether the spot has public restroom facilities available',
     },
     'parking': {
       'label': 'Parking',
       'icon': Icons.local_parking,
-      'description': 'Vehicle parking available',
+      'description': 'Whether the spot has vehicle parking available',
     },
   };
 
