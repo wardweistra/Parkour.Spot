@@ -31,8 +31,8 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   
-  List<File?> _selectedImages = [];
-  List<Uint8List?> _selectedImageBytes = [];
+  final List<File?> _selectedImages = [];
+  final List<Uint8List?> _selectedImageBytes = [];
   Position? _currentPosition;
   LatLng? _pickedLocation;
   String? _currentAddress;
