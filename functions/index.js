@@ -11,7 +11,7 @@
  * functions
  */
 
-const {onCall} = require("firebase-functions/v2/https");
+const {onCall, onRequest} = require("firebase-functions/v2/https");
 const {
   onDocumentCreated,
   onDocumentUpdated,
@@ -29,6 +29,157 @@ const crypto = require("crypto");
 admin.initializeApp();
 const db = admin.firestore();
 const bucket = admin.storage().bucket();
+
+// ========== Social sharing: Dynamic per-spot Open Graph/Twitter meta ==========
+/**
+ * HTTP function that serves an HTML page with dynamic Open Graph and Twitter
+ * meta tags for spot detail URLs. It also boots the Flutter web app so that
+ * normal users see the app, while crawlers read the meta tags.
+ */
+exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
+  try {
+    const originalUrl = req.originalUrl || req.url || "/";
+    const host = req.headers.host || "parkour.spot";
+    const fullUrl = `https://${host}${originalUrl}`;
+
+    function htmlEscape(value) {
+      if (value === null || value === undefined) return "";
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function extractSpotIdFromPath(pathname) {
+      // Match: /<cc>/<city>/<spotId>
+      let m = pathname.match(/^\/[a-zA-Z]{2}\/[^/]+\/([^/?#]+)$/);
+      if (m && m[1]) return m[1];
+      // Match: /spot/<spotId>
+      m = pathname.match(/^\/spot\/([^/?#]+)$/);
+      if (m && m[1]) return m[1];
+      // Fallback: query param ?id=
+      const urlObj = new URL(`https://dummy${pathname}${req.url.includes('?') ? '' : ''}`);
+      const qpId = (req.query && (req.query.id || req.query.spotId)) || null;
+      return qpId ? String(qpId) : null;
+    }
+
+    const pathname = (() => {
+      try {
+        const u = new URL(fullUrl);
+        return u.pathname;
+      } catch (_) {
+        return req.path || "/";
+      }
+    })();
+
+    const spotId = extractSpotIdFromPath(pathname);
+
+    let spot = null;
+    if (spotId) {
+      const snap = await db.collection("spots").doc(spotId).get();
+      if (snap.exists) {
+        spot = {id: snap.id, ...snap.data()};
+      }
+    }
+
+    const siteName = "Parkour.Spot";
+    const defaultTitle = `${siteName}`;
+    const defaultDescription = "Discover and share parkour spots around the world";
+    const defaultImage = `https://${host}/icons/Icon-512.png`;
+
+    const title = spot && spot.name ? `${spot.name} - Parkour·Spot` : defaultTitle;
+
+    function buildDescription(s) {
+      if (!s) return defaultDescription;
+      const parts = [];
+      if (s.address && String(s.address).trim().length > 0) {
+        parts.push(`📍 ${String(s.address).trim()}`);
+      }
+      if (typeof s.averageRating === "number" && !isNaN(s.averageRating)) {
+        parts.push(`⭐ ${s.averageRating.toFixed(1)}`);
+      }
+      if (s.description && String(s.description).trim().length > 0) {
+        const d = String(s.description).trim().replace(/\s+/g, " ");
+        // Keep description concise
+        const clipped = d.length > 220 ? d.slice(0, 217) + "…" : d;
+        parts.push(`💬 ${clipped}`);
+      }
+      return parts.length ? parts.join("\n") : defaultDescription;
+    }
+
+    const description = buildDescription(spot);
+    const imageUrl = (spot && Array.isArray(spot.imageUrls) && spot.imageUrls.length > 0)
+      ? spot.imageUrls[0]
+      : defaultImage;
+
+    // Basic caching for crawlers and share scrapers
+    res.set("Cache-Control", "public, max-age=300, s-maxage=600");
+    res.set("Content-Type", "text/html; charset=utf-8");
+
+    const escapedTitle = htmlEscape(title);
+    const escapedDesc = htmlEscape(description);
+    const escapedImage = htmlEscape(imageUrl);
+    const escapedUrl = htmlEscape(fullUrl);
+
+    const html = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <base href="/" />
+  <title>${escapedTitle}</title>
+  <meta name="description" content="${escapedDesc}" />
+  <link rel="canonical" href="${escapedUrl}" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="${siteName}" />
+  <meta property="og:url" content="${escapedUrl}" />
+  <meta property="og:title" content="${escapedTitle}" />
+  <meta property="og:description" content="${escapedDesc}" />
+  <meta property="og:image" content="${escapedImage}" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${escapedTitle}" />
+  <meta name="twitter:description" content="${escapedDesc}" />
+  <meta name="twitter:image" content="${escapedImage}" />
+
+  <meta name="theme-color" content="#000000" />
+</head>
+<body>
+  <noscript>
+    <p>Loading ${siteName}… If you are not redirected, open <a href="${escapedUrl}">${escapedUrl}</a>.</p>
+  </noscript>
+  <script>
+    // Provide a value for the Flutter web loader; it's optional.
+    const serviceWorkerVersion = null;
+  </script>
+  <script src="/flutter.js" defer></script>
+  <script>
+    window.addEventListener('load', function() {
+      // Boot the Flutter app so humans see the app immediately
+      _flutter.loader.loadEntrypoint({
+        serviceWorker: { serviceWorkerVersion: serviceWorkerVersion },
+        onEntrypointLoaded: function(engineInitializer) {
+          engineInitializer.initializeEngine().then(function(appRunner) {
+            appRunner.runApp();
+          });
+        }
+      });
+    });
+  </script>
+</body>
+</html>`;
+
+    res.status(200).send(html);
+  } catch (err) {
+    console.error("spotPage error", err);
+    res.status(500).send("Internal Server Error");
+  }
+});
 
 /**
  * Removes undefined values from an object to make it Firestore-safe
