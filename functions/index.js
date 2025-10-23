@@ -30,6 +30,9 @@ admin.initializeApp();
 const db = admin.firestore();
 const bucket = admin.storage().bucket();
 
+// Import shared HTML template
+const { generateHtmlPage, htmlEscape } = require('./html-template');
+
 // ========== Social sharing: Dynamic per-spot Open Graph/Twitter meta ==========
 /**
  * HTTP function that serves an HTML page with dynamic Open Graph and Twitter
@@ -39,18 +42,11 @@ const bucket = admin.storage().bucket();
 exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
   try {
     const originalUrl = req.originalUrl || req.url || "/";
+    // Use parkour.spot domain for canonical URLs and meta tags, even if called from .run.app
     const host = req.headers.host || "parkour.spot";
-    const fullUrl = `https://${host}${originalUrl}`;
+    const canonicalHost = host.includes('parkour.spot') ? host : "parkour.spot";
+    const fullUrl = `https://${canonicalHost}${originalUrl}`;
 
-    function htmlEscape(value) {
-      if (value === null || value === undefined) return "";
-      return String(value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
-    }
 
     function extractSpotIdFromPath(pathname) {
       // Match: /<cc>/<city>/<spotId>
@@ -87,7 +83,7 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
     const siteName = "Parkour.Spot";
     const defaultTitle = `${siteName}`;
     const defaultDescription = "Discover and share parkour spots around the world";
-    const defaultImage = `https://${host}/icons/Icon-512.png`;
+    const defaultImage = `https://${canonicalHost}/icons/Icon-512.png`;
 
     const title = spot && spot.name ? `${spot.name} - Parkour·Spot` : defaultTitle;
 
@@ -97,7 +93,7 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
       if (s.address && String(s.address).trim().length > 0) {
         parts.push(`📍 ${String(s.address).trim()}`);
       }
-      if (typeof s.averageRating === "number" && !isNaN(s.averageRating)) {
+      if (typeof s.averageRating === "number" && !isNaN(s.averageRating) && s.ratingCount > 0 && s.averageRating > 0) {
         parts.push(`⭐ ${s.averageRating.toFixed(1)}`);
       }
       if (s.description && String(s.description).trim().length > 0) {
@@ -118,61 +114,15 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
     res.set("Cache-Control", "public, max-age=300, s-maxage=600");
     res.set("Content-Type", "text/html; charset=utf-8");
 
-    const escapedTitle = htmlEscape(title);
-    const escapedDesc = htmlEscape(description);
-    const escapedImage = htmlEscape(imageUrl);
-    const escapedUrl = htmlEscape(fullUrl);
-
-    const html = `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <base href="/" />
-  <title>${escapedTitle}</title>
-  <meta name="description" content="${escapedDesc}" />
-  <link rel="canonical" href="${escapedUrl}" />
-
-  <!-- Open Graph -->
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="${siteName}" />
-  <meta property="og:url" content="${escapedUrl}" />
-  <meta property="og:title" content="${escapedTitle}" />
-  <meta property="og:description" content="${escapedDesc}" />
-  <meta property="og:image" content="${escapedImage}" />
-
-  <!-- Twitter -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="${escapedTitle}" />
-  <meta name="twitter:description" content="${escapedDesc}" />
-  <meta name="twitter:image" content="${escapedImage}" />
-
-  <meta name="theme-color" content="#000000" />
-</head>
-<body>
-  <noscript>
-    <p>Loading ${siteName}… If you are not redirected, open <a href="${escapedUrl}">${escapedUrl}</a>.</p>
-  </noscript>
-  <script>
-    // Provide a value for the Flutter web loader; it's optional.
-    const serviceWorkerVersion = null;
-  </script>
-  <script src="/flutter.js" defer></script>
-  <script>
-    window.addEventListener('load', function() {
-      // Boot the Flutter app so humans see the app immediately
-      _flutter.loader.loadEntrypoint({
-        serviceWorker: { serviceWorkerVersion: serviceWorkerVersion },
-        onEntrypointLoaded: function(engineInitializer) {
-          engineInitializer.initializeEngine().then(function(appRunner) {
-            appRunner.runApp();
-          });
-        }
-      });
+    const html = generateHtmlPage({
+      title: title,
+      description: description,
+      image: imageUrl,
+      url: fullUrl,
+      siteName: siteName,
+      isDynamic: true,
+      serviceWorkerVersion: null
     });
-  </script>
-</body>
-</html>`;
 
     res.status(200).send(html);
   } catch (err) {
