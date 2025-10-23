@@ -109,7 +109,71 @@ class SpotService extends ChangeNotifier {
     }
   }
 
-  // Update an existing spot
+  // Enhanced update method for comprehensive spot updates
+  Future<bool> updateSpotComplete(
+    Spot spot, 
+    {
+      List<File>? newImageFiles,
+      List<Uint8List>? newImageBytesList,
+      List<String>? imagesToDelete,
+    }
+  ) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      List<String>? imageUrls = List.from(spot.imageUrls ?? []);
+
+      // Remove images to delete
+      if (imagesToDelete != null && imagesToDelete.isNotEmpty) {
+        for (final imageUrl in imagesToDelete) {
+          await deleteImageFromStorage(imageUrl);
+          imageUrls.remove(imageUrl);
+        }
+      }
+
+      // Add new images
+      if (newImageFiles != null && newImageFiles.isNotEmpty) {
+        final uploadedUrls = await _uploadImages(newImageFiles);
+        imageUrls.addAll(uploadedUrls);
+      }
+
+      if (newImageBytesList != null && newImageBytesList.isNotEmpty) {
+        final uploadedUrls = await _uploadImagesBytes(newImageBytesList);
+        imageUrls.addAll(uploadedUrls);
+      }
+
+      final updatedSpot = spot.copyWith(
+        imageUrls: imageUrls,
+        updatedAt: DateTime.now(),
+      );
+
+      await _firestore.collection('spots').doc(spot.id).update(updatedSpot.toFirestore());
+      
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Error updating spot: $e');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // Delete specific image from storage
+  Future<bool> deleteImageFromStorage(String imageUrl) async {
+    try {
+      final ref = FirebaseStorage.instance.refFromURL(imageUrl);
+      await ref.delete();
+      return true;
+    } catch (e) {
+      debugPrint('Error deleting image from storage: $e');
+      return false;
+    }
+  }
+
+  // Update an existing spot (legacy method)
   Future<bool> updateSpot(Spot spot, {File? imageFile, Uint8List? imageBytes}) async {
     try {
       _isLoading = true;

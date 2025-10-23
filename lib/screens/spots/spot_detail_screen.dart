@@ -12,6 +12,7 @@ import '../../services/url_service.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../services/sync_source_service.dart';
 import '../../widgets/source_details_dialog.dart';
+import '../../constants/spot_attributes.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 import 'package:url_launcher/url_launcher.dart';
 
@@ -37,6 +38,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   // Add rating cache variables
   Map<String, dynamic>? _cachedRatingStats;
   bool _isLoadingRatingStats = false;
+  
+  // Track expanded sections for chip overflow
+  final Map<String, bool> _expandedSections = {};
 
   @override
   void initState() {
@@ -337,18 +341,91 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       );
                     }
                     
-                    // Show delete for admins or moderators only
+                    // Show moderator menu for admins or moderators only
                     if (authService.isAuthenticated && authService.userProfile != null &&
                         (authService.isAdmin || authService.isModerator)) {
                       return Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          CircleAvatar(
-                            backgroundColor: Colors.red.withValues(alpha: 0.8),
-                            child: IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.white),
-                              onPressed: _showDeleteDialog,
+                          PopupMenuButton<String>(
+                            icon: CircleAvatar(
+                              backgroundColor: Colors.black.withValues(alpha: 0.5),
+                              child: const Icon(Icons.more_vert, color: Colors.white),
                             ),
+                            onSelected: (value) {
+                              if (value == 'edit') {
+                                context.push('/spot/${widget.spot.id}/edit', extra: widget.spot);
+                              } else if (value == 'delete') {
+                                _showDeleteDialog();
+                              }
+                            },
+                            itemBuilder: (context) => [
+                              PopupMenuItem<String>(
+                                value: 'edit',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.edit,
+                                      color: Theme.of(context).colorScheme.primary,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          'Edit Spot',
+                                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Moderator only',
+                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem<String>(
+                                value: 'delete',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.delete,
+                                      color: Colors.red,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          'Delete Spot',
+                                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                            fontWeight: FontWeight.w500,
+                                            color: Colors.red,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Moderator only',
+                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(width: 16),
                         ],
@@ -640,32 +717,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     const SizedBox(height: 24),
                   ],
 
-                    // Tags
-                    if (widget.spot.tags != null && widget.spot.tags!.isNotEmpty) ...[
-                      Text(
-                        'Tags',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: widget.spot.tags!.map((tag) {
-                          return Chip(
-                            label: Text(tag),
-                            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                            labelStyle: TextStyle(
-                              color: Theme.of(context).colorScheme.onPrimaryContainer,
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 24),
-                    ],
-                    
-                                        // Map view toggle and mobile detection info
+                    // Location Section
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -708,8 +760,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             ),
                           ],
                         ),
-                        
-
                       ],
                     ),
                     
@@ -726,87 +776,87 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       ),
                       clipBehavior: Clip.antiAlias,
                       child: Stack(
-                              children: [
-                                GoogleMap(
-                                  initialCameraPosition: CameraPosition(
-                                    target: LatLng(
-                                      widget.spot.latitude,
-                                      widget.spot.longitude,
-                                    ),
-                                    zoom: 16,
-                                  ),
-                                  mapType: _isSatelliteView ? MapType.satellite : MapType.normal,
-                                  markers: {
-                                    Marker(
-                                      markerId: MarkerId(widget.spot.id ?? 'spot'),
-                                      position: LatLng(
-                                        widget.spot.latitude,
-                                        widget.spot.longitude,
-                                      ),
-                                      onTap: null,
-                                      consumeTapEvents: true,
-                                      infoWindow: InfoWindow.noText,
-                                    ),
-                                  },
-                                  zoomControlsEnabled: false,
-                                  myLocationButtonEnabled: false,
-                                  mapToolbarEnabled: false,
-                                  liteModeEnabled: kIsWeb,
-                                  compassEnabled: false,
-                                  zoomGesturesEnabled: false,
-                                  scrollGesturesEnabled: false,
-                                  tiltGesturesEnabled: false,
-                                  rotateGesturesEnabled: false,
-                                  indoorViewEnabled: false,
-                                  trafficEnabled: false,
-                                ),
-                                Positioned.fill(
-                                  child: PointerInterceptor(
-                                    child: Material(
-                                      color: Colors.transparent,
-                                      child: InkWell(
-                                        onTap: () => _openInMaps(),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  bottom: 8,
-                                  right: 8,
-                                  child: PointerInterceptor(
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withValues(alpha: 0.7),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            MobileDetectionService.isMobileDevice 
-                                              ? Icons.phone_android 
-                                              : Icons.touch_app,
-                                            color: Colors.white,
-                                            size: 14,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            'Tap to open map',
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
+                        children: [
+                          GoogleMap(
+                            initialCameraPosition: CameraPosition(
+                              target: LatLng(
+                                widget.spot.latitude,
+                                widget.spot.longitude,
+                              ),
+                              zoom: 16,
                             ),
+                            mapType: _isSatelliteView ? MapType.satellite : MapType.normal,
+                            markers: {
+                              Marker(
+                                markerId: MarkerId(widget.spot.id ?? 'spot'),
+                                position: LatLng(
+                                  widget.spot.latitude,
+                                  widget.spot.longitude,
+                                ),
+                                onTap: null,
+                                consumeTapEvents: true,
+                                infoWindow: InfoWindow.noText,
+                              ),
+                            },
+                            zoomControlsEnabled: false,
+                            myLocationButtonEnabled: false,
+                            mapToolbarEnabled: false,
+                            liteModeEnabled: kIsWeb,
+                            compassEnabled: false,
+                            zoomGesturesEnabled: false,
+                            scrollGesturesEnabled: false,
+                            tiltGesturesEnabled: false,
+                            rotateGesturesEnabled: false,
+                            indoorViewEnabled: false,
+                            trafficEnabled: false,
+                          ),
+                          Positioned.fill(
+                            child: PointerInterceptor(
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () => _openInMaps(),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            bottom: 8,
+                            right: 8,
+                            child: PointerInterceptor(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.7),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      MobileDetectionService.isMobileDevice 
+                                        ? Icons.phone_android 
+                                        : Icons.touch_app,
+                                      color: Colors.white,
+                                      size: 14,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Tap to open map',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     
                     const SizedBox(height: 16),
@@ -868,9 +918,242 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         ],
                       ),
                     ),
-
                     
                     const SizedBox(height: 24),
+
+                    // Attributes Grid Section
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isWideScreen = constraints.maxWidth > 600;
+                        final hasAnyAttributes = widget.spot.goodFor != null && widget.spot.goodFor!.isNotEmpty ||
+                                              widget.spot.spotFeatures != null && widget.spot.spotFeatures!.isNotEmpty ||
+                                              widget.spot.spotAccess != null ||
+                                              widget.spot.spotFacilities != null && widget.spot.spotFacilities!.isNotEmpty;
+                        
+                        if (!hasAnyAttributes) {
+                          return const SizedBox.shrink();
+                        }
+                        
+                        if (isWideScreen) {
+                          // Dynamic grid layout based on available sections
+                          final sections = <Widget>[];
+                          
+                          // Good For Section
+                          if (widget.spot.goodFor != null && widget.spot.goodFor!.isNotEmpty) {
+                            sections.add(
+                              _buildExpandableChipSection(
+                                title: 'Good For',
+                                chips: widget.spot.goodFor!.map((skill) {
+                                  return _buildGoodForChip(skill);
+                                }).toList(),
+                              ),
+                            );
+                          }
+                          
+                          // Features Section
+                          if (widget.spot.spotFeatures != null && widget.spot.spotFeatures!.isNotEmpty) {
+                            sections.add(
+                              _buildExpandableChipSection(
+                                title: 'Features',
+                                chips: widget.spot.spotFeatures!.map((feature) {
+                                  return _buildFeatureChip(feature);
+                                }).toList(),
+                              ),
+                            );
+                          }
+                          
+                          // Access Section
+                          if (widget.spot.spotAccess != null) {
+                            sections.add(
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Access',
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _buildAccessChip(widget.spot.spotAccess!),
+                                ],
+                              ),
+                            );
+                          }
+                          
+                          // Facilities Section
+                          if (widget.spot.spotFacilities != null && widget.spot.spotFacilities!.isNotEmpty) {
+                            // Separate available and unavailable facilities
+                            final availableFacilities = <Widget>[];
+                            final unavailableFacilities = <Widget>[];
+                            
+                            for (final entry in widget.spot.spotFacilities!.entries) {
+                              final chip = _buildFacilityChip(entry.key, entry.value);
+                              if (entry.value == 'yes') {
+                                availableFacilities.add(chip);
+                              } else if (entry.value == 'no') {
+                                unavailableFacilities.add(chip);
+                              }
+                            }
+                            
+                            // Combine: available first, then unavailable
+                            final allFacilityChips = [...availableFacilities, ...unavailableFacilities];
+                            
+                            sections.add(
+                              _buildExpandableChipSection(
+                                title: 'Facilities',
+                                chips: allFacilityChips,
+                              ),
+                            );
+                          }
+                          
+                          // Build dynamic layout based on number of sections
+                          if (sections.length == 1) {
+                            // Single column, full width
+                            return Column(
+                              children: [
+                                sections[0],
+                                const SizedBox(height: 24),
+                              ],
+                            );
+                          } else if (sections.length == 2) {
+                            // Two columns, side by side
+                            return Column(
+                              children: [
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(child: sections[0]),
+                                    const SizedBox(width: 16),
+                                    Expanded(child: sections[1]),
+                                  ],
+                                ),
+                                const SizedBox(height: 24),
+                              ],
+                            );
+                          } else if (sections.length == 3) {
+                            // Two rows: first row has 2 sections, second row has 1 section
+                            return Column(
+                              children: [
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(child: sections[0]),
+                                    const SizedBox(width: 16),
+                                    Expanded(child: sections[1]),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(child: sections[2]),
+                                    const SizedBox(width: 16),
+                                    const Expanded(child: SizedBox()), // Empty space
+                                  ],
+                                ),
+                                const SizedBox(height: 24),
+                              ],
+                            );
+                          } else if (sections.length == 4) {
+                            // Full 2x2 grid
+                            return Column(
+                              children: [
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(child: sections[0]),
+                                    const SizedBox(width: 16),
+                                    Expanded(child: sections[1]),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(child: sections[2]),
+                                    const SizedBox(width: 16),
+                                    Expanded(child: sections[3]),
+                                  ],
+                                ),
+                                const SizedBox(height: 24),
+                              ],
+                            );
+                          }
+                          
+                          // Fallback (shouldn't happen)
+                          return const SizedBox.shrink();
+                        } else {
+                          // Single column for narrow screens
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Good For
+                              if (widget.spot.goodFor != null && widget.spot.goodFor!.isNotEmpty) ...[
+                                _buildExpandableChipSection(
+                                  title: 'Good For',
+                                  chips: widget.spot.goodFor!.map((skill) {
+                                    return _buildGoodForChip(skill);
+                                  }).toList(),
+                                ),
+                                const SizedBox(height: 24),
+                              ],
+                              
+                              // Features
+                              if (widget.spot.spotFeatures != null && widget.spot.spotFeatures!.isNotEmpty) ...[
+                                _buildExpandableChipSection(
+                                  title: 'Features',
+                                  chips: widget.spot.spotFeatures!.map((feature) {
+                                    return _buildFeatureChip(feature);
+                                  }).toList(),
+                                ),
+                                const SizedBox(height: 24),
+                              ],
+                              
+                              // Access
+                              if (widget.spot.spotAccess != null) ...[
+                                Text(
+                                  'Access',
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                _buildAccessChip(widget.spot.spotAccess!),
+                                const SizedBox(height: 24),
+                              ],
+                              
+                              // Facilities
+                              if (widget.spot.spotFacilities != null && widget.spot.spotFacilities!.isNotEmpty) ...[
+                                () {
+                                  // Separate available and unavailable facilities
+                                  final availableFacilities = <Widget>[];
+                                  final unavailableFacilities = <Widget>[];
+                                  
+                                  for (final entry in widget.spot.spotFacilities!.entries) {
+                                    final chip = _buildFacilityChip(entry.key, entry.value);
+                                    if (entry.value == 'yes') {
+                                      availableFacilities.add(chip);
+                                    } else if (entry.value == 'no') {
+                                      unavailableFacilities.add(chip);
+                                    }
+                                  }
+                                  
+                                  // Combine: available first, then unavailable
+                                  final allFacilityChips = [...availableFacilities, ...unavailableFacilities];
+                                  
+                                  return _buildExpandableChipSection(
+                                    title: 'Facilities',
+                                    chips: allFacilityChips,
+                                  );
+                                }(),
+                                const SizedBox(height: 24),
+                              ],
+                            ],
+                          );
+                        }
+                      },
+                    ),
                     
 
                     
@@ -1620,5 +1903,236 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year} at ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+  }
+
+  Widget _buildAccessChip(String accessKey) {
+    final icon = SpotAttributes.getIcon('access', accessKey);
+    final label = SpotAttributes.getLabel('access', accessKey);
+    final description = SpotAttributes.getDescription('access', accessKey);
+    Color backgroundColor;
+    Color textColor;
+    
+    switch (accessKey) {
+      case 'public':
+        backgroundColor = Colors.green.withValues(alpha: 0.1);
+        textColor = Colors.green.shade700;
+        break;
+      case 'restricted':
+        backgroundColor = Colors.orange.withValues(alpha: 0.1);
+        textColor = Colors.orange.shade700;
+        break;
+      case 'paid':
+        backgroundColor = Colors.blue.withValues(alpha: 0.1);
+        textColor = Colors.blue.shade700;
+        break;
+      default:
+        backgroundColor = Theme.of(context).colorScheme.surfaceContainerHighest;
+        textColor = Theme.of(context).colorScheme.onSurface;
+    }
+    
+    return GestureDetector(
+      onTap: () => _showDescriptionDialog(label, description, icon),
+      child: Chip(
+        avatar: Icon(icon, size: 16, color: textColor),
+        label: Text(label),
+        backgroundColor: backgroundColor,
+        labelStyle: TextStyle(color: textColor, fontWeight: FontWeight.w500),
+      ),
+    );
+  }
+
+  Widget _buildFeatureChip(String featureKey) {
+    final icon = SpotAttributes.getIcon('features', featureKey);
+    final label = SpotAttributes.getLabel('features', featureKey);
+    final description = SpotAttributes.getDescription('features', featureKey);
+    
+    return GestureDetector(
+      onTap: () => _showDescriptionDialog(label, description, icon),
+      child: Chip(
+        avatar: Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
+        label: Text(label),
+        backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
+        labelStyle: TextStyle(
+          color: Theme.of(context).colorScheme.onPrimaryContainer,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFacilityChip(String facilityKey, String status) {
+    final icon = SpotAttributes.getIcon('facilities', facilityKey);
+    final label = SpotAttributes.getLabel('facilities', facilityKey);
+    final description = SpotAttributes.getDescription('facilities', facilityKey);
+    Color backgroundColor;
+    Color textColor;
+    IconData statusIcon;
+    
+    // Set colors and status icon based on status
+    if (status == 'yes') {
+      backgroundColor = Colors.green.withValues(alpha: 0.1);
+      textColor = Colors.green.shade700;
+      statusIcon = Icons.check;
+    } else if (status == 'no') {
+      backgroundColor = Colors.red.withValues(alpha: 0.1);
+      textColor = Colors.red.shade700;
+      statusIcon = Icons.close;
+    } else {
+      backgroundColor = Theme.of(context).colorScheme.surfaceContainerHighest;
+      textColor = Theme.of(context).colorScheme.onSurface;
+      statusIcon = Icons.info;
+    }
+    
+    return GestureDetector(
+      onTap: () => _showDescriptionDialog(label, description, icon),
+      child: Chip(
+        avatar: Icon(icon, size: 16, color: textColor),
+        label: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(label),
+            const SizedBox(width: 4),
+            Icon(statusIcon, size: 14, color: textColor),
+          ],
+        ),
+        backgroundColor: backgroundColor,
+        labelStyle: TextStyle(color: textColor, fontWeight: FontWeight.w500),
+      ),
+    );
+  }
+
+  Widget _buildExpandableChipSection({
+    required String title,
+    required List<Widget> chips,
+    int initialCount = 3,
+  }) {
+    if (chips.length <= initialCount) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: chips,
+          ),
+        ],
+      );
+    }
+
+    return StatefulBuilder(
+      builder: (context, setState) {
+        final isExpanded = _expandedSections[title] ?? false;
+        final visibleChips = isExpanded ? chips : chips.take(initialCount).toList();
+        final remainingCount = chips.length - initialCount;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ...visibleChips,
+                if (!isExpanded && remainingCount > 0)
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _expandedSections[title] = true;
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.expand_more,
+                            size: 16,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '$remainingCount more',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildGoodForChip(String skillKey) {
+    final icon = SpotAttributes.getIcon('goodFor', skillKey);
+    final label = SpotAttributes.getLabel('goodFor', skillKey);
+    final description = SpotAttributes.getDescription('goodFor', skillKey);
+    
+    return GestureDetector(
+      onTap: () => _showDescriptionDialog(label, description, icon),
+      child: Chip(
+        avatar: Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
+        label: Text(label),
+        backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
+        labelStyle: TextStyle(
+          color: Theme.of(context).colorScheme.onPrimaryContainer,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+  void _showDescriptionDialog(String title, String description, IconData icon) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(icon, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 8),
+              Expanded(child: Text(title)),
+            ],
+          ),
+          content: Text(description),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

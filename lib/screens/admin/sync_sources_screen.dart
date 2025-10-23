@@ -993,7 +993,10 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
               ),
               TextFormField(
                 controller: urlCtrl,
-                decoration: const InputDecoration(labelText: 'KMZ URL'),
+                decoration: const InputDecoration(
+                  labelText: 'Source URL (KMZ/KML/GeoJSON)',
+                  helperText: 'Paste Google My Maps KMZ/KML or OpenStreetMap uMap GeoJSON URL',
+                ),
                 validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
               ),
               TextFormField(
@@ -1044,8 +1047,8 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Record Folder Name on Spots'),
-                subtitle: const Text('If enabled, store the KML folder name on each imported spot'),
+                title: const Text('Record Folder/Layer on Spots'),
+                subtitle: const Text('If enabled, store the KML folder name or uMap layer on each imported spot'),
                 value: recordFolderName,
                 onChanged: (v) => setState(() => recordFolderName = v),
               ),
