@@ -168,7 +168,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         countryCode: widget.spot.countryCode,
         city: widget.spot.city,
       );
-      final text = '${widget.spot.name.trim()}: $url';
+      final text = '${widget.spot.name.trim()} 👉 $url';
       
       await Clipboard.setData(ClipboardData(text: text));
       
