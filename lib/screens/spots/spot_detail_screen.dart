@@ -67,6 +67,11 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     try {
       final syncSourceService = Provider.of<SyncSourceService>(context, listen: false);
       
+      // Ensure sources are loaded before trying to find the specific source
+      if (syncSourceService.sources.isEmpty && !syncSourceService.isLoading) {
+        await syncSourceService.fetchSyncSources(includeInactive: false);
+      }
+      
       // Find the source by ID
       final source = syncSourceService.sources.firstWhere(
         (s) => s.id == widget.spot.spotSource,
