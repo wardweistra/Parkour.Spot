@@ -691,11 +691,6 @@ exports.onRatingDeleted = onDocumentDeleted(
     },
 );
 
-// Example function that can be called from your Flutter app
-exports.helloWorld = onCall({region: "europe-west1"}, (request) => {
-  return "Hello from ParkourSpot Firebase Functions!";
-});
-
 // Trigger when a new spot is created
 exports.onSpotCreated = onDocumentCreated(
     {document: "spots/{spotId}", region: "europe-west1"},
@@ -734,16 +729,6 @@ exports.onSpotUpdated = onDocumentUpdated(
     },
 );
 
-// Function to get nearby spots (can be called from Flutter app)
-exports.getNearbySpots = onCall({region: "europe-west1"}, (request) => {
-  const {latitude, longitude, radiusKm} = request.data;
-
-  // This is a placeholder - you'd implement actual geospatial query logic
-  return {
-    message: "Nearby spots function called",
-    params: {latitude, longitude, radiusKm},
-  };
-});
 
 /**
  * Downloads a file from the given URL
@@ -1590,69 +1575,6 @@ async function processPlacemarkImages(placemark, existingSpotData = null) {
   return {imageUrls: uploadedImageUrls, imageHashes};
 }
 
-/**
- * Cleans up the image cache by removing entries for images that no longer exist in storage
- * @return {Promise<Object>} A promise that resolves to cleanup statistics
- */
-async function cleanupImageCache() {
-  try {
-    console.log("Starting image cache cleanup...");
-
-    const imageCacheSnapshot = await db.collection("imageCache").get();
-    const totalEntries = imageCacheSnapshot.size;
-    let removedEntries = 0;
-    let validEntries = 0;
-
-    console.log(`Found ${totalEntries} entries in image cache`);
-
-    // Process in batches to avoid memory issues
-    const BATCH_SIZE = 50;
-    const batches = [];
-
-    for (let i = 0; i < imageCacheSnapshot.docs.length; i += BATCH_SIZE) {
-      batches.push(imageCacheSnapshot.docs.slice(i, i + BATCH_SIZE));
-    }
-
-    for (const batch of batches) {
-      const batchPromises = batch.map(async (doc) => {
-        const cacheData = doc.data();
-        const {hash, url} = cacheData;
-
-        // Check if the image still exists in storage
-        const existingFileName = await checkImageExists(hash);
-        if (existingFileName) {
-          validEntries++;
-          return;
-        } else {
-          // Image no longer exists, remove from cache
-          await doc.ref.delete();
-          removedEntries++;
-          console.log(
-              `Removed cache entry for missing image: ${url.substring(0, 50)}...`,
-          );
-        }
-      });
-
-      await Promise.all(batchPromises);
-    }
-
-    const result = {
-      totalEntries,
-      validEntries,
-      removedEntries,
-      message: `Image cache cleanup completed. Removed ${removedEntries} invalid entries, kept ${validEntries} valid entries.`,
-    };
-
-    console.log(result.message);
-    return result;
-  } catch (error) {
-    console.error("Error during image cache cleanup:", error);
-    return {
-      success: false,
-      error: error.message,
-    };
-  }
-}
 
 /**
  * Extracts address information from a KML placemark
@@ -3475,26 +3397,6 @@ exports.cleanupUnusedImages = onCall(
     },
 );
 
-// Function to cleanup image cache by removing entries for images that no longer exist (admin only)
-exports.cleanupImageCache = onCall(
-    {region: "europe-west1", memory: "512MiB", timeoutSeconds: 540},
-    async (request) => {
-      try {
-        await ensureAdmin(request);
-        const result = await cleanupImageCache();
-        return {
-          success: true,
-          ...result,
-        };
-      } catch (error) {
-        console.error("Error in cleanupImageCache:", error);
-        return {
-          success: false,
-          error: error.message,
-        };
-      }
-    },
-);
 
 // Function to find missing images and provide upload URLs (admin only)
 exports.findMissingImages = onCall(
