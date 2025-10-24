@@ -11,6 +11,7 @@ class SpotLocationSection extends StatefulWidget {
   final void Function() onRefreshLocation;
   final void Function() onPickOnMap;
   final void Function(bool) onToggleSatellite;
+  final void Function(GoogleMapController)? onMapCreated;
 
   const SpotLocationSection({
     super.key,
@@ -22,6 +23,7 @@ class SpotLocationSection extends StatefulWidget {
     required this.onRefreshLocation,
     required this.onPickOnMap,
     required this.onToggleSatellite,
+    this.onMapCreated,
   });
 
   @override
@@ -259,7 +261,7 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
                     zoom: 16,
                   ),
                   mapType: widget.isSatelliteView ? MapType.satellite : MapType.normal,
-                  onMapCreated: (controller) {},
+                  onMapCreated: widget.onMapCreated,
                   markers: {
                     Marker(
                       markerId: const MarkerId('selected_location'),

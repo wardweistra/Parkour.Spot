@@ -17,6 +17,7 @@ import '../../widgets/spot_form/location_section.dart';
 import '../../widgets/spot_form/image_section.dart';
 import '../../widgets/spot_form/attributes_section.dart';
 import '../../screens/spots/location_picker_screen.dart';
+import '../../utils/map_recentering_mixin.dart';
 
 class EditSpotScreen extends StatefulWidget {
   final Spot spot;
@@ -30,7 +31,7 @@ class EditSpotScreen extends StatefulWidget {
   State<EditSpotScreen> createState() => _EditSpotScreenState();
 }
 
-class _EditSpotScreenState extends State<EditSpotScreen> {
+class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixin {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -62,6 +63,15 @@ class _EditSpotScreenState extends State<EditSpotScreen> {
   void initState() {
     super.initState();
     _initializeForm();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Center map on location after the map controller is created
+    if (_currentLocation != null) {
+      centerMapAfterBuild(_currentLocation!);
+    }
   }
 
   void _initializeForm() {
@@ -106,6 +116,8 @@ class _EditSpotScreenState extends State<EditSpotScreen> {
         setState(() {
           _currentLocation = LatLng(position.latitude, position.longitude);
         });
+        // Center the map on the new current location with a small delay to ensure controller is ready
+        centerMapOnLocationWithDelay(LatLng(position.latitude, position.longitude));
         await _geocodeLocation(position.latitude, position.longitude);
       }
     } catch (e) {
@@ -165,6 +177,8 @@ class _EditSpotScreenState extends State<EditSpotScreen> {
       setState(() {
         _currentLocation = result;
       });
+      // Center the map on the new picked location with a small delay to ensure controller is ready
+      centerMapOnLocationWithDelay(result);
       await _geocodeLocation(result.latitude, result.longitude);
     }
   }
@@ -258,6 +272,7 @@ class _EditSpotScreenState extends State<EditSpotScreen> {
       _existingImageUrls.removeAt(index);
     });
   }
+
 
   void _toggleSatelliteView(bool value) {
     setState(() {
@@ -430,6 +445,7 @@ class _EditSpotScreenState extends State<EditSpotScreen> {
                     onRefreshLocation: _getCurrentLocation,
                     onPickOnMap: _pickOnMap,
                     onToggleSatellite: _toggleSatelliteView,
+                    onMapCreated: onMapCreated,
                   ),
                   const SizedBox(height: 16),
 

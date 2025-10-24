@@ -17,6 +17,7 @@ import '../../widgets/spot_form/attributes_section.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'location_picker_screen.dart';
 import 'package:go_router/go_router.dart';
+import '../../utils/map_recentering_mixin.dart';
 
 class AddSpotScreen extends StatefulWidget {
   const AddSpotScreen({super.key});
@@ -25,7 +26,7 @@ class AddSpotScreen extends StatefulWidget {
   State<AddSpotScreen> createState() => _AddSpotScreenState();
 }
 
-class _AddSpotScreenState extends State<AddSpotScreen> {
+class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -39,7 +40,6 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
   bool _isLoading = false;
   bool _isGettingLocation = false;
   bool _isGeocoding = false;
-  GoogleMapController? _mapController;
   bool _isSatelliteView = false;
   
   // Spot attributes
@@ -58,9 +58,10 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     // Center map on location after the map controller is created
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _centerMapOnLocation();
-    });
+    if (_currentPosition != null || _pickedLocation != null) {
+      final target = _pickedLocation ?? LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
+      centerMapAfterBuild(target);
+    }
   }
 
   @override
@@ -118,8 +119,8 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
           // Clear picked location so map shows current location instead
           _pickedLocation = null;
         });
-        // Center the map on the new current location
-        _centerMapOnLocation();
+        // Center the map on the new current location with a small delay to ensure controller is ready
+        centerMapOnLocationWithDelay(LatLng(position.latitude, position.longitude));
         // Geocode the coordinates to get address
         _geocodeCurrentLocation();
       }
@@ -206,12 +207,6 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
     });
   }
 
-  void _centerMapOnLocation() {
-    if (_mapController != null && (_currentPosition != null || _pickedLocation != null)) {
-      final target = _pickedLocation ?? LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
-      _mapController!.animateCamera(CameraUpdate.newLatLng(target));
-    }
-  }
 
   Future<void> _pickLocationOnMap() async {
     final result = await Navigator.push<LatLng>(
@@ -232,8 +227,8 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
         // Clear current position so map shows picked location instead
         _currentPosition = null;
       });
-      // Center the map on the new picked location
-      _centerMapOnLocation();
+      // Center the map on the new picked location with a small delay to ensure controller is ready
+      centerMapOnLocationWithDelay(result);
       // Geocode the new coordinates to get address
       _geocodeLocation(result.latitude, result.longitude);
     }
@@ -409,6 +404,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
                                       _isSatelliteView = value;
                                     });
                                   },
+                onMapCreated: onMapCreated,
               ),
               
               const SizedBox(height: 16),
