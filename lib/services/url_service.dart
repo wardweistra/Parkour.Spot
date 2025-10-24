@@ -182,14 +182,6 @@ class UrlService {
   
   /// Get device information for debugging and user experience
   static Map<String, dynamic> get deviceInfo {
-    if (!kIsWeb) {
-      return {
-        'platform': 'native_mobile',
-        'canOpenNativeMaps': true,
-        'preferredMapsApp': 'device_default',
-      };
-    }
-    
     return {
       'platform': 'web',
       'isMobileDevice': MobileDetectionService.isMobileDevice,

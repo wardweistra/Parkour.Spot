@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
@@ -46,7 +45,6 @@ class _EditSpotScreenState extends State<EditSpotScreen> {
   bool _isSatelliteView = false;
 
   // Image state
-  final List<File?> _selectedImages = [];
   final List<Uint8List?> _selectedImageBytes = [];
   final List<String> _existingImageUrls = [];
   final List<String> _imagesToDelete = [];
@@ -191,7 +189,12 @@ class _EditSpotScreenState extends State<EditSpotScreen> {
         } else {
           setState(() {
             for (final image in images) {
-              _selectedImages.add(File(image.path));
+              // For web, read the bytes directly
+              image.readAsBytes().then((bytes) {
+                setState(() {
+                  _selectedImageBytes.add(bytes);
+                });
+              });
             }
           });
         }
@@ -221,7 +224,12 @@ class _EditSpotScreenState extends State<EditSpotScreen> {
           }
         } else {
           setState(() {
-            _selectedImages.add(File(image.path));
+            // For web, read the bytes directly
+            image.readAsBytes().then((bytes) {
+              setState(() {
+                _selectedImageBytes.add(bytes);
+              });
+            });
           });
         }
       }
@@ -237,13 +245,8 @@ class _EditSpotScreenState extends State<EditSpotScreen> {
 
   void _removeSelectedImageAt(int index) {
     setState(() {
-      if (index < _selectedImages.length) {
-        _selectedImages[index] = null;
-      } else {
-        final bytesIndex = index - _selectedImages.length;
-        if (bytesIndex < _selectedImageBytes.length) {
-          _selectedImageBytes[bytesIndex] = null;
-        }
+      if (index < _selectedImageBytes.length) {
+        _selectedImageBytes[index] = null;
       }
     });
   }
@@ -306,7 +309,7 @@ class _EditSpotScreenState extends State<EditSpotScreen> {
       return;
     }
 
-    if (_existingImageUrls.isEmpty && _selectedImages.every((img) => img == null) && _selectedImageBytes.every((bytes) => bytes == null)) {
+    if (_existingImageUrls.isEmpty && _selectedImageBytes.every((bytes) => bytes == null)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please add at least one image')),
       );
@@ -337,12 +340,11 @@ class _EditSpotScreenState extends State<EditSpotScreen> {
       );
 
       // Filter out null values for images
-      final validNewImages = _selectedImages.where((img) => img != null).cast<File>().toList();
       final validNewImageBytes = _selectedImageBytes.where((bytes) => bytes != null).cast<Uint8List>().toList();
 
       final success = await spotService.updateSpotComplete(
         updatedSpot,
-        newImageFiles: validNewImages.isNotEmpty ? validNewImages : null,
+        newImageFiles: null,
         newImageBytesList: validNewImageBytes.isNotEmpty ? validNewImageBytes : null,
         imagesToDelete: _imagesToDelete.isNotEmpty ? _imagesToDelete : null,
       );
@@ -433,7 +435,6 @@ class _EditSpotScreenState extends State<EditSpotScreen> {
 
                   // Image Section
                   SpotImageSection(
-                    selectedImages: _selectedImages,
                     selectedImageBytes: _selectedImageBytes,
                     existingImageUrls: _existingImageUrls,
                     onPickFromGallery: _pickFromGallery,

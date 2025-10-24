@@ -11,7 +11,7 @@ A cross-platform Flutter application for discovering, reporting, and rating park
 - **🗺️ Interactive Maps** - View spots on maps with location data
 - **📱 Add New Spots** - Report new parkour locations with photos
 - **⭐ Rating System** - Rate and review spots
-- **📱 Cross-Platform** - Works on Web, Android, and iOS
+- **📱 Cross-Platform** - Works on Web, Android, and iOS via Progressive Web App
 - **☁️ Cloud Backend** - Firebase-powered with real-time data sync
 
 ## 🚀 Quick Start
@@ -45,17 +45,11 @@ Required environment variables:
 # Firebase Configuration
 FIREBASE_API_KEY=your_api_key_here
 FIREBASE_APP_ID_WEB=your_web_app_id_here
-FIREBASE_APP_ID_ANDROID=your_android_app_id_here
-FIREBASE_APP_ID_IOS=your_ios_app_id_here
 FIREBASE_MESSAGING_SENDER_ID=your_sender_id_here
 FIREBASE_PROJECT_ID=your_project_id_here
 FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
 FIREBASE_STORAGE_BUCKET=your_project_id.firebasestorage.app
 FIREBASE_MEASUREMENT_ID=your_measurement_id_here
-
-# Google Maps API Keys
-GOOGLE_MAPS_API_KEY_ANDROID=your_android_maps_key_here
-GOOGLE_MAPS_API_KEY_IOS=your_ios_maps_key_here
 ```
 
 ### Backend Google Maps API key
@@ -77,12 +71,6 @@ The Flutter client calls callable functions `placesAutocomplete`, `placeDetails`
 ```bash
 # Web
 flutter run -d web
-
-# Android
-flutter run -d android
-
-# iOS (macOS only)
-flutter run -d ios
 ```
 
 ## 🛠️ Development
@@ -92,8 +80,6 @@ flutter run -d ios
 - **Dart SDK**: 3.9.0 or higher
 - **Firebase CLI**: Latest version
 - **Node.js**: 18.0.0 or higher
-- **Android Studio**: For Android development
-- **Xcode**: For iOS development (macOS only)
 
 ### **Development Scripts**
 ```bash
@@ -280,9 +266,9 @@ flutter upgrade
 
 | Platform | Status | Notes |
 |----------|--------|-------|
-| **Web** | ✅ Ready | Firebase Hosting |
-| **Android** | ✅ Ready | APK ready to build |
-| **iOS** | 🔄 Pending | Requires Xcode |
+| **Web** | ✅ Ready | Firebase Hosting + PWA |
+| **Mobile Web** | ✅ Ready | Works on iOS Safari, Android Chrome |
+| **PWA** | ✅ Ready | Installable on mobile devices |
 
 ## 🤝 Contributing
 

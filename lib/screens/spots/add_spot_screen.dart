@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
-import 'dart:io';
 import 'dart:typed_data';
 import 'dart:math';
 import '../../models/spot.dart';
@@ -31,7 +30,6 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   
-  final List<File?> _selectedImages = [];
   final List<Uint8List?> _selectedImageBytes = [];
   Position? _currentPosition;
   LatLng? _pickedLocation;
@@ -154,16 +152,9 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
 
       if (pickedFiles.isNotEmpty) {
         for (final pickedFile in pickedFiles) {
-          if (kIsWeb) {
-            // For web, read the bytes directly
-            final bytes = await pickedFile.readAsBytes();
-            _selectedImageBytes.add(bytes);
-            _selectedImages.add(null); // No File object for web
-          } else {
-            // For mobile, use File
-            _selectedImages.add(File(pickedFile.path));
-            _selectedImageBytes.add(null);
-          }
+          // For web, read the bytes directly
+          final bytes = await pickedFile.readAsBytes();
+          _selectedImageBytes.add(bytes);
         }
         setState(() {}); // Force rebuild to show new images
       }
@@ -190,16 +181,9 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
       );
 
       if (pickedFile != null) {
-        if (kIsWeb) {
-          // For web, read the bytes directly
-          final bytes = await pickedFile.readAsBytes();
-          _selectedImageBytes.add(bytes);
-          _selectedImages.add(null); // No File object for web
-        } else {
-          // For mobile, use File
-          _selectedImages.add(File(pickedFile.path));
-          _selectedImageBytes.add(null);
-        }
+        // For web, read the bytes directly
+        final bytes = await pickedFile.readAsBytes();
+        _selectedImageBytes.add(bytes);
         setState(() {}); // Force rebuild to show new images
       }
     } catch (e) {
@@ -216,9 +200,6 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
 
   void _removeImageAt(int index) {
     setState(() {
-      if (index < _selectedImages.length) {
-        _selectedImages.removeAt(index);
-      }
       if (index < _selectedImageBytes.length) {
         _selectedImageBytes.removeAt(index);
       }
@@ -294,7 +275,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
     if (!_formKey.currentState!.validate()) return;
     
     // Check if at least one photo is uploaded
-    if (_selectedImages.isEmpty && _selectedImageBytes.isEmpty) {
+    if (_selectedImageBytes.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please upload at least one photo of the spot'),
@@ -349,7 +330,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
 
       final spotId = await spotService.createSpot(
         spot,
-        imageFiles: _selectedImages.where((file) => file != null).cast<File>().toList(),
+        imageFiles: null,
         imageBytesList: _selectedImageBytes.where((bytes) => bytes != null).cast<Uint8List>().toList(),
       );
 
@@ -358,7 +339,6 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
         _nameController.clear();
         _descriptionController.clear();
         setState(() {
-          _selectedImages.clear();
           _selectedImageBytes.clear();
           _selectedAccess = null;
           _selectedFeatures.clear();
@@ -429,7 +409,6 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
               
               // Image Section
               SpotImageSection(
-                selectedImages: _selectedImages,
                 selectedImageBytes: _selectedImageBytes,
                 existingImageUrls: const <String>[],
                 onPickFromGallery: _pickImagesFromGallery,
@@ -518,7 +497,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
               CustomButton(
                 onPressed: _isLoading || 
                            (_currentPosition == null && _pickedLocation == null) || 
-                           (_selectedImages.isEmpty && _selectedImageBytes.isEmpty) 
+                           _selectedImageBytes.isEmpty 
                            ? null : _submitForm,
                 text: _isLoading ? 'Creating Spot...' : 'Create Spot',
                 isLoading: _isLoading,

@@ -1,9 +1,7 @@
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
 class SpotImageSection extends StatelessWidget {
-  final List<File?> selectedImages;
   final List<Uint8List?> selectedImageBytes;
   final List<String> existingImageUrls;
   final void Function() onPickFromGallery;
@@ -13,7 +11,6 @@ class SpotImageSection extends StatelessWidget {
 
   const SpotImageSection({
     super.key,
-    required this.selectedImages,
     required this.selectedImageBytes,
     this.existingImageUrls = const <String>[],
     required this.onPickFromGallery,
@@ -93,13 +90,11 @@ class SpotImageSection extends StatelessWidget {
             ],
 
             // Newly selected images (before upload)
-            if (selectedImages.isNotEmpty || selectedImageBytes.isNotEmpty) ...[
+            if (selectedImageBytes.isNotEmpty) ...[
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  for (int i = 0; i < selectedImages.length; i++)
-                    _buildSelectedImage(context, i),
                   for (int i = 0; i < selectedImageBytes.length; i++)
                     _buildSelectedImageBytes(context, i),
                 ],
@@ -129,40 +124,6 @@ class SpotImageSection extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildSelectedImage(BuildContext context, int index) {
-    final file = selectedImages[index];
-    if (file == null) return const SizedBox.shrink();
-    return Stack(
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Image.file(
-            file,
-            width: 120,
-            height: 120,
-            fit: BoxFit.cover,
-          ),
-        ),
-        Positioned(
-          top: 6,
-          right: 6,
-          child: Material(
-            color: Colors.black.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(20),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(20),
-              onTap: () => onRemoveSelectedAt(index),
-              child: const Padding(
-                padding: EdgeInsets.all(4.0),
-                child: Icon(Icons.close, size: 18, color: Colors.white),
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 
