@@ -18,6 +18,7 @@ import '../../services/mobile_detection_service.dart';
 import '../../models/spot.dart';
 import '../../widgets/spot_card.dart';
 import '../../widgets/source_details_dialog.dart';
+import '../../config/app_config.dart';
 
 // Helper widget to ensure icons render properly on mobile web
 class ReliableIcon extends StatelessWidget {
@@ -863,7 +864,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
           // Determine initial camera position - use persisted state, user location, or default
           Consumer<SearchStateService>(
             builder: (context, searchState, child) {
-              LatLng initialTarget = const LatLng(37.7749, -122.4194); // Default to San Francisco
+              LatLng initialTarget = const LatLng(AppConfig.defaultMapCenterLat, AppConfig.defaultMapCenterLng); // Default center location
               double initialZoom = 14;
               
               // Use persisted camera position if available

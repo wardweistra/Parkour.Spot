@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import '../../config/app_config.dart';
 
 class LocationPickerScreen extends StatefulWidget {
   final LatLng? initialLocation;
@@ -24,7 +25,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   @override
   Widget build(BuildContext context) {
     final CameraPosition initialCameraPosition = CameraPosition(
-      target: widget.initialLocation ?? const LatLng(37.7749, -122.4194),
+      target: widget.initialLocation ?? const LatLng(AppConfig.defaultMapCenterLat, AppConfig.defaultMapCenterLng),
       zoom: widget.initialLocation != null ? 16 : 10,
     );
 

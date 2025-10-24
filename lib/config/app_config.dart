@@ -16,6 +16,10 @@ class AppConfig {
   static const String _defaultAppId = '';
   static const String _defaultProjectId = '';
   
+  // Default Map Center Coordinates
+  static const double defaultMapCenterLat = 48.629828;
+  static const double defaultMapCenterLng = 2.441781999999999;
+  
   // Firebase Configuration
   static String get firebaseApiKey => WebEnvVars.firebaseApiKey;
   
