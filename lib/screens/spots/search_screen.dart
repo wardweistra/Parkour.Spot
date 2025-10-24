@@ -301,6 +301,47 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     }
   }
 
+  /// Search for location using current search text and navigate to the first result
+  Future<void> _searchAndNavigateToLocation() async {
+    final query = _searchQuery.trim();
+    if (query.isEmpty) return;
+
+    try {
+      final geocoding = Provider.of<GeocodingService>(context, listen: false);
+      
+      // Ensure session token
+      _placesSessionToken ??= const Uuid().v4();
+
+      // Compute map center bias if possible
+      LatLng? center;
+      if (_mapController != null) {
+        try {
+          final bounds = await _mapController!.getVisibleRegion();
+          center = LatLng(
+            (bounds.northeast.latitude + bounds.southwest.latitude) / 2,
+            (bounds.northeast.longitude + bounds.southwest.longitude) / 2,
+          );
+        } catch (_) {}
+      }
+
+      // Get autocomplete suggestions
+      final results = await geocoding.placesAutocomplete(
+        input: query,
+        sessionToken: _placesSessionToken,
+        biasLat: center?.latitude,
+        biasLng: center?.longitude,
+        radiusMeters: 50000,
+      );
+
+      // If we have results, select the first one
+      if (results.isNotEmpty) {
+        await _selectPlaceSuggestion(results.first);
+      }
+    } catch (e) {
+      debugPrint('Error searching and navigating to location: $e');
+    }
+  }
+
   Future<void> _getCurrentLocation() async {
     setState(() {
       _isGettingLocation = true;
@@ -1090,6 +1131,10 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                               setState(() {
                                 _searchQuery = value;
                               });
+                            },
+                            onSubmitted: (value) {
+                              // When Enter is pressed, search for the location and navigate to it
+                              _searchAndNavigateToLocation();
                             },
                           );
                         },
