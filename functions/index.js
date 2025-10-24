@@ -32,7 +32,243 @@ const db = admin.firestore();
 const bucket = admin.storage().bucket();
 
 // Import shared HTML template
-const { generateHtmlPage, htmlEscape } = require('./html-template');
+const {generateHtmlPage} = require("./html-template");
+
+/**
+ * Extracts spot ID from URL pathname
+ * @param {string} pathname - The URL pathname
+ * @return {string|null} The extracted spot ID or null
+ */
+function extractSpotIdFromPath(pathname) {
+  // Match: /<cc>/<city>/<spotId>
+  let m = pathname.match(/^\/[a-zA-Z]{2}\/[^/]+\/([^/?#]+)$/);
+  if (m && m[1]) return m[1];
+  // Match: /spot/<spotId>
+  m = pathname.match(/^\/spot\/([^/?#]+)$/);
+  if (m && m[1]) return m[1];
+  // Fallback: query param ?id=
+  const urlObj = new URL(`https://dummy${pathname}${pathname.includes("?") ? "" : ""}`);
+  const qpId = (urlObj.searchParams && (urlObj.searchParams.get("id") || urlObj.searchParams.get("spotId"))) || null;
+  return qpId ? String(qpId) : null;
+}
+
+/**
+ * Builds description for social sharing from spot data
+ * @param {Object} s - Spot data object
+ * @return {string} Formatted description
+ */
+function buildDescription(s) {
+  const defaultDescription = "Discover and share parkour spots around the world";
+  if (!s) return defaultDescription;
+  const parts = [];
+  if (s.address && String(s.address).trim().length > 0) {
+    parts.push(`📍 ${String(s.address).trim()}`);
+  }
+  if (typeof s.averageRating === "number" && !isNaN(s.averageRating) && s.ratingCount > 0 && s.averageRating > 0) {
+    parts.push(`⭐ ${s.averageRating.toFixed(1)}`);
+  }
+  if (s.description && String(s.description).trim().length > 0) {
+    const d = String(s.description).trim().replace(/\s+/g, " ");
+    // Keep description concise
+    const clipped = d.length > 220 ? d.slice(0, 217) + "…" : d;
+    parts.push(`💬 ${clipped}`);
+  }
+  return parts.length ? parts.join("\n") : defaultDescription;
+}
+
+/**
+ * Base query function for building Firestore queries
+ * @param {number} lngMin - Minimum longitude
+ * @param {number} lngMax - Maximum longitude
+ * @param {string|null} type - Query type
+ * @param {number} minLat - Minimum latitude
+ * @param {number} maxLat - Maximum latitude
+ * @param {Array} projection - Fields to select
+ * @return {Object} Firestore query
+ */
+function baseQuery(lngMin, lngMax, type = null, minLat, maxLat, projection) {
+  let q = db.collection("spots").where("isPublic", "==", true);
+
+  // For spots without ratings (type 'zero'), order by random field
+  if (type === "zero") {
+    q = q.orderBy("random");
+  } else {
+  // For other types, use the original longitude/latitude ordering
+    q = q.orderBy("longitude");
+  }
+
+  q = q
+      .where("latitude", ">=", minLat)
+      .where("latitude", "<=", maxLat)
+      .where("longitude", ">=", lngMin)
+      .where("longitude", "<=", lngMax);
+
+  // Add latitude ordering for non-zero types
+  if (type !== "zero") {
+    q = q.orderBy("latitude");
+  }
+
+  q = q.select(...projection);
+  return q;
+}
+
+/**
+ * Run segmented query for a specific type
+ * @param {string} type - Query type
+ * @param {number} remaining - Remaining spots to fetch
+ * @param {boolean} crossesDateline - Whether the query crosses the dateline
+ * @param {number} minLat - Minimum latitude
+ * @param {number} maxLat - Maximum latitude
+ * @param {number} minLng - Minimum longitude
+ * @param {number} maxLng - Maximum longitude
+ * @param {number} averageWilson - Average Wilson score
+ * @param {Array} projection - Fields to select
+ * @return {Array} Array of spots
+ */
+async function runSegmentedQuery(type, remaining, crossesDateline, minLat, maxLat, minLng, maxLng, averageWilson, projection) {
+  if (remaining <= 0) return [];
+  const perSide = crossesDateline ?
+  Math.max(1, Math.ceil(remaining / 2)) :
+  remaining;
+
+  const build = (lngMin, lngMax) => {
+    let q = baseQuery(lngMin, lngMax, type, minLat, maxLat, projection);
+    if (type === "above") {
+      q = q.where("wilsonLowerBound", ">", averageWilson);
+    } else if (type === "zero") {
+      q = q.where("wilsonLowerBound", "==", 0);
+    } else if (type === "below") {
+    // strictly below average and greater than zero to avoid duplicates
+      q = q
+          .where("wilsonLowerBound", ">", 0)
+          .where("wilsonLowerBound", "<=", averageWilson);
+    }
+    return q.limit(perSide);
+  };
+
+  if (crossesDateline) {
+    const [q1, q2] = await Promise.all([
+      build(minLng, 180).get(),
+      build(-180, maxLng).get(),
+    ]);
+    return [
+      ...q1.docs.map((d) => ({id: d.id, ...d.data()})),
+      ...q2.docs.map((d) => ({id: d.id, ...d.data()})),
+    ];
+  } else {
+    const snap = await build(minLng, maxLng).get();
+    return snap.docs.map((d) => ({id: d.id, ...d.data()}));
+  }
+}
+
+/**
+ * Get total count of spots in bounds
+ * @param {boolean} crossesDateline - Whether the query crosses the dateline
+ * @param {number} minLat - Minimum latitude
+ * @param {number} maxLat - Maximum latitude
+ * @param {number} minLng - Minimum longitude
+ * @param {number} maxLng - Maximum longitude
+ * @return {number} Total count
+ */
+async function getTotalCount(crossesDateline, minLat, maxLat, minLng, maxLng) {
+  const build = (lngMin, lngMax) =>
+    db
+        .collection("spots")
+        .where("isPublic", "==", true)
+        .orderBy("longitude")
+        .where("latitude", ">=", minLat)
+        .where("latitude", "<=", maxLat)
+        .where("longitude", ">=", lngMin)
+        .where("longitude", "<=", lngMax)
+        .orderBy("latitude");
+  try {
+    if (crossesDateline) {
+      const [c1, c2] = await Promise.all([
+        build(minLng, 180).count().get(),
+        build(-180, maxLng).count().get(),
+      ]);
+      const n1 = c1.data().count || 0;
+      const n2 = c2.data().count || 0;
+      return n1 + n2;
+    } else {
+      const c = await build(minLng, maxLng).count().get();
+      return c.data().count || 0;
+    }
+  } catch (e) {
+  // Fallback: if count aggregates are unavailable, return -1
+    console.warn("Count aggregate failed, returning unknown total", e);
+    return -1;
+  }
+}
+
+/**
+ * Helper: perform geocoding for given lat/lng
+ * @param {number} latitude - The latitude coordinate
+ * @param {number} longitude - The longitude coordinate
+ * @param {string} apiKey - The Google Maps API key
+ * @return {Promise<Object>} Geocoding result
+ */
+async function geocodeLatLng(latitude, longitude, apiKey) {
+  const geocodingUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`;
+  const response = await new Promise((resolve, reject) => {
+    https
+        .get(geocodingUrl, (res) => {
+          let data = "";
+          res.on("data", (chunk) => (data += chunk));
+          res.on("end", () => {
+            try {
+              resolve(JSON.parse(data));
+            } catch (e) {
+              reject(e);
+            }
+          });
+        })
+        .on("error", reject);
+  });
+
+  if (
+    response.status === "OK" &&
+    response.results &&
+    response.results.length > 0
+  ) {
+    const result = response.results[0];
+    const address = result.formatted_address;
+
+    let city = null;
+    let countryCode = null;
+    if (Array.isArray(result.address_components)) {
+      const components = result.address_components;
+      const countryComp = components.find(
+          (c) => c.types && c.types.includes("country"),
+      );
+      if (countryComp && countryComp.short_name) {
+        countryCode = countryComp.short_name;
+      }
+      const cityTypesPriority = [
+        "locality",
+        "postal_town",
+        "administrative_area_level_2",
+        "administrative_area_level_1",
+      ];
+      for (const t of cityTypesPriority) {
+        const comp = components.find(
+            (c) => c.types && c.types.includes(t),
+        );
+        if (comp && comp.long_name) {
+          city = comp.long_name;
+          break;
+        }
+      }
+    }
+
+    return {success: true, address, city, countryCode};
+  }
+
+  return {
+    success: false,
+    error: response.error_message || "No address found for coordinates",
+  };
+}
 
 // ========== Social sharing: Dynamic per-spot Open Graph/Twitter meta ==========
 /**
@@ -45,22 +281,8 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
     const originalUrl = req.originalUrl || req.url || "/";
     // Use parkour.spot domain for canonical URLs and meta tags, even if called from .run.app
     const host = req.headers.host || "parkour.spot";
-    const canonicalHost = host.includes('parkour.spot') ? host : "parkour.spot";
+    const canonicalHost = host.includes("parkour.spot") ? host : "parkour.spot";
     const fullUrl = `https://${canonicalHost}${originalUrl}`;
-
-
-    function extractSpotIdFromPath(pathname) {
-      // Match: /<cc>/<city>/<spotId>
-      let m = pathname.match(/^\/[a-zA-Z]{2}\/[^/]+\/([^/?#]+)$/);
-      if (m && m[1]) return m[1];
-      // Match: /spot/<spotId>
-      m = pathname.match(/^\/spot\/([^/?#]+)$/);
-      if (m && m[1]) return m[1];
-      // Fallback: query param ?id=
-      const urlObj = new URL(`https://dummy${pathname}${req.url.includes('?') ? '' : ''}`);
-      const qpId = (req.query && (req.query.id || req.query.spotId)) || null;
-      return qpId ? String(qpId) : null;
-    }
 
     const pathname = (() => {
       try {
@@ -90,40 +312,21 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
 
     const siteName = "Parkour.Spot";
     const defaultTitle = `${siteName}`;
-    const defaultDescription = "Discover and share parkour spots around the world";
     const defaultImage = `https://${canonicalHost}/icons/Icon-512.png`;
 
     const title = spot && spot.name ? `${spot.name} - Parkour·Spot` : defaultTitle;
 
-    function buildDescription(s) {
-      if (!s) return defaultDescription;
-      const parts = [];
-      if (s.address && String(s.address).trim().length > 0) {
-        parts.push(`📍 ${String(s.address).trim()}`);
-      }
-      if (typeof s.averageRating === "number" && !isNaN(s.averageRating) && s.ratingCount > 0 && s.averageRating > 0) {
-        parts.push(`⭐ ${s.averageRating.toFixed(1)}`);
-      }
-      if (s.description && String(s.description).trim().length > 0) {
-        const d = String(s.description).trim().replace(/\s+/g, " ");
-        // Keep description concise
-        const clipped = d.length > 220 ? d.slice(0, 217) + "…" : d;
-        parts.push(`💬 ${clipped}`);
-      }
-      return parts.length ? parts.join("\n") : defaultDescription;
-    }
-
     const description = buildDescription(spot);
-    let imageUrl = (spot && Array.isArray(spot.imageUrls) && spot.imageUrls.length > 0)
-      ? spot.imageUrls[0]
-      : defaultImage;
-    
+    let imageUrl = (spot && Array.isArray(spot.imageUrls) && spot.imageUrls.length > 0) ?
+      spot.imageUrls[0] :
+      defaultImage;
+
     // For social media previews, use the resized version if it's a Firebase Storage image
-    if (imageUrl && imageUrl.includes('firebasestorage.googleapis.com') && imageUrl.includes('spots%2F')) {
+    if (imageUrl && imageUrl.includes("firebasestorage.googleapis.com") && imageUrl.includes("spots%2F")) {
       // Use the 1200x630 resized version for social media previews (created by Resize Images extension)
       // Replace the path to use the resized subfolder
-      imageUrl = imageUrl.replace('spots%2F', 'spots%2Fresized%2F');
-      imageUrl = imageUrl.replace(/\.(jpg|jpeg|png|webp)(\?|$)/, '_1200x630.webp$2');
+      imageUrl = imageUrl.replace("spots%2F", "spots%2Fresized%2F");
+      imageUrl = imageUrl.replace(/\.(jpg|jpeg|png|webp)(\?|$)/, "_1200x630.webp$2");
     }
 
     // Basic caching for crawlers and share scrapers
@@ -137,7 +340,7 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
       url: canonicalUrl,
       siteName: siteName,
       isDynamic: true,
-      serviceWorkerVersion: null
+      serviceWorkerVersion: null,
     });
 
     res.status(200).send(html);
@@ -248,124 +451,15 @@ exports.getTopSpotsInBounds = onCall(
           "random",
         ];
 
-        /**
-       * Base query function for building Firestore queries
-       * @param {number} lngMin - Minimum longitude
-       * @param {number} lngMax - Maximum longitude
-       * @param {string|null} type - Query type
-       * @return {Object} Firestore query
-       */
-        function baseQuery(lngMin, lngMax, type = null) {
-          let q = db.collection("spots").where("isPublic", "==", true);
 
-          // For spots without ratings (type 'zero'), order by random field
-          if (type === "zero") {
-            q = q.orderBy("random");
-          } else {
-          // For other types, use the original longitude/latitude ordering
-            q = q.orderBy("longitude");
-          }
-
-          q = q
-              .where("latitude", ">=", minLat)
-              .where("latitude", "<=", maxLat)
-              .where("longitude", ">=", lngMin)
-              .where("longitude", "<=", lngMax);
-
-          // Add latitude ordering for non-zero types
-          if (type !== "zero") {
-            q = q.orderBy("latitude");
-          }
-
-          q = q.select(...projection);
-          return q;
-        }
-
-        /**
-       * Run segmented query for a specific type
-       * @param {string} type - Query type
-       * @param {number} remaining - Remaining spots to fetch
-       * @return {Array} Array of spots
-       */
-        async function runSegmentedQuery(type, remaining) {
-          if (remaining <= 0) return [];
-          const perSide = crossesDateline ?
-          Math.max(1, Math.ceil(remaining / 2)) :
-          remaining;
-
-          const build = (lngMin, lngMax) => {
-            let q = baseQuery(lngMin, lngMax, type);
-            if (type === "above") {
-              q = q.where("wilsonLowerBound", ">", averageWilson);
-            } else if (type === "zero") {
-              q = q.where("wilsonLowerBound", "==", 0);
-            } else if (type === "below") {
-            // strictly below average and greater than zero to avoid duplicates
-              q = q
-                  .where("wilsonLowerBound", ">", 0)
-                  .where("wilsonLowerBound", "<=", averageWilson);
-            }
-            return q.limit(perSide);
-          };
-
-          if (crossesDateline) {
-            const [q1, q2] = await Promise.all([
-              build(minLng, 180).get(),
-              build(-180, maxLng).get(),
-            ]);
-            return [
-              ...q1.docs.map((d) => ({id: d.id, ...d.data()})),
-              ...q2.docs.map((d) => ({id: d.id, ...d.data()})),
-            ];
-          } else {
-            const snap = await build(minLng, maxLng).get();
-            return snap.docs.map((d) => ({id: d.id, ...d.data()}));
-          }
-        }
-
-        /**
-       * Get total count of spots in bounds
-       * @return {number} Total count
-       */
-        async function getTotalCount() {
-          const build = (lngMin, lngMax) =>
-            db
-                .collection("spots")
-                .where("isPublic", "==", true)
-                .orderBy("longitude")
-                .where("latitude", ">=", minLat)
-                .where("latitude", "<=", maxLat)
-                .where("longitude", ">=", lngMin)
-                .where("longitude", "<=", lngMax)
-                .orderBy("latitude");
-          try {
-            if (crossesDateline) {
-              const [c1, c2] = await Promise.all([
-                build(minLng, 180).count().get(),
-                build(-180, maxLng).count().get(),
-              ]);
-              const n1 = c1.data().count || 0;
-              const n2 = c2.data().count || 0;
-              return n1 + n2;
-            } else {
-              const c = await build(minLng, maxLng).count().get();
-              return c.data().count || 0;
-            }
-          } catch (e) {
-          // Fallback: if count aggregates are unavailable, return -1
-            console.warn("Count aggregate failed, returning unknown total", e);
-            return -1;
-          }
-        }
-
-        const totalCount = await getTotalCount();
+        const totalCount = await getTotalCount(crossesDateline, minLat, maxLat, minLng, maxLng);
 
         const maxItems = Math.max(0, Math.min(200, Number(limit) || 100));
         const collected = [];
         const seen = new Set();
 
         // 1) Above average
-        const above = await runSegmentedQuery("above", maxItems);
+        const above = await runSegmentedQuery("above", maxItems, crossesDateline, minLat, maxLat, minLng, maxLng, averageWilson, projection);
         for (const s of above) {
           if (!seen.has(s.id) && collected.length < maxItems) {
             seen.add(s.id);
@@ -376,7 +470,7 @@ exports.getTopSpotsInBounds = onCall(
 
         // 2) Unrated (wilsonLowerBound == 0)
         if (remaining > 0) {
-          const zeros = await runSegmentedQuery("zero", remaining);
+          const zeros = await runSegmentedQuery("zero", remaining, crossesDateline, minLat, maxLat, minLng, maxLng, averageWilson, projection);
           for (const s of zeros) {
             if (!seen.has(s.id) && collected.length < maxItems) {
               seen.add(s.id);
@@ -388,7 +482,7 @@ exports.getTopSpotsInBounds = onCall(
 
         // 3) Below average (and > 0)
         if (remaining > 0) {
-          const below = await runSegmentedQuery("below", remaining);
+          const below = await runSegmentedQuery("below", remaining, crossesDateline, minLat, maxLat, minLng, maxLng, averageWilson, projection);
           for (const s of below) {
             if (!seen.has(s.id) && collected.length < maxItems) {
               seen.add(s.id);
@@ -959,9 +1053,9 @@ function parseGeoJsonFeatures(geojsonText) {
       const name = String(props.name || props.title || props.label ||
         "Unnamed Spot");
       const description = String(props.description || props.desc ||
-        props.popupContent || "")
-        // uMap often stores HTML in descriptions; keep KML cleaning consistent later
-        .trim();
+          props.popupContent || "")
+          // uMap often stores HTML in descriptions; keep KML cleaning consistent later
+          .trim();
 
       // uMap folder/layer name often in properties._umap_options.name or
       // properties._umap_options.label, but each feature may also carry a
@@ -1244,32 +1338,32 @@ async function optimizeImage(imageBuffer) {
   try {
     // Get image metadata
     const metadata = await sharp(imageBuffer).metadata();
-    
+
     // Set maximum dimensions to reduce file size while maintaining quality
     const maxWidth = 1920;
     const maxHeight = 1920;
-    
+
     let sharpInstance = sharp(imageBuffer);
-    
+
     // Resize if image is too large
     if (metadata.width > maxWidth || metadata.height > maxHeight) {
       sharpInstance = sharpInstance.resize(maxWidth, maxHeight, {
-        fit: 'inside',
-        withoutEnlargement: true
+        fit: "inside",
+        withoutEnlargement: true,
       });
     }
-    
+
     // Convert to JPEG with optimization
     const optimizedBuffer = await sharpInstance
-      .jpeg({
-        quality: 85, // Good balance between quality and file size
-        progressive: true, // Progressive JPEG for better loading
-        mozjpeg: true // Use mozjpeg encoder for better compression
-      })
-      .toBuffer();
-    
+        .jpeg({
+          quality: 85, // Good balance between quality and file size
+          progressive: true, // Progressive JPEG for better loading
+          mozjpeg: true, // Use mozjpeg encoder for better compression
+        })
+        .toBuffer();
+
     console.log(`Image optimized: ${imageBuffer.length} bytes -> ${optimizedBuffer.length} bytes (${((1 - optimizedBuffer.length / imageBuffer.length) * 100).toFixed(1)}% reduction)`);
-    
+
     return optimizedBuffer;
   } catch (error) {
     console.error("Error optimizing image:", error);
@@ -1370,7 +1464,7 @@ async function downloadAndUploadImage(
 
     // Optimize the image before uploading
     const optimizedImageBuffer = await optimizeImage(imageBuffer);
-    
+
     // Clear original buffer to free memory
     imageBuffer = null;
 
@@ -1450,10 +1544,10 @@ async function processPlacemarkImages(placemark, existingSpotData = null) {
   for (let i = 0; i < imageUrls.length; i += BATCH_SIZE) {
     const batch = imageUrls.slice(i, i + BATCH_SIZE);
     console.log(`Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(imageUrls.length / BATCH_SIZE)} (${batch.length} images)`);
-    
+
     const batchPromises = batch.map(async (url, batchIndex) => {
       const globalIndex = i + batchIndex;
-      
+
       // Check if we have a stored hash for this specific image URL
       let storedHash = null;
       if (urlToHashMap.has(url)) {
@@ -1466,27 +1560,27 @@ async function processPlacemarkImages(placemark, existingSpotData = null) {
           globalIndex,
           storedHash,
       );
-      
+
       // Force garbage collection hint after each image
       if (global.gc) {
         global.gc();
       }
-      
+
       return result;
     });
 
     // Wait for all images in this batch to complete
     const batchResults = await Promise.all(batchPromises);
-    
+
     // Add successful results to our arrays
-    batchResults.forEach(result => {
+    batchResults.forEach((result) => {
       if (result) {
         uploadedImageUrls.push(result.url);
         imageHashes.push(result.hash);
       }
     });
-    
-    console.log(`Completed batch ${Math.floor(i / BATCH_SIZE) + 1}, processed ${batchResults.filter(r => r).length}/${batch.length} images successfully`);
+
+    console.log(`Completed batch ${Math.floor(i / BATCH_SIZE) + 1}, processed ${batchResults.filter((r) => r).length}/${batch.length} images successfully`);
   }
 
   console.log(
@@ -1570,18 +1664,18 @@ function extractAddressFromPlacemark(placemark) {
   if (placemark.address && placemark.address[0]) {
     return placemark.address[0].trim();
   }
-  
+
   // Check ExtendedData for address information
   if (placemark.ExtendedData && placemark.ExtendedData[0]) {
     const extendedData = placemark.ExtendedData[0];
-    
+
     // Check for Data elements with address-related names
     if (extendedData.Data) {
       for (const data of extendedData.Data) {
         if (data.$ && data.$.name) {
           const name = data.$.name.toLowerCase();
-          if (name.includes('adresse') || name.includes('address') || name.includes('location') || 
-              name.includes('place') || name.includes('street')) {
+          if (name.includes("adresse") || name.includes("address") || name.includes("location") ||
+              name.includes("place") || name.includes("street")) {
             if (data.value && data.value[0]) {
               return data.value[0].trim();
             }
@@ -1590,7 +1684,7 @@ function extractAddressFromPlacemark(placemark) {
       }
     }
   }
-  
+
   // Check description for address information
   if (placemark.description && placemark.description[0]) {
     const description = placemark.description[0];
@@ -1602,7 +1696,7 @@ function extractAddressFromPlacemark(placemark) {
       /place[:\s]+([^\n\r<]+)/i,
       /street[:\s]+([^\n\r<]+)/i,
     ];
-    
+
     for (const pattern of addressPatterns) {
       const match = description.match(pattern);
       if (match && match[1]) {
@@ -1610,7 +1704,7 @@ function extractAddressFromPlacemark(placemark) {
       }
     }
   }
-  
+
   // Check name for address information (sometimes the name itself is an address)
   if (placemark.name && placemark.name[0]) {
     const name = placemark.name[0];
@@ -1619,7 +1713,7 @@ function extractAddressFromPlacemark(placemark) {
       return name.trim();
     }
   }
-  
+
   return null;
 }
 
@@ -1779,7 +1873,7 @@ async function reverseGeocodeAddress(address, apiKey) {
   try {
     const encodedAddress = encodeURIComponent(address);
     const geocodingUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&key=${apiKey}`;
-    
+
     const response = await new Promise((resolve, reject) => {
       https
           .get(geocodingUrl, (res) => {
@@ -1923,13 +2017,13 @@ async function processSyncSource(source, sourceId, apiKey) {
     // GeoJSON (uMap) support
     const geojsonText = fileBuffer.toString("utf8");
     const json = JSON.parse(geojsonText);
-    
+
     console.log("Parsed GeoJSON structure:", {
       type: json.type,
       hasProperties: !!json.properties,
       hasDatalayers: !!(json.properties && json.properties.datalayers),
       datalayersCount: json.properties && json.properties.datalayers ? json.properties.datalayers.length : 0,
-      propertiesName: json.properties ? json.properties.name : null
+      propertiesName: json.properties ? json.properties.name : null,
     });
 
     if (isUMapMetadata(json)) {
@@ -1950,7 +2044,7 @@ async function processSyncSource(source, sourceId, apiKey) {
           const datalayerName = json.properties.datalayers[i].name || `Datalayer ${i + 1}`;
 
           const datalayerPlacemarks = await processDatalayer(
-            datalayerUrl, datalayerName);
+              datalayerUrl, datalayerName);
           allPlacemarks.push(...datalayerPlacemarks);
         }
         placemarks = allPlacemarks;
@@ -2085,19 +2179,19 @@ async function processSyncSource(source, sourceId, apiKey) {
     // If placemark has no coordinates but has an address, geocode the address
     if (!coordinates && placemarkAddress) {
       console.log(`Reverse geocoding address for spot: ${name} - ${placemarkAddress}`);
-      
+
       // Add small delay to respect API rate limits
       if (i > 0) {
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
 
       const reverseGeocodeResult = await reverseGeocodeAddress(placemarkAddress, apiKey);
-      
+
       if (reverseGeocodeResult.success) {
         finalCoordinates = {
           latitude: reverseGeocodeResult.latitude,
           longitude: reverseGeocodeResult.longitude,
-          altitude: 0
+          altitude: 0,
         };
         address = placemarkAddress; // Use the original address
         geocoded++;
@@ -2150,7 +2244,7 @@ async function processSyncSource(source, sourceId, apiKey) {
       } else {
         // We have address from reverse geocoding, now get city and country
         console.log(`Getting city/country for spot: ${name} at ${finalCoordinates.latitude}, ${finalCoordinates.longitude}`);
-        
+
         const geocodeResult = await geocodeCoordinates(
             finalCoordinates.latitude,
             finalCoordinates.longitude,
@@ -2244,7 +2338,7 @@ async function processSyncSource(source, sourceId, apiKey) {
       // Update existing spot - preserve existing rating fields
       const existingSpot = existingSpots.docs[0];
       const existingData = existingSpot.data();
-      
+
       // Preserve existing rating fields if they exist
       if (existingData.averageRating !== undefined) {
         spotData.averageRating = existingData.averageRating;
@@ -2255,7 +2349,7 @@ async function processSyncSource(source, sourceId, apiKey) {
       if (existingData.wilsonLowerBound !== undefined) {
         spotData.wilsonLowerBound = existingData.wilsonLowerBound;
       }
-      
+
       await existingSpot.ref.update(cleanUndefinedValues(spotData));
       updated++;
       console.log(
@@ -2818,12 +2912,12 @@ exports.updateSpotSourceNames = onCall(
         await ensureAdmin(request);
         const {sourceId} = request.data;
 
-        console.log(`Starting spot source name update${sourceId ? ` for source: ${sourceId}` : ' for all sources'}`);
+        console.log(`Starting spot source name update${sourceId ? ` for source: ${sourceId}` : " for all sources"}`);
 
         // Get all sync sources to build a mapping
         const sourcesSnapshot = await db.collection("syncSources").get();
         const sourceMap = new Map();
-        
+
         sourcesSnapshot.docs.forEach((doc) => {
           const data = doc.data();
           sourceMap.set(doc.id, data.name);
@@ -2833,7 +2927,7 @@ exports.updateSpotSourceNames = onCall(
 
         // Build query for spots
         let spotsQuery = db.collection("spots");
-        
+
         // If specific sourceId provided, filter by that source
         if (sourceId) {
           spotsQuery = spotsQuery.where("spotSource", "==", sourceId);
@@ -2849,7 +2943,7 @@ exports.updateSpotSourceNames = onCall(
         spotsSnapshot.docs.forEach((doc) => {
           const spotData = doc.data();
           const spotSourceId = spotData.spotSource;
-          
+
           if (!spotSourceId) {
             console.log(`Skipping spot ${doc.id}: no spotSource`);
             skippedCount++;
@@ -3834,73 +3928,6 @@ exports.geocodeMissingSpotAddresses = onCall(
           throw new Error("Google Maps API key not configured");
         }
 
-        /**
-         * Helper: perform geocoding for given lat/lng
-         * @param {number} latitude - The latitude coordinate
-         * @param {number} longitude - The longitude coordinate
-         * @return {Promise<Object>} Geocoding result
-         */
-        async function geocodeLatLng(latitude, longitude) {
-          const geocodingUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`;
-          const response = await new Promise((resolve, reject) => {
-            https
-                .get(geocodingUrl, (res) => {
-                  let data = "";
-                  res.on("data", (chunk) => (data += chunk));
-                  res.on("end", () => {
-                    try {
-                      resolve(JSON.parse(data));
-                    } catch (e) {
-                      reject(e);
-                    }
-                  });
-                })
-                .on("error", reject);
-          });
-
-          if (
-            response.status === "OK" &&
-          response.results &&
-          response.results.length > 0
-          ) {
-            const result = response.results[0];
-            const address = result.formatted_address;
-
-            let city = null;
-            let countryCode = null;
-            if (Array.isArray(result.address_components)) {
-              const components = result.address_components;
-              const countryComp = components.find(
-                  (c) => c.types && c.types.includes("country"),
-              );
-              if (countryComp && countryComp.short_name) {
-                countryCode = countryComp.short_name;
-              }
-              const cityTypesPriority = [
-                "locality",
-                "postal_town",
-                "administrative_area_level_2",
-                "administrative_area_level_1",
-              ];
-              for (const t of cityTypesPriority) {
-                const comp = components.find(
-                    (c) => c.types && c.types.includes(t),
-                );
-                if (comp && comp.long_name) {
-                  city = comp.long_name;
-                  break;
-                }
-              }
-            }
-
-            return {success: true, address, city, countryCode};
-          }
-
-          return {
-            success: false,
-            error: response.error_message || "No address found for coordinates",
-          };
-        }
 
         // Process spots in batches to avoid timeout
         const BATCH_SIZE = 50; // Process 50 spots at a time
@@ -4014,7 +4041,7 @@ exports.geocodeMissingSpotAddresses = onCall(
                 await new Promise((resolve) => setTimeout(resolve, API_DELAY));
               }
 
-              const result = await geocodeLatLng(latitude, longitude);
+              const result = await geocodeLatLng(latitude, longitude, apiKey);
 
               if (result.success) {
                 await doc.ref.update({
