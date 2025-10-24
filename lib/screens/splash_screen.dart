@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:web/web.dart' as web;
@@ -13,10 +14,23 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
+  
+  // Array of inspirational messages
+  static const List<String> _messages = [
+    'For those who start together and finish together',
+    'For those who leave their spot better than they found it',
+    'For those who are strong to be useful',
+  ];
+  
+  late String _selectedMessage;
 
   @override
   void initState() {
     super.initState();
+    
+    // Select a random message
+    final random = Random();
+    _selectedMessage = _messages[random.nextInt(_messages.length)];
     
     _animationController = AnimationController(
       duration: const Duration(seconds: 2),
@@ -166,16 +180,28 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                       ),
                     ),
                     
+                    const SizedBox(height: 20),
+                    
+                    // Header
+                    Text(
+                      'Parkour.Spot',
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    
                     const SizedBox(height: 10),
                     
-                    // Tagline
+                    // Random inspirational message
                     Text(
-                      'Discover & Share Parkour Spots',
+                      _selectedMessage,
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.white.withValues(alpha: 0.9),
                         letterSpacing: 0.5,
                       ),
+                      textAlign: TextAlign.center,
                     ),
                     
                     const SizedBox(height: 50),
