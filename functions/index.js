@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /**
  * Firebase Cloud Functions for ParkourSpot App
  *
@@ -80,6 +81,13 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
       }
     }
 
+    // Generate canonical URL in proper format (country/city/spotId)
+    let canonicalUrl = fullUrl;
+    if (spot && spot.countryCode && spot.city && spotId) {
+      const canonicalPath = `/${spot.countryCode.toLowerCase()}/${spot.city.toLowerCase()}/${spotId}`;
+      canonicalUrl = `https://${canonicalHost}${canonicalPath}`;
+    }
+
     const siteName = "Parkour.Spot";
     const defaultTitle = `${siteName}`;
     const defaultDescription = "Discover and share parkour spots around the world";
@@ -126,7 +134,7 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
       title: title,
       description: description,
       image: imageUrl,
-      url: fullUrl,
+      url: canonicalUrl,
       siteName: siteName,
       isDynamic: true,
       serviceWorkerVersion: null
