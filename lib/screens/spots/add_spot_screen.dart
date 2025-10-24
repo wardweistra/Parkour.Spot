@@ -8,6 +8,7 @@ import '../../models/spot.dart';
 import '../../services/spot_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/geocoding_service.dart';
+import '../../services/url_service.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/spot_form/location_section.dart';
@@ -15,7 +16,6 @@ import '../../widgets/spot_form/image_section.dart';
 import '../../widgets/spot_form/attributes_section.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'location_picker_screen.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:go_router/go_router.dart';
 
 class AddSpotScreen extends StatefulWidget {
@@ -348,7 +348,13 @@ class _AddSpotScreenState extends State<AddSpotScreen> {
         
         // Navigate to the newly created spot detail page
         if (context.mounted) {
-          context.go('/spot/$spotId');
+          // Use locale and city-based URL format
+          final navigationUrl = UrlService.generateNavigationUrl(
+            spotId, 
+            countryCode: _currentCountryCode, 
+            city: _currentCity
+          );
+          context.go(navigationUrl);
         }
       }
     } catch (e) {
