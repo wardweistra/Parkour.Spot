@@ -300,7 +300,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'This will move all unused images to /spots/trash folder.',
+              'This will move all unused images (including resized versions) to /spots/trash folder.',
               style: TextStyle(fontSize: 14),
             ),
             SizedBox(height: 8),
@@ -309,9 +309,9 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
               style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 4),
-            Text('• List all files in /spots folder', style: TextStyle(fontSize: 12)),
+            Text('• List all files in /spots folder (including /spots/resized)', style: TextStyle(fontSize: 12)),
             Text('• List all image files referenced by spots', style: TextStyle(fontSize: 12)),
-            Text('• Move unreferenced images to /spots/trash', style: TextStyle(fontSize: 12)),
+            Text('• Move unreferenced images and resized versions to /spots/trash', style: TextStyle(fontSize: 12)),
             SizedBox(height: 8),
             Text(
               'This is safe - images are moved, not deleted. You can restore them from trash if needed.',

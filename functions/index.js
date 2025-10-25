@@ -3260,6 +3260,7 @@ exports.cleanupUnusedImages = onCall(
         // Get all spots to find which images are currently in use
         const spotsSnapshot = await db.collection("spots").get();
         const usedImageUrls = new Set();
+        const usedImageBaseNames = new Set(); // Track base names for resized image matching
 
         spotsSnapshot.forEach((doc) => {
           const spotData = doc.data();
@@ -3287,6 +3288,10 @@ exports.cleanupUnusedImages = onCall(
 
                 if (filename) {
                   usedImageUrls.add(filename);
+                  // Extract base name for resized image matching
+                  // Remove extension to get base name (e.g., "image_123_hash_0" from "image_123_hash_0.jpg")
+                  const baseName = filename.replace(/\.[^/.]+$/, "");
+                  usedImageBaseNames.add(baseName);
                 }
               } catch (urlError) {
                 console.warn(`Failed to parse URL: ${url}`, urlError);
@@ -3296,6 +3301,8 @@ exports.cleanupUnusedImages = onCall(
                 const filename = lastPart.split("?")[0]; // Remove query parameters
                 if (filename) {
                   usedImageUrls.add(filename);
+                  const baseName = filename.replace(/\.[^/.]+$/, "");
+                  usedImageBaseNames.add(baseName);
                 }
               }
             });
@@ -3308,12 +3315,29 @@ exports.cleanupUnusedImages = onCall(
             Array.from(usedImageUrls).slice(0, 10),
         ); // Log first 10 for debugging
 
-        // List all files in the spots folder
+        // List all files in the spots folder (including resized subfolder)
         const [files] = await bucket.getFiles({
           prefix: "spots/",
         });
 
         console.log(`Found ${files.length} total files in storage`);
+
+        // Helper function to check if a file is a resized version of a used image
+        const isResizedVersionOfUsedImage = (fileName) => {
+          // Check if file is in resized folder
+          if (!fileName.startsWith("spots/resized/")) {
+            return false;
+          }
+          
+          // Extract the resized filename (remove "spots/resized/" prefix)
+          const resizedFileName = fileName.replace("spots/resized/", "");
+          
+          // Remove extension and size suffix to get base name
+          // Firebase Storage Resize extension creates files like: "baseName_1200x630.webp"
+          const baseName = resizedFileName.replace(/_\d+x\d+\.webp$/, "");
+          
+          return usedImageBaseNames.has(baseName);
+        };
 
         // Ensure trash folder exists by creating a placeholder if needed
         const trashFolderExists = await bucket
@@ -3337,10 +3361,17 @@ exports.cleanupUnusedImages = onCall(
           const fileName = file.name;
           const fileNameOnly = fileName.split("/").pop();
 
-          // Skip if file is currently in use
+          // Skip if file is currently in use (original image)
           if (usedImageUrls.has(fileNameOnly)) {
             skippedCount++;
-            console.log(`Skipping used file: ${fileNameOnly}`);
+            console.log(`Skipping used original file: ${fileNameOnly}`);
+            continue;
+          }
+
+          // Skip if file is a resized version of a used image
+          if (isResizedVersionOfUsedImage(fileName)) {
+            skippedCount++;
+            console.log(`Skipping resized version of used image: ${fileNameOnly}`);
             continue;
           }
 
@@ -3352,8 +3383,16 @@ exports.cleanupUnusedImages = onCall(
           }
 
           try {
-          // Move file to trash folder
-            const trashFileName = `spots/trash/${fileNameOnly}`;
+            // Determine trash path based on file location
+            let trashFileName;
+            if (fileName.startsWith("spots/resized/")) {
+              // Keep resized folder structure in trash
+              trashFileName = `spots/trash/resized/${fileNameOnly}`;
+            } else {
+              // Original images go directly to trash root
+              trashFileName = `spots/trash/${fileNameOnly}`;
+            }
+            
             console.log(`Moving ${fileNameOnly} to ${trashFileName}`);
 
             // Copy to trash location
@@ -3381,7 +3420,7 @@ exports.cleanupUnusedImages = onCall(
           totalFiles: files.length,
           movedFiles: movedFiles.slice(0, 10), // Limit to first 10 for response size
           message:
-          `Cleanup completed. Moved ${movedCount} unused images to ` +
+          `Cleanup completed. Moved ${movedCount} unused images (including resized versions) to ` +
           `trash, skipped ${skippedCount} files.`,
         };
 
