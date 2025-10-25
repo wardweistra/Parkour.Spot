@@ -213,10 +213,22 @@ class _SpotCardState extends State<SpotCard> {
                       child: Container(
                         color: Theme.of(context).colorScheme.surfaceContainerHighest,
                         child: Center(
-                          child: Icon(
-                            Icons.location_on,
-                            size: 48,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.image_not_supported,
+                                size: 48,
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'No images',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -539,16 +551,28 @@ class _SpotCardState extends State<SpotCard> {
                             ),
                           ],
                         ] else ...[
-                          // Location marker when no images
+                          // No images indicator
                           Container(
                             decoration: BoxDecoration(
                               color: Theme.of(context).colorScheme.surfaceContainerHighest,
                             ),
                             child: Center(
-                              child: Icon(
-                                Icons.location_on,
-                                size: 48,
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.image_not_supported,
+                                    size: 48,
+                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'No images',
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
