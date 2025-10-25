@@ -238,7 +238,13 @@ class SpotService extends ChangeNotifier {
       final fileName = 'spots/${DateTime.now().millisecondsSinceEpoch}_${imageFile.path.split('/').last}';
       final ref = _storage.ref().child(fileName);
       
-      final uploadTask = ref.putFile(imageFile);
+      // Detect MIME type from file extension
+      final contentType = _getMimeTypeFromExtension(imageFile.path);
+      
+      final uploadTask = ref.putFile(
+        imageFile,
+        SettableMetadata(contentType: contentType),
+      );
       final snapshot = await uploadTask;
       
       return await snapshot.ref.getDownloadURL();
@@ -254,7 +260,13 @@ class SpotService extends ChangeNotifier {
       final fileName = 'spots/${DateTime.now().millisecondsSinceEpoch}_web_image.jpg';
       final ref = _storage.ref().child(fileName);
       
-      final uploadTask = ref.putData(imageBytes);
+      // Detect MIME type from image bytes
+      final contentType = _detectImageMimeType(imageBytes);
+      
+      final uploadTask = ref.putData(
+        imageBytes,
+        SettableMetadata(contentType: contentType),
+      );
       final snapshot = await uploadTask;
       
       return await snapshot.ref.getDownloadURL();
@@ -305,6 +317,59 @@ class SpotService extends ChangeNotifier {
 
   double _degreesToRadians(double degrees) {
     return degrees * (3.14159265359 / 180);
+  }
+
+  // Detect MIME type from image bytes by checking magic numbers
+  String _detectImageMimeType(Uint8List bytes) {
+    if (bytes.length < 4) return 'image/jpeg'; // Default fallback
+    
+    // Check for JPEG
+    if (bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF) {
+      return 'image/jpeg';
+    }
+    
+    // Check for PNG
+    if (bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47) {
+      return 'image/png';
+    }
+    
+    // Check for GIF
+    if (bytes[0] == 0x47 && bytes[1] == 0x49 && bytes[2] == 0x46) {
+      return 'image/gif';
+    }
+    
+    // Check for WebP
+    if (bytes.length >= 12 && 
+        bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x46 &&
+        bytes[8] == 0x57 && bytes[9] == 0x45 && bytes[10] == 0x42 && bytes[11] == 0x50) {
+      return 'image/webp';
+    }
+    
+    // Default to JPEG if we can't detect the type
+    return 'image/jpeg';
+  }
+
+  // Get MIME type from file extension
+  String _getMimeTypeFromExtension(String filePath) {
+    final extension = filePath.toLowerCase().split('.').last;
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      case 'bmp':
+        return 'image/bmp';
+      case 'tiff':
+      case 'tif':
+        return 'image/tiff';
+      default:
+        return 'image/jpeg'; // Default fallback
+    }
   }
 
   // Calculate bounding box for geo queries
