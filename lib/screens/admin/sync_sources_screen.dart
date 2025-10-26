@@ -52,30 +52,30 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                     : const Icon(Icons.sync),
                 tooltip: 'Sync All',
                 onPressed: service.isSyncingAll ? null : () async {
+                  if (!mounted) return;
                   final syncService = context.read<SyncSourceService>();
                   final scaffoldMessenger = ScaffoldMessenger.of(context);
                   final result = await syncService.syncAllSources();
-                  if (mounted) {
-                    if (result != null) {
-                      final stats = result['totalStats'] as Map<String, dynamic>?;
-                      final message = stats != null 
-                          ? 'Sync completed! Created: ${stats['created']}, Updated: ${stats['updated']}, Geocoded: ${stats['geocoded']}'
-                          : 'Sync completed successfully';
-                      scaffoldMessenger.showSnackBar(
-                        SnackBar(
-                          content: Text(message),
-                          backgroundColor: Colors.green,
-                          duration: const Duration(seconds: 4),
-                        ),
-                      );
-                    } else {
-                      scaffoldMessenger.showSnackBar(
-                        SnackBar(
-                          content: Text(syncService.error ?? 'Sync failed'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
+                  if (!mounted) return;
+                  if (result != null) {
+                    final stats = result['totalStats'] as Map<String, dynamic>?;
+                    final message = stats != null 
+                        ? 'Sync completed! Created: ${stats['created']}, Updated: ${stats['updated']}, Geocoded: ${stats['geocoded']}'
+                        : 'Sync completed successfully';
+                    scaffoldMessenger.showSnackBar(
+                      SnackBar(
+                        content: Text(message),
+                        backgroundColor: Colors.green,
+                        duration: const Duration(seconds: 4),
+                      ),
+                    );
+                  } else {
+                    scaffoldMessenger.showSnackBar(
+                      SnackBar(
+                        content: Text(syncService.error ?? 'Sync failed'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
                   }
                 },
               );
@@ -179,30 +179,30 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                                   : const Icon(Icons.sync),
                               tooltip: 'Sync this source',
                               onPressed: isThisSourceSyncing ? null : () async {
+                                if (!mounted) return;
                                 final syncService = context.read<SyncSourceService>();
                                 final scaffoldMessenger = ScaffoldMessenger.of(context);
                                 final result = await syncService.syncSingleSource(s.id);
-                                if (mounted) {
-                                  if (result != null) {
-                                    final stats = result['stats'] as Map<String, dynamic>?;
-                                    final message = stats != null 
-                                        ? '${s.name} sync completed! Created: ${stats['created']}, Updated: ${stats['updated']}, Geocoded: ${stats['geocoded']}'
-                                        : '${s.name} sync completed successfully';
-                                    scaffoldMessenger.showSnackBar(
-                                      SnackBar(
-                                        content: Text(message),
-                                        backgroundColor: Colors.green,
-                                        duration: const Duration(seconds: 4),
-                                      ),
-                                    );
-                                  } else {
-                                    scaffoldMessenger.showSnackBar(
-                                      SnackBar(
-                                        content: Text(syncService.error ?? 'Sync failed for ${s.name}'),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                  }
+                                if (!mounted) return;
+                                if (result != null) {
+                                  final stats = result['stats'] as Map<String, dynamic>?;
+                                  final message = stats != null 
+                                      ? '${s.name} sync completed! Created: ${stats['created']}, Updated: ${stats['updated']}, Geocoded: ${stats['geocoded']}'
+                                      : '${s.name} sync completed successfully';
+                                  scaffoldMessenger.showSnackBar(
+                                    SnackBar(
+                                      content: Text(message),
+                                      backgroundColor: Colors.green,
+                                      duration: const Duration(seconds: 4),
+                                    ),
+                                  );
+                                } else {
+                                  scaffoldMessenger.showSnackBar(
+                                    SnackBar(
+                                      content: Text(syncService.error ?? 'Sync failed for ${s.name}'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
                                 }
                               },
                             );
@@ -284,7 +284,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
       builder: (c) => SyncSourceEditDialog(source: source),
     );
 
-    if (saved == true) {
+    if (saved == true && mounted) {
       final syncService = context.read<SyncSourceService>();
       await syncService.fetchSyncSources(includeInactive: true);
     }
@@ -351,48 +351,47 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
       );
 
       try {
+        if (!mounted) return;
         final syncService = context.read<SyncSourceService>();
         final scaffoldMessenger = ScaffoldMessenger.of(context);
         final navigator = Navigator.of(context);
         final cleanupResult = await syncService.cleanupUnusedImages();
         
-        if (mounted) {
-          navigator.pop(); // Close loading dialog
+        if (!mounted) return;
+        navigator.pop(); // Close loading dialog
+        
+        if (cleanupResult != null && cleanupResult['success'] == true) {
+          final movedCount = cleanupResult['movedCount'] ?? 0;
+          final skippedCount = cleanupResult['skippedCount'] ?? 0;
+          final totalFiles = cleanupResult['totalFiles'] ?? 0;
           
-          if (cleanupResult != null && cleanupResult['success'] == true) {
-            final movedCount = cleanupResult['movedCount'] ?? 0;
-            final skippedCount = cleanupResult['skippedCount'] ?? 0;
-            final totalFiles = cleanupResult['totalFiles'] ?? 0;
-            
-            scaffoldMessenger.showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Cleanup completed: $movedCount images moved to trash, $skippedCount skipped (out of $totalFiles total)',
-                ),
-                duration: const Duration(seconds: 5),
-              ),
-            );
-          } else {
-            scaffoldMessenger.showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Cleanup failed: ${cleanupResult?['error'] ?? 'Unknown error'}',
-                ),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        }
-      } catch (e) {
-        if (mounted) {
-          Navigator.of(context).pop(); // Close loading dialog
-          ScaffoldMessenger.of(context).showSnackBar(
+          scaffoldMessenger.showSnackBar(
             SnackBar(
-              content: Text('Cleanup failed: $e'),
+              content: Text(
+                'Cleanup completed: $movedCount images moved to trash, $skippedCount skipped (out of $totalFiles total)',
+              ),
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        } else {
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: Text(
+                'Cleanup failed: ${cleanupResult?['error'] ?? 'Unknown error'}',
+              ),
               backgroundColor: Colors.red,
             ),
           );
         }
+      } catch (e) {
+        if (!mounted) return;
+        Navigator.of(context).pop(); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Cleanup failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }
@@ -415,58 +414,57 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
     );
 
     try {
+      if (!mounted) return;
       final syncService = context.read<SyncSourceService>();
       final scaffoldMessenger = ScaffoldMessenger.of(context);
       final navigator = Navigator.of(context);
       final result = await syncService.findMissingImages();
       
-      if (mounted) {
-        navigator.pop(); // Close loading dialog
+      if (!mounted) return;
+      navigator.pop(); // Close loading dialog
+      
+      if (result != null && result['success'] == true) {
+        final missingImages = result['missingImages'] as List<dynamic>? ?? [];
+        final totalReferenced = result['totalReferencedImages'] ?? 0;
+        final totalExisting = result['totalExistingFiles'] ?? 0;
+        final missingCount = result['missingImagesCount'] ?? 0;
         
-        if (result != null && result['success'] == true) {
-          final missingImages = result['missingImages'] as List<dynamic>? ?? [];
-          final totalReferenced = result['totalReferencedImages'] ?? 0;
-          final totalExisting = result['totalExistingFiles'] ?? 0;
-          final missingCount = result['missingImagesCount'] ?? 0;
-          
-          if (missingCount == 0) {
-            scaffoldMessenger.showSnackBar(
-              const SnackBar(
-                content: Text('No missing images found! All referenced images exist.'),
-                backgroundColor: Colors.green,
-              ),
-            );
-          } else {
-            // Navigate to missing images screen
-            navigator.push(
-              MaterialPageRoute(
-                builder: (context) => MissingImagesScreen(
-                  missingImages: missingImages,
-                  totalReferenced: totalReferenced,
-                  totalExisting: totalExisting,
-                ),
-              ),
-            );
-          }
-        } else {
+        if (missingCount == 0) {
           scaffoldMessenger.showSnackBar(
-            SnackBar(
-              content: Text('Failed to check missing images: ${result?['error'] ?? 'Unknown error'}'),
-              backgroundColor: Colors.red,
+            const SnackBar(
+              content: Text('No missing images found! All referenced images exist.'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          // Navigate to missing images screen
+          navigator.push(
+            MaterialPageRoute(
+              builder: (context) => MissingImagesScreen(
+                missingImages: missingImages,
+                totalReferenced: totalReferenced,
+                totalExisting: totalExisting,
+              ),
             ),
           );
         }
-      }
-    } catch (e) {
-      if (mounted) {
-        Navigator.of(context).pop(); // Close loading dialog
-        ScaffoldMessenger.of(context).showSnackBar(
+      } else {
+        scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text('Failed to check missing images: $e'),
+            content: Text('Failed to check missing images: ${result?['error'] ?? 'Unknown error'}'),
             backgroundColor: Colors.red,
           ),
         );
       }
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Close loading dialog
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to check missing images: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -488,15 +486,16 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
     );
 
     try {
+      if (!mounted) return;
       final syncService = context.read<SyncSourceService>();
       final scaffoldMessenger = ScaffoldMessenger.of(context);
       final navigator = Navigator.of(context);
       final result = await syncService.findOrphanedSpots();
       
-      if (mounted) {
-        navigator.pop(); // Close loading dialog
-        
-        if (result != null && result['success'] == true) {
+      if (!mounted) return;
+      navigator.pop(); // Close loading dialog
+      
+      if (result != null && result['success'] == true) {
           final orphanedSpots = result['orphanedSpots'] as List<dynamic>? ?? [];
           final totalSpotsWithSource = result['totalSpotsWithSource'] ?? 0;
           final orphanedCount = result['orphanedSpotsCount'] ?? 0;
@@ -586,25 +585,24 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
               ),
             );
           }
-        } else {
-          scaffoldMessenger.showSnackBar(
-            SnackBar(
-              content: Text('Failed to check orphaned spots: ${result?['error'] ?? 'Unknown error'}'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        Navigator.of(context).pop(); // Close loading dialog
-        ScaffoldMessenger.of(context).showSnackBar(
+      } else {
+        scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text('Failed to check orphaned spots: $e'),
+            content: Text('Failed to check orphaned spots: ${result?['error'] ?? 'Unknown error'}'),
             backgroundColor: Colors.red,
           ),
         );
       }
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Close loading dialog
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to check orphaned spots: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -655,42 +653,45 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
       );
 
       // Delete the spot using cloud function
+      if (!mounted) return;
       final syncService = context.read<SyncSourceService>();
       final result = await syncService.deleteSpot(spotId);
 
-      if (mounted) {
-        Navigator.of(context).pop(); // Close loading dialog
-        
-        if (result != null && result['success'] == true) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(result['message'] ?? 'Spot deleted successfully'),
-              backgroundColor: Colors.green,
-            ),
-          );
-
-          // Refresh the orphaned spots dialog
-          Navigator.of(context).pop(); // Close the orphaned spots dialog
-          _showOrphanedSpotsDialog(context); // Reopen to show updated list
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to delete spot: ${result?['error'] ?? 'Unknown error'}'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        Navigator.of(context).pop(); // Close loading dialog
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Close loading dialog
+      
+      if (result != null && result['success'] == true) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to delete spot: $e'),
+            content: Text(result['message'] ?? 'Spot deleted successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Refresh the orphaned spots dialog
+        if (!mounted) return;
+        Navigator.of(context).pop(); // Close the orphaned spots dialog
+        _showOrphanedSpotsDialog(context); // Reopen to show updated list
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete spot: ${result?['error'] ?? 'Unknown error'}'),
             backgroundColor: Colors.red,
           ),
         );
       }
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Close loading dialog
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to delete spot: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -743,41 +744,44 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
       final spotIds = orphanedSpots.map((spot) => spot['spotId'] as String).toList();
 
       // Delete all spots using cloud function
+      if (!mounted) return;
       final syncService = context.read<SyncSourceService>();
       final result = await syncService.deleteSpots(spotIds);
 
-      if (mounted) {
-        Navigator.of(context).pop(); // Close loading dialog
-        
-        if (result != null && result['success'] == true) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(result['message'] ?? 'Successfully deleted ${orphanedSpots.length} orphaned spots'),
-              backgroundColor: Colors.green,
-            ),
-          );
-
-          // Close the orphaned spots dialog
-          Navigator.of(context).pop();
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to delete spots: ${result?['error'] ?? 'Unknown error'}'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        Navigator.of(context).pop(); // Close loading dialog
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Close loading dialog
+      
+      if (result != null && result['success'] == true) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to delete spots: $e'),
+            content: Text(result['message'] ?? 'Successfully deleted ${orphanedSpots.length} orphaned spots'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Close the orphaned spots dialog
+        if (!mounted) return;
+        Navigator.of(context).pop();
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete spots: ${result?['error'] ?? 'Unknown error'}'),
             backgroundColor: Colors.red,
           ),
         );
       }
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Close loading dialog
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to delete spots: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 

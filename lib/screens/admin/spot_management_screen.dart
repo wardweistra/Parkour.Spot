@@ -115,23 +115,24 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
         }
       }
 
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
         _selectedSpotIds.clear();
       });
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Deleted $deletedCount spots${failedCount > 0 ? ', $failedCount failed' : ''}'),
-            backgroundColor: failedCount > 0 ? Colors.orange : Colors.green,
-          ),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Deleted $deletedCount spots${failedCount > 0 ? ', $failedCount failed' : ''}'),
+          backgroundColor: failedCount > 0 ? Colors.orange : Colors.green,
+        ),
+      );
 
       // Refresh the spots list
       await _searchSpots();
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = 'Failed to delete spots: $e';
         _isLoading = false;

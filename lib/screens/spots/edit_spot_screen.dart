@@ -109,7 +109,9 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
 
     try {
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
       );
 
       if (mounted) {

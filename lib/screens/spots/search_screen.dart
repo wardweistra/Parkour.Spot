@@ -405,6 +405,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     try {
       final bounds = await _mapController!.getVisibleRegion();
       
+      if (!mounted) return;
       final spotService = Provider.of<SpotService>(context, listen: false);
       
       // Load ranked top spots within the current map bounds (and total count)
@@ -1044,6 +1045,9 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                           }
 
                           
+                          if (!mounted) {
+                            return const Iterable<Map<String, dynamic>>.empty();
+                          }
                           try {
                             final geocoding = Provider.of<GeocodingService>(context, listen: false);
                             final results = await geocoding.placesAutocomplete(

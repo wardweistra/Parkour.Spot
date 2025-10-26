@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 // Web-specific environment variable getters (const for compile-time evaluation)
 class WebEnvVars {
   static const String firebaseApiKey = String.fromEnvironment('FIREBASE_API_KEY');
@@ -12,9 +10,6 @@ class WebEnvVars {
 }
 
 class AppConfig {
-  static const String _defaultApiKey = '';
-  static const String _defaultAppId = '';
-  static const String _defaultProjectId = '';
   
   // Default Map Center Coordinates
   static const double defaultMapCenterLat = 48.629828;

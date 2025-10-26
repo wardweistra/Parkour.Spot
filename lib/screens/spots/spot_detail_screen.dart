@@ -78,12 +78,14 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         orElse: () => throw Exception('Source not found'),
       );
       
+      if (!mounted) return;
       showDialog(
         context: context,
         builder: (context) => SourceDetailsDialog(source: source),
       );
     } catch (e) {
       // Fallback to simple info dialog if source not found
+      if (!mounted) return;
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -1862,10 +1864,12 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
               Navigator.pop(context);
               try {
                 final spotService = Provider.of<SpotService>(context, listen: false);
-                final scaffoldMessenger = ScaffoldMessenger.of(context);
                 final success = await spotService.deleteSpot(widget.spot.id!);
                 
-                if (success && mounted) {
+                if (!mounted) return;
+                final scaffoldMessenger = ScaffoldMessenger.of(context);
+                
+                if (success) {
                   // Show success message first
                   scaffoldMessenger.showSnackBar(
                     const SnackBar(
@@ -1876,8 +1880,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                   
                   // Navigate to home immediately after successful deletion
                   // Use replace to ensure we don't go back to the deleted spot
+                  if (!mounted) return;
                   context.replace('/home');
-                } else if (mounted) {
+                } else {
                   scaffoldMessenger.showSnackBar(
                     const SnackBar(
                       content: Text('Failed to delete spot'),
@@ -1886,14 +1891,13 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                   );
                 }
               } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Error deleting spot: $e'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error deleting spot: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
               }
             },
             style: TextButton.styleFrom(
