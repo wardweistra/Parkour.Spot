@@ -23,6 +23,7 @@ class Spot {
   final int? ratingCount;
   final double? wilsonLowerBound;
   final double? random;
+  final double? ranking;
   final String? spotAccess;
   final List<String>? spotFeatures;
   final Map<String, String>? spotFacilities;
@@ -51,6 +52,7 @@ class Spot {
     this.ratingCount,
     this.wilsonLowerBound,
     this.random,
+    this.ranking,
     this.spotAccess,
     this.spotFeatures,
     this.spotFacilities,
@@ -132,6 +134,7 @@ class Spot {
       ratingCount: data['ratingCount'],
       wilsonLowerBound: data['wilsonLowerBound'] != null ? (data['wilsonLowerBound'] as num).toDouble() : null,
       random: data['random'] != null ? (data['random'] as num).toDouble() : null,
+      ranking: data['ranking'] != null ? (data['ranking'] as num).toDouble() : null,
       spotAccess: data['spotAccess'],
       spotFeatures: data['spotFeatures'] != null ? List<String>.from(data['spotFeatures']) : null,
       spotFacilities: data['spotFacilities'] != null ? Map<String, String>.from(data['spotFacilities']) : null,
@@ -221,6 +224,7 @@ class Spot {
       ratingCount: (data['ratingCount'] is int) ? data['ratingCount'] as int : (data['ratingCount'] as num?)?.toInt(),
       wilsonLowerBound: (data['wilsonLowerBound'] as num?)?.toDouble(),
       random: (data['random'] as num?)?.toDouble(),
+      ranking: (data['ranking'] as num?)?.toDouble(),
       spotAccess: data['spotAccess'] as String?,
       spotFeatures: data['spotFeatures'] is List ? List<String>.from(data['spotFeatures']) : null,
       spotFacilities: data['spotFacilities'] is Map ? Map<String, String>.from(data['spotFacilities']) : null,
@@ -251,6 +255,7 @@ class Spot {
       if (ratingCount != null) 'ratingCount': ratingCount,
       if (wilsonLowerBound != null) 'wilsonLowerBound': wilsonLowerBound,
       if (random != null) 'random': random,
+      if (ranking != null) 'ranking': ranking,
       if (spotAccess != null) 'spotAccess': spotAccess,
       if (spotFeatures != null) 'spotFeatures': spotFeatures,
       if (spotFacilities != null) 'spotFacilities': spotFacilities,
@@ -281,6 +286,7 @@ class Spot {
     int? ratingCount,
     double? wilsonLowerBound,
     double? random,
+    double? ranking,
     String? spotAccess,
     List<String>? spotFeatures,
     Map<String, String>? spotFacilities,
@@ -309,6 +315,7 @@ class Spot {
       ratingCount: ratingCount ?? this.ratingCount,
       wilsonLowerBound: wilsonLowerBound ?? this.wilsonLowerBound,
       random: random ?? this.random,
+      ranking: ranking ?? this.ranking,
       spotAccess: spotAccess ?? this.spotAccess,
       spotFeatures: spotFeatures ?? this.spotFeatures,
       spotFacilities: spotFacilities ?? this.spotFacilities,
