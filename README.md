@@ -67,10 +67,10 @@ This key should have at least the following APIs enabled:
 
 The Flutter client calls callable functions `placesAutocomplete`, `placeDetails`, `geocodeCoordinates`, and `reverseGeocodeAddress`, which proxy Google APIs securely using the backend key.
 
-### 4. **Run the App**
+### 4. **Run the App Locally**
 ```bash
-# Web
-flutter run -d web
+# Run local development server
+./scripts/run_local.sh
 ```
 
 ## 🛠️ Development
@@ -81,16 +81,36 @@ flutter run -d web
 - **Firebase CLI**: Latest version
 - **Node.js**: 18.0.0 or higher
 
-### **Development Scripts**
-```bash
-# Local development server
-./scripts/run_local.sh
+### **Common Workflows**
 
+#### **Local Development**
+```bash
+# Run the app locally
+./scripts/run_local.sh
+```
+
+#### **Production Build**
+```bash
+# Build for production
+./scripts/build_production.sh
+```
+
+#### **Firebase Deployment**
+```bash
+# Deploy hosting
+firebase deploy --only hosting
+
+# Deploy functions
+firebase deploy --only functions
+
+# Deploy indexes
+firebase deploy --only firestore:indexes
+```
+
+### **Other Development Scripts**
+```bash
 # Development build
 ./scripts/build_development.sh
-
-# Production build
-./scripts/build_production.sh
 ```
 
 ### **Testing**
@@ -106,14 +126,7 @@ flutter test --coverage
 
 ## 🚀 Building & Deployment
 
-### **Web Build & Deploy**
-```bash
-# Build for production
-flutter build web
-
-# Deploy to Firebase Hosting
-firebase deploy --only hosting
-```
+> **Note**: For common workflows, see the [Common Workflows](#common-workflows) section above.
 
 ### **Android Build**
 ```bash
