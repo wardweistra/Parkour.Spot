@@ -2207,6 +2207,26 @@ async function processSyncSource(source, sourceId, apiKey) {
         description || "",
     );
 
+    // If a YouTube thumbnail failed to download (e.g., 404), don't keep the video ID
+    // We determine success by checking if the thumbnail URL was cached during image processing
+    let filteredYoutubeVideoIds = [];
+    if (youtubeVideoIds && youtubeVideoIds.length > 0) {
+      const validationResults = await Promise.all(
+        youtubeVideoIds.map(async (vid) => {
+          const thumbUrl = `https://img.youtube.com/vi/${vid}/maxresdefault.jpg`;
+          const cachedPublicUrl = await checkImageUrlCache(thumbUrl);
+          if (!cachedPublicUrl) {
+            console.warn(
+              `Dropping YouTube ID ${vid} due to missing/cached thumbnail (likely 404): ${thumbUrl}`,
+            );
+            return null;
+          }
+          return vid;
+        }),
+      );
+      filteredYoutubeVideoIds = validationResults.filter((v) => Boolean(v));
+    }
+
     // Clean the description to remove HTML
     const cleanedDescription = cleanDescription(description);
 
@@ -2234,9 +2254,15 @@ async function processSyncSource(source, sourceId, apiKey) {
       }
     }
 
-    // Add YouTube video IDs if found
-    if (youtubeVideoIds.length > 0) {
-      spotData.youtubeVideoIds = youtubeVideoIds;
+    // Add YouTube video IDs only if their thumbnails were successfully processed
+    if (filteredYoutubeVideoIds.length > 0) {
+      spotData.youtubeVideoIds = filteredYoutubeVideoIds;
+    } else if (
+      (existingSpotData && Array.isArray(existingSpotData.youtubeVideoIds) && existingSpotData.youtubeVideoIds.length > 0) ||
+      (youtubeVideoIds && youtubeVideoIds.length > 0)
+    ) {
+      // Explicitly clear previously stored IDs if thumbnails failed or links now broken
+      spotData.youtubeVideoIds = [];
     }
 
     // Add image URLs and hashes if any were found
