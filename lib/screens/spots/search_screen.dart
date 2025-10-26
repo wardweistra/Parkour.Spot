@@ -76,12 +76,14 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   final FocusNode _searchFocusNode = FocusNode();
   String _searchQuery = '';
   String? _placesSessionToken;
+  TextEditingController? _autocompleteController; // Keep reference to autocomplete's controller
   // Autocomplete is fetched live in optionsBuilder; no debounce field needed
   List<Spot> _visibleSpots = [];
   List<Spot> _loadedSpots = []; // Spots loaded for the current map view
   Set<Marker> _markers = {};
   Spot? _selectedSpot;
   bool _isLoadingSpotsForView = false; // Loading state for spots within current view
+  bool _isSearchingLocation = false; // Loading state for location search
   int? _totalSpotsInView; // Total unfiltered spots in current bounds
   int? _bestShownCount; // Number of ranked spots returned (up to 100)
   late AnimationController _bottomSheetAnimationController;
@@ -261,12 +263,22 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     return 13.5;
   }
 
-  Future<void> _selectPlaceSuggestion(Map<String, dynamic> suggestion) async {
+  Future<void> _selectPlaceSuggestion(Map<String, dynamic> suggestion, {bool manageLoadingState = true}) async {
+    if (manageLoadingState) {
+      setState(() {
+        _isSearchingLocation = true;
+      });
+    }
+    
     try {
-      
       final geocoding = Provider.of<GeocodingService>(context, listen: false);
       final placeId = suggestion['placeId'] as String?;
       if (placeId == null) {
+        if (manageLoadingState) {
+          setState(() {
+            _isSearchingLocation = false;
+          });
+        }
         return;
       }
       final details = await geocoding.placeDetails(
@@ -275,7 +287,14 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
       );
       // Reset session token after a selection per Google guidelines
       _placesSessionToken = null;
-      if (details == null) return;
+      if (details == null) {
+        if (manageLoadingState) {
+          setState(() {
+            _isSearchingLocation = false;
+          });
+        }
+        return;
+      }
       final double? lat = (details['latitude'] as num?)?.toDouble();
       final double? lng = (details['longitude'] as num?)?.toDouble();
       final String? formatted = details['formattedAddress'] as String? ?? details['formatted_address'] as String?;
@@ -287,16 +306,28 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
           zoom: zoomLevel,
         )));
       }
-      // Update search field
+      // Update search field - use autocomplete controller if available, otherwise fall back to _searchController
+      final controllerToUpdate = _autocompleteController ?? _searchController;
+      final newText = formatted ?? (suggestion['description'] as String? ?? '');
       setState(() {
-        _searchController.text = formatted ?? (suggestion['description'] as String? ?? '');
-        _searchController.selection = TextSelection.fromPosition(TextPosition(offset: _searchController.text.length));
+        controllerToUpdate.text = newText;
+        controllerToUpdate.selection = TextSelection.fromPosition(TextPosition(offset: controllerToUpdate.text.length));
+        _searchQuery = newText; // Keep _searchQuery in sync
+        // Only clear loading state if we're managing it
+        if (manageLoadingState) {
+          _isSearchingLocation = false;
+        }
       });
       // Trigger a refresh of visible spots for new area
       _updateVisibleSpots();
     } catch (e) {
       // Log errors for debugging
       debugPrint('Error selecting place: $e');
+      if (manageLoadingState) {
+        setState(() {
+          _isSearchingLocation = false;
+        });
+      }
       // No-op: suggestions list is now built live by optionsBuilder
     }
   }
@@ -305,6 +336,10 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   Future<void> _searchAndNavigateToLocation() async {
     final query = _searchQuery.trim();
     if (query.isEmpty) return;
+
+    setState(() {
+      _isSearchingLocation = true;
+    });
 
     try {
       final geocoding = Provider.of<GeocodingService>(context, listen: false);
@@ -335,10 +370,22 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
 
       // If we have results, select the first one
       if (results.isNotEmpty) {
-        await _selectPlaceSuggestion(results.first);
+        // Don't let _selectPlaceSuggestion manage loading state since we're managing it here
+        await _selectPlaceSuggestion(results.first, manageLoadingState: false);
+        // Clear loading state after selection completes
+        setState(() {
+          _isSearchingLocation = false;
+        });
+      } else {
+        setState(() {
+          _isSearchingLocation = false;
+        });
       }
     } catch (e) {
       debugPrint('Error searching and navigating to location: $e');
+      setState(() {
+        _isSearchingLocation = false;
+      });
     }
   }
 
@@ -1071,6 +1118,8 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                           return option['description'] as String? ?? '';
                         },
                         fieldViewBuilder: (BuildContext context, TextEditingController textEditingController, FocusNode focusNode, VoidCallback onFieldSubmitted) {
+                          // Store reference to the autocomplete controller
+                          _autocompleteController = textEditingController;
                           return TextField(
                             controller: textEditingController,
                             focusNode: focusNode,
@@ -1080,8 +1129,23 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                               suffixIcon: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  // Loading indicator removed; optionsBuilder fetches live
-                                  if (textEditingController.text.isNotEmpty)
+                                  // Show loading spinner when searching for location
+                                  if (_isSearchingLocation)
+                                    Padding(
+                                      padding: const EdgeInsets.all(12),
+                                      child: SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(
+                                            Theme.of(context).colorScheme.primary,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  // Clear button (only show when not loading and text is not empty)
+                                  if (!_isSearchingLocation && textEditingController.text.isNotEmpty)
                                     IconButton(
                                       icon: const Icon(Icons.clear),
                                       tooltip: 'Clear',
