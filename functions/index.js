@@ -77,131 +77,6 @@ function buildDescription(s) {
 }
 
 /**
- * Base query function for building Firestore queries
- * @param {number} lngMin - Minimum longitude
- * @param {number} lngMax - Maximum longitude
- * @param {string|null} type - Query type
- * @param {number} minLat - Minimum latitude
- * @param {number} maxLat - Maximum latitude
- * @param {Array} projection - Fields to select
- * @return {Object} Firestore query
- */
-function baseQuery(lngMin, lngMax, type = null, minLat, maxLat, projection) {
-  let q = db.collection("spots").where("isPublic", "==", true);
-
-  // For spots without ratings (type 'zero'), order by ranking field
-  if (type === "zero") {
-    q = q.orderBy("ranking");
-  } else {
-  // For other types, use the original longitude/latitude ordering
-    q = q.orderBy("longitude");
-  }
-
-  q = q
-      .where("latitude", ">=", minLat)
-      .where("latitude", "<=", maxLat)
-      .where("longitude", ">=", lngMin)
-      .where("longitude", "<=", lngMax);
-
-  // Add latitude ordering for non-zero types
-  if (type !== "zero") {
-    q = q.orderBy("latitude");
-  }
-
-  q = q.select(...projection);
-  return q;
-}
-
-/**
- * Run segmented query for a specific type
- * @param {string} type - Query type
- * @param {number} remaining - Remaining spots to fetch
- * @param {boolean} crossesDateline - Whether the query crosses the dateline
- * @param {number} minLat - Minimum latitude
- * @param {number} maxLat - Maximum latitude
- * @param {number} minLng - Minimum longitude
- * @param {number} maxLng - Maximum longitude
- * @param {number} averageWilson - Average Wilson score
- * @param {Array} projection - Fields to select
- * @return {Array} Array of spots
- */
-async function runSegmentedQuery(type, remaining, crossesDateline, minLat, maxLat, minLng, maxLng, averageWilson, projection) {
-  if (remaining <= 0) return [];
-  const perSide = crossesDateline ?
-  Math.max(1, Math.ceil(remaining / 2)) :
-  remaining;
-
-  const build = (lngMin, lngMax) => {
-    let q = baseQuery(lngMin, lngMax, type, minLat, maxLat, projection);
-    if (type === "above") {
-      q = q.where("wilsonLowerBound", ">", averageWilson);
-    } else if (type === "zero") {
-      q = q.where("wilsonLowerBound", "==", 0);
-    } else if (type === "below") {
-    // strictly below average and greater than zero to avoid duplicates
-      q = q
-          .where("wilsonLowerBound", ">", 0)
-          .where("wilsonLowerBound", "<=", averageWilson);
-    }
-    return q.limit(perSide);
-  };
-
-  if (crossesDateline) {
-    const [q1, q2] = await Promise.all([
-      build(minLng, 180).get(),
-      build(-180, maxLng).get(),
-    ]);
-    return [
-      ...q1.docs.map((d) => ({id: d.id, ...d.data()})),
-      ...q2.docs.map((d) => ({id: d.id, ...d.data()})),
-    ];
-  } else {
-    const snap = await build(minLng, maxLng).get();
-    return snap.docs.map((d) => ({id: d.id, ...d.data()}));
-  }
-}
-
-/**
- * Get total count of spots in bounds
- * @param {boolean} crossesDateline - Whether the query crosses the dateline
- * @param {number} minLat - Minimum latitude
- * @param {number} maxLat - Maximum latitude
- * @param {number} minLng - Minimum longitude
- * @param {number} maxLng - Maximum longitude
- * @return {number} Total count
- */
-async function getTotalCount(crossesDateline, minLat, maxLat, minLng, maxLng) {
-  const build = (lngMin, lngMax) =>
-    db
-        .collection("spots")
-        .where("isPublic", "==", true)
-        .orderBy("longitude")
-        .where("latitude", ">=", minLat)
-        .where("latitude", "<=", maxLat)
-        .where("longitude", ">=", lngMin)
-        .where("longitude", "<=", lngMax)
-        .orderBy("latitude");
-  try {
-    if (crossesDateline) {
-      const [c1, c2] = await Promise.all([
-        build(minLng, 180).count().get(),
-        build(-180, maxLng).count().get(),
-      ]);
-      const n1 = c1.data().count || 0;
-      const n2 = c2.data().count || 0;
-      return n1 + n2;
-    } else {
-      const c = await build(minLng, maxLng).count().get();
-      return c.data().count || 0;
-    }
-  } catch (e) {
-  // Fallback: if count aggregates are unavailable, return -1
-    console.warn("Count aggregate failed, returning unknown total", e);
-    return -1;
-  }
-}
-
-/**
  * Helper: perform geocoding for given lat/lng
  * @param {number} latitude - The latitude coordinate
  * @param {number} longitude - The longitude coordinate
@@ -367,15 +242,8 @@ function cleanUndefinedValues(obj) {
 
 // ========== Ranked Spots within Bounds ==========
 /**
- * Returns the top N spots within given map bounds ranked by Wilson score,
+ * Returns the top N spots within given map bounds ranked by ranking field,
  * along with total count.
- * Ordering rules:
- *  - Spots with ratingCount > 0 and wilsonLowerBound > average go first
- *    (desc by wilsonLowerBound)
- *  - Spots without ratings next (treated as average); secondary sort by
- *    createdAt desc then name
- *  - Spots with ratingCount > 0 and wilsonLowerBound <= average last
- *    (desc by wilsonLowerBound)
  */
 exports.getTopSpotsInBounds = onCall(
     {region: "europe-west1", timeoutSeconds: 60, memory: "512MiB"},
@@ -451,44 +319,47 @@ exports.getTopSpotsInBounds = onCall(
           "random",
         ];
 
-
-        const totalCount = await getTotalCount(crossesDateline, minLat, maxLat, minLng, maxLng);
-
         const maxItems = Math.max(0, Math.min(200, Number(limit) || 100));
-        const collected = [];
-        const seen = new Set();
 
-        // 1) Above average
-        const above = await runSegmentedQuery("above", maxItems, crossesDateline, minLat, maxLat, minLng, maxLng, averageWilson, projection);
-        for (const s of above) {
-          if (!seen.has(s.id) && collected.length < maxItems) {
-            seen.add(s.id);
-            collected.push(s);
-          }
-        }
-        let remaining = maxItems - collected.length;
+        // Build query function
+        const buildQuery = (lngMin, lngMax) => {
+          return db
+              .collection("spots")
+              .where("isPublic", "==", true)
+              .where("latitude", ">=", minLat)
+              .where("latitude", "<=", maxLat)
+              .where("longitude", ">=", lngMin)
+              .where("longitude", "<=", lngMax)
+              .orderBy("ranking", "desc");
+        };
 
-        // 2) Unrated (wilsonLowerBound == 0)
-        if (remaining > 0) {
-          const zeros = await runSegmentedQuery("zero", remaining, crossesDateline, minLat, maxLat, minLng, maxLng, averageWilson, projection);
-          for (const s of zeros) {
-            if (!seen.has(s.id) && collected.length < maxItems) {
-              seen.add(s.id);
-              collected.push(s);
-            }
-          }
-          remaining = maxItems - collected.length;
-        }
+        // Execute query(ies)
+        let totalCount = 0;
+        let spots = [];
 
-        // 3) Below average (and > 0)
-        if (remaining > 0) {
-          const below = await runSegmentedQuery("below", remaining, crossesDateline, minLat, maxLat, minLng, maxLng, averageWilson, projection);
-          for (const s of below) {
-            if (!seen.has(s.id) && collected.length < maxItems) {
-              seen.add(s.id);
-              collected.push(s);
-            }
-          }
+        if (crossesDateline) {
+          // Query both sides of dateline
+          const [snap1, snap2, count1, count2] = await Promise.all([
+            buildQuery(minLng, 180).select(...projection).limit(maxItems).get(),
+            buildQuery(-180, maxLng).select(...projection).limit(maxItems).get(),
+            buildQuery(minLng, 180).count().get(),
+            buildQuery(-180, maxLng).count().get(),
+          ]);
+
+          spots = [
+            ...snap1.docs.map((d) => ({id: d.id, ...d.data()})),
+            ...snap2.docs.map((d) => ({id: d.id, ...d.data()})),
+          ];
+          totalCount = (count1.data().count || 0) + (count2.data().count || 0);
+        } else {
+          // Single query
+          const [snap, count] = await Promise.all([
+            buildQuery(minLng, maxLng).select(...projection).limit(maxItems).get(),
+            buildQuery(minLng, maxLng).count().get(),
+          ]);
+
+          spots = snap.docs.map((d) => ({id: d.id, ...d.data()}));
+          totalCount = count.data().count || 0;
         }
 
         // Normalize Firestore Timestamp fields to ISO strings for client
@@ -508,8 +379,8 @@ exports.getTopSpotsInBounds = onCall(
           success: true,
           totalCount,
           averageWilson,
-          shownCount: collected.length,
-          spots: collected.map(normalize),
+          shownCount: spots.length,
+          spots: spots.map(normalize),
         };
       } catch (error) {
         console.error("getTopSpotsInBounds error", error);

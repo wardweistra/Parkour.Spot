@@ -23,30 +23,9 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "isPublic", "order": "ASCENDING" },
-        { "fieldPath": "longitude", "order": "ASCENDING" },
-        { "fieldPath": "latitude", "order": "ASCENDING" },
-        { "fieldPath": "wilsonLowerBound", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "spots",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "isPublic", "order": "ASCENDING" },
-        { "fieldPath": "wilsonLowerBound", "order": "ASCENDING" },
-        { "fieldPath": "longitude", "order": "ASCENDING" },
-        { "fieldPath": "latitude", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "spots",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "isPublic", "order": "ASCENDING" },
-        { "fieldPath": "wilsonLowerBound", "order": "ASCENDING" },
-        { "fieldPath": "ranking", "order": "ASCENDING" },
-        { "fieldPath": "latitude", "order": "ASCENDING" },
-        { "fieldPath": "longitude", "order": "ASCENDING" }
+        { "fieldPath": "ranking", "order": "DESCENDING" },
+        { "fieldPath": "latitude", "order": "DESCENDING" },
+        { "fieldPath": "longitude", "order": "DESCENDING" }
       ]
     },
     {
