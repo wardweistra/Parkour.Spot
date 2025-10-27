@@ -316,7 +316,7 @@ exports.getTopSpotsInBounds = onCall(
           "wilsonLowerBound",
           "createdAt",
           "updatedAt",
-          "random",
+          "ranking",
         ];
 
         const maxItems = Math.max(0, Math.min(200, Number(limit) || 100));
@@ -426,10 +426,10 @@ async function getWilsonLowerBoundAvg() {
 async function recomputeSpotRatingAggregates(spotId) {
   try {
     if (!spotId) return;
-    
+
     // Fetch wilsonLowerBoundAvg from settings
     const wilsonLowerBoundAvg = await getWilsonLowerBoundAvg();
-    
+
     const ratingsSnap = await db
         .collection("ratings")
         .where("spotId", "==", spotId)
@@ -555,32 +555,32 @@ exports.recomputeAllRatedSpots = onCall(
     },
 );
 
-// ========== Admin Callable: Migrate spot rankings ==========
-exports.migrateSpotRankings = onCall(
+// ========== Admin Callable: Recompute spot rankings ==========
+exports.recomputeSpotRankings = onCall(
     {region: "europe-west1", memory: "512MiB", timeoutSeconds: 540},
     async (_request) => {
       try {
         // Fetch wilsonLowerBoundAvg from settings once
         const wilsonLowerBoundAvg = await getWilsonLowerBoundAvg();
-        
+
         // Query all public spots
         const spotsSnap = await db.collection("spots").where("isPublic", "==", true).get();
-        
+
         let processed = 0;
         let updated = 0;
         let failed = 0;
-        
+
         // Process each spot
         for (const spotDoc of spotsSnap.docs) {
           try {
             processed++;
             const spotData = spotDoc.data();
             const wilsonLowerBound = spotData.wilsonLowerBound || 0;
-            
+
             let ranking;
             if (wilsonLowerBound === 0) {
-              // No ratings: use random value (or existing random field as fallback)
-              ranking = (spotData.random !== undefined && spotData.random !== null) ? spotData.random : Math.random();
+              // No ratings: set ranking to random value
+              ranking = Math.random();
             } else if (wilsonLowerBound > wilsonLowerBoundAvg) {
               ranking = wilsonLowerBound + 10;
             } else if (wilsonLowerBound < wilsonLowerBoundAvg) {
@@ -589,20 +589,20 @@ exports.migrateSpotRankings = onCall(
               // Equal: treat as above average
               ranking = wilsonLowerBound + 10;
             }
-            
+
             // Update the spot document with ranking field
             await spotDoc.ref.update({
               ranking: Number(ranking.toFixed(4)),
               updatedAt: admin.firestore.FieldValue.serverTimestamp(),
             });
-            
+
             updated++;
           } catch (e) {
-            console.error("Failed to migrate ranking for", spotDoc.id, e);
+            console.error("Failed to recompute ranking for", spotDoc.id, e);
             failed++;
           }
         }
-        
+
         return {
           success: true,
           processed: processed,
@@ -610,7 +610,7 @@ exports.migrateSpotRankings = onCall(
           failed: failed,
         };
       } catch (error) {
-        console.error("migrateSpotRankings error", error);
+        console.error("recomputeSpotRankings error", error);
         return {success: false, error: error.message};
       }
     },
@@ -2188,17 +2188,17 @@ async function processSyncSource(source, sourceId, apiKey) {
     let filteredYoutubeVideoIds = [];
     if (youtubeVideoIds && youtubeVideoIds.length > 0) {
       const validationResults = await Promise.all(
-        youtubeVideoIds.map(async (vid) => {
-          const thumbUrl = `https://img.youtube.com/vi/${vid}/maxresdefault.jpg`;
-          const cachedPublicUrl = await checkImageUrlCache(thumbUrl);
-          if (!cachedPublicUrl) {
-            console.warn(
-              `Dropping YouTube ID ${vid} due to missing/cached thumbnail (likely 404): ${thumbUrl}`,
-            );
-            return null;
-          }
-          return vid;
-        }),
+          youtubeVideoIds.map(async (vid) => {
+            const thumbUrl = `https://img.youtube.com/vi/${vid}/maxresdefault.jpg`;
+            const cachedPublicUrl = await checkImageUrlCache(thumbUrl);
+            if (!cachedPublicUrl) {
+              console.warn(
+                  `Dropping YouTube ID ${vid} due to missing/cached thumbnail (likely 404): ${thumbUrl}`,
+              );
+              return null;
+            }
+            return vid;
+          }),
       );
       filteredYoutubeVideoIds = validationResults.filter((v) => Boolean(v));
     }
@@ -2217,7 +2217,6 @@ async function processSyncSource(source, sourceId, apiKey) {
       spotSource: sourceId,
       spotSourceName: source.name,
       isPublic: source.isPublic !== false, // Default to true
-      random: Math.random(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
@@ -3335,14 +3334,14 @@ exports.cleanupUnusedImages = onCall(
           if (!fileName.startsWith("spots/resized/")) {
             return false;
           }
-          
+
           // Extract the resized filename (remove "spots/resized/" prefix)
           const resizedFileName = fileName.replace("spots/resized/", "");
-          
+
           // Remove extension and size suffix to get base name
           // Firebase Storage Resize extension creates files like: "baseName_1200x630.webp"
           const baseName = resizedFileName.replace(/_\d+x\d+\.webp$/, "");
-          
+
           return usedImageBaseNames.has(baseName);
         };
 
@@ -3399,7 +3398,7 @@ exports.cleanupUnusedImages = onCall(
               // Original images go directly to trash root
               trashFileName = `spots/trash/${fileNameOnly}`;
             }
-            
+
             console.log(`Moving ${fileNameOnly} to ${trashFileName}`);
 
             // Copy to trash location

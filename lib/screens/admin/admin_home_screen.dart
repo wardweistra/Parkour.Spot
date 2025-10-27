@@ -120,14 +120,14 @@ class AdminHomeScreen extends StatelessWidget {
           Card(
             child: ListTile(
               leading: const Icon(Icons.signal_cellular_alt),
-              title: const Text('Migrate Spot Rankings'),
-              subtitle: const Text('Populate ranking field for all spots based on ratings'),
+              title: const Text('Recompute Spot Rankings'),
+              subtitle: const Text('Recalculate ranking field for all spots based on ratings'),
               onTap: () async {
                 final confirmed = await showDialog<bool>(
                   context: context,
                   builder: (ctx) => AlertDialog(
-                    title: const Text('Migrate Spot Rankings'),
-                    content: const Text('This will populate the ranking field for all spots based on their ratings and the average Wilson score. Continue?'),
+                    title: const Text('Recompute Spot Rankings'),
+                    content: const Text('This will recalculate the ranking field for all spots based on their ratings and the average Wilson score. This is useful after changing the Wilson score threshold in settings. Continue?'),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.of(ctx).pop(false),
@@ -145,12 +145,12 @@ class AdminHomeScreen extends StatelessWidget {
 
                 if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Migrating spot rankings...')),
+                  const SnackBar(content: Text('Recomputing spot rankings...')),
                 );
 
                 try {
                   final spotService = Provider.of<SpotService>(context, listen: false);
-                  final result = await spotService.migrateSpotRankings();
+                  final result = await spotService.recomputeSpotRankings();
                   if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Done. Processed ${result['processed']}, updated ${result['updated']}, failed ${result['failed']}')),

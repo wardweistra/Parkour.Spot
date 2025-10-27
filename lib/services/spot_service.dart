@@ -521,11 +521,11 @@ class SpotService extends ChangeNotifier {
     }
   }
 
-  Future<Map<String, dynamic>> migrateSpotRankings() async {
+  Future<Map<String, dynamic>> recomputeSpotRankings() async {
     try {
       final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
       final callable = functions.httpsCallable(
-        'migrateSpotRankings',
+        'recomputeSpotRankings',
         options: HttpsCallableOptions(
           timeout: const Duration(minutes: 9),
         ),
@@ -534,7 +534,7 @@ class SpotService extends ChangeNotifier {
       final data = result.data as Map<String, dynamic>;
       return data;
     } catch (e) {
-      debugPrint('Error migrating spot rankings: $e');
+      debugPrint('Error recomputing spot rankings: $e');
       rethrow;
     }
   }
