@@ -962,7 +962,7 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
     includeFoldersCtrl = TextEditingController(
       text: (widget.source?.includeFolders == null || widget.source?.includeFolders?.isEmpty == true)
           ? ''
-          : widget.source!.includeFolders!.join(', '),
+          : widget.source!.includeFolders!.join('\n'),
     );
     isPublic = widget.source?.isPublic ?? true;
     isActive = widget.source?.isActive ?? true;
@@ -1025,8 +1025,10 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                 controller: includeFoldersCtrl,
                 decoration: const InputDecoration(
                   labelText: 'Include Folders (optional)',
-                  helperText: 'Comma-separated list of folder names to include when importing',
+                  helperText: 'One folder name per line. Folder names with commas are fully supported.',
                 ),
+                maxLines: 5,
+                minLines: 3,
               ),
               const SizedBox(height: 8),
               Row(
@@ -1079,7 +1081,7 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                 includeFolders: includeFoldersCtrl.text.trim().isEmpty
                     ? null
                     : includeFoldersCtrl.text
-                        .split(',')
+                        .split('\n')
                         .map((s) => s.trim())
                         .where((s) => s.isNotEmpty)
                         .toList(),
@@ -1098,7 +1100,7 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                 includeFolders: includeFoldersCtrl.text.trim().isEmpty
                     ? <String>[]
                     : includeFoldersCtrl.text
-                        .split(',')
+                        .split('\n')
                         .map((s) => s.trim())
                         .where((s) => s.isNotEmpty)
                         .toList(),
