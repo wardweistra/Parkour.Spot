@@ -116,6 +116,54 @@ class AdminHomeScreen extends StatelessWidget {
               },
             ),
           ),
+          const SizedBox(height: 8),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.signal_cellular_alt),
+              title: const Text('Migrate Spot Rankings'),
+              subtitle: const Text('Populate ranking field for all spots based on ratings'),
+              onTap: () async {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Migrate Spot Rankings'),
+                    content: const Text('This will populate the ranking field for all spots based on their ratings and the average Wilson score. Continue?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(false),
+                        child: const Text('Cancel'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => Navigator.of(ctx).pop(true),
+                        child: const Text('Run'),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (confirmed != true) return;
+
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Migrating spot rankings...')),
+                );
+
+                try {
+                  final spotService = Provider.of<SpotService>(context, listen: false);
+                  final result = await spotService.migrateSpotRankings();
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Done. Processed ${result['processed']}, updated ${result['updated']}, failed ${result['failed']}')),
+                  );
+                } catch (e) {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: $e')),
+                  );
+                }
+              },
+            ),
+          ),
         ],
       ),
     );

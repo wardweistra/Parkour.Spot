@@ -89,9 +89,9 @@ function buildDescription(s) {
 function baseQuery(lngMin, lngMax, type = null, minLat, maxLat, projection) {
   let q = db.collection("spots").where("isPublic", "==", true);
 
-  // For spots without ratings (type 'zero'), order by random field
+  // For spots without ratings (type 'zero'), order by ranking field
   if (type === "zero") {
-    q = q.orderBy("random");
+    q = q.orderBy("ranking");
   } else {
   // For other types, use the original longitude/latitude ordering
     q = q.orderBy("longitude");
@@ -520,15 +520,45 @@ exports.getTopSpotsInBounds = onCall(
 
 // ========== Ratings Aggregation Helpers ==========
 /**
+ * Helper function to fetch wilsonLowerBoundAvg from settings
+ * @return {Promise<number>} The average Wilson lower bound
+ */
+async function getWilsonLowerBoundAvg() {
+  try {
+    const settingsSnap = await db
+        .collection("settings")
+        .where("name", "==", "wilsonLowerBoundAvg")
+        .limit(1)
+        .get();
+    if (!settingsSnap.empty) {
+      const v = settingsSnap.docs[0].data().value;
+      if (typeof v === "number") return v;
+      if (v && typeof v === "object" && typeof v.toNumber === "function") {
+        return v.toNumber();
+      }
+    }
+    return 0;
+  } catch (err) {
+    console.warn("Failed to load wilsonLowerBoundAvg from settings, defaulting to 0", err);
+    return 0;
+  }
+}
+
+/**
  * Recomputes rating aggregates for a spot and updates the spot document.
  * averageRating: mean of ratings (0..5)
  * ratingCount: number of ratings
  * wilsonLowerBound: Wilson score lower bound over normalized stars (0..5)
+ * ranking: computed ranking value based on wilsonLowerBound and wilsonLowerBoundAvg
  * @param {string} spotId
  */
 async function recomputeSpotRatingAggregates(spotId) {
   try {
     if (!spotId) return;
+    
+    // Fetch wilsonLowerBoundAvg from settings
+    const wilsonLowerBoundAvg = await getWilsonLowerBoundAvg();
+    
     const ratingsSnap = await db
         .collection("ratings")
         .where("spotId", "==", spotId)
@@ -537,11 +567,13 @@ async function recomputeSpotRatingAggregates(spotId) {
     const count = ratingsSnap.size;
 
     if (count === 0) {
+      // No ratings: set ranking to random value
       await db.collection("spots").doc(spotId).set(
           {
             averageRating: 0,
             ratingCount: 0,
             wilsonLowerBound: 0,
+            ranking: Math.random(),
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           },
           {merge: true},
@@ -575,6 +607,17 @@ async function recomputeSpotRatingAggregates(spotId) {
     const lowerBoundProportion = (center - margin) / denom;
     const wilsonLowerBound = Math.max(0, Math.min(1, lowerBoundProportion)) * 5;
 
+    // Compute ranking based on wilsonLowerBound vs wilsonLowerBoundAvg
+    let ranking;
+    if (wilsonLowerBound > wilsonLowerBoundAvg) {
+      ranking = wilsonLowerBound + 10;
+    } else if (wilsonLowerBound < wilsonLowerBoundAvg) {
+      ranking = wilsonLowerBound - 10;
+    } else {
+      // Equal: treat as above average
+      ranking = wilsonLowerBound + 10;
+    }
+
     await db
         .collection("spots")
         .doc(spotId)
@@ -583,6 +626,7 @@ async function recomputeSpotRatingAggregates(spotId) {
               averageRating: Number(average.toFixed(4)),
               ratingCount: count,
               wilsonLowerBound: Number(wilsonLowerBound.toFixed(4)),
+              ranking: Number(ranking.toFixed(4)),
               updatedAt: admin.firestore.FieldValue.serverTimestamp(),
             },
             {merge: true},
@@ -635,6 +679,67 @@ exports.recomputeAllRatedSpots = onCall(
         };
       } catch (error) {
         console.error("recomputeAllRatedSpots error", error);
+        return {success: false, error: error.message};
+      }
+    },
+);
+
+// ========== Admin Callable: Migrate spot rankings ==========
+exports.migrateSpotRankings = onCall(
+    {region: "europe-west1", memory: "512MiB", timeoutSeconds: 540},
+    async (_request) => {
+      try {
+        // Fetch wilsonLowerBoundAvg from settings once
+        const wilsonLowerBoundAvg = await getWilsonLowerBoundAvg();
+        
+        // Query all public spots
+        const spotsSnap = await db.collection("spots").where("isPublic", "==", true).get();
+        
+        let processed = 0;
+        let updated = 0;
+        let failed = 0;
+        
+        // Process each spot
+        for (const spotDoc of spotsSnap.docs) {
+          try {
+            processed++;
+            const spotData = spotDoc.data();
+            const wilsonLowerBound = spotData.wilsonLowerBound || 0;
+            
+            let ranking;
+            if (wilsonLowerBound === 0) {
+              // No ratings: use random value (or existing random field as fallback)
+              ranking = (spotData.random !== undefined && spotData.random !== null) ? spotData.random : Math.random();
+            } else if (wilsonLowerBound > wilsonLowerBoundAvg) {
+              ranking = wilsonLowerBound + 10;
+            } else if (wilsonLowerBound < wilsonLowerBoundAvg) {
+              ranking = wilsonLowerBound - 10;
+            } else {
+              // Equal: treat as above average
+              ranking = wilsonLowerBound + 10;
+            }
+            
+            // Update the spot document with ranking field
+            await spotDoc.ref.update({
+              ranking: Number(ranking.toFixed(4)),
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+            
+            updated++;
+          } catch (e) {
+            console.error("Failed to migrate ranking for", spotDoc.id, e);
+            failed++;
+          }
+        }
+        
+        return {
+          success: true,
+          processed: processed,
+          updated: updated,
+          failed: failed,
+        };
+      } catch (error) {
+        console.error("migrateSpotRankings error", error);
         return {success: false, error: error.message};
       }
     },
@@ -2272,10 +2377,11 @@ async function processSyncSource(source, sourceId, apiKey) {
     }
 
     if (existingSpots.empty) {
-      // Create new spot - initialize rating fields to 0
+      // Create new spot - initialize rating fields to 0 and ranking field
       spotData.averageRating = 0;
       spotData.ratingCount = 0;
       spotData.wilsonLowerBound = 0;
+      spotData.ranking = Math.random(); // Random ranking for new spots
       spotData.createdAt = admin.firestore.FieldValue.serverTimestamp();
       await db.collection("spots").add(cleanUndefinedValues(spotData));
       created++;
@@ -2283,7 +2389,7 @@ async function processSyncSource(source, sourceId, apiKey) {
           `Created new spot: ${name} from source: ${source.name} with ${imageResult.imageUrls.length} images and geocoded address`,
       );
     } else {
-      // Update existing spot - preserve existing rating fields
+      // Update existing spot - preserve existing rating and ranking fields
       const existingSpot = existingSpots.docs[0];
       const existingData = existingSpot.data();
 
@@ -2296,6 +2402,10 @@ async function processSyncSource(source, sourceId, apiKey) {
       }
       if (existingData.wilsonLowerBound !== undefined) {
         spotData.wilsonLowerBound = existingData.wilsonLowerBound;
+      }
+      // Preserve existing ranking field if it exists
+      if (existingData.ranking !== undefined) {
+        spotData.ranking = existingData.ranking;
       }
 
       await existingSpot.ref.update(cleanUndefinedValues(spotData));

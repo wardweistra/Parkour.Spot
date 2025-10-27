@@ -93,7 +93,7 @@ class SpotService extends ChangeNotifier {
         imageUrls: imageUrls,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
-        random: spot.random ?? Random().nextDouble(),
+        ranking: spot.ranking ?? Random().nextDouble(),
       );
 
       final docRef = await _firestore.collection('spots').add(spotWithImages.toFirestore());
@@ -517,6 +517,24 @@ class SpotService extends ChangeNotifier {
       return data;
     } catch (e) {
       debugPrint('Error recomputing all rated spots: $e');
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> migrateSpotRankings() async {
+    try {
+      final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
+      final callable = functions.httpsCallable(
+        'migrateSpotRankings',
+        options: HttpsCallableOptions(
+          timeout: const Duration(minutes: 9),
+        ),
+      );
+      final result = await callable.call();
+      final data = result.data as Map<String, dynamic>;
+      return data;
+    } catch (e) {
+      debugPrint('Error migrating spot rankings: $e');
       rethrow;
     }
   }
