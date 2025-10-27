@@ -94,6 +94,7 @@ class SpotService extends ChangeNotifier {
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
         random: spot.random ?? Random().nextDouble(),
+        ranking: spot.ranking ?? spot.random ?? Random().nextDouble(),
       );
 
       final docRef = await _firestore.collection('spots').add(spotWithImages.toFirestore());
@@ -517,6 +518,25 @@ class SpotService extends ChangeNotifier {
       return data;
     } catch (e) {
       debugPrint('Error recomputing all rated spots: $e');
+      rethrow;
+    }
+  }
+
+  // Admin: Backfill ranking field for all spots
+  Future<Map<String, dynamic>> backfillSpotRanking() async {
+    try {
+      final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
+      final callable = functions.httpsCallable(
+        'backfillSpotRanking',
+        options: HttpsCallableOptions(
+          timeout: const Duration(minutes: 9),
+        ),
+      );
+      final result = await callable.call();
+      final data = result.data as Map<String, dynamic>;
+      return data;
+    } catch (e) {
+      debugPrint('Error backfilling ranking: $e');
       rethrow;
     }
   }

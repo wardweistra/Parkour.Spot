@@ -449,6 +449,7 @@ exports.getTopSpotsInBounds = onCall(
           "createdAt",
           "updatedAt",
           "random",
+          "ranking",
         ];
 
 
@@ -537,15 +538,34 @@ async function recomputeSpotRatingAggregates(spotId) {
     const count = ratingsSnap.size;
 
     if (count === 0) {
-      await db.collection("spots").doc(spotId).set(
-          {
-            averageRating: 0,
-            ratingCount: 0,
-            wilsonLowerBound: 0,
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-          },
-          {merge: true},
-      );
+      // No ratings: set ranking to existing random (default behavior)
+      let rankingValue = 0;
+      let randomValue = null;
+      try {
+        const spotDoc = await db.collection("spots").doc(spotId).get();
+        const existing = spotDoc.exists ? spotDoc.data() : {};
+        if (existing && typeof existing.random === "number") {
+          randomValue = existing.random;
+        }
+      } catch (e) {
+        // ignore fetch error, will fallback to generated random
+      }
+      if (typeof randomValue !== "number") {
+        randomValue = Math.random();
+      }
+      rankingValue = Number(Number(randomValue).toFixed(6));
+
+      const payload = {
+        averageRating: 0,
+        ratingCount: 0,
+        wilsonLowerBound: 0,
+        ranking: rankingValue,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+      // Ensure random exists if it was missing
+      if (randomValue !== null) payload.random = randomValue;
+
+      await db.collection("spots").doc(spotId).set(payload, {merge: true});
       return;
     }
 
@@ -575,6 +595,29 @@ async function recomputeSpotRatingAggregates(spotId) {
     const lowerBoundProportion = (center - margin) / denom;
     const wilsonLowerBound = Math.max(0, Math.min(1, lowerBoundProportion)) * 5;
 
+    // Load average wilson from settings to compute ranking offset
+    let averageWilson = 0;
+    try {
+      const settingsSnap = await db
+          .collection("settings")
+          .where("name", "==", "wilsonLowerBoundAvg")
+          .limit(1)
+          .get();
+      if (!settingsSnap.empty) {
+        const v = settingsSnap.docs[0].data().value;
+        if (typeof v === "number") averageWilson = v;
+        else if (v && typeof v === "object" && typeof v.toNumber === "function") {
+          averageWilson = v.toNumber();
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to load wilsonLowerBoundAvg in recomputeSpotRatingAggregates, defaulting to 0", e);
+    }
+
+    const ranking = (wilsonLowerBound > averageWilson)
+      ? Number((wilsonLowerBound + 10).toFixed(4))
+      : Number((wilsonLowerBound - 10).toFixed(4));
+
     await db
         .collection("spots")
         .doc(spotId)
@@ -583,6 +626,7 @@ async function recomputeSpotRatingAggregates(spotId) {
               averageRating: Number(average.toFixed(4)),
               ratingCount: count,
               wilsonLowerBound: Number(wilsonLowerBound.toFixed(4)),
+              ranking,
               updatedAt: admin.firestore.FieldValue.serverTimestamp(),
             },
             {merge: true},
@@ -635,6 +679,70 @@ exports.recomputeAllRatedSpots = onCall(
         };
       } catch (error) {
         console.error("recomputeAllRatedSpots error", error);
+        return {success: false, error: error.message};
+      }
+    },
+);
+
+// ========== Admin Callable: Backfill ranking for all spots ==========
+exports.backfillSpotRanking = onCall(
+    {region: "europe-west1", memory: "1GiB", timeoutSeconds: 540},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+
+        // Load average wilson from settings once
+        let averageWilson = 0;
+        try {
+          const settingsSnap = await db
+              .collection("settings")
+              .where("name", "==", "wilsonLowerBoundAvg")
+              .limit(1)
+              .get();
+          if (!settingsSnap.empty) {
+            const v = settingsSnap.docs[0].data().value;
+            if (typeof v === "number") averageWilson = v;
+            else if (v && typeof v === "object" && typeof v.toNumber === "function") {
+              averageWilson = v.toNumber();
+            }
+          }
+        } catch (e) {
+          console.warn("Failed to load wilsonLowerBoundAvg for backfill, defaulting to 0", e);
+        }
+
+        const spotsSnapshot = await db.collection("spots").get();
+        let updated = 0;
+        let skipped = 0;
+        let failed = 0;
+
+        for (const doc of spotsSnapshot.docs) {
+          try {
+            const data = doc.data();
+            const random = typeof data.random === "number" ? data.random : Math.random();
+            const wilson = typeof data.wilsonLowerBound === "number" ? data.wilsonLowerBound : 0;
+            let ranking;
+            if (typeof wilson === "number" && wilson > 0) {
+              ranking = (wilson > averageWilson)
+                ? Number((wilson + 10).toFixed(4))
+                : Number((wilson - 10).toFixed(4));
+            } else {
+              ranking = Number(Number(random).toFixed(6));
+            }
+
+            const payload = {ranking};
+            if (data.random === undefined) payload.random = random;
+
+            await doc.ref.set(payload, {merge: true});
+            updated++;
+          } catch (e) {
+            console.error("Failed updating ranking for spot", doc.id, e);
+            failed++;
+          }
+        }
+
+        return {success: true, total: spotsSnapshot.size, updated, skipped, failed};
+      } catch (error) {
+        console.error("backfillSpotRanking error", error);
         return {success: false, error: error.message};
       }
     },
@@ -2250,6 +2358,8 @@ async function processSyncSource(source, sourceId, apiKey) {
       spotData.averageRating = 0;
       spotData.ratingCount = 0;
       spotData.wilsonLowerBound = 0;
+      // Initialize ranking from random for new spots
+      spotData.ranking = spotData.random;
       spotData.createdAt = admin.firestore.FieldValue.serverTimestamp();
       await db.collection("spots").add(cleanUndefinedValues(spotData));
       created++;

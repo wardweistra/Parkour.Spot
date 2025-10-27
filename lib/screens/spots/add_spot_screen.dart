@@ -317,6 +317,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
         ratingCount: 0,
         wilsonLowerBound: 0.0,
         random: Random().nextDouble(),
+        ranking: Random().nextDouble(),
         spotAccess: _selectedAccess,
         spotFeatures: _selectedFeatures.isNotEmpty ? _selectedFeatures.toList() : null,
         spotFacilities: _selectedFacilities.isNotEmpty ? _selectedFacilities : null,
