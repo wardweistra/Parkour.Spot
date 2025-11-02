@@ -204,7 +204,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: PageView(
         controller: _pageController,
         physics: _currentIndex == 0 
-            ? const NeverScrollableScrollPhysics() // Disable swiping on Search tab (map gestures)
+            ? const NeverScrollableScrollPhysics() // Disable swiping on Home tab (map gestures)
             : const PageScrollPhysics(), // Enable swiping on other tabs
         onPageChanged: (index) {
           setState(() {
@@ -226,8 +226,8 @@ class _HomeScreenState extends State<HomeScreen> {
         elevation: 8,
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: 'Search',
+            icon: Icon(Icons.home),
+            label: 'Home',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.add_location),
