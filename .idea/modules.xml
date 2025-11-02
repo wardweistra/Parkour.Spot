@@ -3,7 +3,6 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/parkour_spot.iml" filepath="$PROJECT_DIR$/parkour_spot.iml" />
-      <module fileurl="file://$PROJECT_DIR$/android/parkour_spot_android.iml" filepath="$PROJECT_DIR$/android/parkour_spot_android.iml" />
     </modules>
   </component>
 </project>

@@ -14,7 +14,7 @@ fi
 export $(cat .env | grep -v '^#' | xargs)
 
 # Validate required variables
-required_vars=("FIREBASE_API_KEY" "FIREBASE_APP_ID_WEB" "FIREBASE_APP_ID_ANDROID" "FIREBASE_APP_ID_IOS" "FIREBASE_PROJECT_ID")
+required_vars=("FIREBASE_API_KEY" "FIREBASE_APP_ID_WEB" "FIREBASE_PROJECT_ID")
 for var in "${required_vars[@]}"; do
     if [ -z "${!var}" ]; then
         echo "❌ Missing required environment variable: $var"
@@ -29,12 +29,8 @@ echo "🌐 Starting Flutter web server on port 8080..."
 flutter run -d web-server --web-port 8080 \
   --dart-define=FIREBASE_API_KEY="$FIREBASE_API_KEY" \
   --dart-define=FIREBASE_APP_ID_WEB="$FIREBASE_APP_ID_WEB" \
-  --dart-define=FIREBASE_APP_ID_ANDROID="$FIREBASE_APP_ID_ANDROID" \
-  --dart-define=FIREBASE_APP_ID_IOS="$FIREBASE_APP_ID_IOS" \
   --dart-define=FIREBASE_MESSAGING_SENDER_ID="$FIREBASE_MESSAGING_SENDER_ID" \
   --dart-define=FIREBASE_PROJECT_ID="$FIREBASE_PROJECT_ID" \
   --dart-define=FIREBASE_AUTH_DOMAIN="$FIREBASE_AUTH_DOMAIN" \
   --dart-define=FIREBASE_STORAGE_BUCKET="$FIREBASE_STORAGE_BUCKET" \
-  --dart-define=FIREBASE_MEASUREMENT_ID="$FIREBASE_MEASUREMENT_ID" \
-  --dart-define=GOOGLE_MAPS_API_KEY_ANDROID="$GOOGLE_MAPS_API_KEY_ANDROID" \
-  --dart-define=GOOGLE_MAPS_API_KEY_IOS="$GOOGLE_MAPS_API_KEY_IOS"
+  --dart-define=FIREBASE_MEASUREMENT_ID="$FIREBASE_MEASUREMENT_ID"

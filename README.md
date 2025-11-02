@@ -11,7 +11,7 @@ A cross-platform Flutter application for discovering, reporting, and rating park
 - **🗺️ Interactive Maps** - View spots on maps with location data
 - **📱 Add New Spots** - Report new parkour locations with photos
 - **⭐ Rating System** - Rate and review spots
-- **📱 Cross-Platform** - Works on Web, Android, and iOS via Progressive Web App
+- **📱 Progressive Web App** - Works on Web, Mobile, and Desktop via Progressive Web App
 - **☁️ Cloud Backend** - Firebase-powered with real-time data sync
 
 ## 🚀 Quick Start
@@ -128,25 +128,6 @@ flutter test --coverage
 
 > **Note**: For common workflows, see the [Common Workflows](#common-workflows) section above.
 
-### **Android Build**
-```bash
-# Debug APK
-flutter build apk --debug
-
-# Release APK
-flutter build apk --release
-
-# APK location: build/app/outputs/flutter-apk/app-debug.apk
-```
-
-### **iOS Build**
-```bash
-# Build iOS app
-flutter build ios --release
-
-# Open in Xcode for final configuration
-open ios/Runner.xcworkspace
-```
 
 ## 🏗️ Architecture
 
@@ -241,14 +222,6 @@ lib/
 
 ### **Common Issues**
 
-#### **NDK Version Issues (Android)**
-```bash
-# Check NDK versions
-ls /Users/ward/Library/Android/sdk/ndk/
-
-# Fix by updating build.gradle.kts
-# Set: ndkVersion = "29.0.13846066"
-```
 
 #### **Firebase Configuration**
 - Ensure `.env` file exists with correct values
