@@ -49,8 +49,8 @@ class ProfileScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'About Parkour.Spot',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        'About',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -232,7 +232,7 @@ class ProfileScreen extends StatelessWidget {
                   children: [
                     Text(
                       'Administrator',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -266,8 +266,8 @@ class ProfileScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'About Parkour.Spot',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        'About',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
