@@ -26,7 +26,7 @@ class AppConfig {
   static String get firebaseProjectId => WebEnvVars.firebaseProjectId;
   
   static String get firebaseAuthDomain => 
-      WebEnvVars.firebaseAuthDomain.isNotEmpty ? WebEnvVars.firebaseAuthDomain : '$firebaseProjectId.firebaseapp.com';
+      WebEnvVars.firebaseAuthDomain.isNotEmpty ? WebEnvVars.firebaseAuthDomain : 'parkour.spot';
   
   static String get firebaseStorageBucket => 
       WebEnvVars.firebaseStorageBucket.isNotEmpty ? WebEnvVars.firebaseStorageBucket : '$firebaseProjectId.firebasestorage.app';

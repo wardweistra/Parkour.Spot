@@ -20,6 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
   
   bool _isLogin = true;
   bool _isLoading = false;
+  bool _isGoogleSignInLoading = false;
   String? _intendedDestination;
   bool _hasCapturedDestination = false;
   bool _hasRedirected = false;
@@ -285,6 +286,60 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 
+  Future<void> _signInWithGoogle() async {
+    setState(() {
+      _isGoogleSignInLoading = true;
+    });
+
+    try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      final success = await authService.signInWithGoogle();
+
+      if (success && mounted) {
+        final isAuthenticated = Provider.of<AuthService>(context, listen: false).isAuthenticated;
+        
+        if (isAuthenticated) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Signed in with Google successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          _redirectAfterAuth();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Authentication failed. Please try again.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Google Sign-In failed. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGoogleSignInLoading = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -334,6 +389,60 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   
                   const SizedBox(height: 32),
+                  
+                  // Google Sign-In Button
+                  OutlinedButton.icon(
+                    onPressed: (_isLoading || _isGoogleSignInLoading) ? null : _signInWithGoogle,
+                    icon: _isGoogleSignInLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.g_mobiledata, size: 24),
+                    label: Text(
+                      _isGoogleSignInLoading ? 'Signing in...' : 'Continue with Google',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      side: BorderSide(
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 24),
+                  
+                  // Divider with "OR" text
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Divider(
+                          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'OR',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Divider(
+                          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                        ),
+                      ),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 24),
                   
                   // Display Name Field (only for sign up)
                   if (!_isLogin) ...[
@@ -397,7 +506,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   
                   // Submit Button
                   CustomButton(
-                    onPressed: _isLoading ? null : _submitForm,
+                    onPressed: (_isLoading || _isGoogleSignInLoading) ? null : _submitForm,
                     text: _isLoading 
                         ? 'Please wait...' 
                         : (_isLogin ? 'Login' : 'Sign Up'),
@@ -408,7 +517,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   
                   // Toggle Mode Button
                   TextButton(
-                    onPressed: _isLoading ? null : _toggleMode,
+                    onPressed: (_isLoading || _isGoogleSignInLoading) ? null : _toggleMode,
                     child: Text(
                       _isLogin 
                           ? 'Don\'t have an account? Sign Up' 
@@ -420,7 +529,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   if (_isLogin) ...[
                     const SizedBox(height: 16),
                     TextButton(
-                      onPressed: _isLoading ? null : () {
+                      onPressed: (_isLoading || _isGoogleSignInLoading) ? null : () {
                         _showForgotPasswordDialog();
                       },
                       child: const Text('Forgot Password?'),

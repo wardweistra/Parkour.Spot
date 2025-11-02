@@ -98,6 +98,39 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  Future<bool> signInWithGoogle() async {
+    if (!kIsWeb) {
+      debugPrint('Google Sign-In is only supported on web');
+      return false;
+    }
+
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      // Create a new provider
+      final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+
+      // Once signed in, return the UserCredential
+      final userCredential = await _auth.signInWithPopup(googleProvider);
+
+      if (userCredential.user != null) {
+        await _updateLastLogin();
+      }
+
+      return true;
+    } on FirebaseAuthException catch (e) {
+      debugPrint('Google Sign-In error: ${e.message}');
+      return false;
+    } catch (e) {
+      debugPrint('Google Sign-In error: $e');
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<bool> createUserWithEmailAndPassword(
     String email, 
     String password, 
