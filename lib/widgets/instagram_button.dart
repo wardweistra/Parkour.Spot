@@ -36,19 +36,22 @@ class InstagramButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final displayLabel = label ?? handle;
     
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: () => _launchInstagramProfile(handle),
-        icon: const FaIcon(
-          FontAwesomeIcons.instagram,
-          size: 18,
-        ),
-        label: Text(displayLabel),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFE4405F), // Instagram brand color
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 400),
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: () => _launchInstagramProfile(handle),
+          icon: const FaIcon(
+            FontAwesomeIcons.instagram,
+            size: 18,
+          ),
+          label: Text(displayLabel),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFE4405F), // Instagram brand color
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          ),
         ),
       ),
     );

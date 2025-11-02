@@ -232,8 +232,8 @@ class ProfileScreen extends StatelessWidget {
                   children: [
                     Text(
                       'Administrator',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 8),
