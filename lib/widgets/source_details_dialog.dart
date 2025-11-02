@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../services/sync_source_service.dart';
+import 'instagram_button.dart';
 
 class SourceDetailsDialog extends StatelessWidget {
   final SyncSource source;
@@ -109,22 +109,7 @@ class SourceDetailsDialog extends StatelessWidget {
             ],
             if (source.instagramHandle != null && source.instagramHandle!.isNotEmpty) ...[
               const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () => _launchInstagramProfile(source.instagramHandle!),
-                  icon: const FaIcon(
-                    FontAwesomeIcons.instagram,
-                    size: 18,
-                  ),
-                  label: Text(source.instagramHandle!),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE4405F), // Instagram brand color
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  ),
-                ),
-              ),
+              InstagramButton(handle: source.instagramHandle!),
             ],
             if (source.createdAt != null) ...[
               const SizedBox(height: 16),
@@ -177,26 +162,6 @@ class SourceDetailsDialog extends StatelessWidget {
     final Uri uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
-
-  Future<void> _launchInstagramProfile(String handle) async {
-    // Remove @ symbol if present and clean the handle
-    final cleanHandle = handle.replaceFirst('@', '');
-    
-    // Try Instagram app first, then fall back to web
-    final instagramAppUrl = 'instagram://user?username=$cleanHandle';
-    final instagramWebUrl = 'https://www.instagram.com/$cleanHandle/';
-    
-    final Uri appUri = Uri.parse(instagramAppUrl);
-    final Uri webUri = Uri.parse(instagramWebUrl);
-    
-    if (await canLaunchUrl(appUri)) {
-      // Try to launch Instagram app
-      await launchUrl(appUri, mode: LaunchMode.externalApplication);
-    } else if (await canLaunchUrl(webUri)) {
-      // Fall back to web version
-      await launchUrl(webUri, mode: LaunchMode.externalApplication);
     }
   }
 }

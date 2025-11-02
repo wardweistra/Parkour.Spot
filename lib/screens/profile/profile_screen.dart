@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/custom_button.dart';
+import '../../widgets/instagram_button.dart';
+import '../../widgets/github_button.dart';
+import '../../widgets/report_issue_button.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -39,60 +41,82 @@ class ProfileScreen extends StatelessWidget {
           Card(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'About Parkour.Spot',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Parkour.Spot is an open source app for finding and sharing spots for parkour and freerunning. Discover new locations, share your favorite spots, and connect with the parkour community.',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          
-          const SizedBox(height: 16),
-          
-          // Links Card
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Connect With Us',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWideScreen = constraints.maxWidth > 600;
                   
-                  _buildLinkTile(
-                    context,
-                    Icons.photo_camera,
-                    'Instagram',
-                    '@parkourdotspot',
-                    'https://www.instagram.com/parkourdotspot',
-                  ),
-                  const Divider(height: 1),
-                  _buildLinkTile(
-                    context,
-                    Icons.code,
-                    'GitHub',
-                    'View source code',
-                    'https://github.com/wardweistra/Parkour.Spot/',
-                  ),
-                ],
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'About Parkour.Spot',
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      isWideScreen
+                          ? Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    'Parkour.Spot is an open source app for finding and sharing spots for parkour and freerunning. Discover new locations, share your favorite spots, and connect with the parkour community.',
+                                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 24),
+                                Expanded(
+                                  child: Column(
+                                    children: [
+                                      InstagramButton(
+                                        handle: 'parkourdotspot',
+                                        label: '@parkourdotspot',
+                                      ),
+                                      const SizedBox(height: 16),
+                                      GitHubButton(
+                                        url: 'https://github.com/wardweistra/Parkour.Spot/',
+                                        label: 'View source code',
+                                      ),
+                                      const SizedBox(height: 16),
+                                      ReportIssueButton(
+                                        url: 'https://github.com/wardweistra/Parkour.Spot/issues',
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Parkour.Spot is an open source app for finding and sharing spots for parkour and freerunning. Discover new locations, share your favorite spots, and connect with the parkour community.',
+                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                InstagramButton(
+                                  handle: 'parkourdotspot',
+                                  label: '@parkourdotspot',
+                                ),
+                                const SizedBox(height: 16),
+                                GitHubButton(
+                                  url: 'https://github.com/wardweistra/Parkour.Spot/',
+                                  label: 'View source code',
+                                ),
+                                const SizedBox(height: 16),
+                                ReportIssueButton(
+                                  url: 'https://github.com/wardweistra/Parkour.Spot/issues',
+                                ),
+                              ],
+                            ),
+                    ],
+                  );
+                },
               ),
             ),
           ),
@@ -234,60 +258,82 @@ class ProfileScreen extends StatelessWidget {
           Card(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'About Parkour.Spot',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Parkour.Spot is an open source app for finding and sharing spots for parkour and freerunning. Discover new locations, share your favorite spots, and connect with the parkour community.',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          
-          const SizedBox(height: 16),
-          
-          // Links Card
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Connect With Us',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWideScreen = constraints.maxWidth > 600;
                   
-                  _buildLinkTile(
-                    context,
-                    Icons.photo_camera,
-                    'Instagram',
-                    '@parkourdotspot',
-                    'https://www.instagram.com/parkourdotspot',
-                  ),
-                  const Divider(height: 1),
-                  _buildLinkTile(
-                    context,
-                    Icons.code,
-                    'GitHub',
-                    'View source code',
-                    'https://github.com/wardweistra/Parkour.Spot/',
-                  ),
-                ],
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'About Parkour.Spot',
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      isWideScreen
+                          ? Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    'Parkour.Spot is an open source app for finding and sharing spots for parkour and freerunning. Discover new locations, share your favorite spots, and connect with the parkour community.',
+                                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 24),
+                                Expanded(
+                                  child: Column(
+                                    children: [
+                                      InstagramButton(
+                                        handle: 'parkourdotspot',
+                                        label: '@parkourdotspot',
+                                      ),
+                                      const SizedBox(height: 16),
+                                      GitHubButton(
+                                        url: 'https://github.com/wardweistra/Parkour.Spot/',
+                                        label: 'View source code',
+                                      ),
+                                      const SizedBox(height: 16),
+                                      ReportIssueButton(
+                                        url: 'https://github.com/wardweistra/Parkour.Spot/issues',
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Parkour.Spot is an open source app for finding and sharing spots for parkour and freerunning. Discover new locations, share your favorite spots, and connect with the parkour community.',
+                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                InstagramButton(
+                                  handle: 'parkourdotspot',
+                                  label: '@parkourdotspot',
+                                ),
+                                const SizedBox(height: 16),
+                                GitHubButton(
+                                  url: 'https://github.com/wardweistra/Parkour.Spot/',
+                                  label: 'View source code',
+                                ),
+                                const SizedBox(height: 16),
+                                ReportIssueButton(
+                                  url: 'https://github.com/wardweistra/Parkour.Spot/issues',
+                                ),
+                              ],
+                            ),
+                    ],
+                  );
+                },
               ),
             ),
           ),
@@ -348,37 +394,6 @@ class ProfileScreen extends StatelessWidget {
       subtitle: Text(subtitle),
       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       onTap: onTap,
-      contentPadding: EdgeInsets.zero,
-    );
-  }
-
-  Widget _buildLinkTile(
-    BuildContext context,
-    IconData icon,
-    String title,
-    String subtitle,
-    String url,
-  ) {
-    return ListTile(
-      leading: Icon(
-        icon,
-        color: Theme.of(context).colorScheme.primary,
-      ),
-      title: Text(title),
-      subtitle: Text(subtitle),
-      trailing: const Icon(Icons.open_in_new, size: 16),
-      onTap: () async {
-        final uri = Uri.parse(url);
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-        } else {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Could not open $url')),
-            );
-          }
-        }
-      },
       contentPadding: EdgeInsets.zero,
     );
   }
