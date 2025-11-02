@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/custom_button.dart';
 
@@ -15,23 +16,11 @@ class ProfileScreen extends StatelessWidget {
         elevation: 0,
         backgroundColor: Theme.of(context).colorScheme.surface,
         foregroundColor: Theme.of(context).colorScheme.onSurface,
-        actions: [
-          IconButton(
-            onPressed: () {
-              // TODO: Implement settings
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Settings coming soon!')),
-              );
-            },
-            icon: const Icon(Icons.settings),
-            tooltip: 'Settings',
-          ),
-        ],
       ),
       body: Consumer<AuthService>(
         builder: (context, authService, child) {
           if (!authService.isAuthenticated) {
-            return _buildNotAuthenticated(context);
+            return _buildAppInfo(context);
           }
 
           return _buildProfileContent(context, authService);
@@ -40,44 +29,116 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildNotAuthenticated(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.person_outline,
-              size: 80,
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Not Signed In',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
+  Widget _buildAppInfo(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // App Info Card
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'About Parkour.Spot',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Parkour.Spot is an open source app for finding and sharing spots for parkour and freerunning. Discover new locations, share your favorite spots, and connect with the parkour community.',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 12),
-            Text(
-              'Sign in to access your profile and manage your parkour spots.',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Links Card
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Connect With Us',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  _buildLinkTile(
+                    context,
+                    Icons.photo_camera,
+                    'Instagram',
+                    '@parkourdotspot',
+                    'https://www.instagram.com/parkourdotspot',
+                  ),
+                  const Divider(height: 1),
+                  _buildLinkTile(
+                    context,
+                    Icons.code,
+                    'GitHub',
+                    'View source code',
+                    'https://github.com/wardweistra/Parkour.Spot/',
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 32),
-            CustomButton(
-              onPressed: () {
-                // Navigate to login screen with redirect back to profile tab
-                context.go('/login?redirectTo=${Uri.encodeComponent('/home?tab=profile')}');
-              },
-              text: 'Sign In',
-              width: double.infinity,
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Sign In Prompt
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.person_outline,
+                    size: 48,
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Sign in to access your profile',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Sign in to manage your spots, rate locations, and save favorites.',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  CustomButton(
+                    onPressed: () {
+                      context.go('/login?redirectTo=${Uri.encodeComponent('/home?tab=profile')}');
+                    },
+                    text: 'Sign In',
+                    width: double.infinity,
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -130,116 +191,6 @@ class ProfileScreen extends StatelessWidget {
                       color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
                   ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Edit Profile Button
-                  CustomButton(
-                    onPressed: () {
-                      // TODO: Navigate to edit profile screen
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Edit profile coming soon!')),
-                      );
-                    },
-                    text: 'Edit Profile',
-                    icon: Icons.edit,
-                    isOutlined: true,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          
-          const SizedBox(height: 16),
-          
-          // Stats Section
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Statistics',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatItem(
-                          context,
-                          Icons.location_on,
-                          'Spots Added',
-                          '0', // TODO: Get actual count
-                        ),
-                      ),
-                      Expanded(
-                        child: _buildStatItem(
-                          context,
-                          Icons.star,
-                          'Spots Rated',
-                          '0', // TODO: Get actual count
-                        ),
-                      ),
-                      Expanded(
-                        child: _buildStatItem(
-                          context,
-                          Icons.favorite,
-                          'Favorites',
-                          '${user?.favoriteSpots?.length ?? 0}',
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          
-          const SizedBox(height: 16),
-          
-          // Quick Actions
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Quick Actions',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  _buildActionTile(
-                    context,
-                    Icons.favorite,
-                    'My Favorites',
-                    'View your favorite parkour spots',
-                    () {
-                      // TODO: Navigate to favorites screen
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Favorites coming soon!')),
-                      );
-                    },
-                  ),
-                  _buildActionTile(
-                    context,
-                    Icons.history,
-                    'My Spots',
-                    'Manage the spots you\'ve added',
-                    () {
-                      // TODO: Navigate to my spots screen
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('My spots coming soon!')),
-                      );
-                    },
-                  ),
                 ],
               ),
             ),
@@ -279,7 +230,34 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: 16),
           ],
           
-          // App Info
+          // App Info Card
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'About Parkour.Spot',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Parkour.Spot is an open source app for finding and sharing spots for parkour and freerunning. Discover new locations, share your favorite spots, and connect with the parkour community.',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Links Card
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -287,41 +265,27 @@ class ProfileScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'App Information',
+                    'Connect With Us',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _buildInfoTile(
+                  
+                  _buildLinkTile(
                     context,
-                    Icons.info,
-                    'Version',
-                    '1.0.0',
+                    Icons.photo_camera,
+                    'Instagram',
+                    '@parkourdotspot',
+                    'https://www.instagram.com/parkourdotspot',
                   ),
-                  _buildInfoTile(
+                  const Divider(height: 1),
+                  _buildLinkTile(
                     context,
-                    Icons.description,
-                    'Terms of Service',
-                    'Read our terms and conditions',
-                    () {
-                      // TODO: Show terms of service
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Terms of service coming soon!')),
-                      );
-                    },
-                  ),
-                  _buildInfoTile(
-                    context,
-                    Icons.privacy_tip,
-                    'Privacy Policy',
-                    'Learn about data privacy',
-                    () {
-                      // TODO: Show privacy policy
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Privacy policy coming soon!')),
-                      );
-                    },
+                    Icons.code,
+                    'GitHub',
+                    'View source code',
+                    'https://github.com/wardweistra/Parkour.Spot/',
                   ),
                 ],
               ),
@@ -363,53 +327,8 @@ class ProfileScreen extends StatelessWidget {
             backgroundColor: Theme.of(context).colorScheme.error,
             width: double.infinity,
           ),
-          
-          const SizedBox(height: 16),
-          
-          // Delete Account Button
-          CustomButton(
-            onPressed: () {
-              // TODO: Implement delete account functionality
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Delete account functionality coming soon!'),
-                  backgroundColor: Colors.orange,
-                ),
-              );
-            },
-            text: 'Delete Account',
-            icon: Icons.delete_forever,
-            backgroundColor: Colors.red,
-            width: double.infinity,
-          ),
         ],
       ),
-    );
-  }
-
-  Widget _buildStatItem(BuildContext context, IconData icon, String label, String value) {
-    return Column(
-      children: [
-        Icon(
-          icon,
-          size: 32,
-          color: Theme.of(context).colorScheme.primary,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
     );
   }
 
@@ -433,22 +352,33 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoTile(
+  Widget _buildLinkTile(
     BuildContext context,
     IconData icon,
     String title,
-    String subtitle, [
-    VoidCallback? onTap,
-  ]) {
+    String subtitle,
+    String url,
+  ) {
     return ListTile(
       leading: Icon(
         icon,
-        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+        color: Theme.of(context).colorScheme.primary,
       ),
       title: Text(title),
       subtitle: Text(subtitle),
-      trailing: onTap != null ? const Icon(Icons.arrow_forward_ios, size: 16) : null,
-      onTap: onTap,
+      trailing: const Icon(Icons.open_in_new, size: 16),
+      onTap: () async {
+        final uri = Uri.parse(url);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } else {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Could not open $url')),
+            );
+          }
+        }
+      },
       contentPadding: EdgeInsets.zero,
     );
   }

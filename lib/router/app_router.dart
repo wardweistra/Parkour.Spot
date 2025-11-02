@@ -36,15 +36,10 @@ class AppRouter {
       final isAuthenticated = authService.isAuthenticated;
       
       // Routes that require authentication
-      final protectedRoutes = ['/profile', '/spots/add'];
+      final protectedRoutes = ['/spots/add'];
       if (protectedRoutes.contains(state.matchedLocation) && !isAuthenticated) {
         // Redirect to login with the intended destination
-        String redirectTo = state.matchedLocation;
-        if (state.matchedLocation == '/profile') {
-          redirectTo = '/home?tab=profile';
-        } else if (state.matchedLocation == '/spots/add') {
-          redirectTo = '/home?tab=add';
-        }
+        String redirectTo = '/home?tab=add';
         return '/login?redirectTo=${Uri.encodeComponent(redirectTo)}';
       }
       

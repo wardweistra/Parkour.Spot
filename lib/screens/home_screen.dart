@@ -51,12 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
     
-    if (index == 2 && !authService.isAuthenticated) {
-      // Profile requires authentication
-      _showLoginRequiredDialog('Profile', 'You need to be logged in to access your profile.');
-      return;
-    }
-    
+    // Profile tab (index 2) is now accessible without authentication
     setState(() {
       _currentIndex = index;
     });
@@ -129,14 +124,8 @@ class _HomeScreenState extends State<HomeScreen> {
               'Share your favorite parkour spots with the community',
               Icons.add_location,
             ),
-      // Show login prompt for unauthenticated users trying to access profile
-      authService.isAuthenticated 
-          ? const ProfileScreen() 
-          : _buildLoginPromptScreen(
-              'Profile',
-              'Manage your account and view your contributions',
-              Icons.person,
-            ),
+      // Profile tab is always accessible
+      const ProfileScreen(),
     ];
   }
 
