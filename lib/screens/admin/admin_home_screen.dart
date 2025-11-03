@@ -35,7 +35,13 @@ class AdminHomeScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Admin Tools')),
+      appBar: AppBar(
+        title: const Text('Admin Tools'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/home?tab=profile'),
+        ),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
