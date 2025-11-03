@@ -47,16 +47,6 @@ class AdminHomeScreen extends StatelessWidget {
         children: [
           Card(
             child: ListTile(
-              leading: const Icon(Icons.shield),
-              title: const Text('Moderator Tools'),
-              subtitle: const Text('Review incoming spot reports and track progress'),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => context.go('/moderator'),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Card(
-            child: ListTile(
               leading: const Icon(Icons.sync),
               title: const Text('Sync Sources'),
               subtitle: const Text('Add, edit, delete, and sync external sources'),
