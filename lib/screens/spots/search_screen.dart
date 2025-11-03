@@ -95,7 +95,6 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   // Filters
   bool _includeSpotsWithoutPictures = true; // Default: include spots without pictures
   bool _includeParkourNative = true; // Spots created directly on parkour.spot (spotSource == null)
-  bool _includeExternalSources = true; // Spots from external sources (spotSource != null)
   Set<String> _selectedExternalSourceIds = <String>{}; // Will be populated with all source IDs by default
   bool _showFiltersDialog = false; // Controls filters dialog visibility
   SpotService? _spotServiceRef; // To attach a listener for spot updates
@@ -130,11 +129,10 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
 
   bool _hasActiveFilters() {
     // Check if any filters are different from defaults
+    final allExternalSourcesSelected = _selectedExternalSourceIds.length == (_syncSourceServiceRef?.sources.length ?? 0);
     return !_includeSpotsWithoutPictures || // Default is true, so false means active
            !_includeParkourNative || // Default is true, so false means active
-           !_includeExternalSources || // Default is true, so false means active
-           (_includeExternalSources && _selectedExternalSourceIds.isNotEmpty && 
-            _selectedExternalSourceIds.length != (_syncSourceServiceRef?.sources.length ?? 0)); // Not all sources selected
+           (_syncSourceServiceRef?.sources.isNotEmpty == true && !allExternalSourcesSelected); // Not all external sources selected
   }
 
   @override
@@ -170,7 +168,6 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         _isSatelliteView = searchState.isSatellite;
         _includeSpotsWithoutPictures = searchState.includeSpotsWithoutPictures;
         _includeParkourNative = searchState.includeParkourNative;
-        _includeExternalSources = searchState.includeExternalSources;
         if (searchState.selectedExternalSourceIds.isNotEmpty) {
           _selectedExternalSourceIds = {...searchState.selectedExternalSourceIds};
         }
@@ -494,16 +491,10 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       final bool isExternal = (spot.spotSource != null && spot.spotSource!.isNotEmpty);
 
       if (isExternal) {
-        if (!_includeExternalSources) {
-          return false; // exclude all external
-        }
-        // If external sources are enabled, check if this specific source is selected
-        if (_selectedExternalSourceIds.isEmpty) {
-          return false; // exclude all external when none selected
-        }
+        // Check if this specific external source is selected
         return _selectedExternalSourceIds.contains(spot.spotSource);
       } else {
-        // Native Parkour.Spot (no spotSource)
+        // Native Parkour.Spot (no spotSource) - controlled by chip
         return _includeParkourNative;
       }
     }).toList();
@@ -536,117 +527,109 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                       _updateVisibleSpots();
                     },
                   ),
-                  // Row 2: Include Parkour.Spot native
-                  SwitchListTile.adaptive(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Include Parkour.Spot native spots'),
-                    subtitle: const Text('Spots added directly on parkour.spot'),
-                    value: _includeParkourNative,
-                    onChanged: (val) {
-                      setState(() {
-                        _includeParkourNative = val;
-                      });
-                      Provider.of<SearchStateService>(context, listen: false)
-                          .setIncludeParkourNative(val);
-                      _updateVisibleSpots();
-                    },
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Sources',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                            ),
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextButton(
+                            onPressed: (_includeParkourNative && _selectedExternalSourceIds.length == (_syncSourceServiceRef?.sources.length ?? 0))
+                                ? null
+                                : () {
+                                    setState(() {
+                                      _includeParkourNative = true;
+                                      _selectedExternalSourceIds.clear();
+                                      _selectedExternalSourceIds.addAll(_syncSourceServiceRef!.sources.map((s) => s.id));
+                                    });
+                                    Provider.of<SearchStateService>(context, listen: false)
+                                      ..setIncludeParkourNative(true)
+                                      ..setSelectedExternalSourceIds(_selectedExternalSourceIds);
+                                    // Call _updateVisibleSpots after setState completes
+                                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                                      _updateVisibleSpots();
+                                    });
+                                  },
+                            child: const Text('Show All'),
+                          ),
+                          const SizedBox(width: 8),
+                          TextButton(
+                            onPressed: (!_includeParkourNative && _selectedExternalSourceIds.isEmpty)
+                                ? null
+                                : () {
+                                    setState(() {
+                                      _includeParkourNative = false;
+                                      _selectedExternalSourceIds.clear();
+                                    });
+                                    Provider.of<SearchStateService>(context, listen: false)
+                                      ..setIncludeParkourNative(false)
+                                      ..setSelectedExternalSourceIds(_selectedExternalSourceIds);
+                                    // Call _updateVisibleSpots after setState completes
+                                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                                      _updateVisibleSpots();
+                                    });
+                                  },
+                            child: const Text('Show None'),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  // Row 3: Include external sources
-                  SwitchListTile.adaptive(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Include external sources'),
-                    subtitle: const Text('Spots from external spot sources'),
-                    value: _includeExternalSources,
-                    onChanged: (val) {
-                      setState(() {
-                        _includeExternalSources = val;
-                      });
-                      Provider.of<SearchStateService>(context, listen: false)
-                          .setIncludeExternalSources(val);
-                      _updateVisibleSpots();
-                    },
-                  ),
-                  if (_includeExternalSources) ...[
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  const SizedBox(height: 8),
+                  if (syncService.isLoading && sources.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8),
+                      child: SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  else if (syncService.error != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Text(
+                        'Failed to load sources',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                      ),
+                    )
+                  else
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
-                        Text(
-                          'External sources',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                              ),
+                        // Parkour.Spot chip - first in line
+                        FilterChip(
+                          label: const Text('Parkour.Spot'),
+                          selected: _includeParkourNative,
+                          onSelected: (val) {
+                            setState(() {
+                              _includeParkourNative = val;
+                            });
+                            Provider.of<SearchStateService>(context, listen: false)
+                                .setIncludeParkourNative(val);
+                            // Call _updateVisibleSpots after setState completes
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              _updateVisibleSpots();
+                            });
+                          },
                         ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            TextButton(
-                              onPressed: _selectedExternalSourceIds.length == (_syncSourceServiceRef?.sources.length ?? 0)
-                                  ? null
-                                  : () {
-                                      setState(() {
-                                        _selectedExternalSourceIds.clear();
-                                        _selectedExternalSourceIds.addAll(_syncSourceServiceRef!.sources.map((s) => s.id));
-                                      });
-                                      Provider.of<SearchStateService>(context, listen: false)
-                                          .setSelectedExternalSourceIds(_selectedExternalSourceIds);
-                                      // Call _updateVisibleSpots after setState completes
-                                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                                        _updateVisibleSpots();
-                                      });
-                                    },
-                              child: const Text('Show All'),
-                            ),
-                            const SizedBox(width: 8),
-                            TextButton(
-                              onPressed: _selectedExternalSourceIds.isEmpty
-                                  ? null
-                                  : () {
-                                      setState(() {
-                                        _selectedExternalSourceIds.clear();
-                                      });
-                                      Provider.of<SearchStateService>(context, listen: false)
-                                          .setSelectedExternalSourceIds(_selectedExternalSourceIds);
-                                      // Call _updateVisibleSpots after setState completes
-                                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                                        _updateVisibleSpots();
-                                      });
-                                    },
-                              child: const Text('Show None'),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    if (syncService.isLoading && sources.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8),
-                        child: SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      )
-                    else if (syncService.error != null)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Text(
-                          'Failed to load sources',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).colorScheme.error,
-                              ),
-                        ),
-                      )
-                    else
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: sources.map((source) {
+                        // External source chips
+                        ...sources.map((source) {
                           final bool selected = _selectedExternalSourceIds.contains(source.id);
                           return _buildSourceChipWithInfo(context, source, selected);
                         }).toList(),
-                      ),
-                  ],
+                      ],
+                    ),
                 ],
           );
       },
