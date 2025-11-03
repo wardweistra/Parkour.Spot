@@ -98,6 +98,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   bool _showFiltersDialog = false; // Controls filters dialog visibility
   SpotService? _spotServiceRef; // To attach a listener for spot updates
   SyncSourceService? _syncSourceServiceRef; // To attach a listener for sync source updates
+  SearchStateService? _searchStateServiceRef; // To attach a listener for search state updates
   
   void _onSpotsChanged() {
     if (mounted) {
@@ -107,6 +108,35 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   
   void _onSyncSourcesChanged() {
     // Sync sources changed - no action needed for single source selection
+  }
+
+  void _onSearchStateChanged() {
+    if (!mounted) return;
+    final searchState = _searchStateServiceRef;
+    if (searchState == null) return;
+    
+    // Update local state from SearchStateService
+    final newSelectedSpotSource = searchState.selectedSpotSource;
+    final newIncludeSpotsWithoutPictures = searchState.includeSpotsWithoutPictures;
+    final newIsSatelliteView = searchState.isSatellite;
+    
+    // Check if selectedSpotSource changed - if so, reload spots
+    final spotSourceChanged = _selectedSpotSource != newSelectedSpotSource;
+    final pictureFilterChanged = _includeSpotsWithoutPictures != newIncludeSpotsWithoutPictures;
+    
+    setState(() {
+      _isSatelliteView = newIsSatelliteView;
+      _includeSpotsWithoutPictures = newIncludeSpotsWithoutPictures;
+      _selectedSpotSource = newSelectedSpotSource;
+    });
+    
+    // Reload spots if the source filter changed
+    if (spotSourceChanged && _mapController != null) {
+      _loadSpotsForCurrentView();
+    } else if (pictureFilterChanged) {
+      // Just update visible spots if only picture filter changed
+      _updateVisibleSpots();
+    }
   }
 
   bool _hasActiveFilters() {
@@ -142,12 +172,15 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     // Preload external sync sources for filters
     // Safe to call with listen: false in initState
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Load persisted search state and apply to UI
-      final searchState = Provider.of<SearchStateService>(context, listen: false);
+      // Listen to SearchStateService changes to update filters when storage loads
+      _searchStateServiceRef = Provider.of<SearchStateService>(context, listen: false);
+      _searchStateServiceRef!.addListener(_onSearchStateChanged);
+      
+      // Initial state load (will be updated when storage finishes loading via listener)
       setState(() {
-        _isSatelliteView = searchState.isSatellite;
-        _includeSpotsWithoutPictures = searchState.includeSpotsWithoutPictures;
-        _selectedSpotSource = searchState.selectedSpotSource; // null = all sources (default)
+        _isSatelliteView = _searchStateServiceRef!.isSatellite;
+        _includeSpotsWithoutPictures = _searchStateServiceRef!.includeSpotsWithoutPictures;
+        _selectedSpotSource = _searchStateServiceRef!.selectedSpotSource; // null = all sources (default)
       });
 
       // Listen to SpotService changes to refresh visible spots when data updates
@@ -174,6 +207,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     // Remove listeners
     _spotServiceRef?.removeListener(_onSpotsChanged);
     _syncSourceServiceRef?.removeListener(_onSyncSourcesChanged);
+    _searchStateServiceRef?.removeListener(_onSearchStateChanged);
     super.dispose();
   }
 

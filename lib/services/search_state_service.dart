@@ -8,9 +8,6 @@ class SearchStateService extends ChangeNotifier {
   static const String _keyZoom = 'search_zoom';
   static const String _keyIsSatellite = 'search_is_satellite';
   static const String _keyIncludeWithoutPictures = 'search_include_without_pictures';
-  static const String _keyIncludeParkourNative = 'search_include_parkour_native';
-  static const String _keyIncludeExternalSources = 'search_include_external_sources';
-  static const String _keySelectedExternalSourceIds = 'search_selected_external_source_ids';
   static const String _keySelectedSpotSource = 'search_selected_spot_source'; // null = all, "" = native, string = specific source
 
   // Backing fields
@@ -19,9 +16,6 @@ class SearchStateService extends ChangeNotifier {
   double? _zoom;
   bool _isSatellite = false;
   bool _includeSpotsWithoutPictures = true; // Default: include spots without pictures
-  bool _includeParkourNative = true;
-  bool _includeExternalSources = true;
-  Set<String> _selectedExternalSourceIds = <String>{};
   String? _selectedSpotSource; // null = all sources, "" = native only, string = specific source ID
 
   // Getters
@@ -30,9 +24,6 @@ class SearchStateService extends ChangeNotifier {
   double? get zoom => _zoom;
   bool get isSatellite => _isSatellite;
   bool get includeSpotsWithoutPictures => _includeSpotsWithoutPictures;
-  bool get includeParkourNative => _includeParkourNative;
-  bool get includeExternalSources => _includeExternalSources;
-  Set<String> get selectedExternalSourceIds => _selectedExternalSourceIds;
   String? get selectedSpotSource => _selectedSpotSource;
 
   Future<void> loadFromStorage() async {
@@ -43,12 +34,6 @@ class SearchStateService extends ChangeNotifier {
       _zoom = prefs.getDouble(_keyZoom);
       _isSatellite = prefs.getBool(_keyIsSatellite) ?? false;
       _includeSpotsWithoutPictures = prefs.getBool(_keyIncludeWithoutPictures) ?? true;
-      _includeParkourNative = prefs.getBool(_keyIncludeParkourNative) ?? true;
-      _includeExternalSources = prefs.getBool(_keyIncludeExternalSources) ?? true;
-      final savedSources = prefs.getStringList(_keySelectedExternalSourceIds);
-      if (savedSources != null) {
-        _selectedExternalSourceIds = savedSources.toSet();
-      }
       _selectedSpotSource = prefs.getString(_keySelectedSpotSource); // null if not set (all sources)
       notifyListeners();
     } catch (e) {
@@ -87,39 +72,6 @@ class SearchStateService extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_keyIncludeWithoutPictures, value);
-    } catch (e) {
-      // Ignore SharedPreferences errors - settings will not persist but app continues to work
-    }
-  }
-
-  Future<void> setIncludeParkourNative(bool value) async {
-    _includeParkourNative = value;
-    notifyListeners();
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_keyIncludeParkourNative, value);
-    } catch (e) {
-      // Ignore SharedPreferences errors - settings will not persist but app continues to work
-    }
-  }
-
-  Future<void> setIncludeExternalSources(bool value) async {
-    _includeExternalSources = value;
-    notifyListeners();
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_keyIncludeExternalSources, value);
-    } catch (e) {
-      // Ignore SharedPreferences errors - settings will not persist but app continues to work
-    }
-  }
-
-  Future<void> setSelectedExternalSourceIds(Set<String> ids) async {
-    _selectedExternalSourceIds = ids;
-    notifyListeners();
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setStringList(_keySelectedExternalSourceIds, ids.toList());
     } catch (e) {
       // Ignore SharedPreferences errors - settings will not persist but app continues to work
     }
