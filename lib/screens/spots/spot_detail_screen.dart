@@ -2429,28 +2429,25 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
     if (!mounted || selectedSpotId == null) return;
 
-    // Show confirmation dialog
-    final bool? confirmed = await showDialog<bool>(
+    // Check if duplicate spot has photos or YouTube links to transfer
+    final hasPhotos = widget.spot.imageUrls != null && widget.spot.imageUrls!.isNotEmpty;
+    final hasYoutubeLinks = widget.spot.youtubeVideoIds != null && widget.spot.youtubeVideoIds!.isNotEmpty;
+
+    // Show confirmation dialog with transfer options
+    final Map<String, bool>? result = await showDialog<Map<String, bool>>(
       context: context,
-      builder: (confirmContext) => AlertDialog(
-        title: const Text('Mark as Duplicate'),
-        content: const Text(
-          'Are you sure you want to mark this spot as a duplicate of the selected spot? This action can be reversed later.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(confirmContext).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(confirmContext).pop(true),
-            child: const Text('Confirm'),
-          ),
-        ],
-      ),
+      builder: (confirmContext) {
+        return _DuplicateTransferDialog(
+          hasPhotos: hasPhotos,
+          hasYoutubeLinks: hasYoutubeLinks,
+        );
+      },
     );
 
-    if (!mounted || confirmed != true) return;
+    if (!mounted || result == null) return;
+
+    final transferPhotos = result['transferPhotos'] ?? false;
+    final transferYoutubeLinks = result['transferYoutubeLinks'] ?? false;
 
     // Mark the spot as duplicate
     try {
@@ -2458,6 +2455,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       final success = await spotService.markSpotAsDuplicate(
         widget.spot.id!,
         selectedSpotId,
+        transferPhotos: transferPhotos,
+        transferYoutubeLinks: transferYoutubeLinks,
       );
 
       if (!mounted) return;
@@ -3112,6 +3111,87 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _DuplicateTransferDialog extends StatefulWidget {
+  final bool hasPhotos;
+  final bool hasYoutubeLinks;
+
+  const _DuplicateTransferDialog({
+    required this.hasPhotos,
+    required this.hasYoutubeLinks,
+  });
+
+  @override
+  State<_DuplicateTransferDialog> createState() => _DuplicateTransferDialogState();
+}
+
+class _DuplicateTransferDialogState extends State<_DuplicateTransferDialog> {
+  bool _transferPhotos = false;
+  bool _transferYoutubeLinks = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Mark as Duplicate'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Are you sure you want to mark this spot as a duplicate? This action can be reversed later.',
+            ),
+            if (widget.hasPhotos || widget.hasYoutubeLinks) ...[
+              const SizedBox(height: 16),
+              const Text(
+                'Select which items to add to the original spot:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              if (widget.hasPhotos)
+                CheckboxListTile(
+                  title: const Text('Photos'),
+                  value: _transferPhotos,
+                  onChanged: (value) {
+                    setState(() {
+                      _transferPhotos = value ?? false;
+                    });
+                  },
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                ),
+              if (widget.hasYoutubeLinks)
+                CheckboxListTile(
+                  title: const Text('YouTube links'),
+                  value: _transferYoutubeLinks,
+                  onChanged: (value) {
+                    setState(() {
+                      _transferYoutubeLinks = value ?? false;
+                    });
+                  },
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(null),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop({
+            'transferPhotos': _transferPhotos,
+            'transferYoutubeLinks': _transferYoutubeLinks,
+          }),
+          child: const Text('Confirm'),
+        ),
+      ],
     );
   }
 }

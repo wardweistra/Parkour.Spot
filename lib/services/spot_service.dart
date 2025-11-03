@@ -881,7 +881,12 @@ class SpotService extends ChangeNotifier {
   }
 
   // Mark a spot as duplicate of another spot
-  Future<bool> markSpotAsDuplicate(String spotId, String originalSpotId) async {
+  Future<bool> markSpotAsDuplicate(
+    String spotId,
+    String originalSpotId, {
+    bool transferPhotos = false,
+    bool transferYoutubeLinks = false,
+  }) async {
     try {
       _isLoading = true;
       notifyListeners();
@@ -890,6 +895,15 @@ class SpotService extends ChangeNotifier {
       final originalSpot = await getSpotById(originalSpotId);
       if (originalSpot == null) {
         _error = 'Original spot not found';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      // Get the duplicate spot to transfer its data
+      final duplicateSpot = await getSpotById(spotId);
+      if (duplicateSpot == null) {
+        _error = 'Duplicate spot not found';
         _isLoading = false;
         notifyListeners();
         return false;
@@ -917,6 +931,42 @@ class SpotService extends ChangeNotifier {
         _isLoading = false;
         notifyListeners();
         return false;
+      }
+
+      // Prepare updates for the original spot
+      Map<String, dynamic> originalSpotUpdates = {};
+      bool needsOriginalUpdate = false;
+
+      // Merge photos if requested
+      if (transferPhotos && duplicateSpot.imageUrls != null && duplicateSpot.imageUrls!.isNotEmpty) {
+        final existingPhotos = List<String>.from(originalSpot.imageUrls ?? []);
+        final newPhotos = duplicateSpot.imageUrls!
+            .where((url) => !existingPhotos.contains(url))
+            .toList();
+        
+        if (newPhotos.isNotEmpty) {
+          originalSpotUpdates['imageUrls'] = [...existingPhotos, ...newPhotos];
+          needsOriginalUpdate = true;
+        }
+      }
+
+      // Merge YouTube links if requested
+      if (transferYoutubeLinks && duplicateSpot.youtubeVideoIds != null && duplicateSpot.youtubeVideoIds!.isNotEmpty) {
+        final existingYoutubeLinks = List<String>.from(originalSpot.youtubeVideoIds ?? []);
+        final newYoutubeLinks = duplicateSpot.youtubeVideoIds!
+            .where((id) => !existingYoutubeLinks.contains(id))
+            .toList();
+        
+        if (newYoutubeLinks.isNotEmpty) {
+          originalSpotUpdates['youtubeVideoIds'] = [...existingYoutubeLinks, ...newYoutubeLinks];
+          needsOriginalUpdate = true;
+        }
+      }
+
+      // Update the original spot if needed
+      if (needsOriginalUpdate) {
+        originalSpotUpdates['updatedAt'] = FieldValue.serverTimestamp();
+        await _firestore.collection('spots').doc(originalSpotId).update(originalSpotUpdates);
       }
 
       // Update the spot to mark it as duplicate
