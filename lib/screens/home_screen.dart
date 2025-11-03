@@ -19,6 +19,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   late PageController _pageController;
+  final GlobalKey<SearchScreenState> _searchKey = GlobalKey<SearchScreenState>();
 
   @override
   void initState() {
@@ -42,6 +43,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onTabTapped(int index) {
+    // If re-tapping Home while already on Home, collapse the bottom sheet
+    if (index == 0 && _currentIndex == 0) {
+      _searchKey.currentState?.collapseBottomSheetIfOpen();
+      _searchKey.currentState?.closeSpotDetailIfOpen();
+      return;
+    }
     // Profile tab (index 2) is now accessible without authentication
     setState(() {
       _currentIndex = index;
@@ -75,7 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final authService = Provider.of<AuthService>(context, listen: false);
     
     return [
-      const SearchScreen(),
+      SearchScreen(key: _searchKey),
       // Show login prompt for unauthenticated users trying to add spots
       authService.isAuthenticated 
           ? const AddSpotScreen() 

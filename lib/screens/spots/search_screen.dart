@@ -60,10 +60,10 @@ class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
 
   @override
-  State<SearchScreen> createState() => _SearchScreenState();
+  State<SearchScreen> createState() => SearchScreenState();
 }
 
-class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMixin {
+class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixin {
   GoogleMapController? _mapController;
   bool _isGettingLocation = false;
   bool _isSatelliteView = false;
@@ -779,6 +779,23 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
         _selectedSpot = null;
       }
     });
+  }
+
+  // Public API so parent can collapse on Home tab re-tap
+  void collapseBottomSheetIfOpen() {
+    if (_isBottomSheetOpen) {
+      _toggleBottomSheet();
+    }
+  }
+
+  // Public API so parent can close spot detail if open
+  void closeSpotDetailIfOpen() {
+    if (_selectedSpot != null && !_isBottomSheetOpen) {
+      setState(() {
+        _selectedSpot = null;
+        _markers = _buildMarkers(_visibleSpots);
+      });
+    }
   }
 
   Timer? _cameraMoveDebounce;
