@@ -26,7 +26,7 @@ class SpotDetailScreen extends StatefulWidget {
   State<SpotDetailScreen> createState() => _SpotDetailScreenState();
 }
 
-enum _SpotMenuAction { report, edit, delete }
+enum _SpotMenuAction { login, report, edit, delete }
 
 class _SpotDetailScreenState extends State<SpotDetailScreen> {
   double _userRating = 0;
@@ -233,6 +233,11 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
   void _onMenuActionSelected(_SpotMenuAction action) {
     switch (action) {
+      case _SpotMenuAction.login:
+        context.go(
+          '/login?redirectTo=${Uri.encodeComponent('/spot/${widget.spot.id}')}',
+        );
+        break;
       case _SpotMenuAction.report:
         _showReportSpotDialog();
         break;
@@ -373,24 +378,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                // Login button for unauthenticated users
-                if (!Provider.of<AuthService>(
-                  context,
-                  listen: false,
-                ).isAuthenticated) ...[
-                  CircleAvatar(
-                    backgroundColor: Colors.black.withValues(alpha: 0.5),
-                    child: IconButton(
-                      icon: const Icon(Icons.login, color: Colors.white),
-                      onPressed: () {
-                        context.go(
-                          '/login?redirectTo=${Uri.encodeComponent('/spot/${widget.spot.id}')}',
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                ],
+                
                 Consumer<AuthService>(
                   builder: (context, authService, child) {
                     if (authService.isLoading) {
@@ -428,6 +416,41 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       itemBuilder: (menuContext) {
                         final theme = Theme.of(menuContext);
                         final List<PopupMenuEntry<_SpotMenuAction>> items = [
+                          if (!authService.isAuthenticated) ...[
+                            PopupMenuItem<_SpotMenuAction>(
+                              value: _SpotMenuAction.login,
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.login,
+                                    color: theme.colorScheme.primary,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'Login',
+                                        style: theme.textTheme.bodyMedium?.copyWith(
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Sign in to rate and favorite',
+                                        style: theme.textTheme.bodySmall?.copyWith(
+                                          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuDivider(),
+                          ],
                           PopupMenuItem<_SpotMenuAction>(
                             value: _SpotMenuAction.report,
                             child: Row(
