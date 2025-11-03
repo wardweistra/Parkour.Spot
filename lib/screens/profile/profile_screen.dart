@@ -222,6 +222,37 @@ class ProfileScreen extends StatelessWidget {
           
           const SizedBox(height: 16),
 
+          if (authService.isModerator || authService.isAdmin) ...[
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Moderator',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildActionTile(
+                      context,
+                      Icons.shield,
+                      'Moderator Tools',
+                      'Review and resolve incoming spot reports',
+                      () {
+                        context.go('/moderator');
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+          ],
+
           if (authService.isAdmin) ...[
             // Administrator Section
             Card(
