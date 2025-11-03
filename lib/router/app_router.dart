@@ -8,6 +8,7 @@ import '../screens/admin/admin_home_screen.dart';
 import '../screens/admin/sync_sources_screen.dart';
 import '../screens/admin/geocoding_admin_screen.dart';
 import '../screens/admin/spot_management_screen.dart';
+import '../screens/moderator/moderator_tools_screen.dart';
 import '../screens/spots/spot_detail_screen.dart';
 import '../screens/spots/edit_spot_screen.dart';
 import '../screens/auth/login_screen.dart';
@@ -36,10 +37,15 @@ class AppRouter {
       final isAuthenticated = authService.isAuthenticated;
       
       // Routes that require authentication
-      final protectedRoutes = ['/spots/add'];
+      final protectedRoutes = ['/spots/add', '/moderator'];
       if (protectedRoutes.contains(state.matchedLocation) && !isAuthenticated) {
         // Redirect to login with the intended destination
-        String redirectTo = '/home?tab=add';
+        String redirectTo;
+        if (state.matchedLocation == '/spots/add') {
+          redirectTo = '/home?tab=add';
+        } else {
+          redirectTo = state.matchedLocation;
+        }
         return '/login?redirectTo=${Uri.encodeComponent(redirectTo)}';
       }
       
@@ -102,6 +108,10 @@ class AppRouter {
       GoRoute(
         path: '/admin/spot-management',
         builder: (context, state) => const SpotManagementScreen(),
+      ),
+      GoRoute(
+        path: '/moderator',
+        builder: (context, state) => const ModeratorToolsScreen(),
       ),
       // Simple spot detail route: /spot/:spotId
       GoRoute(

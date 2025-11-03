@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
+import '../models/spot_report.dart';
+
 /// Service responsible for submitting spot reports to Firestore.
 class SpotReportService {
   SpotReportService({FirebaseFirestore? firestore})
@@ -81,5 +83,16 @@ class SpotReportService {
       debugPrint('Error updating report status: $e');
       return false;
     }
+  }
+
+  /// Streams all spot reports ordered by creation time.
+  Stream<List<SpotReport>> watchSpotReports() {
+    return _firestore
+        .collection('spotReports')
+        .orderBy('createdAt', descending: false)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => SpotReport.fromSnapshot(doc))
+            .toList(growable: false));
   }
 }
