@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import '../../models/spot.dart';
 import '../../services/spot_service.dart';
+import '../../services/spot_report_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/url_service.dart';
 import '../../services/mobile_detection_service.dart';
@@ -24,6 +25,8 @@ class SpotDetailScreen extends StatefulWidget {
   @override
   State<SpotDetailScreen> createState() => _SpotDetailScreenState();
 }
+
+enum _SpotMenuAction { report, edit, delete }
 
 class _SpotDetailScreenState extends State<SpotDetailScreen> {
   double _userRating = 0;
@@ -224,6 +227,324 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   }
 
 
+  void _onMenuActionSelected(_SpotMenuAction action) {
+    switch (action) {
+      case _SpotMenuAction.report:
+        _showReportSpotDialog();
+        break;
+      case _SpotMenuAction.edit:
+        if (widget.spot.id != null) {
+          context.push('/spot/${widget.spot.id}/edit', extra: widget.spot);
+        } else if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Unable to edit this spot right now.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        break;
+      case _SpotMenuAction.delete:
+        _showDeleteDialog();
+        break;
+    }
+  }
+
+  Future<void> _showReportSpotDialog() async {
+    if (widget.spot.id == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to report this spot right now.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final reportService = Provider.of<SpotReportService>(context, listen: false);
+
+    final otherController = TextEditingController();
+    final detailsController = TextEditingController();
+    final emailController = TextEditingController(
+      text: authService.isAuthenticated
+          ? (authService.userProfile?.email ?? authService.currentUser?.email ?? '')
+          : '',
+    );
+
+    final Set<String> selectedCategories = <String>{};
+    String? categoryError;
+    String? otherDescriptionError;
+    String? emailError;
+    String? submissionError;
+    bool isSubmitting = false;
+    final bool isLoggedIn = authService.isAuthenticated && authService.userProfile != null;
+    final String otherCategoryLabel = SpotReportService.defaultCategories.last;
+
+    final bool? result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setState) {
+            final theme = Theme.of(dialogContext);
+            final bool otherSelected = selectedCategories.contains(otherCategoryLabel);
+
+            return WillPopScope(
+              onWillPop: () async => !isSubmitting,
+              child: AlertDialog(
+                title: Row(
+                  children: [
+                    Icon(Icons.flag_outlined, color: theme.colorScheme.primary),
+                    const SizedBox(width: 8),
+                    const Expanded(child: Text('Report this spot')),
+                  ],
+                ),
+                content: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Let us know what is wrong with ${widget.spot.name}. Moderators will review your report shortly.',
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'What is happening?',
+                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: SpotReportService.defaultCategories.map((category) {
+                          final bool isSelected = selectedCategories.contains(category);
+                          return FilterChip(
+                            label: Text(category),
+                            selected: isSelected,
+                            onSelected: (selected) {
+                              setState(() {
+                                if (selected) {
+                                  selectedCategories.add(category);
+                                } else {
+                                  selectedCategories.remove(category);
+                                }
+                                if (selectedCategories.isNotEmpty) {
+                                  categoryError = null;
+                                }
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+                      if (categoryError != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          categoryError!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.error,
+                          ),
+                        ),
+                      ],
+                      if (otherSelected) ...[
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: otherController,
+                          maxLines: 2,
+                          decoration: InputDecoration(
+                            labelText: 'Describe the issue',
+                            hintText: 'Tell us what does not match reality',
+                            errorText: otherDescriptionError,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: detailsController,
+                        minLines: 3,
+                        maxLines: 5,
+                        decoration: const InputDecoration(
+                          labelText: 'Additional details',
+                          hintText: 'Anything else we should know?',
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      if (!isLoggedIn) ...[
+                        TextField(
+                          controller: emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: InputDecoration(
+                            labelText: 'Email address',
+                            hintText: 'name@example.com',
+                            helperText: 'We will contact you only about this report.',
+                            errorText: emailError,
+                          ),
+                        ),
+                      ] else ...[
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                            ),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(Icons.mail, size: 18, color: theme.colorScheme.primary),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  emailController.text.isNotEmpty
+                                      ? 'We will reach out at ${emailController.text} if we need more info.'
+                                      : 'We will reach out using your account email if we need more info.',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      if (submissionError != null) ...[
+                        const SizedBox(height: 16),
+                        Text(
+                          submissionError!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.error,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: isSubmitting ? null : () => Navigator.of(dialogContext).pop(false),
+                    child: const Text('Cancel'),
+                  ),
+                  FilledButton(
+                    onPressed: isSubmitting
+                        ? null
+                        : () async {
+                            setState(() {
+                              categoryError = null;
+                              otherDescriptionError = null;
+                              emailError = null;
+                              submissionError = null;
+                            });
+
+                            if (selectedCategories.isEmpty) {
+                              setState(() {
+                                categoryError = 'Please select at least one category.';
+                              });
+                              return;
+                            }
+
+                            final trimmedOther = otherController.text.trim();
+                            if (otherSelected && trimmedOther.isEmpty) {
+                              setState(() {
+                                otherDescriptionError = 'Please describe the issue when selecting Other.';
+                              });
+                              return;
+                            }
+
+                            final trimmedEmail = emailController.text.trim();
+                            if (!isLoggedIn) {
+                              if (trimmedEmail.isEmpty) {
+                                setState(() {
+                                  emailError = 'Please provide an email address.';
+                                });
+                                return;
+                              }
+                              final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+                              if (!emailRegex.hasMatch(trimmedEmail)) {
+                                setState(() {
+                                  emailError = 'Enter a valid email address.';
+                                });
+                                return;
+                              }
+                            }
+
+                            FocusScope.of(dialogContext).unfocus();
+                            setState(() {
+                              isSubmitting = true;
+                            });
+
+                            final trimmedDetails = detailsController.text.trim();
+                            final trimmedContactEmail = isLoggedIn
+                                ? (emailController.text.trim().isNotEmpty
+                                    ? emailController.text.trim()
+                                    : authService.userProfile?.email ?? authService.currentUser?.email ?? '')
+                                : trimmedEmail;
+
+                            final success = await reportService.submitSpotReport(
+                              spotId: widget.spot.id!,
+                              spotName: widget.spot.name,
+                              categories: selectedCategories.toList(),
+                              otherCategory: otherSelected ? trimmedOther : null,
+                              details: trimmedDetails.isEmpty ? null : trimmedDetails,
+                              contactEmail: trimmedContactEmail.isEmpty ? null : trimmedContactEmail,
+                              reporterUserId: authService.userProfile?.id,
+                              reporterEmail: authService.userProfile?.email ?? authService.currentUser?.email,
+                              spotCountryCode: widget.spot.countryCode,
+                              spotCity: widget.spot.city,
+                            );
+
+                            if (success) {
+                              if (mounted) {
+                                Navigator.of(dialogContext).pop(true);
+                              }
+                            } else {
+                              setState(() {
+                                isSubmitting = false;
+                                submissionError = 'Could not send your report. Please try again.';
+                              });
+                            }
+                          },
+                    child: isSubmitting
+                        ? SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Theme.of(context).colorScheme.onPrimary,
+                              ),
+                            ),
+                          )
+                        : const Text('Submit report'),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    otherController.dispose();
+    detailsController.dispose();
+    emailController.dispose();
+
+    if (!mounted) return;
+    if (result == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Thanks! Your report has been submitted.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -324,12 +645,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                   ),
                   const SizedBox(width: 8),
                 ],
-                // Moderation actions - only show after auth state is restored
                 Consumer<AuthService>(
                   builder: (context, authService, child) {
-                    // Wait for auth state to be restored before checking ownership
                     if (authService.isLoading) {
-                      // Show subtle loading indicator while auth state is being restored
                       return Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -347,102 +665,132 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         ],
                       );
                     }
-                    
-                    // Show moderator menu for admins or moderators only
-                    if (authService.isAuthenticated && authService.userProfile != null &&
-                        (authService.isAdmin || authService.isModerator)) {
-                      return Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          PopupMenuButton<String>(
-                            icon: CircleAvatar(
-                              backgroundColor: Colors.black.withValues(alpha: 0.5),
-                              child: const Icon(Icons.more_vert, color: Colors.white),
+
+                    final bool isModerator = authService.isAuthenticated &&
+                        authService.userProfile != null &&
+                        (authService.isAdmin || authService.isModerator);
+
+                    return PopupMenuButton<_SpotMenuAction>(
+                      position: PopupMenuPosition.under,
+                      tooltip: 'More actions',
+                      icon: CircleAvatar(
+                        backgroundColor: Colors.black.withValues(alpha: 0.5),
+                        child: const Icon(Icons.more_vert, color: Colors.white),
+                      ),
+                      onSelected: _onMenuActionSelected,
+                      itemBuilder: (menuContext) {
+                        final theme = Theme.of(menuContext);
+                        final List<PopupMenuEntry<_SpotMenuAction>> items = [
+                          PopupMenuItem<_SpotMenuAction>(
+                            value: _SpotMenuAction.report,
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.flag_outlined,
+                                  color: theme.colorScheme.primary,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'Report spot',
+                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Help us review this spot',
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
-                            onSelected: (value) {
-                              if (value == 'edit') {
-                                context.push('/spot/${widget.spot.id}/edit', extra: widget.spot);
-                              } else if (value == 'delete') {
-                                _showDeleteDialog();
-                              }
-                            },
-                            itemBuilder: (context) => [
-                              PopupMenuItem<String>(
-                                value: 'edit',
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.edit,
-                                      color: Theme.of(context).colorScheme.primary,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          'Edit Spot',
-                                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                        Text(
-                                          'Moderator only',
-                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                                            fontSize: 11,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              PopupMenuItem<String>(
-                                value: 'delete',
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.delete,
-                                      color: Colors.red,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          'Delete Spot',
-                                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.red,
-                                          ),
-                                        ),
-                                        Text(
-                                          'Moderator only',
-                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                                            fontSize: 11,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
                           ),
-                          const SizedBox(width: 16),
-                        ],
-                      );
-                    }
-                    
-                    // User is authenticated but doesn't own the spot, or auth state not yet restored
-                    return const SizedBox.shrink();
+                        ];
+
+                        if (isModerator && widget.spot.id != null) {
+                          items.addAll([
+                            PopupMenuItem<_SpotMenuAction>(
+                              value: _SpotMenuAction.edit,
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.edit,
+                                    color: theme.colorScheme.primary,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'Edit spot',
+                                        style: theme.textTheme.bodyMedium?.copyWith(
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Moderator only',
+                                        style: theme.textTheme.bodySmall?.copyWith(
+                                          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem<_SpotMenuAction>(
+                              value: _SpotMenuAction.delete,
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.delete,
+                                    color: Colors.red,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'Delete spot',
+                                        style: theme.textTheme.bodyMedium?.copyWith(
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.red,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Moderator only',
+                                        style: theme.textTheme.bodySmall?.copyWith(
+                                          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ]);
+                        }
+
+                        return items;
+                      },
+                    );
                   },
                 ),
+                const SizedBox(width: 16),
               ],
               flexibleSpace: FlexibleSpaceBar(
                 background: _buildImageCarousel(),
