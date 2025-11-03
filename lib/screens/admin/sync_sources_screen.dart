@@ -137,8 +137,6 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                       Row(
                         children: [
                           Chip(label: Text(s.isActive ? 'Active' : 'Inactive')),
-                          const SizedBox(width: 8),
-                          Chip(label: Text(s.isPublic ? 'Public' : 'Private')),
                           if (s.lastSyncAt != null) ...[
                             const SizedBox(width: 8),
                             Chip(label: Text('Last sync: ${s.lastSyncAt}')),
@@ -947,7 +945,6 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
   late final TextEditingController publicUrlCtrl;
   late final TextEditingController instagramHandleCtrl;
   late final TextEditingController includeFoldersCtrl;
-  late bool isPublic;
   late bool isActive;
   late bool recordFolderName;
 
@@ -964,7 +961,6 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
           ? ''
           : widget.source!.includeFolders!.join('\n'),
     );
-    isPublic = widget.source?.isPublic ?? true;
     isActive = widget.source?.isActive ?? true;
     recordFolderName = widget.source?.recordFolderName ?? false;
   }
@@ -1031,25 +1027,11 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                 minLines: 3,
               ),
               const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('Public'),
-                      value: isPublic,
-                      onChanged: (v) => setState(() => isPublic = v),
-                    ),
-                  ),
-                  Expanded(
-                    child: SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('Active'),
-                      value: isActive,
-                      onChanged: (v) => setState(() => isActive = v),
-                    ),
-                  ),
-                ],
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Active'),
+                value: isActive,
+                onChanged: (v) => setState(() => isActive = v),
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
@@ -1076,7 +1058,6 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                 description: descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
                 publicUrl: publicUrlCtrl.text.trim().isEmpty ? null : publicUrlCtrl.text.trim(),
                 instagramHandle: instagramHandleCtrl.text.trim().isEmpty ? null : instagramHandleCtrl.text.trim(),
-                isPublic: isPublic,
                 isActive: isActive,
                 includeFolders: includeFoldersCtrl.text.trim().isEmpty
                     ? null
@@ -1095,7 +1076,6 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                 description: descCtrl.text.trim(),
                 publicUrl: publicUrlCtrl.text.trim(),
                 instagramHandle: instagramHandleCtrl.text.trim(),
-                isPublic: isPublic,
                 isActive: isActive,
                 includeFolders: includeFoldersCtrl.text.trim().isEmpty
                     ? <String>[]

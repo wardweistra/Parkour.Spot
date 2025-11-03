@@ -1,13 +1,9 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Spots collection - users can read public spots, authenticated users can create, only admins/moderators can edit/delete any spot
+    // Spots collection - all spots are public, authenticated users can create, only admins/moderators can edit/delete any spot
     match /spots/{spotId} {
-      allow read: if resource.data.isPublic == true || 
-        (request.auth != null && 
-         exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isModerator == true));
+      allow read: if true;
       allow create: if request.auth != null;
       allow update: if request.auth != null && exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
@@ -53,7 +49,7 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
     
-    // SyncSources collection - allow read access to all users for public sources
+    // SyncSources collection - all sync sources are public
     match /syncSources/{sourceId} {
       allow read: if true; // Allow all users to read sync sources
       // Only allow admin users to write (this would be handled by Firebase Functions with admin privileges)

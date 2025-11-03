@@ -22,7 +22,6 @@ async function testKmzSync() {
       name: "Google Maps Parkour Spots",
       kmzUrl: "https://www.google.com/maps/d/u/0/kml?mid=1F8PHbPAtHhj4RaCQzbsw6Ko6FE0",
       description: "Parkour spots from Google My Maps",
-      isPublic: true,
       isActive: true
     });
     
@@ -52,7 +51,6 @@ class SyncSourceService {
     required String name,
     required String kmzUrl,
     String? description,
-    bool isPublic = true,
     bool isActive = true,
   }) async {
     try {
@@ -61,7 +59,6 @@ class SyncSourceService {
         'name': name,
         'kmzUrl': kmzUrl,
         'description': description,
-        'isPublic': isPublic,
         'isActive': isActive,
       });
       
@@ -107,7 +104,6 @@ class SyncSourceService {
     String? name,
     String? kmzUrl,
     String? description,
-    bool? isPublic,
     bool? isActive,
   }) async {
     try {
@@ -117,7 +113,6 @@ class SyncSourceService {
         'name': name,
         'kmzUrl': kmzUrl,
         'description': description,
-        'isPublic': isPublic,
         'isActive': isActive,
       });
     } catch (e) {

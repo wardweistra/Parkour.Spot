@@ -9,7 +9,6 @@ class SyncSource {
   final String? description;
   final String? publicUrl;
   final String? instagramHandle; // Instagram handle for the source owner
-  final bool isPublic;
   final bool isActive;
   final List<String>? includeFolders; // Optional list of folders to include
   final bool? recordFolderName; // Whether to store folder name on spots
@@ -26,7 +25,6 @@ class SyncSource {
     this.description,
     this.publicUrl,
     this.instagramHandle,
-    required this.isPublic,
     required this.isActive,
     this.includeFolders,
     this.recordFolderName,
@@ -45,7 +43,6 @@ class SyncSource {
       description: data['description'],
       publicUrl: data['publicUrl'],
       instagramHandle: data['instagramHandle'],
-      isPublic: data['isPublic'] ?? true,
       isActive: data['isActive'] ?? true,
       includeFolders: data['includeFolders'] != null
           ? List<String>.from((data['includeFolders'] as List).map((e) => e.toString()))
@@ -140,7 +137,6 @@ class SyncSourceService extends ChangeNotifier {
     String? description,
     String? publicUrl,
     String? instagramHandle,
-    bool isPublic = true,
     bool isActive = true,
     List<String>? includeFolders,
     bool? recordFolderName,
@@ -153,7 +149,6 @@ class SyncSourceService extends ChangeNotifier {
         'description': description,
         'publicUrl': publicUrl,
         'instagramHandle': instagramHandle,
-        'isPublic': isPublic,
         'isActive': isActive,
         if (includeFolders != null) 'includeFolders': includeFolders,
         if (recordFolderName != null) 'recordFolderName': recordFolderName,
@@ -178,7 +173,6 @@ class SyncSourceService extends ChangeNotifier {
     String? description,
     String? publicUrl,
     String? instagramHandle,
-    bool? isPublic,
     bool? isActive,
     List<String>? includeFolders,
     bool? recordFolderName,
@@ -191,7 +185,6 @@ class SyncSourceService extends ChangeNotifier {
       if (description != null) payload['description'] = description;
       if (publicUrl != null) payload['publicUrl'] = publicUrl;
       if (instagramHandle != null) payload['instagramHandle'] = instagramHandle;
-      if (isPublic != null) payload['isPublic'] = isPublic;
       if (isActive != null) payload['isActive'] = isActive;
       if (includeFolders != null) payload['includeFolders'] = includeFolders;
       if (recordFolderName != null) payload['recordFolderName'] = recordFolderName;

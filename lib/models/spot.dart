@@ -16,7 +16,6 @@ class Spot {
   final String? createdByName;
   final DateTime? createdAt;
   final DateTime? updatedAt;
-  final bool? isPublic;
   final String? spotSource;
   final String? spotSourceName;
   final double? averageRating;
@@ -45,7 +44,6 @@ class Spot {
     this.createdByName,
     this.createdAt,
     this.updatedAt,
-    this.isPublic = true,
     this.spotSource,
     this.spotSourceName,
     this.averageRating,
@@ -127,7 +125,6 @@ class Spot {
       createdByName: data['createdByName'],
       createdAt: data['createdAt']?.toDate(),
       updatedAt: data['updatedAt']?.toDate(),
-      isPublic: data['isPublic'] ?? true,
       spotSource: data['spotSource'],
       spotSourceName: data['spotSourceName'],
       averageRating: data['averageRating'] != null ? (data['averageRating'] as num).toDouble() : null,
@@ -217,7 +214,6 @@ class Spot {
       createdByName: data['createdByName'] as String?,
       createdAt: parseDate(data['createdAt']),
       updatedAt: parseDate(data['updatedAt']),
-      isPublic: data['isPublic'] as bool? ?? true,
       spotSource: data['spotSource'] as String?,
       spotSourceName: data['spotSourceName'] as String?,
       averageRating: (data['averageRating'] as num?)?.toDouble(),
@@ -248,7 +244,6 @@ class Spot {
       'createdByName': createdByName,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
-      'isPublic': isPublic,
       'spotSource': spotSource,
       'spotSourceName': spotSourceName,
       if (averageRating != null) 'averageRating': averageRating,
@@ -279,7 +274,6 @@ class Spot {
     String? createdByName,
     DateTime? createdAt,
     DateTime? updatedAt,
-    bool? isPublic,
     String? spotSource,
     String? spotSourceName,
     double? averageRating,
@@ -308,7 +302,6 @@ class Spot {
       createdByName: createdByName ?? this.createdByName,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      isPublic: isPublic ?? this.isPublic,
       spotSource: spotSource ?? this.spotSource,
       spotSourceName: spotSourceName ?? this.spotSourceName,
       averageRating: averageRating ?? this.averageRating,

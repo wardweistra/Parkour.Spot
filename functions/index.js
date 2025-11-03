@@ -308,7 +308,6 @@ exports.getTopSpotsInBounds = onCall(
           "countryCode",
           "imageUrls",
           "tags",
-          "isPublic",
           "spotSource",
           "spotSourceName",
           "averageRating",
@@ -325,7 +324,6 @@ exports.getTopSpotsInBounds = onCall(
         const buildQuery = (lngMin, lngMax) => {
           return db
               .collection("spots")
-              .where("isPublic", "==", true)
               .where("latitude", ">=", minLat)
               .where("latitude", "<=", maxLat)
               .where("longitude", ">=", lngMin)
@@ -563,8 +561,8 @@ exports.recomputeSpotRankings = onCall(
         // Fetch wilsonLowerBoundAvg from settings once
         const wilsonLowerBoundAvg = await getWilsonLowerBoundAvg();
 
-        // Query all public spots
-        const spotsSnap = await db.collection("spots").where("isPublic", "==", true).get();
+        // Query all spots
+        const spotsSnap = await db.collection("spots").get();
 
         let processed = 0;
         let updated = 0;
@@ -2216,7 +2214,6 @@ async function processSyncSource(source, sourceId, apiKey) {
       countryCode: countryCode,
       spotSource: sourceId,
       spotSourceName: source.name,
-      isPublic: source.isPublic !== false, // Default to true
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
@@ -2591,7 +2588,6 @@ exports.createSyncSource = onCall(
           description,
           publicUrl,
           instagramHandle,
-          isPublic = true,
           isActive = true,
           includeFolders,
           recordFolderName,
@@ -2607,7 +2603,6 @@ exports.createSyncSource = onCall(
           description: description || "",
           publicUrl: publicUrl || "",
           instagramHandle: instagramHandle || "",
-          isPublic: isPublic,
           isActive: isActive,
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -2660,7 +2655,6 @@ exports.updateSyncSource = onCall(
           description,
           publicUrl,
           instagramHandle,
-          isPublic,
           isActive,
           includeFolders,
           recordFolderName,
@@ -2681,7 +2675,6 @@ exports.updateSyncSource = onCall(
         if (instagramHandle !== undefined) {
           updateData.instagramHandle = instagramHandle;
         }
-        if (isPublic !== undefined) updateData.isPublic = isPublic;
         if (isActive !== undefined) updateData.isActive = isActive;
         if (includeFolders !== undefined) {
           if (Array.isArray(includeFolders)) {

@@ -610,7 +610,6 @@ class SpotService extends ChangeNotifier {
         // Query 1: From minLng to 180
         final query1 = await _firestore
             .collection('spots')
-            .where('isPublic', isEqualTo: true)
             .orderBy('longitude')
             .where('latitude', isGreaterThanOrEqualTo: minLat)
             .where('latitude', isLessThanOrEqualTo: maxLat)
@@ -624,7 +623,6 @@ class SpotService extends ChangeNotifier {
         // Query 2: From -180 to maxLng
         final query2 = await _firestore
             .collection('spots')
-            .where('isPublic', isEqualTo: true)
             .orderBy('longitude')
             .where('latitude', isGreaterThanOrEqualTo: minLat)
             .where('latitude', isLessThanOrEqualTo: maxLat)
@@ -647,7 +645,6 @@ class SpotService extends ChangeNotifier {
         
         final querySnapshot = await _firestore
             .collection('spots')
-            .where('isPublic', isEqualTo: true)
             .orderBy('longitude')
             .where('latitude', isGreaterThanOrEqualTo: minLat)
             .where('latitude', isLessThanOrEqualTo: maxLat)
@@ -658,7 +655,6 @@ class SpotService extends ChangeNotifier {
         
         debugPrint('📊 Firestore query executed:');
         debugPrint('   - Collection: spots');
-        debugPrint('   - isPublic: true');
         debugPrint('   - latitude range: $minLat to $maxLat (field: latitude)');
         debugPrint('   - longitude range: $minLng to $maxLng (field: longitude)');
         debugPrint('   - Documents returned: ${querySnapshot.docs.length}');
@@ -677,7 +673,6 @@ class SpotService extends ChangeNotifier {
           debugPrint('   Spot $i: ${spot.name}');
           debugPrint('     - latitude: ${spot.latitude}');
           debugPrint('     - longitude: ${spot.longitude}');
-          debugPrint('     - isPublic: ${spot.isPublic}');
         }
       }
       
@@ -857,7 +852,6 @@ class SpotService extends ChangeNotifier {
     try {
       Query queryRef = _firestore
           .collection('spots')
-          .where('isPublic', isEqualTo: true)
           .where('duplicateOf', isNull: true); // Exclude spots that are already duplicates
 
       final querySnapshot = await queryRef.limit(limit).get();
