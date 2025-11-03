@@ -13,6 +13,7 @@ import '../../services/url_service.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../services/sync_source_service.dart';
 import '../../widgets/source_details_dialog.dart';
+import '../../widgets/spot_selection_dialog.dart';
 import '../../constants/spot_attributes.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 import 'package:url_launcher/url_launcher.dart';
@@ -26,7 +27,7 @@ class SpotDetailScreen extends StatefulWidget {
   State<SpotDetailScreen> createState() => _SpotDetailScreenState();
 }
 
-enum _SpotMenuAction { login, report, edit, delete }
+enum _SpotMenuAction { login, report, edit, delete, markAsDuplicate }
 
 class _SpotDetailScreenState extends State<SpotDetailScreen> {
   double _userRating = 0;
@@ -45,6 +46,14 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   // Track expanded sections for chip overflow
   final Map<String, bool> _expandedSections = {};
 
+  // Original spot if this is a duplicate
+  Spot? _originalSpot;
+  bool _isLoadingOriginalSpot = false;
+
+  // Duplicate spots if this is an original
+  List<Spot> _duplicateSpots = [];
+  bool _isLoadingDuplicates = false;
+
   @override
   void initState() {
     super.initState();
@@ -52,6 +61,16 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     _videoPageController = PageController();
     _loadRatingStats(); // Load rating stats once on init
     // Note: User rating will be loaded when auth state is restored via FutureBuilder
+
+    // Load original spot if this is a duplicate
+    if (widget.spot.duplicateOf != null) {
+      _loadOriginalSpot();
+    }
+
+    // Load duplicate spots if this is an original (not a duplicate itself)
+    if (widget.spot.duplicateOf == null && widget.spot.id != null) {
+      _loadDuplicateSpots();
+    }
 
     // We no longer initialize embedded YouTube players; thumbnails/links only
   }
@@ -62,6 +81,58 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     _videoPageController.dispose();
     // No controllers to dispose
     super.dispose();
+  }
+
+  Future<void> _loadOriginalSpot() async {
+    if (widget.spot.duplicateOf == null) return;
+
+    setState(() {
+      _isLoadingOriginalSpot = true;
+    });
+
+    try {
+      final spotService = Provider.of<SpotService>(context, listen: false);
+      final originalSpot = await spotService.getSpotById(widget.spot.duplicateOf!);
+      
+      if (mounted) {
+        setState(() {
+          _originalSpot = originalSpot;
+          _isLoadingOriginalSpot = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingOriginalSpot = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadDuplicateSpots() async {
+    if (widget.spot.id == null) return;
+
+    setState(() {
+      _isLoadingDuplicates = true;
+    });
+
+    try {
+      final spotService = Provider.of<SpotService>(context, listen: false);
+      final duplicates = await spotService.getDuplicatesOfSpot(widget.spot.id!);
+      
+      if (mounted) {
+        setState(() {
+          _duplicateSpots = duplicates;
+          _isLoadingDuplicates = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingDuplicates = false;
+        });
+      }
+    }
   }
 
   void _showExternalSpotInfo() async {
@@ -255,6 +326,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         break;
       case _SpotMenuAction.delete:
         _showDeleteDialog();
+        break;
+      case _SpotMenuAction.markAsDuplicate:
+        _showMarkAsDuplicateDialog();
         break;
     }
   }
@@ -507,6 +581,42 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                     children: [
                                       Text(
                                         'Edit spot',
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                      ),
+                                      Text(
+                                        'Moderator only',
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                              color: theme.colorScheme.onSurface
+                                                  .withValues(alpha: 0.6),
+                                              fontSize: 11,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem<_SpotMenuAction>(
+                              value: _SpotMenuAction.markAsDuplicate,
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.copy_all,
+                                    color: theme.colorScheme.primary,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'Mark as duplicate',
                                         style: theme.textTheme.bodyMedium
                                             ?.copyWith(
                                               fontWeight: FontWeight.w500,
@@ -1646,13 +1756,118 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     // Additional Info
                     if (widget.spot.createdBy != null ||
                         widget.spot.createdByName != null ||
-                        widget.spot.createdAt != null) ...[
+                        widget.spot.createdAt != null ||
+                        widget.spot.duplicateOf != null ||
+                        _duplicateSpots.isNotEmpty ||
+                        _isLoadingDuplicates) ...[
                       Text(
                         'Additional Information',
                         style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 8),
+                      if (widget.spot.duplicateOf != null) ...[
+                        GestureDetector(
+                          onTap: _isLoadingOriginalSpot
+                              ? null
+                              : () {
+                                  if (_originalSpot != null) {
+                                    final navigationUrl = UrlService.generateNavigationUrl(
+                                      _originalSpot!.id!,
+                                      countryCode: _originalSpot!.countryCode,
+                                      city: _originalSpot!.city,
+                                    );
+                                    context.go(navigationUrl);
+                                  } else {
+                                    // Fallback to simple spot ID route
+                                    context.go('/spot/${widget.spot.duplicateOf}');
+                                  }
+                                },
+                          child: ListTile(
+                            leading: Icon(
+                              Icons.copy_all,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            title: const Text('Duplicate of'),
+                            subtitle: _isLoadingOriginalSpot
+                                ? const Text('Loading...')
+                                : Text(
+                                    _originalSpot?.name ?? 'Original spot',
+                                    style: TextStyle(
+                                      color: Theme.of(context).colorScheme.primary,
+                                    ),
+                                  ),
+                            contentPadding: EdgeInsets.zero,
+                            trailing: Icon(
+                              Icons.open_in_new,
+                              size: 16,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ),
+                      ],
+                      if (widget.spot.duplicateOf == null) ...[
+                        if (_isLoadingDuplicates)
+                          ListTile(
+                            leading: Icon(
+                              Icons.copy_all,
+                              color: Theme.of(context).colorScheme.secondary,
+                            ),
+                            title: const Text('Also based on'),
+                            subtitle: const Text('Loading...'),
+                            contentPadding: EdgeInsets.zero,
+                          )
+                        else if (_duplicateSpots.isNotEmpty) ...[
+                          ListTile(
+                            leading: Icon(
+                              Icons.copy_all,
+                              color: Theme.of(context).colorScheme.secondary,
+                            ),
+                            title: Text(
+                              'Also based on (${_duplicateSpots.length})',
+                              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            contentPadding: EdgeInsets.zero,
+                            dense: true,
+                          ),
+                          ..._duplicateSpots.map((duplicate) {
+                            return GestureDetector(
+                              onTap: () {
+                                final navigationUrl = UrlService.generateNavigationUrl(
+                                  duplicate.id!,
+                                  countryCode: duplicate.countryCode,
+                                  city: duplicate.city,
+                                );
+                                context.go(navigationUrl);
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: 48.0),
+                                child: ListTile(
+                                  leading: Icon(
+                                    Icons.arrow_right,
+                                    size: 16,
+                                    color: Theme.of(context).colorScheme.secondary,
+                                  ),
+                                  title: Text(
+                                    duplicate.name,
+                                    style: TextStyle(
+                                      color: Theme.of(context).colorScheme.secondary,
+                                    ),
+                                  ),
+                                  contentPadding: EdgeInsets.zero,
+                                  trailing: Icon(
+                                    Icons.open_in_new,
+                                    size: 16,
+                                    color: Theme.of(context).colorScheme.secondary,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ],
+                      ],
                       if (widget.spot.createdBy != null ||
                           widget.spot.createdByName != null) ...[
                         ListTile(
@@ -2178,6 +2393,107 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       if (attempt < maxRetries - 1) {
         await Future.delayed(retryDelay);
       }
+    }
+  }
+
+  Future<void> _showMarkAsDuplicateDialog() async {
+    if (widget.spot.id == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to mark this spot as duplicate right now.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Check if spot is already marked as duplicate
+    if (widget.spot.duplicateOf != null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('This spot is already marked as a duplicate.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final String? selectedSpotId = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => SpotSelectionDialog(
+        currentSpotId: widget.spot.id,
+      ),
+    );
+
+    if (!mounted || selectedSpotId == null) return;
+
+    // Show confirmation dialog
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (confirmContext) => AlertDialog(
+        title: const Text('Mark as Duplicate'),
+        content: const Text(
+          'Are you sure you want to mark this spot as a duplicate of the selected spot? This action can be reversed later.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(confirmContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(confirmContext).pop(true),
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted || confirmed != true) return;
+
+    // Mark the spot as duplicate
+    try {
+      final spotService = Provider.of<SpotService>(context, listen: false);
+      final success = await spotService.markSpotAsDuplicate(
+        widget.spot.id!,
+        selectedSpotId,
+      );
+
+      if (!mounted) return;
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Spot marked as duplicate successfully.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        // Refresh the spot data
+        final updatedSpot = await spotService.getSpotById(widget.spot.id!);
+        if (updatedSpot != null && mounted) {
+          // Update the widget's spot data by navigating to refresh
+          // For now, we'll just show a message. In a production app,
+          // you might want to update the state or reload the screen.
+        }
+      } else {
+        final error = spotService.error ?? 'Failed to mark spot as duplicate';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error marking spot as duplicate: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 

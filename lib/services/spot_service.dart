@@ -848,6 +848,118 @@ class SpotService extends ChangeNotifier {
     }
   }
 
+  // Search spots for duplicate selection (excludes duplicates and specified spot)
+  Future<List<Spot>> searchSpotsForDuplicateSelection({
+    String? excludeSpotId,
+    String? query,
+    int limit = 1000,
+  }) async {
+    try {
+      Query queryRef = _firestore
+          .collection('spots')
+          .where('isPublic', isEqualTo: true)
+          .where('duplicateOf', isNull: true); // Exclude spots that are already duplicates
+
+      final querySnapshot = await queryRef.limit(limit).get();
+
+      final spots = querySnapshot.docs
+          .map((doc) => Spot.fromFirestore(doc))
+          .where((spot) => spot.id != excludeSpotId) // Exclude specified spot
+          .toList();
+
+      // If query is provided, filter by name, description, address, or city
+      if (query != null && query.isNotEmpty) {
+        final queryLower = query.toLowerCase();
+        spots.retainWhere((spot) {
+          final nameMatch = spot.name.toLowerCase().contains(queryLower);
+          final descriptionMatch = spot.description.toLowerCase().contains(queryLower);
+          final addressMatch = spot.address?.toLowerCase().contains(queryLower) ?? false;
+          final cityMatch = spot.city?.toLowerCase().contains(queryLower) ?? false;
+          return nameMatch || descriptionMatch || addressMatch || cityMatch;
+        });
+      }
+
+      return spots;
+    } catch (e) {
+      debugPrint('Error searching spots for duplicate selection: $e');
+      return [];
+    }
+  }
+
+  // Mark a spot as duplicate of another spot
+  Future<bool> markSpotAsDuplicate(String spotId, String originalSpotId) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      // Verify that the original spot exists and is not a duplicate itself
+      final originalSpot = await getSpotById(originalSpotId);
+      if (originalSpot == null) {
+        _error = 'Original spot not found';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      // Prevent marking a spot as duplicate of itself
+      if (spotId == originalSpotId) {
+        _error = 'Cannot mark a spot as duplicate of itself';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      // Prevent circular references (check if original is already marked as duplicate)
+      if (originalSpot.duplicateOf != null) {
+        _error = 'Cannot mark as duplicate of a spot that is already a duplicate';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      // Ensure the original spot is a native parkour.spot spot (not from external source)
+      if (originalSpot.spotSource != null) {
+        _error = 'Original spot must be a native parkour.spot spot, not from an external source';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      // Update the spot to mark it as duplicate
+      await _firestore.collection('spots').doc(spotId).update({
+        'duplicateOf': originalSpotId,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = 'Failed to mark spot as duplicate: $e';
+      debugPrint('Error marking spot as duplicate: $e');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // Get all spots that are duplicates of a given spot
+  Future<List<Spot>> getDuplicatesOfSpot(String spotId) async {
+    try {
+      final querySnapshot = await _firestore
+          .collection('spots')
+          .where('duplicateOf', isEqualTo: spotId)
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => Spot.fromFirestore(doc))
+          .toList();
+    } catch (e) {
+      debugPrint('Error getting duplicates of spot: $e');
+      return [];
+    }
+  }
+
   // Clear error
   void clearError() {
     _error = null;

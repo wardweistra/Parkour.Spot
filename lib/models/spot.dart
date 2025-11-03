@@ -27,6 +27,7 @@ class Spot {
   final List<String>? spotFeatures;
   final Map<String, String>? spotFacilities;
   final List<String>? goodFor;
+  final String? duplicateOf; // ID of the original spot if this is a duplicate
 
   Spot({
     this.id,
@@ -55,6 +56,7 @@ class Spot {
     this.spotFeatures,
     this.spotFacilities,
     this.goodFor,
+    this.duplicateOf,
   });
 
   factory Spot.fromFirestore(DocumentSnapshot doc) {
@@ -136,6 +138,7 @@ class Spot {
       spotFeatures: data['spotFeatures'] != null ? List<String>.from(data['spotFeatures']) : null,
       spotFacilities: data['spotFacilities'] != null ? Map<String, String>.from(data['spotFacilities']) : null,
       goodFor: data['goodFor'] != null ? List<String>.from(data['goodFor']) : null,
+      duplicateOf: data['duplicateOf'],
     );
   }
 
@@ -225,6 +228,7 @@ class Spot {
       spotFeatures: data['spotFeatures'] is List ? List<String>.from(data['spotFeatures']) : null,
       spotFacilities: data['spotFacilities'] is Map ? Map<String, String>.from(data['spotFacilities']) : null,
       goodFor: data['goodFor'] is List ? List<String>.from(data['goodFor']) : null,
+      duplicateOf: data['duplicateOf'] as String?,
     );
   }
 
@@ -255,6 +259,7 @@ class Spot {
       if (spotFeatures != null) 'spotFeatures': spotFeatures,
       if (spotFacilities != null) 'spotFacilities': spotFacilities,
       if (goodFor != null) 'goodFor': goodFor,
+      if (duplicateOf != null) 'duplicateOf': duplicateOf,
     };
   }
 
@@ -285,6 +290,7 @@ class Spot {
     List<String>? spotFeatures,
     Map<String, String>? spotFacilities,
     List<String>? goodFor,
+    String? duplicateOf,
   }) {
     return Spot(
       id: id ?? this.id,
@@ -313,6 +319,7 @@ class Spot {
       spotFeatures: spotFeatures ?? this.spotFeatures,
       spotFacilities: spotFacilities ?? this.spotFacilities,
       goodFor: goodFor ?? this.goodFor,
+      duplicateOf: duplicateOf ?? this.duplicateOf,
     );
   }
 
