@@ -94,7 +94,13 @@ class _ModeratorToolsScreenState extends State<ModeratorToolsScreen> {
     final dateFormat = DateFormat.yMMMd().add_jm();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Moderator Tools')),
+      appBar: AppBar(
+        title: const Text('Moderator Tools'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/home?tab=profile'),
+        ),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
