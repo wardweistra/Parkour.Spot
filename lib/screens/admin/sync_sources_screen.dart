@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
@@ -39,6 +40,10 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Sync Sources'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/admin'),
+        ),
         actions: [
           Consumer<SyncSourceService>(
             builder: (context, service, child) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/geocoding_service.dart';
@@ -29,6 +30,10 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Geocode Missing Addresses'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/admin'),
+        ),
         actions: [
           TextButton.icon(
             onPressed: _running ? null : _startGeocoding,

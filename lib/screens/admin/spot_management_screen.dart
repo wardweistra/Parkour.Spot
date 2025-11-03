@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/spot_service.dart';
@@ -178,6 +179,10 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Spot Management'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/admin'),
+        ),
         actions: [
           if (_selectedSpotIds.isNotEmpty)
             IconButton(
