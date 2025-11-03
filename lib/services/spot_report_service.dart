@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 /// Service responsible for submitting spot reports to Firestore.
 class SpotReportService {
   SpotReportService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
 
@@ -83,4 +83,3 @@ class SpotReportService {
     }
   }
 }
-

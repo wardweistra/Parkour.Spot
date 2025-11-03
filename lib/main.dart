@@ -15,18 +15,16 @@ import 'package:web/web.dart' as web;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Use path-based URLs instead of hash-based routing
   usePathUrlStrategy();
-  
+
   // Validate configuration before initializing Firebase
   AppConfig.validateConfiguration();
-  
+
   // Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   runApp(const ParkourSpotApp());
 }
 
@@ -39,13 +37,15 @@ class ParkourSpotApp extends StatelessWidget {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkInitialDeepLink();
     });
-    
+
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => SpotService()),
         ChangeNotifierProvider(create: (_) => SyncSourceService()),
-        ChangeNotifierProvider(create: (_) => SearchStateService()..loadFromStorage()),
+        ChangeNotifierProvider(
+          create: (_) => SearchStateService()..loadFromStorage(),
+        ),
         ChangeNotifierProvider(create: (_) => GeocodingService()),
         Provider(create: (_) => SpotReportService()),
       ],
@@ -71,12 +71,12 @@ class ParkourSpotApp extends StatelessWidget {
       ),
     );
   }
-  
+
   void _checkInitialDeepLink() {
     try {
       final browserUrl = web.window.location.href;
       final browserPath = Uri.parse(browserUrl).path;
-      
+
       if (_isSpotUrl(browserPath)) {
         // Use a small delay to ensure the router is ready
         Future.delayed(const Duration(milliseconds: 100), () {
@@ -92,18 +92,22 @@ class ParkourSpotApp extends StatelessWidget {
       // Silent fail - not critical for app functionality
     }
   }
-  
+
   /// Check if the given path is a spot URL
   /// Supports format: /&lt;xx&gt;/&lt;anything&gt;/&lt;spot-id&gt;
   /// where xx is a 2-letter country code
   bool _isSpotUrl(String path) {
     // Format: /nl/amsterdam/&lt;spot-id&gt; or any /&lt;xx&gt;/&lt;anything&gt;/&lt;spot-id&gt;
     if (path.split('/').where((segment) => segment.isNotEmpty).length == 3) {
-      final segments = path.split('/').where((segment) => segment.isNotEmpty).toList();
+      final segments = path
+          .split('/')
+          .where((segment) => segment.isNotEmpty)
+          .toList();
       final countryCode = segments[0];
-      return countryCode.length == 2 && RegExp(r'^[a-zA-Z]{2}$').hasMatch(countryCode);
+      return countryCode.length == 2 &&
+          RegExp(r'^[a-zA-Z]{2}$').hasMatch(countryCode);
     }
-    
+
     return false;
   }
 }

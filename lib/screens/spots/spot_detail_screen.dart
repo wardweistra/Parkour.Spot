@@ -37,11 +37,11 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   late final ScrollController _scrollController;
   late final PageController _videoPageController;
   bool _isSatelliteView = false;
-  
+
   // Add rating cache variables
   Map<String, dynamic>? _cachedRatingStats;
   bool _isLoadingRatingStats = false;
-  
+
   // Track expanded sections for chip overflow
   final Map<String, bool> _expandedSections = {};
 
@@ -66,21 +66,24 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
   void _showExternalSpotInfo() async {
     if (widget.spot.spotSource == null) return;
-    
+
     try {
-      final syncSourceService = Provider.of<SyncSourceService>(context, listen: false);
-      
+      final syncSourceService = Provider.of<SyncSourceService>(
+        context,
+        listen: false,
+      );
+
       // Ensure sources are loaded before trying to find the specific source
       if (syncSourceService.sources.isEmpty && !syncSourceService.isLoading) {
         await syncSourceService.fetchSyncSources(includeInactive: false);
       }
-      
+
       // Find the source by ID
       final source = syncSourceService.sources.firstWhere(
         (s) => s.id == widget.spot.spotSource,
         orElse: () => throw Exception('Source not found'),
       );
-      
+
       if (!mounted) return;
       showDialog(
         context: context,
@@ -94,10 +97,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         builder: (context) => AlertDialog(
           title: Row(
             children: [
-              Icon(
-                Icons.source,
-                color: Theme.of(context).colorScheme.primary,
-              ),
+              Icon(Icons.source, color: Theme.of(context).colorScheme.primary),
               const SizedBox(width: 8),
               const Text('External Spot'),
             ],
@@ -113,9 +113,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
               const SizedBox(height: 12),
               Text(
                 'External spots:',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
               ...[
@@ -123,19 +123,23 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                 '• Could be removed if the source is unavailable',
                 '• May have limited editing capabilities',
                 '• Data accuracy depends on the original source',
-              ].map((item) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Text(
-                  item,
-                  style: Theme.of(context).textTheme.bodyMedium,
+              ].map(
+                (item) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    item,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
                 ),
-              )),
+              ),
               if (widget.spot.spotSourceName != null) ...[
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -143,15 +147,20 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       Icon(
                         Icons.info_outline,
                         size: 16,
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.7),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           'Source: ${widget.spot.spotSourceName}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withValues(alpha: 0.7),
+                              ),
                         ),
                       ),
                     ],
@@ -179,9 +188,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         city: widget.spot.city,
       );
       final text = '${widget.spot.name.trim()} 👉 $url';
-      
+
       await Clipboard.setData(ClipboardData(text: text));
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -203,10 +212,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     }
   }
 
-
-
-
-
   void _openInMaps() async {
     try {
       await UrlService.openLocationInMaps(
@@ -225,7 +230,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       }
     }
   }
-
 
   void _onMenuActionSelected(_SpotMenuAction action) {
     switch (action) {
@@ -263,13 +267,18 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     }
 
     final authService = Provider.of<AuthService>(context, listen: false);
-    final reportService = Provider.of<SpotReportService>(context, listen: false);
+    final reportService = Provider.of<SpotReportService>(
+      context,
+      listen: false,
+    );
 
     final otherController = TextEditingController();
     final detailsController = TextEditingController();
     final emailController = TextEditingController(
       text: authService.isAuthenticated
-          ? (authService.userProfile?.email ?? authService.currentUser?.email ?? '')
+          ? (authService.userProfile?.email ??
+                authService.currentUser?.email ??
+                '')
           : '',
     );
 
@@ -279,7 +288,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     String? emailError;
     String? submissionError;
     bool isSubmitting = false;
-    final bool isLoggedIn = authService.isAuthenticated && authService.userProfile != null;
+    final bool isLoggedIn =
+        authService.isAuthenticated && authService.userProfile != null;
     final String otherCategoryLabel = SpotReportService.defaultCategories.last;
 
     final bool? result = await showDialog<bool>(
@@ -289,7 +299,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         return StatefulBuilder(
           builder: (dialogContext, setState) {
             final theme = Theme.of(dialogContext);
-            final bool otherSelected = selectedCategories.contains(otherCategoryLabel);
+            final bool otherSelected = selectedCategories.contains(
+              otherCategoryLabel,
+            );
 
             return WillPopScope(
               onWillPop: () async => !isSubmitting,
@@ -313,14 +325,20 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       const SizedBox(height: 16),
                       Text(
                         'What is happening?',
-                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: SpotReportService.defaultCategories.map((category) {
-                          final bool isSelected = selectedCategories.contains(category);
+                        children: SpotReportService.defaultCategories.map((
+                          category,
+                        ) {
+                          final bool isSelected = selectedCategories.contains(
+                            category,
+                          );
                           return FilterChip(
                             label: Text(category),
                             selected: isSelected,
@@ -378,7 +396,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                           decoration: InputDecoration(
                             labelText: 'Email address',
                             hintText: 'name@example.com',
-                            helperText: 'We will contact you only about this report.',
+                            helperText:
+                                'We will contact you only about this report.',
                             errorText: emailError,
                           ),
                         ),
@@ -387,16 +406,22 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                           width: double.infinity,
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
+                            color: theme.colorScheme.surfaceContainerHighest
+                                .withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                              color: theme.colorScheme.outlineVariant
+                                  .withValues(alpha: 0.5),
                             ),
                           ),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(Icons.mail, size: 18, color: theme.colorScheme.primary),
+                              Icon(
+                                Icons.mail,
+                                size: 18,
+                                color: theme.colorScheme.primary,
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
@@ -404,7 +429,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                       ? 'We will reach out at ${emailController.text} if we need more info.'
                                       : 'We will reach out using your account email if we need more info.',
                                   style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                                    color: theme.colorScheme.onSurface
+                                        .withValues(alpha: 0.7),
                                   ),
                                 ),
                               ),
@@ -426,7 +452,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                 ),
                 actions: [
                   TextButton(
-                    onPressed: isSubmitting ? null : () => Navigator.of(dialogContext).pop(false),
+                    onPressed: isSubmitting
+                        ? null
+                        : () => Navigator.of(dialogContext).pop(false),
                     child: const Text('Cancel'),
                   ),
                   FilledButton(
@@ -442,7 +470,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
                             if (selectedCategories.isEmpty) {
                               setState(() {
-                                categoryError = 'Please select at least one category.';
+                                categoryError =
+                                    'Please select at least one category.';
                               });
                               return;
                             }
@@ -450,7 +479,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             final trimmedOther = otherController.text.trim();
                             if (otherSelected && trimmedOther.isEmpty) {
                               setState(() {
-                                otherDescriptionError = 'Please describe the issue when selecting Other.';
+                                otherDescriptionError =
+                                    'Please describe the issue when selecting Other.';
                               });
                               return;
                             }
@@ -459,11 +489,14 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             if (!isLoggedIn) {
                               if (trimmedEmail.isEmpty) {
                                 setState(() {
-                                  emailError = 'Please provide an email address.';
+                                  emailError =
+                                      'Please provide an email address.';
                                 });
                                 return;
                               }
-                              final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+                              final emailRegex = RegExp(
+                                r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
+                              );
                               if (!emailRegex.hasMatch(trimmedEmail)) {
                                 setState(() {
                                   emailError = 'Enter a valid email address.';
@@ -477,25 +510,37 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                               isSubmitting = true;
                             });
 
-                            final trimmedDetails = detailsController.text.trim();
+                            final trimmedDetails = detailsController.text
+                                .trim();
                             final trimmedContactEmail = isLoggedIn
                                 ? (emailController.text.trim().isNotEmpty
-                                    ? emailController.text.trim()
-                                    : authService.userProfile?.email ?? authService.currentUser?.email ?? '')
+                                      ? emailController.text.trim()
+                                      : authService.userProfile?.email ??
+                                            authService.currentUser?.email ??
+                                            '')
                                 : trimmedEmail;
 
-                            final success = await reportService.submitSpotReport(
-                              spotId: widget.spot.id!,
-                              spotName: widget.spot.name,
-                              categories: selectedCategories.toList(),
-                              otherCategory: otherSelected ? trimmedOther : null,
-                              details: trimmedDetails.isEmpty ? null : trimmedDetails,
-                              contactEmail: trimmedContactEmail.isEmpty ? null : trimmedContactEmail,
-                              reporterUserId: authService.userProfile?.id,
-                              reporterEmail: authService.userProfile?.email ?? authService.currentUser?.email,
-                              spotCountryCode: widget.spot.countryCode,
-                              spotCity: widget.spot.city,
-                            );
+                            final success = await reportService
+                                .submitSpotReport(
+                                  spotId: widget.spot.id!,
+                                  spotName: widget.spot.name,
+                                  categories: selectedCategories.toList(),
+                                  otherCategory: otherSelected
+                                      ? trimmedOther
+                                      : null,
+                                  details: trimmedDetails.isEmpty
+                                      ? null
+                                      : trimmedDetails,
+                                  contactEmail: trimmedContactEmail.isEmpty
+                                      ? null
+                                      : trimmedContactEmail,
+                                  reporterUserId: authService.userProfile?.id,
+                                  reporterEmail:
+                                      authService.userProfile?.email ??
+                                      authService.currentUser?.email,
+                                  spotCountryCode: widget.spot.countryCode,
+                                  spotCity: widget.spot.city,
+                                );
 
                             if (success) {
                               if (mounted) {
@@ -504,7 +549,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             } else {
                               setState(() {
                                 isSubmitting = false;
-                                submissionError = 'Could not send your report. Please try again.';
+                                submissionError =
+                                    'Could not send your report. Please try again.';
                               });
                             }
                           },
@@ -543,8 +589,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       );
     }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -601,7 +645,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     onTap: _showExternalSpotInfo,
                     child: Container(
                       margin: const EdgeInsets.only(right: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.4),
                         borderRadius: BorderRadius.circular(12),
@@ -613,7 +660,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       child: Text(
                         widget.spot.folderName != null
                             ? '${widget.spot.spotSourceName ?? widget.spot.spotSource!} - ${widget.spot.folderName!}'
-                            : widget.spot.spotSourceName ?? widget.spot.spotSource!,
+                            : widget.spot.spotSourceName ??
+                                  widget.spot.spotSource!,
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 12,
@@ -633,13 +681,18 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                 ),
                 const SizedBox(width: 8),
                 // Login button for unauthenticated users
-                if (!Provider.of<AuthService>(context, listen: false).isAuthenticated) ...[
+                if (!Provider.of<AuthService>(
+                  context,
+                  listen: false,
+                ).isAuthenticated) ...[
                   CircleAvatar(
                     backgroundColor: Colors.black.withValues(alpha: 0.5),
                     child: IconButton(
                       icon: const Icon(Icons.login, color: Colors.white),
                       onPressed: () {
-                        context.go('/login?redirectTo=${Uri.encodeComponent('/spot/${widget.spot.id}')}');
+                        context.go(
+                          '/login?redirectTo=${Uri.encodeComponent('/spot/${widget.spot.id}')}',
+                        );
                       },
                     ),
                   ),
@@ -666,7 +719,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       );
                     }
 
-                    final bool isModerator = authService.isAuthenticated &&
+                    final bool isModerator =
+                        authService.isAuthenticated &&
                         authService.userProfile != null &&
                         (authService.isAdmin || authService.isModerator);
 
@@ -697,16 +751,19 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                   children: [
                                     Text(
                                       'Report spot',
-                                      style: theme.textTheme.bodyMedium?.copyWith(
-                                        fontWeight: FontWeight.w500,
-                                      ),
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w500,
+                                          ),
                                     ),
                                     Text(
                                       'Help us review this spot',
-                                      style: theme.textTheme.bodySmall?.copyWith(
-                                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                                        fontSize: 11,
-                                      ),
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: theme.colorScheme.onSurface
+                                                .withValues(alpha: 0.6),
+                                            fontSize: 11,
+                                          ),
                                     ),
                                   ],
                                 ),
@@ -728,21 +785,25 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                   ),
                                   const SizedBox(width: 12),
                                   Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Text(
                                         'Edit spot',
-                                        style: theme.textTheme.bodyMedium?.copyWith(
-                                          fontWeight: FontWeight.w500,
-                                        ),
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w500,
+                                            ),
                                       ),
                                       Text(
                                         'Moderator only',
-                                        style: theme.textTheme.bodySmall?.copyWith(
-                                          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                                          fontSize: 11,
-                                        ),
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                              color: theme.colorScheme.onSurface
+                                                  .withValues(alpha: 0.6),
+                                              fontSize: 11,
+                                            ),
                                       ),
                                     ],
                                   ),
@@ -760,22 +821,26 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                   ),
                                   const SizedBox(width: 12),
                                   Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Text(
                                         'Delete spot',
-                                        style: theme.textTheme.bodyMedium?.copyWith(
-                                          fontWeight: FontWeight.w500,
-                                          color: Colors.red,
-                                        ),
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.red,
+                                            ),
                                       ),
                                       Text(
                                         'Moderator only',
-                                        style: theme.textTheme.bodySmall?.copyWith(
-                                          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                                          fontSize: 11,
-                                        ),
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                              color: theme.colorScheme.onSurface
+                                                  .withValues(alpha: 0.6),
+                                              fontSize: 11,
+                                            ),
                                       ),
                                     ],
                                   ),
@@ -796,7 +861,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                 background: _buildImageCarousel(),
               ),
             ),
-            
+
             // Content using SliverList
             SliverToBoxAdapter(
               child: Padding(
@@ -810,9 +875,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         Expanded(
                           child: Text(
                             widget.spot.name,
-                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: Theme.of(context).textTheme.headlineMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                         ),
                         // Rating display using cached data
@@ -820,39 +884,50 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             ? const SizedBox(
                                 width: 24,
                                 height: 24,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
-                            : _cachedRatingStats != null && _cachedRatingStats!['ratingCount'] > 0
-                                ? Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.star,
-                                        color: Colors.amber,
-                                        size: 24,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        _cachedRatingStats!['averageRating'].toStringAsFixed(1),
-                                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                          fontWeight: FontWeight.bold,
+                            : _cachedRatingStats != null &&
+                                  _cachedRatingStats!['ratingCount'] > 0
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.star,
+                                    color: Colors.amber,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    _cachedRatingStats!['averageRating']
+                                        .toStringAsFixed(1),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleLarge
+                                        ?.copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '(${_cachedRatingStats!['ratingCount']})',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface
+                                              .withValues(alpha: 0.7),
                                         ),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        '(${_cachedRatingStats!['ratingCount']})',
-                                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                                        ),
-                                      ),
-                                    ],
-                                  )
-                                : const SizedBox.shrink(),
+                                  ),
+                                ],
+                              )
+                            : const SizedBox.shrink(),
                       ],
                     ),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     // Description
                     Text(
                       'Description',
@@ -862,215 +937,274 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      widget.spot.description.trim().isEmpty 
+                      widget.spot.description.trim().isEmpty
                           ? 'No description provided'
                           : widget.spot.description,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        fontStyle: widget.spot.description.trim().isEmpty 
-                            ? FontStyle.italic 
+                        fontStyle: widget.spot.description.trim().isEmpty
+                            ? FontStyle.italic
                             : FontStyle.normal,
-                        color: widget.spot.description.trim().isEmpty 
-                            ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)
+                        color: widget.spot.description.trim().isEmpty
+                            ? Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.6)
                             : null,
                       ),
                     ),
-                    
+
                     const SizedBox(height: 24),
-                    
-                  // YouTube Videos Section - show clickable thumbnails, with carousel when multiple
-                  if (widget.spot.youtubeVideoIds != null && widget.spot.youtubeVideoIds!.isNotEmpty) ...[
-                    Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 900),
-                        child: Builder(
-                          builder: (context) {
-                            final videoIds = widget.spot.youtubeVideoIds!;
-                            if (videoIds.length == 1) {
-                              final id = videoIds.first;
-                              return ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: InkWell(
-                                  onTap: () async {
-                                    final uri = Uri.parse('https://www.youtube.com/watch?v=$id');
-                                    if (await canLaunchUrl(uri)) {
-                                      await launchUrl(uri, mode: LaunchMode.externalApplication);
-                                    }
-                                  },
-                                  child: AspectRatio(
-                                    aspectRatio: 16 / 9,
-                                    child: Stack(
-                                      alignment: Alignment.center,
-                                      children: [
-                                        Image.network(
-                                          'https://img.youtube.com/vi/$id/hqdefault.jpg',
-                                          fit: BoxFit.cover,
-                                          width: double.infinity,
-                                          height: double.infinity,
-                                        ),
-                                        Container(
-                                          width: 64,
-                                          height: 64,
-                                          decoration: BoxDecoration(
-                                            color: Colors.black.withValues(alpha: 0.6),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: const Icon(Icons.play_arrow, color: Colors.white, size: 40),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }
 
-                            // Multiple videos -> carousel
-                            return Stack(
-                              children: [
-                                ClipRRect(
+                    // YouTube Videos Section - show clickable thumbnails, with carousel when multiple
+                    if (widget.spot.youtubeVideoIds != null &&
+                        widget.spot.youtubeVideoIds!.isNotEmpty) ...[
+                      Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 900),
+                          child: Builder(
+                            builder: (context) {
+                              final videoIds = widget.spot.youtubeVideoIds!;
+                              if (videoIds.length == 1) {
+                                final id = videoIds.first;
+                                return ClipRRect(
                                   borderRadius: BorderRadius.circular(12),
-                                  child: AspectRatio(
-                                    aspectRatio: 16 / 9,
-                                    child: PageView.builder(
-                                      controller: _videoPageController,
-                                      itemCount: videoIds.length,
-                                      onPageChanged: (i) {
-                                        setState(() {
-                                          _currentVideoIndex = i;
-                                        });
-                                      },
-                                      itemBuilder: (context, index) {
-                                        final id = videoIds[index];
-                                        return InkWell(
-                                          onTap: () async {
-                                            final uri = Uri.parse('https://www.youtube.com/watch?v=$id');
-                                            if (await canLaunchUrl(uri)) {
-                                              await launchUrl(uri, mode: LaunchMode.externalApplication);
-                                            }
-                                          },
-                                          child: Stack(
-                                            alignment: Alignment.center,
-                                            children: [
-                                              Image.network(
-                                                'https://img.youtube.com/vi/$id/hqdefault.jpg',
-                                                fit: BoxFit.cover,
-                                                width: double.infinity,
-                                                height: double.infinity,
-                                              ),
-                                              Container(
-                                                width: 64,
-                                                height: 64,
-                                                decoration: BoxDecoration(
-                                                  color: Colors.black.withValues(alpha: 0.6),
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: const Icon(Icons.play_arrow, color: Colors.white, size: 40),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ),
-
-                                // Left arrow
-                                if (!MobileDetectionService.isMobileDevice)
-                                  Positioned(
-                                  left: 8,
-                                  top: 0,
-                                  bottom: 0,
-                                  child: Center(
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        final prev = _currentVideoIndex - 1;
-                                        final target = prev < 0 ? videoIds.length - 1 : prev;
-                                        _videoPageController.animateToPage(
-                                          target,
-                                          duration: const Duration(milliseconds: 250),
-                                          curve: Curves.easeOut,
-                                        );
-                                      },
-                                      child: Container(
-                                        width: 40,
-                                        height: 40,
-                                        decoration: BoxDecoration(
-                                          color: Colors.black.withValues(alpha: 0.6),
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: Colors.white.withValues(alpha: 0.3),
-                                          ),
-                                        ),
-                                        child: const Icon(Icons.chevron_left, color: Colors.white),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-
-                                // Right arrow
-                                if (!MobileDetectionService.isMobileDevice)
-                                  Positioned(
-                                  right: 8,
-                                  top: 0,
-                                  bottom: 0,
-                                  child: Center(
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        final next = (_currentVideoIndex + 1) % videoIds.length;
-                                        _videoPageController.animateToPage(
-                                          next,
-                                          duration: const Duration(milliseconds: 250),
-                                          curve: Curves.easeOut,
-                                        );
-                                      },
-                                      child: Container(
-                                        width: 40,
-                                        height: 40,
-                                        decoration: BoxDecoration(
-                                          color: Colors.black.withValues(alpha: 0.6),
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: Colors.white.withValues(alpha: 0.3),
-                                          ),
-                                        ),
-                                        child: const Icon(Icons.chevron_right, color: Colors.white),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-
-                                // Dots indicator
-                                Positioned(
-                                  bottom: 8,
-                                  left: 0,
-                                  right: 0,
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: List.generate(videoIds.length, (index) {
-                                      final isActive = index == _currentVideoIndex;
-                                      return AnimatedContainer(
-                                        duration: const Duration(milliseconds: 200),
-                                        margin: const EdgeInsets.symmetric(horizontal: 3),
-                                        width: isActive ? 8 : 6,
-                                        height: isActive ? 8 : 6,
-                                        decoration: BoxDecoration(
-                                          color: isActive ? Colors.white : Colors.white54,
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: Colors.white.withValues(alpha: 0.3),
-                                          ),
-                                        ),
+                                  child: InkWell(
+                                    onTap: () async {
+                                      final uri = Uri.parse(
+                                        'https://www.youtube.com/watch?v=$id',
                                       );
-                                    }),
+                                      if (await canLaunchUrl(uri)) {
+                                        await launchUrl(
+                                          uri,
+                                          mode: LaunchMode.externalApplication,
+                                        );
+                                      }
+                                    },
+                                    child: AspectRatio(
+                                      aspectRatio: 16 / 9,
+                                      child: Stack(
+                                        alignment: Alignment.center,
+                                        children: [
+                                          Image.network(
+                                            'https://img.youtube.com/vi/$id/hqdefault.jpg',
+                                            fit: BoxFit.cover,
+                                            width: double.infinity,
+                                            height: double.infinity,
+                                          ),
+                                          Container(
+                                            width: 64,
+                                            height: 64,
+                                            decoration: BoxDecoration(
+                                              color: Colors.black.withValues(
+                                                alpha: 0.6,
+                                              ),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Icon(
+                                              Icons.play_arrow,
+                                              color: Colors.white,
+                                              size: 40,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ],
-                            );
-                          },
+                                );
+                              }
+
+                              // Multiple videos -> carousel
+                              return Stack(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: AspectRatio(
+                                      aspectRatio: 16 / 9,
+                                      child: PageView.builder(
+                                        controller: _videoPageController,
+                                        itemCount: videoIds.length,
+                                        onPageChanged: (i) {
+                                          setState(() {
+                                            _currentVideoIndex = i;
+                                          });
+                                        },
+                                        itemBuilder: (context, index) {
+                                          final id = videoIds[index];
+                                          return InkWell(
+                                            onTap: () async {
+                                              final uri = Uri.parse(
+                                                'https://www.youtube.com/watch?v=$id',
+                                              );
+                                              if (await canLaunchUrl(uri)) {
+                                                await launchUrl(
+                                                  uri,
+                                                  mode: LaunchMode
+                                                      .externalApplication,
+                                                );
+                                              }
+                                            },
+                                            child: Stack(
+                                              alignment: Alignment.center,
+                                              children: [
+                                                Image.network(
+                                                  'https://img.youtube.com/vi/$id/hqdefault.jpg',
+                                                  fit: BoxFit.cover,
+                                                  width: double.infinity,
+                                                  height: double.infinity,
+                                                ),
+                                                Container(
+                                                  width: 64,
+                                                  height: 64,
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.black
+                                                        .withValues(alpha: 0.6),
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons.play_arrow,
+                                                    color: Colors.white,
+                                                    size: 40,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ),
+
+                                  // Left arrow
+                                  if (!MobileDetectionService.isMobileDevice)
+                                    Positioned(
+                                      left: 8,
+                                      top: 0,
+                                      bottom: 0,
+                                      child: Center(
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            final prev = _currentVideoIndex - 1;
+                                            final target = prev < 0
+                                                ? videoIds.length - 1
+                                                : prev;
+                                            _videoPageController.animateToPage(
+                                              target,
+                                              duration: const Duration(
+                                                milliseconds: 250,
+                                              ),
+                                              curve: Curves.easeOut,
+                                            );
+                                          },
+                                          child: Container(
+                                            width: 40,
+                                            height: 40,
+                                            decoration: BoxDecoration(
+                                              color: Colors.black.withValues(
+                                                alpha: 0.6,
+                                              ),
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.3,
+                                                ),
+                                              ),
+                                            ),
+                                            child: const Icon(
+                                              Icons.chevron_left,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+
+                                  // Right arrow
+                                  if (!MobileDetectionService.isMobileDevice)
+                                    Positioned(
+                                      right: 8,
+                                      top: 0,
+                                      bottom: 0,
+                                      child: Center(
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            final next =
+                                                (_currentVideoIndex + 1) %
+                                                videoIds.length;
+                                            _videoPageController.animateToPage(
+                                              next,
+                                              duration: const Duration(
+                                                milliseconds: 250,
+                                              ),
+                                              curve: Curves.easeOut,
+                                            );
+                                          },
+                                          child: Container(
+                                            width: 40,
+                                            height: 40,
+                                            decoration: BoxDecoration(
+                                              color: Colors.black.withValues(
+                                                alpha: 0.6,
+                                              ),
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.3,
+                                                ),
+                                              ),
+                                            ),
+                                            child: const Icon(
+                                              Icons.chevron_right,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+
+                                  // Dots indicator
+                                  Positioned(
+                                    bottom: 8,
+                                    left: 0,
+                                    right: 0,
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: List.generate(videoIds.length, (
+                                        index,
+                                      ) {
+                                        final isActive =
+                                            index == _currentVideoIndex;
+                                        return AnimatedContainer(
+                                          duration: const Duration(
+                                            milliseconds: 200,
+                                          ),
+                                          margin: const EdgeInsets.symmetric(
+                                            horizontal: 3,
+                                          ),
+                                          width: isActive ? 8 : 6,
+                                          height: isActive ? 8 : 6,
+                                          decoration: BoxDecoration(
+                                            color: isActive
+                                                ? Colors.white
+                                                : Colors.white54,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: Colors.white.withValues(
+                                                alpha: 0.3,
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      }),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
+                      const SizedBox(height: 24),
+                    ],
 
                     // Location Section
                     Column(
@@ -1081,19 +1215,24 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                           children: [
                             Text(
                               'Location',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w600),
                             ),
                             Row(
                               children: [
                                 Text(
                                   'Standard',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: !_isSatelliteView 
-                                      ? Theme.of(context).colorScheme.primary
-                                      : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                                  ),
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        color: !_isSatelliteView
+                                            ? Theme.of(
+                                                context,
+                                              ).colorScheme.primary
+                                            : Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurface
+                                                  .withValues(alpha: 0.6),
+                                      ),
                                 ),
                                 Switch(
                                   value: _isSatelliteView,
@@ -1105,11 +1244,17 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                 ),
                                 Text(
                                   'Satellite',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: _isSatelliteView 
-                                      ? Theme.of(context).colorScheme.primary
-                                      : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                                  ),
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        color: _isSatelliteView
+                                            ? Theme.of(
+                                                context,
+                                              ).colorScheme.primary
+                                            : Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurface
+                                                  .withValues(alpha: 0.6),
+                                      ),
                                 ),
                               ],
                             ),
@@ -1117,16 +1262,18 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         ),
                       ],
                     ),
-                    
+
                     const SizedBox(height: 8),
-                    
+
                     // Small map widget (web-safe placeholder on web)
                     Container(
                       height: 200,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.outline.withValues(alpha: 0.3),
                         ),
                       ),
                       clipBehavior: Clip.antiAlias,
@@ -1140,7 +1287,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                               ),
                               zoom: 16,
                             ),
-                            mapType: _isSatelliteView ? MapType.satellite : MapType.normal,
+                            mapType: _isSatelliteView
+                                ? MapType.satellite
+                                : MapType.normal,
                             markers: {
                               Marker(
                                 markerId: MarkerId(widget.spot.id ?? 'spot'),
@@ -1181,7 +1330,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             right: 8,
                             child: PointerInterceptor(
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 5,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.black.withValues(alpha: 0.7),
                                   borderRadius: BorderRadius.circular(12),
@@ -1190,9 +1342,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(
-                                      MobileDetectionService.isMobileDevice 
-                                        ? Icons.phone_android 
-                                        : Icons.touch_app,
+                                      MobileDetectionService.isMobileDevice
+                                          ? Icons.phone_android
+                                          : Icons.touch_app,
                                       color: Colors.white,
                                       size: 14,
                                     ),
@@ -1213,17 +1365,21 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         ],
                       ),
                     ),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     // Location Information
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.2),
                           width: 1,
                         ),
                       ),
@@ -1240,10 +1396,13 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                               const SizedBox(width: 8),
                               Text(
                                 'Location Details',
-                                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
+                                style: Theme.of(context).textTheme.titleSmall
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                    ),
                               ),
                             ],
                           ),
@@ -1252,19 +1411,27 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             text: TextSpan(
                               children: [
                                 TextSpan(
-                                  text: '${widget.spot.latitude.toStringAsFixed(6)}, ${widget.spot.longitude.toStringAsFixed(6)}',
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.w500,
-                                    color: Theme.of(context).colorScheme.onSurface,
-                                  ),
+                                  text:
+                                      '${widget.spot.latitude.toStringAsFixed(6)}, ${widget.spot.longitude.toStringAsFixed(6)}',
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w500,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurface,
+                                      ),
                                 ),
                                 if (widget.spot.address != null) ...[
                                   TextSpan(
                                     text: '\n${widget.spot.address}',
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                                      height: 1.3,
-                                    ),
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface
+                                              .withValues(alpha: 0.7),
+                                          height: 1.3,
+                                        ),
                                   ),
                                 ],
                               ],
@@ -1273,28 +1440,33 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         ],
                       ),
                     ),
-                    
+
                     const SizedBox(height: 24),
 
                     // Attributes Grid Section
                     LayoutBuilder(
                       builder: (context, constraints) {
                         final isWideScreen = constraints.maxWidth > 600;
-                        final hasAnyAttributes = widget.spot.goodFor != null && widget.spot.goodFor!.isNotEmpty ||
-                                              widget.spot.spotFeatures != null && widget.spot.spotFeatures!.isNotEmpty ||
-                                              widget.spot.spotAccess != null ||
-                                              widget.spot.spotFacilities != null && widget.spot.spotFacilities!.isNotEmpty;
-                        
+                        final hasAnyAttributes =
+                            widget.spot.goodFor != null &&
+                                widget.spot.goodFor!.isNotEmpty ||
+                            widget.spot.spotFeatures != null &&
+                                widget.spot.spotFeatures!.isNotEmpty ||
+                            widget.spot.spotAccess != null ||
+                            widget.spot.spotFacilities != null &&
+                                widget.spot.spotFacilities!.isNotEmpty;
+
                         if (!hasAnyAttributes) {
                           return const SizedBox.shrink();
                         }
-                        
+
                         if (isWideScreen) {
                           // Dynamic grid layout based on available sections
                           final sections = <Widget>[];
-                          
+
                           // Good For Section
-                          if (widget.spot.goodFor != null && widget.spot.goodFor!.isNotEmpty) {
+                          if (widget.spot.goodFor != null &&
+                              widget.spot.goodFor!.isNotEmpty) {
                             sections.add(
                               _buildExpandableChipSection(
                                 title: 'Good For',
@@ -1304,9 +1476,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                               ),
                             );
                           }
-                          
+
                           // Features Section
-                          if (widget.spot.spotFeatures != null && widget.spot.spotFeatures!.isNotEmpty) {
+                          if (widget.spot.spotFeatures != null &&
+                              widget.spot.spotFeatures!.isNotEmpty) {
                             sections.add(
                               _buildExpandableChipSection(
                                 title: 'Features',
@@ -1316,7 +1489,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                               ),
                             );
                           }
-                          
+
                           // Access Section
                           if (widget.spot.spotAccess != null) {
                             sections.add(
@@ -1325,9 +1498,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                 children: [
                                   Text(
                                     'Access',
-                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(fontWeight: FontWeight.w600),
                                   ),
                                   const SizedBox(height: 8),
                                   _buildAccessChip(widget.spot.spotAccess!),
@@ -1335,25 +1509,33 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                               ),
                             );
                           }
-                          
+
                           // Facilities Section
-                          if (widget.spot.spotFacilities != null && widget.spot.spotFacilities!.isNotEmpty) {
+                          if (widget.spot.spotFacilities != null &&
+                              widget.spot.spotFacilities!.isNotEmpty) {
                             // Separate available and unavailable facilities
                             final availableFacilities = <Widget>[];
                             final unavailableFacilities = <Widget>[];
-                            
-                            for (final entry in widget.spot.spotFacilities!.entries) {
-                              final chip = _buildFacilityChip(entry.key, entry.value);
+
+                            for (final entry
+                                in widget.spot.spotFacilities!.entries) {
+                              final chip = _buildFacilityChip(
+                                entry.key,
+                                entry.value,
+                              );
                               if (entry.value == 'yes') {
                                 availableFacilities.add(chip);
                               } else if (entry.value == 'no') {
                                 unavailableFacilities.add(chip);
                               }
                             }
-                            
+
                             // Combine: available first, then unavailable
-                            final allFacilityChips = [...availableFacilities, ...unavailableFacilities];
-                            
+                            final allFacilityChips = [
+                              ...availableFacilities,
+                              ...unavailableFacilities,
+                            ];
+
                             sections.add(
                               _buildExpandableChipSection(
                                 title: 'Facilities',
@@ -1361,7 +1543,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                               ),
                             );
                           }
-                          
+
                           // Build dynamic layout based on number of sections
                           if (sections.length == 1) {
                             // Single column, full width
@@ -1404,7 +1586,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                   children: [
                                     Expanded(child: sections[2]),
                                     const SizedBox(width: 16),
-                                    const Expanded(child: SizedBox()), // Empty space
+                                    const Expanded(
+                                      child: SizedBox(),
+                                    ), // Empty space
                                   ],
                                 ),
                                 const SizedBox(height: 24),
@@ -1435,7 +1619,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                               ],
                             );
                           }
-                          
+
                           // Fallback (shouldn't happen)
                           return const SizedBox.shrink();
                         } else {
@@ -1444,7 +1628,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               // Good For
-                              if (widget.spot.goodFor != null && widget.spot.goodFor!.isNotEmpty) ...[
+                              if (widget.spot.goodFor != null &&
+                                  widget.spot.goodFor!.isNotEmpty) ...[
                                 _buildExpandableChipSection(
                                   title: 'Good For',
                                   chips: widget.spot.goodFor!.map((skill) {
@@ -1453,50 +1638,60 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                 ),
                                 const SizedBox(height: 24),
                               ],
-                              
+
                               // Features
-                              if (widget.spot.spotFeatures != null && widget.spot.spotFeatures!.isNotEmpty) ...[
+                              if (widget.spot.spotFeatures != null &&
+                                  widget.spot.spotFeatures!.isNotEmpty) ...[
                                 _buildExpandableChipSection(
                                   title: 'Features',
-                                  chips: widget.spot.spotFeatures!.map((feature) {
+                                  chips: widget.spot.spotFeatures!.map((
+                                    feature,
+                                  ) {
                                     return _buildFeatureChip(feature);
                                   }).toList(),
                                 ),
                                 const SizedBox(height: 24),
                               ],
-                              
+
                               // Access
                               if (widget.spot.spotAccess != null) ...[
                                 Text(
                                   'Access',
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.w600),
                                 ),
                                 const SizedBox(height: 8),
                                 _buildAccessChip(widget.spot.spotAccess!),
                                 const SizedBox(height: 24),
                               ],
-                              
+
                               // Facilities
-                              if (widget.spot.spotFacilities != null && widget.spot.spotFacilities!.isNotEmpty) ...[
+                              if (widget.spot.spotFacilities != null &&
+                                  widget.spot.spotFacilities!.isNotEmpty) ...[
                                 () {
                                   // Separate available and unavailable facilities
                                   final availableFacilities = <Widget>[];
                                   final unavailableFacilities = <Widget>[];
-                                  
-                                  for (final entry in widget.spot.spotFacilities!.entries) {
-                                    final chip = _buildFacilityChip(entry.key, entry.value);
+
+                                  for (final entry
+                                      in widget.spot.spotFacilities!.entries) {
+                                    final chip = _buildFacilityChip(
+                                      entry.key,
+                                      entry.value,
+                                    );
                                     if (entry.value == 'yes') {
                                       availableFacilities.add(chip);
                                     } else if (entry.value == 'no') {
                                       unavailableFacilities.add(chip);
                                     }
                                   }
-                                  
+
                                   // Combine: available first, then unavailable
-                                  final allFacilityChips = [...availableFacilities, ...unavailableFacilities];
-                                  
+                                  final allFacilityChips = [
+                                    ...availableFacilities,
+                                    ...unavailableFacilities,
+                                  ];
+
                                   return _buildExpandableChipSection(
                                     title: 'Facilities',
                                     chips: allFacilityChips,
@@ -1509,9 +1704,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         }
                       },
                     ),
-                    
 
-                    
                     // Rating Section
                     Consumer<AuthService>(
                       builder: (context, authService, child) {
@@ -1537,71 +1730,96 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                   const SizedBox(width: 12),
                                   Text(
                                     'Loading...',
-                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                                    ),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface
+                                              .withValues(alpha: 0.7),
+                                        ),
                                   ),
                                 ],
                               ),
                             ),
                           );
                         }
-                        
-                        if (authService.isAuthenticated && authService.userProfile != null) {
+
+                        if (authService.isAuthenticated &&
+                            authService.userProfile != null) {
                           // Load user rating when auth state is confirmed
                           if (_userRating == 0 && !_hasRated) {
                             // Use FutureBuilder to load user rating asynchronously
                             return FutureBuilder<double?>(
                               future: _loadUserRatingFuture(),
                               builder: (context, snapshot) {
-                                if (snapshot.connectionState == ConnectionState.waiting) {
+                                if (snapshot.connectionState ==
+                                    ConnectionState.waiting) {
                                   return SizedBox(
                                     height: 80,
                                     child: Center(
                                       child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: [
                                           SizedBox(
                                             width: 16,
                                             height: 16,
                                             child: CircularProgressIndicator(
                                               strokeWidth: 2,
-                                              valueColor: AlwaysStoppedAnimation<Color>(
-                                                Theme.of(context).colorScheme.primary,
-                                              ),
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                    Theme.of(
+                                                      context,
+                                                    ).colorScheme.primary,
+                                                  ),
                                             ),
                                           ),
                                           const SizedBox(width: 12),
                                           Text(
                                             'Loading your rating...',
-                                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                                            ),
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium
+                                                ?.copyWith(
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurface
+                                                      .withValues(alpha: 0.7),
+                                                ),
                                           ),
                                         ],
                                       ),
                                     ),
                                   );
                                 }
-                                
+
                                 // Rating widget
                                 return Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       'Rate this spot',
-                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                     ),
                                     const SizedBox(height: 16),
                                     Row(
                                       children: [
                                         ...List.generate(5, (index) {
                                           return GestureDetector(
-                                            onTap: () => _submitRatingDirectly(index + 1.0),
+                                            onTap: () => _submitRatingDirectly(
+                                              index + 1.0,
+                                            ),
                                             child: Icon(
-                                              index < _userRating ? Icons.star : Icons.star_border,
+                                              index < _userRating
+                                                  ? Icons.star
+                                                  : Icons.star_border,
                                               color: Colors.amber,
                                               size: 32,
                                             ),
@@ -1615,25 +1833,27 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                               },
                             );
                           }
-                          
+
                           // Show rating widget if user rating is already loaded
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 'Rate this spot',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.w600),
                               ),
                               const SizedBox(height: 16),
                               Row(
                                 children: [
                                   ...List.generate(5, (index) {
                                     return GestureDetector(
-                                      onTap: () => _submitRatingDirectly(index + 1.0),
+                                      onTap: () =>
+                                          _submitRatingDirectly(index + 1.0),
                                       child: Icon(
-                                        index < _userRating ? Icons.star : Icons.star_border,
+                                        index < _userRating
+                                            ? Icons.star
+                                            : Icons.star_border,
                                         color: Colors.amber,
                                         size: 32,
                                       ),
@@ -1653,20 +1873,30 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                 child: Padding(
                                   padding: const EdgeInsets.all(16.0),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'Rate this spot',
-                                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                        ),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                            ),
                                       ),
                                       const SizedBox(height: 8),
                                       Text(
                                         'Login to rate this spot and help other parkour enthusiasts',
-                                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                                        ),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurface
+                                                  .withValues(alpha: 0.7),
+                                            ),
                                       ),
                                       const SizedBox(height: 16),
                                       Row(
@@ -1674,10 +1904,14 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                           Expanded(
                                             child: ElevatedButton.icon(
                                               onPressed: () {
-                                                context.go('/login?redirectTo=${Uri.encodeComponent('/spot/${widget.spot.id}')}');
+                                                context.go(
+                                                  '/login?redirectTo=${Uri.encodeComponent('/spot/${widget.spot.id}')}',
+                                                );
                                               },
                                               icon: const Icon(Icons.login),
-                                              label: const Text('Login to Rate'),
+                                              label: const Text(
+                                                'Login to Rate',
+                                              ),
                                             ),
                                           ),
                                         ],
@@ -1692,21 +1926,27 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         }
                       },
                     ),
-                    
+
                     // Additional Info
-                    if (widget.spot.createdBy != null || widget.spot.createdByName != null || widget.spot.createdAt != null) ...[
+                    if (widget.spot.createdBy != null ||
+                        widget.spot.createdByName != null ||
+                        widget.spot.createdAt != null) ...[
                       Text(
                         'Additional Information',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 8),
-                      if (widget.spot.createdBy != null || widget.spot.createdByName != null) ...[
+                      if (widget.spot.createdBy != null ||
+                          widget.spot.createdByName != null) ...[
                         ListTile(
                           leading: const Icon(Icons.person),
                           title: const Text('Added by'),
-                          subtitle: Text(widget.spot.createdByName ?? widget.spot.createdBy ?? ''),
+                          subtitle: Text(
+                            widget.spot.createdByName ??
+                                widget.spot.createdBy ??
+                                '',
+                          ),
                           contentPadding: EdgeInsets.zero,
                         ),
                       ],
@@ -1717,10 +1957,11 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             leading: const Icon(Icons.source),
                             title: const Text('Source'),
                             subtitle: Text(
-                                    widget.spot.folderName != null
-                                        ? '${widget.spot.spotSourceName ?? 'Unknown Source'} - ${widget.spot.folderName!}'
-                                        : widget.spot.spotSourceName ?? 'Unknown Source',
-                                  ),
+                              widget.spot.folderName != null
+                                  ? '${widget.spot.spotSourceName ?? 'Unknown Source'} - ${widget.spot.folderName!}'
+                                  : widget.spot.spotSourceName ??
+                                        'Unknown Source',
+                            ),
                             contentPadding: EdgeInsets.zero,
                             trailing: const Icon(Icons.info_outline, size: 16),
                           ),
@@ -1734,7 +1975,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                           contentPadding: EdgeInsets.zero,
                         ),
                       ],
-                      if (widget.spot.updatedAt != null && 
+                      if (widget.spot.updatedAt != null &&
                           widget.spot.updatedAt != widget.spot.createdAt) ...[
                         ListTile(
                           leading: const Icon(Icons.update),
@@ -1744,7 +1985,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         ),
                       ],
                     ],
-                    
+
                     const SizedBox(height: 32),
                   ],
                 ),
@@ -1769,13 +2010,17 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
               Icon(
                 Icons.image_not_supported,
                 size: 64,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.5),
               ),
               const SizedBox(height: 16),
               Text(
                 'No images available',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.5),
                 ),
               ),
             ],
@@ -1810,18 +2055,24 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     if (kIsWeb) ...[
                       Text(
                         'Mobile: ${MobileDetectionService.isMobileDevice}',
-                        style: const TextStyle(color: Colors.white, fontSize: 10),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                        ),
                       ),
                       Text(
                         'Platform: ${MobileDetectionService.preferredMapsApp}',
-                        style: const TextStyle(color: Colors.white, fontSize: 10),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                        ),
                       ),
                     ],
                   ],
                 ),
               ),
             ),
-          
+
           // Hybrid image carousel with both swiping and arrow buttons
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
@@ -1833,9 +2084,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
               height: 400,
               placeholder: (context, url) => Container(
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                child: Center(
-                  child: CircularProgressIndicator(),
-                ),
+                child: Center(child: CircularProgressIndicator()),
               ),
               errorWidget: (context, url, error) {
                 debugPrint('Image error: $error');
@@ -1862,7 +2111,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
               },
             ),
           ),
-          
+
           // Gradient overlay for better text readability
           Container(
             decoration: BoxDecoration(
@@ -1909,7 +2158,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                 ),
               ),
             ),
-            
+
             // Right arrow
             Positioned(
               right: 16,
@@ -1951,7 +2200,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                   // Enhanced page indicator dots
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(widget.spot.imageUrls!.length, (index) {
+                    children: List.generate(widget.spot.imageUrls!.length, (
+                      index,
+                    ) {
                       final isActive = index == _currentImageIndex;
                       return GestureDetector(
                         onTap: () {
@@ -1970,13 +2221,17 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                               color: Colors.white.withValues(alpha: 0.3),
                               width: 1,
                             ),
-                            boxShadow: isActive ? [
-                              BoxShadow(
-                                color: Colors.white.withValues(alpha: 0.3),
-                                blurRadius: 8,
-                                spreadRadius: 2,
-                              ),
-                            ] : null,
+                            boxShadow: isActive
+                                ? [
+                                    BoxShadow(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.3,
+                                      ),
+                                      blurRadius: 8,
+                                      spreadRadius: 2,
+                                    ),
+                                  ]
+                                : null,
                           ),
                         ),
                       );
@@ -1989,8 +2244,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       ),
     );
   }
-
-
 
   void _nextImage() {
     if (_currentImageIndex < widget.spot.imageUrls!.length - 1) {
@@ -2026,13 +2279,15 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     }
   }
 
-
   Future<double?> _loadUserRatingFuture() async {
     try {
       final authService = Provider.of<AuthService>(context, listen: false);
       if (authService.isAuthenticated && authService.userProfile != null) {
         final spotService = Provider.of<SpotService>(context, listen: false);
-        final userRating = await spotService.getUserRating(widget.spot.id!, authService.userProfile!.id);
+        final userRating = await spotService.getUserRating(
+          widget.spot.id!,
+          authService.userProfile!.id,
+        );
         if (mounted && userRating != null) {
           setState(() {
             _userRating = userRating;
@@ -2062,7 +2317,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         );
         return;
       }
-      
+
       // Check if this is the same rating as before - if so, don't submit
       if (rating == _previousRating && _hasRated) {
         // Just update the UI to show the selected star without submitting
@@ -2071,37 +2326,42 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         });
         return;
       }
-      
+
       // Store the current rating stats before submitting
       final currentRatingCount = _cachedRatingStats?['ratingCount'] ?? 0;
       final currentAverageRating = _cachedRatingStats?['averageRating'] ?? 0.0;
-      
+
       // Update UI immediately for better UX
       setState(() {
         _userRating = rating;
         _hasRated = true;
         _previousRating = rating;
       });
-      
+
       final spotService = Provider.of<SpotService>(context, listen: false);
       final success = await spotService.rateSpot(
-        widget.spot.id!, 
-        rating, 
-        authService.userProfile!.id
+        widget.spot.id!,
+        rating,
+        authService.userProfile!.id,
       );
-      
+
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Rating ${rating.toInt()} star${rating == 1 ? '' : 's'} submitted!'),
+            content: Text(
+              'Rating ${rating.toInt()} star${rating == 1 ? '' : 's'} submitted!',
+            ),
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 2),
           ),
         );
-        
+
         // Refresh the spot data to show updated rating
         // Retry a few times to allow Cloud Functions to update the spot aggregates
-        await _refreshSpotDataWithRetry(currentRatingCount, currentAverageRating);
+        await _refreshSpotDataWithRetry(
+          currentRatingCount,
+          currentAverageRating,
+        );
       } else if (mounted) {
         // Revert UI changes if submission failed
         setState(() {
@@ -2167,28 +2427,37 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     }
   }
 
-  Future<void> _refreshSpotDataWithRetry(int currentRatingCount, double currentAverageRating) async {
+  Future<void> _refreshSpotDataWithRetry(
+    int currentRatingCount,
+    double currentAverageRating,
+  ) async {
     const maxRetries = 5;
     const retryDelay = Duration(milliseconds: 1000);
-    
+
     for (int attempt = 0; attempt < maxRetries; attempt++) {
       await _refreshSpotData();
-      
+
       // Check if the rating aggregates have changed (indicating the Cloud Function has updated the spot)
       final newRatingCount = _cachedRatingStats?['ratingCount'] ?? 0;
       final newAverageRating = _cachedRatingStats?['averageRating'] ?? 0.0;
-      
+
       // Consider it updated if either count or average has changed
       final countChanged = newRatingCount != currentRatingCount;
-      final averageChanged = (newAverageRating - currentAverageRating).abs() > 0.01; // Allow for small floating point differences
-      
+      final averageChanged =
+          (newAverageRating - currentAverageRating).abs() >
+          0.01; // Allow for small floating point differences
+
       if (countChanged || averageChanged) {
-        debugPrint('Rating aggregates updated successfully. Count: $currentRatingCount -> $newRatingCount, Average: ${currentAverageRating.toStringAsFixed(2)} -> ${newAverageRating.toStringAsFixed(2)}');
+        debugPrint(
+          'Rating aggregates updated successfully. Count: $currentRatingCount -> $newRatingCount, Average: ${currentAverageRating.toStringAsFixed(2)} -> ${newAverageRating.toStringAsFixed(2)}',
+        );
         break; // Success - rating aggregates have been updated
       }
-      
-      debugPrint('Attempt ${attempt + 1}: Rating aggregates unchanged (Count: $newRatingCount, Average: ${newAverageRating.toStringAsFixed(2)})');
-      
+
+      debugPrint(
+        'Attempt ${attempt + 1}: Rating aggregates unchanged (Count: $newRatingCount, Average: ${newAverageRating.toStringAsFixed(2)})',
+      );
+
       // If not the last attempt, wait before retrying
       if (attempt < maxRetries - 1) {
         await Future.delayed(retryDelay);
@@ -2201,7 +2470,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Spot'),
-        content: const Text('Are you sure you want to delete this spot? This action cannot be undone.'),
+        content: const Text(
+          'Are you sure you want to delete this spot? This action cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -2211,12 +2482,15 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
             onPressed: () async {
               Navigator.pop(context);
               try {
-                final spotService = Provider.of<SpotService>(context, listen: false);
+                final spotService = Provider.of<SpotService>(
+                  context,
+                  listen: false,
+                );
                 final success = await spotService.deleteSpot(widget.spot.id!);
-                
+
                 if (!mounted) return;
                 final scaffoldMessenger = ScaffoldMessenger.of(context);
-                
+
                 if (success) {
                   // Show success message first
                   scaffoldMessenger.showSnackBar(
@@ -2225,7 +2499,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       backgroundColor: Colors.green,
                     ),
                   );
-                  
+
                   // Navigate to home immediately after successful deletion
                   // Use replace to ensure we don't go back to the deleted spot
                   if (!mounted) return;
@@ -2248,9 +2522,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                 );
               }
             },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Delete'),
           ),
         ],
@@ -2268,7 +2540,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     final description = SpotAttributes.getDescription('access', accessKey);
     Color backgroundColor;
     Color textColor;
-    
+
     switch (accessKey) {
       case 'public':
         backgroundColor = Colors.green.withValues(alpha: 0.1);
@@ -2286,7 +2558,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         backgroundColor = Theme.of(context).colorScheme.surfaceContainerHighest;
         textColor = Theme.of(context).colorScheme.onSurface;
     }
-    
+
     return GestureDetector(
       onTap: () => _showDescriptionDialog(label, description, icon),
       child: Chip(
@@ -2302,13 +2574,19 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     final icon = SpotAttributes.getIcon('features', featureKey);
     final label = SpotAttributes.getLabel('features', featureKey);
     final description = SpotAttributes.getDescription('features', featureKey);
-    
+
     return GestureDetector(
       onTap: () => _showDescriptionDialog(label, description, icon),
       child: Chip(
-        avatar: Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
+        avatar: Icon(
+          icon,
+          size: 16,
+          color: Theme.of(context).colorScheme.primary,
+        ),
         label: Text(label),
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
+        backgroundColor: Theme.of(
+          context,
+        ).colorScheme.primaryContainer.withValues(alpha: 0.1),
         labelStyle: TextStyle(
           color: Theme.of(context).colorScheme.onPrimaryContainer,
           fontWeight: FontWeight.w500,
@@ -2320,11 +2598,14 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   Widget _buildFacilityChip(String facilityKey, String status) {
     final icon = SpotAttributes.getIcon('facilities', facilityKey);
     final label = SpotAttributes.getLabel('facilities', facilityKey);
-    final description = SpotAttributes.getDescription('facilities', facilityKey);
+    final description = SpotAttributes.getDescription(
+      'facilities',
+      facilityKey,
+    );
     Color backgroundColor;
     Color textColor;
     IconData statusIcon;
-    
+
     // Set colors and status icon based on status
     if (status == 'yes') {
       backgroundColor = Colors.green.withValues(alpha: 0.1);
@@ -2339,7 +2620,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       textColor = Theme.of(context).colorScheme.onSurface;
       statusIcon = Icons.info;
     }
-    
+
     return GestureDetector(
       onTap: () => _showDescriptionDialog(label, description, icon),
       child: Chip(
@@ -2369,16 +2650,12 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         children: [
           Text(
             title,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: chips,
-          ),
+          Wrap(spacing: 8, runSpacing: 8, children: chips),
         ],
       );
     }
@@ -2386,7 +2663,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     return StatefulBuilder(
       builder: (context, setState) {
         final isExpanded = _expandedSections[title] ?? false;
-        final visibleChips = isExpanded ? chips : chips.take(initialCount).toList();
+        final visibleChips = isExpanded
+            ? chips
+            : chips.take(initialCount).toList();
         final remainingCount = chips.length - initialCount;
 
         return Column(
@@ -2394,9 +2673,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           children: [
             Text(
               title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             Wrap(
@@ -2412,12 +2691,19 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       });
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.outline.withValues(alpha: 0.3),
                           width: 1,
                         ),
                       ),
@@ -2454,13 +2740,19 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     final icon = SpotAttributes.getIcon('goodFor', skillKey);
     final label = SpotAttributes.getLabel('goodFor', skillKey);
     final description = SpotAttributes.getDescription('goodFor', skillKey);
-    
+
     return GestureDetector(
       onTap: () => _showDescriptionDialog(label, description, icon),
       child: Chip(
-        avatar: Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
+        avatar: Icon(
+          icon,
+          size: 16,
+          color: Theme.of(context).colorScheme.primary,
+        ),
         label: Text(label),
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
+        backgroundColor: Theme.of(
+          context,
+        ).colorScheme.primaryContainer.withValues(alpha: 0.1),
         labelStyle: TextStyle(
           color: Theme.of(context).colorScheme.onPrimaryContainer,
           fontWeight: FontWeight.w500,
