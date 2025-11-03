@@ -255,6 +255,7 @@ exports.getTopSpotsInBounds = onCall(
           minLng,
           maxLng,
           limit = 100,
+          spotSource = null, // null = all sources, empty string = native only, string = specific source
         } = request.data || {};
 
         if (
@@ -320,15 +321,28 @@ exports.getTopSpotsInBounds = onCall(
 
         const maxItems = Math.max(0, Math.min(200, Number(limit) || 100));
 
-        // Build query function
+        // Build query function with source filtering
         const buildQuery = (lngMin, lngMax) => {
-          return db
+          let query = db
               .collection("spots")
               .where("latitude", ">=", minLat)
               .where("latitude", "<=", maxLat)
               .where("longitude", ">=", lngMin)
-              .where("longitude", "<=", lngMax)
-              .orderBy("ranking", "desc");
+              .where("longitude", "<=", lngMax);
+          
+          // Apply source filter if specified
+          if (spotSource !== null && spotSource !== undefined) {
+            if (spotSource === "") {
+              // Empty string means native spots only (spotSource is null)
+              query = query.where("spotSource", "==", null);
+            } else {
+              // Specific source ID
+              query = query.where("spotSource", "==", spotSource);
+            }
+          }
+          // If spotSource is null, no filter is applied (all sources)
+          
+          return query.orderBy("ranking", "desc");
         };
 
         // Execute query(ies)

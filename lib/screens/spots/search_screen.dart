@@ -94,8 +94,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   double _lastKnownZoom = 14.0;
   // Filters
   bool _includeSpotsWithoutPictures = true; // Default: include spots without pictures
-  bool _includeParkourNative = true; // Spots created directly on parkour.spot (spotSource == null)
-  Set<String> _selectedExternalSourceIds = <String>{}; // Will be populated with all source IDs by default
+  String? _selectedSpotSource; // null = all sources, "" = native only, string = specific source ID
   bool _showFiltersDialog = false; // Controls filters dialog visibility
   SpotService? _spotServiceRef; // To attach a listener for spot updates
   SyncSourceService? _syncSourceServiceRef; // To attach a listener for sync source updates
@@ -107,32 +106,13 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   }
   
   void _onSyncSourcesChanged() {
-    if (mounted && _syncSourceServiceRef != null) {
-      // Select saved external sources if available, otherwise select all by default when they load
-      if (_syncSourceServiceRef!.sources.isNotEmpty && _selectedExternalSourceIds.isEmpty) {
-        final searchState = Provider.of<SearchStateService>(context, listen: false);
-        final savedIds = searchState.selectedExternalSourceIds;
-        if (savedIds.isNotEmpty) {
-          final availableIds = _syncSourceServiceRef!.sources.map((s) => s.id).toSet();
-          _selectedExternalSourceIds.clear();
-          _selectedExternalSourceIds.addAll(savedIds.intersection(availableIds));
-        } else {
-          _selectedExternalSourceIds.clear();
-          _selectedExternalSourceIds.addAll(_syncSourceServiceRef!.sources.map((s) => s.id));
-        }
-        // Persist selected sources
-        searchState.setSelectedExternalSourceIds(_selectedExternalSourceIds);
-        _updateVisibleSpots();
-      }
-    }
+    // Sync sources changed - no action needed for single source selection
   }
 
   bool _hasActiveFilters() {
     // Check if any filters are different from defaults
-    final allExternalSourcesSelected = _selectedExternalSourceIds.length == (_syncSourceServiceRef?.sources.length ?? 0);
     return !_includeSpotsWithoutPictures || // Default is true, so false means active
-           !_includeParkourNative || // Default is true, so false means active
-           (_syncSourceServiceRef?.sources.isNotEmpty == true && !allExternalSourcesSelected); // Not all external sources selected
+           _selectedSpotSource != null; // null means all sources (default)
   }
 
   @override
@@ -167,10 +147,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       setState(() {
         _isSatelliteView = searchState.isSatellite;
         _includeSpotsWithoutPictures = searchState.includeSpotsWithoutPictures;
-        _includeParkourNative = searchState.includeParkourNative;
-        if (searchState.selectedExternalSourceIds.isNotEmpty) {
-          _selectedExternalSourceIds = {...searchState.selectedExternalSourceIds};
-        }
+        _selectedSpotSource = searchState.selectedSpotSource; // null = all sources (default)
       });
 
       // Listen to SpotService changes to refresh visible spots when data updates
@@ -183,19 +160,6 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
 
       if (_syncSourceServiceRef!.sources.isEmpty && !_syncSourceServiceRef!.isLoading) {
         _syncSourceServiceRef!.fetchSyncSources(includeInactive: false);
-      } else if (_syncSourceServiceRef!.sources.isNotEmpty) {
-        // If sources are already loaded, prefer saved selection; otherwise select all
-        final savedIds = searchState.selectedExternalSourceIds;
-        if (savedIds.isNotEmpty) {
-          final availableIds = _syncSourceServiceRef!.sources.map((s) => s.id).toSet();
-          _selectedExternalSourceIds
-            ..clear()
-            ..addAll(savedIds.intersection(availableIds));
-        } else {
-          _selectedExternalSourceIds
-            ..clear()
-            ..addAll(_syncSourceServiceRef!.sources.map((s) => s.id));
-        }
       }
     });
   }
@@ -453,19 +417,21 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       final spotService = Provider.of<SpotService>(context, listen: false);
       
       // Load ranked top spots within the current map bounds (and total count)
+      // Source filtering is now done at database level
       final ranked = await spotService.getTopRankedSpotsInBounds(
         bounds.southwest.latitude,
         bounds.northeast.latitude,
         bounds.southwest.longitude,
         bounds.northeast.longitude,
         limit: 100,
+        spotSource: _selectedSpotSource, // null = all, "" = native, string = specific source
       );
 
       _loadedSpots = (ranked['spots'] as List<Spot>?) ?? <Spot>[];
       _totalSpotsInView = ranked['totalCount'] as int?;
       _bestShownCount = ranked['shownCount'] as int?;
       
-      // Apply filters to the loaded spots
+      // Apply picture filter only (source filtering is done at database level)
       _updateVisibleSpots();
     } catch (e) {
       debugPrint('Error loading spots for current view: $e');
@@ -480,24 +446,12 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     List<Spot> filteredSpots = List.from(_loadedSpots);
     
     // Note: Search query is now only used for location autocomplete, not spot name filtering
+    // Source filtering is now done at database level, so we only need to apply picture filter
 
     // Apply picture filter (default: exclude spots without pictures)
     if (!_includeSpotsWithoutPictures) {
       filteredSpots = filteredSpots.where((spot) => spot.imageUrls != null && spot.imageUrls!.isNotEmpty).toList();
     }
-
-    // Apply source filters
-    filteredSpots = filteredSpots.where((spot) {
-      final bool isExternal = (spot.spotSource != null && spot.spotSource!.isNotEmpty);
-
-      if (isExternal) {
-        // Check if this specific external source is selected
-        return _selectedExternalSourceIds.contains(spot.spotSource);
-      } else {
-        // Native Parkour.Spot (no spotSource) - controlled by chip
-        return _includeParkourNative;
-      }
-    }).toList();
 
     // Update visible spots and markers
     setState(() {
@@ -513,125 +467,133 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-                  // Row 1: Include spots without pictures
-                  SwitchListTile.adaptive(
+            // Row 1: Include spots without pictures
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Include spots without pictures'),
+              value: _includeSpotsWithoutPictures,
+              onChanged: (val) {
+                setState(() {
+                  _includeSpotsWithoutPictures = val;
+                });
+                Provider.of<SearchStateService>(context, listen: false)
+                    .setIncludeSpotsWithoutPictures(val);
+                _updateVisibleSpots();
+              },
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Spot Source',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+            ),
+            const SizedBox(height: 8),
+            if (syncService.isLoading && sources.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            else if (syncService.error != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  'Failed to load sources',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                ),
+              )
+            else
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // All sources option
+                  RadioListTile<String?>(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Include spots without pictures'),
-                    value: _includeSpotsWithoutPictures,
-                    onChanged: (val) {
+                    title: const Text('All Sources'),
+                    value: null,
+                    groupValue: _selectedSpotSource,
+                    onChanged: (value) {
                       setState(() {
-                        _includeSpotsWithoutPictures = val;
+                        _selectedSpotSource = null;
                       });
                       Provider.of<SearchStateService>(context, listen: false)
-                          .setIncludeSpotsWithoutPictures(val);
-                      _updateVisibleSpots();
+                          .setSelectedSpotSource(null);
+                      // Reload spots with new filter
+                      _loadSpotsForCurrentView();
                     },
                   ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Sources',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                            ),
-                      ),
-                      Row(
+                  // Native only option
+                  RadioListTile<String?>(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Parkour.Spot (Native)'),
+                    value: "",
+                    groupValue: _selectedSpotSource,
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedSpotSource = "";
+                      });
+                      Provider.of<SearchStateService>(context, listen: false)
+                          .setSelectedSpotSource("");
+                      // Reload spots with new filter
+                      _loadSpotsForCurrentView();
+                    },
+                  ),
+                  // External source options
+                  ...sources.map((source) {
+                    return RadioListTile<String?>(
+                      contentPadding: EdgeInsets.zero,
+                      title: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          TextButton(
-                            onPressed: (_includeParkourNative && _selectedExternalSourceIds.length == (_syncSourceServiceRef?.sources.length ?? 0))
-                                ? null
-                                : () {
-                                    setState(() {
-                                      _includeParkourNative = true;
-                                      _selectedExternalSourceIds.clear();
-                                      _selectedExternalSourceIds.addAll(_syncSourceServiceRef!.sources.map((s) => s.id));
-                                    });
-                                    Provider.of<SearchStateService>(context, listen: false)
-                                      ..setIncludeParkourNative(true)
-                                      ..setSelectedExternalSourceIds(_selectedExternalSourceIds);
-                                    // Call _updateVisibleSpots after setState completes
-                                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                                      _updateVisibleSpots();
-                                    });
-                                  },
-                            child: const Text('Show All'),
+                          Expanded(
+                            child: Text(source.name),
                           ),
-                          const SizedBox(width: 8),
-                          TextButton(
-                            onPressed: (!_includeParkourNative && _selectedExternalSourceIds.isEmpty)
-                                ? null
-                                : () {
-                                    setState(() {
-                                      _includeParkourNative = false;
-                                      _selectedExternalSourceIds.clear();
-                                    });
-                                    Provider.of<SearchStateService>(context, listen: false)
-                                      ..setIncludeParkourNative(false)
-                                      ..setSelectedExternalSourceIds(_selectedExternalSourceIds);
-                                    // Call _updateVisibleSpots after setState completes
-                                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                                      _updateVisibleSpots();
-                                    });
-                                  },
-                            child: const Text('Show None'),
+                          const SizedBox(width: 4),
+                          GestureDetector(
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) => SourceDetailsDialog(source: source),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                Icons.info_outline,
+                                size: 16,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  if (syncService.isLoading && sources.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8),
-                      child: SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    )
-                  else if (syncService.error != null)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Text(
-                        'Failed to load sources',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.error,
-                            ),
-                      ),
-                    )
-                  else
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        // Parkour.Spot chip - first in line
-                        FilterChip(
-                          label: const Text('Parkour.Spot'),
-                          selected: _includeParkourNative,
-                          onSelected: (val) {
-                            setState(() {
-                              _includeParkourNative = val;
-                            });
-                            Provider.of<SearchStateService>(context, listen: false)
-                                .setIncludeParkourNative(val);
-                            // Call _updateVisibleSpots after setState completes
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              _updateVisibleSpots();
-                            });
-                          },
-                        ),
-                        // External source chips
-                        ...sources.map((source) {
-                          final bool selected = _selectedExternalSourceIds.contains(source.id);
-                          return _buildSourceChipWithInfo(context, source, selected);
-                        }).toList(),
-                      ],
-                    ),
+                      value: source.id,
+                      groupValue: _selectedSpotSource,
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedSpotSource = source.id;
+                        });
+                        Provider.of<SearchStateService>(context, listen: false)
+                            .setSelectedSpotSource(source.id);
+                        // Reload spots with new filter
+                        _loadSpotsForCurrentView();
+                      },
+                    );
+                  }).toList(),
                 ],
-          );
+              ),
+          ],
+        );
       },
     );
   }
@@ -1635,7 +1597,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                     setState(() {
                       _showFiltersDialog = false;
                     });
-                    _updateVisibleSpots();
+                    // Reload spots since source filtering is done at database level
+                    _loadSpotsForCurrentView();
                   },
                   child: const Text('Apply Filters'),
                 ),
@@ -1652,52 +1615,5 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     );
   }
 
-  Widget _buildSourceChipWithInfo(BuildContext context, SyncSource source, bool selected) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        FilterChip(
-          label: Text('${source.name}    '),
-          selected: selected,
-          onSelected: (val) {
-            setState(() {
-              if (val) {
-                _selectedExternalSourceIds.add(source.id);
-              } else {
-                _selectedExternalSourceIds.remove(source.id);
-              }
-            });
-            Provider.of<SearchStateService>(context, listen: false)
-                .setSelectedExternalSourceIds(_selectedExternalSourceIds);
-            // Call _updateVisibleSpots after setState completes
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _updateVisibleSpots();
-            });
-          },
-        ),
-        const SizedBox(width: 4),
-        GestureDetector(
-          onTap: () {
-            showDialog(
-              context: context,
-              builder: (context) => SourceDetailsDialog(source: source),
-            );
-          },
-          child: Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              Icons.info_outline,
-              size: 16,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 }
 

@@ -11,6 +11,7 @@ class SearchStateService extends ChangeNotifier {
   static const String _keyIncludeParkourNative = 'search_include_parkour_native';
   static const String _keyIncludeExternalSources = 'search_include_external_sources';
   static const String _keySelectedExternalSourceIds = 'search_selected_external_source_ids';
+  static const String _keySelectedSpotSource = 'search_selected_spot_source'; // null = all, "" = native, string = specific source
 
   // Backing fields
   double? _centerLat;
@@ -21,6 +22,7 @@ class SearchStateService extends ChangeNotifier {
   bool _includeParkourNative = true;
   bool _includeExternalSources = true;
   Set<String> _selectedExternalSourceIds = <String>{};
+  String? _selectedSpotSource; // null = all sources, "" = native only, string = specific source ID
 
   // Getters
   double? get centerLat => _centerLat;
@@ -31,6 +33,7 @@ class SearchStateService extends ChangeNotifier {
   bool get includeParkourNative => _includeParkourNative;
   bool get includeExternalSources => _includeExternalSources;
   Set<String> get selectedExternalSourceIds => _selectedExternalSourceIds;
+  String? get selectedSpotSource => _selectedSpotSource;
 
   Future<void> loadFromStorage() async {
     try {
@@ -46,6 +49,7 @@ class SearchStateService extends ChangeNotifier {
       if (savedSources != null) {
         _selectedExternalSourceIds = savedSources.toSet();
       }
+      _selectedSpotSource = prefs.getString(_keySelectedSpotSource); // null if not set (all sources)
       notifyListeners();
     } catch (e) {
       // Silent fail - persistence is best-effort
@@ -116,6 +120,23 @@ class SearchStateService extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList(_keySelectedExternalSourceIds, ids.toList());
+    } catch (e) {
+      // Ignore SharedPreferences errors - settings will not persist but app continues to work
+    }
+  }
+
+  /// Set the selected spot source filter
+  /// null = all sources, "" = native only, string = specific source ID
+  Future<void> setSelectedSpotSource(String? spotSource) async {
+    _selectedSpotSource = spotSource;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (spotSource == null) {
+        await prefs.remove(_keySelectedSpotSource);
+      } else {
+        await prefs.setString(_keySelectedSpotSource, spotSource);
+      }
     } catch (e) {
       // Ignore SharedPreferences errors - settings will not persist but app continues to work
     }

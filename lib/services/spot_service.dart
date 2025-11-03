@@ -693,24 +693,30 @@ class SpotService extends ChangeNotifier {
     double minLng,
     double maxLng, {
     int limit = 100,
+    String? spotSource, // null = all sources, empty string = native only, string = specific source
   }) async {
     try {
       final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
       final callable = functions.httpsCallable('getTopSpotsInBounds');
-      final result = await callable.call({
+      final Map<String, dynamic> requestData = {
         'minLat': minLat,
         'maxLat': maxLat,
         'minLng': minLng,
         'maxLng': maxLng,
         'limit': limit,
-      });
+      };
+      // Only include spotSource if it's not null (null means all sources)
+      if (spotSource != null) {
+        requestData['spotSource'] = spotSource;
+      }
+      final result = await callable.call(requestData);
 
-      final data = result.data as Map<String, dynamic>?;
-      if (data == null || data['success'] != true) {
-        throw Exception(data != null && data['error'] is String ? data['error'] : 'Unknown error');
+      final responseData = result.data as Map<String, dynamic>?;
+      if (responseData == null || responseData['success'] != true) {
+        throw Exception(responseData != null && responseData['error'] is String ? responseData['error'] : 'Unknown error');
       }
 
-      final List<dynamic> items = (data['spots'] as List<dynamic>? ?? <dynamic>[]);
+      final List<dynamic> items = (responseData['spots'] as List<dynamic>? ?? <dynamic>[]);
       final spots = items
           .whereType<Map<String, dynamic>>()
           .map((m) => Spot.fromMap(m))
@@ -718,9 +724,9 @@ class SpotService extends ChangeNotifier {
 
       return {
         'spots': spots,
-        'totalCount': (data['totalCount'] as num?)?.toInt() ?? spots.length,
-        'shownCount': (data['shownCount'] as num?)?.toInt() ?? spots.length,
-        'averageWilson': (data['averageWilson'] as num?)?.toDouble() ?? 0.0,
+        'totalCount': (responseData['totalCount'] as num?)?.toInt() ?? spots.length,
+        'shownCount': (responseData['shownCount'] as num?)?.toInt() ?? spots.length,
+        'averageWilson': (responseData['averageWilson'] as num?)?.toDouble() ?? 0.0,
       };
     } catch (e) {
       debugPrint('Error getting top ranked spots in bounds: $e');
