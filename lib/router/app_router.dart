@@ -9,6 +9,7 @@ import '../screens/admin/sync_sources_screen.dart';
 import '../screens/admin/geocoding_admin_screen.dart';
 import '../screens/admin/spot_management_screen.dart';
 import '../screens/moderator/moderator_tools_screen.dart';
+import '../screens/moderator/spot_report_queue_screen.dart';
 import '../screens/spots/spot_detail_screen.dart';
 import '../screens/spots/edit_spot_screen.dart';
 import '../screens/auth/login_screen.dart';
@@ -112,6 +113,12 @@ class AppRouter {
       GoRoute(
         path: '/moderator',
         builder: (context, state) => const ModeratorToolsScreen(),
+        routes: [
+          GoRoute(
+            path: 'reports',
+            builder: (context, state) => const SpotReportQueueScreen(),
+          ),
+        ],
       ),
       // Simple spot detail route: /spot/:spotId
       GoRoute(
