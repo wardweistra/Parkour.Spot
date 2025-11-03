@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:parkour_spot/services/auth_service.dart';
 import 'package:parkour_spot/services/spot_service.dart';
+import 'package:parkour_spot/services/spot_report_service.dart';
 import 'package:parkour_spot/services/sync_source_service.dart';
 import 'package:parkour_spot/services/search_state_service.dart';
 import 'package:parkour_spot/services/geocoding_service.dart';
@@ -46,6 +47,7 @@ class ParkourSpotApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SyncSourceService()),
         ChangeNotifierProvider(create: (_) => SearchStateService()..loadFromStorage()),
         ChangeNotifierProvider(create: (_) => GeocodingService()),
+        Provider(create: (_) => SpotReportService()),
       ],
       child: MaterialApp.router(
         title: 'Parkour.Spot',

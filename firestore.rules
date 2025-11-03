@@ -37,6 +37,15 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
     
+    // Spot reports - anyone can submit, only moderators/admins can view or manage
+    match /spotReports/{reportId} {
+      allow create: if true;
+      allow read, update, delete: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isModerator == true);
+    }
+
     // Comments collection - users can read all comments, authenticated users can create, owners can edit/delete
     match /comments/{commentId} {
       allow read: if true;
