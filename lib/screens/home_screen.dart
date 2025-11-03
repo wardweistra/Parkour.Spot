@@ -42,15 +42,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onTabTapped(int index) {
-    final authService = Provider.of<AuthService>(context, listen: false);
-    
-    // Check authentication for protected features
-    if (index == 1 && !authService.isAuthenticated) {
-      // Add Spot requires authentication
-      _showLoginRequiredDialog('Add New Spot', 'You need to be logged in to add new spots.');
-      return;
-    }
-    
     // Profile tab (index 2) is now accessible without authentication
     setState(() {
       _currentIndex = index;
@@ -78,37 +69,6 @@ class _HomeScreenState extends State<HomeScreen> {
         context.go('/home?tab=profile');
         break;
     }
-  }
-
-  void _showLoginRequiredDialog(String title, String message) {
-    // Determine which tab to redirect to based on the title
-    String redirectTab = 'profile'; // default
-    if (title.contains('Add New Spot')) {
-      redirectTab = 'add';
-    } else if (title.contains('Profile')) {
-      redirectTab = 'profile';
-    }
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              context.go('/login?redirectTo=${Uri.encodeComponent('/home?tab=$redirectTab')}');
-            },
-            child: const Text('Login'),
-          ),
-        ],
-      ),
-    );
   }
 
   List<Widget> _buildScreens() {
