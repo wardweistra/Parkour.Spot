@@ -574,14 +574,18 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                   ),
                   // External source options
                   ...sources.map((source) {
+                    final isWideScreen = MediaQuery.of(context).size.width > 600;
                     return RadioListTile<String?>(
                       contentPadding: EdgeInsets.zero,
                       title: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Expanded(
-                            child: Text(source.name),
-                          ),
+                          if (isWideScreen)
+                            Text(source.name)
+                          else
+                            Expanded(
+                              child: Text(source.name),
+                            ),
                           const SizedBox(width: 4),
                           GestureDetector(
                             onTap: () {
