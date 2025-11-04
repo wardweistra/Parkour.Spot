@@ -1619,21 +1619,48 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
               ),
             ),
             
-            // Apply Button
+            // Clear and Apply Buttons
             Padding(
               padding: const EdgeInsets.all(16),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _showFiltersDialog = false;
-                    });
-                    // Reload spots since source filtering is done at database level
-                    _loadSpotsForCurrentView();
-                  },
-                  child: const Text('Apply Filters'),
-                ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () {
+                        // Clear all filters to defaults
+                        setState(() {
+                          _includeSpotsWithoutPictures = true;
+                          _selectedSpotSource = null;
+                        });
+                        // Update SearchStateService
+                        Provider.of<SearchStateService>(context, listen: false)
+                            .setIncludeSpotsWithoutPictures(true);
+                        Provider.of<SearchStateService>(context, listen: false)
+                            .setSelectedSpotSource(null);
+                        // Reload spots with cleared filters
+                        _loadSpotsForCurrentView();
+                        // Close dialog
+                        setState(() {
+                          _showFiltersDialog = false;
+                        });
+                      },
+                      child: const Text('Clear'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          _showFiltersDialog = false;
+                        });
+                        // Reload spots since source filtering is done at database level
+                        _loadSpotsForCurrentView();
+                      },
+                      child: const Text('Apply'),
+                    ),
+                  ),
+                ],
               ),
             ),
                 ],
