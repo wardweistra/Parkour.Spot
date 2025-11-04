@@ -311,6 +311,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         widget.spot.latitude,
         widget.spot.longitude,
         label: widget.spot.name,
+        useSatellite: _isSatelliteView,
       );
     } catch (e) {
       if (mounted) {

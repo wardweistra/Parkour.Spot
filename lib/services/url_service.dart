@@ -111,7 +111,15 @@ class UrlService {
   /// On mobile: tries to open in native maps app (Google Maps, Apple Maps, etc.)
   /// On web: opens in Google Maps web
   /// On web + mobile device: tries to open in native maps app first
-  static Future<void> openLocationInMaps(double latitude, double longitude, {String? label}) async {
+  /// [useSatellite] attempts to match the Google Maps satellite basemap when applicable
+  static Future<void> openLocationInMaps(
+    double latitude,
+    double longitude,
+    {
+      String? label,
+      bool useSatellite = false,
+    }
+  ) async {
     try {
       Uri uri;
       
@@ -119,21 +127,41 @@ class UrlService {
         // Check if we're on a mobile device in the web version
         if (MobileDetectionService.isMobileDevice) {
           // Try to open in native maps app first
-          uri = await _getNativeMapsUri(latitude, longitude, label);
+          uri = await _getNativeMapsUri(
+            latitude,
+            longitude,
+            label,
+            useSatellite: useSatellite,
+          );
         } else {
           // Desktop web - use Google Maps web
-          uri = Uri.parse('https://www.google.com/maps/place/$latitude,$longitude/@$latitude,$longitude,16z');
+          uri = _buildGoogleMapsUri(
+            latitude,
+            longitude,
+            label: label,
+            satellite: useSatellite,
+          );
         }
       } else {
         // Native mobile app - use native maps
-        uri = await _getNativeMapsUri(latitude, longitude, label);
+        uri = await _getNativeMapsUri(
+          latitude,
+          longitude,
+          label,
+          useSatellite: useSatellite,
+        );
       }
       
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
         // Fallback to Google Maps web if native app can't be launched
-        final fallbackUri = Uri.parse('https://www.google.com/maps/place/$latitude,$longitude/@$latitude,$longitude,16z');
+        final fallbackUri = _buildGoogleMapsUri(
+          latitude,
+          longitude,
+          label: label,
+          satellite: useSatellite,
+        );
         if (await canLaunchUrl(fallbackUri)) {
           await launchUrl(fallbackUri, mode: LaunchMode.externalApplication);
         } else {
@@ -147,18 +175,55 @@ class UrlService {
   }
   
   /// Get the appropriate native maps URI based on device type
-  static Future<Uri> _getNativeMapsUri(double latitude, double longitude, String? label) async {
+  static Future<Uri> _getNativeMapsUri(
+    double latitude,
+    double longitude,
+    String? label, {
+    bool useSatellite = false,
+  }) async {
     final preferredApp = MobileDetectionService.preferredMapsApp;
     
     if (preferredApp == 'apple_maps') {
       // Apple Maps format
-      final query = label != null ? '&q=${Uri.encodeComponent(label)}' : '';
-      return Uri.parse('https://maps.apple.com/?ll=$latitude,$longitude&z=16$query');
+      final queryBuffer = StringBuffer('https://maps.apple.com/?ll=$latitude,$longitude&z=16');
+      if (useSatellite) {
+        queryBuffer.write('&t=k');
+      }
+      if (label != null && label.trim().isNotEmpty) {
+        queryBuffer.write('&q=${Uri.encodeComponent(label)}');
+      }
+      return Uri.parse(queryBuffer.toString());
     } else {
       // Google Maps format (Android and fallback)
-      final query = label != null ? '&q=${Uri.encodeComponent(label)}' : '';
-      return Uri.parse('https://www.google.com/maps/place/$latitude,$longitude/@$latitude,$longitude,16z$query');
+      return _buildGoogleMapsUri(
+        latitude,
+        longitude,
+        label: label,
+        satellite: useSatellite,
+      );
     }
+  }
+
+  static Uri _buildGoogleMapsUri(
+    double latitude,
+    double longitude, {
+    String? label,
+    bool satellite = false,
+  }) {
+    final buffer = StringBuffer(
+      'https://www.google.com/maps/place/$latitude,$longitude/@$latitude,$longitude,16z',
+    );
+
+    if (satellite) {
+      buffer.write('/data=!3m1!1e3');
+    }
+
+    final hasLabel = label != null && label.trim().isNotEmpty;
+    if (hasLabel) {
+      buffer.write('?q=${Uri.encodeComponent(label!)}');
+    }
+
+    return Uri.parse(buffer.toString());
   }
   
   /// Generate a navigation URL for a spot (for internal navigation)
