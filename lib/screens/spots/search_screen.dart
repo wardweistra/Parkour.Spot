@@ -762,6 +762,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     });
   }
 
+  // Public API to check if bottom sheet is open
+  bool get isBottomSheetOpen => _isBottomSheetOpen;
+
   // Public API so parent can collapse on Home tab re-tap
   void collapseBottomSheetIfOpen() {
     if (_isBottomSheetOpen) {
@@ -769,9 +772,29 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     }
   }
 
+  // Public API so parent can open bottom sheet if closed
+  void openBottomSheetIfClosed() {
+    if (!_isBottomSheetOpen) {
+      _toggleBottomSheet();
+    }
+  }
+
+  // Public API to check if spot detail is open
+  bool get isSpotDetailOpen => _selectedSpot != null;
+
   // Public API so parent can close spot detail if open
   void closeSpotDetailIfOpen() {
     if (_selectedSpot != null && !_isBottomSheetOpen) {
+      setState(() {
+        _selectedSpot = null;
+        _markers = _buildMarkers(_visibleSpots);
+      });
+    }
+  }
+
+  // Public API to close spot detail regardless of bottom sheet state
+  void closeSpotDetail() {
+    if (_selectedSpot != null) {
       setState(() {
         _selectedSpot = null;
         _markers = _buildMarkers(_visibleSpots);

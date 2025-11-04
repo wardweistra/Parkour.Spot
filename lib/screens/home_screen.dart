@@ -43,10 +43,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onTabTapped(int index) {
-    // If re-tapping Home while already on Home, collapse the bottom sheet
+    // If re-tapping Home while already on Home, toggle bottom sheet
     if (index == 0 && _currentIndex == 0) {
-      _searchKey.currentState?.collapseBottomSheetIfOpen();
-      _searchKey.currentState?.closeSpotDetailIfOpen();
+      final searchState = _searchKey.currentState;
+      if (searchState != null) {
+        // If Spot Detail Card is open, close it (don't touch bottom sheet)
+        if (searchState.isSpotDetailOpen) {
+          searchState.closeSpotDetail();
+          return;
+        }
+        // Otherwise, toggle bottom sheet: if open, close it; if closed, open it
+        if (searchState.isBottomSheetOpen) {
+          searchState.collapseBottomSheetIfOpen();
+        } else {
+          searchState.openBottomSheetIfClosed();
+        }
+      }
       return;
     }
     // Profile tab (index 2) is now accessible without authentication
