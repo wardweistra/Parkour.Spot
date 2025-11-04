@@ -12,6 +12,7 @@ import '../../services/auth_service.dart';
 import '../../services/url_service.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../services/sync_source_service.dart';
+import '../../services/search_state_service.dart';
 import '../../widgets/source_details_dialog.dart';
 import '../../widgets/spot_selection_dialog.dart';
 import '../../constants/spot_attributes.dart';
@@ -38,6 +39,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   late final ScrollController _scrollController;
   late final PageController _videoPageController;
   bool _isSatelliteView = false;
+  SearchStateService? _searchStateServiceRef;
 
   // Add rating cache variables
   Map<String, dynamic>? _cachedRatingStats;
@@ -73,12 +75,32 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     }
 
     // We no longer initialize embedded YouTube players; thumbnails/links only
+
+    // Initialize satellite view from SearchStateService
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _searchStateServiceRef = Provider.of<SearchStateService>(context, listen: false);
+      _searchStateServiceRef!.addListener(_onSearchStateChanged);
+      setState(() {
+        _isSatelliteView = _searchStateServiceRef!.isSatellite;
+      });
+    });
+  }
+
+  void _onSearchStateChanged() {
+    if (!mounted) return;
+    final searchState = _searchStateServiceRef;
+    if (searchState == null) return;
+    
+    setState(() {
+      _isSatelliteView = searchState.isSatellite;
+    });
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
     _videoPageController.dispose();
+    _searchStateServiceRef?.removeListener(_onSearchStateChanged);
     // No controllers to dispose
     super.dispose();
   }
@@ -1066,6 +1088,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                     setState(() {
                                       _isSatelliteView = value;
                                     });
+                                    final searchState = Provider.of<SearchStateService>(context, listen: false);
+                                    searchState.setSatellite(value);
                                   },
                                 ),
                                 Text(

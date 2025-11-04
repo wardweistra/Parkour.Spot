@@ -8,6 +8,7 @@ import '../../models/spot.dart';
 import '../../services/spot_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/geocoding_service.dart';
+import '../../services/search_state_service.dart';
 import '../../services/url_service.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/custom_button.dart';
@@ -41,6 +42,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
   bool _isGettingLocation = false;
   bool _isGeocoding = false;
   bool _isSatelliteView = false;
+  SearchStateService? _searchStateServiceRef;
   
   // Spot attributes
   String? _selectedAccess;
@@ -52,6 +54,25 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
   void initState() {
     super.initState();
     _getCurrentLocation();
+    
+    // Initialize satellite view from SearchStateService
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _searchStateServiceRef = Provider.of<SearchStateService>(context, listen: false);
+      _searchStateServiceRef!.addListener(_onSearchStateChanged);
+      setState(() {
+        _isSatelliteView = _searchStateServiceRef!.isSatellite;
+      });
+    });
+  }
+
+  void _onSearchStateChanged() {
+    if (!mounted) return;
+    final searchState = _searchStateServiceRef;
+    if (searchState == null) return;
+    
+    setState(() {
+      _isSatelliteView = searchState.isSatellite;
+    });
   }
 
   @override
@@ -68,6 +89,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
+    _searchStateServiceRef?.removeListener(_onSearchStateChanged);
     super.dispose();
   }
 
@@ -403,6 +425,8 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
                                     setState(() {
                                       _isSatelliteView = value;
                                     });
+                                    final searchState = Provider.of<SearchStateService>(context, listen: false);
+                                    searchState.setSatellite(value);
                                   },
                 onMapCreated: onMapCreated,
               ),

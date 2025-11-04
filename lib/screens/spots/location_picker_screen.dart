@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../config/app_config.dart';
+import '../../services/search_state_service.dart';
 
 class LocationPickerScreen extends StatefulWidget {
   final LatLng? initialLocation;
@@ -15,11 +17,37 @@ class LocationPickerScreen extends StatefulWidget {
 class _LocationPickerScreenState extends State<LocationPickerScreen> {
   LatLng? _pickedLocation;
   bool _isSatelliteView = false;
+  SearchStateService? _searchStateServiceRef;
 
   @override
   void initState() {
     super.initState();
     _pickedLocation = widget.initialLocation;
+    
+    // Initialize satellite view from SearchStateService
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _searchStateServiceRef = Provider.of<SearchStateService>(context, listen: false);
+      _searchStateServiceRef!.addListener(_onSearchStateChanged);
+      setState(() {
+        _isSatelliteView = _searchStateServiceRef!.isSatellite;
+      });
+    });
+  }
+
+  void _onSearchStateChanged() {
+    if (!mounted) return;
+    final searchState = _searchStateServiceRef;
+    if (searchState == null) return;
+    
+    setState(() {
+      _isSatelliteView = searchState.isSatellite;
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchStateServiceRef?.removeListener(_onSearchStateChanged);
+    super.dispose();
   }
 
   @override
@@ -54,6 +82,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                   setState(() {
                     _isSatelliteView = value;
                   });
+                  final searchState = Provider.of<SearchStateService>(context, listen: false);
+                  searchState.setSatellite(value);
                 },
               ),
               Text(

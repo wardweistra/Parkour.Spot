@@ -11,6 +11,7 @@ import '../../models/spot.dart';
 import '../../services/spot_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/geocoding_service.dart';
+import '../../services/search_state_service.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/spot_form/location_section.dart';
@@ -44,6 +45,7 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
   bool _isGettingLocation = false;
   bool _isGeocoding = false;
   bool _isSatelliteView = false;
+  SearchStateService? _searchStateServiceRef;
 
   // Image state
   final List<Uint8List?> _selectedImageBytes = [];
@@ -63,6 +65,25 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
   void initState() {
     super.initState();
     _initializeForm();
+    
+    // Initialize satellite view from SearchStateService
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _searchStateServiceRef = Provider.of<SearchStateService>(context, listen: false);
+      _searchStateServiceRef!.addListener(_onSearchStateChanged);
+      setState(() {
+        _isSatelliteView = _searchStateServiceRef!.isSatellite;
+      });
+    });
+  }
+
+  void _onSearchStateChanged() {
+    if (!mounted) return;
+    final searchState = _searchStateServiceRef;
+    if (searchState == null) return;
+    
+    setState(() {
+      _isSatelliteView = searchState.isSatellite;
+    });
   }
 
   @override
@@ -99,6 +120,7 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
+    _searchStateServiceRef?.removeListener(_onSearchStateChanged);
     super.dispose();
   }
 
@@ -280,6 +302,8 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
     setState(() {
       _isSatelliteView = value;
     });
+    final searchState = Provider.of<SearchStateService>(context, listen: false);
+    searchState.setSatellite(value);
   }
 
   void _toggleFeature(String key, bool selected) {
