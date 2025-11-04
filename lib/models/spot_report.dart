@@ -72,7 +72,7 @@ class SpotReport {
       throw StateError('Missing data for spot report ${snapshot.id}');
     }
 
-    DateTime? _parseTimestamp(dynamic value) {
+    DateTime? parseTimestamp(dynamic value) {
       if (value is Timestamp) {
         return value.toDate();
       }
@@ -85,7 +85,7 @@ class SpotReport {
       return null;
     }
 
-    List<String> _parseCategories(dynamic raw) {
+    List<String> parseCategories(dynamic raw) {
       if (raw is Iterable) {
         return raw.whereType<String>().toList(growable: false);
       }
@@ -96,7 +96,7 @@ class SpotReport {
       id: snapshot.id,
       spotId: data['spotId'] as String? ?? '',
       spotName: data['spotName'] as String? ?? 'Unknown spot',
-      categories: _parseCategories(data['categories']),
+      categories: parseCategories(data['categories']),
       otherCategory: data['otherCategory'] as String?,
       details: data['details'] as String?,
       contactEmail: data['contactEmail'] as String?,
@@ -105,8 +105,8 @@ class SpotReport {
       spotCountryCode: data['spotCountryCode'] as String?,
       spotCity: data['spotCity'] as String?,
       status: data['status'] as String? ?? 'New',
-      createdAt: _parseTimestamp(data['createdAt']),
-      updatedAt: _parseTimestamp(data['updatedAt']),
+      createdAt: parseTimestamp(data['createdAt']),
+      updatedAt: parseTimestamp(data['updatedAt']),
     );
   }
 

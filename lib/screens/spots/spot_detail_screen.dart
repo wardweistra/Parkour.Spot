@@ -1889,7 +1889,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                 ),
                               ),
                             );
-                          }).toList(),
+                          }),
                         ],
                       ],
                       if (widget.spot.createdBy != null ||

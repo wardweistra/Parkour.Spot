@@ -621,7 +621,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                         _loadSpotsForCurrentView();
                       },
                     );
-                  }).toList(),
+                  }),
                 ],
               ),
           ],
