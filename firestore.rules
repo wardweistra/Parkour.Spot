@@ -1,7 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Spots collection - all spots are public, authenticated users can create, only admins/moderators can edit/delete any spot
+    // Spots collection - all spots are public, authenticated users can create, admins/moderators can edit, only admins can delete any spot
     match /spots/{spotId} {
       allow read: if true;
       allow create: if request.auth != null;
@@ -9,8 +9,7 @@ service cloud.firestore {
         (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isModerator == true);
       allow delete: if request.auth != null && exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isModerator == true);
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
     
     // Users collection - users can only manage their own profile

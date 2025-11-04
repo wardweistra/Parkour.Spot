@@ -347,7 +347,17 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         }
         break;
       case _SpotMenuAction.delete:
-        _showDeleteDialog();
+        final authService = Provider.of<AuthService>(context, listen: false);
+        if (authService.isAdmin) {
+          _showDeleteDialog();
+        } else if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Only administrators can delete spots.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
         break;
       case _SpotMenuAction.markAsDuplicate:
         _showMarkAsDuplicateDialog();
@@ -496,10 +506,14 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       );
                     }
 
-                    final bool isModerator =
+                    final bool hasStaffAccess =
                         authService.isAuthenticated &&
                         authService.userProfile != null &&
                         (authService.isAdmin || authService.isModerator);
+                    final bool canDeleteSpot =
+                        authService.isAuthenticated &&
+                        authService.userProfile != null &&
+                        authService.isAdmin;
 
                     return PopupMenuButton<_SpotMenuAction>(
                       position: PopupMenuPosition.under,
@@ -584,119 +598,124 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                           ),
                         ];
 
-                        if (isModerator && widget.spot.id != null) {
-                          items.addAll([
-                            PopupMenuItem<_SpotMenuAction>(
-                              value: _SpotMenuAction.edit,
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.edit,
-                                    color: theme.colorScheme.primary,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
+                          if (hasStaffAccess && widget.spot.id != null) {
+                            items.addAll([
+                              PopupMenuItem<_SpotMenuAction>(
+                                value: _SpotMenuAction.edit,
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.edit,
+                                      color: theme.colorScheme.primary,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          'Edit spot',
+                                          style: theme.textTheme.bodyMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                        ),
+                                        Text(
+                                          'Moderator only',
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                                color: theme.colorScheme.onSurface
+                                                    .withValues(alpha: 0.6),
+                                                fontSize: 11,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem<_SpotMenuAction>(
+                                value: _SpotMenuAction.markAsDuplicate,
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.copy_all,
+                                      color: theme.colorScheme.primary,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          'Mark as duplicate',
+                                          style: theme.textTheme.bodyMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                        ),
+                                        Text(
+                                          'Moderator only',
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                                color: theme.colorScheme.onSurface
+                                                    .withValues(alpha: 0.6),
+                                                fontSize: 11,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ]);
+
+                            if (canDeleteSpot) {
+                              items.add(
+                                PopupMenuItem<_SpotMenuAction>(
+                                  value: _SpotMenuAction.delete,
+                                  child: Row(
                                     children: [
-                                      Text(
-                                        'Edit spot',
-                                        style: theme.textTheme.bodyMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w500,
-                                            ),
+                                      const Icon(
+                                        Icons.delete,
+                                        color: Colors.red,
+                                        size: 20,
                                       ),
-                                      Text(
-                                        'Moderator only',
-                                        style: theme.textTheme.bodySmall
-                                            ?.copyWith(
-                                              color: theme.colorScheme.onSurface
-                                                  .withValues(alpha: 0.6),
-                                              fontSize: 11,
-                                            ),
+                                      const SizedBox(width: 12),
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            'Delete spot',
+                                            style: theme.textTheme.bodyMedium
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Colors.red,
+                                                ),
+                                          ),
+                                          Text(
+                                            'Admin only',
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                                  color: theme.colorScheme.onSurface
+                                                      .withValues(alpha: 0.6),
+                                                  fontSize: 11,
+                                                ),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
-                                ],
-                              ),
-                            ),
-                            PopupMenuItem<_SpotMenuAction>(
-                              value: _SpotMenuAction.markAsDuplicate,
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.copy_all,
-                                    color: theme.colorScheme.primary,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        'Mark as duplicate',
-                                        style: theme.textTheme.bodyMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                      ),
-                                      Text(
-                                        'Moderator only',
-                                        style: theme.textTheme.bodySmall
-                                            ?.copyWith(
-                                              color: theme.colorScheme.onSurface
-                                                  .withValues(alpha: 0.6),
-                                              fontSize: 11,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            PopupMenuItem<_SpotMenuAction>(
-                              value: _SpotMenuAction.delete,
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.delete,
-                                    color: Colors.red,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        'Delete spot',
-                                        style: theme.textTheme.bodyMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w500,
-                                              color: Colors.red,
-                                            ),
-                                      ),
-                                      Text(
-                                        'Moderator only',
-                                        style: theme.textTheme.bodySmall
-                                            ?.copyWith(
-                                              color: theme.colorScheme.onSurface
-                                                  .withValues(alpha: 0.6),
-                                              fontSize: 11,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ]);
-                        }
+                                ),
+                              );
+                            }
+                          }
 
                         return items;
                       },
