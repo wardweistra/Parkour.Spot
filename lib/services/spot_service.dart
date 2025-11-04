@@ -17,40 +17,6 @@ class SpotService extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  // Get spots by location (within radius) - Modern efficient approach
-  Future<List<Spot>> getSpotsNearby(
-    double latitude, 
-    double longitude, 
-    double radiusKm
-  ) async {
-    try {
-      // Calculate bounding box for the search area
-      final bounds = _calculateBoundingBox(latitude, longitude, radiusKm);
-      
-      // Use the dateline-aware getSpotsInBounds method
-      final candidates = await getSpotsInBounds(
-        bounds['minLat']!,
-        bounds['maxLat']!,
-        bounds['minLng']!,
-        bounds['maxLng']!,
-      );
-      
-      // Filter by actual distance (smaller dataset now)
-      return candidates.where((spot) {
-        final distance = _calculateDistance(
-          latitude,
-          longitude,
-        spot.latitude,
-        spot.longitude,
-        );
-        return distance <= radiusKm;
-      }).toList();
-    } catch (e) {
-      debugPrint('Error getting nearby spots: $e');
-      return [];
-    }
-  }
-
   // Get a single spot by ID
   Future<Spot?> getSpotById(String spotId) async {
     try {
@@ -296,29 +262,6 @@ class SpotService extends ChangeNotifier {
     return imageUrls;
   }
 
-  // Calculate distance between two points using Haversine formula
-  double _calculateDistance(
-    double lat1, 
-    double lon1, 
-    double lat2, 
-    double lon2
-  ) {
-    const double earthRadius = 6371; // Earth's radius in kilometers
-    
-    final dLat = _degreesToRadians(lat2 - lat1);
-    final dLon = _degreesToRadians(lon2 - lon1);
-    
-    final a = sin(dLat / 2) * sin(dLat / 2) +
-               (sin(lat1) * sin(lat2) * sin(dLon / 2) * sin(dLon / 2));
-    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
-    
-    return earthRadius * c;
-  }
-
-  double _degreesToRadians(double degrees) {
-    return degrees * (3.14159265359 / 180);
-  }
-
   // Detect MIME type from image bytes by checking magic numbers
   String _detectImageMimeType(Uint8List bytes) {
     if (bytes.length < 4) return 'image/jpeg'; // Default fallback
@@ -370,26 +313,6 @@ class SpotService extends ChangeNotifier {
       default:
         return 'image/jpeg'; // Default fallback
     }
-  }
-
-  // Calculate bounding box for geo queries
-  Map<String, double> _calculateBoundingBox(
-    double latitude, 
-    double longitude, 
-    double radiusKm
-  ) {
-    const double earthRadius = 6371; // Earth's radius in kilometers
-    
-    // Convert radius to degrees
-    final latDelta = radiusKm / earthRadius * (180 / 3.14159265359);
-    final lngDelta = radiusKm / (earthRadius * cos(latitude * 3.14159265359 / 180)) * (180 / 3.14159265359);
-    
-    return {
-      'minLat': latitude - latDelta,
-      'maxLat': latitude + latDelta,
-      'minLng': longitude - lngDelta,
-      'maxLng': longitude + lngDelta,
-    };
   }
 
   // Rate a spot
@@ -539,153 +462,6 @@ class SpotService extends ChangeNotifier {
     }
   }
 
-  // Get spots with pagination for large result sets
-  Future<List<Spot>> getSpotsNearbyPaginated(
-    double latitude,
-    double longitude,
-    double radiusKm, {
-    int limit = 20,
-    DocumentSnapshot? startAfter,
-  }) async {
-    try {
-      final bounds = _calculateBoundingBox(latitude, longitude, radiusKm);
-      
-      // For pagination with dateline crossing, we need to handle it differently
-      // For now, use the non-paginated approach and apply pagination after filtering
-      final candidates = await getSpotsInBounds(
-        bounds['minLat']!,
-        bounds['maxLat']!,
-        bounds['minLng']!,
-        bounds['maxLng']!,
-      );
-      
-      // Filter by actual distance and sort by distance
-      final filteredSpots = candidates.where((spot) {
-        final distance = _calculateDistance(
-          latitude,
-          longitude,
-        spot.latitude,
-        spot.longitude,
-        );
-        return distance <= radiusKm;
-      }).toList();
-      
-      // Sort by distance
-      filteredSpots.sort((a, b) {
-        final distanceA = _calculateDistance(
-          latitude, longitude, a.latitude, a.longitude);
-        final distanceB = _calculateDistance(
-          latitude, longitude, b.latitude, b.longitude);
-        return distanceA.compareTo(distanceB);
-      });
-      
-      return filteredSpots;
-    } catch (e) {
-      debugPrint('Error getting nearby spots paginated: $e');
-      return [];
-    }
-  }
-
-  // Get spots within a specific area (useful for map bounds)
-  Future<List<Spot>> getSpotsInBounds(
-    double minLat,
-    double maxLat,
-    double minLng,
-    double maxLng,
-  ) async {
-    try {
-      debugPrint('🔍 SpotService.getSpotsInBounds called with bounds:');
-      debugPrint('   minLat: $minLat, maxLat: $maxLat');
-      debugPrint('   minLng: $minLng, maxLng: $maxLng');
-      
-      // Check if the bounds cross the dateline
-      final crossesDateline = minLng > maxLng;
-      debugPrint('🌍 Dateline crossing: $crossesDateline');
-      
-      List<Spot> allSpots = [];
-      
-      if (crossesDateline) {
-        debugPrint('🌊 Handling dateline crossing with two queries');
-        
-        // Query 1: From minLng to 180
-        final query1 = await _firestore
-            .collection('spots')
-            .orderBy('longitude')
-            .where('latitude', isGreaterThanOrEqualTo: minLat)
-            .where('latitude', isLessThanOrEqualTo: maxLat)
-            .where('longitude', isGreaterThanOrEqualTo: minLng)
-            .where('longitude', isLessThanOrEqualTo: 180)
-            .orderBy('latitude')
-            .get();
-        
-        debugPrint('📊 Query 1 ($minLng to 180): ${query1.docs.length} documents');
-        
-        // Query 2: From -180 to maxLng
-        final query2 = await _firestore
-            .collection('spots')
-            .orderBy('longitude')
-            .where('latitude', isGreaterThanOrEqualTo: minLat)
-            .where('latitude', isLessThanOrEqualTo: maxLat)
-            .where('longitude', isGreaterThanOrEqualTo: -180)
-            .where('longitude', isLessThanOrEqualTo: maxLng)
-            .orderBy('latitude')
-            .get();
-        
-        debugPrint('📊 Query 2 (-180 to $maxLng): ${query2.docs.length} documents');
-        
-        // Combine results
-        allSpots = [
-          ...query1.docs.map((doc) => Spot.fromFirestore(doc)),
-          ...query2.docs.map((doc) => Spot.fromFirestore(doc)),
-        ];
-        
-        debugPrint('📊 Total combined results: ${allSpots.length} documents');
-      } else {
-        debugPrint('🌍 Normal query (no dateline crossing)');
-        
-        final querySnapshot = await _firestore
-            .collection('spots')
-            .orderBy('longitude')
-            .where('latitude', isGreaterThanOrEqualTo: minLat)
-            .where('latitude', isLessThanOrEqualTo: maxLat)
-            .where('longitude', isGreaterThanOrEqualTo: minLng)
-            .where('longitude', isLessThanOrEqualTo: maxLng)
-            .orderBy('latitude')
-            .get();
-        
-        debugPrint('📊 Firestore query executed:');
-        debugPrint('   - Collection: spots');
-        debugPrint('   - latitude range: $minLat to $maxLat (field: latitude)');
-        debugPrint('   - longitude range: $minLng to $maxLng (field: longitude)');
-        debugPrint('   - Documents returned: ${querySnapshot.docs.length}');
-        
-        allSpots = querySnapshot.docs
-            .map((doc) => Spot.fromFirestore(doc))
-            .toList();
-      }
-      
-      if (allSpots.isEmpty) {
-        debugPrint('⚠️ No documents found in Firestore for these bounds');
-      } else {
-        debugPrint('✅ Found ${allSpots.length} documents');
-        for (int i = 0; i < allSpots.length && i < 3; i++) {
-          final spot = allSpots[i];
-          debugPrint('   Spot $i: ${spot.name}');
-          debugPrint('     - latitude: ${spot.latitude}');
-          debugPrint('     - longitude: ${spot.longitude}');
-        }
-      }
-      
-      debugPrint('🎯 Converted to ${allSpots.length} Spot objects');
-      
-      return allSpots;
-    } catch (e) {
-      debugPrint('❌ Error getting spots in bounds: $e');
-      debugPrint('   Stack trace: ${StackTrace.current}');
-      return [];
-    }
-  }
-
   // Get top ranked spots within bounds using backend Wilson logic
   Future<Map<String, dynamic>> getTopRankedSpotsInBounds(
     double minLat,
@@ -738,41 +514,6 @@ class SpotService extends ChangeNotifier {
       return {'spots': <Spot>[], 'totalCount': 0, 'shownCount': 0, 'averageWilson': 0.0};
     }
   }
-
-  // Load spots for map view with loading state management
-  Future<List<Spot>> loadSpotsForMapView(
-    double minLat,
-    double maxLat,
-    double minLng,
-    double maxLng,
-  ) async {
-    try {
-      debugPrint('🗺️ SpotService.loadSpotsForMapView called with bounds:');
-      debugPrint('   minLat: $minLat, maxLat: $maxLat');
-      debugPrint('   minLng: $minLng, maxLng: $maxLng');
-      
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
-      final spots = await getSpotsInBounds(minLat, maxLat, minLng, maxLng);
-      
-      debugPrint('📍 SpotService.loadSpotsForMapView retrieved ${spots.length} spots');
-      if (spots.isNotEmpty) {
-        debugPrint('   First spot: ${spots.first.name} at (${spots.first.latitude}, ${spots.first.longitude})');
-      }
-      
-      return spots;
-    } catch (e) {
-      _error = 'Failed to load spots for map view: $e';
-      debugPrint('❌ Error loading spots for map view: $e');
-      return [];
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
 
   // Get spots by source and timestamp (admin function)
   Future<List<Spot>> getSpotsBySourceAndTimestamp(
