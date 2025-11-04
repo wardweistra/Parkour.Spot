@@ -694,6 +694,7 @@ class SpotService extends ChangeNotifier {
     double maxLng, {
     int limit = 100,
     String? spotSource, // null = all sources, empty string = native only, string = specific source
+    bool hasImages = false, // true = only spots with images, false = all spots
   }) async {
     try {
       final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
@@ -708,6 +709,10 @@ class SpotService extends ChangeNotifier {
       // Only include spotSource if it's not null (null means all sources)
       if (spotSource != null) {
         requestData['spotSource'] = spotSource;
+      }
+      // Only include hasImages if it's true (false means all spots)
+      if (hasImages) {
+        requestData['hasImages'] = true;
       }
       final result = await callable.call(requestData);
 

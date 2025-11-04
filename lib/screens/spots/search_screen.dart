@@ -451,7 +451,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       final spotService = Provider.of<SpotService>(context, listen: false);
       
       // Load ranked top spots within the current map bounds (and total count)
-      // Source filtering is now done at database level
+      // Source and image filtering are now done at database level
       final ranked = await spotService.getTopRankedSpotsInBounds(
         bounds.southwest.latitude,
         bounds.northeast.latitude,
@@ -459,13 +459,14 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         bounds.northeast.longitude,
         limit: 100,
         spotSource: _selectedSpotSource, // null = all, "" = native, string = specific source
+        hasImages: !_includeSpotsWithoutPictures, // true = only spots with images, false = all spots
       );
 
       _loadedSpots = (ranked['spots'] as List<Spot>?) ?? <Spot>[];
       _totalSpotsInView = ranked['totalCount'] as int?;
       _bestShownCount = ranked['shownCount'] as int?;
       
-      // Apply picture filter only (source filtering is done at database level)
+      // All filtering is now done at database level, just update visible spots
       _updateVisibleSpots();
     } catch (e) {
       debugPrint('Error loading spots for current view: $e');
@@ -477,20 +478,13 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   }
 
   void _updateVisibleSpots() {
-    List<Spot> filteredSpots = List.from(_loadedSpots);
-    
     // Note: Search query is now only used for location autocomplete, not spot name filtering
-    // Source filtering is now done at database level, so we only need to apply picture filter
-
-    // Apply picture filter (default: exclude spots without pictures)
-    if (!_includeSpotsWithoutPictures) {
-      filteredSpots = filteredSpots.where((spot) => spot.imageUrls != null && spot.imageUrls!.isNotEmpty).toList();
-    }
+    // Source and image filtering are now done at database level, so no client-side filtering needed
 
     // Update visible spots and markers
     setState(() {
-      _visibleSpots = filteredSpots;
-      _markers = _buildMarkers(filteredSpots);
+      _visibleSpots = _loadedSpots;
+      _markers = _buildMarkers(_loadedSpots);
     });
   }
 

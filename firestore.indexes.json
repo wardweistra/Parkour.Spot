@@ -4,14 +4,16 @@
       "collectionGroup": "spots",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "longitude",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "latitude",
-          "order": "ASCENDING"
-        }
+        { "fieldPath": "longitude", "order": "ASCENDING" },
+        { "fieldPath": "latitude", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "spots",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "spotSource", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
       ]
     },
     {
@@ -24,57 +26,42 @@
       ]
     },
     {
+      "collectionGroup": "spots",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "spotSource", "order": "ASCENDING" },
+        { "fieldPath": "ranking", "order": "DESCENDING" },
+        { "fieldPath": "latitude", "order": "DESCENDING" },
+        { "fieldPath": "longitude", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "spots",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ranking", "order": "DESCENDING" },
+        { "fieldPath": "imageUrls", "order": "DESCENDING" },
+        { "fieldPath": "latitude", "order": "DESCENDING" },
+        { "fieldPath": "longitude", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "spots",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "spotSource", "order": "ASCENDING" },
+        { "fieldPath": "ranking", "order": "DESCENDING" },
+        { "fieldPath": "imageUrls", "order": "DESCENDING" },
+        { "fieldPath": "latitude", "order": "DESCENDING" },
+        { "fieldPath": "longitude", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "ratings",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "spotId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "userId",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "spots",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "spotSource",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "updatedAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "spots",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "spotSource",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "ranking",
-          "order": "DESCENDING"
-        },
-        {
-          "fieldPath": "latitude",
-          "order": "DESCENDING"
-        },
-        {
-          "fieldPath": "longitude",
-          "order": "DESCENDING"
-        },
-        {
-          "fieldPath": "__name__",
-          "order": "DESCENDING"
-        }
+        { "fieldPath": "spotId", "order": "ASCENDING" },
+        { "fieldPath": "userId", "order": "ASCENDING" }
       ]
     }
   ],

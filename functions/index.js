@@ -256,6 +256,7 @@ exports.getTopSpotsInBounds = onCall(
           maxLng,
           limit = 100,
           spotSource = null, // null = all sources, empty string = native only, string = specific source
+          hasImages = false, // true = only spots with images, false = all spots
         } = request.data || {};
 
         if (
@@ -321,7 +322,7 @@ exports.getTopSpotsInBounds = onCall(
 
         const maxItems = Math.max(0, Math.min(200, Number(limit) || 100));
 
-        // Build query function with source filtering
+        // Build query function with source and image filtering
         const buildQuery = (lngMin, lngMax) => {
           let query = db
               .collection("spots")
@@ -341,6 +342,11 @@ exports.getTopSpotsInBounds = onCall(
             }
           }
           // If spotSource is null, no filter is applied (all sources)
+          
+          // Apply image filter if specified
+          if (hasImages === true) {
+            query = query.where("imageUrls", "!=", []);
+          }
           
           return query.orderBy("ranking", "desc");
         };
