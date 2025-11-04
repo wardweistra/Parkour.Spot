@@ -131,10 +131,10 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     });
     
     // Reload spots if the source filter changed
-    if (spotSourceChanged && _mapController != null) {
+    if ((spotSourceChanged || pictureFilterChanged) && _mapController != null) {
       _loadSpotsForCurrentView();
     } else if (pictureFilterChanged) {
-      // Just update visible spots if only picture filter changed
+      // Fallback when map controller not ready yet
       _updateVisibleSpots();
     }
   }
@@ -506,7 +506,11 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                 });
                 Provider.of<SearchStateService>(context, listen: false)
                     .setIncludeSpotsWithoutPictures(val);
-                _updateVisibleSpots();
+                if (_mapController != null) {
+                  _loadSpotsForCurrentView();
+                } else {
+                  _updateVisibleSpots();
+                }
               },
             ),
             const SizedBox(height: 16),
