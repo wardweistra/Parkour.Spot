@@ -21,22 +21,19 @@ class GitHubButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 400),
-      child: SizedBox(
-        width: double.infinity,
-        child: ElevatedButton.icon(
-          onPressed: () => _launchUrl(url),
-          icon: const FaIcon(
-            FontAwesomeIcons.github,
-            size: 18,
-          ),
-          label: Text(label),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF24292e), // GitHub brand color
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          ),
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: () => _launchUrl(url),
+        icon: const FaIcon(
+          FontAwesomeIcons.github,
+          size: 18,
+        ),
+        label: Text(label),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF24292e), // GitHub brand color
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
       ),
     );
