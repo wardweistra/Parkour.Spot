@@ -452,8 +452,10 @@ class SpotAttributesSection extends StatelessWidget {
                                 fontSize: 14,
                               ),
                             ),
-                            const SizedBox(width: 4),
-                            Icon(statusIcon, size: 14, color: textColor),
+                            if (current != 'unknown') ...[
+                              const SizedBox(width: 4),
+                              Icon(statusIcon, size: 14, color: textColor),
+                            ],
                           ],
                         ),
                       ),
