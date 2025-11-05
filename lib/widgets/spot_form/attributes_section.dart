@@ -28,76 +28,52 @@ class SpotAttributesSection extends StatelessWidget {
     final isWide = MediaQuery.of(context).size.width > 600;
 
     if (isWide) {
-      return SizedBox(
-        height: 700,
-        child: Column(
-          children: [
-            Expanded(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(child: _buildGoodForCard(context)),
-                  const SizedBox(width: 16),
-                  Expanded(child: _buildFeaturesCard(context)),
-                ],
-              ),
+      return Column(
+        children: [
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: _buildGoodForCard(context, isWide: true)),
+                const SizedBox(width: 16),
+                Expanded(child: _buildFeaturesCard(context, isWide: true)),
+              ],
             ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(child: _buildAccessCard(context)),
-                  const SizedBox(width: 16),
-                  Expanded(child: _buildFacilitiesCard(context)),
-                ],
-              ),
+          ),
+          const SizedBox(height: 16),
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: _buildAccessCard(context, isWide: true)),
+                const SizedBox(width: 16),
+                Expanded(child: _buildFacilitiesCard(context, isWide: true)),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       );
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildGoodForCard(context),
+        _buildGoodForCard(context, isWide: false),
         const SizedBox(height: 16),
-        _buildFeaturesCard(context),
+        _buildFeaturesCard(context, isWide: false),
         const SizedBox(height: 16),
-        _buildAccessCard(context),
+        _buildAccessCard(context, isWide: false),
         const SizedBox(height: 16),
-        _buildFacilitiesCard(context),
+        _buildFacilitiesCard(context, isWide: false),
       ],
     );
   }
 
-  Widget _buildGoodForCard(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Good For',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'What parkour skills can be practiced here?',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                  ),
-            ),
-            const SizedBox(height: 12),
-            SingleChildScrollView(
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: SpotAttributes.getKeys('goodFor').map((key) {
+  Widget _buildGoodForCard(BuildContext context, {required bool isWide}) {
+    final wrapContent = Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: SpotAttributes.getKeys('goodFor').map((key) {
                   final label = SpotAttributes.getLabel('goodFor', key);
                   final icon = SpotAttributes.getIcon('goodFor', key);
                   final description = SpotAttributes.getDescription('goodFor', key);
@@ -147,15 +123,8 @@ class SpotAttributesSection extends StatelessWidget {
                     ),
                   );
                 }).toList(),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
-  }
 
-  Widget _buildFeaturesCard(BuildContext context) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -163,17 +132,36 @@ class SpotAttributesSection extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Spot Features',
+              'Good For',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
             ),
+            const SizedBox(height: 8),
+            Text(
+              'What parkour skills can be practiced here?',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+            ),
             const SizedBox(height: 12),
-            SingleChildScrollView(
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: SpotAttributes.getKeys('features').map((key) {
+            if (isWide)
+              Expanded(
+                child: SingleChildScrollView(child: wrapContent),
+              )
+            else
+              wrapContent,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFeaturesCard(BuildContext context, {required bool isWide}) {
+    final wrapContent = Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: SpotAttributes.getKeys('features').map((key) {
                   final label = SpotAttributes.getLabel('features', key);
                   final icon = SpotAttributes.getIcon('features', key);
                   final description = SpotAttributes.getDescription('features', key);
@@ -223,15 +211,34 @@ class SpotAttributesSection extends StatelessWidget {
                     ),
                   );
                 }).toList(),
-              ),
+    );
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Spot Features',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
             ),
+            const SizedBox(height: 12),
+            if (isWide)
+              Expanded(
+                child: SingleChildScrollView(child: wrapContent),
+              )
+            else
+              wrapContent,
           ],
         ),
       ),
     );
   }
 
-  Widget _buildAccessCard(BuildContext context) {
+  Widget _buildAccessCard(BuildContext context, {required bool isWide}) {
     final keys = SpotAttributes.getKeys('access');
     return Card(
       child: Padding(
@@ -246,7 +253,9 @@ class SpotAttributesSection extends StatelessWidget {
                   ),
             ),
             const SizedBox(height: 12),
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: keys.map((key) {
                 final label = SpotAttributes.getLabel('access', key);
                 final icon = SpotAttributes.getIcon('access', key);
@@ -280,41 +289,38 @@ class SpotAttributesSection extends StatelessWidget {
                   textColor = Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6);
                 }
                 
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: Tooltip(
-                    message: description,
-                    child: GestureDetector(
-                      onTap: () => onAccessChanged(selected ? null : key),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: backgroundColor,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: textColor.withValues(alpha: 0.3),
-                            width: 1,
+                return Tooltip(
+                  message: description,
+                  child: GestureDetector(
+                    onTap: () => onAccessChanged(selected ? null : key),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: backgroundColor,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: textColor.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            icon, 
+                            size: 16, 
+                            color: textColor,
                           ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              icon, 
-                              size: 16, 
+                          const SizedBox(width: 6),
+                          Text(
+                            label,
+                            style: TextStyle(
                               color: textColor,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 14,
                             ),
-                            const SizedBox(width: 6),
-                            Text(
-                              label,
-                              style: TextStyle(
-                                color: textColor,
-                                fontWeight: FontWeight.w500,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -386,26 +392,12 @@ class SpotAttributesSection extends StatelessWidget {
     );
   }
 
-  Widget _buildFacilitiesCard(BuildContext context) {
+  Widget _buildFacilitiesCard(BuildContext context, {required bool isWide}) {
     final entries = SpotAttributes.getEntries('facilities');
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Spot Facilities',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
-            const SizedBox(height: 12),
-            SingleChildScrollView(
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: entries.keys.map((key) {
+    final wrapContent = Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: entries.keys.map((key) {
                   final label = SpotAttributes.getLabel('facilities', key);
                   final icon = SpotAttributes.getIcon('facilities', key);
                   final description = SpotAttributes.getDescription('facilities', key);
@@ -468,8 +460,27 @@ class SpotAttributesSection extends StatelessWidget {
                     ),
                   );
                 }).toList(),
-              ),
+    );
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Spot Facilities',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
             ),
+            const SizedBox(height: 12),
+            if (isWide)
+              Expanded(
+                child: SingleChildScrollView(child: wrapContent),
+              )
+            else
+              wrapContent,
           ],
         ),
       ),
