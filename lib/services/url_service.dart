@@ -111,7 +111,7 @@ class UrlService {
   /// On mobile: tries to open in native maps app (Google Maps, Apple Maps, etc.)
   /// On web: opens in Google Maps web
   /// On web + mobile device: tries to open in native maps app first
-  static Future<void> openLocationInMaps(double latitude, double longitude, {String? label}) async {
+  static Future<void> openLocationInMaps(double latitude, double longitude, {double? zoom, bool isSatellite = false}) async {
     try {
       Uri uri;
       
@@ -119,21 +119,21 @@ class UrlService {
         // Check if we're on a mobile device in the web version
         if (MobileDetectionService.isMobileDevice) {
           // Try to open in native maps app first
-          uri = await _getNativeMapsUri(latitude, longitude, label);
+          uri = _getNativeMapsUri(latitude, longitude, zoom: zoom, isSatellite: isSatellite);
         } else {
           // Desktop web - use Google Maps web
-          uri = Uri.parse('https://www.google.com/maps/place/$latitude,$longitude/@$latitude,$longitude,16z');
+          uri = _buildGoogleMapsUri(latitude, longitude, zoom: zoom, isSatellite: isSatellite);
         }
       } else {
         // Native mobile app - use native maps
-        uri = await _getNativeMapsUri(latitude, longitude, label);
+        uri = _getNativeMapsUri(latitude, longitude, zoom: zoom, isSatellite: isSatellite);
       }
       
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
         // Fallback to Google Maps web if native app can't be launched
-        final fallbackUri = Uri.parse('https://www.google.com/maps/place/$latitude,$longitude/@$latitude,$longitude,16z');
+        final fallbackUri = _buildGoogleMapsUri(latitude, longitude, zoom: zoom, isSatellite: isSatellite);
         if (await canLaunchUrl(fallbackUri)) {
           await launchUrl(fallbackUri, mode: LaunchMode.externalApplication);
         } else {
@@ -146,18 +146,44 @@ class UrlService {
     }
   }
   
+  /// Build Google Maps URL in the format: https://maps.google.com/?q=lat,lon&z=zoom&t=type
+  static Uri _buildGoogleMapsUri(double latitude, double longitude, {double? zoom, bool isSatellite = false}) {
+    final queryParams = <String, String>{
+      'q': '$latitude,$longitude',
+    };
+    
+    if (zoom != null) {
+      queryParams['z'] = zoom.toStringAsFixed(0);
+    }
+    
+    queryParams['t'] = isSatellite ? 'k' : 'm';
+    
+    return Uri.https('maps.google.com', '/', queryParams);
+  }
+  
+  /// Build Apple Maps URL in the format: http://maps.apple.com/?q=lat,lon&z=zoom&t=type
+  static Uri _buildAppleMapsUri(double latitude, double longitude, {double? zoom, bool isSatellite = false}) {
+    final queryParams = <String, String>{
+      'q': '$latitude,$longitude',
+    };
+    
+    if (zoom != null) {
+      queryParams['z'] = zoom.toStringAsFixed(0);
+    }
+    
+    queryParams['t'] = isSatellite ? 'k' : 'm';
+    
+    return Uri.http('maps.apple.com', '/', queryParams);
+  }
+  
   /// Get the appropriate native maps URI based on device type
-  static Future<Uri> _getNativeMapsUri(double latitude, double longitude, String? label) async {
+  static Uri _getNativeMapsUri(double latitude, double longitude, {double? zoom, bool isSatellite = false}) {
     final preferredApp = MobileDetectionService.preferredMapsApp;
     
     if (preferredApp == 'apple_maps') {
-      // Apple Maps format
-      final query = label != null ? '&q=${Uri.encodeComponent(label)}' : '';
-      return Uri.parse('https://maps.apple.com/?ll=$latitude,$longitude&z=16$query');
+      return _buildAppleMapsUri(latitude, longitude, zoom: zoom, isSatellite: isSatellite);
     } else {
-      // Google Maps format (Android and fallback)
-      final query = label != null ? '&q=${Uri.encodeComponent(label)}' : '';
-      return Uri.parse('https://www.google.com/maps/place/$latitude,$longitude/@$latitude,$longitude,16z$query');
+      return _buildGoogleMapsUri(latitude, longitude, zoom: zoom, isSatellite: isSatellite);
     }
   }
   

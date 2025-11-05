@@ -307,10 +307,13 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
   void _openInMaps() async {
     try {
+      final zoom = _searchStateServiceRef?.zoom;
+      final isSatellite = _searchStateServiceRef?.isSatellite ?? false;
       await UrlService.openLocationInMaps(
         widget.spot.latitude,
         widget.spot.longitude,
-        label: widget.spot.name,
+        zoom: zoom,
+        isSatellite: isSatellite,
       );
     } catch (e) {
       if (mounted) {
