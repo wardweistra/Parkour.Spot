@@ -8,6 +8,7 @@ import '../screens/admin/admin_home_screen.dart';
 import '../screens/admin/sync_sources_screen.dart';
 import '../screens/admin/geocoding_admin_screen.dart';
 import '../screens/admin/spot_management_screen.dart';
+import '../screens/admin/user_management_screen.dart';
 import '../screens/moderator/moderator_tools_screen.dart';
 import '../screens/moderator/spot_report_queue_screen.dart';
 import '../screens/spots/spot_detail_screen.dart';
@@ -93,23 +94,27 @@ class AppRouter {
         path: '/login',
         builder: (context, state) => const LoginScreen(),
       ),
-      // Admin routes (screen will self-guard on admin status)
-      GoRoute(
-        path: '/admin',
-        builder: (context, state) => const AdminHomeScreen(),
-      ),
-      GoRoute(
-        path: '/admin/sources',
-        builder: (context, state) => const SyncSourcesScreen(),
-      ),
-      GoRoute(
-        path: '/admin/geocoding',
-        builder: (context, state) => const GeocodingAdminScreen(),
-      ),
-      GoRoute(
-        path: '/admin/spot-management',
-        builder: (context, state) => const SpotManagementScreen(),
-      ),
+        // Admin routes (screen will self-guard on admin status)
+        GoRoute(
+          path: '/admin',
+          builder: (context, state) => const AdminHomeScreen(),
+        ),
+        GoRoute(
+          path: '/admin/sources',
+          builder: (context, state) => const SyncSourcesScreen(),
+        ),
+        GoRoute(
+          path: '/admin/geocoding',
+          builder: (context, state) => const GeocodingAdminScreen(),
+        ),
+        GoRoute(
+          path: '/admin/spot-management',
+          builder: (context, state) => const SpotManagementScreen(),
+        ),
+        GoRoute(
+          path: '/admin/users',
+          builder: (context, state) => const UserManagementScreen(),
+        ),
       GoRoute(
         path: '/moderator',
         builder: (context, state) => const ModeratorToolsScreen(),
