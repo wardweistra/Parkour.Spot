@@ -12,17 +12,27 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
     
-    // Users collection - users can only manage their own profile
+    // Users collection - users can only manage their own profile, admins can read/update all
     match /users/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
+      // Users can read their own profile, admins can read any profile
+      allow read: if request.auth != null && 
+        (request.auth.uid == userId ||
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true));
       // Allow create only for self and forbid setting privileged flags
       allow create: if request.auth != null && request.auth.uid == userId &&
         request.resource.data.isAdmin == false &&
         request.resource.data.isModerator == false;
       // Allow update for self but prevent privilege escalation on admin/moderator flags
-      allow update: if request.auth != null && request.auth.uid == userId &&
-        request.resource.data.isAdmin == resource.data.isAdmin &&
-        request.resource.data.isModerator == resource.data.isModerator;
+      // Admins can update moderator status for any user
+      allow update: if request.auth != null && 
+        ((request.auth.uid == userId &&
+          request.resource.data.isAdmin == resource.data.isAdmin &&
+          request.resource.data.isModerator == resource.data.isModerator) ||
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true &&
+          // Admins can only update isModerator flag, not isAdmin
+          request.resource.data.isAdmin == resource.data.isAdmin));
     }
     
     // Ratings collection - users can read all ratings, authenticated users can create their own

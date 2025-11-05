@@ -42,9 +42,9 @@ class AdminHomeScreen extends StatelessWidget {
           onPressed: () => context.go('/home?tab=profile'),
         ),
       ),
-        body: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
             Card(
               child: ListTile(
                 leading: const Icon(Icons.sync),
@@ -74,41 +74,40 @@ class AdminHomeScreen extends StatelessWidget {
                 onTap: () => context.go('/admin/geocoding'),
               ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.delete_sweep),
-              title: const Text('Spot Management'),
-              subtitle: const Text('Search and delete spots by source and last updated date'),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => context.go('/admin/spot-management'),
+            const SizedBox(height: 8),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.delete_sweep),
+                title: const Text('Spot Management'),
+                subtitle: const Text('Search and delete spots by source and last updated date'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () => context.go('/admin/spot-management'),
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.star_rate),
-              title: const Text('Recompute Ratings for Rated Spots'),
-              subtitle: const Text('Recalculate average, count, and Wilson lower bound from ratings'),
-              onTap: () async {
-                final confirmed = await showDialog<bool>(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: const Text('Recompute Ratings'),
-                    content: const Text('This will recompute rating aggregates for all spots that have ratings. Continue?'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(false),
-                        child: const Text('Cancel'),
-                      ),
-                      ElevatedButton(
-                        onPressed: () => Navigator.of(ctx).pop(true),
-                        child: const Text('Run'),
-                      ),
-                    ],
-                  ),
-                );
+            const SizedBox(height: 8),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.star_rate),
+                title: const Text('Recompute Ratings for Rated Spots'),
+                subtitle: const Text('Recalculate average, count, and Wilson lower bound from ratings'),
+                onTap: () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Recompute Ratings'),
+                      content: const Text('This will recompute rating aggregates for all spots that have ratings. Continue?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(false),
+                          child: const Text('Cancel'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Navigator.of(ctx).pop(true),
+                          child: const Text('Run'),
+                        ),
+                      ],
+                    ),
+                  );
 
                 if (confirmed != true) return;
 
@@ -132,31 +131,31 @@ class AdminHomeScreen extends StatelessWidget {
                 }
               },
             ),
-          ),
-          const SizedBox(height: 8),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.signal_cellular_alt),
-              title: const Text('Recompute Spot Rankings'),
-              subtitle: const Text('Recalculate ranking field for all spots based on ratings'),
-              onTap: () async {
-                final confirmed = await showDialog<bool>(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: const Text('Recompute Spot Rankings'),
-                    content: const Text('This will recalculate the ranking field for all spots based on their ratings and the average Wilson score. This is useful after changing the Wilson score threshold in settings. Continue?'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(false),
-                        child: const Text('Cancel'),
-                      ),
-                      ElevatedButton(
-                        onPressed: () => Navigator.of(ctx).pop(true),
-                        child: const Text('Run'),
-                      ),
-                    ],
-                  ),
-                );
+            ),
+            const SizedBox(height: 8),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.signal_cellular_alt),
+                title: const Text('Recompute Spot Rankings'),
+                subtitle: const Text('Recalculate ranking field for all spots based on ratings'),
+                onTap: () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Recompute Spot Rankings'),
+                      content: const Text('This will recalculate the ranking field for all spots based on their ratings and the average Wilson score. This is useful after changing the Wilson score threshold in settings. Continue?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(false),
+                          child: const Text('Cancel'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Navigator.of(ctx).pop(true),
+                          child: const Text('Run'),
+                        ),
+                      ],
+                    ),
+                  );
 
                 if (confirmed != true) return;
 
@@ -180,10 +179,10 @@ class AdminHomeScreen extends StatelessWidget {
                 }
               },
             ),
-          ),
-        ],
-      ),
-    );
+            ),
+          ],
+        ),
+      );
   }
 
 }

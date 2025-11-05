@@ -290,6 +290,14 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                           children: [
                             Expanded(
                               child: _StatTile(
+                                label: 'Spots created',
+                                value: stats.spotsCreated.toString(),
+                                icon: Icons.place,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _StatTile(
                                 label: 'Spot reports',
                                 value: stats.spotReports.toString(),
                                 icon: Icons.report,

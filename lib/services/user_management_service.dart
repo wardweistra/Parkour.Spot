@@ -5,13 +5,20 @@ import '../models/user.dart' as app_user;
 
 /// Simple immutable data class representing aggregate statistics for a user.
 class UserStats {
-  const UserStats({required this.spotReports, required this.ratings});
+  const UserStats({
+    required this.spotReports,
+    required this.ratings,
+    required this.spotsCreated,
+  });
 
   /// Number of spot reports submitted by the user.
   final int spotReports;
 
   /// Number of ratings submitted by the user.
   final int ratings;
+
+  /// Number of spots created by the user.
+  final int spotsCreated;
 }
 
 /// Service responsible for loading admin-facing user information and actions.
@@ -107,8 +114,15 @@ class UserManagementService extends ChangeNotifier {
       final int ratingsCount = await _countDocuments(
         _firestore.collection('ratings').where('userId', isEqualTo: userId),
       );
+      final int spotsCreatedCount = await _countDocuments(
+        _firestore.collection('spots').where('createdBy', isEqualTo: userId),
+      );
 
-      final stats = UserStats(spotReports: reportedCount, ratings: ratingsCount);
+      final stats = UserStats(
+        spotReports: reportedCount,
+        ratings: ratingsCount,
+        spotsCreated: spotsCreatedCount,
+      );
       _statsCache[userId] = stats;
       return stats;
     } catch (e, stackTrace) {
@@ -154,7 +168,7 @@ class UserManagementService extends ChangeNotifier {
   Future<int> _countDocuments(Query<Map<String, dynamic>> query) async {
     try {
       final aggregateSnapshot = await query.count().get();
-      return aggregateSnapshot.count;
+      return aggregateSnapshot.count ?? 0;
     } on FirebaseException catch (e) {
       if (e.code == 'failed-precondition') {
         // Firestore requires an index; fall back to client-side count.
