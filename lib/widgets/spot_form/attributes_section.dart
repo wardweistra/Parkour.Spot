@@ -23,6 +23,39 @@ class SpotAttributesSection extends StatelessWidget {
     required this.onToggleGoodFor,
   });
 
+  Widget _buildLongPressHint(BuildContext context, String itemType) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.info_outline,
+            size: 16,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Long press any $itemType for more info',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isWide = MediaQuery.of(context).size.width > 600;
@@ -151,6 +184,10 @@ class SpotAttributesSection extends StatelessWidget {
               )
             else
               wrapContent,
+            if (!isWide) ...[
+              const SizedBox(height: 12),
+              _buildLongPressHint(context, 'skill'),
+            ],
           ],
         ),
       ),
@@ -225,39 +262,13 @@ class SpotAttributesSection extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
             ),
-            if (!isWide) ...[
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
-                    width: 1,
+            const SizedBox(height: 8),
+            Text(
+              'What physical features does this spot have?',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      size: 16,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Long press any feature for more info',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
             const SizedBox(height: 12),
             if (isWide)
               Expanded(
@@ -265,6 +276,10 @@ class SpotAttributesSection extends StatelessWidget {
               )
             else
               wrapContent,
+            if (!isWide) ...[
+              const SizedBox(height: 12),
+              _buildLongPressHint(context, 'feature'),
+            ],
           ],
         ),
       ),
@@ -283,6 +298,13 @@ class SpotAttributesSection extends StatelessWidget {
               'Spot Access',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'What is the access level for this spot?',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
             ),
             const SizedBox(height: 12),
@@ -509,6 +531,13 @@ class SpotAttributesSection extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
             ),
+            const SizedBox(height: 8),
+            Text(
+              'What amenities are available at this spot?',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+            ),
             const SizedBox(height: 12),
             if (isWide)
               Expanded(
@@ -516,6 +545,10 @@ class SpotAttributesSection extends StatelessWidget {
               )
             else
               wrapContent,
+            if (!isWide) ...[
+              const SizedBox(height: 12),
+              _buildLongPressHint(context, 'facility'),
+            ],
           ],
         ),
       ),
