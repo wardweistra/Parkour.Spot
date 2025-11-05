@@ -77,6 +77,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   String _searchQuery = '';
   String? _placesSessionToken;
   TextEditingController? _autocompleteController; // Keep reference to autocomplete's controller
+  FocusNode? _autocompleteFocusNode; // Keep reference to autocomplete's focus node
+  int? _selectedAutocompleteIndex; // Track selected option index for keyboard navigation
+  List<Map<String, dynamic>> _currentAutocompleteOptions = []; // Track current options for keyboard navigation
   // Autocomplete is fetched live in optionsBuilder; no debounce field needed
   List<Spot> _visibleSpots = [];
   List<Spot> _loadedSpots = []; // Spots loaded for the current map view
@@ -308,11 +311,17 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         controllerToUpdate.text = newText;
         controllerToUpdate.selection = TextSelection.fromPosition(TextPosition(offset: controllerToUpdate.text.length));
         _searchQuery = newText; // Keep _searchQuery in sync
+        // Clear selection index to collapse autocomplete dropdown
+        _selectedAutocompleteIndex = null;
         // Only clear loading state if we're managing it
         if (manageLoadingState) {
           _isSearchingLocation = false;
         }
       });
+      // Unfocus the text field to collapse autocomplete suggestions
+      if (_autocompleteFocusNode != null && _autocompleteFocusNode!.hasFocus) {
+        _autocompleteFocusNode!.unfocus();
+      }
       // Trigger a refresh of visible spots for new area
       _updateVisibleSpots();
     } catch (e) {
@@ -1139,12 +1148,58 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                           return option['description'] as String? ?? '';
                         },
                         fieldViewBuilder: (BuildContext context, TextEditingController textEditingController, FocusNode focusNode, VoidCallback onFieldSubmitted) {
-                          // Store reference to the autocomplete controller
+                          // Store reference to the autocomplete controller and focus node
                           _autocompleteController = textEditingController;
-                          return TextField(
-                            controller: textEditingController,
-                            focusNode: focusNode,
-                            decoration: InputDecoration(
+                          _autocompleteFocusNode = focusNode;
+                          
+                          return Focus(
+                            onKeyEvent: (node, event) {
+                              // Handle arrow keys for navigation
+                              if (event is KeyDownEvent) {
+                                final optionsCount = _currentAutocompleteOptions.length;
+                                if (optionsCount > 0) {
+                                  if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+                                    // Move selection down
+                                    setState(() {
+                                      if (_selectedAutocompleteIndex == null) {
+                                        _selectedAutocompleteIndex = 0;
+                                      } else if (_selectedAutocompleteIndex! < optionsCount - 1) {
+                                        _selectedAutocompleteIndex = _selectedAutocompleteIndex! + 1;
+                                      }
+                                    });
+                                    return KeyEventResult.handled;
+                                  } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+                                    // Move selection up
+                                    setState(() {
+                                      if (_selectedAutocompleteIndex != null && _selectedAutocompleteIndex! > 0) {
+                                        _selectedAutocompleteIndex = _selectedAutocompleteIndex! - 1;
+                                      } else {
+                                        _selectedAutocompleteIndex = null;
+                                      }
+                                    });
+                                    return KeyEventResult.handled;
+                                  } else if (event.logicalKey == LogicalKeyboardKey.enter && _selectedAutocompleteIndex != null) {
+                                    // Select the highlighted option
+                                    if (_selectedAutocompleteIndex! < _currentAutocompleteOptions.length) {
+                                      final selectedOption = _currentAutocompleteOptions[_selectedAutocompleteIndex!];
+                                      // Call the onSelected callback
+                                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                                        _selectPlaceSuggestion(selectedOption);
+                                        setState(() {
+                                          _selectedAutocompleteIndex = null;
+                                        });
+                                      });
+                                    }
+                                    return KeyEventResult.handled;
+                                  }
+                                }
+                              }
+                              return KeyEventResult.ignored;
+                            },
+                            child: TextField(
+                              controller: textEditingController,
+                              focusNode: focusNode,
+                              decoration: InputDecoration(
                               hintText: 'Search location…',
                               prefixIcon: Padding(
                                 padding: const EdgeInsets.only(left: 6),
@@ -1225,15 +1280,74 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                             onChanged: (value) {
                               setState(() {
                                 _searchQuery = value;
+                                // Don't reset selection here - let optionsViewBuilder handle it
+                                // This prevents flickering when typing
                               });
                             },
                             onSubmitted: (value) {
-                              // When Enter is pressed, search for the location and navigate to it
-                              _searchAndNavigateToLocation();
+                              // When Enter is pressed, if there's a selected option, select it
+                              // Otherwise, search for the location and navigate to it
+                              if (_selectedAutocompleteIndex != null) {
+                                // This will be handled by the Focus widget's onKeyEvent handler
+                                // The Enter key is already handled there
+                              } else {
+                                _searchAndNavigateToLocation();
+                              }
                             },
-                          );
-                        },
-                        optionsViewBuilder: (BuildContext context, AutocompleteOnSelected<Map<String, dynamic>> onSelected, Iterable<Map<String, dynamic>> options) {
+                          ),
+                        );
+                      },
+                      optionsViewBuilder: (BuildContext context, AutocompleteOnSelected<Map<String, dynamic>> onSelected, Iterable<Map<String, dynamic>> options) {
+                          // Store current options and initialize selection if needed
+                          final optionsList = options.toList();
+                          
+                          // Compute what the selection should be for this build
+                          final int? effectiveSelection;
+                          if (optionsList.isNotEmpty) {
+                            // If current selection is null or out of bounds, select first option
+                            if (_selectedAutocompleteIndex == null || _selectedAutocompleteIndex! >= optionsList.length) {
+                              effectiveSelection = 0;
+                              // Update state asynchronously (but immediately via microtask)
+                              scheduleMicrotask(() {
+                                if (mounted && _selectedAutocompleteIndex != effectiveSelection) {
+                                  setState(() {
+                                    _selectedAutocompleteIndex = effectiveSelection;
+                                    _currentAutocompleteOptions = optionsList;
+                                  });
+                                }
+                              });
+                            } else {
+                              // Keep current selection if it's still valid
+                              effectiveSelection = _selectedAutocompleteIndex;
+                            }
+                          } else {
+                            effectiveSelection = null;
+                          }
+                          
+                          // Update current options for keyboard navigation
+                          _currentAutocompleteOptions = optionsList;
+                          
+                          // Use effective selection for this build
+                          final currentSelection = effectiveSelection;
+                          
+                          final scrollController = ScrollController();
+                          
+                          // Scroll to selected option when it changes
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (currentSelection != null && 
+                                currentSelection < optionsList.length &&
+                                scrollController.hasClients) {
+                              // Estimate item height (ListTile with dense is about 48 pixels)
+                              const itemHeight = 48.0;
+                              final targetOffset = currentSelection * itemHeight;
+                              scrollController.animateTo(
+                                targetOffset.clamp(0.0, scrollController.position.maxScrollExtent),
+                                duration: const Duration(milliseconds: 100),
+                                curve: Curves.easeOut,
+                              );
+                            }
+                          });
+                          
                           return Align(
                             alignment: Alignment.topLeft,
                             child: PointerInterceptor(
@@ -1243,33 +1357,64 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                 child: ConstrainedBox(
                                   constraints: const BoxConstraints(maxHeight: 200),
                                   child: ListView.builder(
+                                    controller: scrollController,
                                     padding: EdgeInsets.zero,
                                     shrinkWrap: true,
-                                    itemCount: options.length,
+                                    itemCount: optionsList.length,
                                     itemBuilder: (context, index) {
-                                      final option = options.elementAt(index);
+                                      final option = optionsList[index];
                                       final description = option['description'] as String? ?? '';
                                       final secondary = option['secondary'] as String?;
+                                      final isSelected = currentSelection == index;
                                       
-                                      return ListTile(
-                                        leading: Icon(
-                                          Icons.location_on_outlined,
-                                          color: Theme.of(context).colorScheme.primary,
+                                      return Container(
+                                        decoration: isSelected
+                                            ? BoxDecoration(
+                                                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+                                                border: Border(
+                                                  left: BorderSide(
+                                                    color: Theme.of(context).colorScheme.primary,
+                                                    width: 3,
+                                                  ),
+                                                ),
+                                              )
+                                            : null,
+                                        child: ListTile(
+                                          leading: Icon(
+                                            isSelected ? Icons.location_on : Icons.location_on_outlined,
+                                            color: Theme.of(context).colorScheme.primary,
+                                          ),
+                                          dense: true,
+                                          title: Text(
+                                            description,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: isSelected
+                                                ? TextStyle(
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Theme.of(context).colorScheme.primary,
+                                                  )
+                                                : null,
+                                          ),
+                                          subtitle: secondary != null ? Text(
+                                            secondary,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: isSelected
+                                                ? TextStyle(
+                                                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
+                                                  )
+                                                : null,
+                                          ) : null,
+                                          selected: isSelected,
+                                          selectedTileColor: Colors.transparent, // Use Container decoration instead
+                                          onTap: () {
+                                            setState(() {
+                                              _selectedAutocompleteIndex = null;
+                                            });
+                                            onSelected(option);
+                                          },
                                         ),
-                                        dense: true,
-                                        title: Text(
-                                          description,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        subtitle: secondary != null ? Text(
-                                          secondary,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ) : null,
-                                        onTap: () {
-                                          onSelected(option);
-                                        },
                                       );
                                     },
                                   ),
