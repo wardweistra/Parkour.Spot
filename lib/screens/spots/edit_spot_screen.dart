@@ -437,22 +437,6 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
         return Scaffold(
           appBar: AppBar(
             title: const Text('Edit Spot'),
-            actions: [
-              if (_isLoading)
-                const Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                )
-              else
-                TextButton(
-                  onPressed: _saveSpot,
-                  child: const Text('Save'),
-                ),
-            ],
           ),
           body: Form(
             key: _formKey,
