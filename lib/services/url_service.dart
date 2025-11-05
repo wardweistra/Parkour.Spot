@@ -100,11 +100,43 @@ class UrlService {
   }
 
   static String _slugify(String input) {
-    final lowered = input.toLowerCase();
+    // First, normalize special characters to ASCII equivalents
+    final normalized = _normalizeToAscii(input);
+    final lowered = normalized.toLowerCase();
     final replaced = lowered
         .replaceAll(RegExp(r"[^a-z0-9\s-_]", caseSensitive: false), '')
         .replaceAll(RegExp(r"[\s_]+"), '-');
     return replaced;
+  }
+
+  /// Normalize special characters to their ASCII equivalents
+  /// e.g., é -> e, É -> e, ñ -> n, etc.
+  static String _normalizeToAscii(String input) {
+    // Common accented characters and their ASCII equivalents
+    const Map<String, String> replacements = {
+      'à': 'a', 'á': 'a', 'â': 'a', 'ã': 'a', 'ä': 'a', 'å': 'a',
+      'À': 'A', 'Á': 'A', 'Â': 'A', 'Ã': 'A', 'Ä': 'A', 'Å': 'A',
+      'è': 'e', 'é': 'e', 'ê': 'e', 'ë': 'e',
+      'È': 'E', 'É': 'E', 'Ê': 'E', 'Ë': 'E',
+      'ì': 'i', 'í': 'i', 'î': 'i', 'ï': 'i',
+      'Ì': 'I', 'Í': 'I', 'Î': 'I', 'Ï': 'I',
+      'ò': 'o', 'ó': 'o', 'ô': 'o', 'õ': 'o', 'ö': 'o',
+      'Ò': 'O', 'Ó': 'O', 'Ô': 'O', 'Õ': 'O', 'Ö': 'O',
+      'ù': 'u', 'ú': 'u', 'û': 'u', 'ü': 'u',
+      'Ù': 'U', 'Ú': 'U', 'Û': 'U', 'Ü': 'U',
+      'ý': 'y', 'ÿ': 'y',
+      'Ý': 'Y', 'Ÿ': 'Y',
+      'ñ': 'n', 'Ñ': 'N',
+      'ç': 'c', 'Ç': 'C',
+      'ß': 'ss',
+    };
+    
+    String result = input;
+    replacements.forEach((char, replacement) {
+      result = result.replaceAll(char, replacement);
+    });
+    
+    return result;
   }
   
   /// Open location in external maps app
