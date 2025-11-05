@@ -27,12 +27,19 @@ service cloud.firestore {
       // Admins can update moderator status for any user
       allow update: if request.auth != null && 
         ((request.auth.uid == userId &&
-          request.resource.data.isAdmin == resource.data.isAdmin &&
-          request.resource.data.isModerator == resource.data.isModerator) ||
+          // Handle missing fields by defaulting to false
+          // If field not in request.resource, it's unchanged, so use resource value (or false if missing)
+          ('isAdmin' in request.resource.data ? request.resource.data.isAdmin : ('isAdmin' in resource.data ? resource.data.isAdmin : false)) == 
+          ('isAdmin' in resource.data ? resource.data.isAdmin : false) &&
+          ('isModerator' in request.resource.data ? request.resource.data.isModerator : ('isModerator' in resource.data ? resource.data.isModerator : false)) == 
+          ('isModerator' in resource.data ? resource.data.isModerator : false)) ||
          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true &&
           // Admins can only update isModerator flag, not isAdmin
-          request.resource.data.isAdmin == resource.data.isAdmin));
+          // Handle case where isAdmin field might not exist in old documents
+          // If isAdmin not in request.resource, it's unchanged, so use resource value (or false if missing)
+          ('isAdmin' in request.resource.data ? request.resource.data.isAdmin : ('isAdmin' in resource.data ? resource.data.isAdmin : false)) == 
+          ('isAdmin' in resource.data ? resource.data.isAdmin : false)));
     }
     
     // Ratings collection - users can read all ratings, authenticated users can create their own
