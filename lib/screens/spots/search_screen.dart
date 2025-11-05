@@ -1146,7 +1146,10 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                             focusNode: focusNode,
                             decoration: InputDecoration(
                               hintText: 'Search location…',
-                              prefixIcon: const Icon(Icons.search),
+                              prefixIcon: Padding(
+                                padding: const EdgeInsets.only(left: 6),
+                                child: Icon(Icons.search),
+                              ),
                               suffixIcon: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -1176,34 +1179,37 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                         setState(() {});
                                       },
                                     ),
-                                  Stack(
-                                    children: [
-                                      IconButton(
-                                        icon: ReliableIcon(
-                                          icon: Icons.filter_list,
-                                          color: _showFiltersDialog ? Theme.of(context).colorScheme.primary : null,
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 6),
+                                    child: Stack(
+                                      children: [
+                                        IconButton(
+                                          icon: ReliableIcon(
+                                            icon: Icons.filter_list,
+                                            color: _showFiltersDialog ? Theme.of(context).colorScheme.primary : null,
+                                          ),
+                                          tooltip: 'Filters',
+                                          onPressed: () {
+                                            setState(() {
+                                              _showFiltersDialog = !_showFiltersDialog;
+                                            });
+                                          },
                                         ),
-                                        tooltip: 'Filters',
-                                        onPressed: () {
-                                          setState(() {
-                                            _showFiltersDialog = !_showFiltersDialog;
-                                          });
-                                        },
-                                      ),
-                                      if (_hasActiveFilters())
-                                        Positioned(
-                                          right: 8,
-                                          top: 8,
-                                          child: Container(
-                                            width: 8,
-                                            height: 8,
-                                            decoration: BoxDecoration(
-                                              color: Theme.of(context).colorScheme.primary,
-                                              shape: BoxShape.circle,
+                                        if (_hasActiveFilters())
+                                          Positioned(
+                                            right: 8,
+                                            top: 8,
+                                            child: Container(
+                                              width: 8,
+                                              height: 8,
+                                              decoration: BoxDecoration(
+                                                color: Theme.of(context).colorScheme.primary,
+                                                shape: BoxShape.circle,
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ],
                               ),
