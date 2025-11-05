@@ -42,26 +42,37 @@ class AdminHomeScreen extends StatelessWidget {
           onPressed: () => context.go('/home?tab=profile'),
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.sync),
-              title: const Text('Sync Sources'),
-              subtitle: const Text('Add, edit, delete, and sync external sources'),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => context.go('/admin/sources'),
+        body: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.sync),
+                title: const Text('Sync Sources'),
+                subtitle: const Text('Add, edit, delete, and sync external sources'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () => context.go('/admin/sources'),
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.place),
-              title: const Text('Geocode Missing Addresses'),
-              subtitle: const Text('Fill address, city, country for spots with empty fields'),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => context.go('/admin/geocoding'),
+            const SizedBox(height: 8),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.people_outline),
+                title: const Text('User Management'),
+                subtitle: const Text('Review users, stats, and moderator access'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () => context.go('/admin/users'),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.place),
+                title: const Text('Geocode Missing Addresses'),
+                subtitle: const Text('Fill address, city, country for spots with empty fields'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () => context.go('/admin/geocoding'),
+              ),
             ),
           ),
           const SizedBox(height: 8),

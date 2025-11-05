@@ -8,6 +8,7 @@ import 'package:parkour_spot/services/spot_report_service.dart';
 import 'package:parkour_spot/services/sync_source_service.dart';
 import 'package:parkour_spot/services/search_state_service.dart';
 import 'package:parkour_spot/services/geocoding_service.dart';
+import 'package:parkour_spot/services/user_management_service.dart';
 import 'package:parkour_spot/router/app_router.dart';
 import 'package:parkour_spot/firebase_options.dart';
 import 'package:parkour_spot/config/app_config.dart';
@@ -41,6 +42,7 @@ class ParkourSpotApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
+        ChangeNotifierProvider(create: (_) => UserManagementService()),
         ChangeNotifierProvider(create: (_) => SpotService()),
         ChangeNotifierProvider(create: (_) => SyncSourceService()),
         ChangeNotifierProvider(
