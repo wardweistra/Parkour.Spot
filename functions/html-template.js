@@ -34,7 +34,6 @@ function generateHtmlHead(options = {}) {
   return `
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="${escapedDesc}" />
   <base href="/" />
 
