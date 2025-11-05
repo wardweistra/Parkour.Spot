@@ -32,29 +32,56 @@ class _LoginScreenState extends State<LoginScreen> {
     await showDialog<void>(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: const Text('Reset password'),
-          content: Form(
-            key: formKey,
-            child: TextFormField(
-              controller: emailController,
-              keyboardType: TextInputType.emailAddress,
-              autofillHints: const [AutofillHints.email],
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                prefixIcon: Icon(Icons.email),
+            return AlertDialog(
+              title: const Text('Reset password'),
+              content: Form(
+                key: formKey,
+                child: TextFormField(
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  autofillHints: const [AutofillHints.email],
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) async {
+                    if (!formKey.currentState!.validate()) return;
+                    try {
+                      final authService = Provider.of<AuthService>(context, listen: false);
+                      final navigator = Navigator.of(context);
+                      final scaffoldMessenger = ScaffoldMessenger.of(context);
+                      await authService.resetPassword(emailController.text.trim());
+                      if (!mounted) return;
+                      navigator.pop();
+                      if (!mounted) return;
+                      scaffoldMessenger.showSnackBar(
+                        const SnackBar(
+                          content: Text('Password reset email sent if the address exists.'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    } catch (e) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Failed to send reset email: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  },
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    prefixIcon: Icon(Icons.email),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter your email';
+                    }
+                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                      return 'Please enter a valid email';
+                    }
+                    return null;
+                  },
+                ),
               ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Please enter your email';
-                }
-                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                  return 'Please enter a valid email';
-                }
-                return null;
-              },
-            ),
-          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -452,6 +479,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       prefixIcon: Icons.person,
                       textCapitalization: TextCapitalization.words,
                       autofillHints: const [AutofillHints.name],
+                      textInputAction: TextInputAction.next,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return 'Please enter your display name';
@@ -469,6 +497,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     prefixIcon: Icons.email,
                     keyboardType: TextInputType.emailAddress,
                     autofillHints: const [AutofillHints.email],
+                    textInputAction: TextInputAction.next,
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
                         return 'Please enter your email';
@@ -491,6 +520,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     autofillHints: _isLogin 
                         ? const [AutofillHints.password]
                         : const [AutofillHints.newPassword],
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) {
+                      if (!_isLoading && !_isGoogleSignInLoading) {
+                        _submitForm();
+                      }
+                    },
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter your password';

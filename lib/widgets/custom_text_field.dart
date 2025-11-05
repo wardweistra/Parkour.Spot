@@ -11,6 +11,8 @@ class CustomTextField extends StatelessWidget {
   final TextCapitalization textCapitalization;
   final String? Function(String?)? validator;
   final void Function(String)? onChanged;
+  final void Function(String)? onFieldSubmitted;
+  final TextInputAction? textInputAction;
   final void Function()? onTap;
   final bool readOnly;
   final int? maxLines;
@@ -29,6 +31,8 @@ class CustomTextField extends StatelessWidget {
     this.textCapitalization = TextCapitalization.none,
     this.validator,
     this.onChanged,
+    this.onFieldSubmitted,
+    this.textInputAction,
     this.onTap,
     this.readOnly = false,
     this.maxLines = 1,
@@ -45,6 +49,8 @@ class CustomTextField extends StatelessWidget {
       textCapitalization: textCapitalization,
       validator: validator,
       onChanged: onChanged,
+      onFieldSubmitted: onFieldSubmitted,
+      textInputAction: textInputAction,
       onTap: onTap,
       readOnly: readOnly,
       maxLines: maxLines,
