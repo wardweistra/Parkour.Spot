@@ -16,6 +16,7 @@ import '../../services/search_state_service.dart';
 import '../../widgets/source_details_dialog.dart';
 import '../../widgets/spot_selection_dialog.dart';
 import '../../constants/spot_attributes.dart';
+import '../../services/snackbar_service.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 import 'package:url_launcher/url_launcher.dart';
 
@@ -55,6 +56,19 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   // Duplicate spots if this is an original
   List<Spot> _duplicateSpots = [];
   bool _isLoadingDuplicates = false;
+
+  void _showSuccessSnack(String message) {
+    // Use global messenger to avoid context churn issues
+    Future.microtask(() {
+      SnackbarService.showSuccess(message);
+    });
+  }
+
+  void _showErrorSnack(String message) {
+    Future.microtask(() {
+      SnackbarService.showError(message);
+    });
+  }
 
   @override
   void initState() {
@@ -1812,7 +1826,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 8),
-                      if (widget.spot.duplicateOf != null) ...[
+                      if (widget.spot.duplicateOf != null || _originalSpot != null) ...[
                         GestureDetector(
                           onTap: _isLoadingOriginalSpot
                               ? null
@@ -1852,7 +1866,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                           ),
                         ),
                       ],
-                      if (widget.spot.duplicateOf == null) ...[
+                      if (widget.spot.duplicateOf == null && _originalSpot == null) ...[
                         if (_isLoadingDuplicates)
                           ListTile(
                             leading: Icon(
@@ -2445,24 +2459,14 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   Future<void> _showMarkAsDuplicateDialog() async {
     if (widget.spot.id == null) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Unable to mark this spot as duplicate right now.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showErrorSnack('Unable to mark this spot as duplicate right now.');
       return;
     }
 
     // Check if spot is already marked as duplicate
     if (widget.spot.duplicateOf != null) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('This spot is already marked as a duplicate.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      _showErrorSnack('This spot is already marked as a duplicate.');
       return;
     }
 
@@ -2474,7 +2478,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       ),
     );
 
-    if (!mounted || selectedSpotIdOrAction == null) return;
+    if (!mounted || selectedSpotIdOrAction == null) {
+      return;
+    }
 
     final spotService = Provider.of<SpotService>(context, listen: false);
     final authService = Provider.of<AuthService>(context, listen: false);
@@ -2484,12 +2490,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       // Check if user is authenticated
       if (!authService.isAuthenticated || authService.currentUser == null) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('You must be logged in to create a native spot.'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        _showErrorSnack('You must be logged in to create a native spot.');
         return;
       }
 
@@ -2501,16 +2502,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           authService.userProfile?.displayName ?? authService.currentUser!.email ?? authService.currentUser!.uid,
         );
 
-        if (!mounted) return;
-
         if (nativeSpotId == null) {
           final error = spotService.error ?? 'Failed to create native spot';
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(error),
-              backgroundColor: Colors.red,
-            ),
-          );
+          _showErrorSnack(error);
           return;
         }
 
@@ -2524,32 +2518,27 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           transferYoutubeLinks: false, // Already copied to native spot
         );
 
-        if (!mounted) return;
-
         if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Native spot created and current spot marked as duplicate successfully.'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          // Load and set the original spot locally to update UI without navigation
+          try {
+            final createdOriginal = await spotService.getSpotById(nativeSpotId);
+            if (mounted) {
+              setState(() {
+                _originalSpot = createdOriginal;
+              });
+            }
+          } catch (e) {
+            // ignore fetch failure; UI already updated via success snackbar
+          }
+
+          _showSuccessSnack('Native spot created and current spot marked as duplicate.');
         } else {
           final error = spotService.error ?? 'Failed to mark spot as duplicate';
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(error),
-              backgroundColor: Colors.red,
-            ),
-          );
+          _showErrorSnack(error);
         }
       } catch (e) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error creating native spot: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        _showErrorSnack('Error creating native spot: $e');
       }
       return;
     }
@@ -2586,40 +2575,27 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         transferYoutubeLinks: transferYoutubeLinks,
       );
 
-      if (!mounted) return;
-
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Spot marked as duplicate successfully.'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        
-        // Refresh the spot data
-        final updatedSpot = await spotService.getSpotById(widget.spot.id!);
-        if (updatedSpot != null && mounted) {
-          // Update the widget's spot data by navigating to refresh
-          // For now, we'll just show a message. In a production app,
-          // you might want to update the state or reload the screen.
+        // Load and set the original spot locally to update UI without navigation
+        try {
+          final original = await spotService.getSpotById(selectedSpotId);
+          if (mounted) {
+            setState(() {
+              _originalSpot = original;
+            });
+          }
+        } catch (e) {
+          // ignore fetch failure; UI already updated via success snackbar
         }
+
+        _showSuccessSnack('Spot marked as duplicate.');
       } else {
         final error = spotService.error ?? 'Failed to mark spot as duplicate';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error),
-            backgroundColor: Colors.red,
-          ),
-        );
+        _showErrorSnack(error);
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error marking spot as duplicate: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showErrorSnack('Error marking spot as duplicate: $e');
     }
   }
 
