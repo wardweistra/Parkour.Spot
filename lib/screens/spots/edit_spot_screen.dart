@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../models/spot.dart';
 import '../../services/spot_service.dart';
@@ -51,6 +52,13 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
   final List<Uint8List?> _selectedImageBytes = [];
   final List<String> _existingImageUrls = [];
   final List<String> _imagesToDelete = [];
+
+  // YouTube links state
+  final List<TextEditingController> _youtubeControllers = [];
+
+  // Duplicate state
+  String? _duplicateOf;
+  bool _duplicateOfWasCleared = false;
 
   // Attributes state
   String? _selectedAccess;
@@ -109,6 +117,17 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
     // Initialize existing images
     _existingImageUrls.addAll(widget.spot.imageUrls ?? []);
 
+    // Initialize YouTube links
+    final youtubeIds = widget.spot.youtubeVideoIds ?? [];
+    for (final id in youtubeIds) {
+      final controller = TextEditingController(text: id);
+      _youtubeControllers.add(controller);
+    }
+
+    // Initialize duplicateOf
+    _duplicateOf = widget.spot.duplicateOf;
+    _duplicateOfWasCleared = false;
+
     // Initialize attributes
     _selectedAccess = widget.spot.spotAccess;
     _selectedFeatures.addAll(widget.spot.spotFeatures ?? []);
@@ -120,6 +139,9 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
+    for (final controller in _youtubeControllers) {
+      controller.dispose();
+    }
     _searchStateServiceRef?.removeListener(_onSearchStateChanged);
     super.dispose();
   }
@@ -338,6 +360,58 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
     });
   }
 
+  // Extract YouTube ID from URL or return as-is if already an ID
+  String? _extractYoutubeId(String input) {
+    final trimmed = input.trim();
+    if (trimmed.isEmpty) return null;
+    // If it's already a likely ID, return as-is (11 chars typical)
+    if (RegExp(r'^[a-zA-Z0-9_-]{6,}$').hasMatch(trimmed) && !trimmed.contains('/')) {
+      return trimmed;
+    }
+    try {
+      final uri = Uri.parse(trimmed);
+      // youtu.be/<id>
+      if (uri.host.contains('youtu.be')) {
+        final seg = uri.pathSegments.isNotEmpty ? uri.pathSegments.last : null;
+        if (seg != null && seg.isNotEmpty) return seg;
+      }
+      // youtube.com/watch?v=<id>
+      final vParam = uri.queryParameters['v'];
+      if (vParam != null && vParam.isNotEmpty) return vParam;
+      // youtube.com/embed/<id>
+      final embedIndex = uri.pathSegments.indexOf('embed');
+      if (embedIndex != -1 && embedIndex + 1 < uri.pathSegments.length) {
+        return uri.pathSegments[embedIndex + 1];
+      }
+      // youtube.com/shorts/<id>
+      final shortsIndex = uri.pathSegments.indexOf('shorts');
+      if (shortsIndex != -1 && shortsIndex + 1 < uri.pathSegments.length) {
+        return uri.pathSegments[shortsIndex + 1];
+      }
+    } catch (_) {}
+    return trimmed; // Fallback to raw value
+  }
+
+  void _addYoutubeLink() {
+    setState(() {
+      _youtubeControllers.add(TextEditingController());
+    });
+  }
+
+  void _removeYoutubeLink(int index) {
+    setState(() {
+      _youtubeControllers[index].dispose();
+      _youtubeControllers.removeAt(index);
+    });
+  }
+
+  void _clearDuplicateOf() {
+    setState(() {
+      _duplicateOf = null;
+      _duplicateOfWasCleared = widget.spot.duplicateOf != null;
+    });
+  }
+
   Future<void> _saveSpot() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -364,7 +438,17 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
     try {
       final spotService = Provider.of<SpotService>(context, listen: false);
 
+      // Extract YouTube IDs from controllers
+      final youtubeIds = _youtubeControllers
+          .map((controller) => _extractYoutubeId(controller.text))
+          .whereType<String>()
+          .where((id) => id.isNotEmpty)
+          .toList();
+
       // Create updated spot data
+      // Note: We don't pass duplicateOf to copyWith if it was cleared,
+      // because copyWith will keep the old value when null is passed.
+      // Instead, we'll handle it separately by deleting from Firestore.
       final updatedSpot = widget.spot.copyWith(
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
@@ -373,6 +457,9 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
         address: _currentAddress,
         city: _currentCity,
         countryCode: _currentCountryCode,
+        youtubeVideoIds: youtubeIds.isNotEmpty ? youtubeIds : null,
+        // Only pass duplicateOf if it wasn't cleared (i.e., it has a value or wasn't set before)
+        duplicateOf: _duplicateOfWasCleared ? widget.spot.duplicateOf : _duplicateOf,
         spotAccess: _selectedAccess,
         spotFeatures: _selectedFeatures.toList(),
         spotFacilities: _selectedFacilities,
@@ -389,6 +476,18 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
         newImageBytesList: validNewImageBytes.isNotEmpty ? validNewImageBytes : null,
         imagesToDelete: _imagesToDelete.isNotEmpty ? _imagesToDelete : null,
       );
+
+      // If duplicateOf was cleared, explicitly delete it from Firestore
+      if (success && _duplicateOfWasCleared && widget.spot.id != null) {
+        try {
+          await FirebaseFirestore.instance
+              .collection('spots')
+              .doc(widget.spot.id)
+              .update({'duplicateOf': FieldValue.delete()});
+        } catch (e) {
+          debugPrint('Error removing duplicateOf field: $e');
+        }
+      }
 
       if (mounted) {
         if (success) {
@@ -524,6 +623,111 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
                     onFacilityChanged: _onFacilityChanged,
                     onToggleGoodFor: _toggleGoodFor,
                   ),
+                  const SizedBox(height: 16),
+
+                  // YouTube Links Section
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'YouTube Links',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.add),
+                                onPressed: _addYoutubeLink,
+                                tooltip: 'Add YouTube link',
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Enter YouTube video IDs or URLs (e.g., dQw4w9WgXcQ or https://www.youtube.com/watch?v=dQw4w9WgXcQ)',
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                          const SizedBox(height: 16),
+                          if (_youtubeControllers.isEmpty)
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 16.0),
+                              child: Text(
+                                'No YouTube links added. Click the + button to add one.',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            )
+                          else
+                            ...List.generate(
+                              _youtubeControllers.length,
+                              (index) => Padding(
+                                padding: const EdgeInsets.only(bottom: 8.0),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: CustomTextField(
+                                        controller: _youtubeControllers[index],
+                                        labelText: 'YouTube Link ${index + 1}',
+                                        hintText: 'Enter YouTube video ID or URL',
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.remove_circle),
+                                      color: Colors.red,
+                                      onPressed: () => _removeYoutubeLink(index),
+                                      tooltip: 'Remove YouTube link',
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Duplicate Section
+                  if (_duplicateOf != null)
+                    Card(
+                      color: Colors.orange.shade50,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Duplicate Status',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'This spot is marked as a duplicate of: ${_duplicateOf}',
+                              style: const TextStyle(color: Colors.orange),
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton.icon(
+                              onPressed: _clearDuplicateOf,
+                              icon: const Icon(Icons.clear),
+                              label: const Text('Remove Duplicate Status'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.orange,
+                                foregroundColor: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: 32),
 
                   // Save Button
