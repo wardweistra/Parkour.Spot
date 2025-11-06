@@ -7,10 +7,12 @@ import '../services/url_service.dart';
 
 class SpotSelectionDialog extends StatefulWidget {
   final String? currentSpotId; // ID of the spot being marked as duplicate (to exclude it)
+  final Spot? currentSpot; // The current spot (to allow creating native spot from it)
 
   const SpotSelectionDialog({
     super.key,
     this.currentSpotId,
+    this.currentSpot,
   });
 
   @override
@@ -325,20 +327,40 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
             // Footer
             Padding(
               padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Cancel'),
-                  ),
-                  if (_foundSpot != null) ...[
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: () => Navigator.of(context).pop(_foundSpot!.id),
-                      child: const Text('Confirm'),
+                  // Create Native Spot option (only show if current spot is from external source)
+                  if (widget.currentSpot != null && widget.currentSpot!.spotSource != null) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => Navigator.of(context).pop('CREATE_NATIVE'),
+                        icon: const Icon(Icons.add_circle_outline),
+                        label: const Text('Create Native Spot from Current Spot'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
                     ),
+                    const SizedBox(height: 8),
                   ],
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text('Cancel'),
+                      ),
+                      if (_foundSpot != null) ...[
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: () => Navigator.of(context).pop(_foundSpot!.id),
+                          child: const Text('Confirm'),
+                        ),
+                      ],
+                    ],
+                  ),
                 ],
               ),
             ),

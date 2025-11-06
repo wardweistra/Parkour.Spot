@@ -31,6 +31,53 @@ class SpotService extends ChangeNotifier {
     }
   }
 
+  // Create a native spot from an existing spot (copies name, description, location, photos, youtube link)
+  Future<String?> createNativeSpotFromExisting(Spot sourceSpot, String createdBy, String createdByName) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      // Create a new native spot (no spotSource) with copied data
+      final nativeSpot = Spot(
+        name: sourceSpot.name,
+        description: sourceSpot.description,
+        latitude: sourceSpot.latitude,
+        longitude: sourceSpot.longitude,
+        address: sourceSpot.address,
+        city: sourceSpot.city,
+        countryCode: sourceSpot.countryCode,
+        imageUrls: sourceSpot.imageUrls, // Preserve existing image URLs
+        youtubeVideoIds: sourceSpot.youtubeVideoIds, // Preserve YouTube links
+        createdBy: createdBy,
+        createdByName: createdByName,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        averageRating: 0.0,
+        ratingCount: 0,
+        wilsonLowerBound: 0.0,
+        ranking: Random().nextDouble(),
+        spotAccess: sourceSpot.spotAccess,
+        spotFeatures: sourceSpot.spotFeatures,
+        spotFacilities: sourceSpot.spotFacilities,
+        goodFor: sourceSpot.goodFor,
+        // spotSource is null (native spot)
+        // duplicateOf is null (new spot)
+      );
+
+      final docRef = await _firestore.collection('spots').add(nativeSpot.toFirestore());
+      
+      _isLoading = false;
+      notifyListeners();
+      return docRef.id; // Return the spot ID
+    } catch (e) {
+      _error = 'Failed to create native spot: $e';
+      debugPrint('Error creating native spot: $e');
+      _isLoading = false;
+      notifyListeners();
+      return null; // Return null on error
+    }
+  }
+
   // Create a new spot
   Future<String?> createSpot(Spot spot, {File? imageFile, Uint8List? imageBytes, List<File>? imageFiles, List<Uint8List>? imageBytesList}) async {
     try {

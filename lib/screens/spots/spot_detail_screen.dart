@@ -2466,14 +2466,96 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       return;
     }
 
-    final String? selectedSpotId = await showDialog<String>(
+    final String? selectedSpotIdOrAction = await showDialog<String>(
       context: context,
       builder: (dialogContext) => SpotSelectionDialog(
         currentSpotId: widget.spot.id,
+        currentSpot: widget.spot,
       ),
     );
 
-    if (!mounted || selectedSpotId == null) return;
+    if (!mounted || selectedSpotIdOrAction == null) return;
+
+    final spotService = Provider.of<SpotService>(context, listen: false);
+    final authService = Provider.of<AuthService>(context, listen: false);
+
+    // Handle "Create Native Spot" action
+    if (selectedSpotIdOrAction == 'CREATE_NATIVE') {
+      // Check if user is authenticated
+      if (!authService.isAuthenticated || authService.currentUser == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You must be logged in to create a native spot.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      try {
+        // Create native spot from current spot
+        final nativeSpotId = await spotService.createNativeSpotFromExisting(
+          widget.spot,
+          authService.currentUser!.uid,
+          authService.userProfile?.displayName ?? authService.currentUser!.email ?? authService.currentUser!.uid,
+        );
+
+        if (!mounted) return;
+
+        if (nativeSpotId == null) {
+          final error = spotService.error ?? 'Failed to create native spot';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(error),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+
+        // Now mark the current spot as duplicate of the newly created native spot
+        // Since we're creating from the current spot, photos and YouTube links are already in the native spot
+        // So we don't need to transfer them
+        final success = await spotService.markSpotAsDuplicate(
+          widget.spot.id!,
+          nativeSpotId,
+          transferPhotos: false, // Already copied to native spot
+          transferYoutubeLinks: false, // Already copied to native spot
+        );
+
+        if (!mounted) return;
+
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Native spot created and current spot marked as duplicate successfully.'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          final error = spotService.error ?? 'Failed to mark spot as duplicate';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(error),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error creating native spot: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Handle normal duplicate marking flow
+    final selectedSpotId = selectedSpotIdOrAction;
 
     // Check if duplicate spot has photos or YouTube links to transfer
     final hasPhotos = widget.spot.imageUrls != null && widget.spot.imageUrls!.isNotEmpty;
@@ -2497,7 +2579,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
     // Mark the spot as duplicate
     try {
-      final spotService = Provider.of<SpotService>(context, listen: false);
       final success = await spotService.markSpotAsDuplicate(
         widget.spot.id!,
         selectedSpotId,
