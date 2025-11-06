@@ -1654,6 +1654,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                       onPressed: _isLoadingSpotsForView ? null : () {
                         _loadSpotsForCurrentView();
                       },
+                      heroTag: 'refreshSpotsFab',
                       mini: true,
                       tooltip: 'Refresh spots in current view',
                       child: _isLoadingSpotsForView
@@ -1686,6 +1687,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                         final searchState = Provider.of<SearchStateService>(context, listen: false);
                         searchState.setSatellite(_isSatelliteView);
                       },
+                      heroTag: 'mapTypeToggleFab',
                       mini: true,
                       tooltip: _isSatelliteView ? 'Switch to Map' : 'Switch to Satellite',
                       child: ReliableIcon(
@@ -1703,6 +1705,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                   child: PointerInterceptor(
                     child: FloatingActionButton(
                       onPressed: _getCurrentLocation,
+                      heroTag: 'currentLocationFab',
                       mini: true,
                       tooltip: 'Center on my location',
                       child: _isGettingLocation
