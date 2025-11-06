@@ -642,6 +642,61 @@ class SpotService extends ChangeNotifier {
     }
   }
 
+  Future<Map<String, int>> backfillMissingDuplicateOf({int batchSize = 400}) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      int totalMatched = 0;
+      int updatedCount = 0;
+
+      final querySnapshot = await _firestore
+          .collection('spots')
+          .where('duplicateOf', isNull: true)
+          .get();
+
+      totalMatched = querySnapshot.docs.length;
+
+      WriteBatch? batch;
+      int batchCount = 0;
+
+      for (final doc in querySnapshot.docs) {
+        final data = doc.data();
+        if (data.containsKey('duplicateOf')) {
+          continue;
+        }
+
+        batch ??= _firestore.batch();
+        batch.update(doc.reference, {'duplicateOf': null});
+        batchCount++;
+        updatedCount++;
+
+        if (batchCount >= batchSize) {
+          await batch.commit();
+          batch = null;
+          batchCount = 0;
+        }
+      }
+
+      if (batch != null && batchCount > 0) {
+        await batch.commit();
+      }
+
+      return {
+        'matched': totalMatched,
+        'updated': updatedCount,
+        'skipped': totalMatched - updatedCount,
+      };
+    } catch (e) {
+      _error = 'Failed to backfill duplicateOf: $e';
+      debugPrint('Error backfilling duplicateOf: $e');
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   // Search spots for duplicate selection (excludes duplicates and specified spot)
   Future<List<Spot>> searchSpotsForDuplicateSelection({
     String? excludeSpotId,

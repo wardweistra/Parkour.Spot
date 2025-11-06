@@ -6,7 +6,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../models/spot.dart';
 import '../../services/spot_service.dart';
@@ -58,7 +57,6 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
 
   // Duplicate state
   String? _duplicateOf;
-  bool _duplicateOfWasCleared = false;
 
   // Attributes state
   String? _selectedAccess;
@@ -126,7 +124,6 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
 
     // Initialize duplicateOf
     _duplicateOf = widget.spot.duplicateOf;
-    _duplicateOfWasCleared = false;
 
     // Initialize attributes
     _selectedAccess = widget.spot.spotAccess;
@@ -408,7 +405,6 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
   void _clearDuplicateOf() {
     setState(() {
       _duplicateOf = null;
-      _duplicateOfWasCleared = widget.spot.duplicateOf != null;
     });
   }
 
@@ -446,9 +442,6 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
           .toList();
 
       // Create updated spot data
-      // Note: We don't pass duplicateOf to copyWith if it was cleared,
-      // because copyWith will keep the old value when null is passed.
-      // Instead, we'll handle it separately by deleting from Firestore.
       final updatedSpot = widget.spot.copyWith(
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
@@ -458,8 +451,7 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
         city: _currentCity,
         countryCode: _currentCountryCode,
         youtubeVideoIds: youtubeIds.isNotEmpty ? youtubeIds : null,
-        // Only pass duplicateOf if it wasn't cleared (i.e., it has a value or wasn't set before)
-        duplicateOf: _duplicateOfWasCleared ? widget.spot.duplicateOf : _duplicateOf,
+        duplicateOf: _duplicateOf,
         spotAccess: _selectedAccess,
         spotFeatures: _selectedFeatures.toList(),
         spotFacilities: _selectedFacilities,
@@ -476,18 +468,6 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
         newImageBytesList: validNewImageBytes.isNotEmpty ? validNewImageBytes : null,
         imagesToDelete: _imagesToDelete.isNotEmpty ? _imagesToDelete : null,
       );
-
-      // If duplicateOf was cleared, explicitly delete it from Firestore
-      if (success && _duplicateOfWasCleared && widget.spot.id != null) {
-        try {
-          await FirebaseFirestore.instance
-              .collection('spots')
-              .doc(widget.spot.id)
-              .update({'duplicateOf': FieldValue.delete()});
-        } catch (e) {
-          debugPrint('Error removing duplicateOf field: $e');
-        }
-      }
 
       if (mounted) {
         if (success) {

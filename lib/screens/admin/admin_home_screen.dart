@@ -87,6 +87,16 @@ class AdminHomeScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Card(
               child: ListTile(
+                leading: const Icon(Icons.content_paste_off),
+                title: const Text('Backfill Duplicate Field'),
+                subtitle: const Text('Set duplicateOf to null on spots missing the field'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () => context.go('/admin/duplicate-field-backfill'),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Card(
+              child: ListTile(
                 leading: const Icon(Icons.star_rate),
                 title: const Text('Recompute Ratings for Rated Spots'),
                 subtitle: const Text('Recalculate average, count, and Wilson lower bound from ratings'),
