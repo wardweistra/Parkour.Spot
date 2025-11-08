@@ -9,6 +9,7 @@ import '../screens/admin/sync_sources_screen.dart';
 import '../screens/admin/geocoding_admin_screen.dart';
 import '../screens/admin/spot_management_screen.dart';
 import '../screens/admin/user_management_screen.dart';
+import '../screens/admin/duplicate_field_backfill_screen.dart';
 import '../screens/moderator/moderator_tools_screen.dart';
 import '../screens/moderator/spot_report_queue_screen.dart';
 import '../screens/spots/spot_detail_screen.dart';
@@ -110,6 +111,10 @@ class AppRouter {
         GoRoute(
           path: '/admin/spot-management',
           builder: (context, state) => const SpotManagementScreen(),
+        ),
+        GoRoute(
+          path: '/admin/duplicate-field-backfill',
+          builder: (context, state) => const DuplicateFieldBackfillScreen(),
         ),
         GoRoute(
           path: '/admin/users',

@@ -28,6 +28,8 @@ class Spot {
   final List<String>? goodFor;
   final String? duplicateOf; // ID of the original spot if this is a duplicate
 
+  static const Object _unset = Object();
+
   Spot({
     this.id,
     required this.name,
@@ -254,7 +256,7 @@ class Spot {
       if (spotFeatures != null) 'spotFeatures': spotFeatures,
       if (spotFacilities != null) 'spotFacilities': spotFacilities,
       if (goodFor != null) 'goodFor': goodFor,
-      if (duplicateOf != null) 'duplicateOf': duplicateOf,
+      'duplicateOf': duplicateOf,
     };
   }
 
@@ -284,7 +286,7 @@ class Spot {
     List<String>? spotFeatures,
     Map<String, String>? spotFacilities,
     List<String>? goodFor,
-    String? duplicateOf,
+    Object? duplicateOf = _unset,
   }) {
     return Spot(
       id: id ?? this.id,
@@ -312,7 +314,7 @@ class Spot {
       spotFeatures: spotFeatures ?? this.spotFeatures,
       spotFacilities: spotFacilities ?? this.spotFacilities,
       goodFor: goodFor ?? this.goodFor,
-      duplicateOf: duplicateOf ?? this.duplicateOf,
+      duplicateOf: identical(duplicateOf, _unset) ? this.duplicateOf : duplicateOf as String?,
     );
   }
 
