@@ -462,34 +462,51 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
               actions: [
                 // External spot badge
                 if (widget.spot.spotSource != null) ...[
-                  GestureDetector(
-                    onTap: _showExternalSpotInfo,
-                    child: Container(
-                      margin: const EdgeInsets.only(right: 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.4),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          width: 1,
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      // Calculate max width: screen width minus back button, share button, and other actions
+                      final screenWidth = MediaQuery.of(context).size.width;
+                      // Reserve space for back button (~56px), share button (~56px), other actions (~100px), and padding
+                      // Use 50% of screen width with a minimum of 100px to prevent overlap on small screens
+                      // On wide screens, allow more space for longer source names
+                      final reservedSpace = 200.0; // Back button + share + other actions + padding
+                      final maxWidth = (screenWidth - reservedSpace).clamp(100.0, double.infinity);
+                      
+                      return GestureDetector(
+                        onTap: _showExternalSpotInfo,
+                        child: Container(
+                          margin: const EdgeInsets.only(right: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          constraints: BoxConstraints(
+                            maxWidth: maxWidth,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.4),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            widget.spot.folderName != null
+                                ? '${widget.spot.spotSourceName ?? widget.spot.spotSource!} - ${widget.spot.folderName!}'
+                                : widget.spot.spotSourceName ??
+                                      widget.spot.spotSource!,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
                         ),
-                      ),
-                      child: Text(
-                        widget.spot.folderName != null
-                            ? '${widget.spot.spotSourceName ?? widget.spot.spotSource!} - ${widget.spot.folderName!}'
-                            : widget.spot.spotSourceName ??
-                                  widget.spot.spotSource!,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
+                      );
+                    },
                   ),
                 ],
                 // Share button for all users
