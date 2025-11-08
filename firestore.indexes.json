@@ -57,6 +57,16 @@
       ]
     },
     {
+      "collectionGroup": "spots",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "duplicateOf", "order": "ASCENDING" },
+        { "fieldPath": "ranking", "order": "DESCENDING" },
+        { "fieldPath": "latitude", "order": "DESCENDING" },
+        { "fieldPath": "longitude", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "ratings",
       "queryScope": "COLLECTION",
       "fields": [

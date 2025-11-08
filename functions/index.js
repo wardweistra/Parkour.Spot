@@ -390,8 +390,11 @@ exports.getTopSpotsInBounds = onCall(
               // Specific source ID
               query = query.where("spotSource", "==", spotSource);
             }
+          } else {
+            // If spotSource is null, no source filter is applied (all sources)
+            // Exclude spots marked as duplicates when searching all sources
+            query = query.where("duplicateOf", "==", null);
           }
-          // If spotSource is null, no filter is applied (all sources)
           
           // Apply image filter if specified
           if (hasImages === true) {
