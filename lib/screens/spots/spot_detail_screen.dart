@@ -1916,6 +1916,15 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                       color: Theme.of(context).colorScheme.secondary,
                                     ),
                                   ),
+                                  subtitle: duplicate.spotSourceName != null || duplicate.spotSource != null
+                                      ? Text(
+                                          duplicate.spotSourceName ?? duplicate.spotSource ?? '',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Theme.of(context).colorScheme.secondary.withOpacity(0.7),
+                                          ),
+                                        )
+                                      : null,
                                   contentPadding: EdgeInsets.zero,
                                   trailing: Icon(
                                     Icons.open_in_new,
