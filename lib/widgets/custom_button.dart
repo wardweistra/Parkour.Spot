@@ -68,7 +68,11 @@ class CustomButton extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (icon != null) ...[
-                    Icon(icon, size: 20),
+                    Icon(
+                      icon,
+                      size: 20,
+                      color: isOutlined ? defaultBackgroundColor : defaultTextColor,
+                    ),
                     const SizedBox(width: 8),
                   ],
                   Text(
@@ -76,6 +80,7 @@ class CustomButton extends StatelessWidget {
                     style: theme.textTheme.labelLarge?.copyWith(
                       fontWeight: FontWeight.w600,
                       fontSize: 16,
+                      color: isOutlined ? defaultBackgroundColor : defaultTextColor,
                     ),
                   ),
                 ],
