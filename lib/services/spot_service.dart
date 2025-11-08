@@ -123,8 +123,8 @@ class SpotService extends ChangeNotifier {
     }
   }
 
-  // Enhanced update method for comprehensive spot updates
-  Future<bool> updateSpotComplete(
+  // Update an existing spot with comprehensive image management
+  Future<bool> updateSpot(
     Spot spot, 
     {
       List<File>? newImageFiles,
@@ -184,45 +184,6 @@ class SpotService extends ChangeNotifier {
     } catch (e) {
       debugPrint('Error deleting image from storage: $e');
       return false;
-    }
-  }
-
-  // Update an existing spot (legacy method)
-  Future<bool> updateSpot(Spot spot, {File? imageFile, Uint8List? imageBytes}) async {
-    try {
-      _isLoading = true;
-      notifyListeners();
-
-      List<String>? imageUrls = spot.imageUrls;
-      if (imageFile != null) {
-        final imageUrl = await _uploadImage(imageFile);
-        imageUrls = [
-          ...?spot.imageUrls,
-          imageUrl,
-        ];
-      } else if (imageBytes != null) {
-        final imageUrl = await _uploadImageBytes(imageBytes);
-        imageUrls = [
-          ...?spot.imageUrls,
-          imageUrl,
-        ];
-      }
-
-      final updatedSpot = spot.copyWith(
-        imageUrls: imageUrls,
-        updatedAt: DateTime.now(),
-      );
-
-      await _firestore.collection('spots').doc(spot.id).update(updatedSpot.toFirestore());
-      
-      return true;
-    } catch (e) {
-      _error = 'Failed to update spot: $e';
-      debugPrint('Error updating spot: $e');
-      return false;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
     }
   }
 

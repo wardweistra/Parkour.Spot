@@ -462,7 +462,7 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
       // Filter out null values for images
       final validNewImageBytes = _selectedImageBytes.where((bytes) => bytes != null).cast<Uint8List>().toList();
 
-      final success = await spotService.updateSpotComplete(
+      final success = await spotService.updateSpot(
         updatedSpot,
         newImageFiles: null,
         newImageBytesList: validNewImageBytes.isNotEmpty ? validNewImageBytes : null,
