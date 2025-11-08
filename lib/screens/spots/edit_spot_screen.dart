@@ -691,7 +691,7 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'This spot is marked as a duplicate of: ${_duplicateOf}',
+                              'This spot is marked as a duplicate of: $_duplicateOf',
                               style: const TextStyle(color: Colors.orange),
                             ),
                             const SizedBox(height: 16),
