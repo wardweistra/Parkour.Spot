@@ -17,6 +17,7 @@ import '../../widgets/source_details_dialog.dart';
 import '../../widgets/spot_selection_dialog.dart';
 import '../../constants/spot_attributes.dart';
 import '../../services/snackbar_service.dart';
+import '../../utils/image_url_utils.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 import 'package:url_launcher/url_launcher.dart';
 
@@ -2095,7 +2096,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
             duration: const Duration(milliseconds: 300),
             child: CachedNetworkImage(
               key: ValueKey(_currentImageIndex),
-              imageUrl: widget.spot.imageUrls![_currentImageIndex],
+              imageUrl: getResizedImageUrl(widget.spot.imageUrls![_currentImageIndex]),
               fit: BoxFit.cover,
               width: double.infinity,
               height: 400,
