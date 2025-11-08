@@ -60,8 +60,8 @@ class SpotService extends ChangeNotifier {
         spotFeatures: sourceSpot.spotFeatures,
         spotFacilities: sourceSpot.spotFacilities,
         goodFor: sourceSpot.goodFor,
+        duplicateOf: null, // New native spot, not a duplicate
         // spotSource is null (native spot)
-        // duplicateOf is null (new spot)
       );
 
       final docRef = await _firestore.collection('spots').add(nativeSpot.toFirestore());
@@ -107,6 +107,7 @@ class SpotService extends ChangeNotifier {
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
         ranking: spot.ranking ?? Random().nextDouble(),
+        duplicateOf: null, // New spot, not a duplicate
       );
 
       final docRef = await _firestore.collection('spots').add(spotWithImages.toFirestore());
@@ -649,43 +650,68 @@ class SpotService extends ChangeNotifier {
 
       int totalMatched = 0;
       int updatedCount = 0;
+      int alreadyHadField = 0;
 
-      final querySnapshot = await _firestore
-          .collection('spots')
-          .where('duplicateOf', isNull: true)
-          .get();
+      // Query all spots in batches since we can't query for missing fields directly
+      Query query = _firestore.collection('spots').orderBy(FieldPath.documentId).limit(1000);
+      DocumentSnapshot? lastDoc;
+      bool hasMore = true;
 
-      totalMatched = querySnapshot.docs.length;
+      WriteBatch? writeBatch;
+      int writeBatchCount = 0;
 
-      WriteBatch? batch;
-      int batchCount = 0;
+      while (hasMore) {
+        Query currentQuery = lastDoc == null 
+            ? query 
+            : query.startAfterDocument(lastDoc);
 
-      for (final doc in querySnapshot.docs) {
-        final data = doc.data();
-        if (data.containsKey('duplicateOf')) {
-          continue;
+        final querySnapshot = await currentQuery.get();
+
+        if (querySnapshot.docs.isEmpty) {
+          hasMore = false;
+          break;
         }
 
-        batch ??= _firestore.batch();
-        batch.update(doc.reference, {'duplicateOf': null});
-        batchCount++;
-        updatedCount++;
+        for (final doc in querySnapshot.docs) {
+          final data = doc.data() as Map<String, dynamic>?;
+          
+          // Check if the document is missing the duplicateOf field
+          if (data == null || !data.containsKey('duplicateOf')) {
+            totalMatched++;
+            
+            writeBatch ??= _firestore.batch();
+            writeBatch.update(doc.reference, {'duplicateOf': null});
+            writeBatchCount++;
+            updatedCount++;
 
-        if (batchCount >= batchSize) {
-          await batch.commit();
-          batch = null;
-          batchCount = 0;
+            if (writeBatchCount >= batchSize) {
+              await writeBatch.commit();
+              writeBatch = null;
+              writeBatchCount = 0;
+            }
+          } else {
+            // Field exists, count it as already having the field
+            alreadyHadField++;
+          }
+        }
+
+        // Check if we need to continue paginating
+        if (querySnapshot.docs.length < 1000) {
+          hasMore = false;
+        } else {
+          lastDoc = querySnapshot.docs.last;
         }
       }
 
-      if (batch != null && batchCount > 0) {
-        await batch.commit();
+      // Commit any remaining writes
+      if (writeBatch != null && writeBatchCount > 0) {
+        await writeBatch.commit();
       }
 
       return {
         'matched': totalMatched,
         'updated': updatedCount,
-        'skipped': totalMatched - updatedCount,
+        'skipped': alreadyHadField,
       };
     } catch (e) {
       _error = 'Failed to backfill duplicateOf: $e';

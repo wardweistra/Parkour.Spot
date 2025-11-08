@@ -2319,6 +2319,7 @@ async function processSyncSource(source, sourceId, apiKey) {
       spotData.ratingCount = 0;
       spotData.wilsonLowerBound = 0;
       spotData.ranking = Math.random(); // Random ranking for new spots
+      spotData.duplicateOf = null; // Initialize duplicateOf field
       spotData.createdAt = admin.firestore.FieldValue.serverTimestamp();
       await db.collection("spots").add(cleanUndefinedValues(spotData));
       created++;
@@ -2343,6 +2344,10 @@ async function processSyncSource(source, sourceId, apiKey) {
       // Preserve existing ranking field if it exists
       if (existingData.ranking !== undefined) {
         spotData.ranking = existingData.ranking;
+      }
+      // Preserve existing duplicateOf field if it exists
+      if (existingData.duplicateOf !== undefined) {
+        spotData.duplicateOf = existingData.duplicateOf;
       }
 
       await existingSpot.ref.update(cleanUndefinedValues(spotData));

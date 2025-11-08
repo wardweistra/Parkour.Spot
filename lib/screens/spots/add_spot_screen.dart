@@ -343,6 +343,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
         spotFeatures: _selectedFeatures.isNotEmpty ? _selectedFeatures.toList() : null,
         spotFacilities: _selectedFacilities.isNotEmpty ? _selectedFacilities : null,
         goodFor: _selectedGoodFor.isNotEmpty ? _selectedGoodFor.toList() : null,
+        duplicateOf: null, // New spot, not a duplicate
       );
 
       final spotId = await spotService.createSpot(
