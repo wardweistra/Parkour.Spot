@@ -115,8 +115,8 @@ class _UrbnMigrationScreenState extends State<UrbnMigrationScreen> {
         _status = 'Processing ${spotsToProcess.length} spots...';
       });
 
-      // Process spots in batches of 50
-      const batchSize = 50;
+      // Process spots in batches of 20
+      const batchSize = 20;
       final batches = <List<Map<String, dynamic>>>[];
       for (int i = 0; i < spotsToProcess.length; i += batchSize) {
         batches.add(spotsToProcess.sublist(i, (i + batchSize).clamp(0, spotsToProcess.length)));
