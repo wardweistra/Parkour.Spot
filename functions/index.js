@@ -375,8 +375,52 @@ exports.getTopSpotsInBounds = onCall(
               "minLat, maxLat, minLng, maxLng are required numbers");
         }
 
-        // Handle dateline crossing
-        const crossesDateline = minLng > maxLng;
+        // Normalize longitude values to [-180, 180] range
+        const normalizeLongitude = (lng) => {
+          // Normalize to [-180, 180]
+          const normalized = ((lng + 180) % 360 + 360) % 360 - 180;
+          return normalized;
+        };
+
+        // Normalize longitude values for query building
+        const normalizedMinLng = normalizeLongitude(minLng);
+        const normalizedMaxLng = normalizeLongitude(maxLng);
+
+        // Check if both normalized values are the same (indicates full wrap-around)
+        // This happens when the viewport spans exactly 360 degrees or more
+        const isFullWrap = normalizedMinLng === normalizedMaxLng;
+
+        // If full wrap, treat as spanning entire globe and skip span calculation
+        let spansEntireGlobe = false;
+        let crossesDateline = false;
+        let lngSpan = null; // Only set when not a full wrap
+
+        if (isFullWrap) {
+          // Both bounds normalize to the same value - this means full 360-degree wrap
+          spansEntireGlobe = true;
+        } else {
+          // Calculate longitude span for other cases
+          if (normalizedMinLng > normalizedMaxLng) {
+            // Crosses dateline: span = (180 - minLng) + (maxLng - (-180))
+            lngSpan = (180 - normalizedMinLng) + (normalizedMaxLng - (-180));
+          } else {
+            // Normal case: check if raw span is >= 360 (viewport spans entire globe)
+            const rawSpan = maxLng - minLng;
+            if (rawSpan >= 360) {
+              // Viewport spans entire globe or more
+              lngSpan = rawSpan;
+            } else {
+              // Use normalized span
+              lngSpan = normalizedMaxLng - normalizedMinLng;
+            }
+          }
+
+          // If viewport spans entire globe or more (>= 360 degrees), query all longitudes
+          spansEntireGlobe = lngSpan >= 360;
+
+          // Handle dateline crossing (only if not spanning entire globe)
+          crossesDateline = !spansEntireGlobe && normalizedMinLng > normalizedMaxLng;
+        }
 
         // Fetch precomputed average wilson from settings
         let averageWilson = 0;
@@ -464,13 +508,23 @@ exports.getTopSpotsInBounds = onCall(
         let totalCount = 0;
         let spots = [];
 
-        if (crossesDateline) {
+        if (spansEntireGlobe) {
+          // Viewport spans entire globe or more - use full longitude range (-180 to 180)
+          // This allows Firestore to use indexes that include longitude
+          const [snap, count] = await Promise.all([
+            buildQuery(-180, 180).select(...projection).limit(maxItems).get(),
+            buildQuery(-180, 180).count().get(),
+          ]);
+
+          spots = snap.docs.map((d) => ({id: d.id, ...d.data()}));
+          totalCount = count.data().count || 0;
+        } else if (crossesDateline) {
           // Query both sides of dateline
           const [snap1, snap2, count1, count2] = await Promise.all([
-            buildQuery(minLng, 180).select(...projection).limit(maxItems).get(),
-            buildQuery(-180, maxLng).select(...projection).limit(maxItems).get(),
-            buildQuery(minLng, 180).count().get(),
-            buildQuery(-180, maxLng).count().get(),
+            buildQuery(normalizedMinLng, 180).select(...projection).limit(maxItems).get(),
+            buildQuery(-180, normalizedMaxLng).select(...projection).limit(maxItems).get(),
+            buildQuery(normalizedMinLng, 180).count().get(),
+            buildQuery(-180, normalizedMaxLng).count().get(),
           ]);
 
           spots = [
@@ -481,8 +535,8 @@ exports.getTopSpotsInBounds = onCall(
         } else {
           // Single query
           const [snap, count] = await Promise.all([
-            buildQuery(minLng, maxLng).select(...projection).limit(maxItems).get(),
-            buildQuery(minLng, maxLng).count().get(),
+            buildQuery(normalizedMinLng, normalizedMaxLng).select(...projection).limit(maxItems).get(),
+            buildQuery(normalizedMinLng, normalizedMaxLng).count().get(),
           ]);
 
           spots = snap.docs.map((d) => ({id: d.id, ...d.data()}));
