@@ -7,7 +7,7 @@
 .buildlog/
 .history
 
-
+/urbn
 
 # Flutter repo-specific
 /bin/cache/

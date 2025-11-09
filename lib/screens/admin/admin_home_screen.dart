@@ -97,6 +97,16 @@ class AdminHomeScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Card(
               child: ListTile(
+                leading: const Icon(Icons.cloud_upload),
+                title: const Text('URBN Migration'),
+                subtitle: const Text('Import spots from URBN Jumpers JSON file'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () => context.go('/admin/urbn-migration'),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Card(
+              child: ListTile(
                 leading: const Icon(Icons.star_rate),
                 title: const Text('Recompute Ratings for Rated Spots'),
                 subtitle: const Text('Recalculate average, count, and Wilson lower bound from ratings'),

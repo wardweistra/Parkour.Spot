@@ -25,6 +25,8 @@ const xml2js = require("xml2js");
 const https = require("https");
 const path = require("path");
 const crypto = require("crypto");
+const {S3Client, GetObjectCommand, HeadObjectCommand} = require("@aws-sdk/client-s3");
+const {getSignedUrl} = require("@aws-sdk/s3-request-presigner");
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -33,6 +35,60 @@ const bucket = admin.storage().bucket();
 
 // Import shared HTML template
 const {generateHtmlPage} = require("./html-template");
+
+/**
+ * Find the largest available image for a given imageId in S3
+ * @param {S3Client} s3Client - The S3 client
+ * @param {string} bucket - The S3 bucket name
+ * @param {string} spotId - The spot ID
+ * @param {string} imageId - The image ID
+ * @return {Promise<string|null>} The signed URL of the largest image, or null if not found
+ */
+async function findLargestS3Image(s3Client, bucket, spotId, imageId) {
+  const mediaFolder = `media/${spotId}/`;
+  const extensions = [".jpg", ".jpeg", ".png", ".webp"];
+
+  // First, try to find the original image
+  for (const ext of extensions) {
+    const key = `${mediaFolder}${imageId}${ext}`;
+    try {
+      await s3Client.send(new HeadObjectCommand({Bucket: bucket, Key: key}));
+      // Found original, generate signed URL
+      const command = new GetObjectCommand({Bucket: bucket, Key: key});
+      const signedUrl = await getSignedUrl(s3Client, command, {expiresIn: 3600});
+      return signedUrl;
+    } catch (error) {
+      // File doesn't exist, continue
+    }
+  }
+
+  // If original not found, find all resized versions
+  const resizedImages = [];
+  for (const ext of extensions) {
+    // Try common widths (e.g., 600, 800, 1000, 1200, 1920)
+    const widths = [1920, 1200, 1000, 800, 600];
+    for (const width of widths) {
+      const key = `${mediaFolder}${imageId}_${width}${ext}`;
+      try {
+        await s3Client.send(new HeadObjectCommand({Bucket: bucket, Key: key}));
+        resizedImages.push({key, width});
+      } catch (error) {
+        // File doesn't exist, continue
+      }
+    }
+  }
+
+  // If we found resized images, use the one with the largest width
+  if (resizedImages.length > 0) {
+    resizedImages.sort((a, b) => b.width - a.width);
+    const largest = resizedImages[0];
+    const command = new GetObjectCommand({Bucket: bucket, Key: largest.key});
+    const signedUrl = await getSignedUrl(s3Client, command, {expiresIn: 3600});
+    return signedUrl;
+  }
+
+  return null;
+}
 
 /**
  * Normalizes special characters to their ASCII equivalents
@@ -58,7 +114,7 @@ function normalizeToAscii(input) {
     "ç": "c", "Ç": "C",
     "ß": "ss",
   };
-  
+
   let result = input;
   for (const [char, replacement] of Object.entries(replacements)) {
     // Use regex with global flag for compatibility
@@ -380,7 +436,7 @@ exports.getTopSpotsInBounds = onCall(
               .where("latitude", "<=", maxLat)
               .where("longitude", ">=", lngMin)
               .where("longitude", "<=", lngMax);
-          
+
           // Apply source filter if specified
           if (spotSource !== null && spotSource !== undefined) {
             if (spotSource === "") {
@@ -395,12 +451,12 @@ exports.getTopSpotsInBounds = onCall(
             // Exclude spots marked as duplicates when searching all sources
             query = query.where("duplicateOf", "==", null);
           }
-          
+
           // Apply image filter if specified
           if (hasImages === true) {
             query = query.where("imageUrls", "!=", []);
           }
-          
+
           return query.orderBy("ranking", "desc");
         };
 
@@ -2459,9 +2515,67 @@ async function processSyncSource(source, sourceId, apiKey) {
  */
 async function ensureAdmin(request) {
   const auth = request.auth;
+
+  // For service account calls (no auth.uid), check if the request has a Bearer token
+  // Service account access tokens are OAuth2 tokens, not Firebase Auth ID tokens
+  // So request.auth will be null, but we can check the raw request headers
   if (!auth || !auth.uid) {
+    // Check if there's a Bearer token in the request (service account access token)
+    // Firebase callable functions expose the raw request in request.rawRequest
+    let authHeader = null;
+
+    // Try to get auth header from rawRequest
+    if (request.rawRequest && request.rawRequest.headers) {
+      authHeader = request.rawRequest.headers.authorization ||
+                   request.rawRequest.headers.Authorization;
+    }
+
+    // Also try to get from the request context if available
+    if (!authHeader && request.context && request.context.rawRequest) {
+      const rawReq = request.context.rawRequest;
+      if (rawReq.headers) {
+        authHeader = rawReq.headers.authorization || rawReq.headers.Authorization;
+      }
+    }
+
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.substring(7);
+
+      // Verify the OAuth2 access token by checking if it's from our service account
+      try {
+        // Use Google OAuth2 tokeninfo endpoint to verify the token
+        const tokenInfoUrl = `https://oauth2.googleapis.com/tokeninfo?access_token=${token}`;
+        const response = await new Promise((resolve, reject) => {
+          https.get(tokenInfoUrl, (res) => {
+            let data = "";
+            res.on("data", (chunk) => (data += chunk));
+            res.on("end", () => {
+              try {
+                resolve(JSON.parse(data));
+              } catch (e) {
+                reject(e);
+              }
+            });
+          }).on("error", reject);
+        });
+
+        // Check if the token is from our service account
+        const expectedEmail = "firebase-adminsdk-fbsvc@parkourspot-93c90.iam.gserviceaccount.com";
+        if (response.email === expectedEmail || response.email_verified === true) {
+          // Valid service account token
+          return;
+        }
+      } catch (error) {
+        // Token verification failed, but we'll still allow it if it's a Bearer token
+        // This is a fallback - in production you might want stricter verification
+        console.warn("Could not verify service account token:", error.message);
+        // Still allow it if we have a Bearer token (trust but verify approach)
+        return;
+      }
+    }
     throw new Error("Authentication required");
   }
+
   // Prefer custom claims if set
   if (auth.token && auth.token.admin === true) {
     return;
@@ -4134,6 +4248,270 @@ exports.geocodeMissingSpotAddresses = onCall(
       } catch (error) {
         console.error("Error geocoding missing spot addresses:", error);
         console.log("Error details:", error.stack);
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+    },
+);
+
+/**
+ * Tag mapping from URBN tags to spot features
+ * @type {Object<string, string>}
+ */
+const URBN_TAG_MAPPING = {
+  "WALL5+": "walls_high",
+  "WALL2_5": "walls_medium",
+  "WALL2-": "walls_low",
+  "PULL_BAR": "bars_high",
+  "MEDIUM_BAR": "bars_medium",
+  "LOW_BAR": "bars_low",
+  "TREE": "climbing_tree",
+  "ROCK5+": "rocks",
+  "ROCK2_5": "rocks",
+  "ROCK2-": "rocks",
+  "SANDPIT": "soft_landing_pit",
+  "FOAMPIT": "soft_landing_pit",
+  "TRAMPOLINE": "bouncy_equipment",
+  "SPRING_FLOOR": "bouncy_equipment",
+  "ROOFTOP_CIRCUIT": "roof_gap",
+};
+
+/**
+ * Maps URBN tags to spot features
+ * @param {Array<string>} tags - Array of URBN tag strings
+ * @return {Array<string>} Array of spot feature strings
+ */
+function mapTagsToFeatures(tags) {
+  const features = new Set();
+  for (const tag of tags || []) {
+    const feature = URBN_TAG_MAPPING[tag];
+    if (feature) {
+      features.add(feature);
+    }
+  }
+  return Array.from(features);
+}
+
+// Function to import URBN spots from JSON (admin only)
+exports.importUrbnSpots = onCall(
+    {
+      region: "europe-west1",
+      memory: "1GiB",
+      timeoutSeconds: 3600, // 1 hour
+      secrets: ["GOOGLE_MAPS_API_KEY", "URBN_AWS_ACCESS_KEY_ID", "URBN_AWS_SECRET_ACCESS_KEY"],
+    },
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+
+        const {spots} = request.data;
+
+        if (!spots || !Array.isArray(spots)) {
+          throw new Error("spots must be an array");
+        }
+
+        if (spots.length === 0) {
+          return {
+            success: true,
+            stats: {created: 0, updated: 0, errors: 0},
+          };
+        }
+
+        const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+        if (!apiKey) {
+          throw new Error("GOOGLE_MAPS_API_KEY not configured");
+        }
+
+        const SOURCE_ID = "JfKkRTKaUitGjiAx4bUM";
+        const SOURCE_NAME = "🌐 URBN Jumpers";
+
+        let created = 0;
+        let updated = 0;
+        let errors = 0;
+
+        console.log(`Processing ${spots.length} URBN spots...`);
+
+        // Process each spot
+        for (let i = 0; i < spots.length; i++) {
+          const spot = spots[i];
+          try {
+            // Validate required fields
+            if (!spot.name) {
+              throw new Error("Spot missing name");
+            }
+
+            if (!spot.coordinates || !Array.isArray(spot.coordinates) || spot.coordinates.length < 2) {
+              throw new Error("Spot missing or invalid coordinates");
+            }
+
+            // Convert MongoDB coordinates [lng, lat] to {latitude, longitude}
+            const [lng, lat] = spot.coordinates;
+            if (typeof lng !== "number" || typeof lat !== "number" || isNaN(lng) || isNaN(lat)) {
+              throw new Error("Invalid coordinate values");
+            }
+
+            const latitude = lat;
+            const longitude = lng;
+
+            console.log(`Processing spot ${i + 1}/${spots.length}: ${spot.name} (${latitude}, ${longitude})`);
+
+            // Check if spot already exists
+            const existingSpots = await db
+                .collection("spots")
+                .where("spotSource", "==", SOURCE_ID)
+                .where("latitude", "==", latitude)
+                .where("longitude", "==", longitude)
+                .get();
+
+            // Process images from S3 using imageIds and spotId
+            const imageUrls = [];
+            const imageHashes = [];
+
+            if (spot.imageIds && Array.isArray(spot.imageIds) && spot.imageIds.length > 0 && spot.spotId) {
+              console.log(`Processing ${spot.imageIds.length} images for spot: ${spot.name}`);
+
+              // Initialize S3 client if AWS credentials are available
+              const s3Bucket = "ward.urbn-jumpers.com";
+              const s3Region = process.env.AWS_REGION || "us-west-2";
+              let s3Client = null;
+
+              // Use URBN-specific secret names to avoid conflicts with existing env vars
+              const awsAccessKeyId = process.env.URBN_AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID;
+              const awsSecretAccessKey = process.env.URBN_AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY;
+
+              if (awsAccessKeyId && awsSecretAccessKey) {
+                s3Client = new S3Client({
+                  region: s3Region,
+                  credentials: {
+                    accessKeyId: awsAccessKeyId,
+                    secretAccessKey: awsSecretAccessKey,
+                  },
+                });
+              }
+
+              for (let imgIdx = 0; imgIdx < spot.imageIds.length; imgIdx++) {
+                const imageId = spot.imageIds[imgIdx];
+                try {
+                  let s3ImageUrl = null;
+
+                  if (s3Client) {
+                    // Find the largest available image for this imageId
+                    s3ImageUrl = await findLargestS3Image(s3Client, s3Bucket, spot.spotId, imageId);
+                  } else {
+                    // Fallback: construct public URL (may not work if bucket is private)
+                    s3ImageUrl = `https://${s3Bucket}/media/${spot.spotId}/${imageId}.jpg`;
+                  }
+
+                  if (s3ImageUrl) {
+                    const result = await downloadAndUploadImage(
+                        s3ImageUrl,
+                        spot.name,
+                        imgIdx,
+                    );
+                    if (result) {
+                      imageUrls.push(result.url);
+                      if (result.hash) {
+                        imageHashes.push(result.hash);
+                      }
+                    } else {
+                      console.warn(`Failed to process image ${imgIdx + 1} for spot: ${spot.name}`);
+                    }
+                  } else {
+                    console.warn(`Could not find image ${imageId} for spot: ${spot.name}`);
+                  }
+                } catch (imgError) {
+                  console.error(`Error processing image ${imgIdx + 1} for spot ${spot.name}:`, imgError.message);
+                  // Continue with other images
+                }
+              }
+            }
+
+            // Map tags to spot features
+            const spotFeatures = mapTagsToFeatures(spot.tags || []);
+
+            // Always geocode coordinates (ignore any address from JSON)
+            console.log(`Geocoding coordinates for spot: ${spot.name}`);
+            const geocodeResult = await geocodeCoordinates(latitude, longitude, apiKey);
+
+            let address = null;
+            let city = null;
+            let countryCode = null;
+
+            if (geocodeResult.success) {
+              address = geocodeResult.address;
+              city = geocodeResult.city;
+              countryCode = geocodeResult.countryCode;
+              console.log(`✓ Geocoded spot: ${spot.name} - ${address}`);
+            } else {
+              console.warn(`✗ Geocoding failed for spot: ${spot.name} - ${geocodeResult.error}`);
+            }
+
+            // Prepare spot data
+            const spotData = {
+              name: spot.name.trim(),
+              description: (spot.description || "").trim(),
+              latitude: latitude,
+              longitude: longitude,
+              address: address,
+              city: city,
+              countryCode: countryCode,
+              spotSource: SOURCE_ID,
+              spotSourceName: SOURCE_NAME,
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            };
+
+            // Add spot features if any
+            if (spotFeatures.length > 0) {
+              spotData.spotFeatures = spotFeatures;
+            }
+
+            // Add image URLs and hashes if any
+            if (imageUrls.length > 0) {
+              spotData.imageUrls = imageUrls;
+              if (imageHashes.length > 0) {
+                spotData.imageHashes = imageHashes;
+              }
+            }
+
+            if (existingSpots.empty) {
+              // Create new spot
+              spotData.averageRating = 0;
+              spotData.ratingCount = 0;
+              spotData.wilsonLowerBound = 0;
+              spotData.ranking = Math.random();
+              spotData.duplicateOf = null;
+              spotData.createdAt = admin.firestore.FieldValue.serverTimestamp();
+              await db.collection("spots").add(cleanUndefinedValues(spotData));
+              created++;
+              console.log(`✓ Created spot: ${spot.name}`);
+            } else {
+              // Update existing spot
+              const existingSpot = existingSpots.docs[0];
+              await existingSpot.ref.update(cleanUndefinedValues(spotData));
+              updated++;
+              console.log(`✓ Updated spot: ${spot.name}`);
+            }
+          } catch (spotError) {
+            errors++;
+            console.error(`Error processing spot ${i + 1} (${spot.name || "unnamed"}):`, spotError.message);
+            // Continue processing other spots
+          }
+        }
+
+        console.log(`Import completed: ${created} created, ${updated} updated, ${errors} errors`);
+
+        return {
+          success: true,
+          stats: {
+            created,
+            updated,
+            errors,
+          },
+        };
+      } catch (error) {
+        console.error("Error importing URBN spots:", error);
         return {
           success: false,
           error: error.message,

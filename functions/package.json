@@ -14,6 +14,8 @@
   },
   "main": "index.js",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.700.0",
+    "@aws-sdk/s3-request-presigner": "^3.700.0",
     "firebase-admin": "^12.6.0",
     "firebase-functions": "^6.6.0",
     "sharp": "^0.33.0",
