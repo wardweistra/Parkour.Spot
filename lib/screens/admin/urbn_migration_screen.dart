@@ -136,7 +136,7 @@ class _UrbnMigrationScreenState extends State<UrbnMigrationScreen> {
             // Validate coordinates
             if (spot['location'] == null || 
                 spot['location']['coordinates'] == null ||
-                !(spot['location']['coordinates'] is List) ||
+                spot['location']['coordinates'] is! List ||
                 (spot['location']['coordinates'] as List).length < 2) {
               throw Exception('Missing or invalid coordinates');
             }

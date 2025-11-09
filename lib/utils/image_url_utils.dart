@@ -1,5 +1,6 @@
 /// Utility functions for working with image URLs, particularly for converting
 /// full-size images to resized versions for better performance.
+library;
 
 /// Converts a full-size Firebase Storage image URL to its resized version.
 /// 
