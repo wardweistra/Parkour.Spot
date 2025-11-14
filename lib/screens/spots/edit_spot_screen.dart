@@ -465,11 +465,18 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
       // Filter out null values for images
       final validNewImageBytes = _selectedImageBytes.where((bytes) => bytes != null).cast<Uint8List>().toList();
 
+      // Get user info for audit logging (moderator edits)
+      final authService = Provider.of<AuthService>(context, listen: false);
+      final userId = authService.currentUser?.uid;
+      final userName = authService.userProfile?.displayName ?? authService.currentUser?.displayName ?? authService.currentUser?.email;
+
       final success = await spotService.updateSpot(
         updatedSpot,
         newImageFiles: null,
         newImageBytesList: validNewImageBytes.isNotEmpty ? validNewImageBytes : null,
         imagesToDelete: _imagesToDelete.isNotEmpty ? _imagesToDelete : null,
+        userId: userId,
+        userName: userName,
       );
 
       if (mounted) {

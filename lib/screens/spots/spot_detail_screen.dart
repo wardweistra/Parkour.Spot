@@ -2538,11 +2538,16 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         // Now mark the current spot as duplicate of the newly created native spot
         // Since we're creating from the current spot, photos and YouTube links are already in the native spot
         // So we don't need to transfer them
+        final userId = authService.currentUser!.uid;
+        final userName = authService.userProfile?.displayName ?? authService.currentUser!.displayName ?? authService.currentUser!.email;
+        
         final success = await spotService.markSpotAsDuplicate(
           widget.spot.id!,
           nativeSpotId,
           transferPhotos: false, // Already copied to native spot
           transferYoutubeLinks: false, // Already copied to native spot
+          userId: userId,
+          userName: userName,
         );
 
         if (success) {
@@ -2595,11 +2600,18 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
     // Mark the spot as duplicate
     try {
+      // Get user info for audit logging (moderator action)
+      final authService = Provider.of<AuthService>(context, listen: false);
+      final userId = authService.currentUser?.uid;
+      final userName = authService.userProfile?.displayName ?? authService.currentUser?.displayName ?? authService.currentUser?.email;
+
       final success = await spotService.markSpotAsDuplicate(
         widget.spot.id!,
         selectedSpotId,
         transferPhotos: transferPhotos,
         transferYoutubeLinks: transferYoutubeLinks,
+        userId: userId,
+        userName: userName,
       );
 
       if (success) {

@@ -70,5 +70,23 @@ service cloud.firestore {
       allow read: if true; // Allow all users to read sync sources
       // Only allow admin users to write (this would be handled by Firebase Functions with admin privileges)
     }
+    
+    // AuditLog collection - logs moderator actions on spots
+    match /auditLog/{logId} {
+      // Only moderators and admins can read audit logs
+      allow read: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isModerator == true);
+      // Only moderators and admins can create audit log entries (when performing actions)
+      allow create: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isModerator == true) &&
+        // Ensure the userId in the log matches the authenticated user
+        request.resource.data.userId == request.auth.uid;
+      // No updates or deletes allowed (immutable audit log)
+      allow update, delete: if false;
+    }
   }
 }

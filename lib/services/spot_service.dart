@@ -6,10 +6,12 @@ import 'dart:io';
 import 'dart:math';
 import '../models/spot.dart';
 import '../models/rating.dart';
+import 'audit_log_service.dart';
 
 class SpotService extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
+  final AuditLogService _auditLogService = AuditLogService();
   
   bool _isLoading = false;
   String? _error;
@@ -130,11 +132,19 @@ class SpotService extends ChangeNotifier {
       List<File>? newImageFiles,
       List<Uint8List>? newImageBytesList,
       List<String>? imagesToDelete,
+      String? userId,
+      String? userName,
     }
   ) async {
     try {
       _isLoading = true;
       notifyListeners();
+
+      // Get the old spot data for audit logging
+      Spot? oldSpot;
+      if (userId != null && userName != null) {
+        oldSpot = await getSpotById(spot.id!);
+      }
 
       List<String>? imageUrls = List.from(spot.imageUrls ?? []);
 
@@ -164,6 +174,19 @@ class SpotService extends ChangeNotifier {
 
       await _firestore.collection('spots').doc(spot.id).update(updatedSpot.toFirestore());
       
+      // Log audit trail if user info is provided (moderator edit)
+      if (userId != null && userName != null && oldSpot != null) {
+        final changes = _computeSpotChanges(oldSpot, updatedSpot);
+        if (changes.isNotEmpty) {
+          await _auditLogService.logSpotEdit(
+            spotId: spot.id!,
+            userId: userId,
+            userName: userName,
+            changes: changes,
+          );
+        }
+      }
+      
       _isLoading = false;
       notifyListeners();
       return true;
@@ -173,6 +196,135 @@ class SpotService extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  // Compute changes between old and new spot for audit logging
+  Map<String, dynamic> _computeSpotChanges(Spot oldSpot, Spot newSpot) {
+    final changes = <String, dynamic>{};
+
+    // Helper to compare values
+    bool valuesEqual(dynamic oldVal, dynamic newVal) {
+      if (oldVal == null && newVal == null) return true;
+      if (oldVal == null || newVal == null) return false;
+      if (oldVal is List && newVal is List) {
+        if (oldVal.length != newVal.length) return false;
+        for (int i = 0; i < oldVal.length; i++) {
+          if (oldVal[i] != newVal[i]) return false;
+        }
+        return true;
+      }
+      if (oldVal is Map && newVal is Map) {
+        if (oldVal.length != newVal.length) return false;
+        for (final key in oldVal.keys) {
+          if (oldVal[key] != newVal[key]) return false;
+        }
+        return true;
+      }
+      return oldVal == newVal;
+    }
+
+    // Helper to serialize value for storage
+    dynamic serializeValue(dynamic value) {
+      if (value == null) return null;
+      if (value is DateTime) return value.toIso8601String();
+      if (value is List) return value;
+      if (value is Map) return value;
+      return value;
+    }
+
+    // Compare each field
+    if (!valuesEqual(oldSpot.name, newSpot.name)) {
+      changes['name'] = {
+        'from': oldSpot.name,
+        'to': newSpot.name,
+      };
+    }
+
+    if (!valuesEqual(oldSpot.description, newSpot.description)) {
+      changes['description'] = {
+        'from': oldSpot.description,
+        'to': newSpot.description,
+      };
+    }
+
+    if (oldSpot.latitude != newSpot.latitude || oldSpot.longitude != newSpot.longitude) {
+      changes['location'] = {
+        'from': {'latitude': oldSpot.latitude, 'longitude': oldSpot.longitude},
+        'to': {'latitude': newSpot.latitude, 'longitude': newSpot.longitude},
+      };
+    }
+
+    if (!valuesEqual(oldSpot.address, newSpot.address)) {
+      changes['address'] = {
+        'from': oldSpot.address,
+        'to': newSpot.address,
+      };
+    }
+
+    if (!valuesEqual(oldSpot.city, newSpot.city)) {
+      changes['city'] = {
+        'from': oldSpot.city,
+        'to': newSpot.city,
+      };
+    }
+
+    if (!valuesEqual(oldSpot.countryCode, newSpot.countryCode)) {
+      changes['countryCode'] = {
+        'from': oldSpot.countryCode,
+        'to': newSpot.countryCode,
+      };
+    }
+
+    if (!valuesEqual(oldSpot.imageUrls, newSpot.imageUrls)) {
+      changes['imageUrls'] = {
+        'from': serializeValue(oldSpot.imageUrls),
+        'to': serializeValue(newSpot.imageUrls),
+      };
+    }
+
+    if (!valuesEqual(oldSpot.youtubeVideoIds, newSpot.youtubeVideoIds)) {
+      changes['youtubeVideoIds'] = {
+        'from': serializeValue(oldSpot.youtubeVideoIds),
+        'to': serializeValue(newSpot.youtubeVideoIds),
+      };
+    }
+
+    if (!valuesEqual(oldSpot.spotAccess, newSpot.spotAccess)) {
+      changes['spotAccess'] = {
+        'from': oldSpot.spotAccess,
+        'to': newSpot.spotAccess,
+      };
+    }
+
+    if (!valuesEqual(oldSpot.spotFeatures, newSpot.spotFeatures)) {
+      changes['spotFeatures'] = {
+        'from': serializeValue(oldSpot.spotFeatures),
+        'to': serializeValue(newSpot.spotFeatures),
+      };
+    }
+
+    if (!valuesEqual(oldSpot.spotFacilities, newSpot.spotFacilities)) {
+      changes['spotFacilities'] = {
+        'from': serializeValue(oldSpot.spotFacilities),
+        'to': serializeValue(newSpot.spotFacilities),
+      };
+    }
+
+    if (!valuesEqual(oldSpot.goodFor, newSpot.goodFor)) {
+      changes['goodFor'] = {
+        'from': serializeValue(oldSpot.goodFor),
+        'to': serializeValue(newSpot.goodFor),
+      };
+    }
+
+    if (!valuesEqual(oldSpot.duplicateOf, newSpot.duplicateOf)) {
+      changes['duplicateOf'] = {
+        'from': oldSpot.duplicateOf,
+        'to': newSpot.duplicateOf,
+      };
+    }
+
+    return changes;
   }
 
   // Delete specific image from storage
@@ -727,6 +879,8 @@ class SpotService extends ChangeNotifier {
     String originalSpotId, {
     bool transferPhotos = false,
     bool transferYoutubeLinks = false,
+    String? userId,
+    String? userName,
   }) async {
     try {
       _isLoading = true;
@@ -815,6 +969,18 @@ class SpotService extends ChangeNotifier {
         'duplicateOf': originalSpotId,
         'updatedAt': FieldValue.serverTimestamp(),
       });
+
+      // Log audit trail if user info is provided (moderator action)
+      if (userId != null && userName != null) {
+        await _auditLogService.logSpotMarkedAsDuplicate(
+          spotId: spotId,
+          originalSpotId: originalSpotId,
+          userId: userId,
+          userName: userName,
+          transferPhotos: transferPhotos,
+          transferYoutubeLinks: transferYoutubeLinks,
+        );
+      }
 
       _isLoading = false;
       notifyListeners();
