@@ -81,7 +81,7 @@ class ModeratorToolsScreen extends StatelessWidget {
         title: const Text('Moderator Tools'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/home?tab=profile'),
+          onPressed: () => context.go('/explore?tab=profile'),
         ),
       ),
       body: ListView(

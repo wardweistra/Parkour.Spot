@@ -793,7 +793,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   // Public API to check if bottom sheet is open
   bool get isBottomSheetOpen => _isBottomSheetOpen;
 
-  // Public API so parent can collapse on Home tab re-tap
+  // Public API so parent can collapse on Explore tab re-tap
   void collapseBottomSheetIfOpen() {
     if (_isBottomSheetOpen) {
       _toggleBottomSheet();
@@ -1768,7 +1768,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                             // Check authentication before navigating
                                             if (!authService.isAuthenticated) {
                                               // Navigate to login with redirect
-                                              context.go('/login?redirectTo=${Uri.encodeComponent('/home?tab=add')}');
+                                              context.go('/login?redirectTo=${Uri.encodeComponent('/explore?tab=add')}');
                                             } else {
                                               // Navigate to add spot screen with the location
                                               Navigator.push(

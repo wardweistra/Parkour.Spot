@@ -108,8 +108,8 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     }
     
     // Allow both authenticated and unauthenticated users to access public features
-    // Navigate to home for all users - authentication will be handled per-feature
-    context.go('/home');
+    // Navigate to explore for all users - authentication will be handled per-feature
+    context.go('/explore');
   }
   
   /// Check if the given path is a spot URL

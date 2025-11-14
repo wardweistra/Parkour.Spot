@@ -153,7 +153,7 @@ class ProfileScreen extends StatelessWidget {
                   const SizedBox(height: 16),
                   CustomButton(
                     onPressed: () {
-                      context.go('/login?redirectTo=${Uri.encodeComponent('/home?tab=profile')}');
+                      context.go('/login?redirectTo=${Uri.encodeComponent('/explore?tab=profile')}');
                     },
                     text: 'Sign In',
                     width: double.infinity,
@@ -395,7 +395,7 @@ class ProfileScreen extends StatelessWidget {
               if (shouldSignOut == true) {
                 await authService.signOut();
                 if (context.mounted) {
-                  context.go('/home?tab=profile');
+                  context.go('/explore?tab=profile');
                 }
               }
             },

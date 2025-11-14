@@ -24,7 +24,7 @@ class AdminHomeScreen extends StatelessWidget {
                 const Text('Administrator access required'),
                 const SizedBox(height: 12),
                 ElevatedButton(
-                  onPressed: () => context.go('/home?tab=profile'),
+                  onPressed: () => context.go('/explore?tab=profile'),
                   child: const Text('Back to Profile'),
                 ),
               ],
@@ -39,7 +39,7 @@ class AdminHomeScreen extends StatelessWidget {
         title: const Text('Admin Tools'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/home?tab=profile'),
+          onPressed: () => context.go('/explore?tab=profile'),
         ),
       ),
       body: ListView(

@@ -134,12 +134,12 @@ class _LoginScreenState extends State<LoginScreen> {
         _intendedDestination = Uri.decodeComponent(redirectTo);
       } else {
         // Check if we came from a protected route by looking at the referrer
-        // For now, we'll default to home, but this could be enhanced
-        _intendedDestination = '/home';
+        // For now, we'll default to explore, but this could be enhanced
+        _intendedDestination = '/explore';
       }
     } catch (e) {
-      // If we can't get the router state, default to home
-      _intendedDestination = '/home';
+      // If we can't get the router state, default to explore
+      _intendedDestination = '/explore';
     }
   }
 
@@ -286,8 +286,8 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
     
-    // Navigate to the intended destination or home
-    final destination = _intendedDestination ?? '/home';
+    // Navigate to the intended destination or explore
+    final destination = _intendedDestination ?? '/explore';
     
     _hasRedirected = true;
     
@@ -297,9 +297,9 @@ class _LoginScreenState extends State<LoginScreen> {
         try {
           context.go(destination);
         } catch (e) {
-          // If navigation fails, fall back to home
+          // If navigation fails, fall back to explore
           if (mounted) {
-            context.go('/home');
+            context.go('/explore');
           }
         }
       }

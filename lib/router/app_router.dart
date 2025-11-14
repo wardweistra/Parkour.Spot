@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../screens/splash_screen.dart';
-import '../screens/home_screen.dart';
+import '../screens/explore_screen.dart';
 import '../screens/admin/admin_home_screen.dart';
 import '../screens/admin/sync_sources_screen.dart';
 import '../screens/admin/geocoding_admin_screen.dart';
@@ -46,7 +46,7 @@ class AppRouter {
         // Redirect to login with the intended destination
         String redirectTo;
         if (state.matchedLocation == '/spots/add') {
-          redirectTo = '/home?tab=add';
+          redirectTo = '/explore?tab=add';
         } else {
           redirectTo = state.matchedLocation;
         }
@@ -61,7 +61,7 @@ class AppRouter {
         builder: (context, state) => const SplashScreen(),
       ),
       GoRoute(
-        path: '/home',
+        path: '/explore',
         builder: (context, state) {
           // Parse tab parameter from query string
           final tabParam = state.uri.queryParameters['tab'];
@@ -80,17 +80,17 @@ class AppRouter {
             }
           }
           
-          return HomeScreen(initialTab: initialTab);
+          return ExploreScreen(initialTab: initialTab);
         },
       ),
-      // Individual tab routes that redirect to home with tab parameter
+      // Individual tab routes that redirect to explore with tab parameter
       GoRoute(
         path: '/spots/add',
-        redirect: (context, state) => '/home?tab=add',
+        redirect: (context, state) => '/explore?tab=add',
       ),
       GoRoute(
         path: '/profile',
-        redirect: (context, state) => '/home?tab=profile',
+        redirect: (context, state) => '/explore?tab=profile',
       ),
       GoRoute(
         path: '/login',
@@ -164,8 +164,8 @@ class AppRouter {
           
           // Validate that countryCode is 2 letters
           if (countryCode.length != 2 || !RegExp(r'^[a-zA-Z]{2}$').hasMatch(countryCode)) {
-            // If not a valid country code, redirect to home
-            return const HomeScreen();
+            // If not a valid country code, redirect to explore
+            return const ExploreScreen();
           }
           
           return SpotDetailRoute(spotId: spotId);
@@ -201,7 +201,7 @@ class AppRouter {
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () => context.go('/'),
-              child: const Text('Go Home'),
+              child: const Text('Go to Explore'),
             ),
           ],
         ),
@@ -285,8 +285,8 @@ class SpotDetailRoute extends StatelessWidget {
                       const Text('Spot not found'),
                       const SizedBox(height: 24),
                       ElevatedButton(
-                        onPressed: () => context.go('/home'),
-                        child: const Text('Go Home'),
+                        onPressed: () => context.go('/explore'),
+                        child: const Text('Go to Explore'),
                       ),
                     ],
                   ),

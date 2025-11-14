@@ -448,8 +448,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     // If there's a previous page, go back to it
                     Navigator.pop(context);
                   } else {
-                    // If no previous page (direct link), go to home
-                    context.go('/home');
+                    // If no previous page (direct link), go to explore
+                    context.go('/explore');
                   }
                 },
                 icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -2661,10 +2661,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     ),
                   );
 
-                  // Navigate to home immediately after successful deletion
+                  // Navigate to explore immediately after successful deletion
                   // Use replace to ensure we don't go back to the deleted spot
                   if (!mounted) return;
-                  context.replace('/home');
+                  context.replace('/explore');
                 } else {
                   scaffoldMessenger.showSnackBar(
                     const SnackBar(

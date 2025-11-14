@@ -7,16 +7,16 @@ import 'spots/search_screen.dart';
 import 'spots/add_spot_screen.dart';
 import 'profile/profile_screen.dart';
 
-class HomeScreen extends StatefulWidget {
+class ExploreScreen extends StatefulWidget {
   final int initialTab;
   
-  const HomeScreen({super.key, this.initialTab = 0});
+  const ExploreScreen({super.key, this.initialTab = 0});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<ExploreScreen> createState() => _ExploreScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _ExploreScreenState extends State<ExploreScreen> {
   int _currentIndex = 0;
   late PageController _pageController;
   final GlobalKey<SearchScreenState> _searchKey = GlobalKey<SearchScreenState>();
@@ -43,7 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onTabTapped(int index) {
-    // If re-tapping Home while already on Home, toggle bottom sheet
+    // If re-tapping Explore while already on Explore, toggle bottom sheet
     if (index == 0 && _currentIndex == 0) {
       final searchState = _searchKey.currentState;
       if (searchState != null) {
@@ -76,16 +76,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _updateUrlForTab(int index) {
-    // Update URL without navigating away from the home screen
+    // Update URL without navigating away from the explore screen
     switch (index) {
       case 0:
-        context.go('/home');
+        context.go('/explore');
         break;
       case 1:
-        context.go('/home?tab=add');
+        context.go('/explore?tab=add');
         break;
       case 2:
-        context.go('/home?tab=profile');
+        context.go('/explore?tab=profile');
         break;
     }
   }
@@ -146,7 +146,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 32),
               ElevatedButton.icon(
                 onPressed: () {
-                  context.go('/login?redirectTo=${Uri.encodeComponent('/home?tab=profile')}');
+                  context.go('/login?redirectTo=${Uri.encodeComponent('/explore?tab=profile')}');
                 },
                 icon: const Icon(Icons.login),
                 label: const Text('Login to Continue'),
@@ -166,7 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     duration: const Duration(milliseconds: 300),
                     curve: Curves.easeInOut,
                   );
-                  context.go('/home');
+                  context.go('/explore');
                 },
                 child: const Text('Continue Browsing'),
               ),
@@ -183,7 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: PageView(
         controller: _pageController,
         physics: _currentIndex == 0 
-            ? const NeverScrollableScrollPhysics() // Disable swiping on Home tab (map gestures)
+            ? const NeverScrollableScrollPhysics() // Disable swiping on Explore tab (map gestures)
             : const PageScrollPhysics(), // Enable swiping on other tabs
         onPageChanged: (index) {
           setState(() {
@@ -206,8 +206,8 @@ class _HomeScreenState extends State<HomeScreen> {
           elevation: 8,
           items: const [
             BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              label: 'Home',
+              icon: Icon(Icons.explore),
+              label: 'Explore',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.add_location),
@@ -223,3 +223,4 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
