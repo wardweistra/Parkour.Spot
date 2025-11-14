@@ -15,10 +15,12 @@ import '../../services/search_state_service.dart';
 import '../../services/url_service.dart';
 import '../../services/geocoding_service.dart';
 import '../../services/mobile_detection_service.dart';
+import '../../services/auth_service.dart';
 import '../../models/spot.dart';
 import '../../widgets/spot_card.dart';
 import '../../widgets/source_details_dialog.dart';
 import '../../config/app_config.dart';
+import 'add_spot_screen.dart';
 
 // Helper widget to ensure icons render properly on mobile web
 class ReliableIcon extends StatelessWidget {
@@ -102,6 +104,10 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   SpotService? _spotServiceRef; // To attach a listener for spot updates
   SyncSourceService? _syncSourceServiceRef; // To attach a listener for sync source updates
   SearchStateService? _searchStateServiceRef; // To attach a listener for search state updates
+  LatLng? _longPressedLocation; // Location from long press on map
+  Timer? _longPressTimer; // Timer for detecting long press on mobile web
+  Offset? _longPressStartPosition; // Starting position for long press detection
+  bool _longPressHandled = false; // Flag to track if long press was successfully handled
   
   void _onSpotsChanged() {
     if (mounted) {
@@ -203,6 +209,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   @override
   void dispose() {
     _cameraMoveDebounce?.cancel();
+    _longPressTimer?.cancel();
     _searchController.dispose();
     _searchFocusNode.dispose();
     _bottomSheetAnimationController.dispose();
@@ -696,6 +703,18 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       );
     }
 
+    // Add marker for long-pressed location
+    if (_longPressedLocation != null) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('long_pressed_location'),
+          position: _longPressedLocation!,
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+          zIndexInt: 10000, // Above other markers
+        ),
+      );
+    }
+
     return markers;
   }
 
@@ -860,6 +879,36 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
 
   void _handleDragEnd(DragEndDetails details) {
     _isDragging = false;
+  }
+
+  Future<void> _handleLongPress(LatLng position) async {
+    // Don't show add spot button if filter dialog is open
+    if (_showFiltersDialog) {
+      _longPressHandled = false; // Reset if we're not going to handle it
+      return;
+    }
+    // Note: _longPressHandled is already set to true in the timer callback
+    // before this async function is called, so onPointerUp won't interfere
+    
+    // Collapse bottom sheet if open (similar to when spot detail card is shown)
+    if (_isBottomSheetOpen) {
+      await _bottomSheetAnimationController.reverse();
+      if (!mounted) {
+        _longPressHandled = false; // Reset if unmounted
+        return;
+      }
+      setState(() {
+        _isBottomSheetOpen = false;
+      });
+    }
+    // Set the long pressed location to show the add spot button
+    if (mounted) {
+      setState(() {
+        _longPressedLocation = position;
+        // Rebuild markers to include the long-pressed location marker
+        _markers = _buildMarkers(_visibleSpots);
+      });
+    }
   }
 
   Future<void> _locateSpot(Spot spot) async {
@@ -1055,6 +1104,24 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                       _markers = _buildMarkers(_visibleSpots);
                     });
                   }
+                  // Clear long press location on regular tap
+                  // The overlay handles most dismissals, but this is a safety net
+                  if (_longPressedLocation != null && !_longPressHandled) {
+                    setState(() {
+                      _longPressedLocation = null;
+                      _longPressHandled = false;
+                      // Rebuild markers to remove the long-pressed location marker
+                      _markers = _buildMarkers(_visibleSpots);
+                    });
+                  }
+                },
+                onLongPress: (LatLng position) async {
+                  // This works on desktop web (right click) but not on mobile web
+                  // Mobile web uses the GestureDetector overlay below
+                  if (kIsWeb && MobileDetectionService.isMobileDevice) {
+                    return; // Let the overlay handle it on mobile web
+                  }
+                  await _handleLongPress(position);
                 },
               ),
 
@@ -1067,6 +1134,108 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                       child: Container(
                         color: Colors.transparent,
                       ),
+                    ),
+                  ),
+                ),
+
+              // Long press detection overlay for mobile web (Google Maps doesn't support onLongPress on mobile web)
+              // Uses Listener to detect pointer events without blocking map gestures
+              if (kIsWeb && MobileDetectionService.isMobileDevice && !_isBottomSheetOpen && !_showFiltersDialog && _selectedSpot == null && _longPressedLocation == null)
+                Positioned.fill(
+                  child: Listener(
+                    behavior: HitTestBehavior.translucent,
+                    onPointerDown: (PointerDownEvent event) {
+                      // Reset handled flag for new press
+                      _longPressHandled = false;
+                      
+                      // Cancel any existing timer
+                      _longPressTimer?.cancel();
+                      
+                      // Store the start position
+                      _longPressStartPosition = event.localPosition;
+                      
+                      // Start a timer to detect long press (500ms)
+                      _longPressTimer = Timer(const Duration(milliseconds: 500), () async {
+                        if (_mapController == null || _longPressStartPosition == null || !mounted) return;
+                        
+                        // Mark as handled IMMEDIATELY before any async operations
+                        // This prevents onPointerUp from clearing it
+                        _longPressHandled = true;
+                        
+                        try {
+                          // Get the visible region to calculate the LatLng from screen coordinates
+                          final visibleRegion = await _mapController!.getVisibleRegion();
+                          
+                          // Calculate the center of the visible region
+                          final centerLat = (visibleRegion.northeast.latitude + visibleRegion.southwest.latitude) / 2;
+                          final centerLng = (visibleRegion.northeast.longitude + visibleRegion.southwest.longitude) / 2;
+                          
+                          // Get the screen size
+                          final screenSize = MediaQuery.of(context).size;
+                          
+                          // Calculate the offset from center (in pixels)
+                          final offsetX = _longPressStartPosition!.dx - screenSize.width / 2;
+                          final offsetY = _longPressStartPosition!.dy - screenSize.height / 2;
+                          
+                          // Calculate the lat/lng range of the visible region
+                          final latRange = visibleRegion.northeast.latitude - visibleRegion.southwest.latitude;
+                          final lngRange = visibleRegion.northeast.longitude - visibleRegion.southwest.longitude;
+                          
+                          // Convert pixel offset to lat/lng offset
+                          // Note: Y is inverted (screen Y increases downward, but latitude increases upward)
+                          final latOffset = -(offsetY / screenSize.height) * latRange;
+                          final lngOffset = (offsetX / screenSize.width) * lngRange;
+                          
+                          final longPressLatLng = LatLng(
+                            centerLat + latOffset,
+                            centerLng + lngOffset,
+                          );
+                          
+                          // Clear timer and position after marking as handled
+                          _longPressTimer = null;
+                          _longPressStartPosition = null;
+                          
+                          await _handleLongPress(longPressLatLng);
+                        } catch (e) {
+                          debugPrint('Error converting long press position: $e');
+                          // Clear on error too
+                          _longPressTimer = null;
+                          _longPressStartPosition = null;
+                          _longPressHandled = false;
+                        }
+                      });
+                    },
+                    onPointerUp: (PointerUpEvent event) {
+                      // Only cancel if long press hasn't been handled yet
+                      // Check the flag first (set synchronously in timer callback)
+                      if (!_longPressHandled) {
+                        _longPressTimer?.cancel();
+                        _longPressTimer = null;
+                        _longPressStartPosition = null;
+                      }
+                    },
+                    onPointerCancel: (PointerCancelEvent event) {
+                      // Only cancel if long press hasn't been handled yet
+                      if (!_longPressHandled) {
+                        _longPressTimer?.cancel();
+                        _longPressTimer = null;
+                        _longPressStartPosition = null;
+                      }
+                    },
+                    onPointerMove: (PointerMoveEvent event) {
+                      // Cancel long press if pointer moves significantly (user is panning)
+                      // But only if it hasn't been handled yet
+                      if (_longPressStartPosition != null && !_longPressHandled) {
+                        final distance = (event.localPosition - _longPressStartPosition!).distance;
+                        if (distance > 10) { // 10 pixels threshold
+                          _longPressTimer?.cancel();
+                          _longPressTimer = null;
+                          _longPressStartPosition = null;
+                        }
+                      }
+                    },
+                    child: Container(
+                      color: Colors.transparent,
                     ),
                   ),
                 ),
@@ -1521,8 +1690,115 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                       ),
                 ),
 
-              // Bottom Sheet with Spots List - hide when spot detail card is visible
-              if (_selectedSpot == null)
+              // Add Spot Button (when long press is detected)
+              if (_longPressedLocation != null && _selectedSpot == null && !_showFiltersDialog)
+                Stack(
+                  children: [
+                    // Transparent overlay to dismiss on tap outside
+                    Positioned.fill(
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _longPressedLocation = null;
+                            _longPressHandled = false;
+                            // Rebuild markers to remove the long-pressed location marker
+                            _markers = _buildMarkers(_visibleSpots);
+                          });
+                        },
+                        child: Container(
+                          color: Colors.transparent,
+                        ),
+                      ),
+                    ),
+                    // The popup card
+                    Positioned(
+                      left: 16,
+                      right: 16,
+                      bottom: 16,
+                      child: PointerInterceptor(
+                        child: Center(
+                          child: GestureDetector(
+                            onTap: () {
+                              // Prevent tap from propagating to the overlay
+                            },
+                            child: Card(
+                              elevation: 8,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'Add spot at this location?',
+                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        TextButton(
+                                          onPressed: () {
+                                            setState(() {
+                                              _longPressedLocation = null;
+                                              _longPressHandled = false;
+                                              // Rebuild markers to remove the long-pressed location marker
+                                              _markers = _buildMarkers(_visibleSpots);
+                                            });
+                                          },
+                                          child: const Text('Cancel'),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        ElevatedButton.icon(
+                                          onPressed: () {
+                                            final location = _longPressedLocation!;
+                                            final authService = Provider.of<AuthService>(context, listen: false);
+                                            
+                                            setState(() {
+                                              _longPressedLocation = null;
+                                              _longPressHandled = false;
+                                              // Rebuild markers to remove the long-pressed location marker
+                                              _markers = _buildMarkers(_visibleSpots);
+                                            });
+                                            
+                                            // Check authentication before navigating
+                                            if (!authService.isAuthenticated) {
+                                              // Navigate to login with redirect
+                                              context.go('/login?redirectTo=${Uri.encodeComponent('/home?tab=add')}');
+                                            } else {
+                                              // Navigate to add spot screen with the location
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) => AddSpotScreen(
+                                                    initialLocation: location,
+                                                  ),
+                                                ),
+                                              );
+                                            }
+                                          },
+                                          icon: const ReliableIcon(icon: Icons.add_location),
+                                          label: const Text('Add Spot'),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+              // Bottom Sheet with Spots List - hide when spot detail card or add spot button is visible
+              if (_selectedSpot == null && _longPressedLocation == null)
                 Positioned(
                   left: 0,
                   right: 0,

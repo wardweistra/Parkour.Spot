@@ -21,7 +21,9 @@ import 'package:go_router/go_router.dart';
 import '../../utils/map_recentering_mixin.dart';
 
 class AddSpotScreen extends StatefulWidget {
-  const AddSpotScreen({super.key});
+  final LatLng? initialLocation;
+  
+  const AddSpotScreen({super.key, this.initialLocation});
 
   @override
   State<AddSpotScreen> createState() => _AddSpotScreenState();
@@ -53,7 +55,19 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
   @override
   void initState() {
     super.initState();
-    _getCurrentLocation();
+    
+    // If initial location is provided, use it; otherwise get current location
+    if (widget.initialLocation != null) {
+      setState(() {
+        _pickedLocation = widget.initialLocation;
+      });
+      // Geocode the initial location
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _geocodeLocation(widget.initialLocation!.latitude, widget.initialLocation!.longitude);
+      });
+    } else {
+      _getCurrentLocation();
+    }
     
     // Initialize satellite view from SearchStateService
     WidgetsBinding.instance.addPostFrameCallback((_) {
