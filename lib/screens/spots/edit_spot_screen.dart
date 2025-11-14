@@ -420,7 +420,10 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
       return;
     }
 
-    if (_existingImageUrls.isEmpty && _selectedImageBytes.every((bytes) => bytes == null)) {
+    // Only require images for non-moderators (moderators can save spots without images)
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final isModeratorOrAdmin = authService.isModerator || authService.isAdmin;
+    if (!isModeratorOrAdmin && _existingImageUrls.isEmpty && _selectedImageBytes.every((bytes) => bytes == null)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please add at least one image')),
       );
@@ -577,12 +580,19 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
                             hintText: 'Describe the spot, what makes it special, etc.',
                             maxLines: 4,
                             validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Please enter a description';
+                              // Moderators can save spots without descriptions
+                              final isModeratorOrAdmin = authService.isModerator || authService.isAdmin;
+                              
+                              if (!isModeratorOrAdmin) {
+                                // For non-moderators, description is required
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Please enter a description';
+                                }
+                                if (value.trim().length < 10) {
+                                  return 'Description must be at least 10 characters';
+                                }
                               }
-                              if (value.trim().length < 10) {
-                                return 'Description must be at least 10 characters';
-                              }
+                              // For moderators, description is optional
                               return null;
                             },
                           ),
