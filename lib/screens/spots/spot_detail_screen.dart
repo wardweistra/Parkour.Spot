@@ -30,7 +30,7 @@ class SpotDetailScreen extends StatefulWidget {
   State<SpotDetailScreen> createState() => _SpotDetailScreenState();
 }
 
-enum _SpotMenuAction { login, report, edit, delete, markAsDuplicate }
+enum _SpotMenuAction { login, report, edit, delete, markAsDuplicate, toggleHide }
 
 class _SpotDetailScreenState extends State<SpotDetailScreen> {
   double _userRating = 0;
@@ -58,6 +58,12 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   List<Spot> _duplicateSpots = [];
   bool _isLoadingDuplicates = false;
 
+  // Current spot (can be updated after operations like hide/unhide)
+  Spot? _currentSpot;
+
+  // Getter for the current spot (falls back to widget.spot if not updated)
+  Spot get _spot => _currentSpot ?? widget.spot;
+
   void _showSuccessSnack(String message) {
     // Use global messenger to avoid context churn issues
     Future.microtask(() {
@@ -76,6 +82,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     super.initState();
     _scrollController = ScrollController();
     _videoPageController = PageController();
+    _currentSpot = widget.spot; // Initialize current spot
     _loadRatingStats(); // Load rating stats once on init
     // Note: User rating will be loaded when auth state is restored via FutureBuilder
 
@@ -380,6 +387,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       case _SpotMenuAction.markAsDuplicate:
         _showMarkAsDuplicateDialog();
         break;
+      case _SpotMenuAction.toggleHide:
+        _toggleSpotHidden();
+        break;
     }
   }
 
@@ -633,7 +643,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                           ),
                         ];
 
-                          if (hasStaffAccess && widget.spot.id != null) {
+                          if (hasStaffAccess && _spot.id != null) {
                             items.addAll([
                               PopupMenuItem<_SpotMenuAction>(
                                 value: _SpotMenuAction.edit,
@@ -688,6 +698,42 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                       children: [
                                         Text(
                                           'Mark as duplicate',
+                                          style: theme.textTheme.bodyMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                        ),
+                                        Text(
+                                          'Moderator only',
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                                color: theme.colorScheme.onSurface
+                                                    .withValues(alpha: 0.6),
+                                                fontSize: 11,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem<_SpotMenuAction>(
+                                value: _SpotMenuAction.toggleHide,
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      _spot.hidden ? Icons.visibility : Icons.visibility_off,
+                                      color: theme.colorScheme.primary,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          _spot.hidden ? 'Unhide spot' : 'Hide spot',
                                           style: theme.textTheme.bodyMedium
                                               ?.copyWith(
                                                 fontWeight: FontWeight.w500,
@@ -776,7 +822,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       children: [
                         Expanded(
                           child: Text(
-                            widget.spot.name,
+                            _spot.name,
                             style: Theme.of(context).textTheme.headlineMedium
                                 ?.copyWith(fontWeight: FontWeight.bold),
                           ),
@@ -830,6 +876,47 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
                     const SizedBox(height: 16),
 
+                    // Hidden spot indicator
+                    if (_spot.hidden)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withValues(alpha: 0.1),
+                          border: Border.all(
+                            color: Colors.orange.withValues(alpha: 0.3),
+                            width: 1,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.visibility_off,
+                              color: Colors.orange.shade700,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'This spot is hidden from public view',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: Colors.orange.shade700,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
                     // Description
                     Text(
                       'Description',
@@ -839,14 +926,14 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      widget.spot.description.trim().isEmpty
+                      _spot.description.trim().isEmpty
                           ? 'No description provided'
-                          : widget.spot.description,
+                          : _spot.description,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        fontStyle: widget.spot.description.trim().isEmpty
+                        fontStyle: _spot.description.trim().isEmpty
                             ? FontStyle.italic
                             : FontStyle.normal,
-                        color: widget.spot.description.trim().isEmpty
+                        color: _spot.description.trim().isEmpty
                             ? Theme.of(
                                 context,
                               ).colorScheme.onSurface.withValues(alpha: 0.6)
@@ -2647,6 +2734,57 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     }
   }
 
+  Future<void> _toggleSpotHidden() async {
+    if (_spot.id == null) {
+      if (!mounted) return;
+      _showErrorSnack('Unable to hide/unhide this spot right now.');
+      return;
+    }
+
+    final spotService = Provider.of<SpotService>(context, listen: false);
+    final authService = Provider.of<AuthService>(context, listen: false);
+
+    // Check if user is authenticated and is a moderator
+    if (!authService.isAuthenticated || (!authService.isModerator && !authService.isAdmin)) {
+      if (!mounted) return;
+      _showErrorSnack('Only moderators can hide/unhide spots.');
+      return;
+    }
+
+    final newHiddenState = !_spot.hidden;
+    final userId = authService.currentUser?.uid;
+    final userName = authService.userProfile?.displayName ?? authService.currentUser?.displayName ?? authService.currentUser?.email;
+
+    try {
+      final success = await spotService.setSpotHidden(
+        _spot.id!,
+        newHiddenState,
+        userId: userId,
+        userName: userName,
+      );
+
+      if (!mounted) return;
+
+      if (success) {
+        // Reload the spot to get the updated state
+        final updatedSpot = await spotService.getSpotById(_spot.id!);
+        if (updatedSpot != null && mounted) {
+          setState(() {
+            _currentSpot = updatedSpot;
+          });
+        }
+
+        _showSuccessSnack(newHiddenState ? 'Spot hidden successfully.' : 'Spot unhidden successfully.');
+      } else {
+        final error = spotService.error ?? 'Failed to ${newHiddenState ? 'hide' : 'unhide'} spot';
+        _showErrorSnack(error);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _showErrorSnack('Error ${newHiddenState ? 'hiding' : 'unhiding'} spot: $e');
+    }
+  }
+
   void _showDeleteDialog() {
     showDialog(
       context: context,
@@ -2668,7 +2806,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                   context,
                   listen: false,
                 );
-                final success = await spotService.deleteSpot(widget.spot.id!);
+                final success = await spotService.deleteSpot(_spot.id!);
 
                 if (!mounted) return;
                 final scaffoldMessenger = ScaffoldMessenger.of(context);
