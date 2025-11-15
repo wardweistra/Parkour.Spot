@@ -107,6 +107,16 @@ class AdminHomeScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Card(
               child: ListTile(
+                leading: const Icon(Icons.history),
+                title: const Text('Audit Log Viewer'),
+                subtitle: const Text('View spot creations, user creations, and audit log actions'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () => context.go('/admin/audit-log'),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Card(
+              child: ListTile(
                 leading: const Icon(Icons.star_rate),
                 title: const Text('Recompute Ratings for Rated Spots'),
                 subtitle: const Text('Recalculate average, count, and Wilson lower bound from ratings'),

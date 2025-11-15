@@ -11,6 +11,7 @@ import '../screens/admin/spot_management_screen.dart';
 import '../screens/admin/user_management_screen.dart';
 import '../screens/admin/duplicate_field_backfill_screen.dart';
 import '../screens/admin/urbn_migration_screen.dart';
+import '../screens/admin/audit_log_viewer_screen.dart';
 import '../screens/moderator/moderator_tools_screen.dart';
 import '../screens/moderator/spot_report_queue_screen.dart';
 import '../screens/spots/spot_detail_screen.dart';
@@ -124,6 +125,10 @@ class AppRouter {
         GoRoute(
           path: '/admin/urbn-migration',
           builder: (context, state) => const UrbnMigrationScreen(),
+        ),
+        GoRoute(
+          path: '/admin/audit-log',
+          builder: (context, state) => const AuditLogViewerScreen(),
         ),
       GoRoute(
         path: '/moderator',
