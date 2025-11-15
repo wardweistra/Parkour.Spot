@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 
 import '../../models/spot_report.dart';
 import '../../services/spot_report_service.dart';
-import '../../services/spot_service.dart';
 import '../../services/auth_service.dart';
 
 class SpotReportQueueScreen extends StatefulWidget {
@@ -209,100 +208,6 @@ class _ReportCard extends StatefulWidget {
 }
 
 class _ReportCardState extends State<_ReportCard> {
-  bool? _isSpotHidden;
-  bool _isLoadingSpot = false;
-  bool _isTogglingHidden = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadSpotHiddenStatus();
-  }
-
-  Future<void> _loadSpotHiddenStatus() async {
-    setState(() {
-      _isLoadingSpot = true;
-    });
-
-    try {
-      final spotService = context.read<SpotService>();
-      final spot = await spotService.getSpotById(widget.report.spotId);
-      if (mounted) {
-        setState(() {
-          _isSpotHidden = spot?.hidden ?? false;
-          _isLoadingSpot = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoadingSpot = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _toggleSpotHidden() async {
-    if (_isTogglingHidden || _isSpotHidden == null) return;
-
-    setState(() {
-      _isTogglingHidden = true;
-    });
-
-    try {
-      final spotService = context.read<SpotService>();
-      final authService = context.read<AuthService>();
-      final user = authService.currentUser;
-      final userProfile = authService.userProfile;
-
-      final newHiddenValue = !_isSpotHidden!;
-      final success = await spotService.setSpotHidden(
-        widget.report.spotId,
-        newHiddenValue,
-        userId: user?.uid,
-        userName: userProfile?.displayName ?? user?.email,
-      );
-
-      if (mounted) {
-        if (success) {
-          setState(() {
-            _isSpotHidden = newHiddenValue;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                newHiddenValue
-                    ? 'Spot hidden from public view'
-                    : 'Spot unhidden and visible to public',
-              ),
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Failed to ${newHiddenValue ? 'hide' : 'unhide'} spot',
-              ),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Error updating spot visibility'),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isTogglingHidden = false;
-        });
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -323,29 +228,11 @@ class _ReportCardState extends State<_ReportCard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              widget.report.spotName,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          if (_isLoadingSpot)
-                            const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          else if (_isSpotHidden == true)
-                            Icon(
-                              Icons.visibility_off,
-                              size: 18,
-                              color: colorScheme.error,
-                            ),
-                        ],
+                      Text(
+                        widget.report.spotName,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -461,7 +348,7 @@ class _ReportCardState extends State<_ReportCard> {
               ),
             ],
             const SizedBox(height: 16),
-            if (widget.isUpdating || _isTogglingHidden)
+            if (widget.isUpdating)
               const Center(child: CircularProgressIndicator())
             else
               Wrap(
@@ -473,18 +360,6 @@ class _ReportCardState extends State<_ReportCard> {
                     icon: const Icon(Icons.open_in_new),
                     label: const Text('Open Spot'),
                   ),
-                  if (_isSpotHidden != null)
-                    OutlinedButton.icon(
-                      onPressed: _isTogglingHidden ? null : _toggleSpotHidden,
-                      icon: Icon(_isSpotHidden! ? Icons.visibility : Icons.visibility_off),
-                      label: Text(_isSpotHidden! ? 'Unhide Spot' : 'Hide Spot'),
-                      style: _isSpotHidden!
-                          ? OutlinedButton.styleFrom(
-                              foregroundColor: colorScheme.error,
-                              side: BorderSide(color: colorScheme.error),
-                            )
-                          : null,
-                    ),
                   if (widget.report.status != SpotReportService.statuses.first)
                     OutlinedButton(
                       onPressed: () => widget.onChangeStatus(SpotReportService.statuses.first),
