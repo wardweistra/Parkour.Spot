@@ -87,16 +87,6 @@ class AdminHomeScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Card(
               child: ListTile(
-                leading: const Icon(Icons.content_paste_off),
-                title: const Text('Backfill Duplicate Field'),
-                subtitle: const Text('Set duplicateOf to null on spots missing the field'),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                onTap: () => context.go('/admin/duplicate-field-backfill'),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Card(
-              child: ListTile(
                 leading: const Icon(Icons.cloud_upload),
                 title: const Text('URBN Migration'),
                 subtitle: const Text('Import spots from URBN Jumpers JSON file'),
