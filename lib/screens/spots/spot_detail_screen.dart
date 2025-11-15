@@ -2589,6 +2589,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         return _DuplicateTransferDialog(
           hasPhotos: hasPhotos,
           hasYoutubeLinks: hasYoutubeLinks,
+          spot: widget.spot,
         );
       },
     );
@@ -2597,6 +2598,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
     final transferPhotos = result['transferPhotos'] ?? false;
     final transferYoutubeLinks = result['transferYoutubeLinks'] ?? false;
+    final overwriteName = result['overwriteName'] ?? false;
+    final overwriteDescription = result['overwriteDescription'] ?? false;
+    final overwriteLocation = result['overwriteLocation'] ?? false;
+    final overwriteSpotAttributes = result['overwriteSpotAttributes'] ?? false;
 
     // Mark the spot as duplicate
     try {
@@ -2610,6 +2615,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         selectedSpotId,
         transferPhotos: transferPhotos,
         transferYoutubeLinks: transferYoutubeLinks,
+        overwriteName: overwriteName,
+        overwriteDescription: overwriteDescription,
+        overwriteLocation: overwriteLocation,
+        overwriteSpotAttributes: overwriteSpotAttributes,
         userId: userId,
         userName: userName,
       );
@@ -3260,10 +3269,12 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
 class _DuplicateTransferDialog extends StatefulWidget {
   final bool hasPhotos;
   final bool hasYoutubeLinks;
+  final Spot spot;
 
   const _DuplicateTransferDialog({
     required this.hasPhotos,
     required this.hasYoutubeLinks,
+    required this.spot,
   });
 
   @override
@@ -3273,9 +3284,31 @@ class _DuplicateTransferDialog extends StatefulWidget {
 class _DuplicateTransferDialogState extends State<_DuplicateTransferDialog> {
   bool _transferPhotos = false;
   bool _transferYoutubeLinks = false;
+  bool _overwriteName = false;
+  bool _overwriteDescription = false;
+  bool _overwriteLocation = false;
+  bool _overwriteSpotAttributes = false;
+
+  bool get _hasName => widget.spot.name.isNotEmpty;
+  bool get _hasDescription => widget.spot.description.isNotEmpty;
+  bool get _hasLocation {
+    return (widget.spot.latitude != 0.0 && widget.spot.longitude != 0.0) ||
+        (widget.spot.address != null && widget.spot.address!.isNotEmpty) ||
+        (widget.spot.city != null && widget.spot.city!.isNotEmpty) ||
+        (widget.spot.countryCode != null && widget.spot.countryCode!.isNotEmpty);
+  }
+  bool get _hasSpotAttributes {
+    return (widget.spot.spotAccess != null && widget.spot.spotAccess!.isNotEmpty) ||
+        (widget.spot.spotFeatures != null && widget.spot.spotFeatures!.isNotEmpty) ||
+        (widget.spot.spotFacilities != null && widget.spot.spotFacilities!.isNotEmpty) ||
+        (widget.spot.goodFor != null && widget.spot.goodFor!.isNotEmpty);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final hasTransferOptions = widget.hasPhotos || widget.hasYoutubeLinks;
+    final hasOverwriteOptions = _hasName || _hasDescription || _hasLocation || _hasSpotAttributes;
+
     return AlertDialog(
       title: const Text('Mark as Duplicate'),
       content: SingleChildScrollView(
@@ -3286,37 +3319,95 @@ class _DuplicateTransferDialogState extends State<_DuplicateTransferDialog> {
             const Text(
               'Are you sure you want to mark this spot as a duplicate? This action can be reversed later.',
             ),
-            if (widget.hasPhotos || widget.hasYoutubeLinks) ...[
+            if (hasTransferOptions || hasOverwriteOptions) ...[
               const SizedBox(height: 16),
-              const Text(
-                'Select which items to add to the original spot:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              if (widget.hasPhotos)
-                CheckboxListTile(
-                  title: const Text('Photos'),
-                  value: _transferPhotos,
-                  onChanged: (value) {
-                    setState(() {
-                      _transferPhotos = value ?? false;
-                    });
-                  },
-                  contentPadding: EdgeInsets.zero,
-                  controlAffinity: ListTileControlAffinity.leading,
+              if (hasTransferOptions) ...[
+                const Text(
+                  'Select which items to add to the original spot:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
-              if (widget.hasYoutubeLinks)
-                CheckboxListTile(
-                  title: const Text('YouTube links'),
-                  value: _transferYoutubeLinks,
-                  onChanged: (value) {
-                    setState(() {
-                      _transferYoutubeLinks = value ?? false;
-                    });
-                  },
-                  contentPadding: EdgeInsets.zero,
-                  controlAffinity: ListTileControlAffinity.leading,
+                const SizedBox(height: 8),
+                if (widget.hasPhotos)
+                  CheckboxListTile(
+                    title: const Text('Photos'),
+                    value: _transferPhotos,
+                    onChanged: (value) {
+                      setState(() {
+                        _transferPhotos = value ?? false;
+                      });
+                    },
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                  ),
+                if (widget.hasYoutubeLinks)
+                  CheckboxListTile(
+                    title: const Text('YouTube links'),
+                    value: _transferYoutubeLinks,
+                    onChanged: (value) {
+                      setState(() {
+                        _transferYoutubeLinks = value ?? false;
+                      });
+                    },
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                  ),
+              ],
+              if (hasOverwriteOptions) ...[
+                if (hasTransferOptions) const SizedBox(height: 16),
+                const Text(
+                  'Select which items to overwrite in the original spot (if set):',
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
+                const SizedBox(height: 8),
+                if (_hasName)
+                  CheckboxListTile(
+                    title: const Text('Name'),
+                    value: _overwriteName,
+                    onChanged: (value) {
+                      setState(() {
+                        _overwriteName = value ?? false;
+                      });
+                    },
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                  ),
+                if (_hasDescription)
+                  CheckboxListTile(
+                    title: const Text('Description'),
+                    value: _overwriteDescription,
+                    onChanged: (value) {
+                      setState(() {
+                        _overwriteDescription = value ?? false;
+                      });
+                    },
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                  ),
+                if (_hasLocation)
+                  CheckboxListTile(
+                    title: const Text('Location'),
+                    value: _overwriteLocation,
+                    onChanged: (value) {
+                      setState(() {
+                        _overwriteLocation = value ?? false;
+                      });
+                    },
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                  ),
+                if (_hasSpotAttributes)
+                  CheckboxListTile(
+                    title: const Text('Spot attributes'),
+                    value: _overwriteSpotAttributes,
+                    onChanged: (value) {
+                      setState(() {
+                        _overwriteSpotAttributes = value ?? false;
+                      });
+                    },
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                  ),
+              ],
             ],
           ],
         ),
@@ -3330,6 +3421,10 @@ class _DuplicateTransferDialogState extends State<_DuplicateTransferDialog> {
           onPressed: () => Navigator.of(context).pop({
             'transferPhotos': _transferPhotos,
             'transferYoutubeLinks': _transferYoutubeLinks,
+            'overwriteName': _overwriteName,
+            'overwriteDescription': _overwriteDescription,
+            'overwriteLocation': _overwriteLocation,
+            'overwriteSpotAttributes': _overwriteSpotAttributes,
           }),
           child: const Text('Confirm'),
         ),

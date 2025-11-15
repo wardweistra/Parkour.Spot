@@ -35,6 +35,10 @@ class AuditLogService {
     required String? userName,
     bool transferPhotos = false,
     bool transferYoutubeLinks = false,
+    bool overwriteName = false,
+    bool overwriteDescription = false,
+    bool overwriteLocation = false,
+    bool overwriteSpotAttributes = false,
   }) async {
     try {
       await _firestore.collection('auditLog').add({
@@ -47,6 +51,10 @@ class AuditLogService {
           'originalSpotId': originalSpotId,
           'transferPhotos': transferPhotos,
           'transferYoutubeLinks': transferYoutubeLinks,
+          'overwriteName': overwriteName,
+          'overwriteDescription': overwriteDescription,
+          'overwriteLocation': overwriteLocation,
+          'overwriteSpotAttributes': overwriteSpotAttributes,
         },
       });
     } catch (e) {

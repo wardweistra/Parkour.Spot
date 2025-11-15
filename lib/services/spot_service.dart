@@ -879,6 +879,10 @@ class SpotService extends ChangeNotifier {
     String originalSpotId, {
     bool transferPhotos = false,
     bool transferYoutubeLinks = false,
+    bool overwriteName = false,
+    bool overwriteDescription = false,
+    bool overwriteLocation = false,
+    bool overwriteSpotAttributes = false,
     String? userId,
     String? userName,
   }) async {
@@ -958,6 +962,67 @@ class SpotService extends ChangeNotifier {
         }
       }
 
+      // Overwrite name if requested and duplicate has a name
+      if (overwriteName && duplicateSpot.name.isNotEmpty) {
+        originalSpotUpdates['name'] = duplicateSpot.name;
+        needsOriginalUpdate = true;
+      }
+
+      // Overwrite description if requested and duplicate has a description
+      if (overwriteDescription && duplicateSpot.description.isNotEmpty) {
+        originalSpotUpdates['description'] = duplicateSpot.description;
+        needsOriginalUpdate = true;
+      }
+
+      // Overwrite location if requested and duplicate has location data
+      if (overwriteLocation) {
+        bool hasLocationData = false;
+        if (duplicateSpot.latitude != 0.0 && duplicateSpot.longitude != 0.0) {
+          originalSpotUpdates['latitude'] = duplicateSpot.latitude;
+          originalSpotUpdates['longitude'] = duplicateSpot.longitude;
+          hasLocationData = true;
+        }
+        if (duplicateSpot.address != null && duplicateSpot.address!.isNotEmpty) {
+          originalSpotUpdates['address'] = duplicateSpot.address;
+          hasLocationData = true;
+        }
+        if (duplicateSpot.city != null && duplicateSpot.city!.isNotEmpty) {
+          originalSpotUpdates['city'] = duplicateSpot.city;
+          hasLocationData = true;
+        }
+        if (duplicateSpot.countryCode != null && duplicateSpot.countryCode!.isNotEmpty) {
+          originalSpotUpdates['countryCode'] = duplicateSpot.countryCode;
+          hasLocationData = true;
+        }
+        if (hasLocationData) {
+          needsOriginalUpdate = true;
+        }
+      }
+
+      // Overwrite spot attributes if requested and duplicate has attributes
+      if (overwriteSpotAttributes) {
+        bool hasAttributes = false;
+        if (duplicateSpot.spotAccess != null && duplicateSpot.spotAccess!.isNotEmpty) {
+          originalSpotUpdates['spotAccess'] = duplicateSpot.spotAccess;
+          hasAttributes = true;
+        }
+        if (duplicateSpot.spotFeatures != null && duplicateSpot.spotFeatures!.isNotEmpty) {
+          originalSpotUpdates['spotFeatures'] = duplicateSpot.spotFeatures;
+          hasAttributes = true;
+        }
+        if (duplicateSpot.spotFacilities != null && duplicateSpot.spotFacilities!.isNotEmpty) {
+          originalSpotUpdates['spotFacilities'] = duplicateSpot.spotFacilities;
+          hasAttributes = true;
+        }
+        if (duplicateSpot.goodFor != null && duplicateSpot.goodFor!.isNotEmpty) {
+          originalSpotUpdates['goodFor'] = duplicateSpot.goodFor;
+          hasAttributes = true;
+        }
+        if (hasAttributes) {
+          needsOriginalUpdate = true;
+        }
+      }
+
       // Update the original spot if needed
       if (needsOriginalUpdate) {
         originalSpotUpdates['updatedAt'] = FieldValue.serverTimestamp();
@@ -979,6 +1044,10 @@ class SpotService extends ChangeNotifier {
           userName: userName,
           transferPhotos: transferPhotos,
           transferYoutubeLinks: transferYoutubeLinks,
+          overwriteName: overwriteName,
+          overwriteDescription: overwriteDescription,
+          overwriteLocation: overwriteLocation,
+          overwriteSpotAttributes: overwriteSpotAttributes,
         );
       }
 
