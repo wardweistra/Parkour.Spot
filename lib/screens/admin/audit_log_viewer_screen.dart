@@ -244,6 +244,24 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                     'Original spot: ${auditLog.metadata!['originalSpotId']}';
               }
               break;
+            case AuditLogAction.spotHidden:
+              title = 'Spot Hidden';
+              subtitle = auditLog.userName != null
+                  ? 'Hidden by ${auditLog.userName}'
+                  : auditLog.userId != null
+                      ? 'Hidden by ${auditLog.userId}'
+                      : 'Hidden by unknown';
+              details = 'Spot hidden from public view';
+              break;
+            case AuditLogAction.spotUnhidden:
+              title = 'Spot Unhidden';
+              subtitle = auditLog.userName != null
+                  ? 'Unhidden by ${auditLog.userName}'
+                  : auditLog.userId != null
+                      ? 'Unhidden by ${auditLog.userId}'
+                      : 'Unhidden by unknown';
+              details = 'Spot made visible to public';
+              break;
           }
 
           newEntries.add(AuditLogEntry(

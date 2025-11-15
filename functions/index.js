@@ -501,6 +501,9 @@ exports.getTopSpotsInBounds = onCall(
             query = query.where("imageUrls", "!=", []);
           }
 
+          // Exclude hidden spots from public view
+          query = query.where("hidden", "!=", true);
+
           return query.orderBy("ranking", "desc");
         };
 

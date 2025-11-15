@@ -82,6 +82,30 @@ class AuditLogService {
     }
   }
 
+  /// Log when a spot is hidden or unhidden
+  Future<void> logSpotHidden({
+    required String spotId,
+    required bool hidden,
+    required String? userId,
+    required String? userName,
+  }) async {
+    try {
+      await _firestore.collection('auditLog').add({
+        'action': (hidden ? AuditLogAction.spotHidden : AuditLogAction.spotUnhidden).toString().split('.').last,
+        'spotId': spotId,
+        'userId': userId,
+        'userName': userName,
+        'timestamp': FieldValue.serverTimestamp(),
+        'metadata': {
+          'hidden': hidden,
+        },
+      });
+    } catch (e) {
+      debugPrint('Error logging spot hidden/unhidden: $e');
+      // Don't throw - audit logging should not break the main operation
+    }
+  }
+
   /// Get audit logs for a specific user
   Future<List<AuditLog>> getAuditLogsForUser(String userId, {int limit = 100}) async {
     try {

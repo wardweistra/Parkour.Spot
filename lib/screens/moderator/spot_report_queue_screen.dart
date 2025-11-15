@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 
 import '../../models/spot_report.dart';
 import '../../services/spot_report_service.dart';
+import '../../services/spot_service.dart';
+import '../../services/auth_service.dart';
 
 class SpotReportQueueScreen extends StatefulWidget {
   const SpotReportQueueScreen({super.key});
@@ -180,7 +182,7 @@ class _SpotReportQueueScreenState extends State<SpotReportQueueScreen> {
   }
 }
 
-class _ReportCard extends StatelessWidget {
+class _ReportCard extends StatefulWidget {
   const _ReportCard({
     required this.report,
     required this.dateFormat,
@@ -192,6 +194,106 @@ class _ReportCard extends StatelessWidget {
   final DateFormat dateFormat;
   final bool isUpdating;
   final ValueChanged<String> onChangeStatus;
+
+  @override
+  State<_ReportCard> createState() => _ReportCardState();
+}
+
+class _ReportCardState extends State<_ReportCard> {
+  bool? _isSpotHidden;
+  bool _isLoadingSpot = false;
+  bool _isTogglingHidden = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSpotHiddenStatus();
+  }
+
+  Future<void> _loadSpotHiddenStatus() async {
+    setState(() {
+      _isLoadingSpot = true;
+    });
+
+    try {
+      final spotService = context.read<SpotService>();
+      final spot = await spotService.getSpotById(widget.report.spotId);
+      if (mounted) {
+        setState(() {
+          _isSpotHidden = spot?.hidden ?? false;
+          _isLoadingSpot = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingSpot = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _toggleSpotHidden() async {
+    if (_isTogglingHidden || _isSpotHidden == null) return;
+
+    setState(() {
+      _isTogglingHidden = true;
+    });
+
+    try {
+      final spotService = context.read<SpotService>();
+      final authService = context.read<AuthService>();
+      final user = authService.currentUser;
+      final userProfile = authService.userProfile;
+
+      final newHiddenValue = !_isSpotHidden!;
+      final success = await spotService.setSpotHidden(
+        widget.report.spotId,
+        newHiddenValue,
+        userId: user?.uid,
+        userName: userProfile?.displayName ?? user?.email,
+      );
+
+      if (mounted) {
+        if (success) {
+          setState(() {
+            _isSpotHidden = newHiddenValue;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                newHiddenValue
+                    ? 'Spot hidden from public view'
+                    : 'Spot unhidden and visible to public',
+              ),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Failed to ${newHiddenValue ? 'hide' : 'unhide'} spot',
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error updating spot visibility'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isTogglingHidden = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -212,15 +314,33 @@ class _ReportCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        report.spotName,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              widget.report.spotName,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          if (_isLoadingSpot)
+                            const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          else if (_isSpotHidden == true)
+                            Icon(
+                              Icons.visibility_off,
+                              size: 18,
+                              color: colorScheme.error,
+                            ),
+                        ],
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        report.spotId,
+                        widget.report.spotId,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
@@ -228,7 +348,7 @@ class _ReportCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                _StatusChip(status: report.status),
+                _StatusChip(status: widget.report.status),
               ],
             ),
             const SizedBox(height: 8),
@@ -237,15 +357,15 @@ class _ReportCard extends StatelessWidget {
                 const Icon(Icons.schedule, size: 16),
                 const SizedBox(width: 4),
                 Text(
-                  report.createdAt != null ? dateFormat.format(report.createdAt!.toLocal()) : 'Awaiting timestamp',
+                  widget.report.createdAt != null ? widget.dateFormat.format(widget.report.createdAt!.toLocal()) : 'Awaiting timestamp',
                   style: theme.textTheme.bodySmall,
                 ),
-                if (report.locationSummary != null) ...[
+                if (widget.report.locationSummary != null) ...[
                   const SizedBox(width: 12),
                   const Icon(Icons.location_on_outlined, size: 16),
                   const SizedBox(width: 4),
                   Text(
-                    report.locationSummary!,
+                    widget.report.locationSummary!,
                     style: theme.textTheme.bodySmall,
                   ),
                 ],
@@ -255,7 +375,7 @@ class _ReportCard extends StatelessWidget {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: report.displayCategories
+              children: widget.report.displayCategories
                   .map((category) => Chip(
                         label: Text(category),
                         backgroundColor: colorScheme.secondaryContainer,
@@ -265,7 +385,7 @@ class _ReportCard extends StatelessWidget {
                       ))
                   .toList(),
             ),
-            if (report.details?.isNotEmpty ?? false) ...[
+            if (widget.report.details?.isNotEmpty ?? false) ...[
               const SizedBox(height: 12),
               Text(
                 'Details',
@@ -273,11 +393,11 @@ class _ReportCard extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                report.details!,
+                widget.report.details!,
                 style: theme.textTheme.bodyMedium,
               ),
             ],
-            if (report.primaryContact != null) ...[
+            if (widget.report.primaryContact != null) ...[
               const SizedBox(height: 12),
               Text(
                 'Contact',
@@ -285,12 +405,12 @@ class _ReportCard extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               SelectableText(
-                report.primaryContact!,
+                widget.report.primaryContact!,
                 style: theme.textTheme.bodyMedium,
               ),
             ],
             const SizedBox(height: 16),
-            if (isUpdating)
+            if (widget.isUpdating || _isTogglingHidden)
               const Center(child: CircularProgressIndicator())
             else
               Wrap(
@@ -298,23 +418,35 @@ class _ReportCard extends StatelessWidget {
                 runSpacing: 8,
                 children: [
                   TextButton.icon(
-                    onPressed: () => context.go('/spot/${report.spotId}'),
+                    onPressed: () => context.go('/spot/${widget.report.spotId}'),
                     icon: const Icon(Icons.open_in_new),
                     label: const Text('Open Spot'),
                   ),
-                  if (report.status != SpotReportService.statuses.first)
+                  if (_isSpotHidden != null)
+                    OutlinedButton.icon(
+                      onPressed: _isTogglingHidden ? null : _toggleSpotHidden,
+                      icon: Icon(_isSpotHidden! ? Icons.visibility : Icons.visibility_off),
+                      label: Text(_isSpotHidden! ? 'Unhide Spot' : 'Hide Spot'),
+                      style: _isSpotHidden!
+                          ? OutlinedButton.styleFrom(
+                              foregroundColor: colorScheme.error,
+                              side: BorderSide(color: colorScheme.error),
+                            )
+                          : null,
+                    ),
+                  if (widget.report.status != SpotReportService.statuses.first)
                     OutlinedButton(
-                      onPressed: () => onChangeStatus(SpotReportService.statuses.first),
+                      onPressed: () => widget.onChangeStatus(SpotReportService.statuses.first),
                       child: const Text('Mark as New'),
                     ),
-                  if (report.status != SpotReportService.statuses[1])
+                  if (widget.report.status != SpotReportService.statuses[1])
                     OutlinedButton(
-                      onPressed: () => onChangeStatus(SpotReportService.statuses[1]),
+                      onPressed: () => widget.onChangeStatus(SpotReportService.statuses[1]),
                       child: const Text('Mark In Progress'),
                     ),
-                  if (report.status != SpotReportService.statuses.last)
+                  if (widget.report.status != SpotReportService.statuses.last)
                     FilledButton(
-                      onPressed: () => onChangeStatus(SpotReportService.statuses.last),
+                      onPressed: () => widget.onChangeStatus(SpotReportService.statuses.last),
                       child: const Text('Mark Done'),
                     ),
                 ],

@@ -22,6 +22,7 @@
       "fields": [
         { "fieldPath": "spotSource", "order": "ASCENDING" },
         { "fieldPath": "ranking", "order": "DESCENDING" },
+        { "fieldPath": "hidden", "order": "DESCENDING" },
         { "fieldPath": "latitude", "order": "DESCENDING" },
         { "fieldPath": "longitude", "order": "DESCENDING" }
       ]
@@ -33,6 +34,7 @@
         { "fieldPath": "spotSource", "order": "ASCENDING" },
         { "fieldPath": "ranking", "order": "DESCENDING" },
         { "fieldPath": "imageUrls", "order": "DESCENDING" },
+        { "fieldPath": "hidden", "order": "DESCENDING" },
         { "fieldPath": "latitude", "order": "DESCENDING" },
         { "fieldPath": "longitude", "order": "DESCENDING" }
       ]
@@ -43,6 +45,7 @@
       "fields": [
         { "fieldPath": "duplicateOf", "order": "ASCENDING" },
         { "fieldPath": "ranking", "order": "DESCENDING" },
+        { "fieldPath": "hidden", "order": "DESCENDING" },
         { "fieldPath": "latitude", "order": "DESCENDING" },
         { "fieldPath": "longitude", "order": "DESCENDING" }
       ]
@@ -54,6 +57,7 @@
         { "fieldPath": "duplicateOf", "order": "ASCENDING" },
         { "fieldPath": "ranking", "order": "DESCENDING" },
         { "fieldPath": "imageUrls", "order": "DESCENDING" },
+        { "fieldPath": "hidden", "order": "DESCENDING" },
         { "fieldPath": "latitude", "order": "DESCENDING" },
         { "fieldPath": "longitude", "order": "DESCENDING" }
       ]

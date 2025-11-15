@@ -27,6 +27,7 @@ class Spot {
   final Map<String, String>? spotFacilities;
   final List<String>? goodFor;
   final String? duplicateOf; // ID of the original spot if this is a duplicate
+  final bool hidden; // Whether the spot is hidden from public view
 
   static const Object _unset = Object();
 
@@ -57,6 +58,7 @@ class Spot {
     this.spotFacilities,
     this.goodFor,
     this.duplicateOf,
+    this.hidden = false,
   });
 
   factory Spot.fromFirestore(DocumentSnapshot doc) {
@@ -138,6 +140,7 @@ class Spot {
       spotFacilities: data['spotFacilities'] != null ? Map<String, String>.from(data['spotFacilities']) : null,
       goodFor: data['goodFor'] != null ? List<String>.from(data['goodFor']) : null,
       duplicateOf: data['duplicateOf'],
+      hidden: data['hidden'] == true,
     );
   }
 
@@ -227,6 +230,7 @@ class Spot {
       spotFacilities: data['spotFacilities'] is Map ? Map<String, String>.from(data['spotFacilities']) : null,
       goodFor: data['goodFor'] is List ? List<String>.from(data['goodFor']) : null,
       duplicateOf: data['duplicateOf'] as String?,
+      hidden: data['hidden'] == true,
     );
   }
 
@@ -257,6 +261,7 @@ class Spot {
       if (spotFacilities != null) 'spotFacilities': spotFacilities,
       if (goodFor != null) 'goodFor': goodFor,
       'duplicateOf': duplicateOf,
+      'hidden': hidden,
     };
   }
 
@@ -287,6 +292,7 @@ class Spot {
     Map<String, String>? spotFacilities,
     List<String>? goodFor,
     Object? duplicateOf = _unset,
+    bool? hidden,
   }) {
     return Spot(
       id: id ?? this.id,
@@ -315,6 +321,7 @@ class Spot {
       spotFacilities: spotFacilities ?? this.spotFacilities,
       goodFor: goodFor ?? this.goodFor,
       duplicateOf: identical(duplicateOf, _unset) ? this.duplicateOf : duplicateOf as String?,
+      hidden: hidden ?? this.hidden,
     );
   }
 

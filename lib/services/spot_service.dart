@@ -1109,6 +1109,54 @@ class SpotService extends ChangeNotifier {
     }
   }
 
+  // Hide or unhide a spot (moderator only)
+  Future<bool> setSpotHidden(
+    String spotId,
+    bool hidden, {
+    String? userId,
+    String? userName,
+  }) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      // Get the current spot to check if it exists
+      final spot = await getSpotById(spotId);
+      if (spot == null) {
+        _error = 'Spot not found';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      // Update the hidden field
+      await _firestore.collection('spots').doc(spotId).update({
+        'hidden': hidden,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // Log audit trail if user info is provided (moderator action)
+      if (userId != null && userName != null) {
+        await _auditLogService.logSpotHidden(
+          spotId: spotId,
+          hidden: hidden,
+          userId: userId,
+          userName: userName,
+        );
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = 'Failed to ${hidden ? 'hide' : 'unhide'} spot: $e';
+      debugPrint('Error ${hidden ? 'hiding' : 'unhiding'} spot: $e');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   // Clear error
   void clearError() {
     _error = null;

@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 enum AuditLogAction {
   spotEdit,
   spotMarkedAsDuplicate,
+  spotHidden,
+  spotUnhidden,
 }
 
 class AuditLog {
