@@ -352,6 +352,24 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
     }
   }
 
+  /// Check if an entry is a spot report status change
+  bool _isSpotReportStatusChange(AuditLogEntry entry) {
+    if (entry.type == AuditLogEntryType.auditLogAction) {
+      final action = entry.metadata?['action'] as String?;
+      if (action != null) {
+        // Action is stored as enum.toString(), e.g., "AuditLogAction.spotReportStatusChange"
+        // or just "spotReportStatusChange" depending on how it's stored
+        return action.contains('spotReportStatusChange');
+      }
+    }
+    return false;
+  }
+
+  /// Check if an entry is a user account creation
+  bool _isUserCreation(AuditLogEntry entry) {
+    return entry.type == AuditLogEntryType.userCreation;
+  }
+
   /// Get list of spot IDs from an audit log entry
   /// Returns original spot first (if applicable), then the main spot
   List<String> _getSpotIdsFromEntry(AuditLogEntry entry) {
@@ -556,33 +574,61 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                   ),
                                 ],
                               ),
-                              trailing: spotIds.isNotEmpty
+                              trailing: (spotIds.isNotEmpty || _isSpotReportStatusChange(entry) || _isUserCreation(entry))
                                   ? Row(
                                       mainAxisSize: MainAxisSize.min,
-                                      children: spotIds.asMap().entries.map((spotEntry) {
-                                        final isLast = spotEntry.key == spotIds.length - 1;
-                                        return Padding(
-                                          padding: EdgeInsets.only(
-                                            right: isLast ? 0 : 4,
-                                          ),
-                                          child: IconButton(
-                                            icon: Icon(
-                                              spotIds.length > 1 && spotEntry.key == 0
-                                                  ? Icons.location_on
-                                                  : Icons.open_in_new,
+                                      children: [
+                                        // Spot buttons
+                                        ...spotIds.asMap().entries.map((spotEntry) {
+                                          final isLast = spotEntry.key == spotIds.length - 1;
+                                          final hasOtherButtons = _isSpotReportStatusChange(entry) || _isUserCreation(entry);
+                                          return Padding(
+                                            padding: EdgeInsets.only(
+                                              right: isLast && !hasOtherButtons ? 0 : 4,
+                                            ),
+                                            child: IconButton(
+                                              icon: Icon(
+                                                spotIds.length > 1 && spotEntry.key == 0
+                                                    ? Icons.location_on
+                                                    : Icons.open_in_new,
+                                                size: 20,
+                                              ),
+                                              tooltip: spotIds.length > 1 && spotEntry.key == 0
+                                                  ? 'Open original spot'
+                                                  : spotIds.length > 1
+                                                      ? 'Open duplicate spot'
+                                                      : 'Open spot',
+                                              onPressed: () => _navigateToSpot(spotEntry.value),
+                                              padding: EdgeInsets.zero,
+                                              constraints: const BoxConstraints(),
+                                            ),
+                                          );
+                                        }),
+                                        // Spot Report Queue button
+                                        if (_isSpotReportStatusChange(entry))
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.report_problem,
                                               size: 20,
                                             ),
-                                            tooltip: spotIds.length > 1 && spotEntry.key == 0
-                                                ? 'Open original spot'
-                                                : spotIds.length > 1
-                                                    ? 'Open duplicate spot'
-                                                    : 'Open spot',
-                                            onPressed: () => _navigateToSpot(spotEntry.value),
+                                            tooltip: 'Open Spot Report Queue',
+                                            onPressed: () => context.go('/moderator/reports'),
                                             padding: EdgeInsets.zero,
                                             constraints: const BoxConstraints(),
                                           ),
-                                        );
-                                      }).toList(),
+                                        // User Management button
+                                        if (_isUserCreation(entry))
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.people_outline,
+                                              size: 20,
+                                            ),
+                                            tooltip: 'Open User Management',
+                                            onPressed: () => context.go('/admin/users'),
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(),
+                                          ),
+                                      ],
                                     )
                                   : null,
                               isThreeLine: true,
@@ -698,6 +744,30 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                         ),
                                         const SizedBox(width: 8),
                                       ],
+                                      if (_isSpotReportStatusChange(entry))
+                                        TextButton.icon(
+                                          icon: const Icon(
+                                            Icons.report_problem,
+                                            size: 18,
+                                          ),
+                                          label: const Text('Open Report Queue'),
+                                          onPressed: () {
+                                            Navigator.of(context).pop();
+                                            context.go('/moderator/reports');
+                                          },
+                                        ),
+                                      if (_isUserCreation(entry))
+                                        TextButton.icon(
+                                          icon: const Icon(
+                                            Icons.people_outline,
+                                            size: 18,
+                                          ),
+                                          label: const Text('Open User Management'),
+                                          onPressed: () {
+                                            Navigator.of(context).pop();
+                                            context.go('/admin/users');
+                                          },
+                                        ),
                                       TextButton(
                                         onPressed: () =>
                                             Navigator.of(context).pop(),
