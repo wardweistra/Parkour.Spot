@@ -18,7 +18,7 @@ import '../../widgets/spot_selection_dialog.dart';
 import '../../constants/spot_attributes.dart';
 import '../../services/snackbar_service.dart';
 import '../../utils/image_url_utils.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
+import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode, debugPrint;
 import 'package:url_launcher/url_launcher.dart';
 
 class SpotDetailScreen extends StatefulWidget {

@@ -839,6 +839,15 @@ class SpotService extends ChangeNotifier {
         return false;
       }
 
+      // Prevent marking a spot as duplicate if other spots are already marked as duplicates of it
+      final existingDuplicates = await getDuplicatesOfSpot(spotId);
+      if (existingDuplicates.isNotEmpty) {
+        _error = 'Cannot mark this spot as a duplicate because other spots are already marked as duplicates of it';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
       // Prevent circular references (check if original is already marked as duplicate)
       if (originalSpot.duplicateOf != null) {
         _error = 'Cannot mark as duplicate of a spot that is already a duplicate';

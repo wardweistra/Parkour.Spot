@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/spot.dart';
@@ -25,7 +26,47 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
   final TextEditingController _inputController = TextEditingController();
   Spot? _foundSpot;
   bool _isLoading = false;
+  bool _isCheckingDuplicates = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    // Check if other spots are already marked as duplicates of the current spot
+    // Only for moderator actions (not for user reports)
+    if (!widget.allowExternalSources && widget.currentSpotId != null) {
+      _checkExistingDuplicates();
+    }
+  }
+
+  Future<void> _checkExistingDuplicates() async {
+    setState(() {
+      _isCheckingDuplicates = true;
+    });
+
+    try {
+      final spotService = Provider.of<SpotService>(context, listen: false);
+      final existingDuplicates = await spotService.getDuplicatesOfSpot(widget.currentSpotId!);
+      if (mounted && existingDuplicates.isNotEmpty) {
+        setState(() {
+          _error = 'Cannot mark this spot as a duplicate because other spots are already marked as duplicates of it.';
+          _isCheckingDuplicates = false;
+        });
+      } else if (mounted) {
+        setState(() {
+          _isCheckingDuplicates = false;
+        });
+      }
+    } catch (e) {
+      // If check fails, continue anyway (validation will catch it later)
+      debugPrint('Error checking for existing duplicates: $e');
+      if (mounted) {
+        setState(() {
+          _isCheckingDuplicates = false;
+        });
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -275,13 +316,13 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
                             errorText: _error,
                           ),
                           onSubmitted: (_) => _searchSpot(),
-                          enabled: !_isLoading,
+                          enabled: !_isLoading && !_isCheckingDuplicates,
                         ),
                       ),
                       const SizedBox(width: 8),
                       ElevatedButton.icon(
-                        onPressed: _isLoading ? null : _searchSpot,
-                        icon: _isLoading
+                        onPressed: (_isLoading || _isCheckingDuplicates) ? null : _searchSpot,
+                        icon: (_isLoading || _isCheckingDuplicates)
                             ? const SizedBox(
                                 width: 16,
                                 height: 16,
@@ -305,8 +346,10 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
             
             // Results area
             Expanded(
-              child: _foundSpot == null && !_isLoading && _error == null
-                  ? Center(
+              child: _isCheckingDuplicates
+                  ? const Center(child: CircularProgressIndicator())
+                  : _foundSpot == null && !_isLoading && _error == null
+                      ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -384,7 +427,7 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(
-                        onPressed: () => Navigator.of(context).pop('CREATE_NATIVE'),
+                        onPressed: _error != null ? null : () => Navigator.of(context).pop('CREATE_NATIVE'),
                         icon: const Icon(Icons.add_circle_outline),
                         label: const Text('Create Native Spot from Current Spot'),
                         style: OutlinedButton.styleFrom(
@@ -401,7 +444,7 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
                         onPressed: () => Navigator.of(context).pop(),
                         child: const Text('Cancel'),
                       ),
-                      if (_foundSpot != null) ...[
+                      if (_foundSpot != null && _error == null) ...[
                         const SizedBox(width: 8),
                         ElevatedButton(
                           onPressed: () => Navigator.of(context).pop(_foundSpot!.id),
