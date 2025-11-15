@@ -8,11 +8,13 @@ import '../services/url_service.dart';
 class SpotSelectionDialog extends StatefulWidget {
   final String? currentSpotId; // ID of the spot being marked as duplicate (to exclude it)
   final Spot? currentSpot; // The current spot (to allow creating native spot from it)
+  final bool allowExternalSources; // Allow spots from external sources (for reports)
 
   const SpotSelectionDialog({
     super.key,
     this.currentSpotId,
     this.currentSpot,
+    this.allowExternalSources = false,
   });
 
   @override
@@ -31,12 +33,58 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
     super.dispose();
   }
 
-  /// Extract spot ID from input (can be URL or just ID)
+  /// Extract spot ID from input (can be URL, ID, or text containing a URL)
   String? _extractSpotId(String input) {
     final trimmed = input.trim();
     if (trimmed.isEmpty) return null;
 
-    // Check if it's a URL
+    // First, try to find URLs within the text (for cases like "Barbican - Fountains 👉 https://parkour.spot/...")
+    // Pattern to match http://, https://, or relative paths starting with /
+    // Matches URLs until whitespace, common punctuation, or end of string
+    final urlPattern = RegExp(
+      r'(https?://[^\s<>"()]+|/[^\s<>"()]+)',
+      caseSensitive: false,
+    );
+    
+    final urlMatches = urlPattern.allMatches(trimmed);
+    for (final match in urlMatches) {
+      final urlCandidate = match.group(0);
+      if (urlCandidate == null) continue;
+      
+      String? spotId;
+      
+      // If it's a full URL
+      if (urlCandidate.startsWith('http://') || urlCandidate.startsWith('https://')) {
+        spotId = UrlService.extractSpotIdFromUrl(urlCandidate);
+        if (spotId != null) return spotId;
+        
+        // Also try to extract from /spot/:spotId format
+        try {
+          final uri = Uri.parse(urlCandidate);
+          final pathSegments = uri.pathSegments;
+          if (pathSegments.length == 2 && pathSegments[0] == 'spot') {
+            return pathSegments[1];
+          }
+        } catch (_) {}
+      }
+      
+      // If it's a relative path starting with /
+      if (urlCandidate.startsWith('/')) {
+        spotId = UrlService.extractSpotIdFromUrl('https://parkour.spot$urlCandidate');
+        if (spotId != null) return spotId;
+        
+        // Also try to extract from /spot/:spotId format
+        try {
+          final uri = Uri.parse('https://parkour.spot$urlCandidate');
+          final pathSegments = uri.pathSegments;
+          if (pathSegments.length == 2 && pathSegments[0] == 'spot') {
+            return pathSegments[1];
+          }
+        } catch (_) {}
+      }
+    }
+
+    // If no URL found in text, check if the entire input is a URL
     if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
       final spotId = UrlService.extractSpotIdFromUrl(trimmed);
       if (spotId != null) return spotId;
@@ -126,8 +174,8 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
         return;
       }
 
-      // Check if the found spot is already a duplicate
-      if (spot.duplicateOf != null) {
+      // Check if the found spot is already a duplicate (only for moderator actions)
+      if (!widget.allowExternalSources && spot.duplicateOf != null) {
         setState(() {
           _error = 'This spot is already marked as a duplicate of another spot';
           _foundSpot = null;
@@ -137,7 +185,8 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
       }
 
       // Ensure the original spot is a native parkour.spot spot (not from external source)
-      if (spot.spotSource != null) {
+      // Only enforce this for moderator actions, not for user reports
+      if (!widget.allowExternalSources && spot.spotSource != null) {
         setState(() {
           _error = 'Original spot must be a native parkour.spot spot, not from an external source';
           _foundSpot = null;
@@ -216,7 +265,7 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
                         child: TextField(
                           controller: _inputController,
                           decoration: InputDecoration(
-                            hintText: 'Spot ID or https://parkour.spot/.../spot-id',
+                            hintText: 'Paste shared text, URL, or spot ID',
                             prefixIcon: const Icon(Icons.link),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -245,7 +294,7 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Paste a spot URL (e.g., https://parkour.spot/nl/amsterdam/spot-id) or enter the spot ID directly',
+                    'Paste the text copied when sharing a spot, a spot URL, or enter the spot ID directly',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                     ),

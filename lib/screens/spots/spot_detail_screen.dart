@@ -3125,7 +3125,10 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
   String? otherDescriptionError;
   String? emailError;
   String? submissionError;
+  String? duplicateSpotError;
   bool isSubmitting = false;
+  Spot? _selectedDuplicateSpot;
+  String? _duplicateOfSpotId;
 
   @override
   void initState() {
@@ -3200,6 +3203,12 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
                           selectedCategories.add(category);
                         } else {
                           selectedCategories.remove(category);
+                          // Clear duplicate spot selection if "Duplicate spot" is deselected
+                          if (category == 'Duplicate spot') {
+                            _selectedDuplicateSpot = null;
+                            _duplicateOfSpotId = null;
+                            duplicateSpotError = null;
+                          }
                         }
                         if (selectedCategories.isNotEmpty) {
                           categoryError = null;
@@ -3229,6 +3238,109 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
                     errorText: otherDescriptionError,
                   ),
                 ),
+              ],
+              if (selectedCategories.contains('Duplicate spot')) ...[
+                const SizedBox(height: 16),
+                Text(
+                  'Which spot is this a duplicate of?',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                if (duplicateSpotError != null) ...[
+                  Text(
+                    duplicateSpotError!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.error,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                if (_selectedDuplicateSpot == null) ...[
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      final result = await showDialog<String>(
+                        context: dialogContext,
+                        builder: (context) => SpotSelectionDialog(
+                          currentSpotId: widget.spot.id,
+                          allowExternalSources: true, // Allow external sources for reports
+                        ),
+                      );
+                      if (result != null && mounted) {
+                        setState(() {
+                          _duplicateOfSpotId = result;
+                          duplicateSpotError = null; // Clear error when spot is selected
+                        });
+                        // Fetch the spot details to display
+                        final spotService = Provider.of<SpotService>(context, listen: false);
+                        final spot = await spotService.getSpotById(result);
+                        if (mounted && spot != null) {
+                          setState(() {
+                            _selectedDuplicateSpot = spot;
+                          });
+                        }
+                      }
+                    },
+                    icon: const Icon(Icons.search),
+                    label: const Text('Select duplicate spot'),
+                  ),
+                ] else ...[
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _selectedDuplicateSpot!.name,
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                if (_selectedDuplicateSpot!.description.isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _selectedDuplicateSpot!.description,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                                if (_selectedDuplicateSpot!.id != null) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Spot ID: ${_selectedDuplicateSpot!.id}',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                                      fontFamily: 'monospace',
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () {
+                              setState(() {
+                                _selectedDuplicateSpot = null;
+                                _duplicateOfSpotId = null;
+                                duplicateSpotError = null;
+                              });
+                            },
+                            tooltip: 'Remove selection',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ],
               const SizedBox(height: 16),
               TextField(
@@ -3315,11 +3427,20 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
                       otherDescriptionError = null;
                       emailError = null;
                       submissionError = null;
+                      duplicateSpotError = null;
                     });
 
                     if (selectedCategories.isEmpty) {
                       setState(() {
                         categoryError = 'Please select at least one category.';
+                      });
+                      return;
+                    }
+
+                    // Validate duplicate spot selection if "Duplicate spot" is selected
+                    if (selectedCategories.contains('Duplicate spot') && _duplicateOfSpotId == null) {
+                      setState(() {
+                        duplicateSpotError = 'Please select the spot this is a duplicate of.';
                       });
                       return;
                     }
@@ -3372,6 +3493,7 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
                       reporterEmail: authService.userProfile?.email ?? authService.currentUser?.email,
                       spotCountryCode: widget.spot.countryCode,
                       spotCity: widget.spot.city,
+                      duplicateOfSpotId: _duplicateOfSpotId,
                     );
 
                     if (success) {

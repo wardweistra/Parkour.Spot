@@ -394,6 +394,48 @@ class _ReportCardState extends State<_ReportCard> {
                       ))
                   .toList(),
             ),
+            if (widget.report.duplicateOfSpotId != null) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Icon(
+                    Icons.copy_all,
+                    size: 16,
+                    color: colorScheme.primary,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Duplicate of:',
+                    style: theme.textTheme.titleSmall,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Expanded(
+                    child: SelectableText(
+                      widget.report.duplicateOfSpotId!,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontFamily: 'monospace',
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton.icon(
+                    onPressed: () => context.go('/spot/${widget.report.duplicateOfSpotId}'),
+                    icon: const Icon(Icons.open_in_new, size: 16),
+                    label: const Text('Open'),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      minimumSize: const Size(0, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ],
+              ),
+            ],
             if (widget.report.details?.isNotEmpty ?? false) ...[
               const SizedBox(height: 12),
               Text(

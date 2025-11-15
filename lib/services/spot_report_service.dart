@@ -37,6 +37,7 @@ class SpotReportService {
     String? reporterEmail,
     String? spotCountryCode,
     String? spotCity,
+    String? duplicateOfSpotId,
   }) async {
     try {
       await _firestore.collection('spotReports').add({
@@ -55,6 +56,8 @@ class SpotReportService {
         if (spotCountryCode != null && spotCountryCode.isNotEmpty)
           'spotCountryCode': spotCountryCode,
         if (spotCity != null && spotCity.isNotEmpty) 'spotCity': spotCity,
+        if (duplicateOfSpotId != null && duplicateOfSpotId.isNotEmpty)
+          'duplicateOfSpotId': duplicateOfSpotId,
         'status': statuses.first, // default "New"
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),

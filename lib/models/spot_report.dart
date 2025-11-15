@@ -17,6 +17,7 @@ class SpotReport {
     this.reporterEmail,
     this.spotCountryCode,
     this.spotCity,
+    this.duplicateOfSpotId,
     this.createdAt,
     this.updatedAt,
   });
@@ -53,6 +54,9 @@ class SpotReport {
 
   /// City of the spot when available.
   final String? spotCity;
+
+  /// ID of the spot this is a duplicate of (when category is "Duplicate spot").
+  final String? duplicateOfSpotId;
 
   /// Current moderation status of the report.
   final String status;
@@ -104,6 +108,7 @@ class SpotReport {
       reporterEmail: data['reporterEmail'] as String?,
       spotCountryCode: data['spotCountryCode'] as String?,
       spotCity: data['spotCity'] as String?,
+      duplicateOfSpotId: data['duplicateOfSpotId'] as String?,
       status: data['status'] as String? ?? 'New',
       createdAt: parseTimestamp(data['createdAt']),
       updatedAt: parseTimestamp(data['updatedAt']),
