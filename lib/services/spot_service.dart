@@ -63,6 +63,7 @@ class SpotService extends ChangeNotifier {
         spotFacilities: sourceSpot.spotFacilities,
         goodFor: sourceSpot.goodFor,
         duplicateOf: null, // New native spot, not a duplicate
+        hidden: false, // New spot, not hidden
         // spotSource is null (native spot)
       );
 
@@ -110,6 +111,7 @@ class SpotService extends ChangeNotifier {
         updatedAt: DateTime.now(),
         ranking: spot.ranking ?? Random().nextDouble(),
         duplicateOf: null, // New spot, not a duplicate
+        hidden: spot.hidden, // Preserve hidden field (defaults to false for new spots)
       );
 
       final docRef = await _firestore.collection('spots').add(spotWithImages.toFirestore());
@@ -170,6 +172,7 @@ class SpotService extends ChangeNotifier {
       final updatedSpot = spot.copyWith(
         imageUrls: imageUrls,
         updatedAt: DateTime.now(),
+        hidden: spot.hidden, // Preserve existing hidden field
       );
 
       await _firestore.collection('spots').doc(spot.id).update(updatedSpot.toFirestore());

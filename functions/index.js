@@ -2436,6 +2436,7 @@ async function processSyncSource(source, sourceId, apiKey) {
       spotData.wilsonLowerBound = 0;
       spotData.ranking = Math.random(); // Random ranking for new spots
       spotData.duplicateOf = null; // Initialize duplicateOf field
+      spotData.hidden = false; // Initialize hidden field
       spotData.createdAt = admin.firestore.FieldValue.serverTimestamp();
       await db.collection("spots").add(cleanUndefinedValues(spotData));
       created++;
@@ -2464,6 +2465,10 @@ async function processSyncSource(source, sourceId, apiKey) {
       // Preserve existing duplicateOf field if it exists
       if (existingData.duplicateOf !== undefined) {
         spotData.duplicateOf = existingData.duplicateOf;
+      }
+      // Preserve existing hidden field if it exists
+      if (existingData.hidden !== undefined) {
+        spotData.hidden = existingData.hidden;
       }
 
       await existingSpot.ref.update(cleanUndefinedValues(spotData));
@@ -4539,13 +4544,19 @@ exports.importUrbnSpots = onCall(
               spotData.wilsonLowerBound = 0;
               spotData.ranking = Math.random();
               spotData.duplicateOf = null;
+              spotData.hidden = false; // Initialize hidden field
               spotData.createdAt = admin.firestore.FieldValue.serverTimestamp();
               await db.collection("spots").add(cleanUndefinedValues(spotData));
               created++;
               console.log(`✓ Created spot: ${spot.name}`);
             } else {
-              // Update existing spot
+              // Update existing spot - preserve existing fields
               const existingSpot = existingSpots.docs[0];
+              const existingData = existingSpot.data();
+              // Preserve existing hidden field if it exists
+              if (existingData.hidden !== undefined) {
+                spotData.hidden = existingData.hidden;
+              }
               await existingSpot.ref.update(cleanUndefinedValues(spotData));
               updated++;
               console.log(`✓ Updated spot: ${spot.name}`);

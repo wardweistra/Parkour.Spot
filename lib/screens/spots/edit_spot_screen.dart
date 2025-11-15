@@ -460,6 +460,7 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
         spotFacilities: _selectedFacilities,
         goodFor: _selectedGoodFor.toList(),
         updatedAt: DateTime.now(),
+        hidden: widget.spot.hidden, // Preserve existing hidden field
       );
 
       // Filter out null values for images
