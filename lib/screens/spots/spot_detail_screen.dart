@@ -3120,7 +3120,7 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
   late final TextEditingController detailsController;
   late final TextEditingController emailController;
 
-  final Set<String> selectedCategories = <String>{};
+  String? selectedCategory;
   String? categoryError;
   String? otherDescriptionError;
   String? emailError;
@@ -3160,7 +3160,8 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
     final reportService = Provider.of<SpotReportService>(dialogContext, listen: false);
     final bool isLoggedIn = authService.isAuthenticated && authService.userProfile != null;
     final String otherCategoryLabel = SpotReportService.defaultCategories.last;
-    final bool otherSelected = selectedCategories.contains(otherCategoryLabel);
+    final bool otherSelected = selectedCategory == otherCategoryLabel;
+    final bool duplicateSpotSelected = selectedCategory == 'Duplicate spot';
 
     return WillPopScope(
       onWillPop: () async => !isSubmitting,
@@ -3189,41 +3190,71 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
                 ),
               ),
               const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: SpotReportService.defaultCategories.map((category) {
-                  final bool isSelected = selectedCategories.contains(category);
-                  return FilterChip(
-                    label: Text(category),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      setState(() {
-                        if (selected) {
-                          selectedCategories.add(category);
-                        } else {
-                          selectedCategories.remove(category);
-                          // Clear duplicate spot selection if "Duplicate spot" is deselected
-                          if (category == 'Duplicate spot') {
-                            _selectedDuplicateSpot = null;
-                            _duplicateOfSpotId = null;
-                            duplicateSpotError = null;
-                          }
-                        }
-                        if (selectedCategories.isNotEmpty) {
-                          categoryError = null;
-                        }
-                      });
-                    },
+              DropdownButtonFormField<String>(
+                value: selectedCategory,
+                decoration: InputDecoration(
+                  labelText: 'Select a category',
+                  hintText: 'Choose a report category',
+                  errorText: categoryError,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: theme.colorScheme.surfaceContainerHighest,
+                ),
+                items: SpotReportService.defaultCategories.map((category) {
+                  return DropdownMenuItem<String>(
+                    value: category,
+                    child: Text(category),
                   );
                 }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedCategory = value;
+                    categoryError = null;
+                    // Clear duplicate spot selection if "Duplicate spot" is deselected
+                    if (value != 'Duplicate spot') {
+                      _selectedDuplicateSpot = null;
+                      _duplicateOfSpotId = null;
+                      duplicateSpotError = null;
+                    }
+                    // Clear other description when switching away from "Other"
+                    if (value != otherCategoryLabel) {
+                      otherController.clear();
+                      otherDescriptionError = null;
+                    }
+                  });
+                },
               ),
-              if (categoryError != null) ...[
-                const SizedBox(height: 8),
-                Text(
-                  categoryError!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.error,
+              if (selectedCategory != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 18,
+                        color: theme.colorScheme.onSecondaryContainer,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _getCategoryDescription(selectedCategory!),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSecondaryContainer,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -3239,7 +3270,7 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
                   ),
                 ),
               ],
-              if (selectedCategories.contains('Duplicate spot')) ...[
+              if (duplicateSpotSelected) ...[
                 const SizedBox(height: 16),
                 Text(
                   'Which spot is this a duplicate of?',
@@ -3430,15 +3461,15 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
                       duplicateSpotError = null;
                     });
 
-                    if (selectedCategories.isEmpty) {
+                    if (selectedCategory == null) {
                       setState(() {
-                        categoryError = 'Please select at least one category.';
+                        categoryError = 'Please select a category.';
                       });
                       return;
                     }
 
                     // Validate duplicate spot selection if "Duplicate spot" is selected
-                    if (selectedCategories.contains('Duplicate spot') && _duplicateOfSpotId == null) {
+                    if (selectedCategory == 'Duplicate spot' && _duplicateOfSpotId == null) {
                       setState(() {
                         duplicateSpotError = 'Please select the spot this is a duplicate of.';
                       });
@@ -3485,7 +3516,7 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
                     final success = await reportService.submitSpotReport(
                       spotId: widget.spot.id!,
                       spotName: widget.spot.name,
-                      categories: selectedCategories.toList(),
+                      categories: [selectedCategory!],
                       otherCategory: otherSelected ? trimmedOther : null,
                       details: trimmedDetails.isEmpty ? null : trimmedDetails,
                       contactEmail: trimmedContactEmail.isEmpty ? null : trimmedContactEmail,
@@ -3523,6 +3554,25 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
         ],
       ),
     );
+  }
+
+  String _getCategoryDescription(String category) {
+    switch (category) {
+      case 'Spot closed or removed':
+        return 'The spot has been permanently closed, demolished, or removed and is no longer accessible. Please provide more details below.';
+      case 'Inaccurate location or details':
+        return 'The spot\'s location on the map is incorrect, or details like name, description, or address are wrong. Please provide more details below on what should be corrected.';
+      case 'Unsafe conditions':
+        return 'The spot has become dangerous due to structural issues, environmental hazards, or other safety concerns. Please provide more details below on what is unsafe.';
+      case 'Duplicate spot':
+        return 'This spot is a duplicate of another spot already in the database. Please select the original spot below.';
+      case 'Not a spot':
+        return 'Only for objective issues like spam, spots in invalid locations (e.g., middle of the sea), private residences, entire cities, or other clearly invalid entries. For subjective opinions about spot quality, please use a rating instead. Please provide more details below on why this is not a spot.';
+      case 'Other':
+        return 'Any other issue not covered by the categories above. Please describe the issue in the field below.';
+      default:
+        return '';
+    }
   }
 }
 
