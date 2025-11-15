@@ -5,6 +5,7 @@ import '../../models/audit_log.dart';
 import '../../models/spot.dart';
 import '../../models/user.dart' as app_user;
 import '../../services/auth_service.dart';
+import '../../services/url_service.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
@@ -262,6 +263,26 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                       : 'Unhidden by unknown';
               details = 'Spot made visible to public';
               break;
+            case AuditLogAction.spotReportStatusChange:
+              title = 'Spot Report Status Changed';
+              subtitle = auditLog.userName != null
+                  ? 'Changed by ${auditLog.userName}'
+                  : auditLog.userId != null
+                      ? 'Changed by ${auditLog.userId}'
+                      : 'Changed by unknown';
+              if (auditLog.changes != null &&
+                  auditLog.changes!['status'] != null) {
+                final statusChange = auditLog.changes!['status'] as Map<String, dynamic>;
+                final fromStatus = statusChange['from'] as String? ?? 'Unknown';
+                final toStatus = statusChange['to'] as String? ?? 'Unknown';
+                details = 'Status: $fromStatus → $toStatus';
+                if (auditLog.reportId != null) {
+                  details += '\nReport ID: ${auditLog.reportId}';
+                }
+              } else {
+                details = 'Spot report status updated';
+              }
+              break;
           }
 
           newEntries.add(AuditLogEntry(
@@ -273,6 +294,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
             details: details,
             metadata: {
               'spotId': auditLog.spotId,
+              if (auditLog.reportId != null) 'reportId': auditLog.reportId,
               'userId': auditLog.userId,
               'userName': auditLog.userName,
               'action': auditLog.action.toString(),
@@ -327,6 +349,68 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
         return Colors.blue;
       case AuditLogEntryType.auditLogAction:
         return Colors.orange;
+    }
+  }
+
+  /// Get list of spot IDs from an audit log entry
+  /// Returns original spot first (if applicable), then the main spot
+  List<String> _getSpotIdsFromEntry(AuditLogEntry entry) {
+    final spotIds = <String>[];
+    
+    if (entry.type == AuditLogEntryType.spotCreation) {
+      // For spot creation, the id is the spot ID
+      if (entry.id != null) {
+        spotIds.add(entry.id!);
+      } else if (entry.metadata?['spotId'] != null) {
+        spotIds.add(entry.metadata!['spotId'] as String);
+      }
+    } else if (entry.type == AuditLogEntryType.auditLogAction) {
+      // For duplicate actions, add original spot first, then the duplicate
+      if (entry.metadata?['metadata'] != null) {
+        final nestedMetadata = entry.metadata!['metadata'] as Map<String, dynamic>?;
+        if (nestedMetadata?['originalSpotId'] != null) {
+          final originalSpotId = nestedMetadata!['originalSpotId'] as String;
+          spotIds.add(originalSpotId);
+        }
+      }
+      
+      // Then add the main spot (duplicate spot for duplicate actions)
+      if (entry.metadata?['spotId'] != null) {
+        final spotId = entry.metadata!['spotId'] as String;
+        if (!spotIds.contains(spotId)) {
+          spotIds.add(spotId);
+        }
+      }
+    }
+    
+    return spotIds;
+  }
+
+  /// Navigate to a spot by fetching it first to get location info
+  Future<void> _navigateToSpot(String spotId) async {
+    try {
+      final spotDoc = await _firestore.collection('spots').doc(spotId).get();
+      if (spotDoc.exists) {
+        final spot = Spot.fromFirestore(spotDoc);
+        final navigationUrl = UrlService.generateNavigationUrl(
+          spotId,
+          countryCode: spot.countryCode,
+          city: spot.city,
+        );
+        if (mounted) {
+          context.go(navigationUrl);
+        }
+      } else {
+        // Fallback to simple route if spot doesn't exist
+        if (mounted) {
+          context.go('/spot/$spotId');
+        }
+      }
+    } catch (e) {
+      // Fallback to simple route on error
+      if (mounted) {
+        context.go('/spot/$spotId');
+      }
     }
   }
 
@@ -424,6 +508,8 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                           final formattedDate =
                               dateFormat.format(entry.timestamp);
 
+                          final spotIds = _getSpotIdsFromEntry(entry);
+                          
                           return Card(
                             margin: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 4),
@@ -470,9 +556,39 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                   ),
                                 ],
                               ),
+                              trailing: spotIds.isNotEmpty
+                                  ? Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: spotIds.asMap().entries.map((spotEntry) {
+                                        final isLast = spotEntry.key == spotIds.length - 1;
+                                        return Padding(
+                                          padding: EdgeInsets.only(
+                                            right: isLast ? 0 : 4,
+                                          ),
+                                          child: IconButton(
+                                            icon: Icon(
+                                              spotIds.length > 1 && spotEntry.key == 0
+                                                  ? Icons.location_on
+                                                  : Icons.open_in_new,
+                                              size: 20,
+                                            ),
+                                            tooltip: spotIds.length > 1 && spotEntry.key == 0
+                                                ? 'Open original spot'
+                                                : spotIds.length > 1
+                                                    ? 'Open duplicate spot'
+                                                    : 'Open spot',
+                                            onPressed: () => _navigateToSpot(spotEntry.value),
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(),
+                                          ),
+                                        );
+                                      }).toList(),
+                                    )
+                                  : null,
                               isThreeLine: true,
                               onTap: () {
                                 // Show details dialog
+                                final dialogSpotIds = _getSpotIdsFromEntry(entry);
                                 showDialog(
                                   context: context,
                                   builder: (context) => AlertDialog(
@@ -489,6 +605,49 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                           if (entry.id != null) ...[
                                             const SizedBox(height: 8),
                                             Text('ID: ${entry.id}'),
+                                          ],
+                                          if (dialogSpotIds.isNotEmpty) ...[
+                                            const SizedBox(height: 16),
+                                            const Text(
+                                              'Related Spots:',
+                                              style: TextStyle(
+                                                  fontWeight: FontWeight.bold),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            ...dialogSpotIds.asMap().entries.map(
+                                              (spotEntry) => Padding(
+                                                padding: const EdgeInsets.only(
+                                                    bottom: 8),
+                                                child: Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: Text(
+                                                        dialogSpotIds.length > 1 && spotEntry.key == 0
+                                                            ? 'Original: ${spotEntry.value}'
+                                                            : dialogSpotIds.length > 1
+                                                                ? 'Duplicate: ${spotEntry.value}'
+                                                                : 'Spot: ${spotEntry.value}',
+                                                        style: const TextStyle(
+                                                            fontSize: 12),
+                                                      ),
+                                                    ),
+                                                    IconButton(
+                                                      icon: const Icon(
+                                                        Icons.open_in_new,
+                                                        size: 20,
+                                                      ),
+                                                      tooltip: 'Open spot',
+                                                      onPressed: () {
+                                                        Navigator.of(context).pop();
+                                                        _navigateToSpot(spotEntry.value);
+                                                      },
+                                                      padding: EdgeInsets.zero,
+                                                      constraints: const BoxConstraints(),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
                                           ],
                                           if (entry.metadata != null &&
                                               entry.metadata!.isNotEmpty) ...[
@@ -515,6 +674,30 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                       ),
                                     ),
                                     actions: [
+                                      if (dialogSpotIds.isNotEmpty) ...[
+                                        ...dialogSpotIds.asMap().entries.map(
+                                          (spotEntry) => TextButton.icon(
+                                            icon: Icon(
+                                              dialogSpotIds.length > 1 && spotEntry.key == 0
+                                                  ? Icons.location_on
+                                                  : Icons.open_in_new,
+                                              size: 18,
+                                            ),
+                                            label: Text(
+                                              dialogSpotIds.length > 1 && spotEntry.key == 0
+                                                  ? 'Open Original'
+                                                  : dialogSpotIds.length > 1
+                                                      ? 'Open Duplicate'
+                                                      : 'Open Spot',
+                                            ),
+                                            onPressed: () {
+                                              Navigator.of(context).pop();
+                                              _navigateToSpot(spotEntry.value);
+                                            },
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                      ],
                                       TextButton(
                                         onPressed: () =>
                                             Navigator.of(context).pop(),

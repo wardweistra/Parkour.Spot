@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
 import '../models/spot_report.dart';
+import 'audit_log_service.dart';
 
 /// Service responsible for submitting spot reports to Firestore.
 class SpotReportService {
@@ -9,6 +10,7 @@ class SpotReportService {
     : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
+  final AuditLogService _auditLogService = AuditLogService();
 
   /// Default categories shown to the user when reporting a spot.
   static const List<String> defaultCategories = <String>[
@@ -68,16 +70,41 @@ class SpotReportService {
   Future<bool> updateReportStatus({
     required String reportId,
     required String status,
+    String? userId,
+    String? userName,
   }) async {
     if (!statuses.contains(status)) {
       throw ArgumentError.value(status, 'status', 'Invalid report status');
     }
 
     try {
+      // Get the current report to retrieve old status and spotId
+      final reportDoc = await _firestore.collection('spotReports').doc(reportId).get();
+      if (!reportDoc.exists) {
+        debugPrint('Report $reportId does not exist');
+        return false;
+      }
+
+      final reportData = reportDoc.data()!;
+      final oldStatus = reportData['status'] as String? ?? 'New';
+      final spotId = reportData['spotId'] as String? ?? '';
+
+      // Update the status
       await _firestore.collection('spotReports').doc(reportId).update({
         'status': status,
         'updatedAt': FieldValue.serverTimestamp(),
       });
+
+      // Log the status change
+      await _auditLogService.logSpotReportStatusChange(
+        reportId: reportId,
+        spotId: spotId,
+        oldStatus: oldStatus,
+        newStatus: status,
+        userId: userId,
+        userName: userName,
+      );
+
       return true;
     } catch (e) {
       debugPrint('Error updating report status: $e');

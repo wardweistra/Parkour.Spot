@@ -131,7 +131,16 @@ class _SpotReportQueueScreenState extends State<SpotReportQueueScreen> {
 
     setState(() => _updatingReportIds.add(report.id));
     final service = context.read<SpotReportService>();
-    final success = await service.updateReportStatus(reportId: report.id, status: status);
+    final authService = context.read<AuthService>();
+    final user = authService.currentUser;
+    final userProfile = authService.userProfile;
+    
+    final success = await service.updateReportStatus(
+      reportId: report.id,
+      status: status,
+      userId: user?.uid,
+      userName: userProfile?.displayName ?? user?.email,
+    );
 
     if (!mounted) return;
 

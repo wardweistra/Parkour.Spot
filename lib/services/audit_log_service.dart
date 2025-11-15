@@ -124,5 +124,35 @@ class AuditLogService {
       return [];
     }
   }
+
+  /// Log when a spot report status is changed
+  Future<void> logSpotReportStatusChange({
+    required String reportId,
+    required String spotId,
+    required String oldStatus,
+    required String newStatus,
+    required String? userId,
+    required String? userName,
+  }) async {
+    try {
+      await _firestore.collection('auditLog').add({
+        'action': AuditLogAction.spotReportStatusChange.toString().split('.').last,
+        'reportId': reportId,
+        'spotId': spotId,
+        'userId': userId,
+        'userName': userName,
+        'timestamp': FieldValue.serverTimestamp(),
+        'changes': {
+          'status': {
+            'from': oldStatus,
+            'to': newStatus,
+          },
+        },
+      });
+    } catch (e) {
+      debugPrint('Error logging spot report status change: $e');
+      // Don't throw - audit logging should not break the main operation
+    }
+  }
 }
 
