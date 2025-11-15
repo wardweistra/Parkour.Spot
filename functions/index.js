@@ -3503,7 +3503,7 @@ exports.reverseGeocodeAddress = onCall(
 
 // Function to cleanup unused images by moving them to trash (admin only)
 exports.cleanupUnusedImages = onCall(
-    {region: "europe-west1", memory: "1GiB", timeoutSeconds: 540},
+    {region: "europe-west1", memory: "2GiB", timeoutSeconds: 540},
     async (request) => {
       try {
         await ensureAdmin(request);
@@ -3563,17 +3563,6 @@ exports.cleanupUnusedImages = onCall(
         });
 
         console.log(`Found ${usedImageUrls.size} images currently in use`);
-        console.log(
-            "Used image filenames:",
-            Array.from(usedImageUrls).slice(0, 10),
-        ); // Log first 10 for debugging
-
-        // List all files in the spots folder (including resized subfolder)
-        const [files] = await bucket.getFiles({
-          prefix: "spots/",
-        });
-
-        console.log(`Found ${files.length} total files in storage`);
 
         // Helper function to check if a file is a resized version of a used image
         const isResizedVersionOfUsedImage = (fileName) => {
@@ -3608,77 +3597,163 @@ exports.cleanupUnusedImages = onCall(
 
         let movedCount = 0;
         let skippedCount = 0;
+        let totalFiles = 0;
         const movedFiles = [];
+        const BATCH_SIZE = 100; // Process files in batches
+        const LOG_INTERVAL = 1000; // Log progress every N files
 
-        for (const file of files) {
-          const fileName = file.name;
-          const fileNameOnly = fileName.split("/").pop();
+        // Helper function to process a batch of files
+        const processBatch = async (
+            files,
+            usedImageUrls,
+            isResizedVersionOfUsedImage,
+        ) => {
+          let batchMovedCount = 0;
+          let batchSkippedCount = 0;
+          const batchMovedFiles = [];
 
-          // Skip if file is currently in use (original image)
-          if (usedImageUrls.has(fileNameOnly)) {
-            skippedCount++;
-            console.log(`Skipping used original file: ${fileNameOnly}`);
-            continue;
-          }
+          for (const file of files) {
+            const fileName = file.name;
+            const fileNameOnly = fileName.split("/").pop();
 
-          // Skip if file is a resized version of a used image
-          if (isResizedVersionOfUsedImage(fileName)) {
-            skippedCount++;
-            console.log(`Skipping resized version of used image: ${fileNameOnly}`);
-            continue;
-          }
-
-          // Skip if already in trash folder
-          if (fileName.startsWith("spots/trash/")) {
-            skippedCount++;
-            console.log(`Skipping file already in trash: ${fileNameOnly}`);
-            continue;
-          }
-
-          try {
-            // Determine trash path based on file location
-            let trashFileName;
-            if (fileName.startsWith("spots/resized/")) {
-              // Keep resized folder structure in trash
-              trashFileName = `spots/trash/resized/${fileNameOnly}`;
-            } else {
-              // Original images go directly to trash root
-              trashFileName = `spots/trash/${fileNameOnly}`;
+            // Skip if file is currently in use (original image)
+            if (usedImageUrls.has(fileNameOnly)) {
+              batchSkippedCount++;
+              continue;
             }
 
-            console.log(`Moving ${fileNameOnly} to ${trashFileName}`);
+            // Skip if file is a resized version of a used image
+            if (isResizedVersionOfUsedImage(fileName)) {
+              batchSkippedCount++;
+              continue;
+            }
 
-            // Copy to trash location
-            await file.copy(trashFileName);
-            console.log(`Copied ${fileNameOnly} to trash`);
+            // Skip if already in trash folder
+            if (fileName.startsWith("spots/trash/")) {
+              batchSkippedCount++;
+              continue;
+            }
 
-            // Delete original file
-            await file.delete();
-            console.log(`Deleted original ${fileNameOnly}`);
+            try {
+              // Determine trash path based on file location
+              let trashFileName;
+              if (fileName.startsWith("spots/resized/")) {
+                // Keep resized folder structure in trash
+                trashFileName = `spots/trash/resized/${fileNameOnly}`;
+              } else {
+                // Original images go directly to trash root
+                trashFileName = `spots/trash/${fileNameOnly}`;
+              }
 
-            movedCount++;
-            movedFiles.push(fileName);
-            console.log(
-                `Successfully moved unused file to trash: ${fileNameOnly}`,
-            );
-          } catch (moveError) {
-            console.error(`Failed to move file ${fileName} to trash:`, moveError);
+              // Copy to trash location
+              await file.copy(trashFileName);
+
+              // Delete original file
+              await file.delete();
+
+              batchMovedCount++;
+              batchMovedFiles.push(fileName);
+            } catch (moveError) {
+              console.error(`Failed to move file ${fileName} to trash:`, moveError);
+            }
           }
-        }
 
-        const result = {
-          success: true,
-          movedCount,
-          skippedCount,
-          totalFiles: files.length,
-          movedFiles: movedFiles.slice(0, 10), // Limit to first 10 for response size
-          message:
-          `Cleanup completed. Moved ${movedCount} unused images (including resized versions) to ` +
-          `trash, skipped ${skippedCount} files.`,
+          return {batchMovedCount, batchSkippedCount, batchMovedFiles};
         };
 
-        console.log("Unused images cleanup completed:", result);
-        return result;
+        // Process files using streaming to avoid loading all into memory
+        return new Promise((resolve, reject) => {
+          const fileStream = bucket.getFilesStream({
+            prefix: "spots/",
+          });
+
+          let batch = [];
+          let processedInBatch = 0;
+          let isProcessing = false;
+
+          fileStream
+              .on("data", (file) => {
+                totalFiles++;
+                batch.push(file);
+
+                // Process batch when it reaches BATCH_SIZE (only if not already processing)
+                if (batch.length >= BATCH_SIZE && !isProcessing) {
+                  fileStream.pause(); // Pause the stream while processing
+                  isProcessing = true;
+
+                  const currentBatch = batch;
+                  batch = [];
+
+                  processBatch(
+                      currentBatch,
+                      usedImageUrls,
+                      isResizedVersionOfUsedImage,
+                  )
+                      .then((result) => {
+                        movedCount += result.batchMovedCount;
+                        skippedCount += result.batchSkippedCount;
+                        movedFiles.push(...result.batchMovedFiles);
+                        processedInBatch += currentBatch.length;
+
+                        // Log progress periodically
+                        if (processedInBatch % LOG_INTERVAL === 0) {
+                          console.log(
+                              `Processed ${processedInBatch} files. ` +
+                              `Moved: ${movedCount}, Skipped: ${skippedCount}`,
+                          );
+                        }
+
+                        isProcessing = false;
+                        fileStream.resume(); // Resume the stream
+                      })
+                      .catch((error) => {
+                        fileStream.destroy();
+                        reject(error);
+                      });
+                }
+              })
+              .on("end", async () => {
+                // Wait for any ongoing batch processing to complete
+                while (isProcessing) {
+                  await new Promise((r) => setTimeout(r, 100));
+                }
+
+                // Process remaining files in the batch
+                if (batch.length > 0) {
+                  try {
+                    const result = await processBatch(
+                        batch,
+                        usedImageUrls,
+                        isResizedVersionOfUsedImage,
+                    );
+                    movedCount += result.batchMovedCount;
+                    skippedCount += result.batchSkippedCount;
+                    movedFiles.push(...result.batchMovedFiles);
+                  } catch (error) {
+                    reject(error);
+                    return;
+                  }
+                }
+
+                const result = {
+                  success: true,
+                  movedCount,
+                  skippedCount,
+                  totalFiles,
+                  movedFiles: movedFiles.slice(0, 10), // Limit to first 10 for response size
+                  message:
+                  `Cleanup completed. Moved ${movedCount} unused images ` +
+                  `(including resized versions) to trash, skipped ${skippedCount} files.`,
+                };
+
+                console.log("Unused images cleanup completed:", result);
+                resolve(result);
+              })
+              .on("error", (error) => {
+                console.error("Error streaming files:", error);
+                reject(error);
+              });
+        });
       } catch (error) {
         console.error("Error during unused images cleanup:", error);
         return {
