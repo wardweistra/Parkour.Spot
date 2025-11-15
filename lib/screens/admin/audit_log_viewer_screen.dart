@@ -283,6 +283,36 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                 details = 'Spot report status updated';
               }
               break;
+            case AuditLogAction.spotDelete:
+              title = 'Spot Deleted';
+              subtitle = auditLog.userName != null
+                  ? 'Deleted by ${auditLog.userName}'
+                  : auditLog.userId != null
+                      ? 'Deleted by ${auditLog.userId}'
+                      : 'Deleted by unknown';
+              if (auditLog.metadata != null) {
+                final spotName = auditLog.metadata!['spotName'] as String?;
+                final ratingsCount = auditLog.metadata!['ratingsCount'] as int? ?? 0;
+                final spotReportsCount = auditLog.metadata!['spotReportsCount'] as int? ?? 0;
+                final duplicateSpotsCount = auditLog.metadata!['duplicateSpotsCount'] as int? ?? 0;
+                
+                details = spotName != null ? 'Spot: $spotName' : 'Spot deleted';
+                if (ratingsCount > 0 || spotReportsCount > 0 || duplicateSpotsCount > 0) {
+                  details += '\nLinked data at deletion:';
+                  if (ratingsCount > 0) {
+                    details += '\n  • Ratings: $ratingsCount';
+                  }
+                  if (spotReportsCount > 0) {
+                    details += '\n  • Spot Reports: $spotReportsCount';
+                  }
+                  if (duplicateSpotsCount > 0) {
+                    details += '\n  • Duplicate Spots: $duplicateSpotsCount';
+                  }
+                }
+              } else {
+                details = 'Spot permanently deleted';
+              }
+              break;
           }
 
           newEntries.add(AuditLogEntry(

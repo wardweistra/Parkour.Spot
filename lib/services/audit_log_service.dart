@@ -154,5 +154,27 @@ class AuditLogService {
       // Don't throw - audit logging should not break the main operation
     }
   }
+
+  /// Log when a spot is deleted
+  Future<void> logSpotDelete({
+    required String spotId,
+    required String? userId,
+    required String? userName,
+    Map<String, dynamic>? metadata,
+  }) async {
+    try {
+      await _firestore.collection('auditLog').add({
+        'action': AuditLogAction.spotDelete.toString().split('.').last,
+        'spotId': spotId,
+        'userId': userId,
+        'userName': userName,
+        'timestamp': FieldValue.serverTimestamp(),
+        if (metadata != null) 'metadata': metadata,
+      });
+    } catch (e) {
+      debugPrint('Error logging spot delete: $e');
+      // Don't throw - audit logging should not break the main operation
+    }
+  }
 }
 

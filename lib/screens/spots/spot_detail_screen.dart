@@ -20,6 +20,8 @@ import '../../services/snackbar_service.dart';
 import '../../utils/image_url_utils.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode, debugPrint;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../services/audit_log_service.dart';
 
 class SpotDetailScreen extends StatefulWidget {
   final Spot spot;
@@ -2785,13 +2787,105 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     }
   }
 
-  void _showDeleteDialog() {
+  Future<void> _showDeleteDialog() async {
+    if (_spot.id == null) return;
+
+    // Show loading dialog while fetching counts
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 16),
+            Text('Checking linked data...'),
+          ],
+        ),
+      ),
+    );
+
+    // Fetch linked data counts
+    final firestore = FirebaseFirestore.instance;
+    final spotId = _spot.id!;
+
+    int ratingsCount = 0;
+    int spotReportsCount = 0;
+    int duplicateSpotsCount = 0;
+
+    try {
+      // Query counts in parallel
+      final results = await Future.wait([
+        firestore.collection('ratings').where('spotId', isEqualTo: spotId).count().get(),
+        firestore.collection('spotReports').where('spotId', isEqualTo: spotId).count().get(),
+        firestore.collection('spots').where('duplicateOf', isEqualTo: spotId).count().get(),
+      ]);
+
+      ratingsCount = results[0].count ?? 0;
+      spotReportsCount = results[1].count ?? 0;
+      duplicateSpotsCount = results[2].count ?? 0;
+    } catch (e) {
+      debugPrint('Error fetching linked data counts: $e');
+      // Continue with counts as 0 if there's an error
+    }
+
+    // Close loading dialog
+    if (mounted) {
+      Navigator.pop(context);
+    }
+
+    final canDelete = ratingsCount == 0 && spotReportsCount == 0 && duplicateSpotsCount == 0;
+
+    if (!mounted) return;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Spot'),
-        content: const Text(
-          'Are you sure you want to delete this spot? This action cannot be undone.',
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Are you sure you want to delete this spot? This action cannot be undone.',
+              ),
+              const SizedBox(height: 16),
+              if (ratingsCount > 0 || spotReportsCount > 0 || duplicateSpotsCount > 0) ...[
+                const Divider(),
+                const SizedBox(height: 8),
+                const Text(
+                  'This spot has linked data:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                if (ratingsCount > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text('• Ratings: $ratingsCount'),
+                  ),
+                if (spotReportsCount > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text('• Spot Reports: $spotReportsCount'),
+                  ),
+                if (duplicateSpotsCount > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text('• Duplicate Spots: $duplicateSpotsCount'),
+                  ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Please resolve these links before deleting the spot.',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -2799,49 +2893,92 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              try {
-                final spotService = Provider.of<SpotService>(
-                  context,
-                  listen: false,
-                );
-                final success = await spotService.deleteSpot(_spot.id!);
+            onPressed: canDelete
+                ? () async {
+                    Navigator.pop(context);
+                    
+                    // Capture spot data before deletion for audit logging
+                    final spotId = _spot.id!;
+                    final spotName = _spot.name;
+                    final capturedRatingsCount = ratingsCount;
+                    final capturedSpotReportsCount = spotReportsCount;
+                    final capturedDuplicateSpotsCount = duplicateSpotsCount;
+                    
+                    try {
+                      final spotService = Provider.of<SpotService>(
+                        context,
+                        listen: false,
+                      );
+                      final authService = Provider.of<AuthService>(
+                        context,
+                        listen: false,
+                      );
+                      
+                      // Get user info for audit logging
+                      final userId = authService.userProfile?.id ?? authService.currentUser?.uid;
+                      final userName = authService.userProfile?.displayName ?? 
+                                      authService.currentUser?.displayName ?? 
+                                      authService.currentUser?.email;
+                      
+                      final success = await spotService.deleteSpot(spotId);
 
-                if (!mounted) return;
-                final scaffoldMessenger = ScaffoldMessenger.of(context);
+                      if (success) {
+                        // Log the deletion to audit log BEFORE checking mounted state
+                        // This doesn't require the widget to be mounted
+                        try {
+                          final auditLogService = AuditLogService();
+                          await auditLogService.logSpotDelete(
+                            spotId: spotId,
+                            userId: userId,
+                            userName: userName,
+                            metadata: {
+                              'spotName': spotName,
+                              'ratingsCount': capturedRatingsCount,
+                              'spotReportsCount': capturedSpotReportsCount,
+                              'duplicateSpotsCount': capturedDuplicateSpotsCount,
+                            },
+                          );
+                        } catch (auditError) {
+                          debugPrint('Error creating audit log entry: $auditError');
+                          // Don't fail the deletion if audit logging fails
+                        }
 
-                if (success) {
-                  // Show success message first
-                  scaffoldMessenger.showSnackBar(
-                    const SnackBar(
-                      content: Text('Spot deleted successfully'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
+                        // Now check if mounted for UI operations
+                        if (!mounted) return;
+                        
+                        final scaffoldMessenger = ScaffoldMessenger.of(context);
+                        scaffoldMessenger.showSnackBar(
+                          const SnackBar(
+                            content: Text('Spot deleted successfully'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
 
-                  // Navigate to explore immediately after successful deletion
-                  // Use replace to ensure we don't go back to the deleted spot
-                  if (!mounted) return;
-                  context.replace('/explore');
-                } else {
-                  scaffoldMessenger.showSnackBar(
-                    const SnackBar(
-                      content: Text('Failed to delete spot'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              } catch (e) {
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Error deleting spot: $e'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            },
+                        // Navigate to explore immediately after successful deletion
+                        // Use replace to ensure we don't go back to the deleted spot
+                        if (!mounted) return;
+                        context.replace('/explore');
+                      } else {
+                        if (!mounted) return;
+                        final scaffoldMessenger = ScaffoldMessenger.of(context);
+                        scaffoldMessenger.showSnackBar(
+                          const SnackBar(
+                            content: Text('Failed to delete spot'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Error deleting spot: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                : null,
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Delete'),
           ),
