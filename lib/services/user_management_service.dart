@@ -71,7 +71,7 @@ class UserManagementService extends ChangeNotifier {
     try {
       final querySnapshot = await _firestore
           .collection('users')
-          .orderBy('email')
+          .orderBy('createdAt', descending: true)
           .limit(limit)
           .get();
 

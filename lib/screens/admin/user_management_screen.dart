@@ -126,13 +126,21 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   );
                 }
 
-                final List<app_user.User> filteredUsers = _searchTerm.isEmpty
-                    ? service.users
+                final List<app_user.User> filteredUsers = (_searchTerm.isEmpty
+                    ? List<app_user.User>.from(service.users)
                     : service.users.where((user) {
                         final name = user.displayName?.toLowerCase() ?? '';
                         final email = user.email.toLowerCase();
                         return name.contains(_searchTerm) || email.contains(_searchTerm);
-                      }).toList();
+                      }).toList())
+                  ..sort((a, b) {
+                    // Sort by createdAt in reverse chronological order (newest first)
+                    // Users without createdAt go to the end
+                    if (a.createdAt == null && b.createdAt == null) return 0;
+                    if (a.createdAt == null) return 1;
+                    if (b.createdAt == null) return -1;
+                    return b.createdAt!.compareTo(a.createdAt!);
+                  });
 
                 if (filteredUsers.isEmpty) {
                   return RefreshIndicator(
