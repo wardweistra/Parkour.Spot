@@ -579,7 +579,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                   // Native only option
                   RadioListTile<String?>(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Parkour.Spot (Native)'),
+                    title: const Text('Parkour·Spot (Native)'),
                     value: "",
                     groupValue: _selectedSpotSource,
                     onChanged: (value) {

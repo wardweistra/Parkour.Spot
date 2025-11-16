@@ -22,6 +22,7 @@ import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode, debugPrint;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/audit_log_service.dart';
+import 'package:web/web.dart' as web;
 
 class SpotDetailScreen extends StatefulWidget {
   final Spot spot;
@@ -88,6 +89,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     _loadRatingStats(); // Load rating stats once on init
     // Note: User rating will be loaded when auth state is restored via FutureBuilder
 
+    // Update document title for web
+    _updateDocumentTitle();
+
     // Load original spot if this is a duplicate
     if (widget.spot.duplicateOf != null) {
       _loadOriginalSpot();
@@ -110,6 +114,12 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     });
   }
 
+  void _updateDocumentTitle() {
+    if (kIsWeb) {
+      web.document.title = '${_spot.name} - Parkour·Spot';
+    }
+  }
+
   void _onSearchStateChanged() {
     if (!mounted) return;
     final searchState = _searchStateServiceRef;
@@ -122,6 +132,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
   @override
   void dispose() {
+    // Reset document title to default when leaving spot page
+    if (kIsWeb) {
+      web.document.title = 'Parkour·Spot';
+    }
     _scrollController.dispose();
     _videoPageController.dispose();
     _searchStateServiceRef?.removeListener(_onSearchStateChanged);
@@ -2774,6 +2788,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           setState(() {
             _currentSpot = updatedSpot;
           });
+          // Update document title if spot name changed
+          _updateDocumentTitle();
         }
 
         _showSuccessSnack(newHiddenState ? 'Spot hidden successfully.' : 'Spot unhidden successfully.');

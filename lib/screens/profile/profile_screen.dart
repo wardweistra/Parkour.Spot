@@ -350,7 +350,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildAboutSection(BuildContext context) {
-    const initialText = 'Parkour.spot is a community-driven app for discovering and sharing parkour and freerunning spots worldwide. We\'re making it simple to find quality locations—wherever you train.';
+    const initialText = 'Parkour·Spot is a community-driven app for discovering and sharing parkour and freerunning spots worldwide. We\'re making it simple to find quality locations—wherever you train.';
     
     final textStyle = Theme.of(context).textTheme.bodyLarge?.copyWith(
       color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),

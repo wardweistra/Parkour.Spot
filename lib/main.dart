@@ -53,7 +53,7 @@ class ParkourSpotApp extends StatelessWidget {
         Provider(create: (_) => SpotReportService()),
       ],
       child: MaterialApp.router(
-        title: 'Parkour.Spot',
+        title: 'Parkour·Spot',
         routerConfig: AppRouter.router,
         scaffoldMessengerKey: SnackbarService.messengerKey,
         theme: ThemeData(

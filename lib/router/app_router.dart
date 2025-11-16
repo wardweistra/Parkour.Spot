@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:web/web.dart' as web;
 import '../screens/splash_screen.dart';
 import '../screens/explore_screen.dart';
 import '../screens/admin/admin_home_screen.dart';
@@ -20,9 +21,64 @@ import '../models/spot.dart';
 import '../services/spot_service.dart';
 import '../services/auth_service.dart';
 
+/// Router observer that updates the document title based on the current route
+class TitleObserver extends NavigatorObserver {
+  static const String defaultTitle = 'Parkour·Spot';
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    super.didPush(route, previousRoute);
+    _updateTitle(route);
+  }
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    super.didPop(route, previousRoute);
+    if (previousRoute != null) {
+      _updateTitle(previousRoute);
+    } else {
+      _setTitle(defaultTitle);
+    }
+  }
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
+    if (newRoute != null) {
+      _updateTitle(newRoute);
+    } else {
+      _setTitle(defaultTitle);
+    }
+  }
+
+  void _updateTitle(Route<dynamic> route) {
+    // Title updates for spot pages are handled in SpotDetailScreen
+    // This observer handles default titles for other routes
+    final routeSettings = route.settings;
+    if (routeSettings.name != null && !_isSpotRoute(routeSettings.name!)) {
+      _setTitle(defaultTitle);
+    }
+  }
+
+  bool _isSpotRoute(String routeName) {
+    // Check if this is a spot detail route
+    return routeName.contains('/spot/') || 
+           RegExp(r'^/[a-z]{2}/[^/]+/[^/]+$').hasMatch(routeName);
+  }
+
+  void _setTitle(String title) {
+    if (kIsWeb) {
+      web.document.title = title;
+    }
+  }
+}
+
 class AppRouter {
+  static final TitleObserver _titleObserver = TitleObserver();
+  
   static final GoRouter router = GoRouter(
     initialLocation: '/',
+    observers: [_titleObserver],
     redirect: (context, state) {
       // If we're already on a spot detail page, don't redirect
       if (_isSpotUrl(state.matchedLocation)) {

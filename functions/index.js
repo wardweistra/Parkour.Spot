@@ -291,7 +291,7 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
       canonicalUrl = `https://${canonicalHost}${canonicalPath}`;
     }
 
-    const siteName = "Parkour.Spot";
+    const siteName = "Parkour·Spot";
     const defaultTitle = `${siteName}`;
     const defaultImage = `https://${canonicalHost}/icons/Icon-512.png`;
 

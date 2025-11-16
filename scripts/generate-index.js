@@ -13,11 +13,11 @@ const { generateHtmlPage } = require('../functions/html-template');
 
 // Generate the default index.html
 const html = generateHtmlPage({
-  title: "Parkour.Spot",
+  title: "Parkour·Spot",
   description: "Discover and share parkour spots around the world",
   image: "icons/Icon-512.png",
   url: null,
-  siteName: "Parkour.Spot",
+  siteName: "Parkour·Spot",
   isDynamic: false,
   serviceWorkerVersion: "{{flutter_service_worker_version}}"
 });

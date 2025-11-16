@@ -1,4 +1,4 @@
-# 🏃‍♂️ Parkour.Spot
+# 🏃‍♂️ Parkour·Spot
 
 A cross-platform Flutter application for discovering, reporting, and rating parkour spots. Built with Firebase backend services and modern Flutter architecture.
 

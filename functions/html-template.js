@@ -8,21 +8,21 @@ const GOOGLE_MAPS_API_KEY = 'AIzaSyAAhFK9QYxOlbI3ySWTmoFIJKLAl8CL-qo';
 /**
  * Generate the HTML head section with optional dynamic meta tags
  * @param {Object} options - Configuration options
- * @param {string} options.title - Page title (default: "Parkour.Spot")
+ * @param {string} options.title - Page title (default: "Parkour·Spot")
  * @param {string} options.description - Meta description (default: "Discover and share parkour spots around the world")
  * @param {string} options.image - Meta image URL (default: "icons/Icon-512.png")
  * @param {string} options.url - Canonical URL (optional)
- * @param {string} options.siteName - Site name (default: "Parkour.Spot")
+ * @param {string} options.siteName - Site name (default: "Parkour·Spot")
  * @param {boolean} options.isDynamic - Whether to include dynamic Open Graph/Twitter tags (default: false)
  * @returns {string} HTML head content
  */
 function generateHtmlHead(options = {}) {
   const {
-    title = "Parkour.Spot",
+    title = "Parkour·Spot",
     description = "Discover and share parkour spots around the world",
     image = "icons/Icon-512.png",
     url = null,
-    siteName = "Parkour.Spot",
+    siteName = "Parkour·Spot",
     isDynamic = false
   } = options;
 
@@ -88,14 +88,14 @@ function generateHtmlHead(options = {}) {
 /**
  * Generate the HTML body section
  * @param {Object} options - Configuration options
- * @param {string} options.siteName - Site name (default: "Parkour.Spot")
+ * @param {string} options.siteName - Site name (default: "Parkour·Spot")
  * @param {string} options.url - URL for noscript fallback (optional)
  * @param {string} options.serviceWorkerVersion - Service worker version (default: null)
  * @returns {string} HTML body content
  */
 function generateHtmlBody(options = {}) {
   const {
-    siteName = "Parkour.Spot",
+    siteName = "Parkour·Spot",
     url = null,
     serviceWorkerVersion = null
   } = options;
