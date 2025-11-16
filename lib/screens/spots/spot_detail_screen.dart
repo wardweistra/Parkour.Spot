@@ -3328,7 +3328,7 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
               ),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                value: selectedCategory,
+                initialValue: selectedCategory,
                 decoration: InputDecoration(
                   labelText: 'Select a category',
                   hintText: 'Choose a report category',
