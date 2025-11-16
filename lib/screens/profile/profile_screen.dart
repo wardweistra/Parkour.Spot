@@ -1,14 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/instagram_button.dart';
 import '../../widgets/github_button.dart';
 import '../../widgets/report_issue_button.dart';
+import '../../widgets/email_button.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  bool _isExpanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -41,83 +51,7 @@ class ProfileScreen extends StatelessWidget {
           Card(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isWideScreen = constraints.maxWidth > 600;
-                  
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'About',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      isWideScreen
-                          ? Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    'Parkour.Spot is an open source app for finding and sharing spots for parkour and freerunning. Discover new locations, share your favorite spots, and connect with the parkour community.',
-                                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 24),
-                                Expanded(
-                                  child: Column(
-                                    children: [
-                                      InstagramButton(
-                                        handle: 'parkourdotspot',
-                                        label: '@parkourdotspot',
-                                      ),
-                                      const SizedBox(height: 16),
-                                      GitHubButton(
-                                        url: 'https://github.com/wardweistra/Parkour.Spot/',
-                                        label: 'View source code',
-                                      ),
-                                      const SizedBox(height: 16),
-                                      ReportIssueButton(
-                                        url: 'https://github.com/wardweistra/Parkour.Spot/issues',
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            )
-                          : Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Parkour.Spot is an open source app for finding and sharing spots for parkour and freerunning. Discover new locations, share your favorite spots, and connect with the parkour community.',
-                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                InstagramButton(
-                                  handle: 'parkourdotspot',
-                                  label: '@parkourdotspot',
-                                ),
-                                const SizedBox(height: 16),
-                                GitHubButton(
-                                  url: 'https://github.com/wardweistra/Parkour.Spot/',
-                                  label: 'View source code',
-                                ),
-                                const SizedBox(height: 16),
-                                ReportIssueButton(
-                                  url: 'https://github.com/wardweistra/Parkour.Spot/issues',
-                                ),
-                              ],
-                            ),
-                    ],
-                  );
-                },
-              ),
+              child: _buildAboutSection(context),
             ),
           ),
           
@@ -289,83 +223,7 @@ class ProfileScreen extends StatelessWidget {
           Card(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isWideScreen = constraints.maxWidth > 600;
-                  
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'About',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      isWideScreen
-                          ? Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    'Parkour.Spot is an open source app for finding and sharing spots for parkour and freerunning. Discover new locations, share your favorite spots, and connect with the parkour community.',
-                                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 24),
-                                Expanded(
-                                  child: Column(
-                                    children: [
-                                      InstagramButton(
-                                        handle: 'parkourdotspot',
-                                        label: '@parkourdotspot',
-                                      ),
-                                      const SizedBox(height: 16),
-                                      GitHubButton(
-                                        url: 'https://github.com/wardweistra/Parkour.Spot/',
-                                        label: 'View source code',
-                                      ),
-                                      const SizedBox(height: 16),
-                                      ReportIssueButton(
-                                        url: 'https://github.com/wardweistra/Parkour.Spot/issues',
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            )
-                          : Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Parkour.Spot is an open source app for finding and sharing spots for parkour and freerunning. Discover new locations, share your favorite spots, and connect with the parkour community.',
-                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                InstagramButton(
-                                  handle: 'parkourdotspot',
-                                  label: '@parkourdotspot',
-                                ),
-                                const SizedBox(height: 16),
-                                GitHubButton(
-                                  url: 'https://github.com/wardweistra/Parkour.Spot/',
-                                  label: 'View source code',
-                                ),
-                                const SizedBox(height: 16),
-                                ReportIssueButton(
-                                  url: 'https://github.com/wardweistra/Parkour.Spot/issues',
-                                ),
-                              ],
-                            ),
-                    ],
-                  );
-                },
-              ),
+              child: _buildAboutSection(context),
             ),
           ),
           
@@ -406,6 +264,232 @@ class ProfileScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildExpandedText(BuildContext context) {
+    final textStyle = Theme.of(context).textTheme.bodyLarge?.copyWith(
+      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+    );
+    
+    final linkStyle = textStyle?.copyWith(
+      color: Theme.of(context).colorScheme.primary,
+      decoration: TextDecoration.underline,
+    );
+    
+    // Split the text at "Ward Weistra"
+    const beforeLink = 'Built by ';
+    const linkText = 'Ward Weistra';
+    const afterLink = ' from the Utrecht parkour community, the app brings together local knowledge from existing city and regional maps—whether they lived on Facebook, Instagram, websites, or retired apps—so great spot data doesn\'t get lost.';
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        RichText(
+          text: TextSpan(
+            style: textStyle,
+            children: [
+              TextSpan(text: beforeLink),
+              TextSpan(
+                text: linkText,
+                style: linkStyle,
+                recognizer: TapGestureRecognizer()
+                  ..onTap = () async {
+                    final uri = Uri.parse('https://www.instagram.com/wardweistra/');
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    }
+                  },
+              ),
+              TextSpan(text: afterLink),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'This is your map. Add new spots, rate existing ones, and enrich listings with details. The more we contribute, the stronger the community\'s shared knowledge becomes.',
+          style: textStyle,
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Our principles:',
+          style: textStyle?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.only(left: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '• Transparency: you can browse the app without an account, and each spot shows which external sources contributed to it.',
+                style: textStyle,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '• Portability: we\'re building export tools so spot data can be used beyond the app.',
+                style: textStyle,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '• Open source: the app is community-owned, not dependent on one person.',
+                style: textStyle,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Enjoy discovering and sharing spots with Parkour.spot. Questions or ideas? Tap the contact button—we\'d love to hear from you.',
+          style: textStyle,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAboutSection(BuildContext context) {
+    const initialText = 'Parkour.spot is a community-driven app for discovering and sharing parkour and freerunning spots worldwide. We\'re making it simple to find quality locations—wherever you train.';
+    
+    final textStyle = Theme.of(context).textTheme.bodyLarge?.copyWith(
+      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWideScreen = constraints.maxWidth > 600;
+        
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'About',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            isWideScreen
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  initialText,
+                                  style: textStyle,
+                                ),
+                                if (!_isExpanded) ...[
+                                  const SizedBox(height: 8),
+                                  GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _isExpanded = true;
+                                      });
+                                    },
+                                    child: Text(
+                                      'Read more',
+                                      style: textStyle?.copyWith(
+                                        color: Theme.of(context).colorScheme.primary,
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 24),
+                          Expanded(
+                            child: Column(
+                              children: [
+                                InstagramButton(
+                                  handle: 'parkourdotspot',
+                                  label: '@parkourdotspot',
+                                ),
+                                const SizedBox(height: 16),
+                                GitHubButton(
+                                  url: 'https://github.com/wardweistra/Parkour.Spot/',
+                                  label: 'View source code',
+                                ),
+                                const SizedBox(height: 16),
+                                ReportIssueButton(
+                                  url: 'https://github.com/wardweistra/Parkour.Spot/issues',
+                                ),
+                                const SizedBox(height: 16),
+                                EmailButton(
+                                  email: 'parkour.spot@wardweistra.nl',
+                                  label: 'Contact us',
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (_isExpanded) ...[
+                        const SizedBox(height: 16),
+                        _buildExpandedText(context),
+                      ],
+                    ],
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        initialText,
+                        style: textStyle,
+                      ),
+                      if (!_isExpanded) ...[
+                        const SizedBox(height: 8),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _isExpanded = true;
+                            });
+                          },
+                          child: Text(
+                            'Read more',
+                            style: textStyle?.copyWith(
+                              color: Theme.of(context).colorScheme.primary,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      ],
+                      if (_isExpanded) ...[
+                        const SizedBox(height: 16),
+                        _buildExpandedText(context),
+                      ],
+                      const SizedBox(height: 16),
+                      InstagramButton(
+                        handle: 'parkourdotspot',
+                        label: '@parkourdotspot',
+                      ),
+                      const SizedBox(height: 16),
+                      GitHubButton(
+                        url: 'https://github.com/wardweistra/Parkour.Spot/',
+                        label: 'View source code',
+                      ),
+                      const SizedBox(height: 16),
+                      ReportIssueButton(
+                        url: 'https://github.com/wardweistra/Parkour.Spot/issues',
+                      ),
+                      const SizedBox(height: 16),
+                      EmailButton(
+                        email: 'parkour.spot@wardweistra.nl',
+                        label: 'Contact us',
+                      ),
+                    ],
+                  ),
+          ],
+        );
+      },
     );
   }
 
