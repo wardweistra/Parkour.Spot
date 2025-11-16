@@ -363,6 +363,7 @@ exports.getTopSpotsInBounds = onCall(
           limit = 100,
           spotSource = null, // null = all sources, empty string = native only, string = specific source
           hasImages = false, // true = only spots with images, false = all spots
+          folder = null, // Optional single folder name to filter by (only used when spotSource is set, null = all folders)
         } = request.data || {};
 
         if (
@@ -462,6 +463,7 @@ exports.getTopSpotsInBounds = onCall(
           "tags",
           "spotSource",
           "spotSourceName",
+          "folderName",
           "averageRating",
           "ratingCount",
           "wilsonLowerBound",
@@ -472,7 +474,13 @@ exports.getTopSpotsInBounds = onCall(
 
         const maxItems = Math.max(0, Math.min(200, Number(limit) || 100));
 
-        // Build query function with source and image filtering
+        // Normalize folder string
+        let normalizedFolder = null;
+        if (folder && typeof folder === "string" && folder.trim().length > 0 && spotSource !== null && spotSource !== undefined) {
+          normalizedFolder = String(folder).trim();
+        }
+
+        // Build query function with source, image, and folder filtering
         const buildQuery = (lngMin, lngMax) => {
           let query = db
               .collection("spots")
@@ -496,13 +504,20 @@ exports.getTopSpotsInBounds = onCall(
             query = query.where("duplicateOf", "==", null);
           }
 
+          // Apply folder filter if specified (only when spotSource is set)
+          // Note: This requires a composite index on (spotSource, folderName, ranking)
+          if (normalizedFolder) {
+            query = query.where("folderName", "==", normalizedFolder);
+          }
+
           // Apply image filter if specified
           if (hasImages === true) {
             query = query.where("imageUrls", "!=", []);
           }
 
           // Exclude hidden spots from public view
-          query = query.where("hidden", "!=", true);
+          // Use == false instead of != true to avoid inequality filter conflict
+          query = query.where("hidden", "==", false);
 
           return query.orderBy("ranking", "desc");
         };
@@ -545,6 +560,9 @@ exports.getTopSpotsInBounds = onCall(
           spots = snap.docs.map((d) => ({id: d.id, ...d.data()}));
           totalCount = count.data().count || 0;
         }
+
+        // Folder filtering is now done at database level via whereIn query
+        // No additional in-memory filtering needed
 
         // Normalize Firestore Timestamp fields to ISO strings for client
         const normalize = (s) => {

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class SearchStateService extends ChangeNotifier {
   // Keys for SharedPreferences
@@ -9,6 +10,7 @@ class SearchStateService extends ChangeNotifier {
   static const String _keyIsSatellite = 'search_is_satellite';
   static const String _keyIncludeWithoutPictures = 'search_include_without_pictures';
   static const String _keySelectedSpotSource = 'search_selected_spot_source'; // null = all, "" = native, string = specific source
+  static const String _keySelectedFolders = 'search_selected_folders'; // JSON map of sourceId -> String (single folder)
 
   // Backing fields
   double? _centerLat;
@@ -17,6 +19,7 @@ class SearchStateService extends ChangeNotifier {
   bool _isSatellite = false;
   bool _includeSpotsWithoutPictures = true; // Default: include spots without pictures
   String? _selectedSpotSource; // null = all sources, "" = native only, string = specific source ID
+  Map<String, String?> _selectedFolders = {}; // sourceId -> selected folder name (null = all folders)
 
   // Getters
   double? get centerLat => _centerLat;
@@ -25,6 +28,12 @@ class SearchStateService extends ChangeNotifier {
   bool get isSatellite => _isSatellite;
   bool get includeSpotsWithoutPictures => _includeSpotsWithoutPictures;
   String? get selectedSpotSource => _selectedSpotSource;
+  Map<String, String?> get selectedFolders => Map.unmodifiable(_selectedFolders);
+  
+  /// Get selected folder for a specific source (null = all folders)
+  String? getSelectedFolderForSource(String sourceId) {
+    return _selectedFolders[sourceId];
+  }
 
   Future<void> loadFromStorage() async {
     try {
@@ -35,6 +44,29 @@ class SearchStateService extends ChangeNotifier {
       _isSatellite = prefs.getBool(_keyIsSatellite) ?? false;
       _includeSpotsWithoutPictures = prefs.getBool(_keyIncludeWithoutPictures) ?? true;
       _selectedSpotSource = prefs.getString(_keySelectedSpotSource); // null if not set (all sources)
+      
+      // Load selected folders (migrate from old format if needed)
+      final foldersJson = prefs.getString(_keySelectedFolders);
+      if (foldersJson != null) {
+        try {
+          final decoded = jsonDecode(foldersJson) as Map<String, dynamic>;
+          _selectedFolders = decoded.map((key, value) {
+            // Handle migration from old List format to new String? format
+            if (value is List && value.isNotEmpty) {
+              // Take first folder from old list format
+              return MapEntry(key, value[0] as String?);
+            } else if (value is String) {
+              return MapEntry(key, value);
+            } else {
+              return MapEntry(key, null);
+            }
+          });
+        } catch (e) {
+          // Silent fail - reset to empty map
+          _selectedFolders = {};
+        }
+      }
+      
       notifyListeners();
     } catch (e) {
       // Silent fail - persistence is best-effort
@@ -89,6 +121,23 @@ class SearchStateService extends ChangeNotifier {
       } else {
         await prefs.setString(_keySelectedSpotSource, spotSource);
       }
+    } catch (e) {
+      // Ignore SharedPreferences errors - settings will not persist but app continues to work
+    }
+  }
+
+  /// Set selected folder for a specific source (null = all folders)
+  Future<void> setSelectedFolderForSource(String sourceId, String? folder) async {
+    if (folder == null) {
+      _selectedFolders.remove(sourceId);
+    } else {
+      _selectedFolders[sourceId] = folder;
+    }
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final foldersJson = jsonEncode(_selectedFolders);
+      await prefs.setString(_keySelectedFolders, foldersJson);
     } catch (e) {
       // Ignore SharedPreferences errors - settings will not persist but app continues to work
     }

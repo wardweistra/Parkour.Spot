@@ -635,6 +635,7 @@ class SpotService extends ChangeNotifier {
     int limit = 100,
     String? spotSource, // null = all sources, empty string = native only, string = specific source
     bool hasImages = false, // true = only spots with images, false = all spots
+    String? folder, // Optional single folder name to filter by (only used when spotSource is set, null = all folders)
   }) async {
     try {
       final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
@@ -653,6 +654,10 @@ class SpotService extends ChangeNotifier {
       // Only include hasImages if it's true (false means all spots)
       if (hasImages) {
         requestData['hasImages'] = true;
+      }
+      // Only include folder if provided and spotSource is set
+      if (folder != null && folder.isNotEmpty && spotSource != null) {
+        requestData['folder'] = folder;
       }
       final result = await callable.call(requestData);
 
