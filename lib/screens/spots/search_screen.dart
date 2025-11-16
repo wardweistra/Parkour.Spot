@@ -667,37 +667,60 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                           if (isSelected && hasFolders)
                             Padding(
                               padding: const EdgeInsets.only(left: 40, top: 8, bottom: 8),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              child: Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
                                 children: [
                                   // All folders option
-                                  RadioListTile<String?>(
-                                    contentPadding: EdgeInsets.zero,
-                                    title: const Text('All Folders'),
-                                    value: null,
-                                    groupValue: searchState.getSelectedFolderForSource(source.id),
-                                    onChanged: (value) {
-                                      searchState.setSelectedFolderForSource(source.id, null);
-                                      // Reload spots with new folder filter
-                                      if (_mapController != null) {
-                                        _loadSpotsForCurrentView();
-                                      }
+                                  Builder(
+                                    builder: (context) {
+                                      final isAllSelected = searchState.getSelectedFolderForSource(source.id) == null;
+                                      return FilterChip(
+                                        label: const Text('All Folders'),
+                                        selected: isAllSelected,
+                                        onSelected: (selected) {
+                                          // Only allow selection, not deselection (radio button behavior)
+                                          if (selected && !isAllSelected) {
+                                            searchState.setSelectedFolderForSource(source.id, null);
+                                            // Reload spots with new folder filter
+                                            if (_mapController != null) {
+                                              _loadSpotsForCurrentView();
+                                            }
+                                          }
+                                        },
+                                        selectedColor: Theme.of(context).colorScheme.primaryContainer,
+                                        checkmarkColor: Theme.of(context).colorScheme.onPrimaryContainer,
+                                        labelStyle: TextStyle(
+                                          color: isAllSelected
+                                              ? Theme.of(context).colorScheme.onPrimaryContainer
+                                              : null,
+                                        ),
+                                      );
                                     },
                                   ),
                                   // Individual folder options
                                   ...(source.allFolders ?? []).map((folder) {
-                                    return RadioListTile<String?>(
-                                      contentPadding: EdgeInsets.zero,
-                                      title: Text(folder),
-                                      value: folder,
-                                      groupValue: searchState.getSelectedFolderForSource(source.id),
-                                      onChanged: (value) {
-                                        searchState.setSelectedFolderForSource(source.id, value);
-                                        // Reload spots with new folder filter
-                                        if (_mapController != null) {
-                                          _loadSpotsForCurrentView();
+                                    final isFolderSelected = searchState.getSelectedFolderForSource(source.id) == folder;
+                                    return FilterChip(
+                                      label: Text(folder),
+                                      selected: isFolderSelected,
+                                      onSelected: (selected) {
+                                        // Only allow selection, not deselection (radio button behavior)
+                                        if (selected && !isFolderSelected) {
+                                          searchState.setSelectedFolderForSource(source.id, folder);
+                                          // Reload spots with new folder filter
+                                          if (_mapController != null) {
+                                            _loadSpotsForCurrentView();
+                                          }
                                         }
                                       },
+                                      selectedColor: Theme.of(context).colorScheme.primaryContainer,
+                                      checkmarkColor: Theme.of(context).colorScheme.onPrimaryContainer,
+                                      labelStyle: TextStyle(
+                                        color: isFolderSelected
+                                            ? Theme.of(context).colorScheme.onPrimaryContainer
+                                            : null,
+                                      ),
                                     );
                                   }),
                                 ],
