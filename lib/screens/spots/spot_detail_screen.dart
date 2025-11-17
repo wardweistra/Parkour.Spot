@@ -343,6 +343,12 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     }
   }
 
+  void _locateSpotOnMap() {
+    if (_spot.id != null) {
+      context.go('/explore?locateSpotId=${_spot.id}');
+    }
+  }
+
   void _openInMaps() async {
     try {
       final zoom = _searchStateServiceRef?.zoom;
@@ -536,6 +542,16 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     },
                   ),
                 ],
+                // Locate button
+                CircleAvatar(
+                  backgroundColor: Colors.black.withValues(alpha: 0.5),
+                  child: IconButton(
+                    icon: const Icon(Icons.my_location, color: Colors.white),
+                    onPressed: _locateSpotOnMap,
+                    tooltip: 'Locate on map',
+                  ),
+                ),
+                const SizedBox(width: 8),
                 // Share button for all users
                 CircleAvatar(
                   backgroundColor: Colors.black.withValues(alpha: 0.5),

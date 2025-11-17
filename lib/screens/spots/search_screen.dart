@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'dart:async';
 import 'package:uuid/uuid.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
@@ -108,6 +108,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   Timer? _longPressTimer; // Timer for detecting long press on mobile web
   Offset? _longPressStartPosition; // Starting position for long press detection
   bool _longPressHandled = false; // Flag to track if long press was successfully handled
+  String? _spotIdToLocate; // Spot ID to locate from query parameter
   
   void _onSpotsChanged() {
     if (mounted) {
@@ -212,6 +213,23 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         _syncSourceServiceRef!.fetchSyncSources(includeInactive: false);
       }
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Check for locateSpotId query parameter (only if not already set)
+    if (_spotIdToLocate == null) {
+      try {
+        final routerState = GoRouterState.of(context);
+        final locateSpotId = routerState.uri.queryParameters['locateSpotId'];
+        if (locateSpotId != null && locateSpotId.isNotEmpty) {
+          _spotIdToLocate = locateSpotId;
+        }
+      } catch (e) {
+        // Ignore errors when accessing router state
+      }
+    }
   }
 
   @override
@@ -1037,6 +1055,32 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     }
   }
 
+  Future<void> _locateSpotById(String spotId) async {
+    // Wait for spot service to be available
+    if (_spotServiceRef == null) {
+      // Try to get it from context
+      _spotServiceRef = Provider.of<SpotService>(context, listen: false);
+    }
+    
+    if (_spotServiceRef == null) return;
+    
+    try {
+      final spot = await _spotServiceRef!.getSpotById(spotId);
+      if (spot != null && mounted) {
+        await _locateSpot(spot);
+        // Clear the query parameter from URL after successful location
+        if (mounted) {
+          context.go('/explore');
+        }
+      }
+    } catch (e) {
+      // Ignore errors - spot might not be found or service not ready
+      if (mounted) {
+        debugPrint('Failed to locate spot $spotId: $e');
+      }
+    }
+  }
+
   Widget _buildSpotsList() {
     final screenWidth = MediaQuery.of(context).size.width;
     final useGrid = screenWidth >= 600; // Use grid layout on wider screens
@@ -1159,9 +1203,31 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                   _mapController = controller;
                   _lastKnownZoom = initialCameraPosition.zoom;
                   
+                  // Check for locateSpotId query parameter if not already set
+                  if (_spotIdToLocate == null) {
+                    try {
+                      final routerState = GoRouterState.of(context);
+                      final locateSpotId = routerState.uri.queryParameters['locateSpotId'];
+                      if (locateSpotId != null && locateSpotId.isNotEmpty) {
+                        _spotIdToLocate = locateSpotId;
+                      }
+                    } catch (e) {
+                      // Ignore errors when accessing router state
+                    }
+                  }
+                  
                   // Load spots for the current view after a short delay to ensure map is ready
                   Future.delayed(const Duration(milliseconds: 500), () {
                     _loadSpotsForCurrentView();
+                    
+                    // If we have a spot ID to locate, locate it after spots are loaded
+                    if (_spotIdToLocate != null) {
+                      final spotId = _spotIdToLocate!;
+                      _spotIdToLocate = null; // Clear before attempting to locate
+                      Future.delayed(const Duration(milliseconds: 300), () {
+                        _locateSpotById(spotId);
+                      });
+                    }
                   });
                   
                   // Restore persisted camera after map is ready (in case state loaded late)
