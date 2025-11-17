@@ -335,6 +335,18 @@ class _ReportCardState extends State<_ReportCard> {
                 style: theme.textTheme.bodyMedium,
               ),
             ],
+            if (widget.report.reporterName?.isNotEmpty ?? false) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Reporter',
+                style: theme.textTheme.titleSmall,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                widget.report.reporterName!,
+                style: theme.textTheme.bodyMedium,
+              ),
+            ],
             if (widget.report.primaryContact != null) ...[
               const SizedBox(height: 12),
               Text(

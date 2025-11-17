@@ -35,6 +35,7 @@ class SpotReportService {
     String? details,
     String? contactEmail,
     String? reporterUserId,
+    String? reporterName,
     String? reporterEmail,
     String? spotCountryCode,
     String? spotCity,
@@ -52,6 +53,8 @@ class SpotReportService {
           'contactEmail': contactEmail,
         if (reporterUserId != null && reporterUserId.isNotEmpty)
           'reporterUserId': reporterUserId,
+        if (reporterName != null && reporterName.isNotEmpty)
+          'reporterName': reporterName,
         if (reporterEmail != null && reporterEmail.isNotEmpty)
           'reporterEmail': reporterEmail,
         if (spotCountryCode != null && spotCountryCode.isNotEmpty)

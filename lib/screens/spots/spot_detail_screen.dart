@@ -3660,6 +3660,17 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
                     });
 
                     final trimmedDetails = detailsController.text.trim();
+                    final reporterName = (() {
+                      final profileName = authService.userProfile?.displayName;
+                      if (profileName != null && profileName.trim().isNotEmpty) {
+                        return profileName.trim();
+                      }
+                      final authName = authService.currentUser?.displayName;
+                      if (authName != null && authName.trim().isNotEmpty) {
+                        return authName.trim();
+                      }
+                      return null;
+                    })();
                     final trimmedContactEmail = isLoggedIn
                         ? (emailController.text.trim().isNotEmpty
                             ? emailController.text.trim()
@@ -3674,6 +3685,7 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
                       details: trimmedDetails.isEmpty ? null : trimmedDetails,
                       contactEmail: trimmedContactEmail.isEmpty ? null : trimmedContactEmail,
                       reporterUserId: authService.userProfile?.id,
+                      reporterName: reporterName,
                       reporterEmail: authService.userProfile?.email ?? authService.currentUser?.email,
                       spotCountryCode: widget.spot.countryCode,
                       spotCity: widget.spot.city,

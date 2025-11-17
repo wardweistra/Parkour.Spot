@@ -14,6 +14,7 @@ class SpotReport {
     this.details,
     this.contactEmail,
     this.reporterUserId,
+    this.reporterName,
     this.reporterEmail,
     this.spotCountryCode,
     this.spotCity,
@@ -45,6 +46,9 @@ class SpotReport {
 
   /// Reporter user id when authenticated.
   final String? reporterUserId;
+
+  /// Reporter display name when authenticated.
+  final String? reporterName;
 
   /// Reporter e-mail when authenticated.
   final String? reporterEmail;
@@ -105,6 +109,7 @@ class SpotReport {
       details: data['details'] as String?,
       contactEmail: data['contactEmail'] as String?,
       reporterUserId: data['reporterUserId'] as String?,
+      reporterName: data['reporterName'] as String?,
       reporterEmail: data['reporterEmail'] as String?,
       spotCountryCode: data['spotCountryCode'] as String?,
       spotCity: data['spotCity'] as String?,
