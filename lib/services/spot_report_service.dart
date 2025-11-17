@@ -23,7 +23,7 @@ class SpotReportService {
   ];
 
   /// Firestore status values a moderator can apply to a spot report.
-  static const List<String> statuses = <String>['New', 'In Progress', 'Done'];
+  static const List<String> statuses = <String>['New', 'Reviewing', 'Done'];
 
   /// Submits a spot report to Firestore. Returns true when the submission
   /// succeeds, otherwise false.

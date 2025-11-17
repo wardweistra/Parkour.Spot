@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/spot_report.dart';
 import '../../services/spot_report_service.dart';
@@ -46,21 +47,60 @@ class _SpotReportQueueScreenState extends State<SpotReportQueueScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _filters.map((filter) {
-                final isSelected = _selectedFilter == filter;
-                return ChoiceChip(
-                  label: Text(filter),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    if (selected) {
-                      setState(() => _selectedFilter = filter);
-                    }
-                  },
+            StreamBuilder<List<SpotReport>>(
+              stream: spotReportService.watchSpotReports(),
+              builder: (context, snapshot) {
+                final allReports = snapshot.data ?? <SpotReport>[];
+                final statusCounts = <String, int>{
+                  _allFilter: allReports.length,
+                  for (var status in SpotReportService.statuses)
+                    status: allReports.where((r) => r.status == status).length,
+                };
+
+                return Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _filters.map((filter) {
+                    final isSelected = _selectedFilter == filter;
+                    final count = statusCounts[filter] ?? 0;
+                    return ChoiceChip(
+                      label: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(filter),
+                          if (count > 0) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? theme.colorScheme.onSecondaryContainer
+                                    : theme.colorScheme.secondaryContainer,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                count.toString(),
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: isSelected
+                                      ? theme.colorScheme.secondaryContainer
+                                      : theme.colorScheme.onSecondaryContainer,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        if (selected) {
+                          setState(() => _selectedFilter = filter);
+                        }
+                      },
+                    );
+                  }).toList(),
                 );
-              }).toList(),
+              },
             ),
             const SizedBox(height: 16),
             Expanded(
@@ -86,7 +126,7 @@ class _SpotReportQueueScreenState extends State<SpotReportQueueScreen> {
                     ..sort((a, b) {
                       final aTime = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
                       final bTime = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-                      return aTime.compareTo(bTime);
+                      return bTime.compareTo(aTime);
                     });
 
                   if (reports.isEmpty) {
@@ -209,184 +249,243 @@ class _ReportCard extends StatefulWidget {
 
 class _ReportCardState extends State<_ReportCard> {
 
+  String _formatRelativeTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inDays > 7) {
+      return widget.dateFormat.format(dateTime.toLocal());
+    } else if (difference.inDays > 0) {
+      return '${difference.inDays} ${difference.inDays == 1 ? 'day' : 'days'} ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours} ${difference.inHours == 1 ? 'hour' : 'hours'} ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes} ${difference.inMinutes == 1 ? 'minute' : 'minutes'} ago';
+    } else {
+      return 'Just now';
+    }
+  }
+
+  Color _getStatusColor(String status) {
+    final colorScheme = Theme.of(context).colorScheme;
+    switch (status) {
+      case 'Done':
+        return colorScheme.primary;
+      case 'In Progress':
+        return colorScheme.tertiary;
+      case 'New':
+      default:
+        return colorScheme.secondary;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final statusColor = _getStatusColor(widget.report.status);
+    final isNew = widget.report.status == SpotReportService.statuses.first;
 
     return Card(
-      elevation: 0,
+      elevation: isNew ? 2 : 0,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: statusColor.withValues(alpha: isNew ? 0.5 : 0.3),
+          width: isNew ? 2 : 1,
+        ),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+          padding: const EdgeInsets.all(16),
+          child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              // Spot name (clickable) at top left
+              InkWell(
+                onTap: () => context.go('/spot/${widget.report.spotId}'),
+                borderRadius: BorderRadius.circular(4),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        widget.report.spotName,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
+                      Flexible(
+                        child: Text(
+                          widget.report.spotName,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.primary,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        widget.report.spotId,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
+                      const SizedBox(width: 6),
+                      Icon(
+                        Icons.open_in_new,
+                        size: 18,
+                        color: colorScheme.primary,
                       ),
                     ],
                   ),
                 ),
-                _StatusChip(status: widget.report.status),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Icon(Icons.schedule, size: 16),
-                const SizedBox(width: 4),
-                Text(
-                  widget.report.createdAt != null ? widget.dateFormat.format(widget.report.createdAt!.toLocal()) : 'Awaiting timestamp',
-                  style: theme.textTheme.bodySmall,
-                ),
-                if (widget.report.locationSummary != null) ...[
-                  const SizedBox(width: 12),
-                  const Icon(Icons.location_on_outlined, size: 16),
-                  const SizedBox(width: 4),
-                  Text(
-                    widget.report.locationSummary!,
-                    style: theme.textTheme.bodySmall,
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: widget.report.displayCategories
-                  .map((category) => Chip(
-                        label: Text(category),
-                        backgroundColor: colorScheme.secondaryContainer,
-                        labelStyle: theme.textTheme.labelSmall?.copyWith(
-                          color: colorScheme.onSecondaryContainer,
-                        ),
-                      ))
-                  .toList(),
-            ),
-            if (widget.report.duplicateOfSpotId != null) ...[
+              ),
               const SizedBox(height: 12),
-              Row(
+              // Metadata row: category, reporter, time, location
+              Wrap(
+                spacing: 16,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Icon(
-                    Icons.copy_all,
-                    size: 16,
-                    color: colorScheme.primary,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Duplicate of:',
-                    style: theme.textTheme.titleSmall,
-                  ),
+                  // Report type/category first
+                  if (widget.report.displayCategories.isNotEmpty)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.flag_outlined,
+                          size: 16,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          widget.report.displayCategories.first,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  if (widget.report.reporterName?.isNotEmpty ?? false)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.person_outline,
+                          size: 16,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          widget.report.reporterName!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  if (widget.report.createdAt != null)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.schedule_outlined,
+                          size: 16,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          _formatRelativeTime(widget.report.createdAt!),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  if (widget.report.locationSummary != null)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.location_on_outlined,
+                          size: 16,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          widget.report.locationSummary!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
                 ],
               ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Expanded(
-                    child: SelectableText(
-                      widget.report.duplicateOfSpotId!,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontFamily: 'monospace',
-                        color: colorScheme.primary,
-                      ),
+            if (widget.report.duplicateOfSpotId != null) ...[
+              const SizedBox(height: 12),
+              TextButton.icon(
+                onPressed: () => context.go('/spot/${widget.report.duplicateOfSpotId}'),
+                icon: const Icon(Icons.open_in_new, size: 18),
+                label: const Text('Open suggested original spot'),
+              ),
+            ],
+            if (widget.report.otherCategory?.isNotEmpty ?? false) ...[
+              const SizedBox(height: 12),
+              RichText(
+                text: TextSpan(
+                  style: theme.textTheme.bodyMedium,
+                  children: [
+                    const TextSpan(
+                      text: 'Issue Description: ',
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  TextButton.icon(
-                    onPressed: () => context.go('/spot/${widget.report.duplicateOfSpotId}'),
-                    icon: const Icon(Icons.open_in_new, size: 16),
-                    label: const Text('Open'),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      minimumSize: const Size(0, 32),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    TextSpan(
+                      text: widget.report.otherCategory!,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
             if (widget.report.details?.isNotEmpty ?? false) ...[
               const SizedBox(height: 12),
-              Text(
-                'Details',
-                style: theme.textTheme.titleSmall,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                widget.report.details!,
-                style: theme.textTheme.bodyMedium,
-              ),
-            ],
-            if (widget.report.reporterName?.isNotEmpty ?? false) ...[
-              const SizedBox(height: 12),
-              Text(
-                'Reporter',
-                style: theme.textTheme.titleSmall,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                widget.report.reporterName!,
-                style: theme.textTheme.bodyMedium,
+              RichText(
+                text: TextSpan(
+                  style: theme.textTheme.bodyMedium,
+                  children: [
+                    const TextSpan(
+                      text: 'Additional Details: ',
+                    ),
+                    TextSpan(
+                      text: widget.report.details!,
+                    ),
+                  ],
+                ),
               ),
             ],
             if (widget.report.primaryContact != null) ...[
               const SizedBox(height: 12),
-              Text(
-                'Contact',
-                style: theme.textTheme.titleSmall,
-              ),
-              const SizedBox(height: 4),
-              SelectableText(
-                widget.report.primaryContact!,
-                style: theme.textTheme.bodyMedium,
+              TextButton.icon(
+                onPressed: () async {
+                  final Uri emailUri = Uri.parse('mailto:${widget.report.primaryContact}');
+                  if (await canLaunchUrl(emailUri)) {
+                    await launchUrl(emailUri);
+                  }
+                },
+                icon: const Icon(Icons.open_in_new, size: 18),
+                label: const Text('Contact user'),
               ),
             ],
             const SizedBox(height: 16),
+            // Action buttons
             if (widget.isUpdating)
               const Center(child: CircularProgressIndicator())
             else
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  TextButton.icon(
-                    onPressed: () => context.go('/spot/${widget.report.spotId}'),
-                    icon: const Icon(Icons.open_in_new),
-                    label: const Text('Open Spot'),
+                  SegmentedButton<String>(
+                    segments: SpotReportService.statuses.map((status) {
+                      return ButtonSegment<String>(
+                        value: status,
+                        label: Text(status),
+                      );
+                    }).toList(),
+                    selected: {widget.report.status},
+                    onSelectionChanged: (Set<String> newSelection) {
+                      if (newSelection.isNotEmpty) {
+                        widget.onChangeStatus(newSelection.first);
+                      }
+                    },
                   ),
-                  if (widget.report.status != SpotReportService.statuses.first)
-                    OutlinedButton(
-                      onPressed: () => widget.onChangeStatus(SpotReportService.statuses.first),
-                      child: const Text('Mark as New'),
-                    ),
-                  if (widget.report.status != SpotReportService.statuses[1])
-                    OutlinedButton(
-                      onPressed: () => widget.onChangeStatus(SpotReportService.statuses[1]),
-                      child: const Text('Mark In Progress'),
-                    ),
-                  if (widget.report.status != SpotReportService.statuses.last)
-                    FilledButton(
-                      onPressed: () => widget.onChangeStatus(SpotReportService.statuses.last),
-                      child: const Text('Mark Done'),
-                    ),
                 ],
               ),
           ],
@@ -396,35 +495,4 @@ class _ReportCardState extends State<_ReportCard> {
   }
 }
 
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.status});
-
-  final String status;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    Color statusColor;
-    switch (status) {
-      case 'Done':
-        statusColor = colorScheme.primary;
-        break;
-      case 'In Progress':
-        statusColor = colorScheme.tertiary;
-        break;
-      case 'New':
-      default:
-        statusColor = colorScheme.secondary;
-        break;
-    }
-
-    return Chip(
-      label: Text(status),
-      labelStyle: Theme.of(context).textTheme.labelSmall?.copyWith(color: statusColor),
-      backgroundColor: statusColor.withValues(alpha: 0.15),
-      side: BorderSide(color: statusColor.withValues(alpha: 0.4)),
-    );
-  }
-}
 
