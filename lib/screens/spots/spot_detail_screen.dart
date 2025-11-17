@@ -1390,7 +1390,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      'Locate on the map',
+                                      'Locate on map',
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 11,
