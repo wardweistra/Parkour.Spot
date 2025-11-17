@@ -343,6 +343,33 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     }
   }
 
+  void _copyAddressToClipboard() async {
+    if (_spot.address == null || _spot.address!.isEmpty) return;
+    
+    try {
+      await Clipboard.setData(ClipboardData(text: _spot.address!));
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Address copied to clipboard!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to copy address: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   void _locateSpotOnMap() {
     if (_spot.id != null) {
       context.go('/explore?locateSpotId=${_spot.id}');
@@ -542,16 +569,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     },
                   ),
                 ],
-                // Locate button
-                CircleAvatar(
-                  backgroundColor: Colors.black.withValues(alpha: 0.5),
-                  child: IconButton(
-                    icon: const Icon(Icons.my_location, color: Colors.white),
-                    onPressed: _locateSpotOnMap,
-                    tooltip: 'Locate on map',
-                  ),
-                ),
-                const SizedBox(width: 8),
                 // Share button for all users
                 CircleAvatar(
                   backgroundColor: Colors.black.withValues(alpha: 0.5),
@@ -1342,7 +1359,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                               child: Material(
                                 color: Colors.transparent,
                                 child: InkWell(
-                                  onTap: () => _openInMaps(),
+                                  onTap: _locateSpotOnMap,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
@@ -1373,7 +1390,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      'Tap to open map',
+                                      'Locate on the map',
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 11,
@@ -1417,49 +1434,57 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                 size: 20,
                               ),
                               const SizedBox(width: 8),
-                              Text(
-                                'Location Details',
-                                style: Theme.of(context).textTheme.titleSmall
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.primary,
-                                    ),
+                              Expanded(
+                                child: Text(
+                                  'Location Details',
+                                  style: Theme.of(context).textTheme.titleSmall
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
+                                      ),
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: _openInMaps,
+                                icon: Icon(
+                                  Icons.open_in_new,
+                                  color: Theme.of(context).colorScheme.primary,
+                                  size: 20,
+                                ),
+                                tooltip: 'Open in Maps',
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(
+                                  minWidth: 32,
+                                  minHeight: 32,
+                                ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 8),
-                          RichText(
-                            text: TextSpan(
-                              children: [
-                                TextSpan(
-                                  text:
-                                      '${widget.spot.latitude.toStringAsFixed(6)}, ${widget.spot.longitude.toStringAsFixed(6)}',
-                                  style: Theme.of(context).textTheme.bodyMedium
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.w500,
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onSurface,
-                                      ),
-                                ),
-                                if (widget.spot.address != null) ...[
-                                  TextSpan(
-                                    text: '\n${widget.spot.address}',
-                                    style: Theme.of(context).textTheme.bodySmall
-                                        ?.copyWith(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface
-                                              .withValues(alpha: 0.7),
-                                          height: 1.3,
-                                        ),
-                                  ),
-                                ],
-                              ],
+                          // Coordinates
+                          Text(
+                            '${widget.spot.latitude.toStringAsFixed(6)}, ${widget.spot.longitude.toStringAsFixed(6)}',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                             ),
                           ),
+                          // Address - prominent and copyable
+                          if (widget.spot.address != null) ...[
+                            const SizedBox(height: 8),
+                            GestureDetector(
+                              onTap: _copyAddressToClipboard,
+                              child: SelectableText(
+                                widget.spot.address!,
+                                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
