@@ -864,12 +864,58 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     return BitmapDescriptor.bytes(bytes);
   }
 
+  Future<BitmapDescriptor> _createSelectedSpotIcon({double size = 22}) async {
+    final ui.PictureRecorder recorder = ui.PictureRecorder();
+    final Canvas canvas = Canvas(recorder);
+    final double radius = size / 2;
+    final Offset center = Offset(radius, radius);
+    const Color fillColor = Color(0xFF007FA8); // Dark blue
+
+    // Calculate proportional border thickness (same as regular spots)
+    final double borderThickness = size * 4 / 96; // Scale from 4px at 96px size
+    final double innerRadius = radius - borderThickness;
+
+    // Draw circle with shadow
+    final Paint shadowPaint = Paint()..color = Colors.black.withValues(alpha: 0.2);
+    canvas.drawCircle(center, radius, shadowPaint);
+
+    // Draw white border ring (same as regular spots)
+    final Paint ringPaint = Paint()..color = Colors.white;
+    canvas.drawCircle(center, innerRadius, ringPaint);
+
+    // Draw main circle fill
+    final Paint circlePaint = Paint()..color = fillColor;
+    canvas.drawCircle(center, innerRadius - borderThickness * 2, circlePaint);
+
+    // Draw white X inside
+    final Paint xPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round;
+    
+    final double xSize = (innerRadius - borderThickness * 2) * 0.6; // X size relative to inner circle
+    final Offset topLeft = center + Offset(-xSize, -xSize);
+    final Offset topRight = center + Offset(xSize, -xSize);
+    final Offset bottomLeft = center + Offset(-xSize, xSize);
+    final Offset bottomRight = center + Offset(xSize, xSize);
+    
+    // Draw X: top-left to bottom-right, and top-right to bottom-left
+    canvas.drawLine(topLeft, bottomRight, xPaint);
+    canvas.drawLine(topRight, bottomLeft, xPaint);
+
+    final ui.Image image = await recorder.endRecording().toImage(size.toInt(), size.toInt());
+    final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    final Uint8List bytes = byteData!.buffer.asUint8List();
+    return BitmapDescriptor.bytes(bytes);
+  }
+
   Future<void> _loadSpotIcons() async {
     try {
       // Simple circular icons to ensure consistent coloring on web
-      final BitmapDescriptor defaultIcon = await _createUserLocationIcon(size: 22, fillColor: Colors.red);
-      // Make selected more distinct and smaller
-      final BitmapDescriptor selectedIcon = await _createUserLocationIcon(size: 22, fillColor: Color(0xFFFF8A80));
+      final BitmapDescriptor defaultIcon = await _createUserLocationIcon(size: 22, fillColor: const Color(0xFF007FA8)); // Dark blue
+      // Selected spot with X mark
+      final BitmapDescriptor selectedIcon = await _createSelectedSpotIcon(size: 22);
       if (mounted) {
         setState(() {
           _spotDefaultIcon = defaultIcon;
@@ -1028,17 +1074,32 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       }
     }
 
-    // Center map on spot with fluid zoom-in (no zoom-out)
+    // Center map on spot in the top half of the screen with fluid zoom-in (no zoom-out)
     if (_mapController != null) {
       const double desiredZoom = 15.0;
       final double targetZoom = _lastKnownZoom < desiredZoom ? desiredZoom : _lastKnownZoom;
-      // Step 1: pan to target at current zoom (smoother motion)
+      
+      // Get screen size to calculate offset for positioning
+      final screenHeight = MediaQuery.of(context).size.height;
+      // To position lower on screen, use a smaller offset (1/6 of screen height)
+      // This positions the spot closer to center but still in upper portion
+      final offsetPixels = screenHeight / 6;
+      
+      // First center on the spot
       await _mapController!.animateCamera(
         CameraUpdate.newLatLng(
           LatLng(spot.latitude, spot.longitude),
         ),
       );
-      // Step 2: if we need to zoom in, do that as a separate animation
+      
+      // Step 2: Scroll up by 1/3 screen height to position spot at 1/3 down the screen
+      // (positive Y scrolls camera up, moving content down relative to viewport,
+      // which positions the spot higher on screen)
+      await _mapController!.animateCamera(
+        CameraUpdate.scrollBy(0, offsetPixels),
+      );
+      
+      // Step 3: if we need to zoom in, do that as a separate animation
       if (_lastKnownZoom < targetZoom) {
         await _mapController!.animateCamera(
           CameraUpdate.zoomTo(targetZoom),
