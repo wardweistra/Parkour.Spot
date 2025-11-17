@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -41,7 +42,7 @@ class _SpotReportQueueScreenState extends State<SpotReportQueueScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Work through new spot reports, keeping moderators aligned on progress.',
+              'Review user-submitted spot reports here. Mark reports as "Reviewing" when you start working on them to prevent duplicate efforts, and mark them as "Done" when complete.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
               ),
@@ -453,15 +454,34 @@ class _ReportCardState extends State<_ReportCard> {
             ],
             if (widget.report.primaryContact != null) ...[
               const SizedBox(height: 12),
-              TextButton.icon(
-                onPressed: () async {
-                  final Uri emailUri = Uri.parse('mailto:${widget.report.primaryContact}');
-                  if (await canLaunchUrl(emailUri)) {
-                    await launchUrl(emailUri);
-                  }
-                },
-                icon: const Icon(Icons.open_in_new, size: 18),
-                label: const Text('Contact user'),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton.icon(
+                      onPressed: () async {
+                        final Uri emailUri = Uri.parse('mailto:${widget.report.primaryContact}');
+                        if (await canLaunchUrl(emailUri)) {
+                          await launchUrl(emailUri);
+                        }
+                      },
+                      icon: const Icon(Icons.open_in_new, size: 18),
+                      label: const Text('Contact user'),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      Clipboard.setData(ClipboardData(text: widget.report.primaryContact!));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Email address copied to clipboard'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.copy, size: 18),
+                    tooltip: 'Copy email address',
+                  ),
+                ],
               ),
             ],
             const SizedBox(height: 16),
