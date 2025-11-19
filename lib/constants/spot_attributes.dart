@@ -88,32 +88,32 @@ class SpotAttributes {
   /// Spot features configuration
   static const Map<String, Map<String, dynamic>> spotFeatures = {
     'walls_low': {
-      'label': 'Wall - Low (<1m/3\')',
+      'label': 'Wall - Low',
       'icon': Icons.view_in_ar,
       'description': 'This spot has low walls, up to 1 meter or 3 feet high',
     },
     'walls_medium': {
-      'label': 'Wall - Medium (1-2m/3-7\')',
+      'label': 'Wall - Medium',
       'icon': Icons.view_in_ar,
       'description': 'This spot has medium height walls, 1 to 2 meters or 3-7 feet high',
     },
     'walls_high': {
-      'label': 'Wall - High (>2m/7\')',
+      'label': 'Wall - High',
       'icon': Icons.view_in_ar,
       'description': 'This spot has high walls, above 2 meters or 7 feet high',
     },
     'bars_low': {
-      'label': 'Bar - Low (<1m/3\')',
+      'label': 'Bar - Low',
       'icon': Icons.horizontal_rule,
       'description': 'This spot has low bars, up to 1 meter or 3 feet high',
     },
     'bars_medium': {
-      'label': 'Bar - Medium (1-2m/3-7\')',
+      'label': 'Bar - Medium',
       'icon': Icons.horizontal_rule,
       'description': 'This spot has medium height bars, 1 meter or 3 feet to 2 meters or 7 feet high',
     },
     'bars_high': {
-      'label': 'Bar - High (>2m / 7\')',
+      'label': 'Bar - High',
       'icon': Icons.horizontal_rule,
       'description': 'This spot has high bars, above 2 meters or 7 feet high',
     },
