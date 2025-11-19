@@ -1057,10 +1057,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
 
   Future<void> _locateSpotById(String spotId) async {
     // Wait for spot service to be available
-    if (_spotServiceRef == null) {
-      // Try to get it from context
-      _spotServiceRef = Provider.of<SpotService>(context, listen: false);
-    }
+    _spotServiceRef ??= Provider.of<SpotService>(context, listen: false);
     
     if (_spotServiceRef == null) return;
     
