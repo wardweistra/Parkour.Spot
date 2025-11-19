@@ -88,32 +88,32 @@ class SpotAttributes {
   /// Spot features configuration
   static const Map<String, Map<String, dynamic>> spotFeatures = {
     'walls_low': {
-      'label': 'Wall - Low',
+      'label': 'Low wall',
       'icon': Icons.view_in_ar,
       'description': 'This spot has low walls, up to 1 meter or 3 feet high',
     },
     'walls_medium': {
-      'label': 'Wall - Medium',
+      'label': 'Medium wall',
       'icon': Icons.view_in_ar,
       'description': 'This spot has medium height walls, 1 to 2 meters or 3-7 feet high',
     },
     'walls_high': {
-      'label': 'Wall - High',
+      'label': 'High wall',
       'icon': Icons.view_in_ar,
       'description': 'This spot has high walls, above 2 meters or 7 feet high',
     },
     'bars_low': {
-      'label': 'Bar - Low',
+      'label': 'Low bar',
       'icon': Icons.horizontal_rule,
       'description': 'This spot has low bars, up to 1 meter or 3 feet high',
     },
     'bars_medium': {
-      'label': 'Bar - Medium',
+      'label': 'Medium bar',
       'icon': Icons.horizontal_rule,
       'description': 'This spot has medium height bars, 1 meter or 3 feet to 2 meters or 7 feet high',
     },
     'bars_high': {
-      'label': 'Bar - High',
+      'label': 'High bar',
       'icon': Icons.horizontal_rule,
       'description': 'This spot has high bars, above 2 meters or 7 feet high',
     },
@@ -159,7 +159,7 @@ class SpotAttributes {
     'paid': {
       'label': 'Paid',
       'icon': Icons.payments,
-      'description': 'This spot requires payment or a membership to access, like for example a parkour gym or park',
+      'description': 'This spot requires payment or a membership to access, like for example a commercial parkour gym or park',
     },
   };
 
