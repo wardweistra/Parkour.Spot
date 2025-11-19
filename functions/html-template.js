@@ -73,7 +73,7 @@ function generateHtmlHead(options = {}) {
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="icon" type="image/x-icon" href="favicon.ico"/>
 
   <title>${escapedTitle}</title>
   <link rel="manifest" href="manifest.json">
@@ -110,7 +110,7 @@ function generateHtmlBody(options = {}) {
   ` : ''}
   <script>
     // The value below is injected by flutter build, do not touch.
-    const serviceWorkerVersion = ${serviceWorkerVersion !== null ? `'${serviceWorkerVersion}'` : 'null'};
+    const serviceWorkerVersion = ${serviceWorkerVersion !== null ? `'${serviceWorkerVersion}'` : `'{{flutter_service_worker_version}}'`};
   </script>
   <!-- This script adds the flutter initialization JS code -->
   <script src="flutter.js" defer></script>

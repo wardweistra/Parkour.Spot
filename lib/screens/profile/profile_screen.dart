@@ -350,8 +350,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildAboutSection(BuildContext context) {
-    const initialText = 'Parkour·Spot is a community-driven app for discovering and sharing parkour and freerunning spots worldwide. We\'re making it simple to find quality locations—wherever you train.';
-    
     final textStyle = Theme.of(context).textTheme.bodyLarge?.copyWith(
       color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
     );
@@ -363,10 +361,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'About',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 500),
+                child: Image.asset(
+                  'assets/images/logo-with-text.png',
+                  width: double.infinity,
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -382,7 +384,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  initialText,
+                                  'Parkour·Spot is a community-driven app for discovering and sharing parkour and freerunning spots worldwide. We\'re making it simple to find quality locations—wherever you train.',
                                   style: textStyle,
                                 ),
                                 if (!_isExpanded) ...[
@@ -442,7 +444,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        initialText,
+                        'Parkour·Spot is a community-driven app for discovering and sharing parkour and freerunning spots worldwide. We\'re making it simple to find quality locations—wherever you train.',
                         style: textStyle,
                       ),
                       if (!_isExpanded) ...[
