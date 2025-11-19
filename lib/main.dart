@@ -57,17 +57,16 @@ class ParkourSpotApp extends StatelessWidget {
         routerConfig: AppRouter.router,
         scaffoldMessengerKey: SnackbarService.messengerKey,
         theme: ThemeData(
-          primarySwatch: Colors.blue,
           useMaterial3: true,
           colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.blue,
+            seedColor: const Color(0xFF007FA8),
             brightness: Brightness.light,
           ),
         ),
         darkTheme: ThemeData(
           useMaterial3: true,
           colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.blue,
+            seedColor: const Color(0xFF007FA8),
             brightness: Brightness.dark,
           ),
         ),
