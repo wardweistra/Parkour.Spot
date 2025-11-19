@@ -3,6 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/instagram_button.dart';
@@ -364,10 +365,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 500),
-                child: Image.asset(
-                  'assets/images/logo-with-text.png',
+                child: SizedBox(
                   width: double.infinity,
-                  fit: BoxFit.contain,
+                  child: AspectRatio(
+                    aspectRatio: 2773 / 646, // From SVG viewBox
+                    child: SvgPicture.asset(
+                      Theme.of(context).brightness == Brightness.dark
+                          ? 'assets/images/logo-with-text-dark.svg'
+                          : 'assets/images/logo-with-text.svg',
+                      fit: BoxFit.contain,
+                    ),
+                  ),
                 ),
               ),
             ),
