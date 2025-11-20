@@ -18,6 +18,7 @@
     "@aws-sdk/s3-request-presigner": "^3.700.0",
     "firebase-admin": "^12.6.0",
     "firebase-functions": "^6.6.0",
+    "i18n-iso-countries": "^7.9.0",
     "sharp": "^0.33.0",
     "xml2js": "^0.6.2",
     "yauzl": "^3.0.0"

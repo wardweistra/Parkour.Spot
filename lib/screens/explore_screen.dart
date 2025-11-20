@@ -9,8 +9,9 @@ import 'profile/profile_screen.dart';
 
 class ExploreScreen extends StatefulWidget {
   final int initialTab;
+  final String? initialLocationQuery;
   
-  const ExploreScreen({super.key, this.initialTab = 0});
+  const ExploreScreen({super.key, this.initialTab = 0, this.initialLocationQuery});
 
   @override
   State<ExploreScreen> createState() => _ExploreScreenState();
@@ -94,7 +95,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
     final authService = Provider.of<AuthService>(context, listen: false);
     
     return [
-      SearchScreen(key: _searchKey),
+      SearchScreen(
+        key: _searchKey,
+        initialLocationQuery: widget.initialLocationQuery,
+      ),
       // Show login prompt for unauthenticated users trying to add spots
       authService.isAuthenticated 
           ? const AddSpotScreen() 

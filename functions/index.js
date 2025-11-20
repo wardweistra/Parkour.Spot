@@ -27,11 +27,41 @@ const path = require("path");
 const crypto = require("crypto");
 const {S3Client, GetObjectCommand, HeadObjectCommand} = require("@aws-sdk/client-s3");
 const {getSignedUrl} = require("@aws-sdk/s3-request-presigner");
+const countries = require("i18n-iso-countries");
 
 // Initialize Firebase Admin
 admin.initializeApp();
 const db = admin.firestore();
 const bucket = admin.storage().bucket();
+
+// Register English locale for country names
+countries.registerLocale(require("i18n-iso-countries/langs/en.json"));
+
+// Countries that need "the" article prefix (e.g., "the Netherlands", not "Netherlands")
+const countriesWithArticle = new Set([
+  "NL", // Netherlands
+  "PH", // Philippines
+  "BS", // Bahamas
+  "GM", // Gambia
+  "MV", // Maldives
+  "AE", // United Arab Emirates
+  "US", // United States
+  "GB", // United Kingdom
+]);
+
+/**
+ * Get country name with proper article if needed
+ * @param {string} countryCode - ISO 3166-1 alpha-2 country code
+ * @param {boolean} withArticle - Whether to include "the" article (default: true)
+ * @returns {string} Country name with "the" prefix if needed
+ */
+function getCountryNameWithArticle(countryCode, withArticle = true) {
+  const countryName = countries.getName(countryCode, "en") || countryCode;
+  if (withArticle && countriesWithArticle.has(countryCode.toUpperCase())) {
+    return `the ${countryName}`;
+  }
+  return countryName;
+}
 
 // Import shared HTML template
 const {generateHtmlPage} = require("./html-template");
@@ -273,31 +303,93 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
       }
     })();
 
-    const spotId = extractSpotIdFromPath(pathname);
+    // Check if this is a location URL (1 or 2 segments) vs spot URL (3 segments)
+    const pathSegments = pathname.split("/").filter((segment) => segment.length > 0);
+    const isLocationUrl = pathSegments.length === 1 || pathSegments.length === 2;
+    const isSpotUrl = pathSegments.length === 3;
 
     let spot = null;
-    if (spotId) {
-      const snap = await db.collection("spots").doc(spotId).get();
-      if (snap.exists) {
-        spot = {id: snap.id, ...snap.data()};
+    let locationInfo = null;
+
+    if (isSpotUrl) {
+      // Handle spot detail URLs
+      const spotId = extractSpotIdFromPath(pathname);
+      if (spotId) {
+        const snap = await db.collection("spots").doc(spotId).get();
+        if (snap.exists) {
+          spot = {id: snap.id, ...snap.data()};
+        }
+      }
+    } else if (isLocationUrl) {
+      // Handle location URLs: /gb or /gb/london
+      const countryCode = pathSegments[0]?.toUpperCase();
+      const citySlug = pathSegments[1];
+
+      // Validate country code (2 letters)
+      if (countryCode && countryCode.length === 2 && /^[A-Z]{2}$/.test(countryCode)) {
+        if (citySlug) {
+          // City + country URL: /gb/london
+          // Decode and capitalize city name
+          const decodedCity = decodeURIComponent(citySlug);
+          const cityName = decodedCity.split(" ").map((word) => {
+            if (word.length === 0) return word;
+            return word[0].toUpperCase() + word.substring(1).toLowerCase();
+          }).join(" ");
+          
+          // When city is present, don't use "the" article before country name
+          const countryName = getCountryNameWithArticle(countryCode, false);
+          
+          locationInfo = {
+            city: cityName,
+            countryCode: countryCode,
+            countryName: countryName,
+          };
+        } else {
+          // Country only URL: /gb - use "the" article when appropriate
+          const countryName = getCountryNameWithArticle(countryCode, true);
+          
+          locationInfo = {
+            countryCode: countryCode,
+            countryName: countryName,
+          };
+        }
       }
     }
 
-    // Generate canonical URL in proper format (country/city/spotId)
+    // Generate canonical URL
     let canonicalUrl = fullUrl;
-    if (spot && spot.countryCode && spot.city && spotId) {
+    if (spot && spot.countryCode && spot.city && isSpotUrl) {
       const citySlug = slugify(spot.city);
-      const canonicalPath = `/${spot.countryCode.toLowerCase()}/${citySlug}/${spotId}`;
+      const canonicalPath = `/${spot.countryCode.toLowerCase()}/${citySlug}/${spot.id}`;
       canonicalUrl = `https://${canonicalHost}${canonicalPath}`;
+    } else if (locationInfo) {
+      // Use the current URL as canonical for location pages
+      canonicalUrl = fullUrl;
     }
 
     const siteName = "Parkour·Spot";
     const defaultTitle = `${siteName}`;
     const defaultImage = `https://${canonicalHost}/ParkourSpot-Featured.png`;
 
-    const title = spot && spot.name ? `${spot.name} - Parkour·Spot` : defaultTitle;
+    // Generate title and description based on URL type
+    let title = defaultTitle;
+    let description = "Discover and share parkour spots around the world";
 
-    const description = buildDescription(spot);
+    if (spot && spot.name) {
+      // Spot detail page
+      title = `${spot.name} - Parkour·Spot`;
+      description = buildDescription(spot);
+    } else if (locationInfo) {
+      // Location page
+      if (locationInfo.city) {
+        title = `Best parkour spots in ${locationInfo.city}, ${locationInfo.countryName}`;
+        description = `Discover the best parkour spots in ${locationInfo.city}, ${locationInfo.countryName}. Find training locations, share your favorite spots, and connect with the parkour community.`;
+      } else {
+        title = `Best parkour spots in ${locationInfo.countryName}`;
+        description = `Discover the best parkour spots in ${locationInfo.countryName}. Find training locations, share your favorite spots, and connect with the parkour community.`;
+      }
+    }
+
     let imageUrl = (spot && Array.isArray(spot.imageUrls) && spot.imageUrls.length > 0) ?
       spot.imageUrls[0] :
       defaultImage;

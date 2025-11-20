@@ -38,6 +38,14 @@
         "function": "spotPage"
       },
       {
+        "source": "/:countryCode/:city",
+        "function": "spotPage"
+      },
+      {
+        "source": "/:countryCode",
+        "function": "spotPage"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

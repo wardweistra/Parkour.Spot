@@ -59,7 +59,9 @@ class ReliableIcon extends StatelessWidget {
 }
 
 class SearchScreen extends StatefulWidget {
-  const SearchScreen({super.key});
+  final String? initialLocationQuery;
+  
+  const SearchScreen({super.key, this.initialLocationQuery});
 
   @override
   State<SearchScreen> createState() => SearchScreenState();
@@ -168,6 +170,13 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     super.initState();
     // Removed automatic location fetching - now user-controlled
     _searchController.addListener(_onSearchChanged);
+    
+    // Set initial location query if provided
+    if (widget.initialLocationQuery != null && widget.initialLocationQuery!.isNotEmpty) {
+      _searchController.text = widget.initialLocationQuery!;
+      _searchQuery = widget.initialLocationQuery!;
+    }
+    
     _loadUserLocationIcon();
     _loadSpotIcons();
     
@@ -1199,6 +1208,16 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                 onMapCreated: (GoogleMapController controller) {
                   _mapController = controller;
                   _lastKnownZoom = initialCameraPosition.zoom;
+                  
+                  // Trigger location search if initialLocationQuery is provided
+                  if (widget.initialLocationQuery != null && widget.initialLocationQuery!.isNotEmpty) {
+                    // Wait a bit for the map to be fully ready
+                    Future.delayed(const Duration(milliseconds: 500), () {
+                      if (mounted && _mapController != null) {
+                        _searchAndNavigateToLocation();
+                      }
+                    });
+                  }
                   
                   // Check for locateSpotId query parameter if not already set
                   if (_spotIdToLocate == null) {

@@ -136,7 +136,13 @@ class AppRouter {
             }
           }
           
-          return ExploreScreen(initialTab: initialTab);
+          // Parse location query parameter
+          final locationQuery = state.uri.queryParameters['location'];
+          
+          return ExploreScreen(
+            initialTab: initialTab,
+            initialLocationQuery: locationQuery,
+          );
         },
       ),
       // Individual tab routes that redirect to explore with tab parameter
@@ -190,6 +196,55 @@ class AppRouter {
             builder: (context, state) => const SpotReportQueueScreen(),
           ),
         ],
+      ),
+      // Location routes - must come before spot detail routes
+      // Route for /:countryCode/:city (e.g., /gb/london)
+      // Note: GoRouter will only match this if there are exactly 2 path segments
+      GoRoute(
+        path: '/:countryCode/:city',
+        builder: (context, state) {
+          final countryCode = state.pathParameters['countryCode']!;
+          final city = state.pathParameters['city']!;
+          
+          // Validate that countryCode is 2 letters
+          if (countryCode.length != 2 || !RegExp(r'^[a-zA-Z]{2}$').hasMatch(countryCode)) {
+            // If not a valid country code, redirect to explore
+            return const ExploreScreen();
+          }
+          
+          // Decode city name (handle URL encoding)
+          final decodedCity = Uri.decodeComponent(city);
+          // Capitalize first letter of each word
+          final cityName = decodedCity.split(' ').map((word) {
+            if (word.isEmpty) return word;
+            return word[0].toUpperCase() + word.substring(1).toLowerCase();
+          }).join(' ');
+          
+          // Build location query: "City, Country Code" (e.g., "London, GB")
+          final locationQuery = '$cityName, ${countryCode.toUpperCase()}';
+          
+          return ExploreScreen(initialLocationQuery: locationQuery);
+        },
+      ),
+      // Route for /:countryCode (e.g., /gb)
+      GoRoute(
+        path: '/:countryCode',
+        builder: (context, state) {
+          final countryCode = state.pathParameters['countryCode']!;
+          
+          // Validate that countryCode is 2 letters
+          if (countryCode.length != 2 || !RegExp(r'^[a-zA-Z]{2}$').hasMatch(countryCode)) {
+            // If not a valid country code, redirect to explore
+            return const ExploreScreen();
+          }
+          
+          // Map common country codes to country names for better search results
+          // This helps Google Places API find the country instead of ambiguous matches
+          final countryName = _getCountryNameFromCode(countryCode.toUpperCase());
+          final locationQuery = countryName ?? countryCode.toUpperCase();
+          
+          return ExploreScreen(initialLocationQuery: locationQuery);
+        },
       ),
       // Simple spot detail route: /spot/:spotId
       GoRoute(
@@ -274,6 +329,46 @@ class AppRouter {
       return countryCode.length == 2 && RegExp(r'^[a-zA-Z]{2}$').hasMatch(countryCode);
     }
     return false;
+  }
+  
+  /// Get country name from ISO 3166-1 alpha-2 country code
+  /// Returns null if not found (will fall back to country code)
+  static String? _getCountryNameFromCode(String code) {
+    // Common country codes mapped to their full names
+    // This helps Google Places API find countries instead of ambiguous matches
+    const countryMap = {
+      'GB': 'United Kingdom',
+      'US': 'United States',
+      'NL': 'Netherlands',
+      'DE': 'Germany',
+      'FR': 'France',
+      'ES': 'Spain',
+      'IT': 'Italy',
+      'BE': 'Belgium',
+      'CH': 'Switzerland',
+      'AT': 'Austria',
+      'SE': 'Sweden',
+      'NO': 'Norway',
+      'DK': 'Denmark',
+      'FI': 'Finland',
+      'PL': 'Poland',
+      'CZ': 'Czech Republic',
+      'IE': 'Ireland',
+      'PT': 'Portugal',
+      'GR': 'Greece',
+      'AU': 'Australia',
+      'CA': 'Canada',
+      'NZ': 'New Zealand',
+      'JP': 'Japan',
+      'KR': 'South Korea',
+      'CN': 'China',
+      'IN': 'India',
+      'BR': 'Brazil',
+      'MX': 'Mexico',
+      'AR': 'Argentina',
+      'ZA': 'South Africa',
+    };
+    return countryMap[code];
   }
 }
 
