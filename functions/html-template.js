@@ -10,7 +10,7 @@ const GOOGLE_MAPS_API_KEY = 'AIzaSyAAhFK9QYxOlbI3ySWTmoFIJKLAl8CL-qo';
  * @param {Object} options - Configuration options
  * @param {string} options.title - Page title (default: "Parkour·Spot")
  * @param {string} options.description - Meta description (default: "Discover and share parkour spots around the world")
- * @param {string} options.image - Meta image URL (default: "icons/Icon-512.png")
+ * @param {string} options.image - Meta image URL (default: "https://parkour.spot/ParkourSpot-Featured.png")
  * @param {string} options.url - Canonical URL (optional)
  * @param {string} options.siteName - Site name (default: "Parkour·Spot")
  * @param {boolean} options.isDynamic - Whether to include dynamic Open Graph/Twitter tags (default: false)
@@ -20,7 +20,7 @@ function generateHtmlHead(options = {}) {
   const {
     title = "Parkour·Spot",
     description = "Discover and share parkour spots around the world",
-    image = "icons/Icon-512.png",
+    image = "https://parkour.spot/ParkourSpot-Featured.png",
     url = null,
     siteName = "Parkour·Spot",
     isDynamic = false

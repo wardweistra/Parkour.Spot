@@ -293,7 +293,7 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
 
     const siteName = "Parkour·Spot";
     const defaultTitle = `${siteName}`;
-    const defaultImage = `https://${canonicalHost}/icons/Icon-512.png`;
+    const defaultImage = `https://${canonicalHost}/ParkourSpot-Featured.png`;
 
     const title = spot && spot.name ? `${spot.name} - Parkour·Spot` : defaultTitle;
 
