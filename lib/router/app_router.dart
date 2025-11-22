@@ -233,6 +233,31 @@ class AppRouter {
       // Note: GoRouter will only match this if there are exactly 2 path segments
       GoRoute(
         path: '/:countryCode/:city',
+        redirect: (context, state) {
+          final countryCode = state.pathParameters['countryCode']!;
+          
+          // Validate that countryCode is 2 letters
+          if (countryCode.length != 2 || !RegExp(r'^[a-zA-Z]{2}$').hasMatch(countryCode)) {
+            // If not a valid country code format, redirect to explore
+            if (kDebugMode) {
+              print('[Router] /:countryCode/:city - Invalid country code format, redirecting to explore');
+            }
+            return '/explore';
+          }
+          
+          // Check if country code actually exists
+          final countryName = _getCountryNameFromCode(countryCode.toUpperCase());
+          if (countryName == null) {
+            // Country code doesn't exist, redirect to explore
+            if (kDebugMode) {
+              print('[Router] /:countryCode/:city - Country code $countryCode not found, redirecting to explore');
+            }
+            return '/explore';
+          }
+          
+          // Valid country code, proceed to builder
+          return null;
+        },
         builder: (context, state) {
           final countryCode = state.pathParameters['countryCode']!;
           final city = state.pathParameters['city']!;
@@ -246,14 +271,8 @@ class AppRouter {
             print('[Router]   Query parameters: ${state.uri.queryParameters}');
           }
           
-          // Validate that countryCode is 2 letters
-          if (countryCode.length != 2 || !RegExp(r'^[a-zA-Z]{2}$').hasMatch(countryCode)) {
-            // If not a valid country code, redirect to explore
-            if (kDebugMode) {
-              print('[Router]   Invalid country code, redirecting to explore');
-            }
-            return const ExploreScreen();
-          }
+          // Get country name (we know it exists from redirect check)
+          final countryName = _getCountryNameFromCode(countryCode.toUpperCase())!;
           
           // Decode city name (handle URL encoding)
           final decodedCity = Uri.decodeComponent(city);
@@ -263,10 +282,11 @@ class AppRouter {
             return word[0].toUpperCase() + word.substring(1).toLowerCase();
           }).join(' ');
           
-          // Build location query: "City, Country Code" (e.g., "London, GB")
-          final locationQuery = '$cityName, ${countryCode.toUpperCase()}';
+          // Build location query: "City, Country Name" (e.g., "Amsterdam, Netherlands")
+          final locationQuery = '$cityName, $countryName';
           
           if (kDebugMode) {
+            print('[Router]   Country name: $countryName');
             print('[Router]   Location query: $locationQuery');
             print('[Router]   Building ExploreScreen with location filter');
           }
@@ -277,6 +297,31 @@ class AppRouter {
       // Route for /:countryCode (e.g., /gb)
       GoRoute(
         path: '/:countryCode',
+        redirect: (context, state) {
+          final countryCode = state.pathParameters['countryCode']!;
+          
+          // Validate that countryCode is 2 letters
+          if (countryCode.length != 2 || !RegExp(r'^[a-zA-Z]{2}$').hasMatch(countryCode)) {
+            // If not a valid country code format, redirect to explore
+            if (kDebugMode) {
+              print('[Router] /:countryCode - Invalid country code format, redirecting to explore');
+            }
+            return '/explore';
+          }
+          
+          // Check if country code actually exists
+          final countryName = _getCountryNameFromCode(countryCode.toUpperCase());
+          if (countryName == null) {
+            // Country code doesn't exist, redirect to explore
+            if (kDebugMode) {
+              print('[Router] /:countryCode - Country code $countryCode not found, redirecting to explore');
+            }
+            return '/explore';
+          }
+          
+          // Valid country code, proceed to builder
+          return null;
+        },
         builder: (context, state) {
           final countryCode = state.pathParameters['countryCode']!;
           
@@ -289,19 +334,11 @@ class AppRouter {
             print('[Router]   Query parameters: ${state.uri.queryParameters}');
           }
           
-          // Validate that countryCode is 2 letters
-          if (countryCode.length != 2 || !RegExp(r'^[a-zA-Z]{2}$').hasMatch(countryCode)) {
-            // If not a valid country code, redirect to explore
-            if (kDebugMode) {
-              print('[Router]   Invalid country code, redirecting to explore');
-            }
-            return const ExploreScreen();
-          }
+          // Get country name (we know it exists from redirect check)
+          final countryName = _getCountryNameFromCode(countryCode.toUpperCase())!;
           
-          // Map common country codes to country names for better search results
-          // This helps Google Places API find the country instead of ambiguous matches
-          final countryName = _getCountryNameFromCode(countryCode.toUpperCase());
-          final locationQuery = countryName ?? countryCode.toUpperCase();
+          // Use the country name for the location query
+          final locationQuery = countryName;
           
           if (kDebugMode) {
             print('[Router]   Country name: $countryName');

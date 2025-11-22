@@ -322,11 +322,19 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
       }
     } else if (isLocationUrl) {
       // Handle location URLs: /gb or /gb/london
-      const countryCode = pathSegments[0]?.toUpperCase();
+      const countryCode = pathSegments[0] ? pathSegments[0].toUpperCase() : null;
       const citySlug = pathSegments[1];
 
       // Validate country code (2 letters)
       if (countryCode && countryCode.length === 2 && /^[A-Z]{2}$/.test(countryCode)) {
+        // Check if country code actually exists
+        const countryNameRaw = countries.getName(countryCode, "en");
+        if (!countryNameRaw) {
+          // Country code doesn't exist, redirect to /explore
+          res.redirect(302, "/explore");
+          return;
+        }
+
         if (citySlug) {
           // City + country URL: /gb/london
           // Decode and capitalize city name
@@ -335,10 +343,10 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
             if (word.length === 0) return word;
             return word[0].toUpperCase() + word.substring(1).toLowerCase();
           }).join(" ");
-          
+
           // When city is present, don't use "the" article before country name
           const countryName = getCountryNameWithArticle(countryCode, false);
-          
+
           locationInfo = {
             city: cityName,
             countryCode: countryCode,
@@ -347,7 +355,7 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
         } else {
           // Country only URL: /gb - use "the" article when appropriate
           const countryName = getCountryNameWithArticle(countryCode, true);
-          
+
           locationInfo = {
             countryCode: countryCode,
             countryName: countryName,

@@ -303,7 +303,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     return 13.5;
   }
 
-  Future<void> _selectPlaceSuggestion(Map<String, dynamic> suggestion, {bool manageLoadingState = true}) async {
+  Future<void> _selectPlaceSuggestion(Map<String, dynamic> suggestion, {bool manageLoadingState = true, bool fromInitialQuery = false}) async {
     if (manageLoadingState) {
       setState(() {
         _isSearchingLocation = true;
@@ -366,6 +366,14 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       }
       // Trigger a refresh of visible spots for new area
       _updateVisibleSpots();
+      
+      // If this search came from an initial location query (country/city route),
+      // normalize the URL to /explore?location=... to preserve the search term in the URL
+      // This allows the search bar to remain filled and the page to be refreshable
+      if (fromInitialQuery && formatted != null && mounted) {
+        final encodedLocation = Uri.encodeComponent(formatted);
+        context.go('/explore?location=$encodedLocation');
+      }
     } catch (e) {
       // Log errors for debugging
       debugPrint('Error selecting place: $e');
@@ -416,8 +424,12 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
 
       // If we have results, select the first one
       if (results.isNotEmpty) {
+        // Check if this search came from an initial location query (country/city route)
+        final fromInitialQuery = widget.initialLocationQuery != null && 
+                                  widget.initialLocationQuery!.isNotEmpty &&
+                                  _searchQuery == widget.initialLocationQuery;
         // Don't let _selectPlaceSuggestion manage loading state since we're managing it here
-        await _selectPlaceSuggestion(results.first, manageLoadingState: false);
+        await _selectPlaceSuggestion(results.first, manageLoadingState: false, fromInitialQuery: fromInitialQuery);
         // Clear loading state after selection completes
         setState(() {
           _isSearchingLocation = false;
