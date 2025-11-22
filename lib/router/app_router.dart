@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:web/web.dart' as web;
+import 'package:sealed_countries/sealed_countries.dart';
 import '../screens/splash_screen.dart';
 import '../screens/explore_screen.dart';
 import '../screens/admin/admin_home_screen.dart';
@@ -381,41 +382,25 @@ class AppRouter {
   /// Get country name from ISO 3166-1 alpha-2 country code
   /// Returns null if not found (will fall back to country code)
   static String? _getCountryNameFromCode(String code) {
-    // Common country codes mapped to their full names
-    // This helps Google Places API find countries instead of ambiguous matches
-    const countryMap = {
-      'GB': 'United Kingdom',
-      'US': 'United States',
-      'NL': 'Netherlands',
-      'DE': 'Germany',
-      'FR': 'France',
-      'ES': 'Spain',
-      'IT': 'Italy',
-      'BE': 'Belgium',
-      'CH': 'Switzerland',
-      'AT': 'Austria',
-      'SE': 'Sweden',
-      'NO': 'Norway',
-      'DK': 'Denmark',
-      'FI': 'Finland',
-      'PL': 'Poland',
-      'CZ': 'Czech Republic',
-      'IE': 'Ireland',
-      'PT': 'Portugal',
-      'GR': 'Greece',
-      'AU': 'Australia',
-      'CA': 'Canada',
-      'NZ': 'New Zealand',
-      'JP': 'Japan',
-      'KR': 'South Korea',
-      'CN': 'China',
-      'IN': 'India',
-      'BR': 'Brazil',
-      'MX': 'Mexico',
-      'AR': 'Argentina',
-      'ZA': 'South Africa',
-    };
-    return countryMap[code];
+    // Normalize code to uppercase for lookup (ISO 3166-1 alpha-2 codes are uppercase)
+    final normalizedCode = code.toUpperCase();
+    
+    // Use the nullable runtime-safe method to find country by ISO 3166-1 alpha-2 code
+    final country = WorldCountry.maybeFromCodeShort(normalizedCode);
+    
+    if (country != null) {
+      // Return the English common name
+      if (kDebugMode) {
+        print('[Router] Found country for code $normalizedCode: ${country.name.common}');
+      }
+      return country.name.common;
+    }
+    
+    // If lookup fails, return null to fall back to country code
+    if (kDebugMode) {
+      print('[Router] Country code $normalizedCode not found in sealed_countries package');
+    }
+    return null;
   }
 }
 
