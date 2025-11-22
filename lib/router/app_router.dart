@@ -197,7 +197,37 @@ class AppRouter {
           ),
         ],
       ),
-      // Location routes - must come before spot detail routes
+      // Simple spot detail route: /spot/:spotId
+      // Must come before location routes to ensure /spot/:spotId matches before /:countryCode/:city
+      GoRoute(
+        path: '/spot/:spotId',
+        builder: (context, state) {
+          final spotId = state.pathParameters['spotId']!;
+          
+          // Logging for route debugging
+          if (kDebugMode) {
+            print('[Router] /spot/:spotId route matched');
+            print('[Router]   Full URI: ${state.uri}');
+            print('[Router]   Matched location: ${state.matchedLocation}');
+            print('[Router]   Path parameters: spotId=$spotId');
+            print('[Router]   Query parameters: ${state.uri.queryParameters}');
+            print('[Router]   Building SpotDetailRoute for spot: $spotId');
+          }
+          
+          return SpotDetailRoute(spotId: spotId);
+        },
+        routes: [
+          // Edit route: /spot/:spotId/edit
+          GoRoute(
+            path: 'edit',
+            builder: (context, state) {
+              final spot = state.extra as Spot;
+              return EditSpotScreen(spot: spot);
+            },
+          ),
+        ],
+      ),
+      // Location routes - must come after specific routes like /spot/:spotId
       // Route for /:countryCode/:city (e.g., /gb/london)
       // Note: GoRouter will only match this if there are exactly 2 path segments
       GoRoute(
@@ -206,9 +236,21 @@ class AppRouter {
           final countryCode = state.pathParameters['countryCode']!;
           final city = state.pathParameters['city']!;
           
+          // Logging for route debugging
+          if (kDebugMode) {
+            print('[Router] /:countryCode/:city route matched');
+            print('[Router]   Full URI: ${state.uri}');
+            print('[Router]   Matched location: ${state.matchedLocation}');
+            print('[Router]   Path parameters: countryCode=$countryCode, city=$city');
+            print('[Router]   Query parameters: ${state.uri.queryParameters}');
+          }
+          
           // Validate that countryCode is 2 letters
           if (countryCode.length != 2 || !RegExp(r'^[a-zA-Z]{2}$').hasMatch(countryCode)) {
             // If not a valid country code, redirect to explore
+            if (kDebugMode) {
+              print('[Router]   Invalid country code, redirecting to explore');
+            }
             return const ExploreScreen();
           }
           
@@ -223,6 +265,11 @@ class AppRouter {
           // Build location query: "City, Country Code" (e.g., "London, GB")
           final locationQuery = '$cityName, ${countryCode.toUpperCase()}';
           
+          if (kDebugMode) {
+            print('[Router]   Location query: $locationQuery');
+            print('[Router]   Building ExploreScreen with location filter');
+          }
+          
           return ExploreScreen(initialLocationQuery: locationQuery);
         },
       ),
@@ -232,9 +279,21 @@ class AppRouter {
         builder: (context, state) {
           final countryCode = state.pathParameters['countryCode']!;
           
+          // Logging for route debugging
+          if (kDebugMode) {
+            print('[Router] /:countryCode route matched');
+            print('[Router]   Full URI: ${state.uri}');
+            print('[Router]   Matched location: ${state.matchedLocation}');
+            print('[Router]   Path parameters: countryCode=$countryCode');
+            print('[Router]   Query parameters: ${state.uri.queryParameters}');
+          }
+          
           // Validate that countryCode is 2 letters
           if (countryCode.length != 2 || !RegExp(r'^[a-zA-Z]{2}$').hasMatch(countryCode)) {
             // If not a valid country code, redirect to explore
+            if (kDebugMode) {
+              print('[Router]   Invalid country code, redirecting to explore');
+            }
             return const ExploreScreen();
           }
           
@@ -243,26 +302,14 @@ class AppRouter {
           final countryName = _getCountryNameFromCode(countryCode.toUpperCase());
           final locationQuery = countryName ?? countryCode.toUpperCase();
           
+          if (kDebugMode) {
+            print('[Router]   Country name: $countryName');
+            print('[Router]   Location query: $locationQuery');
+            print('[Router]   Building ExploreScreen with location filter');
+          }
+          
           return ExploreScreen(initialLocationQuery: locationQuery);
         },
-      ),
-      // Simple spot detail route: /spot/:spotId
-      GoRoute(
-        path: '/spot/:spotId',
-        builder: (context, state) {
-          final spotId = state.pathParameters['spotId']!;
-          return SpotDetailRoute(spotId: spotId);
-        },
-        routes: [
-          // Edit route: /spot/:spotId/edit
-          GoRoute(
-            path: 'edit',
-            builder: (context, state) {
-              final spot = state.extra as Spot;
-              return EditSpotScreen(spot: spot);
-            },
-          ),
-        ],
       ),
       // Spot detail route: /nl/amsterdam/&lt;spot-id&gt; or any /&lt;xx&gt;/&lt;anything&gt;/&lt;spot-id&gt;
       GoRoute(
