@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /**
  * Shared HTML template for both the regular index.html and the spotPage function
  * This ensures both pages have identical content except for dynamic meta tags
@@ -105,7 +106,7 @@ function generateHtmlBody(options = {}) {
   const {
     siteName = "Parkour·Spot",
     url = null,
-    serviceWorkerVersion = null
+    serviceWorkerVersion = null,
   } = options;
 
   const escapedUrl = url ? htmlEscape(url) : null;
@@ -157,7 +158,7 @@ function generateBreadcrumbJsonLd(options = {}) {
     "@type": "ListItem",
     "position": index + 1,
     "name": htmlEscape(crumb.name),
-    "item": `https://${canonicalHost}${crumb.url}`
+    "item": `https://${canonicalHost}${crumb.url}`,
   }));
 
   const jsonLd = {
@@ -214,6 +215,6 @@ if (typeof module !== "undefined" && module.exports) {
     generateHtmlBody,
     generateHtmlPage,
     htmlEscape,
-    GOOGLE_MAPS_API_KEY
+    GOOGLE_MAPS_API_KEY,
   };
 }
