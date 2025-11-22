@@ -204,17 +204,6 @@ class AppRouter {
         path: '/spot/:spotId',
         builder: (context, state) {
           final spotId = state.pathParameters['spotId']!;
-          
-          // Logging for route debugging
-          if (kDebugMode) {
-            print('[Router] /spot/:spotId route matched');
-            print('[Router]   Full URI: ${state.uri}');
-            print('[Router]   Matched location: ${state.matchedLocation}');
-            print('[Router]   Path parameters: spotId=$spotId');
-            print('[Router]   Query parameters: ${state.uri.queryParameters}');
-            print('[Router]   Building SpotDetailRoute for spot: $spotId');
-          }
-          
           return SpotDetailRoute(spotId: spotId);
         },
         routes: [
@@ -238,20 +227,12 @@ class AppRouter {
           
           // Validate that countryCode is 2 letters
           if (countryCode.length != 2 || !RegExp(r'^[a-zA-Z]{2}$').hasMatch(countryCode)) {
-            // If not a valid country code format, redirect to explore
-            if (kDebugMode) {
-              print('[Router] /:countryCode/:city - Invalid country code format, redirecting to explore');
-            }
             return '/explore';
           }
           
           // Check if country code actually exists
           final countryName = _getCountryNameFromCode(countryCode.toUpperCase());
           if (countryName == null) {
-            // Country code doesn't exist, redirect to explore
-            if (kDebugMode) {
-              print('[Router] /:countryCode/:city - Country code $countryCode not found, redirecting to explore');
-            }
             return '/explore';
           }
           
@@ -261,15 +242,6 @@ class AppRouter {
         builder: (context, state) {
           final countryCode = state.pathParameters['countryCode']!;
           final city = state.pathParameters['city']!;
-          
-          // Logging for route debugging
-          if (kDebugMode) {
-            print('[Router] /:countryCode/:city route matched');
-            print('[Router]   Full URI: ${state.uri}');
-            print('[Router]   Matched location: ${state.matchedLocation}');
-            print('[Router]   Path parameters: countryCode=$countryCode, city=$city');
-            print('[Router]   Query parameters: ${state.uri.queryParameters}');
-          }
           
           // Get country name (we know it exists from redirect check)
           final countryName = _getCountryNameFromCode(countryCode.toUpperCase())!;
@@ -285,12 +257,6 @@ class AppRouter {
           // Build location query: "City, Country Name" (e.g., "Amsterdam, Netherlands")
           final locationQuery = '$cityName, $countryName';
           
-          if (kDebugMode) {
-            print('[Router]   Country name: $countryName');
-            print('[Router]   Location query: $locationQuery');
-            print('[Router]   Building ExploreScreen with location filter');
-          }
-          
           return ExploreScreen(initialLocationQuery: locationQuery);
         },
       ),
@@ -302,20 +268,12 @@ class AppRouter {
           
           // Validate that countryCode is 2 letters
           if (countryCode.length != 2 || !RegExp(r'^[a-zA-Z]{2}$').hasMatch(countryCode)) {
-            // If not a valid country code format, redirect to explore
-            if (kDebugMode) {
-              print('[Router] /:countryCode - Invalid country code format, redirecting to explore');
-            }
             return '/explore';
           }
           
           // Check if country code actually exists
           final countryName = _getCountryNameFromCode(countryCode.toUpperCase());
           if (countryName == null) {
-            // Country code doesn't exist, redirect to explore
-            if (kDebugMode) {
-              print('[Router] /:countryCode - Country code $countryCode not found, redirecting to explore');
-            }
             return '/explore';
           }
           
@@ -325,26 +283,11 @@ class AppRouter {
         builder: (context, state) {
           final countryCode = state.pathParameters['countryCode']!;
           
-          // Logging for route debugging
-          if (kDebugMode) {
-            print('[Router] /:countryCode route matched');
-            print('[Router]   Full URI: ${state.uri}');
-            print('[Router]   Matched location: ${state.matchedLocation}');
-            print('[Router]   Path parameters: countryCode=$countryCode');
-            print('[Router]   Query parameters: ${state.uri.queryParameters}');
-          }
-          
           // Get country name (we know it exists from redirect check)
           final countryName = _getCountryNameFromCode(countryCode.toUpperCase())!;
           
           // Use the country name for the location query
           final locationQuery = countryName;
-          
-          if (kDebugMode) {
-            print('[Router]   Country name: $countryName');
-            print('[Router]   Location query: $locationQuery');
-            print('[Router]   Building ExploreScreen with location filter');
-          }
           
           return ExploreScreen(initialLocationQuery: locationQuery);
         },
@@ -427,16 +370,10 @@ class AppRouter {
     
     if (country != null) {
       // Return the English common name
-      if (kDebugMode) {
-        print('[Router] Found country for code $normalizedCode: ${country.name.common}');
-      }
       return country.name.common;
     }
     
-    // If lookup fails, return null to fall back to country code
-    if (kDebugMode) {
-      print('[Router] Country code $normalizedCode not found in sealed_countries package');
-    }
+    // If lookup fails, return null
     return null;
   }
 }
