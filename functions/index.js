@@ -53,7 +53,7 @@ const countriesWithArticle = new Set([
  * Get country name with proper article if needed
  * @param {string} countryCode - ISO 3166-1 alpha-2 country code
  * @param {boolean} withArticle - Whether to include "the" article (default: true)
- * @returns {string} Country name with "the" prefix if needed
+ * @return {string} Country name with "the" prefix if needed
  */
 function getCountryNameWithArticle(countryCode, withArticle = true) {
   const countryName = countries.getName(countryCode, "en") || countryCode;
