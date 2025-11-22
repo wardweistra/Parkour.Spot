@@ -3,7 +3,7 @@
  * This ensures both pages have identical content except for dynamic meta tags
  */
 
-const GOOGLE_MAPS_API_KEY = 'AIzaSyAAhFK9QYxOlbI3ySWTmoFIJKLAl8CL-qo';
+const GOOGLE_MAPS_API_KEY = "AIzaSyAAhFK9QYxOlbI3ySWTmoFIJKLAl8CL-qo";
 
 /**
  * Generate the HTML head section with optional dynamic meta tags
@@ -14,7 +14,9 @@ const GOOGLE_MAPS_API_KEY = 'AIzaSyAAhFK9QYxOlbI3ySWTmoFIJKLAl8CL-qo';
  * @param {string} options.url - Canonical URL (optional)
  * @param {string} options.siteName - Site name (default: "Parkour·Spot")
  * @param {boolean} options.isDynamic - Whether to include dynamic Open Graph/Twitter tags (default: false)
- * @returns {string} HTML head content
+ * @param {string} options.canonicalHost - Canonical host for breadcrumbs (optional)
+ * @param {Array} options.breadcrumbs - Breadcrumb items (optional)
+ * @return {string} HTML head content
  */
 function generateHtmlHead(options = {}) {
   const {
@@ -23,13 +25,19 @@ function generateHtmlHead(options = {}) {
     image = "https://parkour.spot/ParkourSpot-Featured.png",
     url = null,
     siteName = "Parkour·Spot",
-    isDynamic = false
+    isDynamic = false,
+    canonicalHost = "parkour.spot",
+    breadcrumbs = [],
   } = options;
 
   const escapedTitle = htmlEscape(title);
   const escapedDesc = htmlEscape(description);
   const escapedImage = htmlEscape(image);
   const escapedUrl = url ? htmlEscape(url) : null;
+  const breadcrumbJsonLd = generateBreadcrumbJsonLd({
+    canonicalHost: canonicalHost,
+    breadcrumbs: breadcrumbs,
+  });
 
   return `
   <meta charset="UTF-8">
@@ -41,7 +49,7 @@ function generateHtmlHead(options = {}) {
   <!-- Dynamic Open Graph -->
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="${siteName}" />
-  ${escapedUrl ? `<meta property="og:url" content="${escapedUrl}" />` : ''}
+  ${escapedUrl ? `<meta property="og:url" content="${escapedUrl}" />` : ""}
   <meta property="og:title" content="${escapedTitle}" />
   <meta property="og:description" content="${escapedDesc}" />
   <meta property="og:image" content="${escapedImage}" />
@@ -82,7 +90,7 @@ function generateHtmlHead(options = {}) {
   <script async defer src="https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&loading=async"></script>
 
   <meta name="theme-color" content="#000000" />
-  ${escapedUrl ? `<link rel="canonical" href="${escapedUrl}" />` : ''}`;
+  ${escapedUrl ? `<link rel="canonical" href="${escapedUrl}" />` : ""}${breadcrumbJsonLd}`;
 }
 
 /**
@@ -91,7 +99,7 @@ function generateHtmlHead(options = {}) {
  * @param {string} options.siteName - Site name (default: "Parkour·Spot")
  * @param {string} options.url - URL for noscript fallback (optional)
  * @param {string} options.serviceWorkerVersion - Service worker version (default: null)
- * @returns {string} HTML body content
+ * @return {string} HTML body content
  */
 function generateHtmlBody(options = {}) {
   const {
@@ -107,7 +115,7 @@ function generateHtmlBody(options = {}) {
   <noscript>
     <p>Loading ${siteName}… If you are not redirected, open <a href="${escapedUrl}">${escapedUrl}</a>.</p>
   </noscript>
-  ` : ''}
+  ` : ""}
   <script>
     // The value below is injected by flutter build, do not touch.
     const serviceWorkerVersion = ${serviceWorkerVersion !== null ? `'${serviceWorkerVersion}'` : `'{{flutter_service_worker_version}}'`};
@@ -132,14 +140,47 @@ function generateHtmlBody(options = {}) {
 }
 
 /**
+ * Generate breadcrumb structured data (JSON-LD)
+ * @param {Object} options - Breadcrumb options
+ * @param {string} options.canonicalHost - The canonical host (e.g., "parkour.spot")
+ * @param {Array} options.breadcrumbs - Array of breadcrumb items with {name, url}
+ * @return {string} JSON-LD script tag or empty string
+ */
+function generateBreadcrumbJsonLd(options = {}) {
+  const {canonicalHost = "parkour.spot", breadcrumbs = []} = options;
+
+  if (!breadcrumbs || breadcrumbs.length === 0) {
+    return "";
+  }
+
+  const items = breadcrumbs.map((crumb, index) => ({
+    "@type": "ListItem",
+    "position": index + 1,
+    "name": htmlEscape(crumb.name),
+    "item": `https://${canonicalHost}${crumb.url}`
+  }));
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": items,
+  };
+
+  return `
+  <script type="application/ld+json">
+${JSON.stringify(jsonLd, null, 2)}
+  </script>`;
+}
+
+/**
  * Generate complete HTML page
  * @param {Object} options - Configuration options
- * @returns {string} Complete HTML page
+ * @return {string} Complete HTML page
  */
 function generateHtmlPage(options = {}) {
   const headContent = generateHtmlHead(options);
   const bodyContent = generateHtmlBody(options);
-  
+
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -154,20 +195,20 @@ ${bodyContent}
 /**
  * HTML escape function
  * @param {any} value - Value to escape
- * @returns {string} Escaped HTML string
+ * @return {string} Escaped HTML string
  */
 function htmlEscape(value) {
   if (value === null || value === undefined) return "";
   return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
 }
 
 // Export for use in Node.js (Firebase Functions)
-if (typeof module !== 'undefined' && module.exports) {
+if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     generateHtmlHead,
     generateHtmlBody,

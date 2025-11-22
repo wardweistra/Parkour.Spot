@@ -375,6 +375,44 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
       canonicalUrl = fullUrl;
     }
 
+    // Generate breadcrumb data
+    const breadcrumbs = [];
+    breadcrumbs.push({ name: "Home", url: "/" });
+    
+    if (locationInfo || spot) {
+      const countryCode = (locationInfo?.countryCode || spot?.countryCode)?.toUpperCase();
+      // Always use country name without article for breadcrumbs
+      const countryName = countryCode ? getCountryNameWithArticle(countryCode, false) : null;
+      
+      if (countryCode && countryName) {
+        breadcrumbs.push({ 
+          name: countryName, 
+          url: `/${countryCode.toLowerCase()}` 
+        });
+      }
+    }
+    
+    if ((locationInfo?.city || spot?.city) && (locationInfo?.countryCode || spot?.countryCode)) {
+      const countryCode = (locationInfo?.countryCode || spot?.countryCode)?.toLowerCase();
+      const cityName = locationInfo?.city || spot?.city;
+      const citySlug = slugify(cityName);
+      
+      breadcrumbs.push({ 
+        name: cityName, 
+        url: `/${countryCode}/${citySlug}` 
+      });
+    }
+    
+    if (spot && spot.name && spot.countryCode && spot.city) {
+      const countryCode = spot.countryCode.toLowerCase();
+      const citySlug = slugify(spot.city);
+      
+      breadcrumbs.push({ 
+        name: spot.name, 
+        url: `/${countryCode}/${citySlug}/${spot.id}` 
+      });
+    }
+
     const siteName = "Parkour·Spot";
     const defaultTitle = `${siteName}`;
     const defaultImage = `https://${canonicalHost}/ParkourSpot-Featured.png`;
@@ -422,6 +460,8 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
       siteName: siteName,
       isDynamic: true,
       serviceWorkerVersion: null,
+      canonicalHost: canonicalHost,
+      breadcrumbs: breadcrumbs,
     });
 
     res.status(200).send(html);
