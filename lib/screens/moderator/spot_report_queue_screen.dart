@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../models/spot_report.dart';
 import '../../services/spot_report_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/url_service.dart';
 
 class SpotReportQueueScreen extends StatefulWidget {
   const SpotReportQueueScreen({super.key});
@@ -304,7 +305,14 @@ class _ReportCardState extends State<_ReportCard> {
               children: [
               // Spot name (clickable) at top left
               InkWell(
-                onTap: () => context.go('/spot/${widget.report.spotId}'),
+                onTap: () {
+                  final url = UrlService.generateNavigationUrl(
+                    widget.report.spotId,
+                    countryCode: widget.report.spotCountryCode,
+                    city: widget.report.spotCity,
+                  );
+                  context.go(url);
+                },
                 borderRadius: BorderRadius.circular(4),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
@@ -415,7 +423,12 @@ class _ReportCardState extends State<_ReportCard> {
             if (widget.report.duplicateOfSpotId != null) ...[
               const SizedBox(height: 12),
               TextButton.icon(
-                onPressed: () => context.go('/spot/${widget.report.duplicateOfSpotId}'),
+                onPressed: () {
+                  // For duplicate spots, we don't have countryCode/city info,
+                  // so this will fall back to /spot/<id> format
+                  final url = UrlService.generateNavigationUrl(widget.report.duplicateOfSpotId!);
+                  context.go(url);
+                },
                 icon: const Icon(Icons.open_in_new, size: 18),
                 label: const Text('Open suggested original spot'),
               ),
