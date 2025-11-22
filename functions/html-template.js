@@ -4,6 +4,9 @@
  * This ensures both pages have identical content except for dynamic meta tags
  */
 
+// Import shared utility functions
+const {escapeXml} = require("./utils");
+
 const GOOGLE_MAPS_API_KEY = "AIzaSyAAhFK9QYxOlbI3ySWTmoFIJKLAl8CL-qo";
 
 /**
@@ -265,14 +268,13 @@ ${bodyContent}
  * @param {any} value - Value to escape
  * @return {string} Escaped HTML string
  */
+/**
+ * Alias for escapeXml for backward compatibility
+ * @param {any} value - Value to escape
+ * @return {string} Escaped HTML string
+ */
 function htmlEscape(value) {
-  if (value === null || value === undefined) return "";
-  return String(value)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
+  return escapeXml(value);
 }
 
 // Export for use in Node.js (Firebase Functions)

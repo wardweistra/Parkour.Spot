@@ -13,6 +13,7 @@
  */
 
 const {onCall, onRequest} = require("firebase-functions/v2/https");
+const {onSchedule} = require("firebase-functions/v2/scheduler");
 const {
   onDocumentCreated,
   onDocumentUpdated,
@@ -63,8 +64,17 @@ function getCountryNameWithArticle(countryCode, withArticle = true) {
   return countryName;
 }
 
+// Import shared utilities
+const {normalizeToAscii, slugify, formatDateToISO} = require("./utils");
+
 // Import shared HTML template
 const {generateHtmlPage} = require("./html-template");
+
+// Import sitemap generation functions
+const {
+  generateAllSitemaps,
+  getSitemapFromStorage,
+} = require("./generate-sitemaps");
 
 /**
  * Find the largest available image for a given imageId in S3
@@ -120,54 +130,6 @@ async function findLargestS3Image(s3Client, bucket, spotId, imageId) {
   return null;
 }
 
-/**
- * Normalizes special characters to their ASCII equivalents
- * e.g., é -> e, É -> e, ñ -> n, etc.
- * @param {string} input - The input string
- * @return {string} Normalized string
- */
-function normalizeToAscii(input) {
-  const replacements = {
-    "à": "a", "á": "a", "â": "a", "ã": "a", "ä": "a", "å": "a",
-    "À": "A", "Á": "A", "Â": "A", "Ã": "A", "Ä": "A", "Å": "A",
-    "è": "e", "é": "e", "ê": "e", "ë": "e",
-    "È": "E", "É": "E", "Ê": "E", "Ë": "E",
-    "ì": "i", "í": "i", "î": "i", "ï": "i",
-    "Ì": "I", "Í": "I", "Î": "I", "Ï": "I",
-    "ò": "o", "ó": "o", "ô": "o", "õ": "o", "ö": "o",
-    "Ò": "O", "Ó": "O", "Ô": "O", "Õ": "O", "Ö": "O",
-    "ù": "u", "ú": "u", "û": "u", "ü": "u",
-    "Ù": "U", "Ú": "U", "Û": "U", "Ü": "U",
-    "ý": "y", "ÿ": "y",
-    "Ý": "Y", "Ÿ": "Y",
-    "ñ": "n", "Ñ": "N",
-    "ç": "c", "Ç": "C",
-    "ß": "ss",
-  };
-
-  let result = input;
-  for (const [char, replacement] of Object.entries(replacements)) {
-    // Use regex with global flag for compatibility
-    const regex = new RegExp(char.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g");
-    result = result.replace(regex, replacement);
-  }
-  return result;
-}
-
-/**
- * Slugifies a string for use in URLs
- * Normalizes special characters, lowercases, and replaces spaces/hyphens
- * @param {string} input - The input string
- * @return {string} Slugified string
- */
-function slugify(input) {
-  const normalized = normalizeToAscii(input);
-  const lowered = normalized.toLowerCase();
-  const replaced = lowered
-      .replace(/[^a-z0-9\s-_]/g, "")
-      .replace(/[\s_]+/g, "-");
-  return replaced;
-}
 
 /**
  * Extracts spot ID from URL pathname
@@ -737,14 +699,8 @@ exports.getTopSpotsInBounds = onCall(
 
         // Normalize Firestore Timestamp fields to ISO strings for client
         const normalize = (s) => {
-          const createdAt =
-          s.createdAt && s.createdAt.toDate ?
-            s.createdAt.toDate().toISOString() :
-            s.createdAt || null;
-          const updatedAt =
-          s.updatedAt && s.updatedAt.toDate ?
-            s.updatedAt.toDate().toISOString() :
-            s.updatedAt || null;
+          const createdAt = formatDateToISO(s.createdAt) || s.createdAt || null;
+          const updatedAt = formatDateToISO(s.updatedAt) || s.updatedAt || null;
           return {...s, createdAt, updatedAt};
         };
 
@@ -4848,6 +4804,94 @@ exports.importUrbnSpots = onCall(
           success: false,
           error: error.message,
         };
+      }
+    },
+);
+
+/**
+ * Scheduled function to regenerate sitemaps nightly
+ * Runs at midnight UTC every day
+ */
+exports.generateSitemapsScheduled = onSchedule(
+    {
+      schedule: "every day 00:00",
+      timeZone: "UTC",
+      region: "europe-west1",
+      memory: "1GiB", // Increase memory limit to handle large sitemap generation
+      timeoutSeconds: 540, // 9 minutes (max for scheduled functions)
+    },
+    async () => {
+      console.log("Scheduled sitemap generation started");
+      try {
+        // Generate and upload sitemaps to Storage
+        await generateAllSitemaps();
+        
+        console.log("Scheduled sitemap generation completed successfully");
+      } catch (error) {
+        console.error("Error in scheduled sitemap generation:", error);
+        throw error;
+      }
+    },
+);
+
+/**
+ * HTTP function to serve sitemaps on-demand
+ * Handles requests for:
+ * - /sitemap.xml (sitemap index)
+ * - /sitemaps/sitemap-{country}.xml (country sitemaps)
+ */
+exports.serveSitemap = onRequest(
+    {
+      region: "europe-west1",
+      cors: true,
+    },
+    async (req, res) => {
+      try {
+        // Normalize path - remove query string and trailing slashes
+        const path = (req.path || req.url || "/").split("?")[0].replace(/\/$/, "") || "/";
+        
+        // Extract sitemap filename from path
+        let sitemapName;
+        if (path === "/sitemap.xml" || path === "/sitemaps/sitemap.xml") {
+          sitemapName = "sitemap.xml";
+        } else if (path.startsWith("/sitemaps/")) {
+          // Extract filename and decode URL encoding
+          const rawFilename = path.replace("/sitemaps/", "");
+          sitemapName = decodeURIComponent(rawFilename);
+          
+          // Validate filename to prevent path traversal attacks
+          // Must match pattern: sitemap.xml or sitemap-{country}.xml or sitemap-{country}-{number}.xml
+          if (!/^sitemap(-[a-z]{2}(-\d+)?)?\.xml$/.test(sitemapName)) {
+            res.status(400).send("Invalid sitemap filename");
+            return;
+          }
+          
+          // Additional security check: ensure no path traversal sequences
+          if (sitemapName.includes("..") || sitemapName.includes("/") || sitemapName.includes("\\")) {
+            res.status(400).send("Invalid sitemap filename");
+            return;
+          }
+        } else {
+          res.status(404).send("Sitemap not found");
+          return;
+        }
+        
+        // Read sitemap from Storage
+        const xml = await getSitemapFromStorage(sitemapName);
+        
+        if (!xml) {
+          res.status(404).send("Sitemap not found");
+          return;
+        }
+        
+        // Set appropriate headers
+        res.set("Content-Type", "application/xml; charset=utf-8");
+        res.set("Cache-Control", "public, max-age=3600"); // Cache for 1 hour
+        
+        res.status(200).send(xml);
+      } catch (error) {
+        console.error("Error serving sitemap:", error);
+        res.status(500).send("Error generating sitemap");
       }
     },
 );
