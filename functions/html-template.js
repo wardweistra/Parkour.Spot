@@ -39,6 +39,14 @@ function generateHtmlHead(options = {}) {
     canonicalHost: canonicalHost,
     breadcrumbs: breadcrumbs,
   });
+  const pageTypeJsonLd = generatePageTypeJsonLd({
+    canonicalHost: canonicalHost,
+    url: url,
+    pageType: options.pageType,
+    name: options.pageName,
+    description: options.pageDescription,
+    address: options.pageAddress,
+  });
 
   return `
   <meta charset="UTF-8">
@@ -91,7 +99,7 @@ function generateHtmlHead(options = {}) {
   <script async defer src="https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&loading=async"></script>
 
   <meta name="theme-color" content="#000000" />
-  ${escapedUrl ? `<link rel="canonical" href="${escapedUrl}" />` : ""}${breadcrumbJsonLd}`;
+  ${escapedUrl ? `<link rel="canonical" href="${escapedUrl}" />` : ""}${breadcrumbJsonLd}${pageTypeJsonLd}`;
 }
 
 /**
@@ -174,6 +182,65 @@ ${JSON.stringify(jsonLd, null, 2)}
 }
 
 /**
+ * Generate page type structured data (JSON-LD)
+ * @param {Object} options - Page type options
+ * @param {string} options.canonicalHost - The canonical host (e.g., "parkour.spot")
+ * @param {string} options.url - The page URL
+ * @param {string} options.pageType - The page type (e.g., "SportsActivityLocation", "CollectionPage")
+ * @param {string} options.name - The page name
+ * @param {string} options.description - The page description
+ * @param {string} options.address - The address (for SportsActivityLocation)
+ * @return {string} JSON-LD script tag or empty string
+ */
+function generatePageTypeJsonLd(options = {}) {
+  const {
+    canonicalHost = "parkour.spot",
+    url = null,
+    pageType = null,
+    name = null,
+    description = null,
+    address = null,
+  } = options;
+
+  if (!pageType || !url) {
+    return "";
+  }
+
+  // Handle both absolute URLs and relative paths
+  const pageId = url.startsWith("http") ? url : `https://${canonicalHost}${url}`;
+
+  const pageData = {
+    "@context": "https://schema.org",
+    "@type": pageType,
+    "@id": pageId,
+  };
+
+  if (name) {
+    pageData.name = htmlEscape(name);
+  }
+
+  if (description) {
+    pageData.description = htmlEscape(description);
+  }
+
+  // Add address for SportsActivityLocation pages
+  if (pageType === "SportsActivityLocation" && address) {
+    const addr = String(address).trim();
+    if (addr.length > 0) {
+      pageData.address = {
+        "@type": "PostalAddress",
+        "streetAddress": htmlEscape(addr),
+      };
+    }
+  }
+
+  return `
+  <script type="application/ld+json">
+${JSON.stringify(pageData, null, 2)}
+  </script>`;
+}
+
+/**
  * Generate complete HTML page
  * @param {Object} options - Configuration options
  * @return {string} Complete HTML page
@@ -214,6 +281,8 @@ if (typeof module !== "undefined" && module.exports) {
     generateHtmlHead,
     generateHtmlBody,
     generateHtmlPage,
+    generateBreadcrumbJsonLd,
+    generatePageTypeJsonLd,
     htmlEscape,
     GOOGLE_MAPS_API_KEY,
   };

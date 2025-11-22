@@ -387,7 +387,7 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
       if (countryCode && countryName) {
         breadcrumbs.push({ 
           name: countryName, 
-          url: `/${countryCode.toLowerCase()}` 
+          url: `/${countryCode.toLowerCase()}`
         });
       }
     }
@@ -399,7 +399,7 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
       
       breadcrumbs.push({ 
         name: cityName, 
-        url: `/${countryCode}/${citySlug}` 
+        url: `/${countryCode}/${citySlug}`
       });
     }
     
@@ -409,7 +409,7 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
       
       breadcrumbs.push({ 
         name: spot.name, 
-        url: `/${countryCode}/${citySlug}/${spot.id}` 
+        url: `/${countryCode}/${citySlug}/${spot.id}`
       });
     }
 
@@ -434,6 +434,33 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
         title = `Best parkour spots in ${locationInfo.countryName}`;
         description = `Discover the best parkour spots in ${locationInfo.countryName}. Find training locations, share your favorite spots, and connect with the parkour community.`;
       }
+    }
+
+    // Determine current page type and metadata for structured data
+    let pageType = null;
+    let pageName = null;
+    let pageDescription = null;
+    let pageAddress = null;
+
+    if (spot && spot.name) {
+      // Spot detail page
+      pageType = "SportsActivityLocation";
+      pageName = spot.name;
+      pageDescription = description;
+      // Extract address if available
+      if (spot.address) {
+        const addr = String(spot.address).trim();
+        if (addr.length > 0) {
+          pageAddress = addr;
+        }
+      }
+    } else if (locationInfo) {
+      // Location page (country or city)
+      pageType = "CollectionPage";
+      pageName = locationInfo.city 
+        ? `Best parkour spots in ${locationInfo.city}, ${locationInfo.countryName}`
+        : `Best parkour spots in ${locationInfo.countryName}`;
+      pageDescription = description;
     }
 
     let imageUrl = (spot && Array.isArray(spot.imageUrls) && spot.imageUrls.length > 0) ?
@@ -462,6 +489,10 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
       serviceWorkerVersion: null,
       canonicalHost: canonicalHost,
       breadcrumbs: breadcrumbs,
+      pageType: pageType,
+      pageName: pageName,
+      pageDescription: pageDescription,
+      pageAddress: pageAddress,
     });
 
     res.status(200).send(html);
