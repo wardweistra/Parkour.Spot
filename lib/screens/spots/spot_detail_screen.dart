@@ -870,7 +870,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     Row(
                       children: [
                         Expanded(
-                          child: Text(
+                          child: SelectableText(
                             _spot.name,
                             style: Theme.of(context).textTheme.headlineMedium
                                 ?.copyWith(fontWeight: FontWeight.bold),
@@ -974,7 +974,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text(
+                    SelectableText(
                       _spot.description.trim().isEmpty
                           ? 'No description provided'
                           : _spot.description,
@@ -1464,7 +1464,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                           ),
                           const SizedBox(height: 8),
                           // Coordinates
-                          Text(
+                          SelectableText(
                             '${widget.spot.latitude.toStringAsFixed(6)}, ${widget.spot.longitude.toStringAsFixed(6)}',
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),

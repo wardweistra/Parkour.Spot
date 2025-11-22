@@ -286,8 +286,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        RichText(
-          text: TextSpan(
+        SelectableText.rich(
+          TextSpan(
             style: textStyle,
             children: [
               TextSpan(text: beforeLink),
@@ -307,12 +307,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        Text(
+        SelectableText(
           'This is your map. Add new spots, rate existing ones, and enrich listings with details. The more we contribute, the stronger the community\'s shared knowledge becomes.',
           style: textStyle,
         ),
         const SizedBox(height: 16),
-        Text(
+        SelectableText(
           'Our principles:',
           style: textStyle?.copyWith(
             fontWeight: FontWeight.bold,
@@ -324,17 +324,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              SelectableText(
                 '• Transparency: you can browse the app without an account, and each spot shows which external sources contributed to it.',
                 style: textStyle,
               ),
               const SizedBox(height: 8),
-              Text(
+              SelectableText(
                 '• Portability: we\'re building export tools so spot data can be used beyond the app.',
                 style: textStyle,
               ),
               const SizedBox(height: 8),
-              Text(
+              SelectableText(
                 '• Open source: the app is community-owned, not dependent on one person.',
                 style: textStyle,
               ),
@@ -342,7 +342,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        Text(
+        SelectableText(
           'Enjoy discovering and sharing spots with Parkour.spot. Questions or ideas? Tap the contact button—we\'d love to hear from you.',
           style: textStyle,
         ),
@@ -391,7 +391,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
+                                SelectableText(
                                   'Parkour·Spot is a community-driven app for discovering and sharing parkour and freerunning spots worldwide. We\'re making it simple to find quality locations—wherever you train.',
                                   style: textStyle,
                                 ),
@@ -451,7 +451,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      SelectableText(
                         'Parkour·Spot is a community-driven app for discovering and sharing parkour and freerunning spots worldwide. We\'re making it simple to find quality locations—wherever you train.',
                         style: textStyle,
                       ),

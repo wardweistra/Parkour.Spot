@@ -19,7 +19,7 @@ class SourceDetailsDialog extends StatelessWidget {
     
     return PointerInterceptor(
       child: AlertDialog(
-      title: Text(source.name),
+      title: SelectableText(source.name),
       content: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -31,7 +31,7 @@ class SourceDetailsDialog extends StatelessWidget {
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
-              Text(source.description!),
+              SelectableText(source.description!),
               const SizedBox(height: 16),
             ],
             const Text(
