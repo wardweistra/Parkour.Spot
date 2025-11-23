@@ -366,14 +366,6 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       }
       // Trigger a refresh of visible spots for new area
       _updateVisibleSpots();
-      
-      // If this search came from an initial location query (country/city route),
-      // normalize the URL to /explore?location=... to preserve the search term in the URL
-      // This allows the search bar to remain filled and the page to be refreshable
-      if (fromInitialQuery && formatted != null && mounted) {
-        final encodedLocation = Uri.encodeComponent(formatted);
-        context.go('/explore?location=$encodedLocation');
-      }
     } catch (e) {
       // Log errors for debugging
       debugPrint('Error selecting place: $e');
