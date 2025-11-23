@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../models/audit_log.dart';
 import '../../models/spot.dart';
 import '../../models/user.dart' as app_user;
+import '../../models/rating.dart';
 import '../../services/auth_service.dart';
 import '../../services/url_service.dart';
 import '../../utils/image_url_utils.dart';
@@ -14,6 +15,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 enum AuditLogEntryType {
   spotCreation,
   userCreation,
+  spotReportCreation,
+  ratingCreation,
+  syncSourceCreation,
   auditLogAction,
 }
 
@@ -352,6 +356,116 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
               'displayName': user.displayName,
               'isAdmin': user.isAdmin,
               'isModerator': user.isModerator,
+            },
+          ));
+        }
+      }
+
+      // Fetch spot report creations within date range
+      Query<Map<String, dynamic>> spotReportsQuery = _firestore
+          .collection('spotReports')
+          .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+          .where('createdAt', isLessThan: Timestamp.fromDate(endDate))
+          .orderBy('createdAt', descending: true);
+
+      final spotReportsSnapshot = await spotReportsQuery.get();
+
+      for (var doc in spotReportsSnapshot.docs) {
+        final data = doc.data();
+        final createdAt = data['createdAt'] is Timestamp
+            ? (data['createdAt'] as Timestamp).toDate()
+            : null;
+        if (createdAt != null) {
+          final spotName = data['spotName'] as String? ?? 'Unknown spot';
+          final reporterName = data['reporterName'] as String?;
+          final reporterEmail = data['reporterEmail'] as String?;
+          final categories = (data['categories'] as List?)?.map((e) => e.toString()).toList() ?? [];
+          
+          newEntries.add(AuditLogEntry(
+            type: AuditLogEntryType.spotReportCreation,
+            timestamp: createdAt,
+            id: doc.id,
+            title: 'Spot Report Created',
+            subtitle: reporterName != null
+                ? 'Reported by $reporterName'
+                : reporterEmail != null
+                    ? 'Reported by $reporterEmail'
+                    : 'Reported anonymously',
+            details: 'Spot: $spotName\nCategories: ${categories.join(', ')}',
+            metadata: {
+              'reportId': doc.id,
+              'spotId': data['spotId'] as String? ?? '',
+              'spotName': spotName,
+              'reporterUserId': data['reporterUserId'] as String?,
+              'reporterName': reporterName,
+              'reporterEmail': reporterEmail,
+              'categories': categories,
+              'status': data['status'] as String? ?? 'New',
+            },
+          ));
+        }
+      }
+
+      // Fetch rating creations within date range
+      Query<Map<String, dynamic>> ratingsQuery = _firestore
+          .collection('ratings')
+          .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+          .where('createdAt', isLessThan: Timestamp.fromDate(endDate))
+          .orderBy('createdAt', descending: true);
+
+      final ratingsSnapshot = await ratingsQuery.get();
+
+      for (var doc in ratingsSnapshot.docs) {
+        final rating = Rating.fromFirestore(doc);
+        final createdAt = rating.createdAt;
+        if (createdAt != null) {
+          newEntries.add(AuditLogEntry(
+            type: AuditLogEntryType.ratingCreation,
+            timestamp: createdAt,
+            id: doc.id,
+            title: 'Rating Created',
+            subtitle: 'Rating: ${rating.rating.toStringAsFixed(1)}/5.0',
+            details: 'Spot ID: ${rating.spotId}\nUser ID: ${rating.userId}',
+            metadata: {
+              'ratingId': doc.id,
+              'spotId': rating.spotId,
+              'userId': rating.userId,
+              'rating': rating.rating,
+            },
+          ));
+        }
+      }
+
+      // Fetch sync source creations within date range
+      Query<Map<String, dynamic>> syncSourcesQuery = _firestore
+          .collection('syncSources')
+          .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+          .where('createdAt', isLessThan: Timestamp.fromDate(endDate))
+          .orderBy('createdAt', descending: true);
+
+      final syncSourcesSnapshot = await syncSourcesQuery.get();
+
+      for (var doc in syncSourcesSnapshot.docs) {
+        final data = doc.data();
+        final createdAt = data['createdAt'] is Timestamp
+            ? (data['createdAt'] as Timestamp).toDate()
+            : null;
+        if (createdAt != null) {
+          final sourceName = data['name'] as String? ?? 'Unknown source';
+          final isActive = data['isActive'] as bool? ?? true;
+          
+          newEntries.add(AuditLogEntry(
+            type: AuditLogEntryType.syncSourceCreation,
+            timestamp: createdAt,
+            id: doc.id,
+            title: 'Sync Source Created: $sourceName',
+            subtitle: isActive ? 'Active sync source' : 'Inactive sync source',
+            details: data['description'] as String? ?? data['kmzUrl'] as String? ?? '',
+            metadata: {
+              'sourceId': doc.id,
+              'name': sourceName,
+              'kmzUrl': data['kmzUrl'] as String?,
+              'isActive': isActive,
             },
           ));
         }
@@ -1162,6 +1276,12 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
         return Icons.add_location;
       case AuditLogEntryType.userCreation:
         return Icons.person_add;
+      case AuditLogEntryType.spotReportCreation:
+        return Icons.report_problem;
+      case AuditLogEntryType.ratingCreation:
+        return Icons.star;
+      case AuditLogEntryType.syncSourceCreation:
+        return Icons.sync;
       case AuditLogEntryType.auditLogAction:
         return Icons.edit;
     }
@@ -1173,6 +1293,12 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
         return Colors.green;
       case AuditLogEntryType.userCreation:
         return Colors.blue;
+      case AuditLogEntryType.spotReportCreation:
+        return Colors.orange;
+      case AuditLogEntryType.ratingCreation:
+        return Colors.amber;
+      case AuditLogEntryType.syncSourceCreation:
+        return Colors.purple;
       case AuditLogEntryType.auditLogAction:
         return Colors.orange;
     }
@@ -1196,6 +1322,11 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
     return entry.type == AuditLogEntryType.userCreation;
   }
 
+  /// Check if an entry is a spot report creation
+  bool _isSpotReportCreation(AuditLogEntry entry) {
+    return entry.type == AuditLogEntryType.spotReportCreation;
+  }
+
   /// Get list of spot IDs from an audit log entry
   /// Returns original spot first (if applicable), then the main spot
   List<String> _getSpotIdsFromEntry(AuditLogEntry entry) {
@@ -1206,6 +1337,16 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
       if (entry.id != null) {
         spotIds.add(entry.id!);
       } else if (entry.metadata?['spotId'] != null) {
+        spotIds.add(entry.metadata!['spotId'] as String);
+      }
+    } else if (entry.type == AuditLogEntryType.spotReportCreation) {
+      // For spot report creation, get spotId from metadata
+      if (entry.metadata?['spotId'] != null) {
+        spotIds.add(entry.metadata!['spotId'] as String);
+      }
+    } else if (entry.type == AuditLogEntryType.ratingCreation) {
+      // For rating creation, get spotId from metadata
+      if (entry.metadata?['spotId'] != null) {
         spotIds.add(entry.metadata!['spotId'] as String);
       }
     } else if (entry.type == AuditLogEntryType.auditLogAction) {
@@ -1426,14 +1567,14 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                   ),
                                 ],
                               ),
-                              trailing: (spotIds.isNotEmpty || _isSpotReportStatusChange(entry) || _isUserCreation(entry))
+                              trailing: (spotIds.isNotEmpty || _isSpotReportStatusChange(entry) || _isSpotReportCreation(entry) || _isUserCreation(entry))
                                   ? Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         // Spot buttons
                                         ...spotIds.asMap().entries.map((spotEntry) {
                                           final isLast = spotEntry.key == spotIds.length - 1;
-                                          final hasOtherButtons = _isSpotReportStatusChange(entry) || _isUserCreation(entry);
+                                          final hasOtherButtons = _isSpotReportStatusChange(entry) || _isSpotReportCreation(entry) || _isUserCreation(entry);
                                           return Padding(
                                             padding: EdgeInsets.only(
                                               right: isLast && !hasOtherButtons ? 0 : 4,
@@ -1457,7 +1598,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                           );
                                         }),
                                         // Spot Report Queue button
-                                        if (_isSpotReportStatusChange(entry))
+                                        if (_isSpotReportStatusChange(entry) || _isSpotReportCreation(entry))
                                           IconButton(
                                             icon: const Icon(
                                               Icons.report_problem,
@@ -1618,7 +1759,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                         ),
                                         const SizedBox(width: 8),
                                       ],
-                                      if (_isSpotReportStatusChange(entry))
+                                      if (_isSpotReportStatusChange(entry) || _isSpotReportCreation(entry))
                                         TextButton.icon(
                                           icon: const Icon(
                                             Icons.report_problem,
