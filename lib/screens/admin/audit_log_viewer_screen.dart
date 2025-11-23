@@ -6,8 +6,10 @@ import '../../models/spot.dart';
 import '../../models/user.dart' as app_user;
 import '../../services/auth_service.dart';
 import '../../services/url_service.dart';
+import '../../utils/image_url_utils.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 enum AuditLogEntryType {
   spotCreation,
@@ -225,12 +227,8 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                   : auditLog.userId != null
                       ? 'Edited by ${auditLog.userId}'
                       : 'Edited by unknown';
-              if (auditLog.changes != null && auditLog.changes!.isNotEmpty) {
-                final changeList = auditLog.changes!.entries
-                    .map((e) => '${e.key}: ${e.value['from']} → ${e.value['to']}')
-                    .join(', ');
-                details = 'Changes: $changeList';
-              }
+              // Don't set details string - we'll build a widget instead
+              details = null;
               break;
             case AuditLogAction.spotMarkedAsDuplicate:
               title = 'Spot Marked as Duplicate';
@@ -359,6 +357,642 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
   }
 
   bool get _hasMoreEntries => _hasMoreSpots || _hasMoreUsers || _hasMoreAuditLogs;
+
+  /// Formats changes for display with bullet points, array diffs, and image previews
+  Widget _buildChangesWidget(Map<String, dynamic> changes) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: changes.entries.map((entry) {
+        final fieldName = entry.key;
+        final changeData = entry.value as Map<String, dynamic>;
+        final fromValue = changeData['from'];
+        final toValue = changeData['to'];
+
+        // Handle array changes (like imageUrls, spotFeatures, etc.)
+        if (fromValue is List || toValue is List) {
+          return _buildArrayChangeItem(fieldName, fromValue, toValue);
+        }
+
+        // Handle Map changes (like spotFacilities, location, etc.)
+        if (fromValue is Map || toValue is Map) {
+          return _buildMapChangeItem(fieldName, fromValue, toValue);
+        }
+
+        // Handle regular field changes
+        final fromFormatted = _formatValue(fromValue);
+        final toFormatted = _formatValue(toValue);
+        final isNullToValue = fromValue == null && toValue != null;
+        final isValueToNull = fromValue != null && toValue == null;
+        
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('• ', style: TextStyle(fontSize: 12)),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$fieldName: ',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    RichText(
+                      text: TextSpan(
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[700],
+                        ),
+                        children: [
+                          TextSpan(
+                            text: fromFormatted,
+                            style: TextStyle(
+                              color: isValueToNull ? Colors.red[700] : Colors.grey[700],
+                              fontStyle: isValueToNull ? FontStyle.italic : FontStyle.normal,
+                            ),
+                          ),
+                          const TextSpan(text: ' → '),
+                          TextSpan(
+                            text: toFormatted,
+                            style: TextStyle(
+                              color: isNullToValue ? Colors.green[700] : Colors.grey[700],
+                              fontStyle: isNullToValue ? FontStyle.italic : FontStyle.normal,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  /// Builds a widget for Map changes showing added/removed/changed keys
+  Widget _buildMapChangeItem(String fieldName, dynamic fromValue, dynamic toValue) {
+    // Handle null values properly - track if values were originally null
+    final fromWasNull = fromValue == null;
+    final toWasNull = toValue == null;
+    final fromMap = fromValue is Map ? Map<String, dynamic>.from(fromValue) : (fromWasNull ? <String, dynamic>{} : null);
+    final toMap = toValue is Map ? Map<String, dynamic>.from(toValue) : (toWasNull ? <String, dynamic>{} : null);
+
+    // If either value is not a Map and not null, treat as regular change
+    if (fromMap == null || toMap == null) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('• ', style: TextStyle(fontSize: 12)),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '$fieldName: ',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${_formatValue(fromValue)} → ${_formatValue(toValue)}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Compute differences
+    final allKeys = {...fromMap.keys, ...toMap.keys};
+    final removed = allKeys.where((key) => fromMap.containsKey(key) && !toMap.containsKey(key)).toList();
+    final added = allKeys.where((key) => !fromMap.containsKey(key) && toMap.containsKey(key)).toList();
+    final changed = allKeys.where((key) => 
+      fromMap.containsKey(key) && 
+      toMap.containsKey(key) && 
+      fromMap[key] != toMap[key]
+    ).toList();
+    final unchanged = allKeys.where((key) => 
+      fromMap.containsKey(key) && 
+      toMap.containsKey(key) && 
+      fromMap[key] == toMap[key]
+    ).toList();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('• ', style: TextStyle(fontSize: 12)),
+              Expanded(
+                child: Text(
+                  '$fieldName:',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          if (fromWasNull && toMap.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.only(left: 12, bottom: 4),
+              child: Text(
+                'Added (${toMap.length} keys) - was null: ${toMap.keys.join(', ')}',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.green[700],
+                ),
+              ),
+            ),
+          ] else if (toWasNull && fromMap.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.only(left: 12, bottom: 4),
+              child: Text(
+                'Removed (${fromMap.length} keys) - now null: ${fromMap.keys.join(', ')}',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.red[700],
+                ),
+              ),
+            ),
+          ] else ...[
+            if (removed.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.only(left: 12, bottom: 4),
+                child: Text(
+                  'Removed keys: ${removed.join(', ')}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.red[700],
+                  ),
+                ),
+              ),
+            ],
+            if (added.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.only(left: 12, bottom: 4),
+                child: Text(
+                  'Added keys: ${added.join(', ')}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.green[700],
+                  ),
+                ),
+              ),
+            ],
+          ],
+          if (changed.isNotEmpty) ...[
+            ...changed.map((key) => Padding(
+              padding: const EdgeInsets.only(left: 12, bottom: 4),
+              child: Text(
+                '$key: ${_formatValue(fromMap[key])} → ${_formatValue(toMap[key])}',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.orange[700],
+                ),
+              ),
+            )),
+          ],
+          if (unchanged.isNotEmpty && removed.isEmpty && added.isEmpty && changed.isEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.only(left: 12),
+              child: Text(
+                'No changes (${unchanged.length} keys)',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ),
+          ],
+          if (removed.isEmpty && added.isEmpty && changed.isEmpty && unchanged.isEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.only(left: 12),
+              child: Text(
+                fromWasNull && toWasNull
+                    ? 'Was null, now null'
+                    : 'No items (was empty, now empty)',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey[600],
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Builds a widget for array changes showing added/removed items
+  Widget _buildArrayChangeItem(String fieldName, dynamic fromValue, dynamic toValue) {
+    // Handle null values properly - track if values were originally null
+    final fromWasNull = fromValue == null;
+    final toWasNull = toValue == null;
+    final fromList = fromValue is List ? fromValue : (fromWasNull ? <dynamic>[] : null);
+    final toList = toValue is List ? toValue : (toWasNull ? <dynamic>[] : null);
+
+    // If either value is not a list and not null, treat as regular change
+    if (fromList == null || toList == null) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('• ', style: TextStyle(fontSize: 12)),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '$fieldName: ',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${_formatValue(fromValue)} → ${_formatValue(toValue)}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Compute differences
+    final removed = fromList.where((item) => !toList.contains(item)).toList();
+    final added = toList.where((item) => !fromList.contains(item)).toList();
+    final unchanged = fromList.where((item) => toList.contains(item)).toList();
+
+    // Special handling for images
+    if (fieldName == 'imageUrls') {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('• ', style: TextStyle(fontSize: 12)),
+                Expanded(
+                  child: Text(
+                    '$fieldName:',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (fromWasNull && toList.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.only(left: 12, bottom: 4),
+                child: Text(
+                  'Added (${toList.length}) - was null:',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.green[700],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 12, bottom: 8),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: toList.map((url) => _buildImagePreview(url.toString(), isRemoved: false)).toList(),
+                ),
+              ),
+            ] else if (removed.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.only(left: 12, bottom: 4),
+                child: Text(
+                  'Removed (${removed.length}):',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.red[700],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 12, bottom: 8),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: removed.map((url) => _buildImagePreview(url.toString(), isRemoved: true)).toList(),
+                ),
+              ),
+            ],
+            if (toWasNull && fromList.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.only(left: 12, bottom: 4),
+                child: Text(
+                  'Removed (${fromList.length}) - now null:',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.red[700],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 12, bottom: 8),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: fromList.map((url) => _buildImagePreview(url.toString(), isRemoved: true)).toList(),
+                ),
+              ),
+            ] else if (added.isNotEmpty && !fromWasNull) ...[
+              Padding(
+                padding: const EdgeInsets.only(left: 12, bottom: 4),
+                child: Text(
+                  'Added (${added.length}):',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.green[700],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 12, bottom: 8),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: added.map((url) => _buildImagePreview(url.toString(), isRemoved: false)).toList(),
+                ),
+              ),
+            ],
+            if (unchanged.isNotEmpty && (removed.isNotEmpty || added.isNotEmpty)) ...[
+              Padding(
+                padding: const EdgeInsets.only(left: 12, bottom: 4),
+                child: Text(
+                  'Unchanged (${unchanged.length}):',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 12),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: unchanged.map((url) => _buildImagePreview(url.toString(), isRemoved: false)).toList(),
+                ),
+              ),
+            ],
+            // Show message if both lists are empty
+            if (removed.isEmpty && added.isEmpty && unchanged.isEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.only(left: 12),
+                child: Text(
+                  fromWasNull && toWasNull
+                      ? 'Was null, now null'
+                      : 'No items (was empty, now empty)',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey[600],
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+    }
+
+    // Regular array handling (non-image arrays)
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('• ', style: TextStyle(fontSize: 12)),
+              Expanded(
+                child: Text(
+                  '$fieldName:',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          if (fromWasNull && toList.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.only(left: 12, bottom: 4),
+              child: Text(
+                'Added (${toList.length}) - was null: ${toList.map((e) => _formatValue(e)).join(', ')}',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.green[700],
+                ),
+              ),
+            ),
+          ] else if (toWasNull && fromList.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.only(left: 12, bottom: 4),
+              child: Text(
+                'Removed (${fromList.length}) - now null: ${fromList.map((e) => _formatValue(e)).join(', ')}',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.red[700],
+                ),
+              ),
+            ),
+          ] else ...[
+            if (removed.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.only(left: 12, bottom: 4),
+                child: Text(
+                  'Removed: ${removed.map((e) => _formatValue(e)).join(', ')}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.red[700],
+                  ),
+                ),
+              ),
+            ],
+            if (added.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.only(left: 12, bottom: 4),
+                child: Text(
+                  'Added: ${added.map((e) => _formatValue(e)).join(', ')}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.green[700],
+                  ),
+                ),
+              ),
+            ],
+          ],
+          if (unchanged.isNotEmpty && removed.isEmpty && added.isEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.only(left: 12),
+              child: Text(
+                'No changes (${unchanged.length} items)',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ),
+          ],
+          // Show message if both lists are empty
+          if (removed.isEmpty && added.isEmpty && unchanged.isEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.only(left: 12),
+              child: Text(
+                fromWasNull && toWasNull
+                    ? 'Was null, now null'
+                    : 'No items (was empty, now empty)',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey[600],
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Builds a small image preview widget
+  Widget _buildImagePreview(String imageUrl, {required bool isRemoved}) {
+    return Stack(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: isRemoved ? Colors.red : Colors.green,
+                width: 2,
+              ),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: CachedNetworkImage(
+              imageUrl: getResizedImageUrl(imageUrl),
+              width: 60,
+              height: 60,
+              fit: BoxFit.cover,
+              placeholder: (context, url) => Container(
+                width: 60,
+                height: 60,
+                color: Colors.grey[300],
+                child: const Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              ),
+              errorWidget: (context, url, error) => Container(
+                width: 60,
+                height: 60,
+                color: Colors.grey[300],
+                child: Icon(
+                  Icons.image_not_supported,
+                  size: 24,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ),
+          ),
+        ),
+        if (isRemoved)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Center(
+                child: Icon(
+                  Icons.remove_circle,
+                  color: Colors.red,
+                  size: 20,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Formats a value for display
+  String _formatValue(dynamic value) {
+    if (value == null) return '(null)';
+    if (value is String) {
+      if (value.isEmpty) return '(empty string)';
+      return value;
+    }
+    if (value is num) return value.toString();
+    if (value is bool) return value.toString();
+    if (value is DateTime) {
+      return DateFormat('yyyy-MM-dd HH:mm:ss').format(value);
+    }
+    if (value is Map) {
+      if (value.isEmpty) return '(empty map)';
+      return '{${value.length} keys}';
+    }
+    if (value is List) {
+      if (value.isEmpty) return '(empty list)';
+      return '[${value.length} items]';
+    }
+    return value.toString();
+  }
 
   IconData _getIconForType(AuditLogEntryType type) {
     switch (type) {
@@ -584,7 +1218,17 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                     entry.subtitle ?? '',
                                     style: const TextStyle(fontSize: 13),
                                   ),
-                                  if (entry.details != null) ...[
+                                  // Show changes widget for Spot Edited entries
+                                  if (entry.type == AuditLogEntryType.auditLogAction &&
+                                      entry.metadata?['action'] != null &&
+                                      entry.metadata!['action'].toString().contains('spotEdit') &&
+                                      entry.metadata?['changes'] != null &&
+                                      (entry.metadata!['changes'] as Map<String, dynamic>).isNotEmpty) ...[
+                                    const SizedBox(height: 8),
+                                    _buildChangesWidget(
+                                      entry.metadata!['changes'] as Map<String, dynamic>,
+                                    ),
+                                  ] else if (entry.details != null) ...[
                                     const SizedBox(height: 4),
                                     Text(
                                       entry.details!,
@@ -682,6 +1326,23 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                             const SizedBox(height: 8),
                                             Text('ID: ${entry.id}'),
                                           ],
+                                          // Show changes widget for Spot Edited entries
+                                          if (entry.type == AuditLogEntryType.auditLogAction &&
+                                              entry.metadata?['action'] != null &&
+                                              entry.metadata!['action'].toString().contains('spotEdit') &&
+                                              entry.metadata?['changes'] != null &&
+                                              (entry.metadata!['changes'] as Map<String, dynamic>).isNotEmpty) ...[
+                                            const SizedBox(height: 16),
+                                            const Text(
+                                              'Changes:',
+                                              style: TextStyle(
+                                                  fontWeight: FontWeight.bold),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            _buildChangesWidget(
+                                              entry.metadata!['changes'] as Map<String, dynamic>,
+                                            ),
+                                          ],
                                           if (dialogSpotIds.isNotEmpty) ...[
                                             const SizedBox(height: 16),
                                             const Text(
@@ -726,7 +1387,10 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                             ),
                                           ],
                                           if (entry.metadata != null &&
-                                              entry.metadata!.isNotEmpty) ...[
+                                              entry.metadata!.isNotEmpty &&
+                                              !(entry.type == AuditLogEntryType.auditLogAction &&
+                                                entry.metadata?['action'] != null &&
+                                                entry.metadata!['action'].toString().contains('spotEdit'))) ...[
                                             const SizedBox(height: 16),
                                             const Text(
                                               'Metadata:',
@@ -734,7 +1398,9 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                                   fontWeight: FontWeight.bold),
                                             ),
                                             const SizedBox(height: 8),
-                                            ...entry.metadata!.entries.map(
+                                            ...entry.metadata!.entries
+                                                .where((e) => e.key != 'changes') // Exclude changes as it's shown separately
+                                                .map(
                                               (e) => Padding(
                                                 padding: const EdgeInsets.only(
                                                     bottom: 4),
