@@ -37,6 +37,211 @@ class AuditLogEntry {
   });
 }
 
+class _DateTimeRangePickerDialog extends StatefulWidget {
+  final DateTime initialStart;
+  final DateTime initialEnd;
+
+  const _DateTimeRangePickerDialog({
+    required this.initialStart,
+    required this.initialEnd,
+  });
+
+  @override
+  State<_DateTimeRangePickerDialog> createState() => _DateTimeRangePickerDialogState();
+}
+
+class _DateTimeRangePickerDialogState extends State<_DateTimeRangePickerDialog> {
+  late DateTime _startDate;
+  late DateTime _endDate;
+  late TimeOfDay _startTime;
+  late TimeOfDay _endTime;
+
+  @override
+  void initState() {
+    super.initState();
+    _startDate = DateTime(
+      widget.initialStart.year,
+      widget.initialStart.month,
+      widget.initialStart.day,
+    );
+    _endDate = DateTime(
+      widget.initialEnd.year,
+      widget.initialEnd.month,
+      widget.initialEnd.day,
+    );
+    _startTime = TimeOfDay.fromDateTime(widget.initialStart);
+    _endTime = TimeOfDay.fromDateTime(widget.initialEnd);
+  }
+
+  Future<void> _selectStartDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      initialDate: _startDate,
+      helpText: 'Select start date',
+    );
+    if (picked != null) {
+      setState(() {
+        _startDate = picked;
+      });
+    }
+  }
+
+  Future<void> _selectStartTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _startTime,
+      helpText: 'Select start time',
+    );
+    if (picked != null) {
+      setState(() {
+        _startTime = picked;
+      });
+    }
+  }
+
+  Future<void> _selectEndDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      firstDate: _startDate,
+      lastDate: DateTime.now(),
+      initialDate: _endDate,
+      helpText: 'Select end date',
+    );
+    if (picked != null) {
+      setState(() {
+        _endDate = picked;
+      });
+    }
+  }
+
+  Future<void> _selectEndTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _endTime,
+      helpText: 'Select end time',
+    );
+    if (picked != null) {
+      setState(() {
+        _endTime = picked;
+      });
+    }
+  }
+
+  DateTimeRange? _getDateTimeRange() {
+    final start = DateTime(
+      _startDate.year,
+      _startDate.month,
+      _startDate.day,
+      _startTime.hour,
+      _startTime.minute,
+    );
+    final end = DateTime(
+      _endDate.year,
+      _endDate.month,
+      _endDate.day,
+      _endTime.hour,
+      _endTime.minute,
+    );
+
+    if (end.isBefore(start)) {
+      return null;
+    }
+
+    return DateTimeRange(start: start, end: end);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dateFormat = DateFormat('MMM d, yyyy');
+
+    return AlertDialog(
+      title: const Text('Select Date & Time Range'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Start date and time
+            const Text(
+              'Start:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.calendar_today, size: 18),
+                    label: Text(dateFormat.format(_startDate)),
+                    onPressed: _selectStartDate,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.access_time, size: 18),
+                    label: Text(_startTime.format(context)),
+                    onPressed: _selectStartTime,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            // End date and time
+            const Text(
+              'End:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.calendar_today, size: 18),
+                    label: Text(dateFormat.format(_endDate)),
+                    onPressed: _selectEndDate,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.access_time, size: 18),
+                    label: Text(_endTime.format(context)),
+                    onPressed: _selectEndTime,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            final range = _getDateTimeRange();
+            if (range != null) {
+              Navigator.of(context).pop(range);
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('End date/time must be after start date/time'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+          child: const Text('Apply'),
+        ),
+      ],
+    );
+  }
+}
+
 class AuditLogViewerScreen extends StatefulWidget {
   const AuditLogViewerScreen({super.key});
 
@@ -47,296 +252,237 @@ class AuditLogViewerScreen extends StatefulWidget {
 class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
   List<AuditLogEntry> _entries = [];
   bool _isLoading = true;
-  bool _isLoadingMore = false;
   String? _error;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final int _pageSize = 30; // Load 30 entries per collection per page
-
-  // Pagination cursors for each collection
-  DocumentSnapshot<Map<String, dynamic>>? _lastSpotDoc;
-  DocumentSnapshot<Map<String, dynamic>>? _lastUserDoc;
-  DocumentSnapshot<Map<String, dynamic>>? _lastAuditLogDoc;
-
-  // Track if there are more entries to load for each collection
-  bool _hasMoreSpots = true;
-  bool _hasMoreUsers = true;
-  bool _hasMoreAuditLogs = true;
+  
+  // Date range for filtering
+  DateTimeRange _dateRange = DateTimeRange(
+    start: DateTime.now().subtract(const Duration(hours: 24)),
+    end: DateTime.now(),
+  );
 
   @override
   void initState() {
     super.initState();
-    _loadAuditLogs(reset: true);
+    _loadAuditLogs();
   }
 
-  Future<void> _loadAuditLogs({bool reset = false}) async {
-    if (reset) {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-        _entries = [];
-        _lastSpotDoc = null;
-        _lastUserDoc = null;
-        _lastAuditLogDoc = null;
-        _hasMoreSpots = true;
-        _hasMoreUsers = true;
-        _hasMoreAuditLogs = true;
-      });
-    } else {
-      setState(() {
-        _isLoadingMore = true;
-      });
-    }
+  Future<void> _loadAuditLogs() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+      _entries = [];
+    });
 
     try {
       List<AuditLogEntry> newEntries = [];
+      final startDate = _dateRange.start;
+      final endDate = _dateRange.end;
 
-      // Fetch spot creations with pagination
-      if (_hasMoreSpots) {
-        try {
-          Query<Map<String, dynamic>> spotsQuery = _firestore
-              .collection('spots')
-              .orderBy('createdAt', descending: true)
-              .limit(_pageSize);
+      // Fetch spot creations within date range
+      Query<Map<String, dynamic>> spotsQuery = _firestore
+          .collection('spots')
+          .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+          .where('createdAt', isLessThan: Timestamp.fromDate(endDate))
+          .orderBy('createdAt', descending: true);
 
-          if (_lastSpotDoc != null) {
-            spotsQuery = spotsQuery.startAfterDocument(_lastSpotDoc!);
-          }
+      final spotsSnapshot = await spotsQuery.get();
 
-          final spotsSnapshot = await spotsQuery.get();
-
-          for (var doc in spotsSnapshot.docs) {
-            final spot = Spot.fromFirestore(doc);
-            final createdAt = spot.createdAt;
-            if (createdAt != null) {
-              newEntries.add(AuditLogEntry(
-                type: AuditLogEntryType.spotCreation,
-                timestamp: createdAt,
-                id: doc.id,
-                title: 'Spot Created: ${spot.name}',
-                subtitle: spot.createdByName != null
-                    ? 'Created by ${spot.createdByName}'
-                    : spot.createdBy != null
-                        ? 'Created by ${spot.createdBy}'
-                        : 'Created by unknown',
-                details: spot.description.isNotEmpty
-                    ? spot.description
-                    : '${spot.latitude.toStringAsFixed(4)}, ${spot.longitude.toStringAsFixed(4)}',
-                metadata: {
-                  'spotId': doc.id,
-                  'spotName': spot.name,
-                  'createdBy': spot.createdBy,
-                  'createdByName': spot.createdByName,
-                },
-              ));
-            }
-          }
-
-          if (spotsSnapshot.docs.isEmpty || spotsSnapshot.docs.length < _pageSize) {
-            _hasMoreSpots = false;
-          } else {
-            _lastSpotDoc = spotsSnapshot.docs.last;
-          }
-        } catch (e) {
-          // If orderBy fails, mark as no more spots
-          _hasMoreSpots = false;
-        }
-      }
-
-      // Fetch user creations with pagination
-      if (_hasMoreUsers) {
-        try {
-          Query<Map<String, dynamic>> usersQuery = _firestore
-              .collection('users')
-              .orderBy('createdAt', descending: true)
-              .limit(_pageSize);
-
-          if (_lastUserDoc != null) {
-            usersQuery = usersQuery.startAfterDocument(_lastUserDoc!);
-          }
-
-          final usersSnapshot = await usersQuery.get();
-
-          for (var doc in usersSnapshot.docs) {
-            final createdAt = doc.data()['createdAt'] is Timestamp
-                ? (doc.data()['createdAt'] as Timestamp).toDate()
-                : null;
-            if (createdAt != null) {
-              final user = app_user.User.fromMap({
-                'id': doc.id,
-                ...doc.data(),
-              });
-              newEntries.add(AuditLogEntry(
-                type: AuditLogEntryType.userCreation,
-                timestamp: createdAt,
-                id: doc.id,
-                title: 'User Account Created',
-                subtitle: user.displayName != null
-                    ? '${user.displayName} (${user.email})'
-                    : user.email,
-                details: user.isAdmin
-                    ? 'Admin account'
-                    : user.isModerator
-                        ? 'Moderator account'
-                        : 'Regular user',
-                metadata: {
-                  'userId': doc.id,
-                  'email': user.email,
-                  'displayName': user.displayName,
-                  'isAdmin': user.isAdmin,
-                  'isModerator': user.isModerator,
-                },
-              ));
-            }
-          }
-
-          if (usersSnapshot.docs.isEmpty || usersSnapshot.docs.length < _pageSize) {
-            _hasMoreUsers = false;
-          } else {
-            _lastUserDoc = usersSnapshot.docs.last;
-          }
-        } catch (e) {
-          // If orderBy fails, mark as no more users
-          _hasMoreUsers = false;
-        }
-      }
-
-      // Fetch audit log entries with pagination
-      if (_hasMoreAuditLogs) {
-        Query<Map<String, dynamic>> auditLogQuery = _firestore
-            .collection('auditLog')
-            .orderBy('timestamp', descending: true)
-            .limit(_pageSize);
-
-        if (_lastAuditLogDoc != null) {
-          auditLogQuery = auditLogQuery.startAfterDocument(_lastAuditLogDoc!);
-        }
-
-        final auditLogSnapshot = await auditLogQuery.get();
-
-        for (var doc in auditLogSnapshot.docs) {
-          final auditLog = AuditLog.fromFirestore(doc);
-          String title;
-          String subtitle;
-          String? details;
-
-          switch (auditLog.action) {
-            case AuditLogAction.spotEdit:
-              title = 'Spot Edited';
-              subtitle = auditLog.userName != null
-                  ? 'Edited by ${auditLog.userName}'
-                  : auditLog.userId != null
-                      ? 'Edited by ${auditLog.userId}'
-                      : 'Edited by unknown';
-              // Don't set details string - we'll build a widget instead
-              details = null;
-              break;
-            case AuditLogAction.spotMarkedAsDuplicate:
-              title = 'Spot Marked as Duplicate';
-              subtitle = auditLog.userName != null
-                  ? 'Marked by ${auditLog.userName}'
-                  : auditLog.userId != null
-                      ? 'Marked by ${auditLog.userId}'
-                      : 'Marked by unknown';
-              if (auditLog.metadata != null &&
-                  auditLog.metadata!['originalSpotId'] != null) {
-                details =
-                    'Original spot: ${auditLog.metadata!['originalSpotId']}';
-              }
-              break;
-            case AuditLogAction.spotHidden:
-              title = 'Spot Hidden';
-              subtitle = auditLog.userName != null
-                  ? 'Hidden by ${auditLog.userName}'
-                  : auditLog.userId != null
-                      ? 'Hidden by ${auditLog.userId}'
-                      : 'Hidden by unknown';
-              details = 'Spot hidden from public view';
-              break;
-            case AuditLogAction.spotUnhidden:
-              title = 'Spot Unhidden';
-              subtitle = auditLog.userName != null
-                  ? 'Unhidden by ${auditLog.userName}'
-                  : auditLog.userId != null
-                      ? 'Unhidden by ${auditLog.userId}'
-                      : 'Unhidden by unknown';
-              details = 'Spot made visible to public';
-              break;
-            case AuditLogAction.spotReportStatusChange:
-              title = 'Spot Report Status Changed';
-              subtitle = auditLog.userName != null
-                  ? 'Changed by ${auditLog.userName}'
-                  : auditLog.userId != null
-                      ? 'Changed by ${auditLog.userId}'
-                      : 'Changed by unknown';
-              if (auditLog.changes != null &&
-                  auditLog.changes!['status'] != null) {
-                final statusChange = auditLog.changes!['status'] as Map<String, dynamic>;
-                final fromStatus = statusChange['from'] as String? ?? 'Unknown';
-                final toStatus = statusChange['to'] as String? ?? 'Unknown';
-                details = 'Status: $fromStatus → $toStatus';
-                if (auditLog.reportId != null) {
-                  details += '\nReport ID: ${auditLog.reportId}';
-                }
-              } else {
-                details = 'Spot report status updated';
-              }
-              break;
-            case AuditLogAction.spotDelete:
-              title = 'Spot Deleted';
-              subtitle = auditLog.userName != null
-                  ? 'Deleted by ${auditLog.userName}'
-                  : auditLog.userId != null
-                      ? 'Deleted by ${auditLog.userId}'
-                      : 'Deleted by unknown';
-              if (auditLog.metadata != null) {
-                final spotName = auditLog.metadata!['spotName'] as String?;
-                final ratingsCount = auditLog.metadata!['ratingsCount'] as int? ?? 0;
-                final spotReportsCount = auditLog.metadata!['spotReportsCount'] as int? ?? 0;
-                final duplicateSpotsCount = auditLog.metadata!['duplicateSpotsCount'] as int? ?? 0;
-                
-                details = spotName != null ? 'Spot: $spotName' : 'Spot deleted';
-                if (ratingsCount > 0 || spotReportsCount > 0 || duplicateSpotsCount > 0) {
-                  details += '\nLinked data at deletion:';
-                  if (ratingsCount > 0) {
-                    details += '\n  • Ratings: $ratingsCount';
-                  }
-                  if (spotReportsCount > 0) {
-                    details += '\n  • Spot Reports: $spotReportsCount';
-                  }
-                  if (duplicateSpotsCount > 0) {
-                    details += '\n  • Duplicate Spots: $duplicateSpotsCount';
-                  }
-                }
-              } else {
-                details = 'Spot permanently deleted';
-              }
-              break;
-          }
-
+      for (var doc in spotsSnapshot.docs) {
+        final spot = Spot.fromFirestore(doc);
+        final createdAt = spot.createdAt;
+        if (createdAt != null) {
           newEntries.add(AuditLogEntry(
-            type: AuditLogEntryType.auditLogAction,
-            timestamp: auditLog.timestamp,
+            type: AuditLogEntryType.spotCreation,
+            timestamp: createdAt,
             id: doc.id,
-            title: title,
-            subtitle: subtitle,
-            details: details,
+            title: 'Spot Created: ${spot.name}',
+            subtitle: spot.createdByName != null
+                ? 'Created by ${spot.createdByName}'
+                : spot.createdBy != null
+                    ? 'Created by ${spot.createdBy}'
+                    : 'Created by unknown',
+            details: spot.description.isNotEmpty
+                ? spot.description
+                : '${spot.latitude.toStringAsFixed(4)}, ${spot.longitude.toStringAsFixed(4)}',
             metadata: {
-              'spotId': auditLog.spotId,
-              if (auditLog.reportId != null) 'reportId': auditLog.reportId,
-              'userId': auditLog.userId,
-              'userName': auditLog.userName,
-              'action': auditLog.action.toString(),
-              'changes': auditLog.changes,
-              'metadata': auditLog.metadata,
+              'spotId': doc.id,
+              'spotName': spot.name,
+              'createdBy': spot.createdBy,
+              'createdByName': spot.createdByName,
             },
           ));
         }
+      }
 
-        if (auditLogSnapshot.docs.isEmpty || auditLogSnapshot.docs.length < _pageSize) {
-          _hasMoreAuditLogs = false;
-        } else {
-          _lastAuditLogDoc = auditLogSnapshot.docs.last;
+      // Fetch user creations within date range
+      Query<Map<String, dynamic>> usersQuery = _firestore
+          .collection('users')
+          .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+          .where('createdAt', isLessThan: Timestamp.fromDate(endDate))
+          .orderBy('createdAt', descending: true);
+
+      final usersSnapshot = await usersQuery.get();
+
+      for (var doc in usersSnapshot.docs) {
+        final createdAt = doc.data()['createdAt'] is Timestamp
+            ? (doc.data()['createdAt'] as Timestamp).toDate()
+            : null;
+        if (createdAt != null) {
+          final user = app_user.User.fromMap({
+            'id': doc.id,
+            ...doc.data(),
+          });
+          newEntries.add(AuditLogEntry(
+            type: AuditLogEntryType.userCreation,
+            timestamp: createdAt,
+            id: doc.id,
+            title: 'User Account Created',
+            subtitle: user.displayName != null
+                ? '${user.displayName} (${user.email})'
+                : user.email,
+            details: user.isAdmin
+                ? 'Admin account'
+                : user.isModerator
+                    ? 'Moderator account'
+                    : 'Regular user',
+            metadata: {
+              'userId': doc.id,
+              'email': user.email,
+              'displayName': user.displayName,
+              'isAdmin': user.isAdmin,
+              'isModerator': user.isModerator,
+            },
+          ));
         }
+      }
+
+      // Fetch audit log entries within date range
+      Query<Map<String, dynamic>> auditLogQuery = _firestore
+          .collection('auditLog')
+          .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+          .where('timestamp', isLessThan: Timestamp.fromDate(endDate))
+          .orderBy('timestamp', descending: true);
+
+      final auditLogSnapshot = await auditLogQuery.get();
+
+      for (var doc in auditLogSnapshot.docs) {
+        final auditLog = AuditLog.fromFirestore(doc);
+        String title;
+        String subtitle;
+        String? details;
+
+        switch (auditLog.action) {
+          case AuditLogAction.spotEdit:
+            title = 'Spot Edited';
+            subtitle = auditLog.userName != null
+                ? 'Edited by ${auditLog.userName}'
+                : auditLog.userId != null
+                    ? 'Edited by ${auditLog.userId}'
+                    : 'Edited by unknown';
+            // Don't set details string - we'll build a widget instead
+            details = null;
+            break;
+          case AuditLogAction.spotMarkedAsDuplicate:
+            title = 'Spot Marked as Duplicate';
+            subtitle = auditLog.userName != null
+                ? 'Marked by ${auditLog.userName}'
+                : auditLog.userId != null
+                    ? 'Marked by ${auditLog.userId}'
+                    : 'Marked by unknown';
+            if (auditLog.metadata != null &&
+                auditLog.metadata!['originalSpotId'] != null) {
+              details =
+                  'Original spot: ${auditLog.metadata!['originalSpotId']}';
+            }
+            break;
+          case AuditLogAction.spotHidden:
+            title = 'Spot Hidden';
+            subtitle = auditLog.userName != null
+                ? 'Hidden by ${auditLog.userName}'
+                : auditLog.userId != null
+                    ? 'Hidden by ${auditLog.userId}'
+                    : 'Hidden by unknown';
+            details = 'Spot hidden from public view';
+            break;
+          case AuditLogAction.spotUnhidden:
+            title = 'Spot Unhidden';
+            subtitle = auditLog.userName != null
+                ? 'Unhidden by ${auditLog.userName}'
+                : auditLog.userId != null
+                    ? 'Unhidden by ${auditLog.userId}'
+                    : 'Unhidden by unknown';
+            details = 'Spot made visible to public';
+            break;
+          case AuditLogAction.spotReportStatusChange:
+            title = 'Spot Report Status Changed';
+            subtitle = auditLog.userName != null
+                ? 'Changed by ${auditLog.userName}'
+                : auditLog.userId != null
+                    ? 'Changed by ${auditLog.userId}'
+                    : 'Changed by unknown';
+            if (auditLog.changes != null &&
+                auditLog.changes!['status'] != null) {
+              final statusChange = auditLog.changes!['status'] as Map<String, dynamic>;
+              final fromStatus = statusChange['from'] as String? ?? 'Unknown';
+              final toStatus = statusChange['to'] as String? ?? 'Unknown';
+              details = 'Status: $fromStatus → $toStatus';
+              if (auditLog.reportId != null) {
+                details += '\nReport ID: ${auditLog.reportId}';
+              }
+            } else {
+              details = 'Spot report status updated';
+            }
+            break;
+          case AuditLogAction.spotDelete:
+            title = 'Spot Deleted';
+            subtitle = auditLog.userName != null
+                ? 'Deleted by ${auditLog.userName}'
+                : auditLog.userId != null
+                    ? 'Deleted by ${auditLog.userId}'
+                    : 'Deleted by unknown';
+            if (auditLog.metadata != null) {
+              final spotName = auditLog.metadata!['spotName'] as String?;
+              final ratingsCount = auditLog.metadata!['ratingsCount'] as int? ?? 0;
+              final spotReportsCount = auditLog.metadata!['spotReportsCount'] as int? ?? 0;
+              final duplicateSpotsCount = auditLog.metadata!['duplicateSpotsCount'] as int? ?? 0;
+              
+              details = spotName != null ? 'Spot: $spotName' : 'Spot deleted';
+              if (ratingsCount > 0 || spotReportsCount > 0 || duplicateSpotsCount > 0) {
+                details += '\nLinked data at deletion:';
+                if (ratingsCount > 0) {
+                  details += '\n  • Ratings: $ratingsCount';
+                }
+                if (spotReportsCount > 0) {
+                  details += '\n  • Spot Reports: $spotReportsCount';
+                }
+                if (duplicateSpotsCount > 0) {
+                  details += '\n  • Duplicate Spots: $duplicateSpotsCount';
+                }
+              }
+            } else {
+              details = 'Spot permanently deleted';
+            }
+            break;
+        }
+
+        newEntries.add(AuditLogEntry(
+          type: AuditLogEntryType.auditLogAction,
+          timestamp: auditLog.timestamp,
+          id: doc.id,
+          title: title,
+          subtitle: subtitle,
+          details: details,
+          metadata: {
+            'spotId': auditLog.spotId,
+            if (auditLog.reportId != null) 'reportId': auditLog.reportId,
+            'userId': auditLog.userId,
+            'userName': auditLog.userName,
+            'action': auditLog.action.toString(),
+            'changes': auditLog.changes,
+            'metadata': auditLog.metadata,
+          },
+        ));
       }
 
       // Merge with existing entries and sort by timestamp
@@ -345,18 +491,34 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
 
       setState(() {
         _isLoading = false;
-        _isLoadingMore = false;
       });
     } catch (e) {
       setState(() {
         _error = 'Failed to load audit logs: $e';
         _isLoading = false;
-        _isLoadingMore = false;
       });
     }
   }
 
-  bool get _hasMoreEntries => _hasMoreSpots || _hasMoreUsers || _hasMoreAuditLogs;
+  Future<void> _selectDateTimeRange() async {
+    DateTime startDate = _dateRange.start;
+    DateTime endDate = _dateRange.end;
+
+    final result = await showDialog<DateTimeRange?>(
+      context: context,
+      builder: (context) => _DateTimeRangePickerDialog(
+        initialStart: startDate,
+        initialEnd: endDate,
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        _dateRange = result;
+      });
+      _loadAuditLogs();
+    }
+  }
 
   /// Formats changes for display with bullet points, array diffs, and image previews
   Widget _buildChangesWidget(Map<String, dynamic> changes) {
@@ -1123,17 +1285,34 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
       );
     }
 
+    final dateTimeFormat = DateFormat('MMM d, yyyy HH:mm');
+    final dateRangeText = '${dateTimeFormat.format(_dateRange.start)} - ${dateTimeFormat.format(_dateRange.end)}';
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Audit Log Viewer'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Audit Log Viewer'),
+            Text(
+              dateRangeText,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+            ),
+          ],
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/admin'),
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.access_time),
+            onPressed: _selectDateTimeRange,
+            tooltip: 'Select date and time range',
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => _loadAuditLogs(reset: true),
+            onPressed: _loadAuditLogs,
             tooltip: 'Refresh',
           ),
         ],
@@ -1158,33 +1337,32 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                   ),
                 )
               : _entries.isEmpty
-                  ? const Center(
-                      child: Text('No audit log entries found'),
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.inbox, size: 64, color: Colors.grey),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No audit log entries found',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'for the selected date range',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
                     )
                   : RefreshIndicator(
-                      onRefresh: () => _loadAuditLogs(reset: true),
+                      onRefresh: _loadAuditLogs,
                       child: ListView.builder(
                         padding: const EdgeInsets.all(8),
-                        itemCount: _entries.length + (_hasMoreEntries ? 1 : 0),
+                        itemCount: _entries.length,
                         itemBuilder: (context, index) {
-                          // Show "Load More" button at the end
-                          if (index == _entries.length) {
-                            return Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Center(
-                                child: _isLoadingMore
-                                    ? const CircularProgressIndicator()
-                                    : ElevatedButton.icon(
-                                        onPressed: _hasMoreEntries
-                                            ? () => _loadAuditLogs()
-                                            : null,
-                                        icon: const Icon(Icons.expand_more),
-                                        label: const Text('Load More'),
-                                      ),
-                              ),
-                            );
-                          }
-
                           final entry = _entries[index];
                           final dateFormat = DateFormat('yyyy-MM-dd HH:mm:ss');
                           final formattedDate =
