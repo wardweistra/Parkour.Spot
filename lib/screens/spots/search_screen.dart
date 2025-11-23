@@ -1262,8 +1262,12 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                       ),
                     );
                   } else {
-                    // If no persisted camera, try to center on user's current location
-                    _getCurrentLocation();
+                    // If no persisted camera and no initial location query (city/country URL),
+                    // try to center on user's current location
+                    // Don't auto-center on user location if they came from a city/country URL
+                    if (widget.initialLocationQuery == null || widget.initialLocationQuery!.isEmpty) {
+                      _getCurrentLocation();
+                    }
                   }
                 },
                 onCameraMove: (CameraPosition position) {
