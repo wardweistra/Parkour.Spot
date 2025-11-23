@@ -1,11 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:web/web.dart' as web;
 
 import '../services/auth_service.dart';
 import 'spots/search_screen.dart';
 import 'spots/add_spot_screen.dart';
 import 'profile/profile_screen.dart';
+
+// Countries that need "the" article prefix (e.g., "the Netherlands", not "Netherlands")
+const _countriesWithArticle = {
+  'NL', // Netherlands
+  'PH', // Philippines
+  'BS', // Bahamas
+  'GM', // Gambia
+  'MV', // Maldives
+  'AE', // United Arab Emirates
+  'US', // United States
+  'GB', // United Kingdom
+};
 
 class ExploreScreen extends StatefulWidget {
   final int initialTab;
@@ -28,6 +42,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
     _currentIndex = widget.initialTab;
     _pageController = PageController(initialPage: _currentIndex);
     
+    // Update document title and meta description for country/city pages
+    _updateDocumentMeta();
+    
     // Initialize page controller position if needed
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // If we have an initial tab that's not 0, ensure the page controller is at the right position
@@ -39,8 +56,131 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   @override
   void dispose() {
+    // Reset document title and meta description when leaving the page
+    if (kIsWeb && widget.initialLocationQuery != null) {
+      const defaultTitle = 'Parkour·Spot';
+      const defaultDescription = 'Discover and share parkour spots around the world';
+      web.document.title = defaultTitle;
+      _updateMetaDescription(defaultDescription);
+      _updateMetaTitle(defaultTitle);
+    }
     _pageController.dispose();
     super.dispose();
+  }
+
+  void _updateDocumentMeta() {
+    if (!kIsWeb || widget.initialLocationQuery == null) {
+      return;
+    }
+
+    final locationQuery = widget.initialLocationQuery!;
+    
+    // Extract country code from current URL to determine if "the" article is needed
+    final countryCode = _extractCountryCodeFromUrl();
+    
+    // Check if this is a city+country format (e.g., "Amsterdam, Netherlands")
+    // or just a country (e.g., "Netherlands" or "the Netherlands")
+    final parts = locationQuery.split(',').map((s) => s.trim()).toList();
+    
+    String title;
+    String description;
+    
+    if (parts.length >= 2) {
+      // City + Country format: "City, Country"
+      // For city pages, don't add "the" article (matching cloud function behavior)
+      final city = parts[0];
+      final country = parts.sublist(1).join(', '); // Handle countries with commas
+      title = 'Best parkour spots in $city, $country';
+      description = 'Discover the best parkour spots in $city, $country. Find training locations, share your favorite spots, and connect with the parkour community.';
+    } else {
+      // Country only format: "Country" or "the Country"
+      // For country pages, add "the" article if needed (matching cloud function behavior)
+      var country = parts[0];
+      
+      // If country code is available and needs "the" article, add it
+      if (countryCode != null && _countriesWithArticle.contains(countryCode.toUpperCase())) {
+        // Check if "the" is not already present
+        if (!country.toLowerCase().startsWith('the ')) {
+          country = 'the $country';
+        }
+      }
+      
+      title = 'Best parkour spots in $country';
+      description = 'Discover the best parkour spots in $country. Find training locations, share your favorite spots, and connect with the parkour community.';
+    }
+    
+    web.document.title = title;
+    _updateMetaDescription(description);
+    _updateMetaTitle(title);
+  }
+
+  /// Extract country code from the current URL path
+  /// Returns null if country code cannot be determined
+  String? _extractCountryCodeFromUrl() {
+    if (!kIsWeb) return null;
+    
+    try {
+      final uri = Uri.parse(web.window.location.href);
+      final pathSegments = uri.pathSegments.where((s) => s.isNotEmpty).toList();
+      
+      // For country-only pages: /gb -> pathSegments = ['gb']
+      // For city pages: /gb/london -> pathSegments = ['gb', 'london']
+      // For spot pages: /gb/london/spot-id -> pathSegments = ['gb', 'london', 'spot-id']
+      
+      if (pathSegments.isNotEmpty) {
+        final firstSegment = pathSegments[0];
+        // Validate it's a 2-letter country code
+        if (firstSegment.length == 2 && RegExp(r'^[a-zA-Z]{2}$').hasMatch(firstSegment)) {
+          return firstSegment.toUpperCase();
+        }
+      }
+    } catch (e) {
+      // If URL parsing fails, return null
+    }
+    
+    return null;
+  }
+
+  void _updateMetaDescription(String description) {
+    if (!kIsWeb) return;
+    
+    // Find or create the meta description tag
+    final metaDescription = web.document.querySelector('meta[name="description"]');
+    if (metaDescription != null) {
+      metaDescription.setAttribute('content', description);
+    } else {
+      // Create new meta tag if it doesn't exist
+      final meta = web.document.createElement('meta') as web.HTMLMetaElement;
+      meta.name = 'description';
+      meta.content = description;
+      web.document.head?.appendChild(meta);
+    }
+    
+    // Also update Open Graph and Twitter meta tags
+    final ogDescription = web.document.querySelector('meta[property="og:description"]');
+    if (ogDescription != null) {
+      ogDescription.setAttribute('content', description);
+    }
+    
+    final twitterDescription = web.document.querySelector('meta[name="twitter:description"]');
+    if (twitterDescription != null) {
+      twitterDescription.setAttribute('content', description);
+    }
+  }
+
+  void _updateMetaTitle(String title) {
+    if (!kIsWeb) return;
+    
+    // Update Open Graph and Twitter title tags
+    final ogTitle = web.document.querySelector('meta[property="og:title"]');
+    if (ogTitle != null) {
+      ogTitle.setAttribute('content', title);
+    }
+    
+    final twitterTitle = web.document.querySelector('meta[name="twitter:title"]');
+    if (twitterTitle != null) {
+      twitterTitle.setAttribute('content', title);
+    }
   }
 
   void _onTabTapped(int index) {
