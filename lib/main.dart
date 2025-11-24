@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:parkour_spot/services/auth_service.dart';
@@ -27,7 +31,43 @@ void main() async {
   // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
+  // Connect to emulators if USE_EMULATOR is set
+  const useEmulator = bool.fromEnvironment('USE_EMULATOR', defaultValue: false);
+  if (useEmulator) {
+    await _connectToEmulators();
+  }
+
   runApp(const ParkourSpotApp());
+}
+
+/// Connect Firebase services to local emulators
+Future<void> _connectToEmulators() async {
+  // Note: For web, we use localhost. For other platforms, use 10.0.2.2 for Android emulator
+  const host = 'localhost';
+  
+  try {
+    // Connect Firestore emulator
+    FirebaseFirestore.instance.useFirestoreEmulator(host, 8082);
+    
+    // Connect Auth emulator
+    await FirebaseAuth.instance.useAuthEmulator(host, 9099);
+    
+    // Connect Storage emulator
+    FirebaseStorage.instance.useStorageEmulator(host, 9199);
+    
+    // Connect Functions emulator
+    FirebaseFunctions.instanceFor(region: 'europe-west1')
+        .useFunctionsEmulator(host, 5001);
+    
+    debugPrint('✅ Connected to Firebase Emulators');
+    debugPrint('   - Firestore: $host:8082');
+    debugPrint('   - Auth: $host:9099');
+    debugPrint('   - Storage: $host:9199');
+    debugPrint('   - Functions: $host:5001');
+  } catch (e) {
+    debugPrint('⚠️  Error connecting to emulators: $e');
+    debugPrint('   Make sure Firebase emulators are running!');
+  }
 }
 
 class ParkourSpotApp extends StatelessWidget {
