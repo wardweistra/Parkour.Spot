@@ -743,6 +743,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             final isModeratorOnly = authService.isModerator && !authService.isAdmin;
                             final shouldDisableEdit = isSpotFromSource && isModeratorOnly;
                             
+                            // Check if spot is already marked as duplicate
+                            final isAlreadyDuplicate = _spot.duplicateOf != null;
+                            
                             items.addAll([
                               PopupMenuItem<_SpotMenuAction>(
                                 value: _SpotMenuAction.edit,
@@ -792,11 +795,14 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                               ),
                               PopupMenuItem<_SpotMenuAction>(
                                 value: _SpotMenuAction.markAsDuplicate,
+                                enabled: !isAlreadyDuplicate,
                                 child: Row(
                                   children: [
                                     Icon(
                                       Icons.copy_all,
-                                      color: theme.colorScheme.primary,
+                                      color: isAlreadyDuplicate
+                                          ? theme.colorScheme.onSurface.withValues(alpha: 0.38)
+                                          : theme.colorScheme.primary,
                                       size: 20,
                                     ),
                                     const SizedBox(width: 12),
@@ -810,10 +816,15 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                           style: theme.textTheme.bodyMedium
                                               ?.copyWith(
                                                 fontWeight: FontWeight.w500,
+                                                color: isAlreadyDuplicate
+                                                    ? theme.colorScheme.onSurface.withValues(alpha: 0.38)
+                                                    : null,
                                               ),
                                         ),
                                         Text(
-                                          'Moderator only',
+                                          isAlreadyDuplicate
+                                              ? 'Already marked as duplicate'
+                                              : 'Moderator only',
                                           style: theme.textTheme.bodySmall
                                               ?.copyWith(
                                                 color: theme.colorScheme.onSurface
