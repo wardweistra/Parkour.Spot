@@ -405,12 +405,6 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
     });
   }
 
-  void _clearDuplicateOf() {
-    setState(() {
-      _duplicateOf = null;
-    });
-  }
-
   Future<void> _saveSpot() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -819,43 +813,6 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
                     ),
                   ),
                   const SizedBox(height: 16),
-
-                  // Duplicate Section
-                  if (_duplicateOf != null)
-                    Card(
-                      color: Colors.orange.shade50,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Duplicate Status',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'This spot is marked as a duplicate of: $_duplicateOf',
-                              style: const TextStyle(color: Colors.orange),
-                            ),
-                            const SizedBox(height: 16),
-                            ElevatedButton.icon(
-                              onPressed: _clearDuplicateOf,
-                              icon: const Icon(Icons.clear),
-                              label: const Text('Remove Duplicate Status'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.orange,
-                                foregroundColor: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  const SizedBox(height: 32),
 
                   // Save Button
                   CustomButton(

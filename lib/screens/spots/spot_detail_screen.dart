@@ -33,7 +33,7 @@ class SpotDetailScreen extends StatefulWidget {
   State<SpotDetailScreen> createState() => _SpotDetailScreenState();
 }
 
-enum _SpotMenuAction { login, report, edit, delete, markAsDuplicate, createNativeSpot, toggleHide }
+enum _SpotMenuAction { login, report, edit, delete, markAsDuplicate, createNativeSpot, toggleHide, removeDuplicateStatus }
 
 class _SpotDetailScreenState extends State<SpotDetailScreen> {
   double _userRating = 0;
@@ -484,6 +484,12 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       case _SpotMenuAction.toggleHide:
         _toggleSpotHidden();
         break;
+      case _SpotMenuAction.removeDuplicateStatus:
+        final confirmed = await _showRemoveDuplicateStatusConfirmationDialog();
+        if (confirmed == true && mounted) {
+          _removeDuplicateStatus();
+        }
+        break;
     }
   }
 
@@ -837,6 +843,44 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                   ],
                                 ),
                               ),
+                              // Remove duplicate status menu item (only when spot is marked as duplicate)
+                              if (isAlreadyDuplicate)
+                                PopupMenuItem<_SpotMenuAction>(
+                                  value: _SpotMenuAction.removeDuplicateStatus,
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.clear,
+                                        color: theme.colorScheme.primary,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            'Remove duplicate status',
+                                            style: theme.textTheme.bodyMedium
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                          ),
+                                          Text(
+                                            'Moderator only',
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                                  color: theme.colorScheme.onSurface
+                                                      .withValues(alpha: 0.6),
+                                                  fontSize: 11,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               // Create native spot menu item (only for spots from external sources)
                               if (isSpotFromSource)
                                 PopupMenuItem<_SpotMenuAction>(
@@ -2993,6 +3037,109 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     } catch (e) {
       if (!mounted) return;
       _showErrorSnack('Error ${newHiddenState ? 'hiding' : 'unhiding'} spot: $e');
+    }
+  }
+
+  Future<bool?> _showRemoveDuplicateStatusConfirmationDialog() async {
+    if (_spot.duplicateOf == null) {
+      if (!mounted) return false;
+      _showErrorSnack('This spot is not marked as a duplicate.');
+      return false;
+    }
+
+    final authService = Provider.of<AuthService>(context, listen: false);
+    if (!authService.isAuthenticated || (!authService.isModerator && !authService.isAdmin)) {
+      if (!mounted) return false;
+      _showErrorSnack('Only moderators can remove duplicate status.');
+      return false;
+    }
+
+    return await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Remove Duplicate Status'),
+        content: const Text(
+          'This will remove the duplicate status from this spot. '
+          'The spot will no longer be marked as a duplicate.\n\n'
+          'Do you want to continue?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _removeDuplicateStatus() async {
+    if (_spot.id == null) {
+      if (!mounted) return;
+      _showErrorSnack('Unable to remove duplicate status right now.');
+      return;
+    }
+
+    final spotService = Provider.of<SpotService>(context, listen: false);
+    final authService = Provider.of<AuthService>(context, listen: false);
+
+    // Check if user is authenticated and is a moderator
+    if (!authService.isAuthenticated || (!authService.isModerator && !authService.isAdmin)) {
+      if (!mounted) return;
+      _showErrorSnack('Only moderators can remove duplicate status.');
+      return;
+    }
+
+    // Check if spot is actually marked as duplicate
+    if (_spot.duplicateOf == null) {
+      if (!mounted) return;
+      _showErrorSnack('This spot is not marked as a duplicate.');
+      return;
+    }
+
+    final userId = authService.currentUser?.uid;
+    final userName = authService.userProfile?.displayName ?? authService.currentUser?.displayName ?? authService.currentUser?.email;
+
+    try {
+      // Update the spot to remove duplicate status
+      final updatedSpot = _spot.copyWith(
+        duplicateOf: null,
+        updatedAt: DateTime.now(),
+      );
+
+      final success = await spotService.updateSpot(
+        updatedSpot,
+        userId: userId,
+        userName: userName,
+      );
+
+      if (!mounted) return;
+
+      if (success) {
+        // Reload the spot to get the updated state
+        final reloadedSpot = await spotService.getSpotById(_spot.id!);
+        if (reloadedSpot != null && mounted) {
+          setState(() {
+            _currentSpot = reloadedSpot;
+            // Clear original spot since it's no longer a duplicate
+            _originalSpot = null;
+          });
+          // Update document title if spot name changed
+          _updateDocumentTitle();
+        }
+
+        _showSuccessSnack('Duplicate status removed successfully.');
+      } else {
+        final error = spotService.error ?? 'Failed to remove duplicate status';
+        _showErrorSnack(error);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _showErrorSnack('Error removing duplicate status: $e');
     }
   }
 
