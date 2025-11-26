@@ -409,6 +409,30 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         _showReportSpotDialog();
         break;
       case _SpotMenuAction.edit:
+        final authService = Provider.of<AuthService>(context, listen: false);
+        final isSpotFromSource = widget.spot.spotSource != null;
+        final isModeratorOnly = authService.isModerator && !authService.isAdmin;
+        
+        // Prevent moderators from editing spot-source spots
+        if (isSpotFromSource && isModeratorOnly) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Spots from external sources cannot be edited. '
+                  'Please create a native spot first using "Mark as Duplicate" → "Create Native Spot".',
+                ),
+                duration: const Duration(seconds: 5),
+                action: SnackBarAction(
+                  label: 'OK',
+                  onPressed: () {},
+                ),
+              ),
+            );
+          }
+          break;
+        }
+        
         if (widget.spot.id != null) {
           context.push('/spot/${widget.spot.id}/edit', extra: widget.spot);
         } else if (mounted) {
@@ -693,39 +717,54 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         ];
 
                           if (hasStaffAccess && _spot.id != null) {
+                            // Check if this is a spot from a source and user is moderator (not admin)
+                            final isSpotFromSource = _spot.spotSource != null;
+                            final isModeratorOnly = authService.isModerator && !authService.isAdmin;
+                            final shouldDisableEdit = isSpotFromSource && isModeratorOnly;
+                            
                             items.addAll([
                               PopupMenuItem<_SpotMenuAction>(
                                 value: _SpotMenuAction.edit,
+                                enabled: !shouldDisableEdit,
                                 child: Row(
                                   children: [
                                     Icon(
                                       Icons.edit,
-                                      color: theme.colorScheme.primary,
+                                      color: shouldDisableEdit
+                                          ? theme.colorScheme.onSurface.withValues(alpha: 0.38)
+                                          : theme.colorScheme.primary,
                                       size: 20,
                                     ),
                                     const SizedBox(width: 12),
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          'Edit spot',
-                                          style: theme.textTheme.bodyMedium
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                        ),
-                                        Text(
-                                          'Moderator only',
-                                          style: theme.textTheme.bodySmall
-                                              ?.copyWith(
-                                                color: theme.colorScheme.onSurface
-                                                    .withValues(alpha: 0.6),
-                                                fontSize: 11,
-                                              ),
-                                        ),
-                                      ],
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            'Edit spot',
+                                            style: theme.textTheme.bodyMedium
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w500,
+                                                  color: shouldDisableEdit
+                                                      ? theme.colorScheme.onSurface.withValues(alpha: 0.38)
+                                                      : null,
+                                                ),
+                                          ),
+                                          Text(
+                                            shouldDisableEdit
+                                                ? 'Create native spot first'
+                                                : 'Moderator only',
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                                  color: theme.colorScheme.onSurface
+                                                      .withValues(alpha: 0.6),
+                                                  fontSize: 11,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ],
                                 ),

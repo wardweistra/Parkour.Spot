@@ -66,6 +66,9 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
 
   // Loading state
   bool _isLoading = false;
+  
+  // Warning banner state (for admin editing spot-source spots)
+  bool _warningDismissed = false;
 
   @override
   void initState() {
@@ -524,6 +527,78 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
           );
         }
 
+        // Check if spot is from a source and user is moderator (not admin)
+        if (widget.spot.spotSource != null && authService.isModerator && !authService.isAdmin) {
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('Cannot Edit Spot'),
+            ),
+            body: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    size: 64,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'This spot is from an external source',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Spots imported from external sources cannot be edited directly. '
+                    'To make changes, first create a native spot from this one, then edit the native spot.',
+                    style: Theme.of(context).textTheme.bodyLarge,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 32),
+                  if (widget.spot.spotSourceName != null)
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Row(
+                          children: [
+                            Icon(Icons.source, color: Theme.of(context).colorScheme.primary),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Source',
+                                    style: Theme.of(context).textTheme.labelSmall,
+                                  ),
+                                  Text(
+                                    widget.spot.spotSourceName!,
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: () => context.pop(),
+                    icon: const Icon(Icons.arrow_back),
+                    label: const Text('Go Back'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
         return Scaffold(
           appBar: AppBar(
             title: const Text('Edit Spot'),
@@ -535,6 +610,60 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // Warning banner for admins editing spot-source spots
+                  if (widget.spot.spotSource != null && authService.isAdmin && !_warningDismissed)
+                    Card(
+                      color: Colors.orange.shade50,
+                      elevation: 2,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.warning_amber_rounded,
+                              color: Colors.orange.shade700,
+                              size: 28,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Warning: Editing Spot from External Source',
+                                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.orange.shade900,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'This spot is imported from an external source (${widget.spot.spotSourceName ?? 'unknown source'}). '
+                                    'Any changes you make may be overwritten when the source syncs again. '
+                                    'Consider creating a native spot instead if you want to make permanent changes.',
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: Colors.orange.shade900,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close),
+                              color: Colors.orange.shade700,
+                              onPressed: () {
+                                setState(() {
+                                  _warningDismissed = true;
+                                });
+                              },
+                              tooltip: 'Dismiss warning',
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   // Location Section
                   SpotLocationSection(
                     currentLocation: _currentLocation,
