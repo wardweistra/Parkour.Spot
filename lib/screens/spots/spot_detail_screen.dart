@@ -482,7 +482,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         }
         break;
       case _SpotMenuAction.toggleHide:
-        _toggleSpotHidden();
+        final confirmed = await _showHideSpotConfirmationDialog();
+        if (confirmed == true && mounted) {
+          _toggleSpotHidden();
+        }
         break;
       case _SpotMenuAction.removeDuplicateStatus:
         final confirmed = await _showRemoveDuplicateStatusConfirmationDialog();
@@ -2985,6 +2988,45 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       if (!mounted) return;
       _showErrorSnack('Error marking spot as duplicate: $e');
     }
+  }
+
+  Future<bool?> _showHideSpotConfirmationDialog() async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    if (!authService.isAuthenticated || (!authService.isModerator && !authService.isAdmin)) {
+      if (!mounted) return false;
+      _showErrorSnack('Only moderators can hide/unhide spots.');
+      return false;
+    }
+
+    final isHiding = !_spot.hidden;
+    final actionCapitalized = isHiding ? 'Hide' : 'Unhide';
+
+    return await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('$actionCapitalized Spot'),
+        content: Text(
+          isHiding
+              ? 'This will hide the spot from public view. '
+                  'Hidden spots will not appear in search results or on the map, '
+                  'but the spot data will be preserved and can be unhidden later.\n\n'
+                  'Do you want to continue?'
+              : 'This will restore the spot to public view. '
+                  'The spot will appear in search results and on the map again.\n\n'
+                  'Do you want to continue?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(actionCapitalized),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _toggleSpotHidden() async {
