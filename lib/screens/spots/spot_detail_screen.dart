@@ -434,7 +434,22 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         }
         
         if (widget.spot.id != null) {
-          context.push('/spot/${widget.spot.id}/edit', extra: widget.spot);
+          // Get current route location and append /edit to maintain route structure
+          final routerState = GoRouterState.of(context);
+          final currentLocation = routerState.uri.path;
+          // Ensure we have a clean path (remove trailing slash if present)
+          final cleanPath = currentLocation.endsWith('/') 
+              ? currentLocation.substring(0, currentLocation.length - 1)
+              : currentLocation;
+          final editPath = '$cleanPath/edit';
+          
+          // Delay navigation to ensure PopupMenu fully closes before navigation
+          Future.delayed(const Duration(milliseconds: 400), () {
+            if (!mounted) return;
+            // Use context.go to ensure URL updates properly for nested routes
+            // EditSpotRoute will fetch the spot by ID from the path parameters
+            context.go(editPath);
+          });
         } else if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
