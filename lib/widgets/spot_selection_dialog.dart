@@ -339,6 +339,38 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
                       color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
+                  if (!widget.allowExternalSources) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            size: 20,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Only native spots can be selected. If you need to create a native spot from an external source spot, use "Create native spot" from the spot menu.',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -418,40 +450,20 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
             // Footer
             Padding(
               padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  // Create Native Spot option (only show if current spot is from external source)
-                  if (widget.currentSpot != null && widget.currentSpot!.spotSource != null) ...[
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: _error != null ? null : () => Navigator.of(context).pop('CREATE_NATIVE'),
-                        icon: const Icon(Icons.add_circle_outline),
-                        label: const Text('Create Native Spot from Current Spot'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: const Text('Cancel'),
-                      ),
-                      if (_foundSpot != null && _error == null) ...[
-                        const SizedBox(width: 8),
-                        ElevatedButton(
-                          onPressed: () => Navigator.of(context).pop(_foundSpot!.id),
-                          child: const Text('Confirm'),
-                        ),
-                      ],
-                    ],
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Cancel'),
                   ),
+                  if (_foundSpot != null && _error == null) ...[
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(_foundSpot!.id),
+                      child: const Text('Confirm'),
+                    ),
+                  ],
                 ],
               ),
             ),

@@ -33,7 +33,7 @@ class SpotDetailScreen extends StatefulWidget {
   State<SpotDetailScreen> createState() => _SpotDetailScreenState();
 }
 
-enum _SpotMenuAction { login, report, edit, delete, markAsDuplicate, toggleHide }
+enum _SpotMenuAction { login, report, edit, delete, markAsDuplicate, createNativeSpot, toggleHide }
 
 class _SpotDetailScreenState extends State<SpotDetailScreen> {
   double _userRating = 0;
@@ -398,7 +398,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     }
   }
 
-  void _onMenuActionSelected(_SpotMenuAction action) {
+  void _onMenuActionSelected(_SpotMenuAction action) async {
     switch (action) {
       case _SpotMenuAction.login:
         context.go(
@@ -474,6 +474,12 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         break;
       case _SpotMenuAction.markAsDuplicate:
         _showMarkAsDuplicateDialog();
+        break;
+      case _SpotMenuAction.createNativeSpot:
+        final confirmed = await _showCreateNativeSpotConfirmationDialog();
+        if (confirmed == true && mounted) {
+          _createNativeSpot();
+        }
         break;
       case _SpotMenuAction.toggleHide:
         _toggleSpotHidden();
@@ -820,6 +826,44 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                   ],
                                 ),
                               ),
+                              // Create native spot menu item (only for spots from external sources)
+                              if (isSpotFromSource)
+                                PopupMenuItem<_SpotMenuAction>(
+                                  value: _SpotMenuAction.createNativeSpot,
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.add_circle_outline,
+                                        color: theme.colorScheme.primary,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            'Create native spot',
+                                            style: theme.textTheme.bodyMedium
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                          ),
+                                          Text(
+                                            'Moderator only',
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                                  color: theme.colorScheme.onSurface
+                                                      .withValues(alpha: 0.6),
+                                                  fontSize: 11,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               PopupMenuItem<_SpotMenuAction>(
                                 value: _SpotMenuAction.toggleHide,
                                 child: Row(
@@ -2681,6 +2725,114 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     }
   }
 
+  Future<bool?> _showCreateNativeSpotConfirmationDialog() async {
+    if (widget.spot.spotSource == null) {
+      if (!mounted) return false;
+      _showErrorSnack('This spot is not from an external source.');
+      return false;
+    }
+
+    final authService = Provider.of<AuthService>(context, listen: false);
+    if (!authService.isAuthenticated || authService.currentUser == null) {
+      if (!mounted) return false;
+      _showErrorSnack('You must be logged in to create a native spot.');
+      return false;
+    }
+
+    return await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Create Native Spot'),
+        content: const Text(
+          'This will create a new native spot based on this spot and mark the current spot as a duplicate of it. '
+          'All spot data (name, description, location, photos, YouTube links, and attributes) will be copied to the new native spot.\n\n'
+          'Note: Admins can remove spots and duplicate links can be removed if needed.\n\n'
+          'Do you want to continue?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _createNativeSpot() async {
+    if (widget.spot.id == null) {
+      if (!mounted) return;
+      _showErrorSnack('Unable to create native spot right now.');
+      return;
+    }
+
+    final spotService = Provider.of<SpotService>(context, listen: false);
+    final authService = Provider.of<AuthService>(context, listen: false);
+
+    // Check if user is authenticated
+    if (!authService.isAuthenticated || authService.currentUser == null) {
+      if (!mounted) return;
+      _showErrorSnack('You must be logged in to create a native spot.');
+      return;
+    }
+
+    try {
+      // Create native spot from current spot
+      final nativeSpotId = await spotService.createNativeSpotFromExisting(
+        widget.spot,
+        authService.currentUser!.uid,
+        authService.userProfile?.displayName ?? authService.currentUser!.email ?? authService.currentUser!.uid,
+      );
+
+      if (nativeSpotId == null) {
+        final error = spotService.error ?? 'Failed to create native spot';
+        _showErrorSnack(error);
+        return;
+      }
+
+      // Now mark the current spot as duplicate of the newly created native spot
+      // Since we're creating from the current spot, photos and YouTube links are already in the native spot
+      // So we don't need to transfer them
+      final userId = authService.currentUser!.uid;
+      final userName = authService.userProfile?.displayName ?? authService.currentUser!.displayName ?? authService.currentUser!.email;
+      
+      final success = await spotService.markSpotAsDuplicate(
+        widget.spot.id!,
+        nativeSpotId,
+        transferPhotos: false, // Already copied to native spot
+        transferYoutubeLinks: false, // Already copied to native spot
+        userId: userId,
+        userName: userName,
+      );
+
+      if (success) {
+        // Load and set the original spot locally to update UI without navigation
+        try {
+          final createdOriginal = await spotService.getSpotById(nativeSpotId);
+          if (mounted) {
+            setState(() {
+              _originalSpot = createdOriginal;
+            });
+          }
+        } catch (e) {
+          // ignore fetch failure; UI already updated via success snackbar
+        }
+
+        _showSuccessSnack('Native spot created and current spot marked as duplicate.');
+      } else {
+        final error = spotService.error ?? 'Failed to mark spot as duplicate';
+        _showErrorSnack(error);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _showErrorSnack('Error creating native spot: $e');
+    }
+  }
+
   Future<void> _showMarkAsDuplicateDialog() async {
     if (widget.spot.id == null) {
       if (!mounted) return;
@@ -2699,7 +2851,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       context: context,
       builder: (dialogContext) => SpotSelectionDialog(
         currentSpotId: widget.spot.id,
-        currentSpot: widget.spot,
       ),
     );
 
@@ -2707,74 +2858,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       return;
     }
 
-    final spotService = Provider.of<SpotService>(context, listen: false);
-    final authService = Provider.of<AuthService>(context, listen: false);
-
-    // Handle "Create Native Spot" action
-    if (selectedSpotIdOrAction == 'CREATE_NATIVE') {
-      // Check if user is authenticated
-      if (!authService.isAuthenticated || authService.currentUser == null) {
-        if (!mounted) return;
-        _showErrorSnack('You must be logged in to create a native spot.');
-        return;
-      }
-
-      try {
-        // Create native spot from current spot
-        final nativeSpotId = await spotService.createNativeSpotFromExisting(
-          widget.spot,
-          authService.currentUser!.uid,
-          authService.userProfile?.displayName ?? authService.currentUser!.email ?? authService.currentUser!.uid,
-        );
-
-        if (nativeSpotId == null) {
-          final error = spotService.error ?? 'Failed to create native spot';
-          _showErrorSnack(error);
-          return;
-        }
-
-        // Now mark the current spot as duplicate of the newly created native spot
-        // Since we're creating from the current spot, photos and YouTube links are already in the native spot
-        // So we don't need to transfer them
-        final userId = authService.currentUser!.uid;
-        final userName = authService.userProfile?.displayName ?? authService.currentUser!.displayName ?? authService.currentUser!.email;
-        
-        final success = await spotService.markSpotAsDuplicate(
-          widget.spot.id!,
-          nativeSpotId,
-          transferPhotos: false, // Already copied to native spot
-          transferYoutubeLinks: false, // Already copied to native spot
-          userId: userId,
-          userName: userName,
-        );
-
-        if (success) {
-          // Load and set the original spot locally to update UI without navigation
-          try {
-            final createdOriginal = await spotService.getSpotById(nativeSpotId);
-            if (mounted) {
-              setState(() {
-                _originalSpot = createdOriginal;
-              });
-            }
-          } catch (e) {
-            // ignore fetch failure; UI already updated via success snackbar
-          }
-
-          _showSuccessSnack('Native spot created and current spot marked as duplicate.');
-        } else {
-          final error = spotService.error ?? 'Failed to mark spot as duplicate';
-          _showErrorSnack(error);
-        }
-      } catch (e) {
-        if (!mounted) return;
-        _showErrorSnack('Error creating native spot: $e');
-      }
-      return;
-    }
-
     // Handle normal duplicate marking flow
     final selectedSpotId = selectedSpotIdOrAction;
+
+    final spotService = Provider.of<SpotService>(context, listen: false);
 
     // Check if duplicate spot has photos or YouTube links to transfer
     final hasPhotos = widget.spot.imageUrls != null && widget.spot.imageUrls!.isNotEmpty;
