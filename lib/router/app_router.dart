@@ -211,8 +211,9 @@ class AppRouter {
           GoRoute(
             path: 'edit',
             builder: (context, state) {
-              final spot = state.extra as Spot;
-              return EditSpotScreen(spot: spot);
+              final spotId = state.pathParameters['spotId']!;
+              final spot = state.extra is Spot ? state.extra as Spot : null;
+              return EditSpotRoute(spotId: spotId, spot: spot);
             },
           ),
         ],
@@ -314,8 +315,9 @@ class AppRouter {
           GoRoute(
             path: 'edit',
             builder: (context, state) {
-              final spot = state.extra as Spot;
-              return EditSpotScreen(spot: spot);
+              final spotId = state.pathParameters['spotId']!;
+              final spot = state.extra is Spot ? state.extra as Spot : null;
+              return EditSpotRoute(spotId: spotId, spot: spot);
             },
           ),
         ],
@@ -453,6 +455,103 @@ class SpotDetailRoute extends StatelessWidget {
 
             final spot = snapshot.data!;
             return SpotDetailScreen(spot: spot);
+          },
+        );
+      },
+    );
+  }
+}
+
+class EditSpotRoute extends StatelessWidget {
+  final String spotId;
+  final Spot? spot;
+  
+  const EditSpotRoute({
+    super.key,
+    required this.spotId,
+    this.spot,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // If spot is provided directly (from state.extra), use it immediately
+    final providedSpot = spot;
+    if (providedSpot != null) {
+      return EditSpotScreen(spot: providedSpot);
+    }
+    
+    // Otherwise, fetch the spot by ID
+    return Consumer<SpotService>(
+      builder: (context, spotService, child) {
+        Future<Spot?> spotFuture = spotService.getSpotById(spotId);
+        
+        return FutureBuilder<Spot?>(
+          future: spotFuture,
+          builder: (context, snapshot) {
+            // Debug logging
+            if (kDebugMode) {
+              print('EditSpotRoute: connectionState=${snapshot.connectionState}, hasData=${snapshot.hasData}, hasError=${snapshot.hasError}');
+              print('EditSpotRoute: isLoading=${spotService.isLoading}');
+            }
+            
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Scaffold(
+                body: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
+
+            if (snapshot.hasError) {
+              return Scaffold(
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error, size: 64, color: Colors.red),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Error loading spot',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Please try again later',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: () => context.go('/explore'),
+                        child: const Text('Go to Explore'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            if (!snapshot.hasData || snapshot.data == null) {
+              return Scaffold(
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.location_off, size: 64, color: Colors.grey),
+                      const SizedBox(height: 16),
+                      const Text('Spot not found'),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: () => context.go('/explore'),
+                        child: const Text('Go to Explore'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            final spot = snapshot.data!;
+            return EditSpotScreen(spot: spot);
           },
         );
       },
