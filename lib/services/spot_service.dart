@@ -136,6 +136,8 @@ class SpotService extends ChangeNotifier {
       List<String>? imagesToDelete,
       String? userId,
       String? userName,
+      String? reportId,
+      String? notes,
     }
   ) async {
     try {
@@ -186,6 +188,8 @@ class SpotService extends ChangeNotifier {
             userId: userId,
             userName: userName,
             changes: changes,
+            reportId: reportId,
+            notes: notes,
           );
         }
       }
@@ -813,6 +817,8 @@ class SpotService extends ChangeNotifier {
     bool overwriteSpotAttributes = false,
     String? userId,
     String? userName,
+    String? reportId,
+    String? notes,
   }) async {
     try {
       _isLoading = true;
@@ -985,6 +991,8 @@ class SpotService extends ChangeNotifier {
           overwriteDescription: overwriteDescription,
           overwriteLocation: overwriteLocation,
           overwriteSpotAttributes: overwriteSpotAttributes,
+          reportId: reportId,
+          notes: notes,
         );
       }
 
@@ -1052,6 +1060,8 @@ class SpotService extends ChangeNotifier {
     bool hidden, {
     String? userId,
     String? userName,
+    String? reportId,
+    String? notes,
   }) async {
     try {
       _isLoading = true;
@@ -1079,6 +1089,8 @@ class SpotService extends ChangeNotifier {
           hidden: hidden,
           userId: userId,
           userName: userName,
+          reportId: reportId,
+          notes: notes,
         );
       }
 

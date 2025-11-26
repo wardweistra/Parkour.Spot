@@ -129,4 +129,52 @@ class SpotReportService {
             .map((doc) => SpotReport.fromSnapshot(doc))
             .toList(growable: false));
   }
+
+  /// Gets all spot reports for a specific spot.
+  /// Includes reports where the spot is the reported spot, or where the spot is mentioned as the original spot (duplicate reports).
+  Future<List<SpotReport>> getReportsForSpot(String spotId) async {
+    try {
+      // Query for reports where this spot is the reported spot
+      final directReportsQuery = _firestore
+          .collection('spotReports')
+          .where('spotId', isEqualTo: spotId);
+
+      // Query for reports where this spot is mentioned as the original spot (duplicate reports)
+      final duplicateReportsQuery = _firestore
+          .collection('spotReports')
+          .where('duplicateOfSpotId', isEqualTo: spotId);
+
+      // Execute both queries in parallel
+      final results = await Future.wait([
+        directReportsQuery.get(),
+        duplicateReportsQuery.get(),
+      ]);
+
+      // Combine results from both queries
+      final allDocs = <DocumentSnapshot<Map<String, dynamic>>>[];
+      allDocs.addAll(results[0].docs);
+      allDocs.addAll(results[1].docs);
+
+      // Convert to SpotReport objects, removing duplicates by ID
+      final reportsMap = <String, SpotReport>{};
+      for (final doc in allDocs) {
+        final report = SpotReport.fromSnapshot(doc);
+        reportsMap[report.id] = report;
+      }
+
+      final reports = reportsMap.values.toList();
+
+      // Sort by creation date (newest first) in post-processing to avoid needing a composite index
+      reports.sort((a, b) {
+        final aTime = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bTime = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return bTime.compareTo(aTime);
+      });
+
+      return reports;
+    } catch (e) {
+      debugPrint('Error getting reports for spot: $e');
+      return [];
+    }
+  }
 }

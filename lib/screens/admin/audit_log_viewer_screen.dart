@@ -508,6 +508,15 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                 auditLog.metadata!['originalSpotId'] != null) {
               details =
                   'Original spot: ${auditLog.metadata!['originalSpotId']}';
+              if (auditLog.reportId != null) {
+                details += '\nLinked to report: ${auditLog.reportId}';
+              }
+              if (auditLog.metadata!['notes'] != null) {
+                final notes = auditLog.metadata!['notes'] as String;
+                if (notes.isNotEmpty) {
+                  details += '\n\nNotes: $notes';
+                }
+              }
             }
             break;
           case AuditLogAction.spotHidden:
@@ -518,6 +527,15 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                     ? 'Hidden by ${auditLog.userId}'
                     : 'Hidden by unknown';
             details = 'Spot hidden from public view';
+            if (auditLog.reportId != null) {
+              details += '\nLinked to report: ${auditLog.reportId}';
+            }
+            if (auditLog.metadata != null && auditLog.metadata!['notes'] != null) {
+              final notes = auditLog.metadata!['notes'] as String;
+              if (notes.isNotEmpty) {
+                details += '\n\nNotes: $notes';
+              }
+            }
             break;
           case AuditLogAction.spotUnhidden:
             title = 'Spot Unhidden';
@@ -527,6 +545,15 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                     ? 'Unhidden by ${auditLog.userId}'
                     : 'Unhidden by unknown';
             details = 'Spot made visible to public';
+            if (auditLog.reportId != null) {
+              details += '\nLinked to report: ${auditLog.reportId}';
+            }
+            if (auditLog.metadata != null && auditLog.metadata!['notes'] != null) {
+              final notes = auditLog.metadata!['notes'] as String;
+              if (notes.isNotEmpty) {
+                details += '\n\nNotes: $notes';
+              }
+            }
             break;
           case AuditLogAction.spotReportStatusChange:
             title = 'Spot Report Status Changed';
@@ -562,6 +589,9 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
               final duplicateSpotsCount = auditLog.metadata!['duplicateSpotsCount'] as int? ?? 0;
               
               details = spotName != null ? 'Spot: $spotName' : 'Spot deleted';
+              if (auditLog.reportId != null) {
+                details += '\nLinked to report: ${auditLog.reportId}';
+              }
               if (ratingsCount > 0 || spotReportsCount > 0 || duplicateSpotsCount > 0) {
                 details += '\nLinked data at deletion:';
                 if (ratingsCount > 0) {
@@ -572,6 +602,12 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                 }
                 if (duplicateSpotsCount > 0) {
                   details += '\n  • Duplicate Spots: $duplicateSpotsCount';
+                }
+              }
+              if (auditLog.metadata!['notes'] != null) {
+                final notes = auditLog.metadata!['notes'] as String;
+                if (notes.isNotEmpty) {
+                  details += '\n\nNotes: $notes';
                 }
               }
             } else {
@@ -1327,6 +1363,22 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
     return entry.type == AuditLogEntryType.spotReportCreation;
   }
 
+  /// Check if an entry has a reportId (for actions linked to spot reports)
+  bool _hasReportId(AuditLogEntry entry) {
+    return entry.metadata?['reportId'] != null;
+  }
+
+  /// Check if an entry is a spot edit
+  bool _isSpotEdit(AuditLogEntry entry) {
+    if (entry.type == AuditLogEntryType.auditLogAction) {
+      final action = entry.metadata?['action'] as String?;
+      if (action != null) {
+        return action.contains('spotEdit');
+      }
+    }
+    return false;
+  }
+
   /// Get list of spot IDs from an audit log entry
   /// Returns original spot first (if applicable), then the main spot
   List<String> _getSpotIdsFromEntry(AuditLogEntry entry) {
@@ -1567,14 +1619,14 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                   ),
                                 ],
                               ),
-                              trailing: (spotIds.isNotEmpty || _isSpotReportStatusChange(entry) || _isSpotReportCreation(entry) || _isUserCreation(entry))
+                              trailing: (spotIds.isNotEmpty || _isSpotReportStatusChange(entry) || _isSpotReportCreation(entry) || _isUserCreation(entry) || _hasReportId(entry) || _isSpotEdit(entry))
                                   ? Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         // Spot buttons
                                         ...spotIds.asMap().entries.map((spotEntry) {
                                           final isLast = spotEntry.key == spotIds.length - 1;
-                                          final hasOtherButtons = _isSpotReportStatusChange(entry) || _isSpotReportCreation(entry) || _isUserCreation(entry);
+                                          final hasOtherButtons = _isSpotReportStatusChange(entry) || _isSpotReportCreation(entry) || _isUserCreation(entry) || _hasReportId(entry) || _isSpotEdit(entry);
                                           return Padding(
                                             padding: EdgeInsets.only(
                                               right: isLast && !hasOtherButtons ? 0 : 4,
@@ -1598,7 +1650,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                           );
                                         }),
                                         // Spot Report Queue button
-                                        if (_isSpotReportStatusChange(entry) || _isSpotReportCreation(entry))
+                                        if (_isSpotReportStatusChange(entry) || _isSpotReportCreation(entry) || _hasReportId(entry) || _isSpotEdit(entry))
                                           IconButton(
                                             icon: const Icon(
                                               Icons.report_problem,
@@ -1661,6 +1713,49 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                             _buildChangesWidget(
                                               entry.metadata!['changes'] as Map<String, dynamic>,
                                             ),
+                                          ],
+                                          // Show report link and notes for Spot Edited entries
+                                          if (entry.type == AuditLogEntryType.auditLogAction &&
+                                              entry.metadata?['action'] != null &&
+                                              entry.metadata!['action'].toString().contains('spotEdit')) ...[
+                                            if (entry.metadata?['reportId'] != null || entry.metadata?['metadata']?['notes'] != null) ...[
+                                              const SizedBox(height: 16),
+                                              const Text(
+                                                'Additional Information:',
+                                                style: TextStyle(
+                                                    fontWeight: FontWeight.bold),
+                                              ),
+                                              const SizedBox(height: 8),
+                                              if (entry.metadata?['reportId'] != null)
+                                                Padding(
+                                                  padding: const EdgeInsets.only(bottom: 4),
+                                                  child: Text(
+                                                    'Linked to report: ${entry.metadata!['reportId']}',
+                                                    style: const TextStyle(fontSize: 12),
+                                                  ),
+                                                ),
+                                              if (entry.metadata?['metadata']?['notes'] != null)
+                                                Padding(
+                                                  padding: const EdgeInsets.only(bottom: 4),
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      const Text(
+                                                        'Notes:',
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          fontWeight: FontWeight.w500,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 4),
+                                                      Text(
+                                                        entry.metadata!['metadata']!['notes'] as String,
+                                                        style: const TextStyle(fontSize: 12),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                            ],
                                           ],
                                           if (dialogSpotIds.isNotEmpty) ...[
                                             const SizedBox(height: 16),
@@ -1759,7 +1854,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                         ),
                                         const SizedBox(width: 8),
                                       ],
-                                      if (_isSpotReportStatusChange(entry) || _isSpotReportCreation(entry))
+                                      if (_isSpotReportStatusChange(entry) || _isSpotReportCreation(entry) || _hasReportId(entry) || _isSpotEdit(entry))
                                         TextButton.icon(
                                           icon: const Icon(
                                             Icons.report_problem,

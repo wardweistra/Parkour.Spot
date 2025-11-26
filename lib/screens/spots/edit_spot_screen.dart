@@ -14,6 +14,7 @@ import '../../services/geocoding_service.dart';
 import '../../services/search_state_service.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/custom_button.dart';
+import '../../widgets/moderator_action_fields.dart';
 import '../../widgets/spot_form/location_section.dart';
 import '../../widgets/spot_form/image_section.dart';
 import '../../widgets/spot_form/attributes_section.dart';
@@ -69,6 +70,10 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
   
   // Warning banner state (for admin editing spot-source spots)
   bool _warningDismissed = false;
+
+  // Moderator action fields state
+  String? _selectedReportId;
+  final _notesController = TextEditingController();
 
   @override
   void initState() {
@@ -139,6 +144,7 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
+    _notesController.dispose();
     for (final controller in _youtubeControllers) {
       controller.dispose();
     }
@@ -467,6 +473,7 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
       final authService = Provider.of<AuthService>(context, listen: false);
       final userId = authService.currentUser?.uid;
       final userName = authService.userProfile?.displayName ?? authService.currentUser?.displayName ?? authService.currentUser?.email;
+      final notes = _notesController.text.trim().isEmpty ? null : _notesController.text.trim();
 
       final success = await spotService.updateSpot(
         updatedSpot,
@@ -475,6 +482,8 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
         imagesToDelete: _imagesToDelete.isNotEmpty ? _imagesToDelete : null,
         userId: userId,
         userName: userName,
+        reportId: _selectedReportId,
+        notes: notes,
       );
 
       if (mounted) {
@@ -808,6 +817,41 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
                                 ),
                               ),
                             ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Moderator Action Fields
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Moderator Notes',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Optionally link this edit to a spot report and add notes for the audit log.',
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                          const SizedBox(height: 16),
+                          ModeratorActionFields(
+                            spotId: widget.spot.id,
+                            notesController: _notesController,
+                            showReportSelector: true,
+                            onReportSelected: (reportId) {
+                              setState(() {
+                                _selectedReportId = reportId;
+                              });
+                            },
+                          ),
                         ],
                       ),
                     ),

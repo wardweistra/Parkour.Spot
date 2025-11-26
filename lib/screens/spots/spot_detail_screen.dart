@@ -15,6 +15,7 @@ import '../../services/sync_source_service.dart';
 import '../../services/search_state_service.dart';
 import '../../widgets/source_details_dialog.dart';
 import '../../widgets/spot_selection_dialog.dart';
+import '../../widgets/moderator_action_fields.dart';
 import '../../constants/spot_attributes.dart';
 import '../../services/snackbar_service.dart';
 import '../../utils/image_url_utils.dart';
@@ -476,21 +477,30 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         _showMarkAsDuplicateDialog();
         break;
       case _SpotMenuAction.createNativeSpot:
-        final confirmed = await _showCreateNativeSpotConfirmationDialog();
-        if (confirmed == true && mounted) {
-          _createNativeSpot();
+        final result = await _showCreateNativeSpotConfirmationDialog();
+        if (result != null && result['confirmed'] == true && mounted) {
+          _createNativeSpot(
+            reportId: result['reportId'] as String?,
+            notes: result['notes'] as String?,
+          );
         }
         break;
       case _SpotMenuAction.toggleHide:
-        final confirmed = await _showHideSpotConfirmationDialog();
-        if (confirmed == true && mounted) {
-          _toggleSpotHidden();
+        final result = await _showHideSpotConfirmationDialog();
+        if (result != null && result['confirmed'] == true && mounted) {
+          _toggleSpotHidden(
+            reportId: result['reportId'] as String?,
+            notes: result['notes'] as String?,
+          );
         }
         break;
       case _SpotMenuAction.removeDuplicateStatus:
-        final confirmed = await _showRemoveDuplicateStatusConfirmationDialog();
-        if (confirmed == true && mounted) {
-          _removeDuplicateStatus();
+        final result = await _showRemoveDuplicateStatusConfirmationDialog();
+        if (result != null && result['confirmed'] == true && mounted) {
+          _removeDuplicateStatus(
+            reportId: result['reportId'] as String?,
+            notes: result['notes'] as String?,
+          );
         }
         break;
     }
@@ -2783,45 +2793,83 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     }
   }
 
-  Future<bool?> _showCreateNativeSpotConfirmationDialog() async {
+  Future<Map<String, dynamic>?> _showCreateNativeSpotConfirmationDialog() async {
     if (widget.spot.spotSource == null) {
-      if (!mounted) return false;
+      if (!mounted) return null;
       _showErrorSnack('This spot is not from an external source.');
-      return false;
+      return null;
     }
 
     final authService = Provider.of<AuthService>(context, listen: false);
     if (!authService.isAuthenticated || authService.currentUser == null) {
-      if (!mounted) return false;
+      if (!mounted) return null;
       _showErrorSnack('You must be logged in to create a native spot.');
-      return false;
+      return null;
     }
 
-    return await showDialog<bool>(
+    String? selectedReportId;
+    final notesController = TextEditingController();
+
+    return await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Create Native Spot'),
-        content: const Text(
-          'This will create a new native spot based on this spot and mark the current spot as a duplicate of it. '
-          'All spot data (name, description, location, photos, YouTube links, and attributes) will be copied to the new native spot.\n\n'
-          'Note: Admins can remove spots and duplicate links can be removed if needed.\n\n'
-          'Do you want to continue?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Create'),
-          ),
-        ],
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Create Native Spot'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'This will create a new native spot based on this spot and mark the current spot as a duplicate of it. '
+                    'All spot data (name, description, location, photos, YouTube links, and attributes) will be copied to the new native spot.\n\n'
+                    'Note: Admins can remove spots and duplicate links can be removed if needed.',
+                  ),
+                  const SizedBox(height: 16),
+                  ModeratorActionFields(
+                    spotId: _spot.id,
+                    notesController: notesController,
+                    showReportSelector: true,
+                    onReportSelected: (reportId) {
+                      setState(() {
+                        selectedReportId = reportId;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  notesController.dispose();
+                  Navigator.of(dialogContext).pop(null);
+                },
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  final notes = notesController.text.trim().isEmpty 
+                      ? null 
+                      : notesController.text.trim();
+                  notesController.dispose();
+                  Navigator.of(dialogContext).pop({
+                    'confirmed': true,
+                    'reportId': selectedReportId,
+                    'notes': notes,
+                  });
+                },
+                child: const Text('Create'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Future<void> _createNativeSpot() async {
+  Future<void> _createNativeSpot({String? reportId, String? notes}) async {
     if (widget.spot.id == null) {
       if (!mounted) return;
       _showErrorSnack('Unable to create native spot right now.');
@@ -2865,6 +2913,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         transferYoutubeLinks: false, // Already copied to native spot
         userId: userId,
         userName: userName,
+        reportId: reportId,
+        notes: notes,
       );
 
       if (success) {
@@ -2926,7 +2976,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     final hasYoutubeLinks = widget.spot.youtubeVideoIds != null && widget.spot.youtubeVideoIds!.isNotEmpty;
 
     // Show confirmation dialog with transfer options
-    final Map<String, bool>? result = await showDialog<Map<String, bool>>(
+    final Map<String, dynamic>? result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (confirmContext) {
         return _DuplicateTransferDialog(
@@ -2945,6 +2995,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     final overwriteDescription = result['overwriteDescription'] ?? false;
     final overwriteLocation = result['overwriteLocation'] ?? false;
     final overwriteSpotAttributes = result['overwriteSpotAttributes'] ?? false;
+    final reportId = result['reportId'] as String?;
+    final notes = result['notes'] as String?;
 
     // Mark the spot as duplicate
     try {
@@ -2964,6 +3016,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         overwriteSpotAttributes: overwriteSpotAttributes,
         userId: userId,
         userName: userName,
+        reportId: reportId,
+        notes: notes,
       );
 
       if (success) {
@@ -2990,46 +3044,83 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     }
   }
 
-  Future<bool?> _showHideSpotConfirmationDialog() async {
+  Future<Map<String, dynamic>?> _showHideSpotConfirmationDialog() async {
     final authService = Provider.of<AuthService>(context, listen: false);
     if (!authService.isAuthenticated || (!authService.isModerator && !authService.isAdmin)) {
-      if (!mounted) return false;
+      if (!mounted) return null;
       _showErrorSnack('Only moderators can hide/unhide spots.');
-      return false;
+      return null;
     }
 
     final isHiding = !_spot.hidden;
     final actionCapitalized = isHiding ? 'Hide' : 'Unhide';
 
-    return await showDialog<bool>(
+    String? selectedReportId;
+    final notesController = TextEditingController();
+
+    return await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text('$actionCapitalized Spot'),
-        content: Text(
-          isHiding
-              ? 'This will hide the spot from public view. '
-                  'Hidden spots will not appear in search results or on the map, '
-                  'but the spot data will be preserved and can be unhidden later.\n\n'
-                  'Do you want to continue?'
-              : 'This will restore the spot to public view. '
-                  'The spot will appear in search results and on the map again.\n\n'
-                  'Do you want to continue?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(actionCapitalized),
-          ),
-        ],
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: Text('$actionCapitalized Spot'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isHiding
+                        ? 'This will hide the spot from public view. '
+                            'Hidden spots will not appear in search results or on the map, '
+                            'but the spot data will be preserved and can be unhidden later.'
+                        : 'This will restore the spot to public view. '
+                            'The spot will appear in search results and on the map again.',
+                  ),
+                  const SizedBox(height: 16),
+                  ModeratorActionFields(
+                    spotId: _spot.id,
+                    notesController: notesController,
+                    showReportSelector: true,
+                    onReportSelected: (reportId) {
+                      setState(() {
+                        selectedReportId = reportId;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  notesController.dispose();
+                  Navigator.of(dialogContext).pop(null);
+                },
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  final notes = notesController.text.trim().isEmpty 
+                      ? null 
+                      : notesController.text.trim();
+                  notesController.dispose();
+                  Navigator.of(dialogContext).pop({
+                    'confirmed': true,
+                    'reportId': selectedReportId,
+                    'notes': notes,
+                  });
+                },
+                child: Text(actionCapitalized),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Future<void> _toggleSpotHidden() async {
+  Future<void> _toggleSpotHidden({String? reportId, String? notes}) async {
     if (_spot.id == null) {
       if (!mounted) return;
       _showErrorSnack('Unable to hide/unhide this spot right now.');
@@ -3056,6 +3147,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         newHiddenState,
         userId: userId,
         userName: userName,
+        reportId: reportId,
+        notes: notes,
       );
 
       if (!mounted) return;
@@ -3082,44 +3175,83 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     }
   }
 
-  Future<bool?> _showRemoveDuplicateStatusConfirmationDialog() async {
+  Future<Map<String, dynamic>?> _showRemoveDuplicateStatusConfirmationDialog() async {
     if (_spot.duplicateOf == null) {
-      if (!mounted) return false;
+      if (!mounted) return null;
       _showErrorSnack('This spot is not marked as a duplicate.');
-      return false;
+      return null;
     }
 
     final authService = Provider.of<AuthService>(context, listen: false);
     if (!authService.isAuthenticated || (!authService.isModerator && !authService.isAdmin)) {
-      if (!mounted) return false;
+      if (!mounted) return null;
       _showErrorSnack('Only moderators can remove duplicate status.');
-      return false;
+      return null;
     }
 
-    return await showDialog<bool>(
+    final TextEditingController notesController = TextEditingController();
+    String? selectedReportId;
+
+    return await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Remove Duplicate Status'),
-        content: const Text(
-          'This will remove the duplicate status from this spot. '
-          'The spot will no longer be marked as a duplicate.\n\n'
-          'Do you want to continue?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Remove'),
-          ),
-        ],
-      ),
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Remove Duplicate Status'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'This will remove the duplicate status from this spot. '
+                      'The spot will no longer be marked as a duplicate.\n\n'
+                      'Do you want to continue?',
+                    ),
+                    const SizedBox(height: 16),
+                    ModeratorActionFields(
+                      spotId: _spot.id,
+                      notesController: notesController,
+                      onReportSelected: (reportId) {
+                        setState(() {
+                          selectedReportId = reportId;
+                        });
+                      },
+                      showReportSelector: true,
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    notesController.dispose();
+                    Navigator.of(dialogContext).pop(null);
+                  },
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final result = {
+                      'confirmed': true,
+                      'reportId': selectedReportId,
+                      'notes': notesController.text.trim().isEmpty ? null : notesController.text.trim(),
+                    };
+                    notesController.dispose();
+                    Navigator.of(dialogContext).pop(result);
+                  },
+                  child: const Text('Remove'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
-  Future<void> _removeDuplicateStatus() async {
+  Future<void> _removeDuplicateStatus({String? reportId, String? notes}) async {
     if (_spot.id == null) {
       if (!mounted) return;
       _showErrorSnack('Unable to remove duplicate status right now.');
@@ -3157,6 +3289,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         updatedSpot,
         userId: userId,
         userName: userName,
+        reportId: reportId,
+        notes: notes,
       );
 
       if (!mounted) return;
@@ -3239,148 +3373,178 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Spot'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Are you sure you want to delete this spot? This action cannot be undone.',
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) {
+          String? selectedReportId;
+          final notesController = TextEditingController();
+
+          return AlertDialog(
+            title: const Text('Delete Spot'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Are you sure you want to delete this spot? This action cannot be undone.',
+                  ),
+                  const SizedBox(height: 16),
+                  if (ratingsCount > 0 || spotReportsCount > 0 || duplicateSpotsCount > 0) ...[
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'This spot has linked data:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    if (ratingsCount > 0)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text('• Ratings: $ratingsCount'),
+                      ),
+                    if (spotReportsCount > 0)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text('• Spot Reports: $spotReportsCount'),
+                      ),
+                    if (duplicateSpotsCount > 0)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text('• Duplicate Spots: $duplicateSpotsCount'),
+                      ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Please resolve these links before deleting the spot.',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                  if (canDelete) ...[
+                    const SizedBox(height: 16),
+                    ModeratorActionFields(
+                      spotId: _spot.id,
+                      notesController: notesController,
+                      showReportSelector: true,
+                      onReportSelected: (reportId) {
+                        setState(() {
+                          selectedReportId = reportId;
+                        });
+                      },
+                    ),
+                  ],
+                ],
               ),
-              const SizedBox(height: 16),
-              if (ratingsCount > 0 || spotReportsCount > 0 || duplicateSpotsCount > 0) ...[
-                const Divider(),
-                const SizedBox(height: 8),
-                const Text(
-                  'This spot has linked data:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                if (ratingsCount > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Text('• Ratings: $ratingsCount'),
-                  ),
-                if (spotReportsCount > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Text('• Spot Reports: $spotReportsCount'),
-                  ),
-                if (duplicateSpotsCount > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Text('• Duplicate Spots: $duplicateSpotsCount'),
-                  ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Please resolve these links before deleting the spot.',
-                  style: TextStyle(
-                    color: Colors.red,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: canDelete
-                ? () async {
-                    Navigator.pop(context);
-                    
-                    // Capture spot data before deletion for audit logging
-                    final spotId = _spot.id!;
-                    final spotName = _spot.name;
-                    final capturedRatingsCount = ratingsCount;
-                    final capturedSpotReportsCount = spotReportsCount;
-                    final capturedDuplicateSpotsCount = duplicateSpotsCount;
-                    
-                    try {
-                      final spotService = Provider.of<SpotService>(
-                        context,
-                        listen: false,
-                      );
-                      final authService = Provider.of<AuthService>(
-                        context,
-                        listen: false,
-                      );
-                      
-                      // Get user info for audit logging
-                      final userId = authService.userProfile?.id ?? authService.currentUser?.uid;
-                      final userName = authService.userProfile?.displayName ?? 
-                                      authService.currentUser?.displayName ?? 
-                                      authService.currentUser?.email;
-                      
-                      final success = await spotService.deleteSpot(spotId);
-
-                      if (success) {
-                        // Log the deletion to audit log BEFORE checking mounted state
-                        // This doesn't require the widget to be mounted
-                        try {
-                          final auditLogService = AuditLogService();
-                          await auditLogService.logSpotDelete(
-                            spotId: spotId,
-                            userId: userId,
-                            userName: userName,
-                            metadata: {
-                              'spotName': spotName,
-                              'ratingsCount': capturedRatingsCount,
-                              'spotReportsCount': capturedSpotReportsCount,
-                              'duplicateSpotsCount': capturedDuplicateSpotsCount,
-                            },
-                          );
-                        } catch (auditError) {
-                          debugPrint('Error creating audit log entry: $auditError');
-                          // Don't fail the deletion if audit logging fails
-                        }
-
-                        // Now check if mounted for UI operations
-                        if (!mounted) return;
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  notesController.dispose();
+                  Navigator.pop(context);
+                },
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: canDelete
+                    ? () async {
+                        final notes = notesController.text.trim().isEmpty 
+                            ? null 
+                            : notesController.text.trim();
+                        notesController.dispose();
+                        Navigator.pop(context);
                         
-                        final scaffoldMessenger = ScaffoldMessenger.of(context);
-                        scaffoldMessenger.showSnackBar(
-                          const SnackBar(
-                            content: Text('Spot deleted successfully'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
+                        // Capture spot data before deletion for audit logging
+                        final spotId = _spot.id!;
+                        final spotName = _spot.name;
+                        final capturedRatingsCount = ratingsCount;
+                        final capturedSpotReportsCount = spotReportsCount;
+                        final capturedDuplicateSpotsCount = duplicateSpotsCount;
+                        
+                        try {
+                          final spotService = Provider.of<SpotService>(
+                            context,
+                            listen: false,
+                          );
+                          final authService = Provider.of<AuthService>(
+                            context,
+                            listen: false,
+                          );
+                          
+                          // Get user info for audit logging
+                          final userId = authService.userProfile?.id ?? authService.currentUser?.uid;
+                          final userName = authService.userProfile?.displayName ?? 
+                                          authService.currentUser?.displayName ?? 
+                                          authService.currentUser?.email;
+                          
+                          final success = await spotService.deleteSpot(spotId);
 
-                        // Navigate to explore immediately after successful deletion
-                        // Use replace to ensure we don't go back to the deleted spot
-                        if (!mounted) return;
-                        context.replace('/explore');
-                      } else {
-                        if (!mounted) return;
-                        final scaffoldMessenger = ScaffoldMessenger.of(context);
-                        scaffoldMessenger.showSnackBar(
-                          const SnackBar(
-                            content: Text('Failed to delete spot'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
+                          if (success) {
+                            // Log the deletion to audit log BEFORE checking mounted state
+                            // This doesn't require the widget to be mounted
+                            try {
+                              final auditLogService = AuditLogService();
+                              await auditLogService.logSpotDelete(
+                                spotId: spotId,
+                                userId: userId,
+                                userName: userName,
+                                reportId: selectedReportId,
+                                metadata: {
+                                  'spotName': spotName,
+                                  'ratingsCount': capturedRatingsCount,
+                                  'spotReportsCount': capturedSpotReportsCount,
+                                  'duplicateSpotsCount': capturedDuplicateSpotsCount,
+                                  if (notes != null && notes.isNotEmpty) 'notes': notes,
+                                },
+                              );
+                            } catch (auditError) {
+                              debugPrint('Error creating audit log entry: $auditError');
+                              // Don't fail the deletion if audit logging fails
+                            }
+
+                            // Now check if mounted for UI operations
+                            if (!mounted) return;
+                            
+                            final scaffoldMessenger = ScaffoldMessenger.of(context);
+                            scaffoldMessenger.showSnackBar(
+                              const SnackBar(
+                                content: Text('Spot deleted successfully'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+
+                            // Navigate to explore immediately after successful deletion
+                            // Use replace to ensure we don't go back to the deleted spot
+                            if (!mounted) return;
+                            context.replace('/explore');
+                          } else {
+                            if (!mounted) return;
+                            final scaffoldMessenger = ScaffoldMessenger.of(context);
+                            scaffoldMessenger.showSnackBar(
+                              const SnackBar(
+                                content: Text('Failed to delete spot'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error deleting spot: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
                       }
-                    } catch (e) {
-                      if (!mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Error deleting spot: $e'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  }
-                : null,
+                    : null,
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Delete'),
           ),
         ],
+      )
+          ;
+        },
       ),
     );
   }
@@ -4145,6 +4309,8 @@ class _DuplicateTransferDialogState extends State<_DuplicateTransferDialog> {
   bool _overwriteDescription = false;
   bool _overwriteLocation = false;
   bool _overwriteSpotAttributes = false;
+  final TextEditingController _notesController = TextEditingController();
+  String? _selectedReportId;
 
   bool get _hasName => widget.spot.name.isNotEmpty;
   bool get _hasDescription => widget.spot.description.isNotEmpty;
@@ -4266,6 +4432,17 @@ class _DuplicateTransferDialogState extends State<_DuplicateTransferDialog> {
                   ),
               ],
             ],
+            const SizedBox(height: 16),
+            ModeratorActionFields(
+              spotId: widget.spot.id,
+              notesController: _notesController,
+              onReportSelected: (reportId) {
+                setState(() {
+                  _selectedReportId = reportId;
+                });
+              },
+              showReportSelector: true,
+            ),
           ],
         ),
       ),
@@ -4282,10 +4459,18 @@ class _DuplicateTransferDialogState extends State<_DuplicateTransferDialog> {
             'overwriteDescription': _overwriteDescription,
             'overwriteLocation': _overwriteLocation,
             'overwriteSpotAttributes': _overwriteSpotAttributes,
+            'reportId': _selectedReportId,
+            'notes': _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
           }),
           child: const Text('Confirm'),
         ),
       ],
     );
+  }
+
+  @override
+  void dispose() {
+    _notesController.dispose();
+    super.dispose();
   }
 }

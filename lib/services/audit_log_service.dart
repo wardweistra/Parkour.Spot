@@ -11,15 +11,19 @@ class AuditLogService {
     required String? userId,
     required String? userName,
     required Map<String, dynamic> changes,
+    String? reportId,
+    String? notes,
   }) async {
     try {
       await _firestore.collection('auditLog').add({
         'action': AuditLogAction.spotEdit.toString().split('.').last,
         'spotId': spotId,
+        if (reportId != null) 'reportId': reportId,
         'userId': userId,
         'userName': userName,
         'timestamp': FieldValue.serverTimestamp(),
         'changes': changes,
+        if (notes != null && notes.isNotEmpty) 'metadata': {'notes': notes},
       });
     } catch (e) {
       debugPrint('Error logging spot edit: $e');
@@ -39,11 +43,14 @@ class AuditLogService {
     bool overwriteDescription = false,
     bool overwriteLocation = false,
     bool overwriteSpotAttributes = false,
+    String? reportId,
+    String? notes,
   }) async {
     try {
       await _firestore.collection('auditLog').add({
         'action': AuditLogAction.spotMarkedAsDuplicate.toString().split('.').last,
         'spotId': spotId,
+        if (reportId != null) 'reportId': reportId,
         'userId': userId,
         'userName': userName,
         'timestamp': FieldValue.serverTimestamp(),
@@ -55,6 +62,7 @@ class AuditLogService {
           'overwriteDescription': overwriteDescription,
           'overwriteLocation': overwriteLocation,
           'overwriteSpotAttributes': overwriteSpotAttributes,
+          if (notes != null && notes.isNotEmpty) 'notes': notes,
         },
       });
     } catch (e) {
@@ -88,16 +96,20 @@ class AuditLogService {
     required bool hidden,
     required String? userId,
     required String? userName,
+    String? reportId,
+    String? notes,
   }) async {
     try {
       await _firestore.collection('auditLog').add({
         'action': (hidden ? AuditLogAction.spotHidden : AuditLogAction.spotUnhidden).toString().split('.').last,
         'spotId': spotId,
+        if (reportId != null) 'reportId': reportId,
         'userId': userId,
         'userName': userName,
         'timestamp': FieldValue.serverTimestamp(),
         'metadata': {
           'hidden': hidden,
+          if (notes != null && notes.isNotEmpty) 'notes': notes,
         },
       });
     } catch (e) {
@@ -160,12 +172,14 @@ class AuditLogService {
     required String spotId,
     required String? userId,
     required String? userName,
+    String? reportId,
     Map<String, dynamic>? metadata,
   }) async {
     try {
       await _firestore.collection('auditLog').add({
         'action': AuditLogAction.spotDelete.toString().split('.').last,
         'spotId': spotId,
+        if (reportId != null) 'reportId': reportId,
         'userId': userId,
         'userName': userName,
         'timestamp': FieldValue.serverTimestamp(),
