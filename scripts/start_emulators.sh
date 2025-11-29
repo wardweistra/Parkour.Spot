@@ -38,6 +38,6 @@ echo ""
 echo "Press Ctrl+C to stop the emulators"
 echo ""
 
-# Start emulators
-firebase emulators:start
+# Start emulators (excluding hosting - use 'flutter run' for web app)
+firebase emulators:start --only auth,firestore,storage,functions
 
