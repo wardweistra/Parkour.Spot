@@ -35,16 +35,6 @@ fi
 
 echo "🚀 Starting emulators..."
 echo ""
-echo "Emulator UI will be available at: http://localhost:4000"
-echo ""
-echo "Emulator ports:"
-echo "  - Firestore: 8082"
-echo "  - Auth: 9099"
-echo "  - Storage: 9199"
-echo "  - Functions: 5001"
-echo "  - UI: 4000"
-echo "  - Hosting: disabled (use 'flutter run' for web app)"
-echo ""
 echo "Press Ctrl+C to stop the emulators"
 echo ""
 
