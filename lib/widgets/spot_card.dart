@@ -364,6 +364,13 @@ class _SpotCardState extends State<SpotCard> {
                 ),
               ),
 
+            if (widget.spot.spotSourceRemoved)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: _buildRemovedBadge(context),
+              ),
+
             // "Added by" text positioned at bottom left
             if (widget.spot.createdBy != null || widget.spot.createdByName != null)
               Positioned(
@@ -609,6 +616,13 @@ class _SpotCardState extends State<SpotCard> {
                               ),
                             ),
                           ),
+
+                        if (widget.spot.spotSourceRemoved)
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: _buildRemovedBadge(context),
+                          ),
                       ],
                     ),
                   ),
@@ -715,6 +729,45 @@ class _SpotCardState extends State<SpotCard> {
     ),
   );
 }
+
+  Widget _buildRemovedBadge(BuildContext context) {
+    final textStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+        ) ??
+        const TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+        );
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.red.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.4),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.warning_amber_rounded,
+            size: 14,
+            color: Colors.white,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            'Removed from source',
+            style: textStyle,
+          ),
+        ],
+      ),
+    );
+  }
 
 String _formatDate(DateTime date) {
     final now = DateTime.now();

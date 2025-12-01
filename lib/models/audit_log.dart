@@ -7,6 +7,7 @@ enum AuditLogAction {
   spotUnhidden,
   spotReportStatusChange,
   spotDelete,
+  spotSourceSync,
 }
 
 class AuditLog {
