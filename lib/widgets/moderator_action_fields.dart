@@ -80,7 +80,7 @@ class _ModeratorActionFieldsState extends State<ModeratorActionFields> {
             )
           else
             DropdownButtonFormField<String>(
-              value: _selectedReportId,
+              initialValue: _selectedReportId,
               isExpanded: true,
               decoration: InputDecoration(
                 labelText: 'Select a report (optional)',
