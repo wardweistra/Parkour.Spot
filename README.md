@@ -101,8 +101,6 @@ See the [Local Development](#local-development) section below for detailed instr
 
 **🌱 Emulator Seed Data**: When you start emulators for the first time, seed data from `scripts/seed-data/` is automatically copied to `.firebase/emulator-data/`. This gives you a working dataset with test users, spots, and other sample data to develop with. Your changes are automatically saved when you stop the emulators.
 
-**⚠️ Note**: The emulator workflow currently has CORS issues between the Flutter app and emulator cloud functions. This is a known issue being worked on.
-
 #### **Production Build**
 ```bash
 # Build for production

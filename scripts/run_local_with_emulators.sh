@@ -7,10 +7,6 @@ echo "📋 This script runs the Flutter app configured to use Firebase emulators
 echo "   This is intended for developers who don't have access to the"
 echo "   Firebase production instance."
 echo ""
-echo "⚠️  KNOWN ISSUE: Currently experiencing CORS issues between the"
-echo "   running app and emulator cloud functions. This workflow is"
-echo "   in progress and may require additional configuration."
-echo ""
 
 # Check if .env.emulator file exists, if not, create it
 if [ ! -f ".env.emulator" ]; then
@@ -37,8 +33,6 @@ echo ""
 echo "📝 Prerequisites:"
 echo "   1. Firebase emulators must be running in another terminal"
 echo "   2. Start them with: ./scripts/start_emulators.sh"
-echo ""
-echo "⚠️  Remember: This workflow currently has CORS issues with cloud functions."
 echo ""
 read -p "Press Enter when emulators are running, or Ctrl+C to cancel..."
 
