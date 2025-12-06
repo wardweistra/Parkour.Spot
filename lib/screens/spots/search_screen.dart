@@ -2019,50 +2019,41 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                               // Header with spot count
                               Padding(
                                 padding: const EdgeInsets.all(16),
-                                child: SizedBox(
-                                  width: double.infinity,
-                                  child: Stack(
-                                    alignment: Alignment.center,
-                                    children: [
-                                      Center(
-                                        child: Padding(
-                                          padding: const EdgeInsets.only(right: 48),
-                                          child: RichText(
-                                            text: TextSpan(
-                                              children: [
+                                child: Center(
+                                  child: TextButton(
+                                    onPressed: _toggleBottomSheet,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        RichText(
+                                          text: TextSpan(
+                                            children: [
+                                              TextSpan(
+                                                text: _totalSpotsInView != null && _bestShownCount != null
+                                                    ? '$_totalSpotsInView spots'
+                                                    : '${_visibleSpots.length} ${_visibleSpots.length == 1 ? 'spot' : 'spots'} found',
+                                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Theme.of(context).colorScheme.onSurface,
+                                                ),
+                                              ),
+                                              if (_totalSpotsInView != null && _bestShownCount != null && _bestShownCount! < _totalSpotsInView!)
                                                 TextSpan(
-                                                  text: _totalSpotsInView != null && _bestShownCount != null
-                                                      ? '$_totalSpotsInView spots'
-                                                      : '${_visibleSpots.length} ${_visibleSpots.length == 1 ? 'spot' : 'spots'} found',
+                                                  text: ' ($_bestShownCount best shown)',
                                                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                                    fontWeight: FontWeight.bold,
-                                                    color: Theme.of(context).colorScheme.onSurface,
+                                                    fontWeight: FontWeight.normal,
+                                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                                                   ),
                                                 ),
-                                                if (_totalSpotsInView != null && _bestShownCount != null && _bestShownCount! < _totalSpotsInView!)
-                                                  TextSpan(
-                                                    text: ' ($_bestShownCount best shown)',
-                                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                                      fontWeight: FontWeight.normal,
-                                                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                                                    ),
-                                                  ),
-                                              ],
-                                            ),
+                                            ],
                                           ),
                                         ),
-                                      ),
-                                      Align(
-                                        alignment: Alignment.centerRight,
-                                        child: IconButton(
-                                          onPressed: _toggleBottomSheet,
-                                          tooltip: _isBottomSheetOpen ? 'Collapse' : 'Expand',
-                                          icon: ReliableIcon(
-                                            icon: _isBottomSheetOpen ? Icons.expand_more : Icons.expand_less,
-                                          ),
+                                        const SizedBox(width: 8),
+                                        ReliableIcon(
+                                          icon: _isBottomSheetOpen ? Icons.expand_more : Icons.expand_less,
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
