@@ -68,10 +68,8 @@ This key should have at least the following APIs enabled:
 The Flutter client calls callable functions `placesAutocomplete`, `placeDetails`, `geocodeCoordinates`, and `reverseGeocodeAddress`, which proxy Google APIs securely using the backend key.
 
 ### 4. **Run the App Locally**
-```bash
-# Run local development server
-./scripts/run_local.sh
-```
+
+See the [Local Development](#local-development) section below for detailed instructions on running the app with either Firebase production instance or emulators.
 
 ## 🛠️ Development
 
@@ -84,10 +82,23 @@ The Flutter client calls callable functions `placesAutocomplete`, `placeDetails`
 ### **Common Workflows**
 
 #### **Local Development**
+
+**With Firebase Production Instance:**
 ```bash
-# Run the app locally
+# Run the app locally (requires Firebase project access)
 ./scripts/run_local.sh
 ```
+
+**With Firebase Emulators:**
+```bash
+# Terminal 1: Start Firebase emulators
+./scripts/start_emulators.sh
+
+# Terminal 2: Run the app with emulators
+./scripts/run_local_with_emulators.sh
+```
+
+**⚠️ Note**: The emulator workflow currently has CORS issues between the Flutter app and emulator cloud functions. This is a known issue being worked on.
 
 #### **Production Build**
 ```bash
