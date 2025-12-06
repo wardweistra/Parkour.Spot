@@ -45,25 +45,31 @@ Future<void> _connectToEmulators() async {
   // Note: For web, we use 127.0.0.1 to match emulator URLs. For other platforms, use 10.0.2.2 for Android emulator
   const host = '127.0.0.1';
   
+  // Emulator port configuration
+  const firestorePort = 8082;
+  const authPort = 9099;
+  const storagePort = 9199;
+  const functionsPort = 5001;
+  
   try {
     // Connect Firestore emulator
-    FirebaseFirestore.instance.useFirestoreEmulator(host, 8082);
+    FirebaseFirestore.instance.useFirestoreEmulator(host, firestorePort);
     
     // Connect Auth emulator
-    await FirebaseAuth.instance.useAuthEmulator(host, 9099);
+    await FirebaseAuth.instance.useAuthEmulator(host, authPort);
     
     // Connect Storage emulator
-    FirebaseStorage.instance.useStorageEmulator(host, 9199);
+    FirebaseStorage.instance.useStorageEmulator(host, storagePort);
     
     // Connect Functions emulator
     FirebaseFunctions.instanceFor(region: 'europe-west1')
-        .useFunctionsEmulator(host, 5001);
+        .useFunctionsEmulator(host, functionsPort);
     
     debugPrint('✅ Connected to Firebase Emulators');
-    debugPrint('   - Firestore: $host:8082');
-    debugPrint('   - Auth: $host:9099');
-    debugPrint('   - Storage: $host:9199');
-    debugPrint('   - Functions: $host:5001');
+    debugPrint('   - Firestore: $host:$firestorePort');
+    debugPrint('   - Auth: $host:$authPort');
+    debugPrint('   - Storage: $host:$storagePort');
+    debugPrint('   - Functions: $host:$functionsPort');
   } catch (e) {
     debugPrint('⚠️  Error connecting to emulators: $e');
     debugPrint('   Make sure Firebase emulators are running!');

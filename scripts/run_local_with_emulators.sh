@@ -42,9 +42,12 @@ echo "⚠️  Remember: This workflow currently has CORS issues with cloud funct
 echo ""
 read -p "Press Enter when emulators are running, or Ctrl+C to cancel..."
 
+# Port configuration
+WEB_PORT=8080
+
 # Run Flutter web with dart-define and USE_EMULATOR flag
-echo "🌐 Starting Flutter web server on port 8080..."
-flutter run -d web-server --web-port 8080 \
+echo "🌐 Starting Flutter web server on port $WEB_PORT..."
+flutter run -d web-server --web-port $WEB_PORT \
   --dart-define=USE_EMULATOR=true \
   --dart-define=FIREBASE_API_KEY="$FIREBASE_API_KEY" \
   --dart-define=FIREBASE_APP_ID_WEB="$FIREBASE_APP_ID_WEB" \

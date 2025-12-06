@@ -24,9 +24,12 @@ done
 
 echo "✅ Environment variables loaded"
 
+# Port configuration
+WEB_PORT=8080
+
 # Run Flutter web with dart-define
-echo "🌐 Starting Flutter web server on port 8080..."
-flutter run -d web-server --web-port 8080 \
+echo "🌐 Starting Flutter web server on port $WEB_PORT..."
+flutter run -d web-server --web-port $WEB_PORT \
   --dart-define=FIREBASE_API_KEY="$FIREBASE_API_KEY" \
   --dart-define=FIREBASE_APP_ID_WEB="$FIREBASE_APP_ID_WEB" \
   --dart-define=FIREBASE_MESSAGING_SENDER_ID="$FIREBASE_MESSAGING_SENDER_ID" \
