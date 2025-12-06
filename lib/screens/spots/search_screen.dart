@@ -1421,22 +1421,27 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
               // Top Search Bar
               Positioned(
                 top: MediaQuery.of(context).padding.top + 16,
-                left: 16,
-                right: 16,
-                child: PointerInterceptor(
-                  child: Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1200),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: PointerInterceptor(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.1),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Autocomplete<Map<String, dynamic>>(
@@ -1774,8 +1779,11 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                     ],
                   ),
                 ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
 
               // Location Loading Indicator
               if (_isGettingLocation)
@@ -1990,20 +1998,23 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                         onPanStart: _handleDragStart, // Always enable drag gestures
                         onPanUpdate: _handleDragUpdate,
                         onPanEnd: _handleDragEnd,
-                        child: Container(
-                          height: MediaQuery.of(context).size.height * _bottomSheetAnimation.value,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surface,
-                            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 8,
-                                offset: const Offset(0, -2),
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 1200),
+                            child: Container(
+                              height: MediaQuery.of(context).size.height * _bottomSheetAnimation.value,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.surface,
+                                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.1),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, -2),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                          child: Column(
+                              child: Column(
                             children: [
                               // Header with spot count
                               Padding(
@@ -2090,6 +2101,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                       : _buildSpotsList(),
                                 ),
                             ],
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -2100,9 +2113,13 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
 
               // Refresh Spots Button - Floating Action Button
               if (!_isBottomSheetOpen && _selectedSpot == null)
-                Positioned(
-                  right: 16,
-                  bottom: MediaQuery.of(context).size.height * 0.09 + 144, // Position above map/satellite button
+                Builder(
+                  builder: (context) {
+                    final screenWidth = MediaQuery.of(context).size.width;
+                    final rightPosition = screenWidth > 1200 ? (screenWidth - 1200) / 2 + 16 : 16.0;
+                    return Positioned(
+                      right: rightPosition,
+                      bottom: MediaQuery.of(context).size.height * 0.09 + 144, // Position above map/satellite button
                   child: PointerInterceptor(
                     child: FloatingActionButton(
                       onPressed: _isLoadingSpotsForView ? null : () {
@@ -2125,13 +2142,19 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                             ),
                     ),
                   ),
+                    );
+                  },
                 ),
 
               // Map Type Toggle Button - Floating Action Button
               if (!_isBottomSheetOpen && _selectedSpot == null)
-                Positioned(
-                  right: 16,
-                  bottom: MediaQuery.of(context).size.height * 0.09 + 80, // Position above location button
+                Builder(
+                  builder: (context) {
+                    final screenWidth = MediaQuery.of(context).size.width;
+                    final rightPosition = screenWidth > 1200 ? (screenWidth - 1200) / 2 + 16 : 16.0;
+                    return Positioned(
+                      right: rightPosition,
+                      bottom: MediaQuery.of(context).size.height * 0.09 + 80, // Position above location button
                   child: PointerInterceptor(
                     child: FloatingActionButton(
                       onPressed: () {
@@ -2149,13 +2172,19 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                       ),
                     ),
                   ),
+                    );
+                  },
                 ),
 
               // Location Button - Floating Action Button (only show when bottom sheet is collapsed and no spot selected)
               if (!_isBottomSheetOpen && _selectedSpot == null)
-                Positioned(
-                  right: 16,
-                  bottom: MediaQuery.of(context).size.height * 0.09 + 16, // Position above bottom sheet
+                Builder(
+                  builder: (context) {
+                    final screenWidth = MediaQuery.of(context).size.width;
+                    final rightPosition = screenWidth > 1200 ? (screenWidth - 1200) / 2 + 16 : 16.0;
+                    return Positioned(
+                      right: rightPosition,
+                      bottom: MediaQuery.of(context).size.height * 0.09 + 16, // Position above bottom sheet
                   child: PointerInterceptor(
                     child: FloatingActionButton(
                       onPressed: _getCurrentLocation,
@@ -2174,6 +2203,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                           : const Icon(Icons.my_location),
                     ),
                   ),
+                    );
+                  },
                 ),
             ],
           );
@@ -2205,12 +2236,16 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
               onTap: () {
                 // Prevent dialog from closing when tapping inside
               },
-              child: Container(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.8,
-                maxWidth: MediaQuery.of(context).size.width * 0.9,
-              ),
-              decoration: BoxDecoration(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: 1200,
+                ),
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(context).size.height * 0.8,
+                    maxWidth: MediaQuery.of(context).size.width * 0.9,
+                  ),
+                  decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
@@ -2304,7 +2339,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
             ),
                 ],
               ),
-            ),
+                ),
+              ),
             ),
           ),
         ),
