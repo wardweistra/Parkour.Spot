@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:web/web.dart' as web;
 
 import '../services/auth_service.dart';
+import '../widgets/custom_button.dart';
 import 'spots/search_screen.dart';
 import 'spots/add_spot_screen.dart';
 import 'profile/profile_screen.dart';
@@ -260,61 +261,99 @@ class _ExploreScreenState extends State<ExploreScreen> {
         backgroundColor: Theme.of(context).colorScheme.surface,
         foregroundColor: Theme.of(context).colorScheme.onSurface,
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 80,
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                title,
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1200),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Sign In Prompt Card
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      children: [
+                        Icon(
+                          icon,
+                          size: 48,
+                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Sign in to add a spot',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          description,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 400),
+                            child: CustomButton(
+                              onPressed: () {
+                                context.go('/login?redirectTo=${Uri.encodeComponent('/explore?tab=add')}');
+                              },
+                              text: 'Sign In',
+                              width: double.infinity,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        // OR divider
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Divider(
+                                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: Text(
+                                'OR',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Divider(
+                                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 400),
+                            child: CustomButton(
+                              onPressed: () {
+                                context.go('/login?mode=signup&redirectTo=${Uri.encodeComponent('/explore?tab=add')}');
+                              },
+                              text: 'Create an Account',
+                              width: double.infinity,
+                              isOutlined: true,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                description,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-              ElevatedButton.icon(
-                onPressed: () {
-                  context.go('/login?redirectTo=${Uri.encodeComponent('/explore?tab=profile')}');
-                },
-                icon: const Icon(Icons.login),
-                label: const Text('Login to Continue'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextButton(
-                onPressed: () {
-                  // Go back to spots list
-                  setState(() {
-                    _currentIndex = 0;
-                  });
-                  _pageController.animateToPage(
-                    0,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                  );
-                  context.go('/explore');
-                },
-                child: const Text('Continue Browsing'),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

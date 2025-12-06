@@ -393,7 +393,15 @@ class _LoginScreenState extends State<LoginScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            context.go('/explore?tab=profile');
+            // Check if we can pop back to a previous page
+            if (Navigator.canPop(context)) {
+              // If there's a previous page, go back to it
+              Navigator.pop(context);
+            } else {
+              // If no previous page (direct link), use intended destination or default to explore
+              final destination = _intendedDestination ?? '/explore';
+              context.go(destination);
+            }
           },
         ),
         elevation: 0,
