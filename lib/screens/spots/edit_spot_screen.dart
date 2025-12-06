@@ -610,9 +610,12 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
             key: _formKey,
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1200),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
                   // Warning banner for admins editing spot-source spots
                   if (widget.spot.spotSource != null && authService.isAdmin && !_warningDismissed)
                     Card(
@@ -864,7 +867,9 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
                     text: _isLoading ? 'Saving...' : 'Update Spot',
                     icon: Icons.save,
                   ),
-                ],
+                    ],
+                  ),
+                ),
               ),
             ),
           ),

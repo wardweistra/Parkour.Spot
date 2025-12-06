@@ -1030,9 +1030,12 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1200),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                     // Title and Rating
                     Row(
                       children: [
@@ -2362,7 +2365,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     ],
 
                     const SizedBox(height: 32),
-                  ],
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),

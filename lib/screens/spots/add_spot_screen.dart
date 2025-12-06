@@ -421,9 +421,12 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
         key: _formKey,
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1200),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
               // Location Section
               SpotLocationSection(
                 currentLocation: _pickedLocation != null 
@@ -546,8 +549,10 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
                 icon: Icons.add_location,
             ),
           ],
+              ),
+            ),
+          ),
         ),
-      ),
       ),
     );
   }
