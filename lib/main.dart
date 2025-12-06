@@ -42,8 +42,8 @@ void main() async {
 
 /// Connect Firebase services to local emulators
 Future<void> _connectToEmulators() async {
-  // Note: For web, we use localhost. For other platforms, use 10.0.2.2 for Android emulator
-  const host = 'localhost';
+  // Note: For web, we use 127.0.0.1 to match emulator URLs. For other platforms, use 10.0.2.2 for Android emulator
+  const host = '127.0.0.1';
   
   try {
     // Connect Firestore emulator

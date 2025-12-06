@@ -21,9 +21,9 @@ if [ ! -f ".env.emulator" ]; then
 FIREBASE_API_KEY=dummy-api-key-for-emulator
 FIREBASE_APP_ID_WEB=1:123456789:web:abcdef
 FIREBASE_MESSAGING_SENDER_ID=123456789
-FIREBASE_PROJECT_ID=demo-parkour-spot
+FIREBASE_PROJECT_ID=parkourspot-93c90
 FIREBASE_AUTH_DOMAIN=localhost
-FIREBASE_STORAGE_BUCKET=demo-parkour-spot.firebasestorage.app
+FIREBASE_STORAGE_BUCKET=parkourspot-93c90.firebasestorage.app
 FIREBASE_MEASUREMENT_ID=G-XXXXXXXXXX
 EOF
     echo "✅ Created .env.emulator file"
