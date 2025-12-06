@@ -74,6 +74,7 @@ hosting/.cache
 /firebase-*.zip
 /.firebase/
 /emulator-ui/
+/.firebase/emulator-data/
 
 # Firebase Configuration Files (CRITICAL - Contains API Keys)
 **/google-services.json

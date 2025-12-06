@@ -33,6 +33,7 @@ The setup script will:
 - Install Flutter dependencies
 - Initialize Firebase project
 - Configure FlutterFire
+- Initialize emulator seed data (for local development)
 
 ### 3. **Environment Configuration**
 ```bash
@@ -98,6 +99,8 @@ See the [Local Development](#local-development) section below for detailed instr
 ./scripts/run_local_with_emulators.sh
 ```
 
+**🌱 Emulator Seed Data**: When you start emulators for the first time, seed data from `scripts/seed-data/` is automatically copied to `.firebase/emulator-data/`. This gives you a working dataset with test users, spots, and other sample data to develop with. Your changes are automatically saved when you stop the emulators.
+
 **⚠️ Note**: The emulator workflow currently has CORS issues between the Flutter app and emulator cloud functions. This is a known issue being worked on.
 
 #### **Production Build**
@@ -123,6 +126,30 @@ firebase deploy --only firestore:indexes
 # Development build
 ./scripts/build_development.sh
 ```
+
+### **Emulator Data Management**
+
+The project includes seed data for Firebase emulators to help new developers get started quickly.
+
+**Available Scripts:**
+```bash
+# Reset emulator data to seed data
+./scripts/clear_emulator_data.sh
+
+# Update seed data from current emulator data
+./scripts/update_seed_data.sh
+
+# Export emulator data manually (if needed)
+./scripts/export_emulator_data.sh
+```
+
+**How It Works:**
+- **Seed Data**: Located in `scripts/seed-data/`, this is committed to the repository and provides initial test data
+- **Emulator Data**: Located in `.firebase/emulator-data/` (gitignored), this is your local development data
+- **Auto-Initialization**: When you run `./scripts/start_emulators.sh` for the first time, seed data is automatically copied to emulator data
+- **Auto-Export**: When you stop emulators (Ctrl+C), your data is automatically exported to `.firebase/emulator-data/`
+- **Reset**: Use `./scripts/clear_emulator_data.sh` to reset your emulator data back to seed data
+- **Update Seed**: Use `./scripts/update_seed_data.sh` to update the seed data that new developers will receive
 
 ### **Testing**
 ```bash
