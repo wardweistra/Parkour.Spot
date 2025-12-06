@@ -149,17 +149,6 @@ The project includes seed data for Firebase emulators to help new developers get
 - **Reset**: Use `./scripts/clear_emulator_data.sh` to reset your emulator data back to seed data
 - **Update Seed**: Use `./scripts/update_seed_data.sh` to update the seed data that new developers will receive
 
-### **Testing**
-```bash
-# All tests
-flutter test
-
-# With coverage
-flutter test --coverage
-```
-
-**Note**: Currently there are no tests implemented.
-
 ## 🚀 Building & Deployment
 
 > **Note**: For common workflows, see the [Common Workflows](#common-workflows) section above.
