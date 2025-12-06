@@ -16,6 +16,7 @@ import '../../services/search_state_service.dart';
 import '../../widgets/source_details_dialog.dart';
 import '../../widgets/spot_selection_dialog.dart';
 import '../../widgets/moderator_action_fields.dart';
+import '../../widgets/custom_button.dart';
 import '../../constants/spot_attributes.dart';
 import '../../services/snackbar_service.dart';
 import '../../utils/image_url_utils.dart';
@@ -2080,55 +2081,101 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                           );
                         } else {
                           // Show login prompt for unauthenticated users
+                          // Get current location for redirect, or construct spot URL
+                          String redirectUrl;
+                          try {
+                            final routerState = GoRouterState.of(context);
+                            redirectUrl = routerState.uri.toString();
+                          } catch (e) {
+                            // Fallback: construct URL from spot data
+                            if (widget.spot.id != null && 
+                                widget.spot.countryCode != null && 
+                                widget.spot.city != null) {
+                              redirectUrl = '/${widget.spot.countryCode!.toLowerCase()}/${Uri.encodeComponent(widget.spot.city!.toLowerCase().replaceAll(' ', '-'))}/${widget.spot.id}';
+                            } else {
+                              redirectUrl = '/explore';
+                            }
+                          }
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Card(
                                 child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
+                                  padding: const EdgeInsets.all(24.0),
                                   child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
                                     children: [
+                                      Icon(
+                                        Icons.star_outline,
+                                        size: 48,
+                                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
+                                      ),
+                                      const SizedBox(height: 16),
                                       Text(
-                                        'Rate this spot',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w600,
-                                            ),
+                                        'Sign in to rate this spot',
+                                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        textAlign: TextAlign.center,
                                       ),
                                       const SizedBox(height: 8),
                                       Text(
-                                        'Login to rate this spot and help other parkour enthusiasts',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodyMedium
-                                            ?.copyWith(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurface
-                                                  .withValues(alpha: 0.7),
-                                            ),
+                                        'Sign in to rate this spot and help other parkour enthusiasts.',
+                                        textAlign: TextAlign.center,
+                                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                        ),
                                       ),
                                       const SizedBox(height: 16),
+                                      Center(
+                                        child: ConstrainedBox(
+                                          constraints: const BoxConstraints(maxWidth: 400),
+                                          child: CustomButton(
+                                            onPressed: () {
+                                              context.go('/login?redirectTo=${Uri.encodeComponent(redirectUrl)}');
+                                            },
+                                            text: 'Sign In',
+                                            width: double.infinity,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      // OR divider
                                       Row(
                                         children: [
                                           Expanded(
-                                            child: ElevatedButton.icon(
-                                              onPressed: () {
-                                                context.go(
-                                                  '/login?redirectTo=${Uri.encodeComponent('/spot/${widget.spot.id}')}',
-                                                );
-                                              },
-                                              icon: const Icon(Icons.login),
-                                              label: const Text(
-                                                'Login to Rate',
+                                            child: Divider(
+                                              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                                            ),
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                                            child: Text(
+                                              'OR',
+                                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                                               ),
                                             ),
                                           ),
+                                          Expanded(
+                                            child: Divider(
+                                              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                                            ),
+                                          ),
                                         ],
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Center(
+                                        child: ConstrainedBox(
+                                          constraints: const BoxConstraints(maxWidth: 400),
+                                          child: CustomButton(
+                                            onPressed: () {
+                                              context.go('/login?mode=signup&redirectTo=${Uri.encodeComponent(redirectUrl)}');
+                                            },
+                                            text: 'Create an Account',
+                                            width: double.infinity,
+                                            isOutlined: true,
+                                          ),
+                                        ),
                                       ),
                                     ],
                                   ),
