@@ -14,15 +14,23 @@ A cross-platform Flutter application for discovering, reporting, and rating park
 - **📱 Progressive Web App** - Works on Web, Mobile, and Desktop via Progressive Web App
 - **☁️ Cloud Backend** - Firebase-powered with real-time data sync
 
-## 🚀 Quick Start
+## 🚀 Development
 
-### 1. **Clone the Repository**
+### **Prerequisites**
+- **Flutter SDK**: 3.9.0 or higher
+- **Dart SDK**: 3.9.0 or higher
+- **Firebase CLI**: Latest version
+- **Node.js**: 18.0.0 or higher
+
+### **Setup**
+
+#### 1. **Clone the Repository**
 ```bash
 git clone <your-repo-url>
 cd Parkour.Spot
 ```
 
-### 2. **Run Setup Script**
+#### 2. **Run Setup Script**
 ```bash
 chmod +x setup.sh
 ./setup.sh
@@ -35,7 +43,29 @@ The setup script will:
 - Configure FlutterFire
 - Initialize emulator seed data (for local development)
 
-### 3. **Environment Configuration**
+### **Local Development**
+
+There are two development flows depending on whether you have access to the production Firebase project:
+
+#### **Option 1: Using Firebase Emulators (Recommended for Most Developers)**
+
+This is the recommended approach for most developers. No Firebase production access required.
+
+```bash
+# Terminal 1: Start Firebase emulators
+./scripts/start_emulators.sh
+
+# Terminal 2: Run the app with emulators
+./scripts/run_local_with_emulators.sh
+```
+
+**🌱 Emulator Seed Data**: When you start emulators for the first time, seed data from `scripts/seed-data/` is automatically copied to `.firebase/emulator-data/`. This gives you a working dataset with test users, spots, and other sample data to develop with. Your changes are automatically saved when you stop the emulators.
+
+#### **Option 2: Using Firebase Production Instance**
+
+**Only for developers with access to the production Firebase project.**
+
+1. **Environment Configuration**
 ```bash
 cp env.example .env
 # Edit .env with your Firebase configuration
@@ -53,7 +83,12 @@ FIREBASE_STORAGE_BUCKET=your_project_id.firebasestorage.app
 FIREBASE_MEASUREMENT_ID=your_measurement_id_here
 ```
 
-### Backend Google Maps API key
+2. **Run the App**
+```bash
+./scripts/run_local.sh
+```
+
+### **Backend Google Maps API Key**
 
 The autocomplete and geocoding features use a server-side Google Maps API key via Firebase Functions secrets. Make sure to set the secret in your Firebase project:
 
@@ -68,38 +103,7 @@ This key should have at least the following APIs enabled:
 
 The Flutter client calls callable functions `placesAutocomplete`, `placeDetails`, `geocodeCoordinates`, and `reverseGeocodeAddress`, which proxy Google APIs securely using the backend key.
 
-### 4. **Run the App Locally**
-
-See the [Local Development](#local-development) section below for detailed instructions on running the app with either Firebase production instance or emulators.
-
-## 🛠️ Development
-
-### **Prerequisites**
-- **Flutter SDK**: 3.9.0 or higher
-- **Dart SDK**: 3.9.0 or higher
-- **Firebase CLI**: Latest version
-- **Node.js**: 18.0.0 or higher
-
 ### **Common Workflows**
-
-#### **Local Development**
-
-**With Firebase Production Instance:**
-```bash
-# Run the app locally (requires Firebase project access)
-./scripts/run_local.sh
-```
-
-**With Firebase Emulators:**
-```bash
-# Terminal 1: Start Firebase emulators
-./scripts/start_emulators.sh
-
-# Terminal 2: Run the app with emulators
-./scripts/run_local_with_emulators.sh
-```
-
-**🌱 Emulator Seed Data**: When you start emulators for the first time, seed data from `scripts/seed-data/` is automatically copied to `.firebase/emulator-data/`. This gives you a working dataset with test users, spots, and other sample data to develop with. Your changes are automatically saved when you stop the emulators.
 
 #### **Production Build**
 ```bash
