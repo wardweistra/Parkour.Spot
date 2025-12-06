@@ -85,7 +85,7 @@ FIREBASE_MEASUREMENT_ID=your_measurement_id_here
 
 2. **Run the App**
 ```bash
-./scripts/run_local.sh
+./scripts/run_production.sh
 ```
 
 ### **Backend Google Maps API Key**
