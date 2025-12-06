@@ -412,7 +412,8 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add New Spot'),
+        title: const SizedBox.shrink(),
+        toolbarHeight: 0,
         elevation: 0,
         backgroundColor: Theme.of(context).colorScheme.surface,
         foregroundColor: Theme.of(context).colorScheme.onSurface,

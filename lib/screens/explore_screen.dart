@@ -256,7 +256,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
   Widget _buildLoginPromptScreen(String title, String description, IconData icon) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(title),
+        title: const SizedBox.shrink(),
+        toolbarHeight: 0,
         elevation: 0,
         backgroundColor: Theme.of(context).colorScheme.surface,
         foregroundColor: Theme.of(context).colorScheme.onSurface,

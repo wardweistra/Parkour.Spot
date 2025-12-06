@@ -25,7 +25,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: const SizedBox.shrink(),
+        toolbarHeight: 0,
         elevation: 0,
         backgroundColor: Theme.of(context).colorScheme.surface,
         foregroundColor: Theme.of(context).colorScheme.onSurface,
@@ -51,16 +52,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // App Info Card
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: _buildAboutSection(context),
-                ),
-              ),
-              
-              const SizedBox(height: 16),
-              
               // Sign In Prompt
               Card(
                 child: Padding(
@@ -82,7 +73,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Sign in to manage your spots, rate locations, and save favorites.',
+                        'Sign in to manage your spots and rate locations.',
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
@@ -142,6 +133,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ],
                   ),
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // App Info Card
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: _buildAboutSection(context),
                 ),
               ),
             ],
