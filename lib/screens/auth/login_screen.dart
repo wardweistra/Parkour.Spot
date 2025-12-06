@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/custom_button.dart';
@@ -24,6 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _intendedDestination;
   bool _hasCapturedDestination = false;
   bool _hasRedirected = false;
+  bool _hasSetMode = false;
 
   Future<void> _showForgotPasswordDialog() async {
     final emailController = TextEditingController(text: _emailController.text.trim());
@@ -161,6 +163,23 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_hasCapturedDestination) {
       _captureIntendedDestination();
       _hasCapturedDestination = true;
+    }
+    
+    // Check for mode query parameter to set sign up mode (only once)
+    if (!_hasSetMode) {
+      try {
+        final routerState = GoRouterState.of(context);
+        final mode = routerState.uri.queryParameters['mode'];
+        if (mode == 'signup' && _isLogin) {
+          setState(() {
+            _isLogin = false;
+          });
+        }
+        _hasSetMode = true;
+      } catch (e) {
+        // Ignore errors
+        _hasSetMode = true;
+      }
     }
   }
 
@@ -370,77 +389,88 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            context.go('/explore?tab=profile');
+          },
+        ),
+        elevation: 0,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
+      ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // App Logo and Title
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Icon(
-                      Icons.park,
-                      size: 60,
-                      color: Colors.white,
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 24),
-                  
-                  Text(
-                    'Parkour·Spot',
-                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 8),
-                  
-                  Text(
-                    _isLogin ? 'Welcome back!' : 'Create your account',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 32),
-                  
-                  // Google Sign-In Button
-                  OutlinedButton.icon(
-                    onPressed: (_isLoading || _isGoogleSignInLoading) ? null : _signInWithGoogle,
-                    icon: _isGoogleSignInLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.g_mobiledata, size: 24),
-                    label: Text(
-                      _isGoogleSignInLoading ? 'Signing in...' : 'Continue with Google',
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 500),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // App Logo
+                      Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 400),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: AspectRatio(
+                              aspectRatio: 2773 / 646, // From SVG viewBox
+                              child: SvgPicture.asset(
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? 'assets/images/logo-with-text-dark.svg'
+                                    : 'assets/images/logo-with-text.svg',
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
-                      side: BorderSide(
-                        color: Theme.of(context).colorScheme.outline,
+                      
+                      const SizedBox(height: 32),
+                      
+                      Text(
+                        _isLogin ? 'Welcome back!' : 'Create your account',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                        ),
                       ),
-                    ),
-                  ),
+                      
+                      const SizedBox(height: 32),
+                      
+                      // Google Sign-In Button
+                      ElevatedButton.icon(
+                        onPressed: (_isLoading || _isGoogleSignInLoading) ? null : _signInWithGoogle,
+                        icon: _isGoogleSignInLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Icon(Icons.g_mobiledata, size: 24, color: Colors.white),
+                        label: Text(
+                          _isGoogleSignInLoading ? 'Signing in...' : 'Continue with Google',
+                          style: const TextStyle(fontSize: 16, color: Colors.white),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFEA4335), // Google red
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 2,
+                        ),
+                      ),
                   
                   const SizedBox(height: 24),
                   
@@ -572,9 +602,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ],
               ),
+              ),
             ),
           ),
         ),
+      ),
       ),
     );
   }
