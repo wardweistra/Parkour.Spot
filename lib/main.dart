@@ -18,6 +18,7 @@ import 'package:parkour_spot/router/app_router.dart';
 import 'package:parkour_spot/firebase_options.dart';
 import 'package:parkour_spot/config/app_config.dart';
 import 'package:web/web.dart' as web;
+import 'package:google_fonts/google_fonts.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -108,6 +109,7 @@ class ParkourSpotApp extends StatelessWidget {
             seedColor: const Color(0xFF007FA8),
             brightness: Brightness.light,
           ),
+          textTheme: GoogleFonts.fredokaTextTheme(),
         ),
         darkTheme: ThemeData(
           useMaterial3: true,
@@ -115,6 +117,7 @@ class ParkourSpotApp extends StatelessWidget {
             seedColor: const Color(0xFF007FA8),
             brightness: Brightness.dark,
           ),
+          textTheme: GoogleFonts.fredokaTextTheme(ThemeData.dark().textTheme),
         ),
         debugShowCheckedModeBanner: false,
       ),
