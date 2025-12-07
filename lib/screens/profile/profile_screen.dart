@@ -3,7 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:lottie/lottie.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/instagram_button.dart';
@@ -18,8 +18,37 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderStateMixin {
   bool _isExpanded = false;
+  late AnimationController _lottieController;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize with a default duration, will be updated when Lottie loads
+    _lottieController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    );
+  }
+
+  @override
+  void dispose() {
+    _lottieController.dispose();
+    super.dispose();
+  }
+
+  void _handleLottieTap() {
+    if (_lottieController.isAnimating) {
+      // Restart animation if already playing
+      _lottieController.reset();
+      _lottieController.forward();
+    } else {
+      // Reset and start animation (handles both initial state and completed state)
+      _lottieController.reset();
+      _lottieController.forward();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -427,11 +456,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       width: double.infinity,
                       child: AspectRatio(
                         aspectRatio: 2773 / 646, // From SVG viewBox
-                        child: SvgPicture.asset(
-                          Theme.of(context).brightness == Brightness.dark
-                              ? 'assets/images/logo-with-text-dark.svg'
-                              : 'assets/images/logo-with-text.svg',
-                          fit: BoxFit.contain,
+                        child: GestureDetector(
+                          onTap: _handleLottieTap,
+                          child: Lottie.asset(
+                            Theme.of(context).brightness == Brightness.dark
+                                ? 'assets/images/lottie-dark.json'
+                                : 'assets/images/lottie.json',
+                            controller: _lottieController,
+                            fit: BoxFit.contain,
+                            repeat: false,
+                            animate: false,
+                            onLoaded: (composition) {
+                              // Update controller duration based on loaded composition
+                              _lottieController.duration = composition.duration;
+                            },
+                          ),
                         ),
                       ),
                     ),
