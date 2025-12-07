@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:web/web.dart' as web;
+import 'package:lottie/lottie.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -12,10 +13,8 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
   late AnimationController _animationController;
-  late AnimationController _rotationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
-  late Animation<double> _rotationAnimation;
   
   // Array of inspirational messages
   static const List<String> _messages = [
@@ -39,12 +38,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       vsync: this,
     );
     
-    // Rotation controller for continuous rotation
-    _rotationController = AnimationController(
-      duration: const Duration(seconds: 3),
-      vsync: this,
-    )..repeat(); // Repeat the rotation indefinitely
-    
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
@@ -58,15 +51,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       end: 1.0,
     ).animate(CurvedAnimation(
       parent: _animationController,
-      curve: Curves.elasticOut,
-    ));
-    
-    // Rotation animation: 0.0 = 0 turns, 1.0 = 1 full turn (360 degrees)
-    _rotationAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _rotationController,
       curve: Curves.elasticOut,
     ));
     
@@ -146,7 +130,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   @override
   void dispose() {
     _animationController.dispose();
-    _rotationController.dispose();
     super.dispose();
   }
 
@@ -156,7 +139,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       backgroundColor: Theme.of(context).colorScheme.primary,
       body: Center(
         child: AnimatedBuilder(
-          animation: Listenable.merge([_animationController, _rotationController]),
+          animation: _animationController,
           builder: (context, child) {
             return FadeTransition(
               opacity: _fadeAnimation,
@@ -165,32 +148,15 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Stack of two images with rotation
+                    // Lottie logo animation
                     SizedBox(
                       width: 240,
                       height: 240,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          // Background image (static)
-                          Image.asset(
-                            'assets/images/splash_background.png',
-                            width: 240,
-                            height: 240,
-                            fit: BoxFit.contain,
-                          ),
-                          // Rotating image on top
-                          RotationTransition(
-                            turns: _rotationAnimation,
-                            alignment: Alignment.center,
-                            child: Image.asset(
-                              'assets/images/splash_rotating.png',
-                              width: 240,
-                              height: 240,
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                        ],
+                      child: Lottie.asset(
+                        'assets/images/lottie-logo-only.json',
+                        fit: BoxFit.contain,
+                        repeat: true,
+                        animate: true,
                       ),
                     ),
                     
