@@ -2344,6 +2344,39 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             trailing: const Icon(Icons.info_outline, size: 16),
                           ),
                         ),
+                        const SizedBox(height: 8),
+                      ],
+                      if (widget.spot.spotSourceRemoved) ...[
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.5),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.error.withValues(alpha: 0.6),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.warning_amber_rounded,
+                                color: Theme.of(context).colorScheme.error,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'This spot is no longer listed in ${widget.spot.spotSourceName ?? 'its original source'}. Details might be outdated, so double-check before visiting.',
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                        color: Theme.of(context).colorScheme.onErrorContainer,
+                                      ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                       if (widget.spot.createdAt != null) ...[
                         ListTile(

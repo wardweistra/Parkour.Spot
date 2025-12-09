@@ -2361,7 +2361,12 @@ async function processSyncSource(source, sourceId, apiKey) {
   let updated = 0;
   let geocoded = 0;
   let geocodingFailed = 0;
+  let removed = 0;
   const skipped = 0;
+  const processedSpotIds = new Set();
+  const addedSpotSummaries = [];
+  const updatedSpotSummaries = [];
+  const removedSpotSummaries = [];
 
   // Collect all unique folder names from successfully processed spots if recordFolderName is enabled
   const allFolders = new Set();
@@ -2545,6 +2550,8 @@ async function processSyncSource(source, sourceId, apiKey) {
       countryCode: countryCode,
       spotSource: sourceId,
       spotSourceName: source.name,
+      spotSourceRemoved: false,
+      spotSourceRemovedAt: admin.firestore.FieldValue.delete(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
@@ -2583,8 +2590,13 @@ async function processSyncSource(source, sourceId, apiKey) {
       spotData.duplicateOf = null; // Initialize duplicateOf field
       spotData.hidden = false; // Initialize hidden field
       spotData.createdAt = admin.firestore.FieldValue.serverTimestamp();
-      await db.collection("spots").add(cleanUndefinedValues(spotData));
+      const newSpotRef = await db.collection("spots").add(cleanUndefinedValues(spotData));
       created++;
+      processedSpotIds.add(newSpotRef.id);
+      addedSpotSummaries.push({
+        id: newSpotRef.id,
+        name: spotData.name,
+      });
       console.log(
           `Created new spot: ${name} from source: ${source.name} with ${imageResult.imageUrls.length} images and geocoded address`,
       );
@@ -2617,6 +2629,11 @@ async function processSyncSource(source, sourceId, apiKey) {
       }
 
       await existingSpot.ref.update(cleanUndefinedValues(spotData));
+      processedSpotIds.add(existingSpot.id);
+      updatedSpotSummaries.push({
+        id: existingSpot.id,
+        name: spotData.name,
+      });
       updated++;
       console.log(
           `Updated existing spot: ${name} from source: ${source.name} with ${imageResult.imageUrls.length} images (preserved rating: ${existingData.averageRating || 0}, count: ${existingData.ratingCount || 0})`,
@@ -2641,23 +2658,56 @@ async function processSyncSource(source, sourceId, apiKey) {
     }
   }
 
+  // Identify and label spots that were not present in this sync
+  const sourceSpotsSnapshot = await db
+      .collection("spots")
+      .where("spotSource", "==", sourceId)
+      .get();
+
+  for (const doc of sourceSpotsSnapshot.docs) {
+    if (processedSpotIds.has(doc.id)) {
+      continue;
+    }
+
+    const spotRecord = doc.data() || {};
+    if (spotRecord.spotSourceRemoved === true) {
+      continue; // Already labeled as removed
+    }
+
+    await doc.ref.update({
+      spotSourceRemoved: true,
+      spotSourceRemovedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    removed++;
+    removedSpotSummaries.push({
+      id: doc.id,
+      name: spotRecord.name || doc.id,
+    });
+  }
+
+  const geocodingSuccessRate =
+    placemarks.length > 0 ?
+      ((geocoded / placemarks.length) * 100).toFixed(1) + "%" :
+      "0%";
+
+  const stats = {
+    total: placemarks.length,
+    created,
+    updated,
+    removed,
+    skipped,
+    geocoded,
+    geocodingFailed,
+    geocodingSuccessRate,
+  };
+
   // Update source last sync time and folder information
   const sourceDoc = await db.collection("syncSources").doc(sourceId).get();
   if (sourceDoc.exists) {
     const updateData = {
       lastSyncAt: admin.firestore.FieldValue.serverTimestamp(),
-      lastSyncStats: {
-        total: placemarks.length,
-        created: created,
-        updated: updated,
-        skipped: skipped,
-        geocoded: geocoded,
-        geocodingFailed: geocodingFailed,
-        geocodingSuccessRate:
-          placemarks.length > 0 ?
-            ((geocoded / placemarks.length) * 100).toFixed(1) + "%" :
-            "0%",
-      },
+      lastSyncStats: stats,
     };
 
     // Update allFolders if recordFolderName is enabled
@@ -2697,21 +2747,33 @@ async function processSyncSource(source, sourceId, apiKey) {
     await sourceDoc.ref.update(updateData);
   }
 
+  try {
+    await db.collection("auditLog").add({
+      action: "spotSourceSync",
+      spotId: `syncSource:${sourceId}`,
+      userId: null,
+      userName: "Spot Sync Service",
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      metadata: {
+        sourceId: sourceId,
+        sourceName: source.name,
+        stats: stats,
+        addedSpots: addedSpotSummaries,
+        updatedSpots: updatedSpotSummaries,
+        removedSpots: removedSpotSummaries,
+      },
+    });
+  } catch (error) {
+    console.error(
+        `Failed to write audit log entry for source ${sourceId}:`,
+        error,
+    );
+  }
+
   return {
     sourceId: sourceId,
     sourceName: source.name,
-    stats: {
-      total: placemarks.length,
-      created: created,
-      updated: updated,
-      skipped: skipped,
-      geocoded: geocoded,
-      geocodingFailed: geocodingFailed,
-      geocodingSuccessRate:
-        placemarks.length > 0 ?
-          ((geocoded / placemarks.length) * 100).toFixed(1) + "%" :
-          "0%",
-    },
+    stats,
   };
 }
 

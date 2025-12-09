@@ -614,6 +614,67 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
               details = 'Spot permanently deleted';
             }
             break;
+          case AuditLogAction.spotSourceSync:
+            title = 'Spot Source Synced';
+            final syncMetadata = auditLog.metadata ?? {};
+            final sourceName = syncMetadata['sourceName'] as String? ?? 'Unknown source';
+            subtitle = 'Source: $sourceName';
+
+            List<String> _formatSpotList(dynamic value) {
+              if (value is List) {
+                return value
+                    .map((entry) {
+                      if (entry is Map<String, dynamic>) {
+                        final name = (entry['name'] as String?)?.trim();
+                        if (name != null && name.isNotEmpty) {
+                          return name;
+                        }
+                        final id = entry['id'] as String?;
+                        if (id != null && id.isNotEmpty) {
+                          return id;
+                        }
+                      }
+                      if (entry is String) {
+                        return entry;
+                      }
+                      return null;
+                    })
+                    .whereType<String>()
+                    .toList();
+              }
+              return const [];
+            }
+
+            final addedNames = _formatSpotList(syncMetadata['addedSpots']);
+            final updatedNames = _formatSpotList(syncMetadata['updatedSpots']);
+            final removedNames = _formatSpotList(syncMetadata['removedSpots']);
+            final statsMap = syncMetadata['stats'] is Map<String, dynamic>
+                ? Map<String, dynamic>.from(syncMetadata['stats'] as Map)
+                : null;
+
+            final summaryLines = <String>[];
+            if (statsMap != null) {
+              final total = statsMap['total'] ?? 0;
+              final created = statsMap['created'] ?? 0;
+              final updatedCount = statsMap['updated'] ?? 0;
+              final removedCount = statsMap['removed'] ?? 0;
+              summaryLines.add('Total spots in feed: $total');
+              summaryLines.add('Created: $created • Updated: $updatedCount • Removed: $removedCount');
+            }
+            if (addedNames.isNotEmpty) {
+              summaryLines.add('Added (${addedNames.length}): ${addedNames.join(', ')}');
+            }
+            if (updatedNames.isNotEmpty) {
+              summaryLines.add('Updated (${updatedNames.length}): ${updatedNames.join(', ')}');
+            }
+            if (removedNames.isNotEmpty) {
+              summaryLines.add('Removed (${removedNames.length}): ${removedNames.join(', ')}');
+            }
+
+            details = summaryLines.isEmpty
+                ? 'Sync completed without changes.'
+                : summaryLines.join('\n');
+            break;
         }
 
         newEntries.add(AuditLogEntry(
@@ -624,7 +685,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
           subtitle: subtitle,
           details: details,
           metadata: {
-            'spotId': auditLog.spotId,
+            if (auditLog.action != AuditLogAction.spotSourceSync) 'spotId': auditLog.spotId,
             if (auditLog.reportId != null) 'reportId': auditLog.reportId,
             'userId': auditLog.userId,
             'userName': auditLog.userName,

@@ -18,6 +18,8 @@ class Spot {
   final DateTime? updatedAt;
   final String? spotSource;
   final String? spotSourceName;
+  final bool spotSourceRemoved;
+  final DateTime? spotSourceRemovedAt;
   final double? averageRating;
   final int? ratingCount;
   final double? wilsonLowerBound;
@@ -49,6 +51,8 @@ class Spot {
     this.updatedAt,
     this.spotSource,
     this.spotSourceName,
+    this.spotSourceRemoved = false,
+    this.spotSourceRemovedAt,
     this.averageRating,
     this.ratingCount,
     this.wilsonLowerBound,
@@ -131,6 +135,10 @@ class Spot {
       updatedAt: data['updatedAt']?.toDate(),
       spotSource: data['spotSource'],
       spotSourceName: data['spotSourceName'],
+      spotSourceRemoved: data['spotSourceRemoved'] == true,
+      spotSourceRemovedAt: data['spotSourceRemovedAt'] is Timestamp
+          ? (data['spotSourceRemovedAt'] as Timestamp).toDate()
+          : null,
       averageRating: data['averageRating'] != null ? (data['averageRating'] as num).toDouble() : null,
       ratingCount: data['ratingCount'],
       wilsonLowerBound: data['wilsonLowerBound'] != null ? (data['wilsonLowerBound'] as num).toDouble() : null,
@@ -221,6 +229,8 @@ class Spot {
       updatedAt: parseDate(data['updatedAt']),
       spotSource: data['spotSource'] as String?,
       spotSourceName: data['spotSourceName'] as String?,
+      spotSourceRemoved: data['spotSourceRemoved'] == true,
+      spotSourceRemovedAt: parseDate(data['spotSourceRemovedAt']),
       averageRating: (data['averageRating'] as num?)?.toDouble(),
       ratingCount: (data['ratingCount'] is int) ? data['ratingCount'] as int : (data['ratingCount'] as num?)?.toInt(),
       wilsonLowerBound: (data['wilsonLowerBound'] as num?)?.toDouble(),
@@ -252,6 +262,8 @@ class Spot {
       'updatedAt': updatedAt,
       'spotSource': spotSource,
       'spotSourceName': spotSourceName,
+      'spotSourceRemoved': spotSourceRemoved,
+      if (spotSourceRemovedAt != null) 'spotSourceRemovedAt': spotSourceRemovedAt,
       if (averageRating != null) 'averageRating': averageRating,
       if (ratingCount != null) 'ratingCount': ratingCount,
       if (wilsonLowerBound != null) 'wilsonLowerBound': wilsonLowerBound,
@@ -283,6 +295,8 @@ class Spot {
     DateTime? updatedAt,
     String? spotSource,
     String? spotSourceName,
+    bool? spotSourceRemoved,
+    Object? spotSourceRemovedAt = _unset,
     double? averageRating,
     int? ratingCount,
     double? wilsonLowerBound,
@@ -312,6 +326,10 @@ class Spot {
       updatedAt: updatedAt ?? this.updatedAt,
       spotSource: spotSource ?? this.spotSource,
       spotSourceName: spotSourceName ?? this.spotSourceName,
+      spotSourceRemoved: spotSourceRemoved ?? this.spotSourceRemoved,
+      spotSourceRemovedAt: identical(spotSourceRemovedAt, _unset)
+          ? this.spotSourceRemovedAt
+          : spotSourceRemovedAt as DateTime?,
       averageRating: averageRating ?? this.averageRating,
       ratingCount: ratingCount ?? this.ratingCount,
       wilsonLowerBound: wilsonLowerBound ?? this.wilsonLowerBound,
