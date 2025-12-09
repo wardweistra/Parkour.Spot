@@ -21,6 +21,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderStateMixin {
   bool _isExpanded = false;
   late AnimationController _lottieController;
+  bool _hasAnimatedOnLoad = false;
 
   @override
   void initState() {
@@ -469,6 +470,11 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                             onLoaded: (composition) {
                               // Update controller duration based on loaded composition
                               _lottieController.duration = composition.duration;
+                              // Animate once on first load
+                              if (!_hasAnimatedOnLoad) {
+                                _hasAnimatedOnLoad = true;
+                                _lottieController.forward();
+                              }
                             },
                           ),
                         ),
