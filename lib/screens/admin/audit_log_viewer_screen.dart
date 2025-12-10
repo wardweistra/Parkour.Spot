@@ -620,7 +620,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
             final sourceName = syncMetadata['sourceName'] as String? ?? 'Unknown source';
             subtitle = 'Source: $sourceName';
 
-            List<String> _formatSpotList(dynamic value) {
+            List<String> formatSpotList(dynamic value) {
               if (value is List) {
                 return value
                     .map((entry) {
@@ -645,9 +645,9 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
               return const [];
             }
 
-            final addedNames = _formatSpotList(syncMetadata['addedSpots']);
-            final updatedNames = _formatSpotList(syncMetadata['updatedSpots']);
-            final removedNames = _formatSpotList(syncMetadata['removedSpots']);
+            final addedNames = formatSpotList(syncMetadata['addedSpots']);
+            final updatedNames = formatSpotList(syncMetadata['updatedSpots']);
+            final removedNames = formatSpotList(syncMetadata['removedSpots']);
             final statsMap = syncMetadata['stats'] is Map<String, dynamic>
                 ? Map<String, dynamic>.from(syncMetadata['stats'] as Map)
                 : null;
