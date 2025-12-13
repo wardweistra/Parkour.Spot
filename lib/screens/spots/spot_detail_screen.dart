@@ -35,7 +35,7 @@ class SpotDetailScreen extends StatefulWidget {
   State<SpotDetailScreen> createState() => _SpotDetailScreenState();
 }
 
-enum _SpotMenuAction { login, report, edit, delete, markAsDuplicate, createNativeSpot, toggleHide, removeDuplicateStatus }
+enum _SpotMenuAction { login, reportAsDuplicate, report, edit, delete, markAsDuplicate, createNativeSpot, toggleHide, removeDuplicateStatus }
 
 class _SpotDetailScreenState extends State<SpotDetailScreen> {
   double _userRating = 0;
@@ -407,6 +407,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           '/login?redirectTo=${Uri.encodeComponent('/spot/${widget.spot.id}')}',
         );
         break;
+      case _SpotMenuAction.reportAsDuplicate:
+        _showReportDuplicateDialog();
+        break;
       case _SpotMenuAction.report:
         _showReportSpotDialog();
         break;
@@ -504,6 +507,35 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           );
         }
         break;
+    }
+  }
+
+  Future<void> _showReportDuplicateDialog() async {
+    if (widget.spot.id == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to flag this spot as duplicate right now.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final bool? result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => _ReportDuplicateDialog(spot: widget.spot),
+    );
+
+    if (!mounted) return;
+    if (result == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Thanks! Your duplicate report has been submitted.'),
+          backgroundColor: Colors.green,
+        ),
+      );
     }
   }
 
@@ -720,6 +752,41 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             ),
                             const PopupMenuDivider(),
                           ],
+                          PopupMenuItem<_SpotMenuAction>(
+                            value: _SpotMenuAction.reportAsDuplicate,
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.copy_all,
+                                  color: theme.colorScheme.primary,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'Flag as duplicate',
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                    ),
+                                    Text(
+                                      'This spot is a duplicate',
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: theme.colorScheme.onSurface
+                                                .withValues(alpha: 0.6),
+                                            fontSize: 11,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
                           PopupMenuItem<_SpotMenuAction>(
                             value: _SpotMenuAction.report,
                             child: Row(
@@ -3890,6 +3957,352 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   }
 }
 
+class _ReportDuplicateDialog extends StatefulWidget {
+  final Spot spot;
+
+  const _ReportDuplicateDialog({required this.spot});
+
+  @override
+  State<_ReportDuplicateDialog> createState() => _ReportDuplicateDialogState();
+}
+
+class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
+  late final TextEditingController detailsController;
+  late final TextEditingController emailController;
+
+  String? duplicateSpotError;
+  String? emailError;
+  String? submissionError;
+  bool isSubmitting = false;
+  Spot? _selectedDuplicateSpot;
+  String? _duplicateOfSpotId;
+
+  @override
+  void initState() {
+    super.initState();
+    final authService = Provider.of<AuthService>(context, listen: false);
+    detailsController = TextEditingController();
+    emailController = TextEditingController(
+      text: authService.isAuthenticated
+          ? (authService.userProfile?.email ??
+              authService.currentUser?.email ??
+              '')
+          : '',
+    );
+  }
+
+  @override
+  void dispose() {
+    detailsController.dispose();
+    emailController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext dialogContext) {
+    final theme = Theme.of(dialogContext);
+    final authService = Provider.of<AuthService>(dialogContext, listen: false);
+    final reportService = Provider.of<SpotReportService>(dialogContext, listen: false);
+    final bool isLoggedIn = authService.isAuthenticated && authService.userProfile != null;
+
+    return WillPopScope(
+      onWillPop: () async => !isSubmitting,
+      child: AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.copy_all, color: theme.colorScheme.primary),
+            const SizedBox(width: 8),
+            const Expanded(child: Text('Flag as duplicate')),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'This spot appears to be a duplicate of another spot. Please select the original spot below.',
+                style: theme.textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Which spot is this a duplicate of?',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              if (duplicateSpotError != null) ...[
+                Text(
+                  duplicateSpotError!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+              if (_selectedDuplicateSpot == null) ...[
+                OutlinedButton.icon(
+                  onPressed: () async {
+                      final result = await showDialog<String>(
+                        context: dialogContext,
+                        builder: (context) => SpotSelectionDialog(
+                          currentSpotId: widget.spot.id,
+                          currentSpot: widget.spot,
+                          allowExternalSources: true,
+                          showNearbySpots: true,
+                        ),
+                      );
+                    if (result != null && mounted) {
+                      setState(() {
+                        _duplicateOfSpotId = result;
+                        duplicateSpotError = null;
+                      });
+                      final spotService = Provider.of<SpotService>(context, listen: false);
+                      final spot = await spotService.getSpotById(result);
+                      if (mounted && spot != null) {
+                        setState(() {
+                          _selectedDuplicateSpot = spot;
+                        });
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.search),
+                  label: const Text('Select duplicate spot'),
+                ),
+              ] else ...[
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _selectedDuplicateSpot!.name,
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              if (_selectedDuplicateSpot!.description.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  _selectedDuplicateSpot!.description,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                              if (_selectedDuplicateSpot!.id != null) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Spot ID: ${_selectedDuplicateSpot!.id}',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                                    fontFamily: 'monospace',
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () {
+                            setState(() {
+                              _selectedDuplicateSpot = null;
+                              _duplicateOfSpotId = null;
+                              duplicateSpotError = null;
+                            });
+                          },
+                          tooltip: 'Remove selection',
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+              TextField(
+                controller: detailsController,
+                minLines: 3,
+                maxLines: 5,
+                decoration: const InputDecoration(
+                  labelText: 'Additional details',
+                  hintText: 'Anything else we should know?',
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (!isLoggedIn) ...[
+                TextField(
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: InputDecoration(
+                    labelText: 'Email address',
+                    hintText: 'name@example.com',
+                    helperText: 'We will contact you only about this report.',
+                    errorText: emailError,
+                  ),
+                ),
+              ] else ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: theme.colorScheme.outlineVariant
+                          .withValues(alpha: 0.5),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.mail,
+                        size: 18,
+                        color: theme.colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          emailController.text.isNotEmpty
+                              ? 'We will reach out at ${emailController.text} if we need more info.'
+                              : 'We will reach out using your account email if we need more info.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface
+                                .withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              if (submissionError != null) ...[
+                const SizedBox(height: 16),
+                Text(
+                  submissionError!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: isSubmitting ? null : () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: isSubmitting
+                ? null
+                : () async {
+                    setState(() {
+                      duplicateSpotError = null;
+                      emailError = null;
+                      submissionError = null;
+                    });
+
+                    if (_duplicateOfSpotId == null) {
+                      setState(() {
+                        duplicateSpotError = 'Please select the spot this is a duplicate of.';
+                      });
+                      return;
+                    }
+
+                    final trimmedEmail = emailController.text.trim();
+                    if (!isLoggedIn) {
+                      if (trimmedEmail.isEmpty) {
+                        setState(() {
+                          emailError = 'Please provide an email address.';
+                        });
+                        return;
+                      }
+                      final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+                      if (!emailRegex.hasMatch(trimmedEmail)) {
+                        setState(() {
+                          emailError = 'Enter a valid email address.';
+                        });
+                        return;
+                      }
+                    }
+
+                    FocusScope.of(dialogContext).unfocus();
+                    setState(() {
+                      isSubmitting = true;
+                    });
+
+                    final trimmedDetails = detailsController.text.trim();
+                    final reporterName = (() {
+                      final profileName = authService.userProfile?.displayName;
+                      if (profileName != null && profileName.trim().isNotEmpty) {
+                        return profileName.trim();
+                      }
+                      final authName = authService.currentUser?.displayName;
+                      if (authName != null && authName.trim().isNotEmpty) {
+                        return authName.trim();
+                      }
+                      return null;
+                    })();
+                    final trimmedContactEmail = isLoggedIn
+                        ? (emailController.text.trim().isNotEmpty
+                            ? emailController.text.trim()
+                            : authService.userProfile?.email ?? authService.currentUser?.email ?? '')
+                        : trimmedEmail;
+
+                    final success = await reportService.submitSpotReport(
+                      spotId: widget.spot.id!,
+                      spotName: widget.spot.name,
+                      categories: ['Duplicate spot'],
+                      details: trimmedDetails.isEmpty ? null : trimmedDetails,
+                      contactEmail: trimmedContactEmail.isEmpty ? null : trimmedContactEmail,
+                      reporterUserId: authService.userProfile?.id,
+                      reporterName: reporterName,
+                      reporterEmail: authService.userProfile?.email ?? authService.currentUser?.email,
+                      spotCountryCode: widget.spot.countryCode,
+                      spotCity: widget.spot.city,
+                      duplicateOfSpotId: _duplicateOfSpotId,
+                    );
+
+                    if (success) {
+                      if (mounted) {
+                        Navigator.of(dialogContext).pop(true);
+                      }
+                    } else {
+                      setState(() {
+                        isSubmitting = false;
+                        submissionError = 'Could not send your report. Please try again.';
+                      });
+                    }
+                  },
+            child: isSubmitting
+                ? SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Theme.of(dialogContext).colorScheme.onPrimary,
+                      ),
+                    ),
+                  )
+                : const Text('Submit report'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ReportSpotDialog extends StatefulWidget {
   final Spot spot;
 
@@ -3909,10 +4322,7 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
   String? otherDescriptionError;
   String? emailError;
   String? submissionError;
-  String? duplicateSpotError;
   bool isSubmitting = false;
-  Spot? _selectedDuplicateSpot;
-  String? _duplicateOfSpotId;
 
   @override
   void initState() {
@@ -3945,7 +4355,6 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
     final bool isLoggedIn = authService.isAuthenticated && authService.userProfile != null;
     final String otherCategoryLabel = SpotReportService.defaultCategories.last;
     final bool otherSelected = selectedCategory == otherCategoryLabel;
-    final bool duplicateSpotSelected = selectedCategory == 'Duplicate spot';
 
     return WillPopScope(
       onWillPop: () async => !isSubmitting,
@@ -3996,12 +4405,6 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
                   setState(() {
                     selectedCategory = value;
                     categoryError = null;
-                    // Clear duplicate spot selection if "Duplicate spot" is deselected
-                    if (value != 'Duplicate spot') {
-                      _selectedDuplicateSpot = null;
-                      _duplicateOfSpotId = null;
-                      duplicateSpotError = null;
-                    }
                     // Clear other description when switching away from "Other"
                     if (value != otherCategoryLabel) {
                       otherController.clear();
@@ -4053,109 +4456,6 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
                     errorText: otherDescriptionError,
                   ),
                 ),
-              ],
-              if (duplicateSpotSelected) ...[
-                const SizedBox(height: 16),
-                Text(
-                  'Which spot is this a duplicate of?',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                if (duplicateSpotError != null) ...[
-                  Text(
-                    duplicateSpotError!,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.error,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                ],
-                if (_selectedDuplicateSpot == null) ...[
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      final result = await showDialog<String>(
-                        context: dialogContext,
-                        builder: (context) => SpotSelectionDialog(
-                          currentSpotId: widget.spot.id,
-                          allowExternalSources: true, // Allow external sources for reports
-                        ),
-                      );
-                      if (result != null && mounted) {
-                        setState(() {
-                          _duplicateOfSpotId = result;
-                          duplicateSpotError = null; // Clear error when spot is selected
-                        });
-                        // Fetch the spot details to display
-                        final spotService = Provider.of<SpotService>(context, listen: false);
-                        final spot = await spotService.getSpotById(result);
-                        if (mounted && spot != null) {
-                          setState(() {
-                            _selectedDuplicateSpot = spot;
-                          });
-                        }
-                      }
-                    },
-                    icon: const Icon(Icons.search),
-                    label: const Text('Select duplicate spot'),
-                  ),
-                ] else ...[
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _selectedDuplicateSpot!.name,
-                                  style: theme.textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                if (_selectedDuplicateSpot!.description.isNotEmpty) ...[
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    _selectedDuplicateSpot!.description,
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                                if (_selectedDuplicateSpot!.id != null) ...[
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Spot ID: ${_selectedDuplicateSpot!.id}',
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                                      fontFamily: 'monospace',
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.close),
-                            onPressed: () {
-                              setState(() {
-                                _selectedDuplicateSpot = null;
-                                _duplicateOfSpotId = null;
-                                duplicateSpotError = null;
-                              });
-                            },
-                            tooltip: 'Remove selection',
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
               ],
               const SizedBox(height: 16),
               TextField(
@@ -4242,20 +4542,11 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
                       otherDescriptionError = null;
                       emailError = null;
                       submissionError = null;
-                      duplicateSpotError = null;
                     });
 
                     if (selectedCategory == null) {
                       setState(() {
                         categoryError = 'Please select a category.';
-                      });
-                      return;
-                    }
-
-                    // Validate duplicate spot selection if "Duplicate spot" is selected
-                    if (selectedCategory == 'Duplicate spot' && _duplicateOfSpotId == null) {
-                      setState(() {
-                        duplicateSpotError = 'Please select the spot this is a duplicate of.';
                       });
                       return;
                     }
@@ -4320,7 +4611,6 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
                       reporterEmail: authService.userProfile?.email ?? authService.currentUser?.email,
                       spotCountryCode: widget.spot.countryCode,
                       spotCity: widget.spot.city,
-                      duplicateOfSpotId: _duplicateOfSpotId,
                     );
 
                     if (success) {
@@ -4360,8 +4650,6 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
         return 'The spot\'s location on the map is incorrect, or details like name, description, or address are wrong. Please provide more details below on what should be corrected.';
       case 'Unsafe conditions':
         return 'The spot has become dangerous due to structural issues, environmental hazards, or other safety concerns. Please provide more details below on what is unsafe.';
-      case 'Duplicate spot':
-        return 'This spot is a duplicate of another spot already in the database. Please select the original spot below.';
       case 'Not a spot':
         return 'Only for objective issues like spam, spots in invalid locations (e.g., middle of the sea), private residences, entire cities, or other clearly invalid entries. For subjective opinions about spot quality, please use a rating instead. Please provide more details below on why this is not a spot.';
       case 'Other':

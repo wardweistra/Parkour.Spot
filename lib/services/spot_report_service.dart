@@ -17,7 +17,6 @@ class SpotReportService {
     'Spot closed or removed',
     'Inaccurate location or details',
     'Unsafe conditions',
-    'Duplicate spot',
     'Not a spot',
     'Other',
   ];

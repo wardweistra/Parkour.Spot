@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -9,12 +10,14 @@ class SpotSelectionDialog extends StatefulWidget {
   final String? currentSpotId; // ID of the spot being marked as duplicate (to exclude it)
   final Spot? currentSpot; // The current spot (to allow creating native spot from it)
   final bool allowExternalSources; // Allow spots from external sources (for reports)
+  final bool showNearbySpots; // Show nearby spots automatically (for duplicate reporting)
 
   const SpotSelectionDialog({
     super.key,
     this.currentSpotId,
     this.currentSpot,
     this.allowExternalSources = false,
+    this.showNearbySpots = false,
   });
 
   @override
@@ -26,6 +29,8 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
   Spot? _foundSpot;
   bool _isLoading = false;
   bool _isCheckingDuplicates = false;
+  bool _isLoadingNearby = false;
+  List<Spot> _nearbySpots = [];
   String? _error;
 
   @override
@@ -35,6 +40,79 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
     // Only for moderator actions (not for user reports)
     if (!widget.allowExternalSources && widget.currentSpotId != null) {
       _checkExistingDuplicates();
+    }
+    // Load nearby spots if requested (for duplicate reporting)
+    if (widget.showNearbySpots && widget.currentSpot != null) {
+      _loadNearbySpots();
+    }
+  }
+
+  /// Calculate approximate bounds for ~50 meters radius
+  Map<String, double> _calculateBounds(double lat, double lng) {
+    // 1 degree latitude ≈ 111 km = 111,000 m
+    // 50 m ≈ 0.00045 degrees latitude
+    const double latOffset = 50 / 111000; // ~0.00045 degrees
+    
+    // For longitude, account for latitude (longitude lines get closer near poles)
+    // 1 degree longitude ≈ 111 km * cos(latitude)
+    final double lngOffset = latOffset / (math.cos(lat * math.pi / 180.0).abs());
+    
+    return {
+      'minLat': lat - latOffset,
+      'maxLat': lat + latOffset,
+      'minLng': lng - lngOffset,
+      'maxLng': lng + lngOffset,
+    };
+  }
+
+  Future<void> _loadNearbySpots() async {
+    final currentSpot = widget.currentSpot;
+    final lat = currentSpot?.latitude;
+    final lng = currentSpot?.longitude;
+    
+    if (currentSpot == null || lat == null || lng == null) {
+      return;
+    }
+
+    setState(() {
+      _isLoadingNearby = true;
+    });
+
+    try {
+      final spotService = Provider.of<SpotService>(context, listen: false);
+      final bounds = _calculateBounds(lat, lng);
+
+      final result = await spotService.getTopRankedSpotsInBounds(
+        bounds['minLat']!,
+        bounds['maxLat']!,
+        bounds['minLng']!,
+        bounds['maxLng']!,
+        limit: 20, // Limit to 20 nearby spots
+        spotSource: widget.allowExternalSources ? null : '', // Empty string = native only
+      );
+
+      final spots = (result['spots'] as List<Spot>?) ?? <Spot>[];
+      
+      // Filter out the current spot and spots already marked as duplicates
+      final filteredSpots = spots.where((spot) {
+        if (spot.id == widget.currentSpotId) return false;
+        if (!widget.allowExternalSources && spot.duplicateOf != null) return false;
+        return true;
+      }).toList();
+
+      if (mounted) {
+        setState(() {
+          _nearbySpots = filteredSpots;
+          _isLoadingNearby = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading nearby spots: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingNearby = false;
+        });
+      }
     }
   }
 
@@ -379,70 +457,7 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
             Expanded(
               child: _isCheckingDuplicates
                   ? const Center(child: CircularProgressIndicator())
-                  : _foundSpot == null && !_isLoading && _error == null
-                      ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.search,
-                            size: 64,
-                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Enter a spot ID or URL to search',
-                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : _isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : _error != null && _foundSpot == null
-                          ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.error_outline,
-                                    size: 48,
-                                    color: Theme.of(context).colorScheme.error,
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                                    child: Text(
-                                      _error!,
-                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                        color: Theme.of(context).colorScheme.error,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
-                          : _foundSpot != null
-                              ? SingleChildScrollView(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Found Spot',
-                                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      _buildSpotItem(_foundSpot!),
-                                    ],
-                                  ),
-                                )
-                              : const SizedBox.shrink(),
+                  : _buildResultsContent(),
             ),
             
             const Divider(height: 1),
@@ -473,35 +488,165 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
     );
   }
 
-  Widget _buildSpotItem(Spot spot) {
-    return Card(
-      child: Padding(
+  Widget _buildResultsContent() {
+    // Show nearby spots section if available
+    if (_nearbySpots.isNotEmpty && _foundSpot == null && !_isLoading && _error == null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text(
+              'Nearby spots (within ~50m)',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _nearbySpots.length,
+              itemBuilder: (context, index) {
+                final spot = _nearbySpots[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _buildSpotItem(spot, isSelectable: true),
+                );
+              },
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Show loading nearby spots
+    if (_isLoadingNearby && _foundSpot == null && !_isLoading && _error == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    // Show empty state
+    if (_foundSpot == null && !_isLoading && _error == null && _nearbySpots.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.search,
+              size: 64,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Enter a spot ID or URL to search',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Show loading search
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    // Show error
+    if (_error != null && _foundSpot == null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 48,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                _error!,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.error,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Show found spot from search
+    if (_foundSpot != null) {
+      return SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Spot image and basic info
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Spot image thumbnail
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: spot.imageUrls != null && spot.imageUrls!.isNotEmpty
-                      ? CachedNetworkImage(
-                          imageUrl: spot.imageUrls!.first,
-                          width: 100,
-                          height: 100,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(
+            Text(
+              'Found Spot',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildSpotItem(_foundSpot!, isSelectable: false),
+          ],
+        ),
+      );
+    }
+
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildSpotItem(Spot spot, {bool isSelectable = false}) {
+    return Card(
+      child: InkWell(
+        onTap: isSelectable
+            ? () => Navigator.of(context).pop(spot.id)
+            : null,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Spot image and basic info
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Spot image thumbnail
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: spot.imageUrls != null && spot.imageUrls!.isNotEmpty
+                        ? CachedNetworkImage(
+                            imageUrl: spot.imageUrls!.first,
                             width: 100,
                             height: 100,
-                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                            child: const Center(
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => Container(
+                              width: 100,
+                              height: 100,
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                              child: const Center(
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
                             ),
-                          ),
-                          errorWidget: (context, url, error) => Container(
+                            errorWidget: (context, url, error) => Container(
+                              width: 100,
+                              height: 100,
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                              child: Icon(
+                                Icons.image_not_supported,
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                              ),
+                            ),
+                          )
+                        : Container(
                             width: 100,
                             height: 100,
                             color: Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -510,80 +655,78 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
                               color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                             ),
                           ),
-                        )
-                      : Container(
-                          width: 100,
-                          height: 100,
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                          child: Icon(
-                            Icons.image_not_supported,
-                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                  ),
+                  
+                  const SizedBox(width: 16),
+                  
+                  // Spot details
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          spot.name,
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                ),
-                
-                const SizedBox(width: 16),
-                
-                // Spot details
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        spot.name,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        spot.description,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                        ),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (spot.address != null || spot.city != null) ...[
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.location_on,
-                              size: 16,
-                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                [spot.address, spot.city].whereType<String>().join(', '),
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                      if (spot.id != null) ...[
                         const SizedBox(height: 8),
                         Text(
-                          'Spot ID: ${spot.id}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-                            fontFamily: 'monospace',
+                          spot.description,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                           ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
                         ),
+                        if (spot.address != null || spot.city != null) ...[
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.location_on,
+                                size: 16,
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  [spot.address, spot.city].whereType<String>().join(', '),
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                        if (spot.id != null) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            'Spot ID: ${spot.id}',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                  if (isSelectable) ...[
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.chevron_right,
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
