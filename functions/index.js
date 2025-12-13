@@ -2605,8 +2605,9 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
             const thumbUrl = `https://img.youtube.com/vi/${vid}/maxresdefault.jpg`;
             const cachedPublicUrl = await checkImageUrlCache(thumbUrl);
             if (!cachedPublicUrl) {
+              const folderName = placemark.folderName || 'unknown';
               console.warn(
-                  `Dropping YouTube ID ${vid} due to missing/cached thumbnail (likely 404): ${thumbUrl}`,
+                  `Dropping YouTube ID ${vid} due to missing/cached thumbnail (likely 404): ${thumbUrl} (folder: ${folderName}, spot: ${name})`,
               );
               return null;
             }
