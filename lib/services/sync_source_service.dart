@@ -17,6 +17,11 @@ class SyncSource {
   final DateTime? updatedAt;
   final DateTime? lastSyncAt;
   final Map<String, dynamic>? lastSyncStats;
+  final String? lightSyncSchedule; // Cron expression for light sync
+  final String? fullSyncSchedule; // Cron expression for full sync
+  final bool? autoSyncEnabled; // Whether auto-sync is enabled
+  final DateTime? lastLightSyncAt;
+  final DateTime? lastFullSyncAt;
 
   SyncSource({
     required this.id,
@@ -33,6 +38,11 @@ class SyncSource {
     this.updatedAt,
     this.lastSyncAt,
     this.lastSyncStats,
+    this.lightSyncSchedule,
+    this.fullSyncSchedule,
+    this.autoSyncEnabled,
+    this.lastLightSyncAt,
+    this.lastFullSyncAt,
   });
 
   factory SyncSource.fromMap(Map<String, dynamic> data) {
@@ -55,6 +65,11 @@ class SyncSource {
       updatedAt: _parseTimestamp(data['updatedAt']),
       lastSyncAt: _parseTimestamp(data['lastSyncAt']),
       lastSyncStats: data['lastSyncStats'],
+      lightSyncSchedule: data['lightSyncSchedule'],
+      fullSyncSchedule: data['fullSyncSchedule'],
+      autoSyncEnabled: data['autoSyncEnabled'],
+      lastLightSyncAt: _parseTimestamp(data['lastLightSyncAt']),
+      lastFullSyncAt: _parseTimestamp(data['lastFullSyncAt']),
     );
   }
 
@@ -140,6 +155,9 @@ class SyncSourceService extends ChangeNotifier {
     bool isActive = true,
     List<String>? includeFolders,
     bool? recordFolderName,
+    String? lightSyncSchedule,
+    String? fullSyncSchedule,
+    bool autoSyncEnabled = false,
   }) async {
     try {
       final callable = _functions.httpsCallable('createSyncSource');
@@ -152,6 +170,9 @@ class SyncSourceService extends ChangeNotifier {
         'isActive': isActive,
         if (includeFolders != null) 'includeFolders': includeFolders,
         if (recordFolderName != null) 'recordFolderName': recordFolderName,
+        if (lightSyncSchedule != null && lightSyncSchedule.isNotEmpty) 'lightSyncSchedule': lightSyncSchedule,
+        if (fullSyncSchedule != null && fullSyncSchedule.isNotEmpty) 'fullSyncSchedule': fullSyncSchedule,
+        'autoSyncEnabled': autoSyncEnabled,
       });
       final success = result.data['success'] == true;
       if (success) {
@@ -176,6 +197,9 @@ class SyncSourceService extends ChangeNotifier {
     bool? isActive,
     List<String>? includeFolders,
     bool? recordFolderName,
+    String? lightSyncSchedule,
+    String? fullSyncSchedule,
+    bool? autoSyncEnabled,
   }) async {
     try {
       final callable = _functions.httpsCallable('updateSyncSource');
@@ -188,6 +212,13 @@ class SyncSourceService extends ChangeNotifier {
       if (isActive != null) payload['isActive'] = isActive;
       if (includeFolders != null) payload['includeFolders'] = includeFolders;
       if (recordFolderName != null) payload['recordFolderName'] = recordFolderName;
+      if (lightSyncSchedule != null) {
+        payload['lightSyncSchedule'] = lightSyncSchedule.isEmpty ? null : lightSyncSchedule;
+      }
+      if (fullSyncSchedule != null) {
+        payload['fullSyncSchedule'] = fullSyncSchedule.isEmpty ? null : fullSyncSchedule;
+      }
+      if (autoSyncEnabled != null) payload['autoSyncEnabled'] = autoSyncEnabled;
       final result = await callable.call(payload);
       final success = result.data['success'] == true;
       if (success) {

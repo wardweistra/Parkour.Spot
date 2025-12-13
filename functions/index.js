@@ -29,6 +29,7 @@ const crypto = require("crypto");
 const {S3Client, GetObjectCommand, HeadObjectCommand} = require("@aws-sdk/client-s3");
 const {getSignedUrl} = require("@aws-sdk/s3-request-presigner");
 const countries = require("i18n-iso-countries");
+const cronParser = require("cron-parser");
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -3120,6 +3121,9 @@ exports.createSyncSource = onCall(
           isActive = true,
           includeFolders,
           recordFolderName,
+          lightSyncSchedule,
+          fullSyncSchedule,
+          autoSyncEnabled = false,
         } = request.data;
 
         if (!name || !kmzUrl) {
@@ -3156,6 +3160,14 @@ exports.createSyncSource = onCall(
           sourceData.recordFolderName = recordFolderName;
         }
 
+        if (lightSyncSchedule) {
+          sourceData.lightSyncSchedule = lightSyncSchedule;
+        }
+        if (fullSyncSchedule) {
+          sourceData.fullSyncSchedule = fullSyncSchedule;
+        }
+        sourceData.autoSyncEnabled = autoSyncEnabled;
+
         const docRef = await db.collection("syncSources").add(sourceData);
 
         return {
@@ -3187,6 +3199,9 @@ exports.updateSyncSource = onCall(
           isActive,
           includeFolders,
           recordFolderName,
+          lightSyncSchedule,
+          fullSyncSchedule,
+          autoSyncEnabled,
         } = request.data;
 
         if (!sourceId) {
@@ -3226,6 +3241,23 @@ exports.updateSyncSource = onCall(
           } else if (recordFolderName === null) {
             updateData.recordFolderName = admin.firestore.FieldValue.delete();
           }
+        }
+        if (lightSyncSchedule !== undefined) {
+          if (lightSyncSchedule && lightSyncSchedule.trim().length > 0) {
+            updateData.lightSyncSchedule = lightSyncSchedule.trim();
+          } else {
+            updateData.lightSyncSchedule = admin.firestore.FieldValue.delete();
+          }
+        }
+        if (fullSyncSchedule !== undefined) {
+          if (fullSyncSchedule && fullSyncSchedule.trim().length > 0) {
+            updateData.fullSyncSchedule = fullSyncSchedule.trim();
+          } else {
+            updateData.fullSyncSchedule = admin.firestore.FieldValue.delete();
+          }
+        }
+        if (autoSyncEnabled !== undefined) {
+          updateData.autoSyncEnabled = autoSyncEnabled;
         }
 
         await db.collection("syncSources").doc(sourceId).update(updateData);
@@ -4934,6 +4966,152 @@ exports.importUrbnSpots = onCall(
           success: false,
           error: error.message,
         };
+      }
+    },
+);
+
+/**
+ * Helper function to determine if a sync should run based on cron schedule
+ * @param {string} cronExpression - Cron expression (e.g., "0 2 *\/3 * *")
+ * @param {Date} lastRun - Last time this sync ran
+ * @param {Date} now - Current time
+ * @return {boolean} - Whether sync should run
+ */
+function shouldRunSync(cronExpression, lastRun, now) {
+  try {
+    const interval = cronParser.parseExpression(cronExpression, {tz: "UTC"});
+    
+    // Get the next scheduled time after lastRun
+    interval.reset(lastRun);
+    const nextScheduled = interval.next().toDate();
+    
+    // If next scheduled time has passed, we should run
+    return nextScheduled <= now;
+  } catch (error) {
+    console.error(`Invalid cron expression: ${cronExpression}`, error);
+    return false;
+  }
+}
+
+/**
+ * Scheduled function to check and run automated syncs for spot sources
+ * Runs every hour to check which sources need syncing based on their cron schedules
+ */
+exports.checkAndRunAutoSyncs = onSchedule(
+    {
+      schedule: "every 1 hours",
+      timeZone: "UTC",
+      region: "europe-west1",
+      memory: "2GiB",
+      timeoutSeconds: 3600,
+      secrets: ["GOOGLE_MAPS_API_KEY"],
+    },
+    async () => {
+      console.log("Auto-sync check started");
+      const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+      if (!apiKey) {
+        throw new Error("Google Maps API key not configured");
+      }
+
+      try {
+        // Get all active sync sources with auto-sync enabled
+        const sourcesSnapshot = await db
+            .collection("syncSources")
+            .where("isActive", "==", true)
+            .get();
+
+        const now = new Date();
+        const syncResults = [];
+
+        for (const sourceDoc of sourcesSnapshot.docs) {
+          const source = sourceDoc.data();
+          const sourceId = sourceDoc.id;
+          
+          // Skip if auto-sync is disabled
+          if (source.autoSyncEnabled !== true) {
+            continue;
+          }
+
+          let shouldRunLightSync = false;
+          let shouldRunFullSync = false;
+
+          // Check light sync schedule
+          if (source.lightSyncSchedule) {
+            const lastLightSync = source.lastLightSyncAt?.toDate() || new Date(0);
+            shouldRunLightSync = shouldRunSync(source.lightSyncSchedule, lastLightSync, now);
+          }
+
+          // Check full sync schedule
+          if (source.fullSyncSchedule) {
+            const lastFullSync = source.lastFullSyncAt?.toDate() || new Date(0);
+            shouldRunFullSync = shouldRunSync(source.fullSyncSchedule, lastFullSync, now);
+          }
+
+          // Run full sync if scheduled (takes precedence)
+          if (shouldRunFullSync) {
+            try {
+              console.log(`Running scheduled full sync for source: ${source.name} (${sourceId})`);
+              const result = await processSyncSource(source, sourceId, apiKey, true);
+              
+              // Update lastFullSyncAt
+              await db.collection("syncSources").doc(sourceId).update({
+                lastFullSyncAt: admin.firestore.FieldValue.serverTimestamp(),
+              });
+
+              syncResults.push({
+                sourceId,
+                sourceName: source.name,
+                syncType: "full",
+                success: true,
+                stats: result.stats,
+              });
+            } catch (error) {
+              console.error(`Error running full sync for ${source.name}:`, error);
+              syncResults.push({
+                sourceId,
+                sourceName: source.name,
+                syncType: "full",
+                success: false,
+                error: error.message,
+              });
+            }
+          } 
+          // Run light sync if scheduled (only if full sync wasn't needed)
+          else if (shouldRunLightSync) {
+            try {
+              console.log(`Running scheduled light sync for source: ${source.name} (${sourceId})`);
+              const result = await processSyncSource(source, sourceId, apiKey, false);
+              
+              // Update lastLightSyncAt
+              await db.collection("syncSources").doc(sourceId).update({
+                lastLightSyncAt: admin.firestore.FieldValue.serverTimestamp(),
+              });
+
+              syncResults.push({
+                sourceId,
+                sourceName: source.name,
+                syncType: "light",
+                success: true,
+                stats: result.stats,
+              });
+            } catch (error) {
+              console.error(`Error running light sync for ${source.name}:`, error);
+              syncResults.push({
+                sourceId,
+                sourceName: source.name,
+                syncType: "light",
+                success: false,
+                error: error.message,
+              });
+            }
+          }
+        }
+
+        console.log(`Auto-sync check completed. Processed ${syncResults.length} sources.`);
+        return {success: true, results: syncResults};
+      } catch (error) {
+        console.error("Error in auto-sync check:", error);
+        throw error;
       }
     },
 );

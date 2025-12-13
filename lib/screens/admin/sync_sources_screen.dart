@@ -239,12 +239,65 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                       Row(
                         children: [
                           Chip(label: Text(s.isActive ? 'Active' : 'Inactive')),
+                          if (s.autoSyncEnabled == true) ...[
+                            const SizedBox(width: 8),
+                            Chip(
+                              label: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.schedule, size: 16),
+                                  SizedBox(width: 4),
+                                  Text('Auto-Sync ON'),
+                                ],
+                              ),
+                              backgroundColor: Colors.green.shade100,
+                            ),
+                          ],
                           if (s.lastSyncAt != null) ...[
                             const SizedBox(width: 8),
                             Chip(label: Text('Last sync: ${s.lastSyncAt}')),
                           ],
                         ],
                       ),
+                      if (s.autoSyncEnabled == true) ...[
+                        const SizedBox(height: 4),
+                        Wrap(
+                          spacing: 4,
+                          runSpacing: 2,
+                          children: [
+                            const Text('Auto-Sync Details:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                            if (s.lightSyncSchedule != null && s.lightSyncSchedule!.isNotEmpty)
+                              Chip(
+                                label: Text('Light: ${s.lightSyncSchedule}', style: const TextStyle(fontSize: 11)),
+                                backgroundColor: Colors.blue.shade50,
+                              ),
+                            if (s.fullSyncSchedule != null && s.fullSyncSchedule!.isNotEmpty)
+                              Chip(
+                                label: Text('Full: ${s.fullSyncSchedule}', style: const TextStyle(fontSize: 11)),
+                                backgroundColor: Colors.purple.shade50,
+                              ),
+                          ],
+                        ),
+                        if (s.lastLightSyncAt != null || s.lastFullSyncAt != null) ...[
+                          const SizedBox(height: 4),
+                          Wrap(
+                            spacing: 4,
+                            runSpacing: 2,
+                            children: [
+                              if (s.lastLightSyncAt != null)
+                                Chip(
+                                  label: Text('Last light sync: ${s.lastLightSyncAt}', style: const TextStyle(fontSize: 11)),
+                                  backgroundColor: Colors.blue.shade100,
+                                ),
+                              if (s.lastFullSyncAt != null)
+                                Chip(
+                                  label: Text('Last full sync: ${s.lastFullSyncAt}', style: const TextStyle(fontSize: 11)),
+                                  backgroundColor: Colors.purple.shade100,
+                                ),
+                            ],
+                          ),
+                        ],
+                      ],
                       if (s.lastSyncStats != null) ...[
                         const SizedBox(height: 4),
                         Wrap(
@@ -1143,8 +1196,11 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
   late final TextEditingController publicUrlCtrl;
   late final TextEditingController instagramHandleCtrl;
   late final TextEditingController includeFoldersCtrl;
+  late final TextEditingController lightSyncScheduleCtrl;
+  late final TextEditingController fullSyncScheduleCtrl;
   late bool isActive;
   late bool recordFolderName;
+  late bool autoSyncEnabled;
 
   @override
   void initState() {
@@ -1159,8 +1215,11 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
           ? ''
           : widget.source!.includeFolders!.join('\n'),
     );
+    lightSyncScheduleCtrl = TextEditingController(text: widget.source?.lightSyncSchedule ?? '');
+    fullSyncScheduleCtrl = TextEditingController(text: widget.source?.fullSyncSchedule ?? '');
     isActive = widget.source?.isActive ?? true;
     recordFolderName = widget.source?.recordFolderName ?? false;
+    autoSyncEnabled = widget.source?.autoSyncEnabled ?? false;
   }
 
   @override
@@ -1171,6 +1230,8 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
     publicUrlCtrl.dispose();
     instagramHandleCtrl.dispose();
     includeFoldersCtrl.dispose();
+    lightSyncScheduleCtrl.dispose();
+    fullSyncScheduleCtrl.dispose();
     super.dispose();
   }
 
@@ -1238,6 +1299,62 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                 value: recordFolderName,
                 onChanged: (v) => setState(() => recordFolderName = v),
               ),
+              const Divider(),
+              const Text(
+                'Auto-Sync Configuration',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Enable Auto-Sync'),
+                subtitle: const Text('Automatically sync this source according to schedules below'),
+                value: autoSyncEnabled,
+                onChanged: (v) => setState(() => autoSyncEnabled = v),
+              ),
+              TextFormField(
+                controller: lightSyncScheduleCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Light Sync Schedule (Cron)',
+                  helperText: 'Cron expression for light sync (e.g., "0 2 */3 * *" for every 3 days at 2 AM UTC). Leave empty to disable.',
+                ),
+              ),
+              TextFormField(
+                controller: fullSyncScheduleCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Full Sync Schedule (Cron)',
+                  helperText: 'Cron expression for full sync (e.g., "0 3 * * 0" for weekly on Sunday at 3 AM UTC). Leave empty to disable.',
+                ),
+              ),
+              if (widget.source != null) ...[
+                const SizedBox(height: 8),
+                if (widget.source!.lastLightSyncAt != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        const Text('Last light sync: ', style: TextStyle(fontSize: 12)),
+                        Text(
+                          widget.source!.lastLightSyncAt.toString(),
+                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (widget.source!.lastFullSyncAt != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        const Text('Last full sync: ', style: TextStyle(fontSize: 12)),
+                        Text(
+                          widget.source!.lastFullSyncAt.toString(),
+                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
             ],
           ),
         ),
@@ -1265,6 +1382,9 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                         .where((s) => s.isNotEmpty)
                         .toList(),
                 recordFolderName: recordFolderName,
+                lightSyncSchedule: lightSyncScheduleCtrl.text.trim().isEmpty ? null : lightSyncScheduleCtrl.text.trim(),
+                fullSyncSchedule: fullSyncScheduleCtrl.text.trim().isEmpty ? null : fullSyncScheduleCtrl.text.trim(),
+                autoSyncEnabled: autoSyncEnabled,
               );
             } else {
               ok = await service.updateSource(
@@ -1283,6 +1403,9 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                         .where((s) => s.isNotEmpty)
                         .toList(),
                 recordFolderName: recordFolderName,
+                lightSyncSchedule: lightSyncScheduleCtrl.text.trim(),
+                fullSyncSchedule: fullSyncScheduleCtrl.text.trim(),
+                autoSyncEnabled: autoSyncEnabled,
               );
             }
             if (context.mounted) {
