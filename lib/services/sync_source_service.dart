@@ -221,14 +221,16 @@ class SyncSourceService extends ChangeNotifier {
     }
   }
 
-  Future<Map<String, dynamic>?> syncAllSources() async {
+  Future<Map<String, dynamic>?> syncAllSources({bool updateImagesForExistingSpots = false}) async {
     try {
       _isSyncingAll = true;
       _error = null;
       notifyListeners();
 
       final callable = _functions.httpsCallable('syncAllSources');
-      final result = await callable.call();
+      final result = await callable.call({
+        'updateImagesForExistingSpots': updateImagesForExistingSpots,
+      });
       
       _isSyncingAll = false;
       notifyListeners();
@@ -251,14 +253,17 @@ class SyncSourceService extends ChangeNotifier {
     }
   }
 
-  Future<Map<String, dynamic>?> syncSingleSource(String sourceId) async {
+  Future<Map<String, dynamic>?> syncSingleSource(String sourceId, {bool updateImagesForExistingSpots = false}) async {
     try {
       _syncingSources.add(sourceId);
       _error = null;
       notifyListeners();
 
       final callable = _functions.httpsCallable('syncSingleSource');
-      final result = await callable.call({'sourceId': sourceId});
+      final result = await callable.call({
+        'sourceId': sourceId,
+        'updateImagesForExistingSpots': updateImagesForExistingSpots,
+      });
       
       _syncingSources.remove(sourceId);
       notifyListeners();

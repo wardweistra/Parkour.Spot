@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../services/auth_service.dart';
 import '../../services/sync_source_service.dart';
 
@@ -47,7 +48,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
         actions: [
           Consumer<SyncSourceService>(
             builder: (context, service, child) {
-              return IconButton(
+              return PopupMenuButton<String>(
                 icon: service.isSyncingAll 
                     ? const SizedBox(
                         width: 20,
@@ -56,11 +57,15 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                       )
                     : const Icon(Icons.sync),
                 tooltip: 'Sync All',
-                onPressed: service.isSyncingAll ? null : () async {
+                enabled: !service.isSyncingAll,
+                onSelected: (mode) async {
                   if (!mounted) return;
+                  final updateImages = mode == 'full';
                   final syncService = context.read<SyncSourceService>();
                   final scaffoldMessenger = ScaffoldMessenger.of(context);
-                  final result = await syncService.syncAllSources();
+                  final result = await syncService.syncAllSources(
+                    updateImagesForExistingSpots: updateImages,
+                  );
                   if (!mounted) return;
                   if (result != null) {
                     final stats = result['totalStats'] as Map<String, dynamic>?;
@@ -83,6 +88,48 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                     );
                   }
                 },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'default',
+                    child: Row(
+                      children: [
+                        Icon(Icons.sync, size: 20),
+                        SizedBox(width: 8),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('Default Sync'),
+                            Text(
+                              'Skip images for existing spots',
+                              style: TextStyle(fontSize: 12, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'full',
+                    child: Row(
+                      children: [
+                        Icon(Icons.sync_problem, size: 20),
+                        SizedBox(width: 8),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('Full Sync'),
+                            Text(
+                              'Update images for existing spots',
+                              style: TextStyle(fontSize: 12, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               );
             },
           ),
@@ -136,9 +183,59 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(s.kmzUrl, maxLines: 1, overflow: TextOverflow.ellipsis),
-                      if (s.description != null && s.description!.isNotEmpty)
-                        Text(s.description!),
+                      if (s.publicUrl != null && s.publicUrl!.isNotEmpty) ...[
+                        InkWell(
+                          onTap: () async {
+                            final uri = Uri.parse(s.publicUrl!);
+                            if (await canLaunchUrl(uri)) {
+                              await launchUrl(uri, mode: LaunchMode.externalApplication);
+                            }
+                          },
+                          child: Row(
+                            children: [
+                              const Icon(Icons.link, size: 16, color: Colors.blue),
+                              const SizedBox(width: 4),
+                              Text(
+                                s.publicUrl!,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.blue,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      if (s.instagramHandle != null && s.instagramHandle!.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        InkWell(
+                          onTap: () async {
+                            final handle = s.instagramHandle!.startsWith('@') 
+                                ? s.instagramHandle!.substring(1) 
+                                : s.instagramHandle!;
+                            final uri = Uri.parse('https://instagram.com/$handle');
+                            if (await canLaunchUrl(uri)) {
+                              await launchUrl(uri, mode: LaunchMode.externalApplication);
+                            }
+                          },
+                          child: Row(
+                            children: [
+                              const Icon(Icons.camera_alt, size: 16, color: Colors.purple),
+                              const SizedBox(width: 4),
+                              Text(
+                                '@${s.instagramHandle!.startsWith('@') ? s.instagramHandle!.substring(1) : s.instagramHandle!}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.purple,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 4),
                       Row(
                         children: [
                           Chip(label: Text(s.isActive ? 'Active' : 'Inactive')),
@@ -148,13 +245,62 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                           ],
                         ],
                       ),
+                      if (s.lastSyncStats != null) ...[
+                        const SizedBox(height: 4),
+                        Wrap(
+                          spacing: 4,
+                          runSpacing: 2,
+                          children: [
+                            const Text('Last sync stats:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                            if (s.lastSyncStats!['created'] != null)
+                              Chip(
+                                label: Text('Created: ${s.lastSyncStats!['created']}', style: const TextStyle(fontSize: 11)),
+                                backgroundColor: Colors.green.shade100,
+                              ),
+                            if (s.lastSyncStats!['updated'] != null)
+                              Chip(
+                                label: Text('Updated: ${s.lastSyncStats!['updated']}', style: const TextStyle(fontSize: 11)),
+                                backgroundColor: Colors.blue.shade100,
+                              ),
+                            if (s.lastSyncStats!['removed'] != null)
+                              Chip(
+                                label: Text('Removed: ${s.lastSyncStats!['removed']}', style: const TextStyle(fontSize: 11)),
+                                backgroundColor: Colors.red.shade100,
+                              ),
+                            if (s.lastSyncStats!['skipped'] != null)
+                              Chip(
+                                label: Text('Skipped: ${s.lastSyncStats!['skipped']}', style: const TextStyle(fontSize: 11)),
+                                backgroundColor: Colors.orange.shade100,
+                              ),
+                            if (s.lastSyncStats!['total'] != null)
+                              Chip(
+                                label: Text('Total: ${s.lastSyncStats!['total']}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                backgroundColor: Colors.grey.shade200,
+                              ),
+                          ],
+                        ),
+                      ],
+                      if (s.includeFolders != null && s.includeFolders!.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Wrap(
+                          spacing: 4,
+                          runSpacing: 2,
+                          children: [
+                            const Text('Include folders:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                            ...s.includeFolders!.map((folder) => Chip(
+                              label: Text(folder, style: const TextStyle(fontSize: 11)),
+                              backgroundColor: Colors.green.shade100,
+                            )),
+                          ],
+                        ),
+                      ],
                       if (s.allFolders != null && s.allFolders!.isNotEmpty) ...[
                         const SizedBox(height: 4),
                         Wrap(
                           spacing: 4,
                           runSpacing: 2,
                           children: [
-                            const Text('Folders:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                            const Text('All folders:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                             ...s.allFolders!.map((folder) => Chip(
                               label: Text(folder, style: const TextStyle(fontSize: 11)),
                               backgroundColor: Colors.blue.shade100,
@@ -168,11 +314,11 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (s.isActive)
+                      if (s.isActive && s.kmzUrl.isNotEmpty)
                         Consumer<SyncSourceService>(
                           builder: (context, service, child) {
                             final isThisSourceSyncing = service.syncingSources.contains(s.id);
-                            return IconButton(
+                            return PopupMenuButton<String>(
                               icon: isThisSourceSyncing 
                                   ? const SizedBox(
                                       width: 20,
@@ -181,11 +327,16 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                                     )
                                   : const Icon(Icons.sync),
                               tooltip: 'Sync this source',
-                              onPressed: isThisSourceSyncing ? null : () async {
+                              enabled: !isThisSourceSyncing,
+                              onSelected: (mode) async {
                                 if (!mounted) return;
+                                final updateImages = mode == 'full';
                                 final syncService = context.read<SyncSourceService>();
                                 final scaffoldMessenger = ScaffoldMessenger.of(context);
-                                final result = await syncService.syncSingleSource(s.id);
+                                final result = await syncService.syncSingleSource(
+                                  s.id,
+                                  updateImagesForExistingSpots: updateImages,
+                                );
                                 if (!mounted) return;
                                 if (result != null) {
                                   final stats = result['stats'] as Map<String, dynamic>?;
@@ -208,6 +359,48 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                                   );
                                 }
                               },
+                              itemBuilder: (context) => [
+                                const PopupMenuItem(
+                                  value: 'default',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.sync, size: 20),
+                                      SizedBox(width: 8),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text('Default Sync'),
+                                          Text(
+                                            'Skip images for existing spots',
+                                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'full',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.sync_problem, size: 20),
+                                      SizedBox(width: 8),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text('Full Sync'),
+                                          Text(
+                                            'Update images for existing spots',
+                                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             );
                           },
                         ),

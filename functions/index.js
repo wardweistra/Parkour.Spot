@@ -1625,6 +1625,7 @@ async function cacheImageMetadata(imageUrl, imageHash, publicUrl) {
  * @return {Promise<Buffer>} A promise that resolves to the optimized image buffer
  */
 async function optimizeImage(imageBuffer) {
+  let sharpInstance = null;
   try {
     // Get image metadata
     const metadata = await sharp(imageBuffer).metadata();
@@ -1633,7 +1634,7 @@ async function optimizeImage(imageBuffer) {
     const maxWidth = 1920;
     const maxHeight = 1920;
 
-    let sharpInstance = sharp(imageBuffer);
+    sharpInstance = sharp(imageBuffer);
 
     // Resize if image is too large
     if (metadata.width > maxWidth || metadata.height > maxHeight) {
@@ -1654,9 +1655,14 @@ async function optimizeImage(imageBuffer) {
 
     console.log(`Image optimized: ${imageBuffer.length} bytes -> ${optimizedBuffer.length} bytes (${((1 - optimizedBuffer.length / imageBuffer.length) * 100).toFixed(1)}% reduction)`);
 
+    // Clean up sharp instance to free memory
+    sharpInstance = null;
+
     return optimizedBuffer;
   } catch (error) {
     console.error("Error optimizing image:", error);
+    // Clean up sharp instance on error
+    sharpInstance = null;
     // Return original buffer if optimization fails
     return imageBuffer;
   }
@@ -1799,11 +1805,21 @@ async function downloadAndUploadImage(
  * @return {Promise<Object>} A promise that resolves to an object containing
  *     imageUrls and imageHashes arrays
  */
-async function processPlacemarkImages(placemark, existingSpotData = null) {
+async function processPlacemarkImages(placemark, existingSpotData = null, updateImagesForExistingSpots = false) {
   const imageUrls = extractImageUrls(placemark);
 
   if (imageUrls.length === 0) {
     return {imageUrls: [], imageHashes: []};
+  }
+
+  // If updateImagesForExistingSpots is false and we have existing spot data,
+  // skip processing and return the existing image arrays (preserve as-is)
+  if (!updateImagesForExistingSpots && existingSpotData) {
+    console.log(`Skipping image processing for existing spot: ${placemark.name} (preserving existing images)`);
+    return {
+      imageUrls: existingSpotData.imageUrls || [],
+      imageHashes: existingSpotData.imageHashes || [],
+    };
   }
 
   console.log(`Found ${imageUrls.length} images for spot: ${placemark.name}`);
@@ -1828,49 +1844,40 @@ async function processPlacemarkImages(placemark, existingSpotData = null) {
     }
   }
 
-  // Process images in parallel batches to reduce total processing time
-  const BATCH_SIZE = 3; // Process 3 images at a time to balance speed and memory usage
+  // Process images sequentially to avoid memory issues
+  // Processing in parallel was causing heap out of memory errors
+  for (let i = 0; i < imageUrls.length; i++) {
+    const url = imageUrls[i];
+    console.log(`Processing image ${i + 1}/${imageUrls.length} for spot: ${placemark.name}`);
 
-  for (let i = 0; i < imageUrls.length; i += BATCH_SIZE) {
-    const batch = imageUrls.slice(i, i + BATCH_SIZE);
-    console.log(`Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(imageUrls.length / BATCH_SIZE)} (${batch.length} images)`);
+    // Check if we have a stored hash for this specific image URL
+    let storedHash = null;
+    if (urlToHashMap.has(url)) {
+      storedHash = urlToHashMap.get(url);
+    }
 
-    const batchPromises = batch.map(async (url, batchIndex) => {
-      const globalIndex = i + batchIndex;
+    const result = await downloadAndUploadImage(
+        url,
+        placemark.name,
+        i,
+        storedHash,
+    );
 
-      // Check if we have a stored hash for this specific image URL
-      let storedHash = null;
-      if (urlToHashMap.has(url)) {
-        storedHash = urlToHashMap.get(url);
-      }
+    // Add successful result to our arrays
+    if (result) {
+      uploadedImageUrls.push(result.url);
+      imageHashes.push(result.hash);
+    }
 
-      const result = await downloadAndUploadImage(
-          url,
-          placemark.name,
-          globalIndex,
-          storedHash,
-      );
+    // Force garbage collection hint after each image to free memory
+    if (global.gc) {
+      global.gc();
+    }
 
-      // Force garbage collection hint after each image
-      if (global.gc) {
-        global.gc();
-      }
-
-      return result;
-    });
-
-    // Wait for all images in this batch to complete
-    const batchResults = await Promise.all(batchPromises);
-
-    // Add successful results to our arrays
-    batchResults.forEach((result) => {
-      if (result) {
-        uploadedImageUrls.push(result.url);
-        imageHashes.push(result.hash);
-      }
-    });
-
-    console.log(`Completed batch ${Math.floor(i / BATCH_SIZE) + 1}, processed ${batchResults.filter((r) => r).length}/${batch.length} images successfully`);
+    // Small delay to allow GC to complete and prevent memory buildup
+    if (i < imageUrls.length - 1) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
   }
 
   console.log(
@@ -2225,8 +2232,8 @@ async function geocodeCoordinates(latitude, longitude, apiKey) {
  * @param {string} apiKey - The Google Maps API key
  * @return {Promise<Object>} Processing result with statistics
  */
-async function processSyncSource(source, sourceId, apiKey) {
-  console.log(`Processing source: ${source.name} (${sourceId})`);
+async function processSyncSource(source, sourceId, apiKey, updateImagesForExistingSpots = false) {
+  console.log(`Processing source: ${source.name} (${sourceId}) with updateImagesForExistingSpots=${updateImagesForExistingSpots}`);
 
   // Download and process based on detected format (KMZ/KML/GeoJSON)
   let fileBuffer = await downloadFile(source.kmzUrl);
@@ -2510,6 +2517,7 @@ async function processSyncSource(source, sourceId, apiKey) {
     const imageResult = await processPlacemarkImages(
         placemark,
         existingSpotData,
+        updateImagesForExistingSpots,
     );
 
     // Extract YouTube IDs from the raw description for storage and thumbnails
@@ -2520,7 +2528,16 @@ async function processSyncSource(source, sourceId, apiKey) {
     // If a YouTube thumbnail failed to download (e.g., 404), don't keep the video ID
     // We determine success by checking if the thumbnail URL was cached during image processing
     let filteredYoutubeVideoIds = [];
-    if (youtubeVideoIds && youtubeVideoIds.length > 0) {
+    
+    // For existing spots in default sync mode, skip YouTube thumbnail processing
+    if (!updateImagesForExistingSpots && existingSpotData) {
+      // Preserve existing YouTube video IDs without processing thumbnails
+      if (existingSpotData.youtubeVideoIds && Array.isArray(existingSpotData.youtubeVideoIds)) {
+        filteredYoutubeVideoIds = existingSpotData.youtubeVideoIds;
+        console.log(`Skipping YouTube thumbnail processing for existing spot: ${name} (preserving ${filteredYoutubeVideoIds.length} existing video IDs)`);
+      }
+    } else if (youtubeVideoIds && youtubeVideoIds.length > 0) {
+      // Process YouTube thumbnails for new spots or when doing full sync
       const validationResults = await Promise.all(
           youtubeVideoIds.map(async (vid) => {
             const thumbUrl = `https://img.youtube.com/vi/${vid}/maxresdefault.jpg`;
@@ -2551,7 +2568,6 @@ async function processSyncSource(source, sourceId, apiKey) {
       spotSource: sourceId,
       spotSourceName: source.name,
       spotSourceRemoved: false,
-      spotSourceRemovedAt: admin.firestore.FieldValue.delete(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
@@ -2564,21 +2580,68 @@ async function processSyncSource(source, sourceId, apiKey) {
       }
     }
 
-    // Add YouTube video IDs only if their thumbnails were successfully processed
-    if (filteredYoutubeVideoIds.length > 0) {
-      spotData.youtubeVideoIds = filteredYoutubeVideoIds;
-    } else if (
-      (existingSpotData && Array.isArray(existingSpotData.youtubeVideoIds) && existingSpotData.youtubeVideoIds.length > 0) ||
-      (youtubeVideoIds && youtubeVideoIds.length > 0)
-    ) {
-      // Explicitly clear previously stored IDs if thumbnails failed or links now broken
-      spotData.youtubeVideoIds = [];
+    // Add YouTube video IDs
+    // For existing spots with updateImagesForExistingSpots=false, preserve existing array
+    // For new spots or when updateImagesForExistingSpots=true, use processed/validated IDs
+    if (existingSpots.empty) {
+      // New spot - use processed YouTube IDs
+      if (filteredYoutubeVideoIds.length > 0) {
+        spotData.youtubeVideoIds = filteredYoutubeVideoIds;
+      } else if (youtubeVideoIds && youtubeVideoIds.length > 0) {
+        // No valid thumbnails found, clear the array
+        spotData.youtubeVideoIds = [];
+      }
+    } else {
+      // Existing spot
+      if (updateImagesForExistingSpots) {
+        // Full sync - use processed YouTube IDs
+        if (filteredYoutubeVideoIds.length > 0) {
+          spotData.youtubeVideoIds = filteredYoutubeVideoIds;
+        } else if (
+          (existingSpotData && Array.isArray(existingSpotData.youtubeVideoIds) && existingSpotData.youtubeVideoIds.length > 0) ||
+          (youtubeVideoIds && youtubeVideoIds.length > 0)
+        ) {
+          // Explicitly clear previously stored IDs if thumbnails failed or links now broken
+          spotData.youtubeVideoIds = [];
+        }
+      } else {
+        // Default sync - preserve existing YouTube IDs (already set in filteredYoutubeVideoIds)
+        if (filteredYoutubeVideoIds.length > 0) {
+          spotData.youtubeVideoIds = filteredYoutubeVideoIds;
+        }
+        // If no existing YouTube IDs, don't set the field to preserve existing state
+      }
     }
 
-    // Add image URLs and hashes if any were found
-    if (imageResult.imageUrls.length > 0) {
-      spotData.imageUrls = imageResult.imageUrls;
-      spotData.imageHashes = imageResult.imageHashes;
+    // Add image URLs and hashes
+    // For existing spots with updateImagesForExistingSpots=false, preserve existing arrays
+    // For new spots or when updateImagesForExistingSpots=true, use processed images
+    if (existingSpots.empty) {
+      // New spot - always use processed images
+      if (imageResult.imageUrls.length > 0) {
+        spotData.imageUrls = imageResult.imageUrls;
+        spotData.imageHashes = imageResult.imageHashes;
+      }
+    } else {
+      // Existing spot
+      if (updateImagesForExistingSpots) {
+        // Full sync - use processed images
+        if (imageResult.imageUrls.length > 0) {
+          spotData.imageUrls = imageResult.imageUrls;
+          spotData.imageHashes = imageResult.imageHashes;
+        } else if (existingSpotData && existingSpotData.imageUrls && existingSpotData.imageUrls.length > 0) {
+          // If placemark has no images but existing spot has images, clear them
+          spotData.imageUrls = [];
+          spotData.imageHashes = [];
+        }
+      } else {
+        // Default sync - preserve existing images (already handled in processPlacemarkImages)
+        if (imageResult.imageUrls.length > 0) {
+          spotData.imageUrls = imageResult.imageUrls;
+          spotData.imageHashes = imageResult.imageHashes;
+        }
+        // If no images returned, don't set imageUrls/imageHashes to preserve existing arrays
+      }
     }
 
     if (existingSpots.empty) {
@@ -2627,6 +2690,9 @@ async function processSyncSource(source, sourceId, apiKey) {
       if (existingData.hidden !== undefined) {
         spotData.hidden = existingData.hidden;
       }
+
+      // Remove spotSourceRemovedAt field if it exists (only valid in update operations)
+      spotData.spotSourceRemovedAt = admin.firestore.FieldValue.delete();
 
       await existingSpot.ref.update(cleanUndefinedValues(spotData));
       processedSpotIds.add(existingSpot.id);
@@ -2860,14 +2926,14 @@ async function ensureAdmin(request) {
 exports.syncSingleSource = onCall(
     {
       region: "europe-west1",
-      memory: "1GiB",
+      memory: "2GiB", // Increased from 1GiB to handle large image processing
       timeoutSeconds: 3600,
       secrets: ["GOOGLE_MAPS_API_KEY"],
     },
     async (request) => {
       try {
         await ensureAdmin(request);
-        const {sourceId} = request.data;
+        const {sourceId, updateImagesForExistingSpots = false} = request.data || {};
 
         if (!sourceId) {
           throw new Error("sourceId is required");
@@ -2878,7 +2944,7 @@ exports.syncSingleSource = onCall(
           throw new Error("Google Maps API key not configured");
         }
 
-        console.log(`Starting sync for single source: ${sourceId}`);
+        console.log(`Starting sync for single source: ${sourceId} (updateImagesForExistingSpots=${updateImagesForExistingSpots})`);
 
         // Get the specific sync source
         const sourceDoc = await db.collection("syncSources").doc(sourceId).get();
@@ -2895,7 +2961,7 @@ exports.syncSingleSource = onCall(
 
         try {
         // Use the shared helper function
-          const result = await processSyncSource(source, sourceId, apiKey);
+          const result = await processSyncSource(source, sourceId, apiKey, updateImagesForExistingSpots);
 
           const response = {
             success: true,
@@ -2937,7 +3003,9 @@ exports.syncAllSources = onCall(
           throw new Error("Google Maps API key not configured");
         }
 
-        console.log("Starting sync for all sources from Firestore");
+        const {updateImagesForExistingSpots = false} = request.data || {};
+
+        console.log(`Starting sync for all sources from Firestore (updateImagesForExistingSpots=${updateImagesForExistingSpots})`);
 
         // Get all active sync sources
         const sourcesSnapshot = await db
@@ -2967,7 +3035,7 @@ exports.syncAllSources = onCall(
 
           try {
           // Use the shared helper function
-            const result = await processSyncSource(source, sourceId, apiKey);
+            const result = await processSyncSource(source, sourceId, apiKey, updateImagesForExistingSpots);
 
             const sourceResult = {
               sourceId: result.sourceId,
