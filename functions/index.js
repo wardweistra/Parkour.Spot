@@ -66,7 +66,7 @@ function getCountryNameWithArticle(countryCode, withArticle = true) {
 }
 
 // Import shared utilities
-const {normalizeToAscii, slugify, formatDateToISO} = require("./utils");
+const {slugify, formatDateToISO} = require("./utils");
 
 // Import shared HTML template
 const {generateHtmlPage} = require("./html-template");
@@ -340,39 +340,41 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
 
     // Generate breadcrumb data
     const breadcrumbs = [];
-    breadcrumbs.push({ name: "Home", url: "/" });
-    
+    breadcrumbs.push({name: "Home", url: "/"});
+
     if (locationInfo || spot) {
-      const countryCode = (locationInfo?.countryCode || spot?.countryCode)?.toUpperCase();
+      const countryCodeValue = locationInfo?.countryCode || spot?.countryCode;
+      const countryCode = countryCodeValue ? countryCodeValue.toUpperCase() : null;
       // Always use country name without article for breadcrumbs
       const countryName = countryCode ? getCountryNameWithArticle(countryCode, false) : null;
-      
+
       if (countryCode && countryName) {
-        breadcrumbs.push({ 
-          name: countryName, 
-          url: `/${countryCode.toLowerCase()}`
+        breadcrumbs.push({
+          name: countryName,
+          url: `/${countryCode.toLowerCase()}`,
         });
       }
     }
-    
+
     if ((locationInfo?.city || spot?.city) && (locationInfo?.countryCode || spot?.countryCode)) {
-      const countryCode = (locationInfo?.countryCode || spot?.countryCode)?.toLowerCase();
+      const countryCodeValue = locationInfo?.countryCode || spot?.countryCode;
+      const countryCode = countryCodeValue ? countryCodeValue.toLowerCase() : null;
       const cityName = locationInfo?.city || spot?.city;
       const citySlug = slugify(cityName);
-      
-      breadcrumbs.push({ 
-        name: cityName, 
-        url: `/${countryCode}/${citySlug}`
+
+      breadcrumbs.push({
+        name: cityName,
+        url: `/${countryCode}/${citySlug}`,
       });
     }
-    
+
     if (spot && spot.name && spot.countryCode && spot.city) {
       const countryCode = spot.countryCode.toLowerCase();
       const citySlug = slugify(spot.city);
-      
-      breadcrumbs.push({ 
-        name: spot.name, 
-        url: `/${countryCode}/${citySlug}/${spot.id}`
+
+      breadcrumbs.push({
+        name: spot.name,
+        url: `/${countryCode}/${citySlug}/${spot.id}`,
       });
     }
 
@@ -420,9 +422,9 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
     } else if (locationInfo) {
       // Location page (country or city)
       pageType = "CollectionPage";
-      pageName = locationInfo.city 
-        ? `Best parkour spots in ${locationInfo.city}, ${locationInfo.countryName}`
-        : `Best parkour spots in ${locationInfo.countryName}`;
+      pageName = locationInfo.city ?
+        `Best parkour spots in ${locationInfo.city}, ${locationInfo.countryName}` :
+        `Best parkour spots in ${locationInfo.countryName}`;
       pageDescription = description;
     }
 
@@ -1803,6 +1805,7 @@ async function downloadAndUploadImage(
  * Processes images for a placemark by downloading and uploading them
  * @param {Object} placemark - The placemark data containing image URLs
  * @param {Object} existingSpotData - Existing spot data (if updating)
+ * @param {boolean} [updateImagesForExistingSpots=false] - Whether to update images for existing spots
  * @return {Promise<Object>} A promise that resolves to an object containing
  *     imageUrls and imageHashes arrays
  */
@@ -2231,13 +2234,15 @@ async function geocodeCoordinates(latitude, longitude, apiKey) {
  * @param {Object} source - The sync source object
  * @param {string} sourceId - The ID of the sync source
  * @param {string} apiKey - The Google Maps API key
+ * @param {boolean} [updateImagesForExistingSpots=false] - Whether to update images for existing spots
+ * @param {number} [startIndex=0] - The index to start processing from (for resuming)
  * @return {Promise<Object>} Processing result with statistics
  */
 async function processSyncSource(source, sourceId, apiKey, updateImagesForExistingSpots = false, startIndex = 0) {
-  const syncType = updateImagesForExistingSpots ? 'full' : 'light';
+  const syncType = updateImagesForExistingSpots ? "full" : "light";
   const isResuming = startIndex > 0;
-  console.log(`Processing source: ${source.name} (${sourceId}) with updateImagesForExistingSpots=${updateImagesForExistingSpots}${isResuming ? ` (resuming from index ${startIndex})` : ''}`);
-  
+  console.log(`Processing source: ${source.name} (${sourceId}) with updateImagesForExistingSpots=${updateImagesForExistingSpots}${isResuming ? ` (resuming from index ${startIndex})` : ""}`);
+
   // Timeout configuration - leave 5 minutes buffer
   const BATCH_SIZE = 25; // Process 25 spots per batch
   const MIN_TIME_REMAINING = 5 * 60 * 1000; // 5 minutes in milliseconds
@@ -2422,15 +2427,14 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
   }
 
   // Process each placemark in batches
-  let processedCount = startIndex;
   for (let i = startIndex; i < placemarks.length; i++) {
     // Check if we're running out of time before processing next batch
     const elapsed = Date.now() - startTime;
     const timeRemaining = timeoutMs - elapsed;
-    
+
     if (timeRemaining < MIN_TIME_REMAINING) {
       console.log(`Approaching timeout. Processed ${i - startIndex} spots (${i}/${placemarks.length} total). Saving progress...`);
-      
+
       // Save progress
       await sourceDocRef.update({
         syncProgress: {
@@ -2439,7 +2443,7 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
           lastProcessedIndex: i,
         },
       });
-      
+
       // Return partial result
       return {
         sourceId: sourceId,
@@ -2590,7 +2594,7 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
     // If a YouTube thumbnail failed to download (e.g., 404), don't keep the video ID
     // We determine success by checking if the thumbnail URL was cached during image processing
     let filteredYoutubeVideoIds = [];
-    
+
     // For existing spots in default sync mode, skip YouTube thumbnail processing
     if (!updateImagesForExistingSpots && existingSpotData) {
       // Preserve existing YouTube video IDs without processing thumbnails
@@ -2605,7 +2609,7 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
             const thumbUrl = `https://img.youtube.com/vi/${vid}/maxresdefault.jpg`;
             const cachedPublicUrl = await checkImageUrlCache(thumbUrl);
             if (!cachedPublicUrl) {
-              const folderName = placemark.folderName || 'unknown';
+              const folderName = placemark.folderName || "unknown";
               console.warn(
                   `Dropping YouTube ID ${vid} due to missing/cached thumbnail (likely 404): ${thumbUrl} (folder: ${folderName}, spot: ${name})`,
               );
@@ -2785,9 +2789,7 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
       global.gc();
       console.log(`Processed ${i + 1}/${placemarks.length} spots, forced GC`);
     }
-    
-    processedCount = i + 1;
-    
+
     // Update progress after each batch
     if ((i + 1) % BATCH_SIZE === 0 || (i + 1) === placemarks.length) {
       await sourceDocRef.update({
@@ -5059,11 +5061,11 @@ exports.importUrbnSpots = onCall(
 function shouldRunSync(cronExpression, lastRun, now) {
   try {
     const interval = cronParser.parseExpression(cronExpression, {tz: "UTC"});
-    
+
     // Get the next scheduled time after lastRun
     interval.reset(lastRun);
     const nextScheduled = interval.next().toDate();
-    
+
     // If next scheduled time has passed, we should run
     return nextScheduled <= now;
   } catch (error) {
@@ -5106,7 +5108,7 @@ exports.checkAndRunAutoSyncs = onSchedule(
         for (const sourceDoc of sourcesSnapshot.docs) {
           const source = sourceDoc.data();
           const sourceId = sourceDoc.id;
-          
+
           // Skip if auto-sync is disabled
           if (source.autoSyncEnabled !== true) {
             continue;
@@ -5115,27 +5117,27 @@ exports.checkAndRunAutoSyncs = onSchedule(
           // PRIORITY 1: Check if there's a sync in progress - finish it first
           if (source.syncInProgress === true) {
             try {
-              const syncType = source.syncType || 'light';
+              const syncType = source.syncType || "light";
               const startIndex = source.syncProgress?.lastProcessedIndex || 0;
-              const isFullSync = syncType === 'full';
-              
+              const isFullSync = syncType === "full";
+
               console.log(`Resuming in-progress ${syncType} sync for source: ${source.name} (${sourceId}) from index ${startIndex}`);
-              
+
               // Refresh source data to get latest state
               const refreshedSourceDoc = await db.collection("syncSources").doc(sourceId).get();
               const refreshedSource = refreshedSourceDoc.data();
-              
+
               const result = await processSyncSource(
-                refreshedSource,
-                sourceId,
-                apiKey,
-                isFullSync,
-                startIndex,
+                  refreshedSource,
+                  sourceId,
+                  apiKey,
+                  isFullSync,
+                  startIndex,
               );
-              
+
               // If sync completed (not partial), update timestamp and clear progress
               if (!result.partial) {
-                const updateField = isFullSync ? 'lastFullSyncAt' : 'lastLightSyncAt';
+                const updateField = isFullSync ? "lastFullSyncAt" : "lastLightSyncAt";
                 await db.collection("syncSources").doc(sourceId).update({
                   [updateField]: admin.firestore.FieldValue.serverTimestamp(),
                 });
@@ -5143,7 +5145,7 @@ exports.checkAndRunAutoSyncs = onSchedule(
               } else {
                 console.log(`Auto-sync partial: ${syncType} sync for ${source.name} - ${result.message}`);
               }
-              
+
               processedSource = true;
               return {
                 success: true,
@@ -5162,7 +5164,7 @@ exports.checkAndRunAutoSyncs = onSchedule(
                 success: false,
                 sourceId,
                 sourceName: source.name,
-                syncType: source.syncType || 'unknown',
+                syncType: source.syncType || "unknown",
                 error: error.message,
                 resumed: true,
                 message: `Failed to resume sync for ${source.name}`,
@@ -5191,7 +5193,7 @@ exports.checkAndRunAutoSyncs = onSchedule(
             try {
               console.log(`Running scheduled full sync for source: ${source.name} (${sourceId})`);
               const result = await processSyncSource(source, sourceId, apiKey, true);
-              
+
               // If sync completed (not partial), update timestamp
               if (!result.partial) {
                 await db.collection("syncSources").doc(sourceId).update({
@@ -5201,7 +5203,7 @@ exports.checkAndRunAutoSyncs = onSchedule(
               } else {
                 console.log(`Auto-sync partial: Full sync for ${source.name} - ${result.message}`);
               }
-              
+
               processedSource = true;
               return {
                 success: true,
@@ -5224,13 +5226,12 @@ exports.checkAndRunAutoSyncs = onSchedule(
                 message: `Failed to process source: ${source.name}`,
               };
             }
-          } 
-          // Run light sync if scheduled (only if full sync wasn't needed)
-          else if (shouldRunLightSync) {
+          } else if (shouldRunLightSync) {
+            // Run light sync if scheduled (only if full sync wasn't needed)
             try {
               console.log(`Running scheduled light sync for source: ${source.name} (${sourceId})`);
               const result = await processSyncSource(source, sourceId, apiKey, false);
-              
+
               // If sync completed (not partial), update timestamp
               if (!result.partial) {
                 await db.collection("syncSources").doc(sourceId).update({
@@ -5240,7 +5241,7 @@ exports.checkAndRunAutoSyncs = onSchedule(
               } else {
                 console.log(`Auto-sync partial: Light sync for ${source.name} - ${result.message}`);
               }
-              
+
               processedSource = true;
               return {
                 success: true,
@@ -5298,7 +5299,7 @@ exports.generateSitemapsScheduled = onSchedule(
       try {
         // Generate and upload sitemaps to Storage
         await generateAllSitemaps();
-        
+
         console.log("Scheduled sitemap generation completed successfully");
       } catch (error) {
         console.error("Error in scheduled sitemap generation:", error);
@@ -5322,7 +5323,7 @@ exports.serveSitemap = onRequest(
       try {
         // Normalize path - remove query string and trailing slashes
         const path = (req.path || req.url || "/").split("?")[0].replace(/\/$/, "") || "/";
-        
+
         // Extract sitemap filename from path
         let sitemapName;
         if (path === "/sitemap.xml" || path === "/sitemaps/sitemap.xml") {
@@ -5331,14 +5332,14 @@ exports.serveSitemap = onRequest(
           // Extract filename and decode URL encoding
           const rawFilename = path.replace("/sitemaps/", "");
           sitemapName = decodeURIComponent(rawFilename);
-          
+
           // Validate filename to prevent path traversal attacks
           // Must match pattern: sitemap.xml or sitemap-{country}.xml or sitemap-{country}-{number}.xml
           if (!/^sitemap(-[a-z]{2}(-\d+)?)?\.xml$/.test(sitemapName)) {
             res.status(400).send("Invalid sitemap filename");
             return;
           }
-          
+
           // Additional security check: ensure no path traversal sequences
           if (sitemapName.includes("..") || sitemapName.includes("/") || sitemapName.includes("\\")) {
             res.status(400).send("Invalid sitemap filename");
@@ -5348,19 +5349,19 @@ exports.serveSitemap = onRequest(
           res.status(404).send("Sitemap not found");
           return;
         }
-        
+
         // Read sitemap from Storage
         const xml = await getSitemapFromStorage(sitemapName);
-        
+
         if (!xml) {
           res.status(404).send("Sitemap not found");
           return;
         }
-        
+
         // Set appropriate headers
         res.set("Content-Type", "application/xml; charset=utf-8");
         res.set("Cache-Control", "public, max-age=3600"); // Cache for 1 hour
-        
+
         res.status(200).send(xml);
       } catch (error) {
         console.error("Error serving sitemap:", error);
