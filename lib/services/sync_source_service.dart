@@ -22,6 +22,9 @@ class SyncSource {
   final bool? autoSyncEnabled; // Whether auto-sync is enabled
   final DateTime? lastLightSyncAt;
   final DateTime? lastFullSyncAt;
+  final bool? syncInProgress; // Whether a sync is currently in progress
+  final String? syncType; // "light" or "full" - type of sync in progress
+  final Map<String, dynamic>? syncProgress; // Progress tracking: {processedCount, totalCount, lastProcessedIndex}
 
   SyncSource({
     required this.id,
@@ -43,6 +46,9 @@ class SyncSource {
     this.autoSyncEnabled,
     this.lastLightSyncAt,
     this.lastFullSyncAt,
+    this.syncInProgress,
+    this.syncType,
+    this.syncProgress,
   });
 
   factory SyncSource.fromMap(Map<String, dynamic> data) {
@@ -70,6 +76,11 @@ class SyncSource {
       autoSyncEnabled: data['autoSyncEnabled'],
       lastLightSyncAt: _parseTimestamp(data['lastLightSyncAt']),
       lastFullSyncAt: _parseTimestamp(data['lastFullSyncAt']),
+      syncInProgress: data['syncInProgress'],
+      syncType: data['syncType'],
+      syncProgress: data['syncProgress'] != null
+          ? Map<String, dynamic>.from(data['syncProgress'] as Map)
+          : null,
     );
   }
 

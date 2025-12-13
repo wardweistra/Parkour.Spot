@@ -2233,8 +2233,16 @@ async function geocodeCoordinates(latitude, longitude, apiKey) {
  * @param {string} apiKey - The Google Maps API key
  * @return {Promise<Object>} Processing result with statistics
  */
-async function processSyncSource(source, sourceId, apiKey, updateImagesForExistingSpots = false) {
-  console.log(`Processing source: ${source.name} (${sourceId}) with updateImagesForExistingSpots=${updateImagesForExistingSpots}`);
+async function processSyncSource(source, sourceId, apiKey, updateImagesForExistingSpots = false, startIndex = 0) {
+  const syncType = updateImagesForExistingSpots ? 'full' : 'light';
+  const isResuming = startIndex > 0;
+  console.log(`Processing source: ${source.name} (${sourceId}) with updateImagesForExistingSpots=${updateImagesForExistingSpots}${isResuming ? ` (resuming from index ${startIndex})` : ''}`);
+  
+  // Timeout configuration - leave 5 minutes buffer
+  const BATCH_SIZE = 25; // Process 25 spots per batch
+  const MIN_TIME_REMAINING = 5 * 60 * 1000; // 5 minutes in milliseconds
+  const timeoutMs = 55 * 60 * 1000; // 55 minutes (leave buffer before 1 hour timeout)
+  const startTime = Date.now();
 
   // Download and process based on detected format (KMZ/KML/GeoJSON)
   let fileBuffer = await downloadFile(source.kmzUrl);
@@ -2365,6 +2373,20 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
   // Clear file buffer to free memory
   fileBuffer = null;
 
+  // Mark sync as in progress (if not already marked)
+  const sourceDocRef = db.collection("syncSources").doc(sourceId);
+  if (!isResuming) {
+    await sourceDocRef.update({
+      syncInProgress: true,
+      syncType: syncType,
+      syncProgress: {
+        processedCount: 0,
+        totalCount: placemarks.length,
+        lastProcessedIndex: 0,
+      },
+    });
+  }
+
   let created = 0;
   let updated = 0;
   let geocoded = 0;
@@ -2399,8 +2421,47 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
     );
   }
 
-  // Process each placemark
-  for (let i = 0; i < placemarks.length; i++) {
+  // Process each placemark in batches
+  let processedCount = startIndex;
+  for (let i = startIndex; i < placemarks.length; i++) {
+    // Check if we're running out of time before processing next batch
+    const elapsed = Date.now() - startTime;
+    const timeRemaining = timeoutMs - elapsed;
+    
+    if (timeRemaining < MIN_TIME_REMAINING) {
+      console.log(`Approaching timeout. Processed ${i - startIndex} spots (${i}/${placemarks.length} total). Saving progress...`);
+      
+      // Save progress
+      await sourceDocRef.update({
+        syncProgress: {
+          processedCount: i,
+          totalCount: placemarks.length,
+          lastProcessedIndex: i,
+        },
+      });
+      
+      // Return partial result
+      return {
+        sourceId: sourceId,
+        sourceName: source.name,
+        stats: {
+          total: placemarks.length,
+          created,
+          updated,
+          removed,
+          skipped,
+          geocoded,
+          geocodingFailed,
+          geocodingSuccessRate: placemarks.length > 0 ?
+            ((geocoded / placemarks.length) * 100).toFixed(1) + "%" :
+            "0%",
+        },
+        partial: true,
+        processed: i - startIndex,
+        remaining: placemarks.length - i,
+        message: `Partial sync: ${i - startIndex}/${placemarks.length - startIndex} spots processed. Will resume on next run.`,
+      };
+    }
     const placemark = placemarks[i];
     const {name, description, coordinates, address: placemarkAddress} = placemark;
 
@@ -2723,6 +2784,20 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
       global.gc();
       console.log(`Processed ${i + 1}/${placemarks.length} spots, forced GC`);
     }
+    
+    processedCount = i + 1;
+    
+    // Update progress after each batch
+    if ((i + 1) % BATCH_SIZE === 0 || (i + 1) === placemarks.length) {
+      await sourceDocRef.update({
+        syncProgress: {
+          processedCount: i + 1,
+          totalCount: placemarks.length,
+          lastProcessedIndex: i + 1,
+        },
+      });
+      console.log(`Progress update: ${i + 1}/${placemarks.length} spots processed`);
+    }
   }
 
   // Identify and label spots that were not present in this sync
@@ -2769,12 +2844,15 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
     geocodingSuccessRate,
   };
 
-  // Update source last sync time and folder information
+  // Sync completed - clear progress tracking and update last sync time
   const sourceDoc = await db.collection("syncSources").doc(sourceId).get();
   if (sourceDoc.exists) {
     const updateData = {
       lastSyncAt: admin.firestore.FieldValue.serverTimestamp(),
       lastSyncStats: stats,
+      syncInProgress: false,
+      syncProgress: admin.firestore.FieldValue.delete(),
+      syncType: admin.firestore.FieldValue.delete(),
     };
 
     // Update allFolders if recordFolderName is enabled
@@ -4996,6 +5074,7 @@ function shouldRunSync(cronExpression, lastRun, now) {
 /**
  * Scheduled function to check and run automated syncs for spot sources
  * Runs every hour to check which sources need syncing based on their cron schedules
+ * Processes only one source per run to avoid timeout issues
  */
 exports.checkAndRunAutoSyncs = onSchedule(
     {
@@ -5021,7 +5100,7 @@ exports.checkAndRunAutoSyncs = onSchedule(
             .get();
 
         const now = new Date();
-        const syncResults = [];
+        let processedSource = false;
 
         for (const sourceDoc of sourcesSnapshot.docs) {
           const source = sourceDoc.data();
@@ -5032,6 +5111,65 @@ exports.checkAndRunAutoSyncs = onSchedule(
             continue;
           }
 
+          // PRIORITY 1: Check if there's a sync in progress - finish it first
+          if (source.syncInProgress === true) {
+            try {
+              const syncType = source.syncType || 'light';
+              const startIndex = source.syncProgress?.lastProcessedIndex || 0;
+              const isFullSync = syncType === 'full';
+              
+              console.log(`Resuming in-progress ${syncType} sync for source: ${source.name} (${sourceId}) from index ${startIndex}`);
+              
+              // Refresh source data to get latest state
+              const refreshedSourceDoc = await db.collection("syncSources").doc(sourceId).get();
+              const refreshedSource = refreshedSourceDoc.data();
+              
+              const result = await processSyncSource(
+                refreshedSource,
+                sourceId,
+                apiKey,
+                isFullSync,
+                startIndex,
+              );
+              
+              // If sync completed (not partial), update timestamp and clear progress
+              if (!result.partial) {
+                const updateField = isFullSync ? 'lastFullSyncAt' : 'lastLightSyncAt';
+                await db.collection("syncSources").doc(sourceId).update({
+                  [updateField]: admin.firestore.FieldValue.serverTimestamp(),
+                });
+                console.log(`Auto-sync completed: ${syncType} sync for ${source.name}`, result.stats);
+              } else {
+                console.log(`Auto-sync partial: ${syncType} sync for ${source.name} - ${result.message}`);
+              }
+              
+              processedSource = true;
+              return {
+                success: true,
+                sourceId,
+                sourceName: source.name,
+                syncType: syncType,
+                stats: result.stats,
+                resumed: true,
+                partial: result.partial,
+                message: result.partial ? result.message : `Resumed and completed ${syncType} sync`,
+              };
+            } catch (error) {
+              console.error(`Error resuming sync for ${source.name}:`, error);
+              processedSource = true;
+              return {
+                success: false,
+                sourceId,
+                sourceName: source.name,
+                syncType: source.syncType || 'unknown',
+                error: error.message,
+                resumed: true,
+                message: `Failed to resume sync for ${source.name}`,
+              };
+            }
+          }
+
+          // PRIORITY 2: Check if a new sync is due (only if no sync in progress)
           let shouldRunLightSync = false;
           let shouldRunFullSync = false;
 
@@ -5053,27 +5191,37 @@ exports.checkAndRunAutoSyncs = onSchedule(
               console.log(`Running scheduled full sync for source: ${source.name} (${sourceId})`);
               const result = await processSyncSource(source, sourceId, apiKey, true);
               
-              // Update lastFullSyncAt
-              await db.collection("syncSources").doc(sourceId).update({
-                lastFullSyncAt: admin.firestore.FieldValue.serverTimestamp(),
-              });
-
-              syncResults.push({
+              // If sync completed (not partial), update timestamp
+              if (!result.partial) {
+                await db.collection("syncSources").doc(sourceId).update({
+                  lastFullSyncAt: admin.firestore.FieldValue.serverTimestamp(),
+                });
+                console.log(`Auto-sync completed: Full sync for ${source.name}`, result.stats);
+              } else {
+                console.log(`Auto-sync partial: Full sync for ${source.name} - ${result.message}`);
+              }
+              
+              processedSource = true;
+              return {
+                success: true,
                 sourceId,
                 sourceName: source.name,
                 syncType: "full",
-                success: true,
                 stats: result.stats,
-              });
+                partial: result.partial,
+                message: result.partial ? result.message : `Processed 1 source (full sync)`,
+              };
             } catch (error) {
               console.error(`Error running full sync for ${source.name}:`, error);
-              syncResults.push({
+              processedSource = true;
+              return {
+                success: false,
                 sourceId,
                 sourceName: source.name,
                 syncType: "full",
-                success: false,
                 error: error.message,
-              });
+                message: `Failed to process source: ${source.name}`,
+              };
             }
           } 
           // Run light sync if scheduled (only if full sync wasn't needed)
@@ -5082,33 +5230,49 @@ exports.checkAndRunAutoSyncs = onSchedule(
               console.log(`Running scheduled light sync for source: ${source.name} (${sourceId})`);
               const result = await processSyncSource(source, sourceId, apiKey, false);
               
-              // Update lastLightSyncAt
-              await db.collection("syncSources").doc(sourceId).update({
-                lastLightSyncAt: admin.firestore.FieldValue.serverTimestamp(),
-              });
-
-              syncResults.push({
+              // If sync completed (not partial), update timestamp
+              if (!result.partial) {
+                await db.collection("syncSources").doc(sourceId).update({
+                  lastLightSyncAt: admin.firestore.FieldValue.serverTimestamp(),
+                });
+                console.log(`Auto-sync completed: Light sync for ${source.name}`, result.stats);
+              } else {
+                console.log(`Auto-sync partial: Light sync for ${source.name} - ${result.message}`);
+              }
+              
+              processedSource = true;
+              return {
+                success: true,
                 sourceId,
                 sourceName: source.name,
                 syncType: "light",
-                success: true,
                 stats: result.stats,
-              });
+                partial: result.partial,
+                message: result.partial ? result.message : `Processed 1 source (light sync)`,
+              };
             } catch (error) {
               console.error(`Error running light sync for ${source.name}:`, error);
-              syncResults.push({
+              processedSource = true;
+              return {
+                success: false,
                 sourceId,
                 sourceName: source.name,
                 syncType: "light",
-                success: false,
                 error: error.message,
-              });
+                message: `Failed to process source: ${source.name}`,
+              };
             }
           }
         }
 
-        console.log(`Auto-sync check completed. Processed ${syncResults.length} sources.`);
-        return {success: true, results: syncResults};
+        if (!processedSource) {
+          console.log("Auto-sync check completed. No sources needed syncing at this time.");
+          return {
+            success: true,
+            message: "No sources needed syncing",
+            processed: 0,
+          };
+        }
       } catch (error) {
         console.error("Error in auto-sync check:", error);
         throw error;

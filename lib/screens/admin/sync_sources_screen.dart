@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -16,6 +17,8 @@ class SyncSourcesScreen extends StatefulWidget {
 }
 
 class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
+  Timer? _refreshTimer;
+
   @override
   void initState() {
     super.initState();
@@ -24,6 +27,53 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
       final service = context.read<SyncSourceService>();
       if (service.sources.isEmpty && !service.isLoading) {
         service.fetchSyncSources(includeInactive: true);
+      }
+      _startPeriodicRefresh();
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startPeriodicRefresh() {
+    if (!mounted) return;
+    
+    // Cancel existing timer if any
+    _refreshTimer?.cancel();
+    
+    final service = context.read<SyncSourceService>();
+    final hasSyncInProgress = service.sources.any((s) => s.syncInProgress == true);
+    
+    // Use 5 seconds if sync is in progress, 30 seconds otherwise
+    final interval = hasSyncInProgress 
+        ? const Duration(seconds: 5) 
+        : const Duration(seconds: 30);
+    
+    _refreshTimer = Timer.periodic(interval, (timer) async {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      
+      // Fetch latest sync sources
+      await context.read<SyncSourceService>().fetchSyncSources(includeInactive: true);
+      
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      
+      // Check if sync status changed after fetch
+      final currentService = context.read<SyncSourceService>();
+      final stillHasSyncInProgress = currentService.sources.any((s) => s.syncInProgress == true);
+      
+      // If sync status changed, restart timer with new interval
+      if (stillHasSyncInProgress != hasSyncInProgress) {
+        timer.cancel();
+        _startPeriodicRefresh(); // Restart with new interval
       }
     });
   }
@@ -239,7 +289,24 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                       Row(
                         children: [
                           Chip(label: Text(s.isActive ? 'Active' : 'Inactive')),
-                          if (s.autoSyncEnabled == true) ...[
+                          if (s.syncInProgress == true) ...[
+                            const SizedBox(width: 8),
+                            Chip(
+                              label: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const SizedBox(
+                                    width: 12,
+                                    height: 12,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text('Syncing ${s.syncType ?? 'unknown'}...'),
+                                ],
+                              ),
+                              backgroundColor: Colors.orange.shade100,
+                            ),
+                          ] else if (s.autoSyncEnabled == true) ...[
                             const SizedBox(width: 8),
                             Chip(
                               label: const Row(
@@ -259,6 +326,69 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                           ],
                         ],
                       ),
+                      if (s.syncInProgress == true && s.syncProgress != null) ...[
+                        const SizedBox(height: 8),
+                        Card(
+                          color: Colors.orange.shade50,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.sync, size: 16, color: Colors.orange),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Sync in Progress (${s.syncType ?? 'unknown'})',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                if (s.syncProgress!['totalCount'] != null &&
+                                    s.syncProgress!['processedCount'] != null)
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            'Progress: ${s.syncProgress!['processedCount']}/${s.syncProgress!['totalCount']} spots',
+                                            style: const TextStyle(fontSize: 11),
+                                          ),
+                                          Text(
+                                            '${((s.syncProgress!['processedCount'] as num) / (s.syncProgress!['totalCount'] as num) * 100).toStringAsFixed(1)}%',
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      LinearProgressIndicator(
+                                        value: (s.syncProgress!['processedCount'] as num) /
+                                            (s.syncProgress!['totalCount'] as num),
+                                        backgroundColor: Colors.grey.shade300,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
+                                      ),
+                                    ],
+                                  )
+                                else
+                                  const Text(
+                                    'Processing...',
+                                    style: TextStyle(fontSize: 11),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                       if (s.autoSyncEnabled == true) ...[
                         const SizedBox(height: 4),
                         Wrap(
