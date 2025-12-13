@@ -594,7 +594,7 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
               ),
             ),
             const SizedBox(height: 16),
-            _buildSpotItem(_foundSpot!, isSelectable: false),
+            _buildSpotItem(_foundSpot!, isSelectable: true),
           ],
         ),
       );
