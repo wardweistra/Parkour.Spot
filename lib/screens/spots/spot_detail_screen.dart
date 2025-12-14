@@ -3122,6 +3122,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       context: context,
       builder: (dialogContext) => SpotSelectionDialog(
         currentSpotId: widget.spot.id,
+        currentSpot: widget.spot,
+        allowExternalSources: false,
+        showNearbySpots: true,
       ),
     );
 
