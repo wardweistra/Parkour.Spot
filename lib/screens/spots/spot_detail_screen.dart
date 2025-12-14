@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -754,11 +755,14 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                           ],
                           PopupMenuItem<_SpotMenuAction>(
                             value: _SpotMenuAction.reportAsDuplicate,
+                            enabled: _spot.duplicateOf == null,
                             child: Row(
                               children: [
                                 Icon(
                                   Icons.copy_all,
-                                  color: theme.colorScheme.primary,
+                                  color: _spot.duplicateOf == null
+                                      ? theme.colorScheme.primary
+                                      : theme.colorScheme.onSurface.withValues(alpha: 0.38),
                                   size: 20,
                                 ),
                                 const SizedBox(width: 12),
@@ -771,10 +775,15 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                       style: theme.textTheme.bodyMedium
                                           ?.copyWith(
                                             fontWeight: FontWeight.w500,
+                                            color: _spot.duplicateOf == null
+                                                ? null
+                                                : theme.colorScheme.onSurface.withValues(alpha: 0.38),
                                           ),
                                     ),
                                     Text(
-                                      'This spot is a duplicate',
+                                      _spot.duplicateOf == null
+                                          ? 'This spot is a duplicate'
+                                          : 'Already marked as duplicate',
                                       style: theme.textTheme.bodySmall
                                           ?.copyWith(
                                             color: theme.colorScheme.onSurface
@@ -833,6 +842,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             // Check if spot is already marked as duplicate
                             final isAlreadyDuplicate = _spot.duplicateOf != null;
                             
+                            items.add(const PopupMenuDivider());
                             items.addAll([
                               PopupMenuItem<_SpotMenuAction>(
                                 value: _SpotMenuAction.edit,
@@ -1039,6 +1049,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             ]);
 
                             if (canDeleteSpot) {
+                              items.add(const PopupMenuDivider());
                               items.add(
                                 PopupMenuItem<_SpotMenuAction>(
                                   value: _SpotMenuAction.delete,
@@ -3969,12 +3980,18 @@ class _ReportDuplicateDialog extends StatefulWidget {
 class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
   late final TextEditingController detailsController;
   late final TextEditingController emailController;
+  late final TextEditingController searchController;
 
   String? duplicateSpotError;
   String? emailError;
   String? submissionError;
+  String? searchError;
   bool isSubmitting = false;
+  bool _isLoadingNearby = false;
+  bool _isSearching = false;
   Spot? _selectedDuplicateSpot;
+  Spot? _foundSpot;
+  List<Spot> _nearbySpots = [];
   String? _duplicateOfSpotId;
 
   @override
@@ -3982,6 +3999,7 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
     super.initState();
     final authService = Provider.of<AuthService>(context, listen: false);
     detailsController = TextEditingController();
+    searchController = TextEditingController();
     emailController = TextEditingController(
       text: authService.isAuthenticated
           ? (authService.userProfile?.email ??
@@ -3989,13 +4007,338 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
               '')
           : '',
     );
+    // Load nearby spots automatically
+    _loadNearbySpots();
   }
 
   @override
   void dispose() {
     detailsController.dispose();
     emailController.dispose();
+    searchController.dispose();
     super.dispose();
+  }
+
+  /// Calculate approximate bounds for ~50 meters radius
+  Map<String, double> _calculateBounds(double lat, double lng) {
+    const double latOffset = 50 / 111000; // ~0.00045 degrees
+    final double lngOffset = latOffset / (math.cos(lat * math.pi / 180.0).abs());
+    
+    return {
+      'minLat': lat - latOffset,
+      'maxLat': lat + latOffset,
+      'minLng': lng - lngOffset,
+      'maxLng': lng + lngOffset,
+    };
+  }
+
+  Future<void> _loadNearbySpots() async {
+    final lat = widget.spot.latitude;
+    final lng = widget.spot.longitude;
+    
+    if (lat == null || lng == null) {
+      return;
+    }
+
+    setState(() {
+      _isLoadingNearby = true;
+    });
+
+    try {
+      final spotService = Provider.of<SpotService>(context, listen: false);
+      final bounds = _calculateBounds(lat, lng);
+
+      final result = await spotService.getTopRankedSpotsInBounds(
+        bounds['minLat']!,
+        bounds['maxLat']!,
+        bounds['minLng']!,
+        bounds['maxLng']!,
+        limit: 20,
+        spotSource: null, // Allow all sources for duplicate reports
+      );
+
+      final spots = (result['spots'] as List<Spot>?) ?? <Spot>[];
+      
+      // Filter out the current spot
+      final filteredSpots = spots.where((spot) {
+        return spot.id != widget.spot.id;
+      }).toList();
+
+      if (mounted) {
+        setState(() {
+          _nearbySpots = filteredSpots;
+          _isLoadingNearby = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading nearby spots: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingNearby = false;
+        });
+      }
+    }
+  }
+
+  /// Extract spot ID from input (can be URL, ID, or text containing a URL)
+  String? _extractSpotId(String input) {
+    final trimmed = input.trim();
+    if (trimmed.isEmpty) return null;
+
+    final urlPattern = RegExp(
+      r'(https?://[^\s<>"()]+|/[^\s<>"()]+)',
+      caseSensitive: false,
+    );
+    
+    final urlMatches = urlPattern.allMatches(trimmed);
+    for (final match in urlMatches) {
+      final urlCandidate = match.group(0);
+      if (urlCandidate == null) continue;
+      
+      String? spotId;
+      
+      if (urlCandidate.startsWith('http://') || urlCandidate.startsWith('https://')) {
+        spotId = UrlService.extractSpotIdFromUrl(urlCandidate);
+        if (spotId != null) return spotId;
+        
+        try {
+          final uri = Uri.parse(urlCandidate);
+          final pathSegments = uri.pathSegments;
+          if (pathSegments.length == 2 && pathSegments[0] == 'spot') {
+            return pathSegments[1];
+          }
+        } catch (_) {}
+      }
+      
+      if (urlCandidate.startsWith('/')) {
+        spotId = UrlService.extractSpotIdFromUrl('https://parkour.spot$urlCandidate');
+        if (spotId != null) return spotId;
+        
+        try {
+          final uri = Uri.parse('https://parkour.spot$urlCandidate');
+          final pathSegments = uri.pathSegments;
+          if (pathSegments.length == 2 && pathSegments[0] == 'spot') {
+            return pathSegments[1];
+          }
+        } catch (_) {}
+      }
+    }
+
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      final spotId = UrlService.extractSpotIdFromUrl(trimmed);
+      if (spotId != null) return spotId;
+      
+      try {
+        final uri = Uri.parse(trimmed);
+        final pathSegments = uri.pathSegments;
+        if (pathSegments.length == 2 && pathSegments[0] == 'spot') {
+          return pathSegments[1];
+        }
+      } catch (_) {}
+      return null;
+    }
+    
+    if (trimmed.startsWith('/')) {
+      final spotId = UrlService.extractSpotIdFromUrl('https://parkour.spot$trimmed');
+      if (spotId != null) return spotId;
+      
+      try {
+        final uri = Uri.parse('https://parkour.spot$trimmed');
+        final pathSegments = uri.pathSegments;
+        if (pathSegments.length == 2 && pathSegments[0] == 'spot') {
+          return pathSegments[1];
+        }
+      } catch (_) {}
+      return null;
+    }
+
+    if (RegExp(r'^[a-zA-Z0-9_-]+$').hasMatch(trimmed)) {
+      return trimmed;
+    }
+
+    return null;
+  }
+
+  Future<void> _searchSpot() async {
+    final input = searchController.text.trim();
+    if (input.isEmpty) {
+      setState(() {
+        searchError = 'Please enter a spot ID or URL';
+        _foundSpot = null;
+      });
+      return;
+    }
+
+    final spotId = _extractSpotId(input);
+    if (spotId == null) {
+      setState(() {
+        searchError = 'Invalid spot ID or URL format';
+        _foundSpot = null;
+      });
+      return;
+    }
+
+    if (spotId == widget.spot.id) {
+      setState(() {
+        searchError = 'Cannot mark a spot as duplicate of itself';
+        _foundSpot = null;
+      });
+      return;
+    }
+
+    setState(() {
+      _isSearching = true;
+      searchError = null;
+      _foundSpot = null;
+    });
+
+    try {
+      final spotService = Provider.of<SpotService>(context, listen: false);
+      final spot = await spotService.getSpotById(spotId);
+
+      if (!mounted) return;
+
+      if (spot == null) {
+        setState(() {
+          searchError = 'Spot not found';
+          _foundSpot = null;
+          _isSearching = false;
+        });
+        return;
+      }
+
+      setState(() {
+        _foundSpot = spot;
+        _isSearching = false;
+        searchError = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        searchError = 'Failed to load spot: $e';
+        _foundSpot = null;
+        _isSearching = false;
+      });
+    }
+  }
+
+  void _selectSpot(Spot spot) {
+    setState(() {
+      _selectedDuplicateSpot = spot;
+      _duplicateOfSpotId = spot.id;
+      duplicateSpotError = null;
+      _foundSpot = null;
+      searchController.clear();
+      searchError = null;
+    });
+  }
+
+  Widget _buildSpotSelectionItem(Spot spot, ThemeData theme, BuildContext dialogContext) {
+    return Card(
+      child: InkWell(
+        onTap: () => _selectSpot(spot),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Spot image thumbnail
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: spot.imageUrls != null && spot.imageUrls!.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: spot.imageUrls!.first,
+                        width: 80,
+                        height: 80,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          width: 80,
+                          height: 80,
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          child: const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          width: 80,
+                          height: 80,
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          child: Icon(
+                            Icons.image_not_supported,
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                          ),
+                        ),
+                      )
+                    : Container(
+                        width: 80,
+                        height: 80,
+                        color: theme.colorScheme.surfaceContainerHighest,
+                        child: Icon(
+                          Icons.image_not_supported,
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                        ),
+                      ),
+              ),
+              const SizedBox(width: 12),
+              // Spot details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      spot.name,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (spot.description.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        spot.description,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    if (spot.address != null || spot.city != null) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on,
+                            size: 14,
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              [spot.address, spot.city].whereType<String>().join(', '),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -4015,186 +4358,237 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
             const Expanded(child: Text('Flag as duplicate')),
           ],
         ),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'This spot appears to be a duplicate of another spot. Please select the original spot below.',
-                style: theme.textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Which spot is this a duplicate of?',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 8),
-              if (duplicateSpotError != null) ...[
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600, maxHeight: 600),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
                 Text(
-                  duplicateSpotError!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.error,
+                  'This spot appears to be a duplicate of another spot. Please select the original spot below.',
+                  style: theme.textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Which spot is this a duplicate of?',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 8),
-              ],
-              if (_selectedDuplicateSpot == null) ...[
-                OutlinedButton.icon(
-                  onPressed: () async {
-                      final result = await showDialog<String>(
-                        context: dialogContext,
-                        builder: (context) => SpotSelectionDialog(
-                          currentSpotId: widget.spot.id,
-                          currentSpot: widget.spot,
-                          allowExternalSources: true,
-                          showNearbySpots: true,
-                        ),
-                      );
-                    if (result != null && mounted) {
-                      setState(() {
-                        _duplicateOfSpotId = result;
-                        duplicateSpotError = null;
-                      });
-                      final spotService = Provider.of<SpotService>(context, listen: false);
-                      final spot = await spotService.getSpotById(result);
-                      if (mounted && spot != null) {
-                        setState(() {
-                          _selectedDuplicateSpot = spot;
-                        });
-                      }
-                    }
-                  },
-                  icon: const Icon(Icons.search),
-                  label: const Text('Select duplicate spot'),
-                ),
-              ] else ...[
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _selectedDuplicateSpot!.name,
-                                style: theme.textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              if (_selectedDuplicateSpot!.description.isNotEmpty) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  _selectedDuplicateSpot!.description,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                              if (_selectedDuplicateSpot!.id != null) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Spot ID: ${_selectedDuplicateSpot!.id}',
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                                    fontFamily: 'monospace',
-                                  ),
-                                ),
-                              ],
-                            ],
+                if (duplicateSpotError != null) ...[
+                  Text(
+                    duplicateSpotError!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.error,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                if (_selectedDuplicateSpot == null) ...[
+                  // Search field
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: searchController,
+                          decoration: InputDecoration(
+                            hintText: 'Paste spot URL or enter spot ID',
+                            prefixIcon: const Icon(Icons.link),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            filled: true,
+                            fillColor: theme.colorScheme.surfaceContainerHighest,
+                            errorText: searchError,
                           ),
+                          onSubmitted: (_) => _searchSpot(),
+                          enabled: !_isSearching,
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () {
-                            setState(() {
-                              _selectedDuplicateSpot = null;
-                              _duplicateOfSpotId = null;
-                              duplicateSpotError = null;
-                            });
-                          },
-                          tooltip: 'Remove selection',
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        onPressed: _isSearching ? null : _searchSpot,
+                        icon: _isSearching
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.search),
+                        label: const Text('Search'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // Nearby spots section
+                  if (_isLoadingNearby)
+                    const Center(child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: CircularProgressIndicator(),
+                    ))
+                  else if (_nearbySpots.isNotEmpty) ...[
+                    Text(
+                      'Nearby spots (within ~50m)',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 200),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: _nearbySpots.map((spot) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: _buildSpotSelectionItem(spot, theme, dialogContext),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  // Found spot from search
+                  if (_foundSpot != null) ...[
+                    Text(
+                      'Found Spot',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildSpotSelectionItem(_foundSpot!, theme, dialogContext),
+                    const SizedBox(height: 16),
+                  ],
+                ] else ...[
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _selectedDuplicateSpot!.name,
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                if (_selectedDuplicateSpot!.description.isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _selectedDuplicateSpot!.description,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                                if (_selectedDuplicateSpot!.id != null) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Spot ID: ${_selectedDuplicateSpot!.id}',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                                      fontFamily: 'monospace',
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () {
+                              setState(() {
+                                _selectedDuplicateSpot = null;
+                                _duplicateOfSpotId = null;
+                                duplicateSpotError = null;
+                              });
+                            },
+                            tooltip: 'Remove selection',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                TextField(
+                  controller: detailsController,
+                  minLines: 3,
+                  maxLines: 5,
+                  decoration: const InputDecoration(
+                    labelText: 'Additional details',
+                    hintText: 'Anything else we should know?',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                if (!isLoggedIn) ...[
+                  TextField(
+                    controller: emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: InputDecoration(
+                      labelText: 'Email address',
+                      hintText: 'name@example.com',
+                      helperText: 'We will contact you only about this report.',
+                      errorText: emailError,
+                    ),
+                  ),
+                ] else ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: theme.colorScheme.outlineVariant
+                            .withValues(alpha: 0.5),
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.mail,
+                          size: 18,
+                          color: theme.colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            emailController.text.isNotEmpty
+                                ? 'We will reach out at ${emailController.text} if we need more info.'
+                                : 'We will reach out using your account email if we need more info.',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.7),
+                            ),
+                          ),
                         ),
                       ],
                     ),
                   ),
-                ),
-              ],
-              const SizedBox(height: 16),
-              TextField(
-                controller: detailsController,
-                minLines: 3,
-                maxLines: 5,
-                decoration: const InputDecoration(
-                  labelText: 'Additional details',
-                  hintText: 'Anything else we should know?',
-                ),
-              ),
-              const SizedBox(height: 16),
-              if (!isLoggedIn) ...[
-                TextField(
-                  controller: emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
-                    labelText: 'Email address',
-                    hintText: 'name@example.com',
-                    helperText: 'We will contact you only about this report.',
-                    errorText: emailError,
-                  ),
-                ),
-              ] else ...[
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest
-                        .withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: theme.colorScheme.outlineVariant
-                          .withValues(alpha: 0.5),
+                ],
+                if (submissionError != null) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    submissionError!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.error,
                     ),
                   ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        Icons.mail,
-                        size: 18,
-                        color: theme.colorScheme.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          emailController.text.isNotEmpty
-                              ? 'We will reach out at ${emailController.text} if we need more info.'
-                              : 'We will reach out using your account email if we need more info.',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.7),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                ],
               ],
-              if (submissionError != null) ...[
-                const SizedBox(height: 16),
-                Text(
-                  submissionError!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.error,
-                  ),
-                ),
-              ],
-            ],
+            ),
           ),
         ),
         actions: [
