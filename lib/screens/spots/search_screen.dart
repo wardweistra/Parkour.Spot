@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'dart:async';
 import 'package:uuid/uuid.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../services/spot_service.dart';
 import '../../services/sync_source_service.dart';
 import '../../services/search_state_service.dart';
@@ -2024,7 +2025,16 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                     onPressed: _toggleBottomSheet,
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      crossAxisAlignment: CrossAxisAlignment.center,
                                       children: [
+                                        SvgPicture.asset(
+                                          'assets/images/logo-square.svg',
+                                          width: 24,
+                                          height: 24,
+                                          fit: BoxFit.contain,
+                                        ),
+                                        const SizedBox(width: 12),
                                         RichText(
                                           text: TextSpan(
                                             children: [
