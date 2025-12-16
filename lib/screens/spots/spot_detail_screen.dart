@@ -4039,7 +4039,7 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
     final lat = widget.spot.latitude;
     final lng = widget.spot.longitude;
     
-    if (lat == null || lng == null) {
+    if (lng == null) {
       return;
     }
 
