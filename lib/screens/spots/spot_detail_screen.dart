@@ -4038,10 +4038,6 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
   Future<void> _loadNearbySpots() async {
     final lat = widget.spot.latitude;
     final lng = widget.spot.longitude;
-    
-    if (lng == null) {
-      return;
-    }
 
     setState(() {
       _isLoadingNearby = true;
