@@ -8,6 +8,7 @@
 const {escapeXml} = require("./utils");
 
 const GOOGLE_MAPS_API_KEY = "AIzaSyAAhFK9QYxOlbI3ySWTmoFIJKLAl8CL-qo";
+const GOOGLE_ANALYTICS_MEASUREMENT_ID = "G-861J61HFR8";
 
 /**
  * Generate the HTML head section with optional dynamic meta tags
@@ -98,6 +99,28 @@ function generateHtmlHead(options = {}) {
 
   <title>${escapedTitle}</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Google Analytics 4 -->
+  <script>
+    window.GA_MEASUREMENT_ID = "${GOOGLE_ANALYTICS_MEASUREMENT_ID}";
+  </script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=${GOOGLE_ANALYTICS_MEASUREMENT_ID}"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){ dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', window.GA_MEASUREMENT_ID, { send_page_view: false }); // SPA: we'll track manually
+  </script>
+  <!-- Optional: basic consent defaults -->
+  <script>
+    gtag('consent', 'default', {
+      ad_storage: 'denied',
+      analytics_storage: 'granted',
+      functionality_storage: 'granted',
+      personalization_storage: 'denied',
+      security_storage: 'granted'
+    });
+  </script>
 
   <!-- Google Maps JavaScript API -->
   <script async defer src="https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&loading=async"></script>

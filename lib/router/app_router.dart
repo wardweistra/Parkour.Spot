@@ -21,6 +21,75 @@ import '../screens/auth/login_screen.dart';
 import '../models/spot.dart';
 import '../services/spot_service.dart';
 import '../services/auth_service.dart';
+import '../analytics/web_analytics.dart';
+
+/// Router observer that tracks page views for Google Analytics
+class GaObserver extends NavigatorObserver {
+  static GoRouter? _router;
+  
+  static void setRouter(GoRouter router) {
+    _router = router;
+  }
+  
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    super.didPush(route, previousRoute);
+    if (kDebugMode) {
+      debugPrint('🔄 [GA Router] Route pushed: ${route.settings.name}');
+    }
+    _track();
+  }
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    super.didPop(route, previousRoute);
+    if (kDebugMode) {
+      debugPrint('🔄 [GA Router] Route popped, tracking previous: ${previousRoute?.settings.name}');
+    }
+    _track();
+  }
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
+    if (kDebugMode) {
+      debugPrint('🔄 [GA Router] Route replaced: ${oldRoute?.settings.name} -> ${newRoute?.settings.name}');
+    }
+    if (newRoute != null) {
+      _track();
+    }
+  }
+
+  void _track() {
+    // Use a post-frame callback to ensure the router state has updated
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      try {
+        // Get the current route path from GoRouter's state
+        // This gives us the actual matched location (e.g., /us/new-york/spot-123)
+        // instead of the route pattern (e.g., /:countryCode/:city/:spotId)
+        final router = _router;
+        if (router != null) {
+          final path = router.routerDelegate.currentConfiguration.uri.path;
+          if (kDebugMode) {
+            debugPrint('📍 [GA Router] Tracking route: $path');
+          }
+          WebAnalytics.trackPageView(path: path);
+        } else {
+          // Fallback to browser URL if router is not set yet
+          final path = web.window.location.pathname;
+          WebAnalytics.trackPageView(path: path);
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('⚠️ [GA Router] Error getting route path: $e');
+        }
+        // Fallback to browser URL if router state is not available
+        final path = web.window.location.pathname;
+        WebAnalytics.trackPageView(path: path);
+      }
+    });
+  }
+}
 
 /// Router observer that updates the document title based on the current route
 class TitleObserver extends NavigatorObserver {
@@ -76,10 +145,19 @@ class TitleObserver extends NavigatorObserver {
 
 class AppRouter {
   static final TitleObserver _titleObserver = TitleObserver();
+  static final GaObserver _gaObserver = GaObserver();
+  static GoRouter? _routerInstance;
   
-  static final GoRouter router = GoRouter(
+  static GoRouter get router {
+    _routerInstance ??= _createRouter();
+    GaObserver.setRouter(_routerInstance!);
+    return _routerInstance!;
+  }
+  
+  static GoRouter _createRouter() {
+    return GoRouter(
     initialLocation: '/',
-    observers: [_titleObserver],
+    observers: [_titleObserver, _gaObserver],
     redirect: (context, state) {
       // If we're already on a spot detail page, don't redirect
       if (_isSpotUrl(state.matchedLocation)) {
@@ -349,6 +427,7 @@ class AppRouter {
       ),
     ),
   );
+  }
   
   /// Check if the given path matches the spot URL format
   /// Format: /&lt;xx&gt;/&lt;anything&gt;/&lt;spot-id&gt; where xx is 2 letters

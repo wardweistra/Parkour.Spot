@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -17,6 +18,7 @@ import 'package:parkour_spot/services/snackbar_service.dart';
 import 'package:parkour_spot/router/app_router.dart';
 import 'package:parkour_spot/firebase_options.dart';
 import 'package:parkour_spot/config/app_config.dart';
+import 'package:parkour_spot/analytics/web_analytics.dart';
 import 'package:web/web.dart' as web;
 import 'package:google_fonts/google_fonts.dart';
 
@@ -39,6 +41,13 @@ void main() async {
   }
 
   runApp(const ParkourSpotApp());
+  
+  // Initialize Google Analytics
+  if (kDebugMode) {
+    debugPrint('🚀 [Main] Initializing Google Analytics...');
+  }
+  WebAnalytics.init();
+  WebAnalytics.trackEvent('app_start', {'platform': 'web'});
 }
 
 /// Connect Firebase services to local emulators

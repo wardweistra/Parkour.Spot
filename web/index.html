@@ -35,6 +35,28 @@
   <title>Parkour·Spot</title>
   <link rel="manifest" href="manifest.json">
 
+  <!-- Google Analytics 4 -->
+  <script>
+    window.GA_MEASUREMENT_ID = "G-861J61HFR8";
+  </script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-861J61HFR8"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){ dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', window.GA_MEASUREMENT_ID, { send_page_view: false }); // SPA: we'll track manually
+  </script>
+  <!-- Optional: basic consent defaults -->
+  <script>
+    gtag('consent', 'default', {
+      ad_storage: 'denied',
+      analytics_storage: 'granted',
+      functionality_storage: 'granted',
+      personalization_storage: 'denied',
+      security_storage: 'granted'
+    });
+  </script>
+
   <!-- Google Maps JavaScript API -->
   <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAAhFK9QYxOlbI3ySWTmoFIJKLAl8CL-qo&loading=async"></script>
 
