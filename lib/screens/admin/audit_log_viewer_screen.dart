@@ -675,6 +675,36 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                 ? 'Sync completed without changes.'
                 : summaryLines.join('\n');
             break;
+          case AuditLogAction.photoAdded:
+            title = 'Photos Added';
+            subtitle = auditLog.userName != null
+                ? 'Added by ${auditLog.userName}'
+                : auditLog.userId != null
+                    ? 'Added by ${auditLog.userId}'
+                    : 'Added by unknown';
+            if (auditLog.metadata != null) {
+              final photoUrls = auditLog.metadata!['photoUrls'] as List?;
+              final photoCount = photoUrls?.length ?? 0;
+              final contributor = auditLog.metadata!['contributor'] as Map<String, dynamic>?;
+              final contributorName = contributor?['userName'] as String?;
+              
+              details = 'Photos added: $photoCount';
+              if (contributorName != null && contributorName != auditLog.userName) {
+                details += '\nContributor: $contributorName';
+              }
+              if (auditLog.reportId != null) {
+                details += '\nLinked to report: ${auditLog.reportId}';
+              }
+              if (auditLog.metadata!['notes'] != null) {
+                final notes = auditLog.metadata!['notes'] as String;
+                if (notes.isNotEmpty) {
+                  details += '\n\nNotes: $notes';
+                }
+              }
+            } else {
+              details = 'Photos added to spot';
+            }
+            break;
         }
 
         newEntries.add(AuditLogEntry(

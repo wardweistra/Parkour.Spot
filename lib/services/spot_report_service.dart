@@ -39,6 +39,7 @@ class SpotReportService {
     String? spotCountryCode,
     String? spotCity,
     String? duplicateOfSpotId,
+    List<String>? suggestedPhotoUrls,
   }) async {
     try {
       await _firestore.collection('spotReports').add({
@@ -61,6 +62,8 @@ class SpotReportService {
         if (spotCity != null && spotCity.isNotEmpty) 'spotCity': spotCity,
         if (duplicateOfSpotId != null && duplicateOfSpotId.isNotEmpty)
           'duplicateOfSpotId': duplicateOfSpotId,
+        if (suggestedPhotoUrls != null && suggestedPhotoUrls.isNotEmpty)
+          'suggestedPhotoUrls': suggestedPhotoUrls,
         'status': statuses.first, // default "New"
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
@@ -68,6 +71,52 @@ class SpotReportService {
       return true;
     } catch (e) {
       debugPrint('Error submitting spot report: $e');
+      return false;
+    }
+  }
+
+  /// Updates a spot report with approved photo URLs (moves from suggestedPhotoUrls to acceptedPhotoUrls)
+  Future<bool> updateReportWithApprovedPhotos({
+    required String reportId,
+    required List<String> originalPhotoUrls, // Original URLs from /suggestions/
+    required List<String> approvedPhotoUrls, // New URLs from /spots/
+    String? userId,
+    String? userName,
+  }) async {
+    try {
+      // Get the current report
+      final reportDoc = await _firestore.collection('spotReports').doc(reportId).get();
+      if (!reportDoc.exists) {
+        debugPrint('Report $reportId does not exist');
+        return false;
+      }
+
+      final reportData = reportDoc.data()!;
+      final currentSuggestedUrls = (reportData['suggestedPhotoUrls'] as List<dynamic>?)
+          ?.map((e) => e.toString())
+          .toList() ?? <String>[];
+
+      // Remove original photos from suggestedPhotoUrls (using original URLs)
+      final updatedSuggestedUrls = currentSuggestedUrls
+          .where((url) => !originalPhotoUrls.contains(url))
+          .toList();
+
+      // Get existing accepted URLs and add new ones
+      final currentAcceptedUrls = (reportData['acceptedPhotoUrls'] as List<dynamic>?)
+          ?.map((e) => e.toString())
+          .toList() ?? <String>[];
+      final updatedAcceptedUrls = <String>[...currentAcceptedUrls, ...approvedPhotoUrls];
+
+      // Update the report
+      await _firestore.collection('spotReports').doc(reportId).update({
+        'suggestedPhotoUrls': updatedSuggestedUrls.isEmpty ? FieldValue.delete() : updatedSuggestedUrls,
+        'acceptedPhotoUrls': updatedAcceptedUrls,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      return true;
+    } catch (e) {
+      debugPrint('Error updating report with approved photos: $e');
       return false;
     }
   }
@@ -114,6 +163,100 @@ class SpotReportService {
       return true;
     } catch (e) {
       debugPrint('Error updating report status: $e');
+      return false;
+    }
+  }
+
+  /// Updates a spot report with rejected photo URLs (moves photos from suggestedPhotoUrls to rejectedPhotoUrls)
+  Future<bool> updateReportWithRejectedPhotos({
+    required String reportId,
+    required List<String> originalPhotoUrls, // Original URLs from /suggestions/
+    required List<String> rejectedPhotoUrls, // New URLs from /rejected/
+    String? userId,
+    String? userName,
+  }) async {
+    try {
+      // Get the current report
+      final reportDoc = await _firestore.collection('spotReports').doc(reportId).get();
+      if (!reportDoc.exists) {
+        debugPrint('Report $reportId does not exist');
+        return false;
+      }
+
+      final reportData = reportDoc.data()!;
+      final currentSuggestedUrls = (reportData['suggestedPhotoUrls'] as List<dynamic>?)
+          ?.map((e) => e.toString())
+          .toList() ?? <String>[];
+
+      // Remove original photos from suggestedPhotoUrls (using original URLs, not new rejected URLs)
+      final updatedSuggestedUrls = currentSuggestedUrls
+          .where((url) => !originalPhotoUrls.contains(url))
+          .toList();
+
+      // Get existing rejected URLs and add new ones
+      final currentRejectedUrls = (reportData['rejectedPhotoUrls'] as List<dynamic>?)
+          ?.map((e) => e.toString())
+          .toList() ?? <String>[];
+      final updatedRejectedUrls = <String>[...currentRejectedUrls, ...rejectedPhotoUrls];
+
+      // Update the report
+      await _firestore.collection('spotReports').doc(reportId).update({
+        'suggestedPhotoUrls': updatedSuggestedUrls.isEmpty ? FieldValue.delete() : updatedSuggestedUrls,
+        'rejectedPhotoUrls': updatedRejectedUrls,
+        'status': 'Done',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      return true;
+    } catch (e) {
+      debugPrint('Error updating report with rejected photos: $e');
+      return false;
+    }
+  }
+
+  /// Undoes rejection by moving photos back from rejectedPhotoUrls to suggestedPhotoUrls
+  Future<bool> undoPhotoRejection({
+    required String reportId,
+    required List<String> originalRejectedUrls, // Original URLs from /rejected/
+    required List<String> restoredPhotoUrls, // New URLs from /suggestions/
+    String? userId,
+    String? userName,
+  }) async {
+    try {
+      // Get the current report
+      final reportDoc = await _firestore.collection('spotReports').doc(reportId).get();
+      if (!reportDoc.exists) {
+        debugPrint('Report $reportId does not exist');
+        return false;
+      }
+
+      final reportData = reportDoc.data()!;
+      final currentSuggestedUrls = (reportData['suggestedPhotoUrls'] as List<dynamic>?)
+          ?.map((e) => e.toString())
+          .toList() ?? <String>[];
+      final currentRejectedUrls = (reportData['rejectedPhotoUrls'] as List<dynamic>?)
+          ?.map((e) => e.toString())
+          .toList() ?? <String>[];
+
+      // Add restored photos back to suggestedPhotoUrls (using new URLs from /suggestions/)
+      final updatedSuggestedUrls = <String>[...currentSuggestedUrls, ...restoredPhotoUrls];
+
+      // Remove original rejected photos from rejectedPhotoUrls (using original URLs, not new suggested URLs)
+      final updatedRejectedUrls = currentRejectedUrls
+          .where((url) => !originalRejectedUrls.contains(url))
+          .toList();
+
+      // Update the report
+      await _firestore.collection('spotReports').doc(reportId).update({
+        'suggestedPhotoUrls': updatedSuggestedUrls,
+        'rejectedPhotoUrls': updatedRejectedUrls.isEmpty ? FieldValue.delete() : updatedRejectedUrls,
+        'status': 'New', // Reset status to New so it appears in the queue again
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      return true;
+    } catch (e) {
+      debugPrint('Error undoing photo rejection: $e');
       return false;
     }
   }

@@ -4,11 +4,14 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../models/spot_report.dart';
 import '../../services/spot_report_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/url_service.dart';
+import '../../services/spot_service.dart';
+import '../../widgets/photo_approval_dialog.dart';
 
 class SpotReportQueueScreen extends StatefulWidget {
   const SpotReportQueueScreen({super.key});
@@ -281,6 +284,138 @@ class _ReportCardState extends State<_ReportCard> {
     }
   }
 
+  Future<void> _handleApprovePhotos(BuildContext context, SpotReport report) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => PhotoApprovalDialog(
+        report: report,
+      ),
+    );
+
+    if (result == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Photos approved and added to spot.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleRejectPhotos(BuildContext context, SpotReport report) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Reject Photo Suggestions'),
+        content: const Text('Are you sure you want to reject these photo suggestions? The photos will be moved to the rejected folder and can be restored later.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(dialogContext).colorScheme.error,
+            ),
+            child: const Text('Reject'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      final spotService = Provider.of<SpotService>(context, listen: false);
+      final reportService = Provider.of<SpotReportService>(context, listen: false);
+      final authService = Provider.of<AuthService>(context, listen: false);
+
+      // Move photos from /suggestions/ to /rejected/
+      if (report.suggestedPhotoUrls != null && report.suggestedPhotoUrls!.isNotEmpty) {
+        // Store original URLs before moving
+        final originalUrls = List<String>.from(report.suggestedPhotoUrls!);
+        final rejectedUrls = await spotService.movePhotosToRejected(originalUrls);
+        
+        if (rejectedUrls.isNotEmpty) {
+          // Update report with rejected photo URLs
+          // Pass both original URLs (to remove from suggestedPhotoUrls) and new rejected URLs (to add to rejectedPhotoUrls)
+          await reportService.updateReportWithRejectedPhotos(
+            reportId: report.id,
+            originalPhotoUrls: originalUrls,
+            rejectedPhotoUrls: rejectedUrls,
+            userId: authService.currentUser?.uid,
+            userName: authService.userProfile?.displayName ?? authService.currentUser?.email,
+          );
+        }
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Photo suggestions rejected. You can undo this action later.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleUndoRejection(BuildContext context, SpotReport report) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Undo Rejection'),
+        content: const Text('This will restore the rejected photos back to suggestions. They will appear in the queue again for review.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(dialogContext).colorScheme.primary,
+            ),
+            child: const Text('Undo Rejection'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      final spotService = Provider.of<SpotService>(context, listen: false);
+      final reportService = Provider.of<SpotReportService>(context, listen: false);
+      final authService = Provider.of<AuthService>(context, listen: false);
+
+      // Move photos from /rejected/ back to /suggestions/
+      if (report.rejectedPhotoUrls != null && report.rejectedPhotoUrls!.isNotEmpty) {
+        // Store original rejected URLs before moving
+        final originalRejectedUrls = List<String>.from(report.rejectedPhotoUrls!);
+        final restoredUrls = await spotService.movePhotosFromRejectedToSuggestions(originalRejectedUrls);
+        
+        if (restoredUrls.isNotEmpty) {
+          // Update report to move photos back to suggestedPhotoUrls
+          // Pass both original rejected URLs (to remove from rejectedPhotoUrls) and new suggested URLs (to add to suggestedPhotoUrls)
+          await reportService.undoPhotoRejection(
+            reportId: report.id,
+            originalRejectedUrls: originalRejectedUrls,
+            restoredPhotoUrls: restoredUrls,
+            userId: authService.currentUser?.uid,
+            userName: authService.userProfile?.displayName ?? authService.currentUser?.email,
+          );
+        }
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Rejection undone. Photos restored to suggestions.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -465,6 +600,282 @@ class _ReportCardState extends State<_ReportCard> {
                 ),
               ),
             ],
+            // Accepted photos (if any)
+            if (widget.report.acceptedPhotoUrls != null && widget.report.acceptedPhotoUrls!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Icon(
+                    Icons.check_circle_outline,
+                    size: 18,
+                    color: colorScheme.primary,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Accepted Photos',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: widget.report.acceptedPhotoUrls!.map((photoUrl) {
+                  return GestureDetector(
+                    onTap: () {
+                      // Show full-size image in a dialog
+                      showDialog(
+                        context: context,
+                        builder: (context) => Dialog(
+                          child: Stack(
+                            children: [
+                              InteractiveViewer(
+                                child: CachedNetworkImage(
+                                  imageUrl: photoUrl,
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: IconButton(
+                                  icon: const Icon(Icons.close),
+                                  onPressed: () => Navigator.of(context).pop(),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: colorScheme.primary,
+                          width: 2,
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Stack(
+                          children: [
+                            CachedNetworkImage(
+                              imageUrl: photoUrl,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Container(
+                                color: colorScheme.surfaceContainerHighest,
+                                child: const Center(
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                color: colorScheme.surfaceContainerHighest,
+                                child: Icon(
+                                  Icons.image_not_supported,
+                                  color: colorScheme.onSurface.withValues(alpha: 0.5),
+                                ),
+                              ),
+                            ),
+                            // Overlay to indicate accepted status
+                            Positioned(
+                              top: 4,
+                              right: 4,
+                              child: Icon(
+                                Icons.check_circle,
+                                color: colorScheme.primary,
+                                size: 24,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+            // Photo suggestions
+            if (widget.report.suggestedPhotoUrls != null && widget.report.suggestedPhotoUrls!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Suggested Photos',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: widget.report.suggestedPhotoUrls!.map((photoUrl) {
+                  return GestureDetector(
+                    onTap: () {
+                      // Show full-size image in a dialog
+                      showDialog(
+                        context: context,
+                        builder: (context) => Dialog(
+                          child: Stack(
+                            children: [
+                              InteractiveViewer(
+                                child: CachedNetworkImage(
+                                  imageUrl: photoUrl,
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: IconButton(
+                                  icon: const Icon(Icons.close),
+                                  onPressed: () => Navigator.of(context).pop(),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: colorScheme.outline,
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: CachedNetworkImage(
+                          imageUrl: photoUrl,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                            color: colorScheme.surfaceContainerHighest,
+                            child: const Center(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => Container(
+                            color: colorScheme.surfaceContainerHighest,
+                            child: Icon(
+                              Icons.image_not_supported,
+                              color: colorScheme.onSurface.withValues(alpha: 0.5),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+            // Rejected photos (if any)
+            if (widget.report.rejectedPhotoUrls != null && widget.report.rejectedPhotoUrls!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Icon(
+                    Icons.cancel_outlined,
+                    size: 18,
+                    color: colorScheme.error,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Rejected Photos',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.error,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: widget.report.rejectedPhotoUrls!.map((photoUrl) {
+                  return GestureDetector(
+                    onTap: () {
+                      // Show full-size image in a dialog
+                      showDialog(
+                        context: context,
+                        builder: (context) => Dialog(
+                          child: Stack(
+                            children: [
+                              InteractiveViewer(
+                                child: CachedNetworkImage(
+                                  imageUrl: photoUrl,
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: IconButton(
+                                  icon: const Icon(Icons.close),
+                                  onPressed: () => Navigator.of(context).pop(),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: colorScheme.error,
+                          width: 2,
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Stack(
+                          children: [
+                            CachedNetworkImage(
+                              imageUrl: photoUrl,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Container(
+                                color: colorScheme.surfaceContainerHighest,
+                                child: const Center(
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                color: colorScheme.surfaceContainerHighest,
+                                child: Icon(
+                                  Icons.image_not_supported,
+                                  color: colorScheme.onSurface.withValues(alpha: 0.5),
+                                ),
+                              ),
+                            ),
+                            // Overlay to indicate rejected status
+                            Container(
+                              color: colorScheme.error.withValues(alpha: 0.3),
+                              child: Icon(
+                                Icons.cancel_outlined,
+                                color: colorScheme.error,
+                                size: 32,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
             if (widget.report.primaryContact != null) ...[
               const SizedBox(height: 12),
               Row(
@@ -505,6 +916,50 @@ class _ReportCardState extends State<_ReportCard> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // Photo suggestion actions
+                  if (widget.report.suggestedPhotoUrls != null && widget.report.suggestedPhotoUrls!.isNotEmpty) ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () => _handleApprovePhotos(context, widget.report),
+                            icon: const Icon(Icons.check),
+                            label: const Text('Approve Photos'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: theme.colorScheme.primary,
+                              foregroundColor: theme.colorScheme.onPrimary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => _handleRejectPhotos(context, widget.report),
+                            icon: const Icon(Icons.close),
+                            label: const Text('Reject'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: theme.colorScheme.error,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  // Undo rejection button (if photos were rejected)
+                  if (widget.report.rejectedPhotoUrls != null && widget.report.rejectedPhotoUrls!.isNotEmpty) ...[
+                    ElevatedButton.icon(
+                      onPressed: () => _handleUndoRejection(context, widget.report),
+                      icon: const Icon(Icons.undo),
+                      label: const Text('Undo Rejection'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.colorScheme.secondary,
+                        foregroundColor: theme.colorScheme.onSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  // Status selector
                   SegmentedButton<String>(
                     segments: SpotReportService.statuses.map((status) {
                       return ButtonSegment<String>(

@@ -19,6 +19,9 @@ class SpotReport {
     this.spotCountryCode,
     this.spotCity,
     this.duplicateOfSpotId,
+    this.suggestedPhotoUrls,
+    this.acceptedPhotoUrls,
+    this.rejectedPhotoUrls,
     this.createdAt,
     this.updatedAt,
   });
@@ -62,6 +65,15 @@ class SpotReport {
   /// ID of the spot this is a duplicate of (when category is "Duplicate spot").
   final String? duplicateOfSpotId;
 
+  /// URLs of photos suggested by the user (when category is "Photo suggestion").
+  final List<String>? suggestedPhotoUrls;
+
+  /// URLs of photos that were accepted/approved (moved to /spots/ folder).
+  final List<String>? acceptedPhotoUrls;
+
+  /// URLs of photos that were rejected (moved to /rejected/ folder).
+  final List<String>? rejectedPhotoUrls;
+
   /// Current moderation status of the report.
   final String status;
 
@@ -100,6 +112,14 @@ class SpotReport {
       return const <String>[];
     }
 
+    List<String>? parsePhotoUrls(dynamic raw) {
+      if (raw == null) return null;
+      if (raw is Iterable) {
+        return raw.whereType<String>().toList(growable: false);
+      }
+      return null;
+    }
+
     return SpotReport(
       id: snapshot.id,
       spotId: data['spotId'] as String? ?? '',
@@ -114,6 +134,9 @@ class SpotReport {
       spotCountryCode: data['spotCountryCode'] as String?,
       spotCity: data['spotCity'] as String?,
       duplicateOfSpotId: data['duplicateOfSpotId'] as String?,
+      suggestedPhotoUrls: parsePhotoUrls(data['suggestedPhotoUrls']),
+      acceptedPhotoUrls: parsePhotoUrls(data['acceptedPhotoUrls']),
+      rejectedPhotoUrls: parsePhotoUrls(data['rejectedPhotoUrls']),
       status: data['status'] as String? ?? 'New',
       createdAt: parseTimestamp(data['createdAt']),
       updatedAt: parseTimestamp(data['updatedAt']),

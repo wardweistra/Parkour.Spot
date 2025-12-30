@@ -26,6 +26,9 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/audit_log_service.dart';
 import 'package:web/web.dart' as web;
+import 'package:image_picker/image_picker.dart';
+import 'dart:typed_data';
+import 'dart:io';
 
 class SpotDetailScreen extends StatefulWidget {
   final Spot spot;
@@ -36,7 +39,7 @@ class SpotDetailScreen extends StatefulWidget {
   State<SpotDetailScreen> createState() => _SpotDetailScreenState();
 }
 
-enum _SpotMenuAction { login, reportAsDuplicate, report, edit, delete, markAsDuplicate, createNativeSpot, toggleHide, removeDuplicateStatus }
+enum _SpotMenuAction { login, reportAsDuplicate, suggestPhoto, report, edit, delete, markAsDuplicate, createNativeSpot, toggleHide, removeDuplicateStatus }
 
 class _SpotDetailScreenState extends State<SpotDetailScreen> {
   double _userRating = 0;
@@ -411,6 +414,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       case _SpotMenuAction.reportAsDuplicate:
         _showReportDuplicateDialog();
         break;
+      case _SpotMenuAction.suggestPhoto:
+        _showSuggestPhotoDialog();
+        break;
       case _SpotMenuAction.report:
         _showReportSpotDialog();
         break;
@@ -534,6 +540,46 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Thanks! Your duplicate report has been submitted.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
+  Future<void> _showSuggestPhotoDialog() async {
+    if (widget.spot.id == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to suggest photos for this spot right now.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (widget.spot.duplicateOf != null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot suggest photos for duplicate spots.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final bool? result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => _SuggestPhotoDialog(spot: widget.spot),
+    );
+
+    if (!mounted) return;
+    if (result == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Thanks! Your photo suggestion has been submitted for review.'),
           backgroundColor: Colors.green,
         ),
       );
@@ -784,6 +830,49 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                       _spot.duplicateOf == null
                                           ? 'This spot is a duplicate'
                                           : 'Already marked as duplicate',
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: theme.colorScheme.onSurface
+                                                .withValues(alpha: 0.6),
+                                            fontSize: 11,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem<_SpotMenuAction>(
+                            value: _SpotMenuAction.suggestPhoto,
+                            enabled: _spot.duplicateOf == null,
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.add_photo_alternate,
+                                  color: _spot.duplicateOf == null
+                                      ? theme.colorScheme.primary
+                                      : theme.colorScheme.onSurface.withValues(alpha: 0.38),
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'Suggest photo',
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w500,
+                                            color: _spot.duplicateOf == null
+                                                ? null
+                                                : theme.colorScheme.onSurface.withValues(alpha: 0.38),
+                                          ),
+                                    ),
+                                    Text(
+                                      _spot.duplicateOf == null
+                                          ? 'Submit photos for this spot'
+                                          : 'Cannot suggest photos for duplicates',
                                       style: theme.textTheme.bodySmall
                                           ?.copyWith(
                                             color: theme.colorScheme.onSurface
@@ -1237,6 +1326,41 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             : null,
                       ),
                     ),
+
+                    // Contributors section
+                    if (_spot.contributors != null && _spot.contributors!.isNotEmpty) ...[
+                      const SizedBox(height: 24),
+                      Text(
+                        'Contributors',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: _spot.contributors!.map((contributor) {
+                          final userName = contributor['userName'] ?? 'Unknown';
+                          return Chip(
+                            avatar: Icon(
+                              Icons.person,
+                              size: 18,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            label: Text(userName),
+                            backgroundColor: Theme.of(context)
+                                .colorScheme
+                                .primaryContainer
+                                .withValues(alpha: 0.1),
+                            labelStyle: TextStyle(
+                              color: Theme.of(context).colorScheme.onPrimaryContainer,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
 
                     const SizedBox(height: 24),
 
@@ -5238,5 +5362,316 @@ class _DuplicateTransferDialogState extends State<_DuplicateTransferDialog> {
   void dispose() {
     _notesController.dispose();
     super.dispose();
+  }
+}
+
+class _SuggestPhotoDialog extends StatefulWidget {
+  final Spot spot;
+
+  const _SuggestPhotoDialog({required this.spot});
+
+  @override
+  State<_SuggestPhotoDialog> createState() => _SuggestPhotoDialogState();
+}
+
+class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
+  late final TextEditingController detailsController;
+  final List<XFile> _selectedImages = [];
+  bool _isUploading = false;
+  bool _isSubmitting = false;
+  String? _submissionError;
+
+  @override
+  void initState() {
+    super.initState();
+    detailsController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    detailsController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickImages() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final List<XFile> pickedFiles = await picker.pickMultiImage();
+      
+      if (pickedFiles.isNotEmpty && mounted) {
+        setState(() {
+          _selectedImages.addAll(pickedFiles);
+        });
+      }
+    } catch (e) {
+      debugPrint('Error picking images: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error picking images: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _removeImage(int index) async {
+    setState(() {
+      _selectedImages.removeAt(index);
+    });
+  }
+
+  Future<void> _submitPhotos() async {
+    if (_selectedImages.isEmpty) {
+      setState(() {
+        _submissionError = 'Please select at least one photo';
+      });
+      return;
+    }
+
+    final authService = Provider.of<AuthService>(context, listen: false);
+    if (!authService.isAuthenticated) {
+      setState(() {
+        _submissionError = 'You must be logged in to suggest photos. Please log in and try again.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+      _submissionError = null;
+    });
+
+    try {
+      final spotService = Provider.of<SpotService>(context, listen: false);
+      final reportService = Provider.of<SpotReportService>(context, listen: false);
+
+      // Convert XFile to Uint8List for web or File for mobile
+      List<Uint8List>? photoBytesList;
+      List<File>? photoFiles;
+
+      if (kIsWeb) {
+        photoBytesList = [];
+        for (final image in _selectedImages) {
+          final bytes = await image.readAsBytes();
+          photoBytesList.add(bytes);
+        }
+      } else {
+        photoFiles = _selectedImages.map((xfile) => File(xfile.path)).toList();
+      }
+
+      // Upload photos to /suggestions/ path
+      setState(() {
+        _isUploading = true;
+      });
+
+      final photoUrls = await spotService.uploadSuggestedPhotos(
+        photoFiles: photoFiles,
+        photoBytesList: photoBytesList,
+      );
+
+      setState(() {
+        _isUploading = false;
+      });
+
+      // Get reporter info
+      final reporterName = (() {
+        final profileName = authService.userProfile?.displayName;
+        if (profileName != null && profileName.trim().isNotEmpty) {
+          return profileName.trim();
+        }
+        final authName = authService.currentUser?.displayName;
+        if (authName != null && authName.trim().isNotEmpty) {
+          return authName.trim();
+        }
+        return null;
+      })();
+
+      // Create spot report
+      final success = await reportService.submitSpotReport(
+        spotId: widget.spot.id!,
+        spotName: widget.spot.name,
+        categories: ['Photo suggestion'],
+        details: detailsController.text.trim().isEmpty ? null : detailsController.text.trim(),
+        reporterUserId: authService.userProfile?.id,
+        reporterName: reporterName,
+        reporterEmail: authService.userProfile?.email ?? authService.currentUser?.email,
+        spotCountryCode: widget.spot.countryCode,
+        spotCity: widget.spot.city,
+        suggestedPhotoUrls: photoUrls,
+      );
+
+      if (!mounted) return;
+
+      if (success) {
+        Navigator.of(context).pop(true);
+      } else {
+        setState(() {
+          _submissionError = 'Failed to submit photo suggestion. Please try again.';
+          _isSubmitting = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error submitting photo suggestion: $e');
+      if (mounted) {
+        setState(() {
+          _submissionError = 'Error submitting photo suggestion: $e';
+          _isSubmitting = false;
+          _isUploading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext dialogContext) {
+    final theme = Theme.of(dialogContext);
+
+    return WillPopScope(
+      onWillPop: () async => !_isSubmitting && !_isUploading,
+      child: AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.add_photo_alternate, color: theme.colorScheme.primary),
+            const SizedBox(width: 8),
+            const Expanded(child: Text('Suggest Photos')),
+          ],
+        ),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600, maxHeight: 600),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Submit photos to be added to this spot. Photos will be reviewed by moderators before being added.',
+                  style: theme.textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 16),
+                // Photo selection
+                Text(
+                  'Select Photos',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ElevatedButton.icon(
+                  onPressed: _isSubmitting || _isUploading ? null : _pickImages,
+                  icon: const Icon(Icons.add_photo_alternate),
+                  label: const Text('Pick Photos'),
+                ),
+                const SizedBox(height: 16),
+                // Display selected images
+                if (_selectedImages.isNotEmpty) ...[
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: List.generate(_selectedImages.length, (index) {
+                      return Stack(
+                        children: [
+                          Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: theme.colorScheme.outline,
+                              ),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: kIsWeb
+                                  ? FutureBuilder<Uint8List>(
+                                      future: _selectedImages[index].readAsBytes(),
+                                      builder: (context, snapshot) {
+                                        if (snapshot.hasData) {
+                                          return Image.memory(
+                                            snapshot.data!,
+                                            fit: BoxFit.cover,
+                                          );
+                                        }
+                                        return const Center(child: CircularProgressIndicator());
+                                      },
+                                    )
+                                  : Image.file(
+                                      File(_selectedImages[index].path),
+                                      fit: BoxFit.cover,
+                                    ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: IconButton(
+                              icon: const Icon(Icons.close, size: 20),
+                              color: theme.colorScheme.error,
+                              onPressed: _isSubmitting || _isUploading
+                                  ? null
+                                  : () => _removeImage(index),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          ),
+                        ],
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                // Details field
+                Text(
+                  'Additional Details (Optional)',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: detailsController,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: 'Add any additional information about these photos...',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: theme.colorScheme.surfaceContainerHighest,
+                  ),
+                  enabled: !_isSubmitting && !_isUploading,
+                ),
+                if (_submissionError != null) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    _submissionError!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.error,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: (_isSubmitting || _isUploading) ? null : () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: (_isSubmitting || _isUploading) ? null : _submitPhotos,
+            child: _isSubmitting || _isUploading
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Submit'),
+          ),
+        ],
+      ),
+    );
   }
 }

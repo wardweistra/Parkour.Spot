@@ -190,5 +190,39 @@ class AuditLogService {
       // Don't throw - audit logging should not break the main operation
     }
   }
+
+  /// Log when photos are added to a spot
+  Future<void> logPhotoAdded({
+    required String spotId,
+    required List<String> photoUrls,
+    required String? userId,
+    required String? userName,
+    String? reportId,
+    List<String>? originalPhotoUrls,
+    String? notes,
+  }) async {
+    try {
+      await _firestore.collection('auditLog').add({
+        'action': AuditLogAction.photoAdded.toString().split('.').last,
+        'spotId': spotId,
+        if (reportId != null) 'reportId': reportId,
+        'userId': userId,
+        'userName': userName,
+        'timestamp': FieldValue.serverTimestamp(),
+        'metadata': {
+          'photoUrls': photoUrls,
+          if (originalPhotoUrls != null) 'originalPhotoUrls': originalPhotoUrls,
+          'contributor': {
+            'userId': userId,
+            'userName': userName,
+          },
+          if (notes != null && notes.isNotEmpty) 'notes': notes,
+        },
+      });
+    } catch (e) {
+      debugPrint('Error logging photo addition: $e');
+      // Don't throw - audit logging should not break the main operation
+    }
+  }
 }
 

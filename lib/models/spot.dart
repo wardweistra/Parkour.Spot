@@ -30,6 +30,7 @@ class Spot {
   final List<String>? goodFor;
   final String? duplicateOf; // ID of the original spot if this is a duplicate
   final bool hidden; // Whether the spot is hidden from public view
+  final List<Map<String, String>>? contributors; // List of contributors who improved the spot
 
   static const Object _unset = Object();
 
@@ -63,6 +64,7 @@ class Spot {
     this.goodFor,
     this.duplicateOf,
     this.hidden = false,
+    this.contributors,
   });
 
   factory Spot.fromFirestore(DocumentSnapshot doc) {
@@ -149,6 +151,11 @@ class Spot {
       goodFor: data['goodFor'] != null ? List<String>.from(data['goodFor']) : null,
       duplicateOf: data['duplicateOf'],
       hidden: data['hidden'] == true,
+      contributors: data['contributors'] != null
+          ? (data['contributors'] as List)
+              .map((e) => Map<String, String>.from(e as Map))
+              .toList()
+          : null,
     );
   }
 
@@ -241,6 +248,11 @@ class Spot {
       goodFor: data['goodFor'] is List ? List<String>.from(data['goodFor']) : null,
       duplicateOf: data['duplicateOf'] as String?,
       hidden: data['hidden'] == true,
+      contributors: data['contributors'] is List
+          ? (data['contributors'] as List)
+              .map((e) => Map<String, String>.from(e as Map))
+              .toList()
+          : null,
     );
   }
 
@@ -274,6 +286,7 @@ class Spot {
       if (goodFor != null) 'goodFor': goodFor,
       'duplicateOf': duplicateOf,
       'hidden': hidden,
+      if (contributors != null) 'contributors': contributors,
     };
   }
 
@@ -307,6 +320,7 @@ class Spot {
     List<String>? goodFor,
     Object? duplicateOf = _unset,
     bool? hidden,
+    List<Map<String, String>>? contributors,
   }) {
     return Spot(
       id: id ?? this.id,
@@ -340,6 +354,7 @@ class Spot {
       goodFor: goodFor ?? this.goodFor,
       duplicateOf: identical(duplicateOf, _unset) ? this.duplicateOf : duplicateOf as String?,
       hidden: hidden ?? this.hidden,
+      contributors: contributors ?? this.contributors,
     );
   }
 

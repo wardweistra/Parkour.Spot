@@ -7,6 +7,20 @@ service firebase.storage {
       allow write: if request.auth != null;
     }
     
+    // Photo suggestions - anyone can read (for moderation), authenticated users can upload
+    match /suggestions/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+      allow delete: if request.auth != null; // Allow deletion for cleanup/rejection
+    }
+    
+    // Rejected photos - anyone can read (for moderation), authenticated users can move/delete
+    match /rejected/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+      allow delete: if request.auth != null; // Allow deletion for cleanup
+    }
+    
     // User profile pictures - users can only manage their own
     match /users/{userId}/{allPaths=**} {
       allow read: if true;

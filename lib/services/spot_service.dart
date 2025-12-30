@@ -4,6 +4,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 import '../models/spot.dart';
 import '../models/rating.dart';
 import 'audit_log_service.dart';
@@ -480,6 +481,330 @@ class SpotService extends ChangeNotifier {
         return 'image/tiff';
       default:
         return 'image/jpeg'; // Default fallback
+    }
+  }
+
+  // Upload photos to /suggestions/ path (temporary storage, does NOT trigger resize extension)
+  Future<List<String>> uploadSuggestedPhotos({
+    List<File>? photoFiles,
+    List<Uint8List>? photoBytesList,
+  }) async {
+    try {
+      final List<String> photoUrls = [];
+      
+      if (photoFiles != null && photoFiles.isNotEmpty) {
+        for (final photoFile in photoFiles) {
+          final fileName = 'suggestions/${DateTime.now().millisecondsSinceEpoch}_${photoFile.path.split('/').last}';
+          final ref = _storage.ref().child(fileName);
+          
+          final contentType = _getMimeTypeFromExtension(photoFile.path);
+          
+          final uploadTask = ref.putFile(
+            photoFile,
+            SettableMetadata(contentType: contentType),
+          );
+          final snapshot = await uploadTask;
+          final url = await snapshot.ref.getDownloadURL();
+          photoUrls.add(url);
+        }
+      } else if (photoBytesList != null && photoBytesList.isNotEmpty) {
+        for (int i = 0; i < photoBytesList.length; i++) {
+          final photoBytes = photoBytesList[i];
+          final fileName = 'suggestions/${DateTime.now().millisecondsSinceEpoch}_web_image_$i.jpg';
+          final ref = _storage.ref().child(fileName);
+          
+          final contentType = _detectImageMimeType(photoBytes);
+          
+          final uploadTask = ref.putData(
+            photoBytes,
+            SettableMetadata(contentType: contentType),
+          );
+          final snapshot = await uploadTask;
+          final url = await snapshot.ref.getDownloadURL();
+          photoUrls.add(url);
+        }
+      }
+      
+      return photoUrls;
+    } catch (e) {
+      debugPrint('Error uploading suggested photos: $e');
+      rethrow;
+    }
+  }
+
+  // Move photos from /suggestions/ to /spots/ and add to spot
+  // Returns the new photo URLs from /spots/ path, or null if failed
+  Future<List<String>?> addPhotosToSpot({
+    required String spotId,
+    required List<String> photoUrls, // URLs from /suggestions/ path
+    required String? userId,
+    required String? userName,
+    String? reportId,
+    String? notes,
+    String? targetSpotId, // Optional: if spot is duplicate, add to original spot instead
+  }) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      // Determine target spot (use targetSpotId if provided, otherwise use spotId)
+      final finalSpotId = targetSpotId ?? spotId;
+      
+      // Get the target spot
+      final targetSpot = await getSpotById(finalSpotId);
+      if (targetSpot == null) {
+        _error = 'Target spot not found';
+        _isLoading = false;
+        notifyListeners();
+        return null;
+      }
+
+      // Move photos from /suggestions/ to /spots/
+      final List<String> finalPhotoUrls = [];
+      for (final photoUrl in photoUrls) {
+        try {
+          // Extract the file path from the URL
+          final uri = Uri.parse(photoUrl);
+          String? filePath;
+          
+          // Handle Firebase Storage URL formats
+          if (uri.pathSegments.contains('o')) {
+            // Format: /v0/b/bucket/o/suggestions%2Ffilename.jpg
+            final encodedPath = uri.pathSegments[uri.pathSegments.indexOf('o') + 1];
+            filePath = Uri.decodeComponent(encodedPath);
+          } else if (uri.host.contains('storage.googleapis.com')) {
+            // Format: https://storage.googleapis.com/bucket/suggestions/filename.jpg
+            final pathIndex = uri.pathSegments.indexOf('suggestions');
+            if (pathIndex != -1 && pathIndex + 1 < uri.pathSegments.length) {
+              filePath = uri.pathSegments.sublist(pathIndex).join('/');
+            }
+          }
+          
+          if (filePath == null || !filePath.startsWith('suggestions/')) {
+            debugPrint('Invalid photo URL format: $photoUrl');
+            continue;
+          }
+          
+          // Create new path in /spots/
+          final newPath = filePath.replaceFirst('suggestions/', 'spots/');
+          
+          // Get references
+          final sourceRef = _storage.ref().child(filePath);
+          final destRef = _storage.ref().child(newPath);
+          
+          // Copy the file (copy preserves original, then we delete it)
+          final data = await sourceRef.getData();
+          if (data != null) {
+            // Get content type from metadata
+            final metadata = await sourceRef.getMetadata();
+            final contentType = metadata.contentType ?? 'image/jpeg';
+            
+            // Upload to new location
+            await destRef.putData(
+              data,
+              SettableMetadata(contentType: contentType),
+            );
+            
+            // Get the new URL
+            final newUrl = await destRef.getDownloadURL();
+            finalPhotoUrls.add(newUrl);
+            
+            // Delete the original from /suggestions/
+            await sourceRef.delete();
+          }
+        } catch (e) {
+          debugPrint('Error moving photo $photoUrl: $e');
+          // Continue with other photos even if one fails
+        }
+      }
+      
+      if (finalPhotoUrls.isEmpty) {
+        _error = 'Failed to move any photos';
+        _isLoading = false;
+        notifyListeners();
+        return null;
+      }
+
+      // Get current image URLs and add new ones (avoid duplicates)
+      List<String> updatedImageUrls = List.from(targetSpot.imageUrls ?? []);
+      for (final photoUrl in finalPhotoUrls) {
+        if (!updatedImageUrls.contains(photoUrl)) {
+          updatedImageUrls.add(photoUrl);
+        }
+      }
+
+      // Update contributors list
+      List<Map<String, String>> updatedContributors = List.from(targetSpot.contributors ?? []);
+      if (userId != null && userName != null) {
+        // Check if contributor already exists
+        final contributorExists = updatedContributors.any((c) => c['userId'] == userId);
+        if (!contributorExists) {
+          updatedContributors.add({
+            'userId': userId,
+            'userName': userName,
+          });
+        }
+      }
+
+      // Update the spot
+      final updatedSpot = targetSpot.copyWith(
+        imageUrls: updatedImageUrls,
+        contributors: updatedContributors,
+        updatedAt: DateTime.now(),
+      );
+
+      await _firestore.collection('spots').doc(finalSpotId).update(updatedSpot.toFirestore());
+      
+      // Log audit trail
+      if (userId != null && userName != null) {
+        await _auditLogService.logPhotoAdded(
+          spotId: finalSpotId,
+          photoUrls: finalPhotoUrls,
+          userId: userId,
+          userName: userName,
+          reportId: reportId,
+          originalPhotoUrls: photoUrls, // Keep track of original URLs from suggestions
+          notes: notes,
+        );
+      }
+      
+      _isLoading = false;
+      notifyListeners();
+      return finalPhotoUrls; // Return the new URLs from /spots/
+    } catch (e) {
+      debugPrint('Error adding photos to spot: $e');
+      _error = 'Failed to add photos to spot: $e';
+      _isLoading = false;
+      notifyListeners();
+      return null;
+    }
+  }
+
+  // Move photos from /suggestions/ to /rejected/ path (used when rejecting photo suggestions)
+  Future<List<String>> movePhotosToRejected(List<String> photoUrls) async {
+    try {
+      final List<String> rejectedUrls = [];
+      
+      for (final photoUrl in photoUrls) {
+        try {
+          // Extract the file path from the URL
+          final uri = Uri.parse(photoUrl);
+          String? filePath;
+          
+          // Handle Firebase Storage URL formats
+          if (uri.pathSegments.contains('o')) {
+            final encodedPath = uri.pathSegments[uri.pathSegments.indexOf('o') + 1];
+            filePath = Uri.decodeComponent(encodedPath);
+          } else if (uri.host.contains('storage.googleapis.com')) {
+            final pathIndex = uri.pathSegments.indexOf('suggestions');
+            if (pathIndex != -1 && pathIndex + 1 < uri.pathSegments.length) {
+              filePath = uri.pathSegments.sublist(pathIndex).join('/');
+            }
+          }
+          
+          if (filePath != null && filePath.startsWith('suggestions/')) {
+            // Create new path in /rejected/
+            final newPath = filePath.replaceFirst('suggestions/', 'rejected/');
+            
+            // Get references
+            final sourceRef = _storage.ref().child(filePath);
+            final destRef = _storage.ref().child(newPath);
+            
+            // Copy the file
+            final data = await sourceRef.getData();
+            if (data != null) {
+              // Get content type from metadata
+              final metadata = await sourceRef.getMetadata();
+              final contentType = metadata.contentType ?? 'image/jpeg';
+              
+              // Upload to rejected location
+              await destRef.putData(
+                data,
+                SettableMetadata(contentType: contentType),
+              );
+              
+              // Get the new URL
+              final newUrl = await destRef.getDownloadURL();
+              rejectedUrls.add(newUrl);
+              
+              // Delete the original from /suggestions/
+              await sourceRef.delete();
+            }
+          }
+        } catch (e) {
+          debugPrint('Error moving suggested photo to rejected $photoUrl: $e');
+          // Continue with other photos even if one fails
+        }
+      }
+      
+      return rejectedUrls;
+    } catch (e) {
+      debugPrint('Error moving suggested photos to rejected: $e');
+      return [];
+    }
+  }
+
+  // Move photos from /rejected/ back to /suggestions/ path (used when undoing rejection)
+  Future<List<String>> movePhotosFromRejectedToSuggestions(List<String> rejectedPhotoUrls) async {
+    try {
+      final List<String> suggestionUrls = [];
+      
+      for (final photoUrl in rejectedPhotoUrls) {
+        try {
+          // Extract the file path from the URL
+          final uri = Uri.parse(photoUrl);
+          String? filePath;
+          
+          // Handle Firebase Storage URL formats
+          if (uri.pathSegments.contains('o')) {
+            final encodedPath = uri.pathSegments[uri.pathSegments.indexOf('o') + 1];
+            filePath = Uri.decodeComponent(encodedPath);
+          } else if (uri.host.contains('storage.googleapis.com')) {
+            final pathIndex = uri.pathSegments.indexOf('rejected');
+            if (pathIndex != -1 && pathIndex + 1 < uri.pathSegments.length) {
+              filePath = uri.pathSegments.sublist(pathIndex).join('/');
+            }
+          }
+          
+          if (filePath != null && filePath.startsWith('rejected/')) {
+            // Create new path in /suggestions/
+            final newPath = filePath.replaceFirst('rejected/', 'suggestions/');
+            
+            // Get references
+            final sourceRef = _storage.ref().child(filePath);
+            final destRef = _storage.ref().child(newPath);
+            
+            // Copy the file
+            final data = await sourceRef.getData();
+            if (data != null) {
+              // Get content type from metadata
+              final metadata = await sourceRef.getMetadata();
+              final contentType = metadata.contentType ?? 'image/jpeg';
+              
+              // Upload to suggestions location
+              await destRef.putData(
+                data,
+                SettableMetadata(contentType: contentType),
+              );
+              
+              // Get the new URL
+              final newUrl = await destRef.getDownloadURL();
+              suggestionUrls.add(newUrl);
+              
+              // Delete the original from /rejected/
+              await sourceRef.delete();
+            }
+          }
+        } catch (e) {
+          debugPrint('Error moving rejected photo back to suggestions $photoUrl: $e');
+          // Continue with other photos even if one fails
+        }
+      }
+      
+      return suggestionUrls;
+    } catch (e) {
+      debugPrint('Error moving rejected photos back to suggestions: $e');
+      return [];
     }
   }
 
