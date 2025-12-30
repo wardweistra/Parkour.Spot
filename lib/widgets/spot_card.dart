@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
+import 'package:country_flags/country_flags.dart';
 import '../models/spot.dart';
 import '../services/mobile_detection_service.dart';
+import '../services/url_service.dart';
 import '../utils/image_url_utils.dart';
 
 enum SpotCardVariant {
@@ -303,11 +306,11 @@ class _SpotCardState extends State<SpotCard> {
                           softWrap: true, // Ensure text wraps properly
                         ),
                         
-                        const SizedBox(height: 16),
-                        
-                        // Add bottom padding to make room for the "Added by" text
+                        // Add bottom padding to make room for the bottom row and "Added by" text
                         if (widget.spot.createdBy != null || widget.spot.createdByName != null)
-                          const SizedBox(height: 60),
+                          const SizedBox(height: 60)
+                        else
+                          const SizedBox(height: 50),
                       ],
                     ),
                   ),
@@ -315,29 +318,92 @@ class _SpotCardState extends State<SpotCard> {
               ],
             ),
 
-            // Locate button (bottom-right)
+            // Bottom row: Flag + City (left) | Share + Locate buttons (right) - floated to bottom
             Positioned(
-              right: 12,
+              left: 16,
+              right: 16,
               bottom: 12,
-              child: Material(
-                color: Theme.of(context).colorScheme.primary,
-                shape: const CircleBorder(),
-                elevation: 2,
-                child: InkWell(
-                  onTap: widget.onLocate,
-                  customBorder: const CircleBorder(),
-                  child: Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: Icon(
-                      Icons.my_location,
-                      size: 20,
-                      color: Theme.of(context).colorScheme.onPrimary,
-                    ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Left: Flag + City
+                  if (widget.spot.city != null || widget.spot.countryCode != null)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (widget.spot.countryCode != null)
+                          CountryFlag.fromCountryCode(
+                            widget.spot.countryCode!,
+                            height: 16,
+                            width: 24,
+                            borderRadius: 2,
+                          ),
+                        if (widget.spot.countryCode != null && widget.spot.city != null)
+                          const SizedBox(width: 6),
+                        if (widget.spot.city != null)
+                          Text(
+                            widget.spot.city!,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                      ],
+                    )
+                  else
+                    const SizedBox.shrink(),
+                  
+                  // Right: Share + Locate buttons
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Share button (always shown)
+                      Material(
+                        color: Theme.of(context).colorScheme.secondary,
+                        shape: const CircleBorder(),
+                        elevation: 2,
+                        child: InkWell(
+                          onTap: () => _shareSpot(context),
+                          customBorder: const CircleBorder(),
+                          child: Padding(
+                            padding: const EdgeInsets.all(6),
+                            child: Icon(
+                              Icons.share,
+                              size: 14,
+                              color: Theme.of(context).colorScheme.onSecondary,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Spacing between Share and Locate buttons
+                      if (widget.onLocate != null)
+                        const SizedBox(width: 6),
+                      // Locate button
+                      if (widget.onLocate != null)
+                        Material(
+                          color: Theme.of(context).colorScheme.secondary,
+                          shape: const CircleBorder(),
+                          elevation: 2,
+                          child: InkWell(
+                            onTap: widget.onLocate,
+                            customBorder: const CircleBorder(),
+                            child: Padding(
+                              padding: const EdgeInsets.all(6),
+                              child: Icon(
+                                Icons.my_location,
+                                size: 14,
+                                color: Theme.of(context).colorScheme.onSecondary,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
-                ),
+                ],
               ),
             ),
-            
+
             // External source indicator - positioned at top right
             if (widget.spot.spotSource != null)
               Positioned(
@@ -683,52 +749,134 @@ class _SpotCardState extends State<SpotCard> {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: widget.onViewDetails,
-                          child: const Text('View Details'),
+                      // Flag + City after description
+                      if (widget.spot.city != null || widget.spot.countryCode != null) ...[
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (widget.spot.countryCode != null)
+                              CountryFlag.fromCountryCode(
+                                widget.spot.countryCode!,
+                                height: 16,
+                                width: 24,
+                                borderRadius: 2,
+                              ),
+                            if (widget.spot.countryCode != null && widget.spot.city != null)
+                              const SizedBox(width: 6),
+                            if (widget.spot.city != null)
+                              Text(
+                                widget.spot.city!,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                          ],
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ),
               ],
             ),
             
-            // Close button positioned at top right of entire card
-            if (widget.onClose != null)
-              Positioned(
-                top: 8,
-                right: 8,
-                child: GestureDetector(
-                  onTap: widget.onClose,
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.6),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.3),
-                        width: 1,
+            // Share and Close buttons positioned at top right of entire card
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Share button (always shown)
+                  GestureDetector(
+                    onTap: () => _shareSpot(context),
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.6),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.share,
+                        color: Colors.white,
+                        size: 18,
                       ),
                     ),
-                    child: const Icon(
-                      Icons.close,
-                      color: Colors.white,
-                      size: 18,
-                    ),
                   ),
-                ),
+                  // Spacing between Share and Close buttons
+                  if (widget.onClose != null)
+                    const SizedBox(width: 8),
+                  // Close button
+                  if (widget.onClose != null)
+                    GestureDetector(
+                      onTap: widget.onClose,
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.6),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
+                    ),
+                ],
               ),
+            ),
           ],
         ),
       ),
     ),
   );
 }
+
+  Future<void> _shareSpot(BuildContext context) async {
+    if (widget.spot.id == null) return;
+    
+    try {
+      final url = UrlService.generateSpotUrl(
+        widget.spot.id!,
+        countryCode: widget.spot.countryCode,
+        city: widget.spot.city,
+      );
+      final text = '${widget.spot.name.trim()} 👉 $url';
+      
+      await Clipboard.setData(ClipboardData(text: text));
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Spot copied to clipboard!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to share spot: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   Widget _buildRemovedBadge(BuildContext context) {
     final textStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
