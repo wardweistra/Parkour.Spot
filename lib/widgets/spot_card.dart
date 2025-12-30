@@ -22,6 +22,7 @@ class SpotCard extends StatefulWidget {
   final VoidCallback? onClose; // For overlay variant
   final VoidCallback? onViewDetails; // For overlay variant
   final double? maxWidth; // For overlay variant
+  final VoidCallback? onRemove; // For list variant - shows remove button
 
   const SpotCard({
     super.key,
@@ -33,6 +34,7 @@ class SpotCard extends StatefulWidget {
     this.onClose,
     this.onViewDetails,
     this.maxWidth,
+    this.onRemove,
   });
 
   @override
@@ -314,11 +316,8 @@ class _SpotCardState extends State<SpotCard> {
                           softWrap: true, // Ensure text wraps properly
                         ),
                         
-                        // Add bottom padding to make room for the bottom row and "Added by" text
-                        if (widget.spot.createdBy != null || widget.spot.createdByName != null)
-                          const SizedBox(height: 60)
-                        else
-                          const SizedBox(height: 50),
+                        // Add bottom padding to make room for the bottom row
+                        const SizedBox(height: 50),
                       ],
                     ),
                   ),
@@ -438,45 +437,27 @@ class _SpotCardState extends State<SpotCard> {
                 ),
               ),
 
+            // Removed badge - position on left if remove button exists, otherwise right
             if (widget.spot.spotSourceRemoved)
               Positioned(
                 top: 8,
-                right: 8,
+                left: widget.onRemove != null ? 8 : null,
+                right: widget.onRemove != null ? null : 8,
                 child: _buildRemovedBadge(context),
               ),
 
-            // "Added by" text positioned at bottom left
-            if (widget.spot.createdBy != null || widget.spot.createdByName != null)
+            // Remove button (for list variant)
+            if (widget.onRemove != null)
               Positioned(
-                bottom: 16,
-                left: 16,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.person,
-                      size: 14,
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Added by ${widget.spot.createdByName ?? widget.spot.createdBy}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (widget.spot.createdAt != null) ...[
-                      const SizedBox(width: 8),
-                      Text(
-                        '• ${_formatDate(widget.spot.createdAt!)}',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-                        ),
-                      ),
-                    ],
-                  ],
+                top: 8,
+                right: 8,
+                child: IconButton(
+                  icon: const Icon(Icons.close),
+                  tooltip: 'Remove from list',
+                  onPressed: widget.onRemove,
+                  style: IconButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.surface,
+                  ),
                 ),
               ),
           ],
@@ -939,24 +920,6 @@ class _SpotCardState extends State<SpotCard> {
         ],
       ),
     );
-  }
-
-String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date);
-    
-    if (difference.inDays == 0) {
-      if (difference.inHours == 0) {
-        return '${difference.inMinutes}m ago';
-      }
-      return '${difference.inHours}h ago';
-    } else if (difference.inDays == 1) {
-      return 'Yesterday';
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays}d ago';
-    } else {
-      return '${date.day}/${date.month}/${date.year}';
-    }
   }
 
   void _nextImage() {

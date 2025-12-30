@@ -180,39 +180,20 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
         itemCount: _spots.length,
         itemBuilder: (context, index) {
           final spot = _spots[index];
-          return Stack(
-            clipBehavior: Clip.none,
-            children: [
-              SpotCard(
-                spot: spot,
-                onTap: () {
-                  // Navigate to spot detail
-                  final navigationUrl = spot.id != null
-                      ? '/spot/${spot.id}'
-                      : null;
-                  if (navigationUrl != null) {
-                    context.go(navigationUrl);
-                  }
-                },
-              ),
-              if (canManage)
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: IconButton(
-                    icon: const Icon(Icons.close),
-                    tooltip: 'Remove from list',
-                    onPressed: () {
-                      if (spot.id != null) {
-                        _removeSpot(spot.id!);
-                      }
-                    },
-                    style: IconButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.surface,
-                    ),
-                  ),
-                ),
-            ],
+          return SpotCard(
+            spot: spot,
+            onTap: () {
+              // Navigate to spot detail
+              final navigationUrl = spot.id != null
+                  ? '/spot/${spot.id}'
+                  : null;
+              if (navigationUrl != null) {
+                context.go(navigationUrl);
+              }
+            },
+            onRemove: canManage && spot.id != null
+                ? () => _removeSpot(spot.id!)
+                : null,
           );
         },
       );
@@ -225,38 +206,20 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
           final spot = _spots[index];
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: Stack(
-              children: [
-                SpotCard(
-                  spot: spot,
-                  onTap: () {
-                    // Navigate to spot detail
-                    final navigationUrl = spot.id != null
-                        ? '/spot/${spot.id}'
-                        : null;
-                    if (navigationUrl != null) {
-                      context.go(navigationUrl);
-                    }
-                  },
-                ),
-                if (canManage)
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: IconButton(
-                      icon: const Icon(Icons.close),
-                      tooltip: 'Remove from list',
-                      onPressed: () {
-                        if (spot.id != null) {
-                          _removeSpot(spot.id!);
-                        }
-                      },
-                      style: IconButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.surface,
-                      ),
-                    ),
-                  ),
-              ],
+            child: SpotCard(
+              spot: spot,
+              onTap: () {
+                // Navigate to spot detail
+                final navigationUrl = spot.id != null
+                    ? '/spot/${spot.id}'
+                    : null;
+                if (navigationUrl != null) {
+                  context.go(navigationUrl);
+                }
+              },
+              onRemove: canManage && spot.id != null
+                  ? () => _removeSpot(spot.id!)
+                  : null,
             ),
           );
         },
