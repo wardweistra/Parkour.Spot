@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:lottie/lottie.dart';
 import '../../services/auth_service.dart';
+import '../../services/spot_list_service.dart';
+import '../../services/feature_access_service.dart';
+import '../../models/spot_list.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/instagram_button.dart';
 import '../../widgets/github_button.dart';
@@ -302,6 +305,158 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
 
                 const SizedBox(height: 16),
               ],
+
+              // Spot Lists Section
+              Consumer<SpotListService>(
+                builder: (context, spotListService, child) {
+                  final authService = Provider.of<AuthService>(context, listen: false);
+                  final featureAccessService = FeatureAccessService(authService);
+                  
+                  if (!featureAccessService.hasFeatureAccess('spotLists')) {
+                    return const SizedBox.shrink();
+                  }
+
+                  return Column(
+                    children: [
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Spot Lists',
+                                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.add),
+                                    tooltip: 'Create New List',
+                                    onPressed: () => _showCreateListDialog(context, spotListService),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              FutureBuilder<List<SpotList>>(
+                                future: spotListService.getUserSpotLists(),
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState == ConnectionState.waiting) {
+                                    return const Padding(
+                                      padding: EdgeInsets.all(16.0),
+                                      child: Center(child: CircularProgressIndicator()),
+                                    );
+                                  }
+
+                                  if (snapshot.hasError) {
+                                    return Padding(
+                                      padding: const EdgeInsets.all(16.0),
+                                      child: Text(
+                                        'Error loading lists: ${snapshot.error}',
+                                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                          color: Theme.of(context).colorScheme.error,
+                                        ),
+                                      ),
+                                    );
+                                  }
+
+                                  final lists = snapshot.data ?? [];
+
+                                  if (lists.isEmpty) {
+                                    return Padding(
+                                      padding: const EdgeInsets.all(16.0),
+                                      child: Column(
+                                        children: [
+                                          Icon(
+                                            Icons.list_outlined,
+                                            size: 48,
+                                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            'No lists yet',
+                                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          TextButton(
+                                            onPressed: () => _showCreateListDialog(context, spotListService),
+                                            child: const Text('Create your first list'),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }
+
+                                  return Column(
+                                    children: lists.map((list) {
+                                      return Card(
+                                        margin: const EdgeInsets.only(bottom: 8),
+                                        child: ListTile(
+                                          title: Text(list.name),
+                                          subtitle: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              if (list.description != null && list.description!.isNotEmpty)
+                                                Padding(
+                                                  padding: const EdgeInsets.only(top: 4),
+                                                  child: Text(
+                                                    list.description!,
+                                                    style: Theme.of(context).textTheme.bodySmall,
+                                                    maxLines: 2,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              Padding(
+                                                padding: const EdgeInsets.only(top: 4),
+                                                child: Text(
+                                                  '${list.spotCount} ${list.spotCount == 1 ? 'spot' : 'spots'}',
+                                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          trailing: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              IconButton(
+                                                icon: const Icon(Icons.edit),
+                                                tooltip: 'Edit',
+                                                onPressed: () => _showEditListDialog(context, spotListService, list),
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(Icons.delete),
+                                                tooltip: 'Delete',
+                                                onPressed: () => _showDeleteListDialog(context, spotListService, list),
+                                              ),
+                                            ],
+                                          ),
+                                          onTap: () {
+                                            if (list.id != null) {
+                                              context.go('/list/${list.id}');
+                                            }
+                                          },
+                                        ),
+                                      );
+                                    }).toList(),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  );
+                },
+              ),
               
               // App Info Card
               Card(
@@ -630,6 +785,185 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       onTap: onTap,
       contentPadding: EdgeInsets.zero,
+    );
+  }
+
+  void _showCreateListDialog(BuildContext context, SpotListService spotListService) {
+    final nameController = TextEditingController();
+    final descriptionController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Create New List'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                labelText: 'List Name',
+                hintText: 'e.g., My Favorite Spots',
+              ),
+              autofocus: true,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: descriptionController,
+              decoration: const InputDecoration(
+                labelText: 'Description (optional)',
+                hintText: 'Add a description for this list',
+              ),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              if (nameController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  const SnackBar(content: Text('List name cannot be empty')),
+                );
+                return;
+              }
+
+              final listId = await spotListService.createSpotList(
+                nameController.text.trim(),
+                description: descriptionController.text.trim().isEmpty
+                    ? null
+                    : descriptionController.text.trim(),
+              );
+
+              if (dialogContext.mounted) {
+                Navigator.pop(dialogContext);
+                if (listId != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('List created successfully')),
+                  );
+                } else if (spotListService.error != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(spotListService.error!)),
+                  );
+                }
+              }
+            },
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditListDialog(BuildContext context, SpotListService spotListService, SpotList list) {
+    final nameController = TextEditingController(text: list.name);
+    final descriptionController = TextEditingController(text: list.description ?? '');
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Edit List'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                labelText: 'List Name',
+              ),
+              autofocus: true,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: descriptionController,
+              decoration: const InputDecoration(
+                labelText: 'Description (optional)',
+              ),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              if (nameController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  const SnackBar(content: Text('List name cannot be empty')),
+                );
+                return;
+              }
+
+              final success = await spotListService.updateSpotList(
+                list.id!,
+                name: nameController.text.trim(),
+                description: descriptionController.text.trim().isEmpty
+                    ? null
+                    : descriptionController.text.trim(),
+              );
+
+              if (dialogContext.mounted) {
+                Navigator.pop(dialogContext);
+                if (success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('List updated successfully')),
+                  );
+                } else if (spotListService.error != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(spotListService.error!)),
+                  );
+                }
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteListDialog(BuildContext context, SpotListService spotListService, SpotList list) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete List'),
+        content: Text('Are you sure you want to delete "${list.name}"? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final success = await spotListService.deleteSpotList(list.id!);
+
+              if (dialogContext.mounted) {
+                Navigator.pop(dialogContext);
+                if (success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('List deleted successfully')),
+                  );
+                } else if (spotListService.error != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(spotListService.error!)),
+                  );
+                }
+              }
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
     );
   }
 }

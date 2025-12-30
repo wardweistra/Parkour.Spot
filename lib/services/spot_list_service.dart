@@ -1,0 +1,374 @@
+import 'package:flutter/foundation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/spot_list.dart';
+import '../services/auth_service.dart';
+import '../services/feature_access_service.dart';
+
+class SpotListService extends ChangeNotifier {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final AuthService _authService;
+  final FeatureAccessService _featureAccessService;
+
+  bool _isLoading = false;
+  String? _error;
+
+  bool get isLoading => _isLoading;
+  String? get error => _error;
+
+  SpotListService(this._authService, this._featureAccessService);
+
+  /// Check if the current user has access to spot lists feature
+  bool _hasFeatureAccess() {
+    return _featureAccessService.hasFeatureAccess('spotLists');
+  }
+
+  /// Check if the current user is authenticated
+  bool _isAuthenticated() {
+    return _authService.isAuthenticated;
+  }
+
+  /// Get the current user ID
+  String? _getCurrentUserId() {
+    return _authService.currentUser?.uid;
+  }
+
+  /// Create a new spot list
+  Future<String?> createSpotList(String name, {String? description}) async {
+    if (!_isAuthenticated()) {
+      _error = 'You must be signed in to create a list';
+      notifyListeners();
+      return null;
+    }
+
+    if (!_hasFeatureAccess()) {
+      _error = 'You do not have access to create spot lists';
+      notifyListeners();
+      return null;
+    }
+
+    final userId = _getCurrentUserId();
+    if (userId == null) {
+      _error = 'User ID not found';
+      notifyListeners();
+      return null;
+    }
+
+    if (name.trim().isEmpty) {
+      _error = 'List name cannot be empty';
+      notifyListeners();
+      return null;
+    }
+
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      final now = DateTime.now();
+      final spotList = SpotList(
+        name: name.trim(),
+        description: description?.trim(),
+        spotIds: [],
+        createdBy: userId,
+        createdAt: now,
+        updatedAt: now,
+      );
+
+      final docRef = await _firestore
+          .collection('spotLists')
+          .add(spotList.toFirestore());
+
+      _isLoading = false;
+      notifyListeners();
+      return docRef.id;
+    } catch (e) {
+      _error = 'Failed to create list: $e';
+      debugPrint('Error creating spot list: $e');
+      _isLoading = false;
+      notifyListeners();
+      return null;
+    }
+  }
+
+  /// Get all spot lists for the current user (requires feature access for management)
+  /// Note: This method does not update loading state or notify listeners
+  /// as it's typically called from FutureBuilder which manages its own loading state
+  Future<List<SpotList>> getUserSpotLists() async {
+    if (!_isAuthenticated()) {
+      return [];
+    }
+
+    if (!_hasFeatureAccess()) {
+      return [];
+    }
+
+    final userId = _getCurrentUserId();
+    if (userId == null) {
+      return [];
+    }
+
+    try {
+      final querySnapshot = await _firestore
+          .collection('spotLists')
+          .where('createdBy', isEqualTo: userId)
+          .orderBy('updatedAt', descending: true)
+          .get();
+
+      final lists = querySnapshot.docs
+          .map((doc) => SpotList.fromFirestore(doc))
+          .toList();
+
+      return lists;
+    } catch (e) {
+      debugPrint('Error loading user spot lists: $e');
+      return [];
+    }
+  }
+
+  /// Get all spot lists for a specific user (public access, no feature flag required)
+  /// Note: This method does not update loading state or notify listeners
+  Future<List<SpotList>> getSpotListsByUser(String userId) async {
+    try {
+      final querySnapshot = await _firestore
+          .collection('spotLists')
+          .where('createdBy', isEqualTo: userId)
+          .orderBy('updatedAt', descending: true)
+          .get();
+
+      final lists = querySnapshot.docs
+          .map((doc) => SpotList.fromFirestore(doc))
+          .toList();
+
+      return lists;
+    } catch (e) {
+      debugPrint('Error loading spot lists for user: $e');
+      return [];
+    }
+  }
+
+  /// Get a specific spot list by ID (public access)
+  Future<SpotList?> getSpotListById(String listId) async {
+    try {
+      final doc = await _firestore.collection('spotLists').doc(listId).get();
+      if (doc.exists) {
+        return SpotList.fromFirestore(doc);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error getting spot list: $e');
+      return null;
+    }
+  }
+
+  /// Update spot list metadata (name and description)
+  Future<bool> updateSpotList(
+    String listId, {
+    String? name,
+    String? description,
+  }) async {
+    if (!_isAuthenticated()) {
+      _error = 'You must be signed in to update a list';
+      notifyListeners();
+      return false;
+    }
+
+    final userId = _getCurrentUserId();
+    if (userId == null) {
+      _error = 'User ID not found';
+      notifyListeners();
+      return false;
+    }
+
+    // Verify ownership
+    final list = await getSpotListById(listId);
+    if (list == null || list.createdBy != userId) {
+      _error = 'You do not have permission to update this list';
+      notifyListeners();
+      return false;
+    }
+
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      final updates = <String, dynamic>{
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+      if (name != null) {
+        if (name.trim().isEmpty) {
+          _error = 'List name cannot be empty';
+          _isLoading = false;
+          notifyListeners();
+          return false;
+        }
+        updates['name'] = name.trim();
+      }
+
+      if (description != null) {
+        updates['description'] = description.trim().isEmpty
+            ? FieldValue.delete()
+            : description.trim();
+      }
+
+      await _firestore.collection('spotLists').doc(listId).update(updates);
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = 'Failed to update list: $e';
+      debugPrint('Error updating spot list: $e');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Add a spot to a list
+  Future<bool> addSpotToList(String listId, String spotId) async {
+    if (!_isAuthenticated()) {
+      _error = 'You must be signed in to add spots to a list';
+      notifyListeners();
+      return false;
+    }
+
+    final userId = _getCurrentUserId();
+    if (userId == null) {
+      _error = 'User ID not found';
+      notifyListeners();
+      return false;
+    }
+
+    // Verify ownership
+    final list = await getSpotListById(listId);
+    if (list == null || list.createdBy != userId) {
+      _error = 'You do not have permission to modify this list';
+      notifyListeners();
+      return false;
+    }
+
+    // Check if spot is already in the list
+    if (list.spotIds.contains(spotId)) {
+      _error = 'Spot is already in this list';
+      notifyListeners();
+      return false;
+    }
+
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      await _firestore.collection('spotLists').doc(listId).update({
+        'spotIds': FieldValue.arrayUnion([spotId]),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = 'Failed to add spot to list: $e';
+      debugPrint('Error adding spot to list: $e');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Remove a spot from a list
+  Future<bool> removeSpotFromList(String listId, String spotId) async {
+    if (!_isAuthenticated()) {
+      _error = 'You must be signed in to remove spots from a list';
+      notifyListeners();
+      return false;
+    }
+
+    final userId = _getCurrentUserId();
+    if (userId == null) {
+      _error = 'User ID not found';
+      notifyListeners();
+      return false;
+    }
+
+    // Verify ownership
+    final list = await getSpotListById(listId);
+    if (list == null || list.createdBy != userId) {
+      _error = 'You do not have permission to modify this list';
+      notifyListeners();
+      return false;
+    }
+
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      await _firestore.collection('spotLists').doc(listId).update({
+        'spotIds': FieldValue.arrayRemove([spotId]),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = 'Failed to remove spot from list: $e';
+      debugPrint('Error removing spot from list: $e');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Delete a spot list
+  Future<bool> deleteSpotList(String listId) async {
+    if (!_isAuthenticated()) {
+      _error = 'You must be signed in to delete a list';
+      notifyListeners();
+      return false;
+    }
+
+    final userId = _getCurrentUserId();
+    if (userId == null) {
+      _error = 'User ID not found';
+      notifyListeners();
+      return false;
+    }
+
+    // Verify ownership
+    final list = await getSpotListById(listId);
+    if (list == null || list.createdBy != userId) {
+      _error = 'You do not have permission to delete this list';
+      notifyListeners();
+      return false;
+    }
+
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      await _firestore.collection('spotLists').doc(listId).delete();
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = 'Failed to delete list: $e';
+      debugPrint('Error deleting spot list: $e');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Clear error state
+  void clearError() {
+    _error = null;
+    notifyListeners();
+  }
+}
+

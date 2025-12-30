@@ -88,5 +88,20 @@ service cloud.firestore {
       // No updates or deletes allowed (immutable audit log)
       allow update, delete: if false;
     }
+
+    // SpotLists collection - all lists are publicly readable, users can only manage their own lists
+    match /spotLists/{listId} {
+      // All lists are publicly readable
+      allow read: if true;
+      // Users can create lists (service validates feature access)
+      allow create: if request.auth != null &&
+        request.resource.data.createdBy == request.auth.uid;
+      // Users can update their own lists
+      allow update: if request.auth != null &&
+        resource.data.createdBy == request.auth.uid;
+      // Users can delete their own lists
+      allow delete: if request.auth != null &&
+        resource.data.createdBy == request.auth.uid;
+    }
   }
 }

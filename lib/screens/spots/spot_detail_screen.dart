@@ -22,6 +22,9 @@ import '../../widgets/custom_button.dart';
 import '../../widgets/location_info_box.dart';
 import '../../constants/spot_attributes.dart';
 import '../../services/snackbar_service.dart';
+import '../../services/spot_list_service.dart';
+import '../../services/feature_access_service.dart';
+import '../../models/spot_list.dart';
 import '../../utils/image_url_utils.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode, debugPrint;
 import 'package:url_launcher/url_launcher.dart';
@@ -41,7 +44,7 @@ class SpotDetailScreen extends StatefulWidget {
   State<SpotDetailScreen> createState() => _SpotDetailScreenState();
 }
 
-enum _SpotMenuAction { login, reportAsDuplicate, suggestPhoto, report, edit, delete, markAsDuplicate, createNativeSpot, toggleHide, removeDuplicateStatus }
+enum _SpotMenuAction { login, reportAsDuplicate, suggestPhoto, report, addToList, edit, delete, markAsDuplicate, createNativeSpot, toggleHide, removeDuplicateStatus }
 
 class _SpotDetailScreenState extends State<SpotDetailScreen> {
   double _userRating = 0;
@@ -592,6 +595,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       case _SpotMenuAction.report:
         _showReportSpotDialog();
         break;
+      case _SpotMenuAction.addToList:
+        _showAddToListDialog();
+        break;
       case _SpotMenuAction.edit:
         final authService = Provider.of<AuthService>(context, listen: false);
         final isSpotFromSource = widget.spot.spotSource != null;
@@ -787,6 +793,79 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     }
   }
 
+  Future<void> _showAddToListDialog() async {
+    if (widget.spot.id == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to add this spot to a list right now.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final spotListService = Provider.of<SpotListService>(context, listen: false);
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final featureAccessService = FeatureAccessService(authService);
+
+    if (!featureAccessService.hasFeatureAccess('spotLists')) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You do not have access to spot lists.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final lists = await spotListService.getUserSpotLists();
+    final spotId = widget.spot.id!;
+
+    // Check which lists already contain this spot
+    final listsWithSpot = lists.where((list) => list.spotIds.contains(spotId)).toList();
+    final availableLists = lists.where((list) => !list.spotIds.contains(spotId)).toList();
+
+    if (!mounted) return;
+
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (dialogContext) => _AddToListDialog(
+        spotId: spotId,
+        lists: availableLists,
+        listsWithSpot: listsWithSpot,
+        spotListService: spotListService,
+      ),
+    );
+
+    if (!mounted) return;
+    if (result != null) {
+      if (result['created'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('List created and spot added!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else if (result['added'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Spot added to list!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else if (result['error'] != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['error'] as String),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Focus(
@@ -898,6 +977,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       onSelected: _onMenuActionSelected,
                       itemBuilder: (menuContext) {
                         final theme = Theme.of(menuContext);
+                        final featureAccessService = FeatureAccessService(authService);
+                        final hasSpotListAccess = authService.isAuthenticated && 
+                            featureAccessService.hasFeatureAccess('spotLists');
                         final List<PopupMenuEntry<_SpotMenuAction>> items = [
                           if (!authService.isAuthenticated) ...[
                             PopupMenuItem<_SpotMenuAction>(
@@ -1055,6 +1137,43 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                               ],
                             ),
                           ),
+                          if (hasSpotListAccess) ...[
+                            PopupMenuItem<_SpotMenuAction>(
+                              value: _SpotMenuAction.addToList,
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.playlist_add,
+                                    color: theme.colorScheme.primary,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'Add to list',
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                      ),
+                                      Text(
+                                        'Save to a spot list',
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                              color: theme.colorScheme.onSurface
+                                                  .withValues(alpha: 0.6),
+                                              fontSize: 11,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ];
 
                           if (hasStaffAccess && _spot.id != null) {
@@ -5582,6 +5701,308 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _AddToListDialog extends StatefulWidget {
+  final String spotId;
+  final List<SpotList> lists;
+  final List<SpotList> listsWithSpot;
+  final SpotListService spotListService;
+
+  const _AddToListDialog({
+    required this.spotId,
+    required this.lists,
+    required this.listsWithSpot,
+    required this.spotListService,
+  });
+
+  @override
+  State<_AddToListDialog> createState() => _AddToListDialogState();
+}
+
+class _AddToListDialogState extends State<_AddToListDialog> {
+  final Set<String> _selectedListIds = {};
+  final _nameController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  bool _showCreateForm = false;
+  bool _isCreating = false;
+  bool _isAdding = false;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _createListAndAdd() async {
+    if (_nameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('List name cannot be empty')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isCreating = true;
+    });
+
+    final listId = await widget.spotListService.createSpotList(
+      _nameController.text.trim(),
+      description: _descriptionController.text.trim().isEmpty
+          ? null
+          : _descriptionController.text.trim(),
+    );
+
+    if (!mounted) return;
+
+    if (listId != null) {
+      // Add spot to the newly created list
+      setState(() {
+        _isCreating = false;
+        _isAdding = true;
+      });
+
+      final success = await widget.spotListService.addSpotToList(listId, widget.spotId);
+
+      if (!mounted) return;
+
+      if (success) {
+        Navigator.of(context).pop({
+          'created': true,
+          'added': true,
+        });
+      } else {
+        setState(() {
+          _isAdding = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(widget.spotListService.error ?? 'Failed to add spot to list'),
+          ),
+        );
+      }
+    } else {
+      setState(() {
+        _isCreating = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(widget.spotListService.error ?? 'Failed to create list'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _addToSelectedLists() async {
+    if (_selectedListIds.isEmpty) {
+      Navigator.of(context).pop();
+      return;
+    }
+
+    setState(() {
+      _isAdding = true;
+    });
+
+    bool allSuccess = true;
+    String? errorMessage;
+
+    for (final listId in _selectedListIds) {
+      final success = await widget.spotListService.addSpotToList(listId, widget.spotId);
+      if (!success) {
+        allSuccess = false;
+        errorMessage = widget.spotListService.error ?? 'Failed to add spot to some lists';
+        break;
+      }
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      _isAdding = false;
+    });
+
+    if (allSuccess) {
+      Navigator.of(context).pop({
+        'added': true,
+      });
+    } else {
+      Navigator.of(context).pop({
+        'error': errorMessage ?? 'Failed to add spot to lists',
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return AlertDialog(
+      title: const Text('Add to List'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (!_showCreateForm) ...[
+                if (widget.listsWithSpot.isNotEmpty) ...[
+                  Text(
+                    'Already in these lists:',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...widget.listsWithSpot.map((list) => Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.check_circle,
+                              size: 16,
+                              color: theme.colorScheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                list.name,
+                                style: theme.textTheme.bodyMedium,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )),
+                  const SizedBox(height: 16),
+                ],
+                if (widget.lists.isEmpty) ...[
+                  Text(
+                    'You don\'t have any lists yet. Create one to get started!',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ] else ...[
+                  Text(
+                    'Select lists to add this spot to:',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...widget.lists.map((list) => CheckboxListTile(
+                        title: Text(list.name),
+                        subtitle: list.description != null && list.description!.isNotEmpty
+                            ? Text(
+                                list.description!,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.bodySmall,
+                              )
+                            : null,
+                        value: _selectedListIds.contains(list.id),
+                        onChanged: _isAdding
+                            ? null
+                            : (value) {
+                                setState(() {
+                                  if (value == true && list.id != null) {
+                                    _selectedListIds.add(list.id!);
+                                  } else if (list.id != null) {
+                                    _selectedListIds.remove(list.id);
+                                  }
+                                });
+                              },
+                        contentPadding: EdgeInsets.zero,
+                      )),
+                ],
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed: _isAdding
+                      ? null
+                      : () {
+                          setState(() {
+                            _showCreateForm = true;
+                          });
+                        },
+                  icon: const Icon(Icons.add),
+                  label: const Text('Create New List'),
+                ),
+              ] else ...[
+                Text(
+                  'Create New List',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'List Name',
+                    hintText: 'e.g., My Favorite Spots',
+                  ),
+                  autofocus: true,
+                  enabled: !_isCreating && !_isAdding,
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _descriptionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Description (optional)',
+                    hintText: 'Add a description for this list',
+                  ),
+                  maxLines: 3,
+                  enabled: !_isCreating && !_isAdding,
+                ),
+                const SizedBox(height: 16),
+                TextButton(
+                  onPressed: (_isCreating || _isAdding)
+                      ? null
+                      : () {
+                          setState(() {
+                            _showCreateForm = false;
+                            _nameController.clear();
+                            _descriptionController.clear();
+                          });
+                        },
+                  child: const Text('Cancel'),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: (_isCreating || _isAdding) ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        if (!_showCreateForm && widget.lists.isNotEmpty)
+          ElevatedButton(
+            onPressed: (_isAdding || _selectedListIds.isEmpty)
+                ? null
+                : _addToSelectedLists,
+            child: _isAdding
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Add'),
+          ),
+        if (_showCreateForm)
+          ElevatedButton(
+            onPressed: (_isCreating || _isAdding) ? null : _createListAndAdd,
+            child: (_isCreating || _isAdding)
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Create & Add'),
+          ),
+      ],
     );
   }
 }

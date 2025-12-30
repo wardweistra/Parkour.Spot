@@ -15,6 +15,8 @@ import 'package:parkour_spot/services/search_state_service.dart';
 import 'package:parkour_spot/services/geocoding_service.dart';
 import 'package:parkour_spot/services/user_management_service.dart';
 import 'package:parkour_spot/services/snackbar_service.dart';
+import 'package:parkour_spot/services/spot_list_service.dart';
+import 'package:parkour_spot/services/feature_access_service.dart';
 import 'package:parkour_spot/router/app_router.dart';
 import 'package:parkour_spot/firebase_options.dart';
 import 'package:parkour_spot/config/app_config.dart';
@@ -107,6 +109,17 @@ class ParkourSpotApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(create: (_) => GeocodingService()),
         Provider(create: (_) => SpotReportService()),
+        ChangeNotifierProxyProvider<AuthService, SpotListService>(
+          create: (context) {
+            final authService = Provider.of<AuthService>(context, listen: false);
+            final featureAccessService = FeatureAccessService(authService);
+            return SpotListService(authService, featureAccessService);
+          },
+          update: (context, authService, previous) {
+            final featureAccessService = FeatureAccessService(authService);
+            return previous ?? SpotListService(authService, featureAccessService);
+          },
+        ),
       ],
       child: MaterialApp.router(
         title: 'Parkour·Spot',

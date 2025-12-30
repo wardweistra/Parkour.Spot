@@ -110,6 +110,14 @@
         { "fieldPath": "latitude", "order": "DESCENDING" },
         { "fieldPath": "longitude", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "spotLists",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "createdBy", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

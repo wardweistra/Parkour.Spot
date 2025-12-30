@@ -17,6 +17,7 @@ import '../screens/moderator/moderator_tools_screen.dart';
 import '../screens/moderator/spot_report_queue_screen.dart';
 import '../screens/spots/spot_detail_screen.dart';
 import '../screens/spots/edit_spot_screen.dart';
+import '../screens/spots/spot_list_detail_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../models/spot.dart';
 import '../services/spot_service.dart';
@@ -236,6 +237,13 @@ class AppRouter {
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/list/:listId',
+        builder: (context, state) {
+          final listId = state.pathParameters['listId']!;
+          return SpotListDetailScreen(listId: listId);
+        },
       ),
         // Admin routes (screen will self-guard on admin status)
         GoRoute(
