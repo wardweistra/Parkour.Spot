@@ -19,6 +19,7 @@ import '../../widgets/source_details_dialog.dart';
 import '../../widgets/spot_selection_dialog.dart';
 import '../../widgets/moderator_action_fields.dart';
 import '../../widgets/custom_button.dart';
+import '../../widgets/location_info_box.dart';
 import '../../constants/spot_attributes.dart';
 import '../../services/snackbar_service.dart';
 import '../../utils/image_url_utils.dart';
@@ -30,7 +31,6 @@ import 'package:web/web.dart' as web;
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 import 'dart:io';
-import 'package:country_flags/country_flags.dart';
 
 class SpotDetailScreen extends StatefulWidget {
   final Spot spot;
@@ -2259,8 +2259,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                           ),
                           // Map Type Toggle Button - Floating Action Button
                           Positioned(
-                            top: 8,
-                            right: 8,
+                            bottom: 24,
+                            right: 10,
                             child: PointerInterceptor(
                               child: FloatingActionButton(
                                 onPressed: () {
@@ -2280,7 +2280,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             ),
                           ),
                           Positioned(
-                            bottom: 8,
+                            top: 8,
                             right: 8,
                             child: PointerInterceptor(
                               child: Container(
@@ -2323,109 +2323,13 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     const SizedBox(height: 8),
 
                     // Location Information
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.primary.withValues(alpha: 0.2),
-                          width: 1,
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Address - prominent and copyable with Open in Maps button
-                          if (widget.spot.address != null) ...[
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                if (widget.spot.countryCode != null) ...[
-                                  CountryFlag.fromCountryCode(
-                                    widget.spot.countryCode!,
-                                    height: 20,
-                                    width: 30,
-                                    borderRadius: 2,
-                                  ),
-                                  const SizedBox(width: 8),
-                                ],
-                                Expanded(
-                                  child: GestureDetector(
-                                    onTap: _copyAddressToClipboard,
-                                    child: SelectableText(
-                                      widget.spot.address!,
-                                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                        fontWeight: FontWeight.w500,
-                                        color: Theme.of(context).colorScheme.onSurface,
-                                        height: 1.4,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                IconButton(
-                                  onPressed: _openInMaps,
-                                  icon: Icon(
-                                    Icons.open_in_new,
-                                    color: Theme.of(context).colorScheme.primary,
-                                    size: 20,
-                                  ),
-                                  tooltip: 'Open in Maps',
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(
-                                    minWidth: 32,
-                                    minHeight: 32,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                          ] else ...[
-                            // If no address, show button on the right
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                IconButton(
-                                  onPressed: _openInMaps,
-                                  icon: Icon(
-                                    Icons.open_in_new,
-                                    color: Theme.of(context).colorScheme.primary,
-                                    size: 20,
-                                  ),
-                                  tooltip: 'Open in Maps',
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(
-                                    minWidth: 32,
-                                    minHeight: 32,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                          ],
-                          // Coordinates
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.gps_fixed,
-                                size: 16,
-                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                              ),
-                              const SizedBox(width: 4),
-                              SelectableText(
-                                '${widget.spot.latitude.toStringAsFixed(6)}, ${widget.spot.longitude.toStringAsFixed(6)}',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                    LocationInfoBox(
+                      latitude: widget.spot.latitude,
+                      longitude: widget.spot.longitude,
+                      address: widget.spot.address,
+                      countryCode: widget.spot.countryCode,
+                      onOpenInMaps: _openInMaps,
+                      onCopyAddress: _copyAddressToClipboard,
                     ),
 
                     const SizedBox(height: 24),

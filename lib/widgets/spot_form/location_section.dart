@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:pointer_interceptor/pointer_interceptor.dart';
+import '../../services/mobile_detection_service.dart';
+import '../../widgets/location_info_box.dart';
 
 class SpotLocationSection extends StatefulWidget {
   final LatLng? currentLocation;
   final String? address;
+  final String? countryCode;
   final bool isGettingLocation;
   final bool isGeocoding;
   final bool isSatelliteView;
@@ -17,6 +21,7 @@ class SpotLocationSection extends StatefulWidget {
     super.key,
     required this.currentLocation,
     required this.address,
+    this.countryCode,
     required this.isGettingLocation,
     required this.isGeocoding,
     required this.isSatelliteView,
@@ -43,7 +48,7 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
             Row(
               children: [
                 Text(
-                  'Location',
+                  'Select Spot Location',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -67,111 +72,7 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
                   Text('Getting your location...'),
                 ],
               )
-            else if (widget.currentLocation != null) ...[
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
-                    width: 1,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on,
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: RichText(
-                            text: TextSpan(
-                              children: [
-                                TextSpan(
-                                  text:
-                                      '${widget.currentLocation!.latitude.toStringAsFixed(6)}, ${widget.currentLocation!.longitude.toStringAsFixed(6)}',
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                        fontWeight: FontWeight.w500,
-                                        color: Theme.of(context).colorScheme.onSurface,
-                                      ),
-                                ),
-                                if (widget.address != null) ...[
-                                  TextSpan(
-                                    text: '\n${widget.address}',
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface
-                                              .withValues(alpha: 0.7),
-                                          height: 1.3,
-                                        ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        if (widget.isGeocoding) ...[
-                          SizedBox(
-                            width: 12,
-                            height: 12,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Getting address...',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                          ),
-                        ] else ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.3),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.gps_fixed,
-                                  size: 14,
-                                  color: Theme.of(context).colorScheme.secondary,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Location selected',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        color: Theme.of(context).colorScheme.secondary,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ] else ...[
+            else if (widget.currentLocation == null) ...[
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -204,48 +105,6 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
 
             if (widget.currentLocation != null) ...[
               const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Location Preview',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                  ),
-                  Row(
-                    children: [
-                      Text(
-                        'Standard',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: !widget.isSatelliteView
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withValues(alpha: 0.6),
-                            ),
-                      ),
-                      Switch(
-                        value: widget.isSatelliteView,
-                        onChanged: widget.onToggleSatellite,
-                      ),
-                      Text(
-                        'Satellite',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: widget.isSatelliteView
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withValues(alpha: 0.6),
-                            ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
               Container(
                 height: 200,
                 decoration: BoxDecoration(
@@ -255,53 +114,152 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
                   ),
                 ),
                 clipBehavior: Clip.antiAlias,
-                child: GoogleMap(
-                  initialCameraPosition: CameraPosition(
-                    target: widget.currentLocation!,
-                    zoom: 16,
-                  ),
-                  mapType: widget.isSatelliteView ? MapType.satellite : MapType.normal,
-                  onMapCreated: widget.onMapCreated,
-                  markers: {
-                    Marker(
-                      markerId: const MarkerId('selected_location'),
-                      position: widget.currentLocation!,
-                      infoWindow: InfoWindow.noText,
+                child: Stack(
+                  children: [
+                    GoogleMap(
+                      initialCameraPosition: CameraPosition(
+                        target: widget.currentLocation!,
+                        zoom: 16,
+                      ),
+                      mapType: widget.isSatelliteView ? MapType.satellite : MapType.normal,
+                      onMapCreated: widget.onMapCreated,
+                      markers: {
+                        Marker(
+                          markerId: const MarkerId('selected_location'),
+                          position: widget.currentLocation!,
+                          infoWindow: InfoWindow.noText,
+                        ),
+                      },
+                      zoomControlsEnabled: false,
+                      myLocationButtonEnabled: false,
+                      mapToolbarEnabled: false,
+                      liteModeEnabled: kIsWeb,
+                      compassEnabled: false,
+                      zoomGesturesEnabled: false,
+                      scrollGesturesEnabled: false,
+                      tiltGesturesEnabled: false,
+                      rotateGesturesEnabled: false,
+                      onTap: (_) => widget.onPickOnMap(),
                     ),
-                  },
-                  zoomControlsEnabled: false,
-                  myLocationButtonEnabled: false,
-                  mapToolbarEnabled: false,
-                  liteModeEnabled: kIsWeb,
-                  compassEnabled: false,
-                  zoomGesturesEnabled: false,
-                  scrollGesturesEnabled: false,
-                  tiltGesturesEnabled: false,
-                  rotateGesturesEnabled: false,
-                  onTap: (_) => widget.onPickOnMap(),
+                    // Pick Location hint
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: PointerInterceptor(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.7),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                MobileDetectionService.isMobileDevice
+                                    ? Icons.phone_android
+                                    : Icons.touch_app,
+                                color: Colors.white,
+                                size: 14,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Pick location',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Map Type Toggle Button - Floating Action Button
+                    Positioned(
+                      bottom: 88,
+                      right: 10,
+                      child: PointerInterceptor(
+                        child: FloatingActionButton(
+                          onPressed: () {
+                            widget.onToggleSatellite(!widget.isSatelliteView);
+                          },
+                          heroTag: 'mapTypeToggleFab',
+                          mini: true,
+                          tooltip: widget.isSatelliteView ? 'Switch to Map' : 'Switch to Satellite',
+                          child: Icon(
+                            widget.isSatelliteView ? Icons.map : Icons.terrain,
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Center on my location button - Floating Action Button
+                    Positioned(
+                      bottom: 24,
+                      right: 10,
+                      child: PointerInterceptor(
+                        child: FloatingActionButton(
+                          onPressed: widget.isGettingLocation ? null : widget.onRefreshLocation,
+                          heroTag: 'currentLocationFab',
+                          mini: true,
+                          tooltip: 'Center on my location',
+                          child: widget.isGettingLocation
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : const Icon(Icons.my_location),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
+              const SizedBox(height: 16),
+              LocationInfoBox(
+                latitude: widget.currentLocation!.latitude,
+                longitude: widget.currentLocation!.longitude,
+                address: widget.address,
+                countryCode: widget.countryCode,
+                isGeocoding: widget.isGeocoding,
+              ),
             ],
-
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: widget.isGettingLocation ? null : widget.onRefreshLocation,
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Refresh Location'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: widget.onPickOnMap,
-                    icon: const Icon(Icons.map),
-                    label: const Text('Pick on Map'),
-                  ),
-                ),
-              ],
+            const SizedBox(height: 20),
+            Builder(
+              builder: (context) {
+                final isMobile = MobileDetectionService.isMobileDevice;
+                final tipText = isMobile
+                    ? 'Tip: You can also add spots from the Explore map by long-pressing on any location.'
+                    : 'Tip: You can also add spots from the Explore map by right-clicking on any location.';
+                
+                return Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        tipText,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                              fontSize: 12,
+                            ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ],
         ),

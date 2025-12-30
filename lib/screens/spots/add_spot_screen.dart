@@ -436,6 +436,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
                         ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude) 
                         : null),
                 address: _currentAddress,
+                countryCode: _currentCountryCode,
                 isGettingLocation: _isGettingLocation,
                 isGeocoding: _isGeocoding,
                 isSatelliteView: _isSatelliteView,

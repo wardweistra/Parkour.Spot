@@ -30,7 +30,7 @@ class SpotImageSection extends StatelessWidget {
             Row(
               children: [
                 Text(
-                  'Spot Images',
+                  'Select Spot Images',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
