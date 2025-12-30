@@ -328,12 +328,14 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     // Created by
     if (_spot.createdBy != null || _spot.createdByName != null) {
       final createdBy = _spot.createdByName ?? _spot.createdBy ?? '';
-      String createdText = 'Spot created by $createdBy';
+      String createdText;
       
       // Add created date if available
       if (_spot.createdAt != null) {
         final createdDateText = _formatRelativeDate(_spot.createdAt!);
-        createdText += ' $createdDateText';
+        createdText = 'Spot created $createdDateText by $createdBy';
+      } else {
+        createdText = 'Spot created by $createdBy';
       }
       
       textSpans.add(TextSpan(
@@ -353,10 +355,20 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       }
       
       final sourceName = _spot.spotSourceName ?? 'Unknown Source';
-      textSpans.add(TextSpan(
-        text: 'Spot imported from ',
-        style: textStyle,
-      ));
+      
+      // Add created date if available and no createdBy (imported spots)
+      if (!hasPreviousContent && _spot.createdAt != null) {
+        final createdDateText = _formatRelativeDate(_spot.createdAt!);
+        textSpans.add(TextSpan(
+          text: 'Spot imported $createdDateText from ',
+          style: textStyle,
+        ));
+      } else {
+        textSpans.add(TextSpan(
+          text: 'Spot imported from ',
+          style: textStyle,
+        ));
+      }
       
       // Make source name clickable
       textSpans.add(TextSpan(
@@ -371,15 +383,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       if (_spot.folderName != null) {
         textSpans.add(TextSpan(
           text: ' from the folder ${_spot.folderName}',
-          style: textStyle,
-        ));
-      }
-      
-      // Add created date if available and no createdBy (imported spots)
-      if (!hasPreviousContent && _spot.createdAt != null) {
-        final createdDateText = _formatRelativeDate(_spot.createdAt!);
-        textSpans.add(TextSpan(
-          text: ' $createdDateText',
           style: textStyle,
         ));
       }
