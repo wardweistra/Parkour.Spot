@@ -153,23 +153,27 @@ class _SpotCardState extends State<SpotCard> {
                               top: 0,
                               bottom: 0,
                               child: Center(
-                                child: GestureDetector(
-                                  onTap: () => _previousImage(),
-                                  child: Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withValues(alpha: 0.6),
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: Colors.white.withValues(alpha: 0.3),
-                                        width: 1,
+                                child: Material(
+                                  color: Colors.black.withValues(alpha: 0.6),
+                                  shape: const CircleBorder(),
+                                  child: InkWell(
+                                    onTap: () => _previousImage(),
+                                    customBorder: const CircleBorder(),
+                                    child: Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Colors.white.withValues(alpha: 0.3),
+                                          width: 1,
+                                        ),
                                       ),
-                                    ),
-                                    child: Icon(
-                                      Icons.chevron_left,
-                                      color: Colors.white,
-                                      size: 24,
+                                      child: const Icon(
+                                        Icons.chevron_left,
+                                        color: Colors.white,
+                                        size: 24,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -182,23 +186,27 @@ class _SpotCardState extends State<SpotCard> {
                               top: 0,
                               bottom: 0,
                               child: Center(
-                                child: GestureDetector(
-                                  onTap: () => _nextImage(),
-                                  child: Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withValues(alpha: 0.6),
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: Colors.white.withValues(alpha: 0.3),
-                                        width: 1,
+                                child: Material(
+                                  color: Colors.black.withValues(alpha: 0.6),
+                                  shape: const CircleBorder(),
+                                  child: InkWell(
+                                    onTap: () => _nextImage(),
+                                    customBorder: const CircleBorder(),
+                                    child: Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Colors.white.withValues(alpha: 0.3),
+                                          width: 1,
+                                        ),
                                       ),
-                                    ),
-                                    child: Icon(
-                                      Icons.chevron_right,
-                                      color: Colors.white,
-                                      size: 24,
+                                      child: const Icon(
+                                        Icons.chevron_right,
+                                        color: Colors.white,
+                                        size: 24,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -335,12 +343,12 @@ class _SpotCardState extends State<SpotCard> {
                         if (widget.spot.countryCode != null)
                           CountryFlag.fromCountryCode(
                             widget.spot.countryCode!,
-                            height: 16,
-                            width: 24,
+                            height: 20,
+                            width: 30,
                             borderRadius: 2,
                           ),
                         if (widget.spot.countryCode != null && widget.spot.city != null)
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 8),
                         if (widget.spot.city != null)
                           Text(
                             widget.spot.city!,
@@ -367,10 +375,10 @@ class _SpotCardState extends State<SpotCard> {
                           onTap: () => _shareSpot(context),
                           customBorder: const CircleBorder(),
                           child: Padding(
-                            padding: const EdgeInsets.all(6),
+                            padding: const EdgeInsets.all(8),
                             child: Icon(
                               Icons.share,
-                              size: 14,
+                              size: 18,
                               color: Theme.of(context).colorScheme.onSecondary,
                             ),
                           ),
@@ -378,7 +386,7 @@ class _SpotCardState extends State<SpotCard> {
                       ),
                       // Spacing between Share and Locate buttons
                       if (widget.onLocate != null)
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 8),
                       // Locate button
                       if (widget.onLocate != null)
                         Material(
@@ -389,10 +397,10 @@ class _SpotCardState extends State<SpotCard> {
                             onTap: widget.onLocate,
                             customBorder: const CircleBorder(),
                             child: Padding(
-                              padding: const EdgeInsets.all(6),
+                              padding: const EdgeInsets.all(8),
                               child: Icon(
                                 Icons.my_location,
-                                size: 14,
+                                size: 18,
                                 color: Theme.of(context).colorScheme.onSecondary,
                               ),
                             ),
@@ -572,23 +580,27 @@ class _SpotCardState extends State<SpotCard> {
                               top: 0,
                               bottom: 0,
                               child: Center(
-                                child: GestureDetector(
-                                  onTap: _previousImage,
-                                  child: Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withValues(alpha: 0.6),
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: Colors.white.withValues(alpha: 0.3),
-                                        width: 1,
+                                child: Material(
+                                  color: Colors.black.withValues(alpha: 0.6),
+                                  shape: const CircleBorder(),
+                                  child: InkWell(
+                                    onTap: _previousImage,
+                                    customBorder: const CircleBorder(),
+                                    child: Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Colors.white.withValues(alpha: 0.3),
+                                          width: 1,
+                                        ),
                                       ),
-                                    ),
-                                    child: Icon(
-                                      Icons.chevron_left,
-                                      color: Colors.white,
-                                      size: 24,
+                                      child: const Icon(
+                                        Icons.chevron_left,
+                                        color: Colors.white,
+                                        size: 24,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -601,23 +613,27 @@ class _SpotCardState extends State<SpotCard> {
                               top: 0,
                               bottom: 0,
                               child: Center(
-                                child: GestureDetector(
-                                  onTap: _nextImage,
-                                  child: Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withValues(alpha: 0.6),
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: Colors.white.withValues(alpha: 0.3),
-                                        width: 1,
+                                child: Material(
+                                  color: Colors.black.withValues(alpha: 0.6),
+                                  shape: const CircleBorder(),
+                                  child: InkWell(
+                                    onTap: _nextImage,
+                                    customBorder: const CircleBorder(),
+                                    child: Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Colors.white.withValues(alpha: 0.3),
+                                          width: 1,
+                                        ),
                                       ),
-                                    ),
-                                    child: Icon(
-                                      Icons.chevron_right,
-                                      color: Colors.white,
-                                      size: 24,
+                                      child: const Icon(
+                                        Icons.chevron_right,
+                                        color: Colors.white,
+                                        size: 24,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -789,23 +805,27 @@ class _SpotCardState extends State<SpotCard> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // Share button (always shown)
-                  GestureDetector(
-                    onTap: () => _shareSpot(context),
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.6),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.3),
-                          width: 1,
+                  Material(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      onTap: () => _shareSpot(context),
+                      customBorder: const CircleBorder(),
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.3),
+                            width: 1,
+                          ),
                         ),
-                      ),
-                      child: const Icon(
-                        Icons.share,
-                        color: Colors.white,
-                        size: 18,
+                        child: const Icon(
+                          Icons.share,
+                          color: Colors.white,
+                          size: 18,
+                        ),
                       ),
                     ),
                   ),
@@ -814,23 +834,27 @@ class _SpotCardState extends State<SpotCard> {
                     const SizedBox(width: 8),
                   // Close button
                   if (widget.onClose != null)
-                    GestureDetector(
-                      onTap: widget.onClose,
-                      child: Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.6),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.3),
-                            width: 1,
+                    Material(
+                      color: Colors.black.withValues(alpha: 0.6),
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        onTap: widget.onClose,
+                        customBorder: const CircleBorder(),
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.3),
+                              width: 1,
+                            ),
                           ),
-                        ),
-                        child: const Icon(
-                          Icons.close,
-                          color: Colors.white,
-                          size: 18,
+                          child: const Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 18,
+                          ),
                         ),
                       ),
                     ),

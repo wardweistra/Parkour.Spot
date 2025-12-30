@@ -834,14 +834,26 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
               ),
               actions: [
                 // Share button for all users
-                CircleAvatar(
-                  backgroundColor: Colors.black.withValues(alpha: 0.5),
-                  child: IconButton(
-                    icon: const Icon(Icons.share, color: Colors.white),
-                    onPressed: _copySpotToClipboard,
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Material(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      onTap: _copySpotToClipboard,
+                      customBorder: const CircleBorder(),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.share,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(width: 8),
                 
                 Consumer<AuthService>(
                   builder: (context, authService, child) {
@@ -1800,37 +1812,39 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                       top: 0,
                                       bottom: 0,
                                       child: Center(
-                                        child: GestureDetector(
-                                          onTap: () {
-                                            final prev = _currentVideoIndex - 1;
-                                            final target = prev < 0
-                                                ? videoIds.length - 1
-                                                : prev;
-                                            _videoPageController.animateToPage(
-                                              target,
-                                              duration: const Duration(
-                                                milliseconds: 250,
-                                              ),
-                                              curve: Curves.easeOut,
-                                            );
-                                          },
-                                          child: Container(
-                                            width: 40,
-                                            height: 40,
-                                            decoration: BoxDecoration(
-                                              color: Colors.black.withValues(
-                                                alpha: 0.6,
-                                              ),
-                                              shape: BoxShape.circle,
-                                              border: Border.all(
-                                                color: Colors.white.withValues(
-                                                  alpha: 0.3,
+                                        child: Material(
+                                          color: Colors.black.withValues(alpha: 0.6),
+                                          shape: const CircleBorder(),
+                                          child: InkWell(
+                                            onTap: () {
+                                              final prev = _currentVideoIndex - 1;
+                                              final target = prev < 0
+                                                  ? videoIds.length - 1
+                                                  : prev;
+                                              _videoPageController.animateToPage(
+                                                target,
+                                                duration: const Duration(
+                                                  milliseconds: 250,
+                                                ),
+                                                curve: Curves.easeOut,
+                                              );
+                                            },
+                                            customBorder: const CircleBorder(),
+                                            child: Container(
+                                              width: 40,
+                                              height: 40,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                border: Border.all(
+                                                  color: Colors.white.withValues(
+                                                    alpha: 0.3,
+                                                  ),
                                                 ),
                                               ),
-                                            ),
-                                            child: const Icon(
-                                              Icons.chevron_left,
-                                              color: Colors.white,
+                                              child: const Icon(
+                                                Icons.chevron_left,
+                                                color: Colors.white,
+                                              ),
                                             ),
                                           ),
                                         ),
@@ -1844,36 +1858,38 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                       top: 0,
                                       bottom: 0,
                                       child: Center(
-                                        child: GestureDetector(
-                                          onTap: () {
-                                            final next =
-                                                (_currentVideoIndex + 1) %
-                                                videoIds.length;
-                                            _videoPageController.animateToPage(
-                                              next,
-                                              duration: const Duration(
-                                                milliseconds: 250,
-                                              ),
-                                              curve: Curves.easeOut,
-                                            );
-                                          },
-                                          child: Container(
-                                            width: 40,
-                                            height: 40,
-                                            decoration: BoxDecoration(
-                                              color: Colors.black.withValues(
-                                                alpha: 0.6,
-                                              ),
-                                              shape: BoxShape.circle,
-                                              border: Border.all(
-                                                color: Colors.white.withValues(
-                                                  alpha: 0.3,
+                                        child: Material(
+                                          color: Colors.black.withValues(alpha: 0.6),
+                                          shape: const CircleBorder(),
+                                          child: InkWell(
+                                            onTap: () {
+                                              final next =
+                                                  (_currentVideoIndex + 1) %
+                                                  videoIds.length;
+                                              _videoPageController.animateToPage(
+                                                next,
+                                                duration: const Duration(
+                                                  milliseconds: 250,
+                                                ),
+                                                curve: Curves.easeOut,
+                                              );
+                                            },
+                                            customBorder: const CircleBorder(),
+                                            child: Container(
+                                              width: 40,
+                                              height: 40,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                border: Border.all(
+                                                  color: Colors.white.withValues(
+                                                    alpha: 0.3,
+                                                  ),
                                                 ),
                                               ),
-                                            ),
-                                            child: const Icon(
-                                              Icons.chevron_right,
-                                              color: Colors.white,
+                                              child: const Icon(
+                                                Icons.chevron_right,
+                                                color: Colors.white,
+                                              ),
                                             ),
                                           ),
                                         ),
@@ -2638,23 +2654,27 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
               top: 0,
               bottom: 0,
               child: Center(
-                child: GestureDetector(
-                  onTap: () => _previousImage(),
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.6),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.3),
-                        width: 1,
+                child: Material(
+                  color: Colors.black.withValues(alpha: 0.6),
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    onTap: () => _previousImage(),
+                    customBorder: const CircleBorder(),
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
                       ),
-                    ),
-                    child: Icon(
-                      Icons.chevron_left,
-                      color: Colors.white,
-                      size: 32,
+                      child: Icon(
+                        Icons.chevron_left,
+                        color: Colors.white,
+                        size: 32,
+                      ),
                     ),
                   ),
                 ),
@@ -2667,23 +2687,27 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
               top: 0,
               bottom: 0,
               child: Center(
-                child: GestureDetector(
-                  onTap: () => _nextImage(),
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.6),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.3),
-                        width: 1,
+                child: Material(
+                  color: Colors.black.withValues(alpha: 0.6),
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    onTap: () => _nextImage(),
+                    customBorder: const CircleBorder(),
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
                       ),
-                    ),
-                    child: Icon(
-                      Icons.chevron_right,
-                      color: Colors.white,
-                      size: 32,
+                      child: Icon(
+                        Icons.chevron_right,
+                        color: Colors.white,
+                        size: 32,
+                      ),
                     ),
                   ),
                 ),
