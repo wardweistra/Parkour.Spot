@@ -373,6 +373,16 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           style: textStyle,
         ));
       }
+      
+      // Add created date if available and no createdBy (imported spots)
+      if (!hasPreviousContent && _spot.createdAt != null) {
+        final createdDateText = _formatRelativeDate(_spot.createdAt!);
+        textSpans.add(TextSpan(
+          text: ' $createdDateText',
+          style: textStyle,
+        ));
+      }
+      
       hasPreviousContent = true;
     }
 
