@@ -36,6 +36,7 @@ class UserManagementService extends ChangeNotifier {
   final Map<String, String> _statsErrors = <String, String>{};
   final Set<String> _loadingStatsFor = <String>{};
   final Set<String> _updatingModeratorFor = <String>{};
+  final Set<String> _updatingFeatureAccessFor = <String>{};
 
   /// Unmodifiable list of all loaded users.
   List<app_user.User> get users => List<app_user.User>.unmodifiable(_users);
@@ -54,6 +55,9 @@ class UserManagementService extends ChangeNotifier {
 
   /// Whether the service is currently updating moderator status for the user.
   bool isUpdatingModerator(String userId) => _updatingModeratorFor.contains(userId);
+
+  /// Whether the service is currently updating feature access for the user.
+  bool isUpdatingFeatureAccess(String userId) => _updatingFeatureAccessFor.contains(userId);
 
   /// Returns cached statistics for the given user if available.
   UserStats? getStats(String userId) => _statsCache[userId];
@@ -161,6 +165,64 @@ class UserManagementService extends ChangeNotifier {
       return false;
     } finally {
       _updatingModeratorFor.remove(userId);
+      notifyListeners();
+    }
+  }
+
+  /// Updates feature access for a user and updates internal cache.
+  /// 
+  /// [featureName] is the name of the feature (e.g., "spotLists").
+  /// [hasAccess] indicates whether the user should have access to the feature.
+  /// 
+  /// This method merges the new feature access with existing feature access,
+  /// so other features are not affected.
+  Future<bool> updateFeatureAccess(String userId, String featureName, bool hasAccess) async {
+    if (_updatingFeatureAccessFor.contains(userId)) {
+      return false;
+    }
+
+    _updatingFeatureAccessFor.add(userId);
+    notifyListeners();
+
+    try {
+      // Get current user to preserve existing feature access
+      final userIndex = _users.indexWhere((u) => u.id == userId);
+      Map<String, bool>? currentFeatureAccess;
+      
+      if (userIndex != -1) {
+        currentFeatureAccess = Map<String, bool>.from(_users[userIndex].featureAccess ?? {});
+      } else {
+        // If user not in cache, fetch from Firestore
+        final userDoc = await _firestore.collection('users').doc(userId).get();
+        if (userDoc.exists) {
+          final data = userDoc.data();
+          if (data != null && data['featureAccess'] != null) {
+            currentFeatureAccess = Map<String, bool>.from(data['featureAccess']);
+          }
+        }
+        currentFeatureAccess ??= <String, bool>{};
+      }
+
+      // Update the specific feature access
+      currentFeatureAccess[featureName] = hasAccess;
+
+      // Update in Firestore
+      await _firestore.collection('users').doc(userId).update(<String, dynamic>{
+        'featureAccess': currentFeatureAccess,
+      });
+
+      // Update local cache
+      if (userIndex != -1) {
+        _users[userIndex] = _users[userIndex].copyWith(featureAccess: currentFeatureAccess);
+      }
+
+      return true;
+    } catch (e, stackTrace) {
+      debugPrint('UserManagementService.updateFeatureAccess error: $e');
+      debugPrint('$stackTrace');
+      return false;
+    } finally {
+      _updatingFeatureAccessFor.remove(userId);
       notifyListeners();
     }
   }

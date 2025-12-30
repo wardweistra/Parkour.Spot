@@ -61,6 +61,7 @@ class AuthService extends ChangeNotifier {
           lastLoginAt: DateTime.now(),
           isAdmin: false,
           isModerator: false,
+          featureAccess: null,
         );
         await _firestore.collection('users').doc(uid).set(_userProfile!.toMap());
       }
@@ -162,6 +163,7 @@ class AuthService extends ChangeNotifier {
           createdAt: DateTime.now(),
           lastLoginAt: DateTime.now(),
           isAdmin: false,
+          featureAccess: null,
         );
         
         await _firestore.collection('users').doc(user.id).set(user.toMap());

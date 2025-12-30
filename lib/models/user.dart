@@ -9,6 +9,7 @@ class User {
   final bool isEmailVerified;
   final bool isAdmin;
   final bool isModerator;
+  final Map<String, bool>? featureAccess;
 
   User({
     required this.id,
@@ -21,6 +22,7 @@ class User {
     this.isEmailVerified = false,
     this.isAdmin = false,
     this.isModerator = false,
+    this.featureAccess,
   });
 
   factory User.fromMap(Map<String, dynamic> map) {
@@ -37,6 +39,9 @@ class User {
       isEmailVerified: map['isEmailVerified'] ?? false,
       isAdmin: map['isAdmin'] ?? false,
       isModerator: map['isModerator'] ?? false,
+      featureAccess: map['featureAccess'] != null
+          ? Map<String, bool>.from(map['featureAccess'])
+          : null,
     );
   }
 
@@ -52,6 +57,7 @@ class User {
       'isEmailVerified': isEmailVerified,
       'isAdmin': isAdmin,
       'isModerator': isModerator,
+      'featureAccess': featureAccess,
     };
   }
 
@@ -66,6 +72,7 @@ class User {
     bool? isEmailVerified,
     bool? isAdmin,
     bool? isModerator,
+    Map<String, bool>? featureAccess,
   }) {
     return User(
       id: id ?? this.id,
@@ -78,6 +85,7 @@ class User {
       isEmailVerified: isEmailVerified ?? this.isEmailVerified,
       isAdmin: isAdmin ?? this.isAdmin,
       isModerator: isModerator ?? this.isModerator,
+      featureAccess: featureAccess ?? this.featureAccess,
     );
   }
 

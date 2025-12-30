@@ -246,6 +246,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 final statsError = userService.statsError(user.id);
                 final bool statsLoading = userService.isLoadingStats(user.id);
                 final bool updatingModerator = userService.isUpdatingModerator(user.id);
+                final bool updatingFeatureAccess = userService.isUpdatingFeatureAccess(user.id);
 
                 return SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
@@ -375,6 +376,18 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                           padding: EdgeInsets.only(top: 8.0),
                           child: LinearProgressIndicator(minHeight: 2),
                         ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Feature Access',
+                        style: Theme.of(sheetContext).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 12),
+                      _FeatureAccessSection(
+                        user: user,
+                        userService: userService,
+                        updatingFeatureAccess: updatingFeatureAccess,
+                        rootContext: rootContext,
+                      ),
                     ],
                   ),
                 );
@@ -462,6 +475,256 @@ class _StatTile extends StatelessWidget {
           Text(label, style: Theme.of(context).textTheme.bodyMedium),
         ],
       ),
+    );
+  }
+}
+
+class _FeatureAccessSection extends StatefulWidget {
+  const _FeatureAccessSection({
+    required this.user,
+    required this.userService,
+    required this.updatingFeatureAccess,
+    required this.rootContext,
+  });
+
+  final app_user.User user;
+  final UserManagementService userService;
+  final bool updatingFeatureAccess;
+  final BuildContext rootContext;
+
+  @override
+  State<_FeatureAccessSection> createState() => _FeatureAccessSectionState();
+}
+
+class _FeatureAccessSectionState extends State<_FeatureAccessSection> {
+  final TextEditingController _newFeatureController = TextEditingController();
+  final Map<String, bool> _localFeatureAccess = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _syncLocalFeatureAccess();
+  }
+
+  @override
+  void didUpdateWidget(_FeatureAccessSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.user.id != widget.user.id ||
+        !_mapsEqual(oldWidget.user.featureAccess, widget.user.featureAccess)) {
+      _syncLocalFeatureAccess();
+    }
+  }
+
+  bool _mapsEqual(Map<String, bool>? a, Map<String, bool>? b) {
+    if (a == null && b == null) return true;
+    if (a == null || b == null) return false;
+    if (a.length != b.length) return false;
+    for (final entry in a.entries) {
+      if (b[entry.key] != entry.value) return false;
+    }
+    return true;
+  }
+
+  void _syncLocalFeatureAccess() {
+    _localFeatureAccess.clear();
+    if (widget.user.featureAccess != null) {
+      _localFeatureAccess.addAll(widget.user.featureAccess!);
+    }
+  }
+
+  @override
+  void dispose() {
+    _newFeatureController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _updateFeatureAccess(String featureName, bool hasAccess) async {
+    final bool success = await widget.userService.updateFeatureAccess(
+      widget.user.id,
+      featureName,
+      hasAccess,
+    );
+
+    if (!mounted) return;
+
+    if (success) {
+      setState(() {
+        _localFeatureAccess[featureName] = hasAccess;
+      });
+      ScaffoldMessenger.of(widget.rootContext).showSnackBar(
+        SnackBar(
+          content: Text(hasAccess
+              ? 'Access granted to "$featureName"'
+              : 'Access removed from "$featureName"'),
+          backgroundColor: hasAccess ? Colors.green : Colors.orange,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(widget.rootContext).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to update feature access'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _removeFeatureAccess(String featureName) async {
+    final bool success = await widget.userService.updateFeatureAccess(
+      widget.user.id,
+      featureName,
+      false,
+    );
+
+    if (!mounted) return;
+
+    if (success) {
+      setState(() {
+        _localFeatureAccess.remove(featureName);
+      });
+      ScaffoldMessenger.of(widget.rootContext).showSnackBar(
+        SnackBar(
+          content: Text('Removed "$featureName" access'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(widget.rootContext).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to remove feature access'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _addFeatureAccess() async {
+    final featureName = _newFeatureController.text.trim();
+    if (featureName.isEmpty) {
+      ScaffoldMessenger.of(widget.rootContext).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a feature name'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    if (_localFeatureAccess.containsKey(featureName)) {
+      ScaffoldMessenger.of(widget.rootContext).showSnackBar(
+        const SnackBar(
+          content: Text('Feature already exists'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final bool success = await widget.userService.updateFeatureAccess(
+      widget.user.id,
+      featureName,
+      true,
+    );
+
+    if (!mounted) return;
+
+    if (success) {
+      setState(() {
+        _localFeatureAccess[featureName] = true;
+      });
+      _newFeatureController.clear();
+      ScaffoldMessenger.of(widget.rootContext).showSnackBar(
+        SnackBar(
+          content: Text('Added "$featureName" access'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(widget.rootContext).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to add feature access'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.updatingFeatureAccess) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16.0),
+        child: LinearProgressIndicator(minHeight: 2),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (_localFeatureAccess.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Text(
+              'No feature access configured',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  ),
+            ),
+          )
+        else
+          ..._localFeatureAccess.entries.map((entry) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Card(
+                child: ListTile(
+                  title: Text(entry.key),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Switch(
+                        value: entry.value,
+                        onChanged: widget.updatingFeatureAccess
+                            ? null
+                            : (value) => _updateFeatureAccess(entry.key, value),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline),
+                        tooltip: 'Remove feature access',
+                        onPressed: widget.updatingFeatureAccess
+                            ? null
+                            : () => _removeFeatureAccess(entry.key),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _newFeatureController,
+                decoration: const InputDecoration(
+                  labelText: 'Feature name',
+                  hintText: 'e.g., spotLists',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                enabled: !widget.updatingFeatureAccess,
+                onSubmitted: (_) => _addFeatureAccess(),
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(Icons.add),
+              tooltip: 'Add feature access',
+              onPressed: widget.updatingFeatureAccess ? null : _addFeatureAccess,
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
