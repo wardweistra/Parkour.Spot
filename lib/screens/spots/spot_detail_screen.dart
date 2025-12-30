@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -314,6 +315,163 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           ],
         ),
       );
+    }
+  }
+
+  Widget _buildMergedSourceInfo() {
+    final List<TextSpan> textSpans = [];
+    final theme = Theme.of(context);
+    final textStyle = theme.textTheme.bodyLarge;
+    bool hasPreviousContent = false;
+
+    // Created by
+    if (_spot.createdBy != null || _spot.createdByName != null) {
+      final createdBy = _spot.createdByName ?? _spot.createdBy ?? '';
+      String createdText = 'Spot created by $createdBy';
+      
+      // Add created date if available
+      if (_spot.createdAt != null) {
+        final createdDateText = _formatRelativeDate(_spot.createdAt!);
+        createdText += ' $createdDateText';
+      }
+      
+      textSpans.add(TextSpan(
+        text: createdText,
+        style: textStyle,
+      ));
+      hasPreviousContent = true;
+    }
+
+    // Source and folder
+    if (_spot.spotSource != null) {
+      if (hasPreviousContent) {
+        textSpans.add(TextSpan(
+          text: ' / ',
+          style: textStyle,
+        ));
+      }
+      
+      final sourceName = _spot.spotSourceName ?? 'Unknown Source';
+      textSpans.add(TextSpan(
+        text: 'Spot imported from ',
+        style: textStyle,
+      ));
+      
+      // Make source name clickable
+      textSpans.add(TextSpan(
+        text: sourceName,
+        style: textStyle?.copyWith(
+          color: theme.colorScheme.primary,
+        ),
+        recognizer: TapGestureRecognizer()
+          ..onTap = _showExternalSpotInfo,
+      ));
+      
+      if (_spot.folderName != null) {
+        textSpans.add(TextSpan(
+          text: ' from the folder ${_spot.folderName}',
+          style: textStyle,
+        ));
+      }
+      hasPreviousContent = true;
+    }
+
+    // Contributors (filter out the createdBy user)
+    bool hasContributors = false;
+    if (_spot.contributors != null && _spot.contributors!.isNotEmpty) {
+      final createdByName = _spot.createdByName;
+      final createdBy = _spot.createdBy;
+      
+      // Filter out contributors that match the createdBy user
+      final filteredContributors = _spot.contributors!.where((c) {
+        final userName = c['userName'];
+        final userId = c['userId'];
+        // Exclude if userName matches createdByName or userId matches createdBy
+        return userName != createdByName && userId != createdBy;
+      }).toList();
+      
+      if (filteredContributors.isNotEmpty) {
+        final contributorNames = filteredContributors
+            .map((c) => c['userName'] ?? 'Unknown')
+            .toList();
+        
+        String contributorsText;
+        if (contributorNames.length == 1) {
+          contributorsText = ' and improved by ${contributorNames.first}';
+        } else if (contributorNames.length == 2) {
+          contributorsText = ' and improved by ${contributorNames.first} and ${contributorNames.last}';
+        } else {
+          final last = contributorNames.last;
+          final others = contributorNames.sublist(0, contributorNames.length - 1);
+          contributorsText = ' and improved by ${others.join(', ')}, and $last';
+        }
+        
+        textSpans.add(TextSpan(
+          text: contributorsText,
+          style: textStyle,
+        ));
+        hasContributors = true;
+      }
+    }
+
+    // Last updated date (only if different from created date)
+    bool hasUpdatedDate = false;
+    if (_spot.updatedAt != null && 
+        _spot.createdAt != null && 
+        _spot.updatedAt != _spot.createdAt) {
+      final updatedDateText = _formatRelativeDate(_spot.updatedAt!);
+      textSpans.add(TextSpan(
+        text: ' and last updated $updatedDateText.',
+        style: textStyle,
+      ));
+      hasUpdatedDate = true;
+    } else if (_spot.updatedAt != null && _spot.createdAt == null) {
+      // If no created date but there's an updated date
+      final updatedDateText = _formatRelativeDate(_spot.updatedAt!);
+      textSpans.add(TextSpan(
+        text: ' and last updated $updatedDateText.',
+        style: textStyle,
+      ));
+      hasUpdatedDate = true;
+    }
+    
+    // Add period at the end if we have content but no updated date
+    if (!hasUpdatedDate && (hasContributors || hasPreviousContent)) {
+      textSpans.add(TextSpan(
+        text: '.',
+        style: textStyle,
+      ));
+    }
+
+    return RichText(
+      text: TextSpan(
+        style: textStyle,
+        children: textSpans,
+      ),
+    );
+  }
+
+  String _formatRelativeDate(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final dateOnly = DateTime(date.year, date.month, date.day);
+    final difference = today.difference(dateOnly).inDays;
+
+    if (difference == 0) {
+      return 'today';
+    } else if (difference == 1) {
+      return 'yesterday';
+    } else if (difference < 7) {
+      return '$difference days ago';
+    } else if (difference < 30) {
+      final weeks = (difference / 7).floor();
+      return weeks == 1 ? '1 week ago' : '$weeks weeks ago';
+    } else if (difference < 365) {
+      final months = (difference / 30).floor();
+      return months == 1 ? '1 month ago' : '$months months ago';
+    } else {
+      final years = (difference / 365).floor();
+      return years == 1 ? '1 year ago' : '$years years ago';
     }
   }
 
@@ -664,55 +822,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                 ),
               ),
               actions: [
-                // External spot badge
-                if (widget.spot.spotSource != null) ...[
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      // Calculate max width: screen width minus back button, share button, and other actions
-                      final screenWidth = MediaQuery.of(context).size.width;
-                      // Reserve space for back button (~56px), share button (~56px), other actions (~100px), and padding
-                      // Use 50% of screen width with a minimum of 100px to prevent overlap on small screens
-                      // On wide screens, allow more space for longer source names
-                      final reservedSpace = 200.0; // Back button + share + other actions + padding
-                      final maxWidth = (screenWidth - reservedSpace).clamp(100.0, double.infinity);
-                      
-                      return GestureDetector(
-                        onTap: _showExternalSpotInfo,
-                        child: Container(
-                          margin: const EdgeInsets.only(right: 8),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          constraints: BoxConstraints(
-                            maxWidth: maxWidth,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.4),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              width: 1,
-                            ),
-                          ),
-                          child: Text(
-                            widget.spot.folderName != null
-                                ? '${widget.spot.spotSourceName ?? widget.spot.spotSource!} - ${widget.spot.folderName!}'
-                                : widget.spot.spotSourceName ??
-                                      widget.spot.spotSource!,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
                 // Share button for all users
                 CircleAvatar(
                   backgroundColor: Colors.black.withValues(alpha: 0.5),
@@ -1260,57 +1369,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       ],
                     ),
 
-                    const SizedBox(height: 16),
-
-                    // Hidden spot indicator
-                    if (_spot.hidden)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        margin: const EdgeInsets.only(bottom: 16),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.withValues(alpha: 0.1),
-                          border: Border.all(
-                            color: Colors.orange.withValues(alpha: 0.3),
-                            width: 1,
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.visibility_off,
-                              color: Colors.orange.shade700,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                'This spot is hidden from public view',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(
-                                      color: Colors.orange.shade700,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    const SizedBox(height: 8),
 
                     // Description
-                    Text(
-                      'Description',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
                     SelectableText(
                       _spot.description.trim().isEmpty
                           ? 'No description provided'
@@ -1324,540 +1385,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                 context,
                               ).colorScheme.onSurface.withValues(alpha: 0.6)
                             : null,
-                      ),
-                    ),
-
-                    // Contributors section
-                    if (_spot.contributors != null && _spot.contributors!.isNotEmpty) ...[
-                      const SizedBox(height: 24),
-                      Text(
-                        'Contributors',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
-                        children: _spot.contributors!.map((contributor) {
-                          final userName = contributor['userName'] ?? 'Unknown';
-                          return Chip(
-                            avatar: Icon(
-                              Icons.person,
-                              size: 18,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                            label: Text(userName),
-                            backgroundColor: Theme.of(context)
-                                .colorScheme
-                                .primaryContainer
-                                .withValues(alpha: 0.1),
-                            labelStyle: TextStyle(
-                              color: Theme.of(context).colorScheme.onPrimaryContainer,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ],
-
-                    const SizedBox(height: 24),
-
-                    // YouTube Videos Section - show clickable thumbnails, with carousel when multiple
-                    if (widget.spot.youtubeVideoIds != null &&
-                        widget.spot.youtubeVideoIds!.isNotEmpty) ...[
-                      Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 900),
-                          child: Builder(
-                            builder: (context) {
-                              final videoIds = widget.spot.youtubeVideoIds!;
-                              if (videoIds.length == 1) {
-                                final id = videoIds.first;
-                                return ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: InkWell(
-                                    onTap: () async {
-                                      final uri = Uri.parse(
-                                        'https://www.youtube.com/watch?v=$id',
-                                      );
-                                      if (await canLaunchUrl(uri)) {
-                                        await launchUrl(
-                                          uri,
-                                          mode: LaunchMode.externalApplication,
-                                        );
-                                      }
-                                    },
-                                    child: AspectRatio(
-                                      aspectRatio: 16 / 9,
-                                      child: Stack(
-                                        alignment: Alignment.center,
-                                        children: [
-                                          Image.network(
-                                            'https://img.youtube.com/vi/$id/hqdefault.jpg',
-                                            fit: BoxFit.cover,
-                                            width: double.infinity,
-                                            height: double.infinity,
-                                          ),
-                                          Container(
-                                            width: 64,
-                                            height: 64,
-                                            decoration: BoxDecoration(
-                                              color: Colors.black.withValues(
-                                                alpha: 0.6,
-                                              ),
-                                              shape: BoxShape.circle,
-                                            ),
-                                            child: const Icon(
-                                              Icons.play_arrow,
-                                              color: Colors.white,
-                                              size: 40,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }
-
-                              // Multiple videos -> carousel
-                              return Stack(
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: AspectRatio(
-                                      aspectRatio: 16 / 9,
-                                      child: PageView.builder(
-                                        controller: _videoPageController,
-                                        itemCount: videoIds.length,
-                                        onPageChanged: (i) {
-                                          setState(() {
-                                            _currentVideoIndex = i;
-                                          });
-                                        },
-                                        itemBuilder: (context, index) {
-                                          final id = videoIds[index];
-                                          return InkWell(
-                                            onTap: () async {
-                                              final uri = Uri.parse(
-                                                'https://www.youtube.com/watch?v=$id',
-                                              );
-                                              if (await canLaunchUrl(uri)) {
-                                                await launchUrl(
-                                                  uri,
-                                                  mode: LaunchMode
-                                                      .externalApplication,
-                                                );
-                                              }
-                                            },
-                                            child: Stack(
-                                              alignment: Alignment.center,
-                                              children: [
-                                                Image.network(
-                                                  'https://img.youtube.com/vi/$id/hqdefault.jpg',
-                                                  fit: BoxFit.cover,
-                                                  width: double.infinity,
-                                                  height: double.infinity,
-                                                ),
-                                                Container(
-                                                  width: 64,
-                                                  height: 64,
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.black
-                                                        .withValues(alpha: 0.6),
-                                                    shape: BoxShape.circle,
-                                                  ),
-                                                  child: const Icon(
-                                                    Icons.play_arrow,
-                                                    color: Colors.white,
-                                                    size: 40,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  ),
-
-                                  // Left arrow
-                                  if (!MobileDetectionService.isMobileDevice)
-                                    Positioned(
-                                      left: 8,
-                                      top: 0,
-                                      bottom: 0,
-                                      child: Center(
-                                        child: GestureDetector(
-                                          onTap: () {
-                                            final prev = _currentVideoIndex - 1;
-                                            final target = prev < 0
-                                                ? videoIds.length - 1
-                                                : prev;
-                                            _videoPageController.animateToPage(
-                                              target,
-                                              duration: const Duration(
-                                                milliseconds: 250,
-                                              ),
-                                              curve: Curves.easeOut,
-                                            );
-                                          },
-                                          child: Container(
-                                            width: 40,
-                                            height: 40,
-                                            decoration: BoxDecoration(
-                                              color: Colors.black.withValues(
-                                                alpha: 0.6,
-                                              ),
-                                              shape: BoxShape.circle,
-                                              border: Border.all(
-                                                color: Colors.white.withValues(
-                                                  alpha: 0.3,
-                                                ),
-                                              ),
-                                            ),
-                                            child: const Icon(
-                                              Icons.chevron_left,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-
-                                  // Right arrow
-                                  if (!MobileDetectionService.isMobileDevice)
-                                    Positioned(
-                                      right: 8,
-                                      top: 0,
-                                      bottom: 0,
-                                      child: Center(
-                                        child: GestureDetector(
-                                          onTap: () {
-                                            final next =
-                                                (_currentVideoIndex + 1) %
-                                                videoIds.length;
-                                            _videoPageController.animateToPage(
-                                              next,
-                                              duration: const Duration(
-                                                milliseconds: 250,
-                                              ),
-                                              curve: Curves.easeOut,
-                                            );
-                                          },
-                                          child: Container(
-                                            width: 40,
-                                            height: 40,
-                                            decoration: BoxDecoration(
-                                              color: Colors.black.withValues(
-                                                alpha: 0.6,
-                                              ),
-                                              shape: BoxShape.circle,
-                                              border: Border.all(
-                                                color: Colors.white.withValues(
-                                                  alpha: 0.3,
-                                                ),
-                                              ),
-                                            ),
-                                            child: const Icon(
-                                              Icons.chevron_right,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-
-                                  // Dots indicator
-                                  Positioned(
-                                    bottom: 8,
-                                    left: 0,
-                                    right: 0,
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: List.generate(videoIds.length, (
-                                        index,
-                                      ) {
-                                        final isActive =
-                                            index == _currentVideoIndex;
-                                        return AnimatedContainer(
-                                          duration: const Duration(
-                                            milliseconds: 200,
-                                          ),
-                                          margin: const EdgeInsets.symmetric(
-                                            horizontal: 3,
-                                          ),
-                                          width: isActive ? 8 : 6,
-                                          height: isActive ? 8 : 6,
-                                          decoration: BoxDecoration(
-                                            color: isActive
-                                                ? Colors.white
-                                                : Colors.white54,
-                                            shape: BoxShape.circle,
-                                            border: Border.all(
-                                              color: Colors.white.withValues(
-                                                alpha: 0.3,
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      }),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                    ],
-
-                    // Location Section
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Location',
-                              style: Theme.of(context).textTheme.titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.w600),
-                            ),
-                            Row(
-                              children: [
-                                Text(
-                                  'Standard',
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(
-                                        color: !_isSatelliteView
-                                            ? Theme.of(
-                                                context,
-                                              ).colorScheme.primary
-                                            : Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurface
-                                                  .withValues(alpha: 0.6),
-                                      ),
-                                ),
-                                Switch(
-                                  value: _isSatelliteView,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _isSatelliteView = value;
-                                    });
-                                    final searchState = Provider.of<SearchStateService>(context, listen: false);
-                                    searchState.setSatellite(value);
-                                  },
-                                ),
-                                Text(
-                                  'Satellite',
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(
-                                        color: _isSatelliteView
-                                            ? Theme.of(
-                                                context,
-                                              ).colorScheme.primary
-                                            : Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurface
-                                                  .withValues(alpha: 0.6),
-                                      ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 8),
-
-                    // Small map widget (web-safe placeholder on web)
-                    Container(
-                      height: 200,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.outline.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child: Stack(
-                        children: [
-                          GoogleMap(
-                            initialCameraPosition: CameraPosition(
-                              target: LatLng(
-                                widget.spot.latitude,
-                                widget.spot.longitude,
-                              ),
-                              zoom: 16,
-                            ),
-                            mapType: _isSatelliteView
-                                ? MapType.satellite
-                                : MapType.normal,
-                            markers: {
-                              Marker(
-                                markerId: MarkerId(widget.spot.id ?? 'spot'),
-                                position: LatLng(
-                                  widget.spot.latitude,
-                                  widget.spot.longitude,
-                                ),
-                                onTap: null,
-                                consumeTapEvents: true,
-                                infoWindow: InfoWindow.noText,
-                              ),
-                            },
-                            zoomControlsEnabled: false,
-                            myLocationButtonEnabled: false,
-                            mapToolbarEnabled: false,
-                            liteModeEnabled: kIsWeb,
-                            compassEnabled: false,
-                            zoomGesturesEnabled: false,
-                            scrollGesturesEnabled: false,
-                            tiltGesturesEnabled: false,
-                            rotateGesturesEnabled: false,
-                            indoorViewEnabled: false,
-                            trafficEnabled: false,
-                          ),
-                          Positioned.fill(
-                            child: PointerInterceptor(
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  onTap: _locateSpotOnMap,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            bottom: 8,
-                            right: 8,
-                            child: PointerInterceptor(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.7),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      MobileDetectionService.isMobileDevice
-                                          ? Icons.phone_android
-                                          : Icons.touch_app,
-                                      color: Colors.white,
-                                      size: 14,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Locate on map',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Location Information
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.primary.withValues(alpha: 0.2),
-                          width: 1,
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.location_on,
-                                color: Theme.of(context).colorScheme.primary,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'Location Details',
-                                  style: Theme.of(context).textTheme.titleSmall
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.primary,
-                                      ),
-                                ),
-                              ),
-                              IconButton(
-                                onPressed: _openInMaps,
-                                icon: Icon(
-                                  Icons.open_in_new,
-                                  color: Theme.of(context).colorScheme.primary,
-                                  size: 20,
-                                ),
-                                tooltip: 'Open in Maps',
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(
-                                  minWidth: 32,
-                                  minHeight: 32,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          // Coordinates
-                          SelectableText(
-                            '${widget.spot.latitude.toStringAsFixed(6)}, ${widget.spot.longitude.toStringAsFixed(6)}',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                            ),
-                          ),
-                          // Address - prominent and copyable
-                          if (widget.spot.address != null) ...[
-                            const SizedBox(height: 8),
-                            GestureDetector(
-                              onTap: _copyAddressToClipboard,
-                              child: SelectableText(
-                                widget.spot.address!,
-                                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                  fontWeight: FontWeight.w500,
-                                  color: Theme.of(context).colorScheme.onSurface,
-                                  height: 1.4,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
                       ),
                     ),
 
@@ -2124,6 +1651,270 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         }
                       },
                     ),
+
+                    // Merged Created by / Source / Contributors section
+                    if (_spot.createdBy != null ||
+                        _spot.createdByName != null ||
+                        _spot.spotSource != null ||
+                        (_spot.contributors != null && _spot.contributors!.isNotEmpty)) ...[
+                      const SizedBox(height: 24),
+                      _buildMergedSourceInfo(),
+                      const SizedBox(height: 24),
+                    ] else
+                      const SizedBox(height: 24),
+
+                    // YouTube Videos Section - show clickable thumbnails, with carousel when multiple
+                    if (widget.spot.youtubeVideoIds != null &&
+                        widget.spot.youtubeVideoIds!.isNotEmpty) ...[
+                      Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 900),
+                          child: Builder(
+                            builder: (context) {
+                              final videoIds = widget.spot.youtubeVideoIds!;
+                              if (videoIds.length == 1) {
+                                final id = videoIds.first;
+                                return ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: InkWell(
+                                    onTap: () async {
+                                      final uri = Uri.parse(
+                                        'https://www.youtube.com/watch?v=$id',
+                                      );
+                                      if (await canLaunchUrl(uri)) {
+                                        await launchUrl(
+                                          uri,
+                                          mode: LaunchMode.externalApplication,
+                                        );
+                                      }
+                                    },
+                                    child: AspectRatio(
+                                      aspectRatio: 16 / 9,
+                                      child: Stack(
+                                        alignment: Alignment.center,
+                                        children: [
+                                          Image.network(
+                                            'https://img.youtube.com/vi/$id/hqdefault.jpg',
+                                            fit: BoxFit.cover,
+                                            width: double.infinity,
+                                            height: double.infinity,
+                                          ),
+                                          Container(
+                                            width: 64,
+                                            height: 64,
+                                            decoration: BoxDecoration(
+                                              color: Colors.black.withValues(
+                                                alpha: 0.6,
+                                              ),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Icon(
+                                              Icons.play_arrow,
+                                              color: Colors.white,
+                                              size: 40,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }
+
+                              // Multiple videos -> carousel
+                              return Stack(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: AspectRatio(
+                                      aspectRatio: 16 / 9,
+                                      child: PageView.builder(
+                                        controller: _videoPageController,
+                                        itemCount: videoIds.length,
+                                        onPageChanged: (i) {
+                                          setState(() {
+                                            _currentVideoIndex = i;
+                                          });
+                                        },
+                                        itemBuilder: (context, index) {
+                                          final id = videoIds[index];
+                                          return InkWell(
+                                            onTap: () async {
+                                              final uri = Uri.parse(
+                                                'https://www.youtube.com/watch?v=$id',
+                                              );
+                                              if (await canLaunchUrl(uri)) {
+                                                await launchUrl(
+                                                  uri,
+                                                  mode: LaunchMode
+                                                      .externalApplication,
+                                                );
+                                              }
+                                            },
+                                            child: Stack(
+                                              alignment: Alignment.center,
+                                              children: [
+                                                Image.network(
+                                                  'https://img.youtube.com/vi/$id/hqdefault.jpg',
+                                                  fit: BoxFit.cover,
+                                                  width: double.infinity,
+                                                  height: double.infinity,
+                                                ),
+                                                Container(
+                                                  width: 64,
+                                                  height: 64,
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.black
+                                                        .withValues(alpha: 0.6),
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons.play_arrow,
+                                                    color: Colors.white,
+                                                    size: 40,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ),
+
+                                  // Left arrow
+                                  if (!MobileDetectionService.isMobileDevice)
+                                    Positioned(
+                                      left: 8,
+                                      top: 0,
+                                      bottom: 0,
+                                      child: Center(
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            final prev = _currentVideoIndex - 1;
+                                            final target = prev < 0
+                                                ? videoIds.length - 1
+                                                : prev;
+                                            _videoPageController.animateToPage(
+                                              target,
+                                              duration: const Duration(
+                                                milliseconds: 250,
+                                              ),
+                                              curve: Curves.easeOut,
+                                            );
+                                          },
+                                          child: Container(
+                                            width: 40,
+                                            height: 40,
+                                            decoration: BoxDecoration(
+                                              color: Colors.black.withValues(
+                                                alpha: 0.6,
+                                              ),
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.3,
+                                                ),
+                                              ),
+                                            ),
+                                            child: const Icon(
+                                              Icons.chevron_left,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+
+                                  // Right arrow
+                                  if (!MobileDetectionService.isMobileDevice)
+                                    Positioned(
+                                      right: 8,
+                                      top: 0,
+                                      bottom: 0,
+                                      child: Center(
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            final next =
+                                                (_currentVideoIndex + 1) %
+                                                videoIds.length;
+                                            _videoPageController.animateToPage(
+                                              next,
+                                              duration: const Duration(
+                                                milliseconds: 250,
+                                              ),
+                                              curve: Curves.easeOut,
+                                            );
+                                          },
+                                          child: Container(
+                                            width: 40,
+                                            height: 40,
+                                            decoration: BoxDecoration(
+                                              color: Colors.black.withValues(
+                                                alpha: 0.6,
+                                              ),
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.3,
+                                                ),
+                                              ),
+                                            ),
+                                            child: const Icon(
+                                              Icons.chevron_right,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+
+                                  // Dots indicator
+                                  Positioned(
+                                    bottom: 8,
+                                    left: 0,
+                                    right: 0,
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: List.generate(videoIds.length, (
+                                        index,
+                                      ) {
+                                        final isActive =
+                                            index == _currentVideoIndex;
+                                        return AnimatedContainer(
+                                          duration: const Duration(
+                                            milliseconds: 200,
+                                          ),
+                                          margin: const EdgeInsets.symmetric(
+                                            horizontal: 3,
+                                          ),
+                                          width: isActive ? 8 : 6,
+                                          height: isActive ? 8 : 6,
+                                          decoration: BoxDecoration(
+                                            color: isActive
+                                                ? Colors.white
+                                                : Colors.white54,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: Colors.white.withValues(
+                                                alpha: 0.3,
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      }),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: 24),
 
                     // Rating Section
                     Consumer<AuthService>(
@@ -2393,6 +2184,216 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       },
                     ),
 
+                    const SizedBox(height: 24),
+
+                    // Location Section - Small map widget (web-safe placeholder on web)
+                    Container(
+                      height: 200,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.outline.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Stack(
+                        children: [
+                          GoogleMap(
+                            initialCameraPosition: CameraPosition(
+                              target: LatLng(
+                                widget.spot.latitude,
+                                widget.spot.longitude,
+                              ),
+                              zoom: 16,
+                            ),
+                            mapType: _isSatelliteView
+                                ? MapType.satellite
+                                : MapType.normal,
+                            markers: {
+                              Marker(
+                                markerId: MarkerId(widget.spot.id ?? 'spot'),
+                                position: LatLng(
+                                  widget.spot.latitude,
+                                  widget.spot.longitude,
+                                ),
+                                onTap: null,
+                                consumeTapEvents: true,
+                                infoWindow: InfoWindow.noText,
+                              ),
+                            },
+                            zoomControlsEnabled: false,
+                            myLocationButtonEnabled: false,
+                            mapToolbarEnabled: false,
+                            liteModeEnabled: kIsWeb,
+                            compassEnabled: false,
+                            zoomGesturesEnabled: false,
+                            scrollGesturesEnabled: false,
+                            tiltGesturesEnabled: false,
+                            rotateGesturesEnabled: false,
+                            indoorViewEnabled: false,
+                            trafficEnabled: false,
+                          ),
+                          Positioned.fill(
+                            child: PointerInterceptor(
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: _locateSpotOnMap,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Map Type Toggle Button - Floating Action Button
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: PointerInterceptor(
+                              child: FloatingActionButton(
+                                onPressed: () {
+                                  setState(() {
+                                    _isSatelliteView = !_isSatelliteView;
+                                  });
+                                  final searchState = Provider.of<SearchStateService>(context, listen: false);
+                                  searchState.setSatellite(_isSatelliteView);
+                                },
+                                heroTag: 'mapTypeToggleFab',
+                                mini: true,
+                                tooltip: _isSatelliteView ? 'Switch to Map' : 'Switch to Satellite',
+                                child: Icon(
+                                  _isSatelliteView ? Icons.map : Icons.terrain,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            bottom: 8,
+                            right: 8,
+                            child: PointerInterceptor(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.7),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      MobileDetectionService.isMobileDevice
+                                          ? Icons.phone_android
+                                          : Icons.touch_app,
+                                      color: Colors.white,
+                                      size: 14,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Locate on map',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Location Information
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.2),
+                          width: 1,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.location_on,
+                                color: Theme.of(context).colorScheme.primary,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Location Details',
+                                  style: Theme.of(context).textTheme.titleSmall
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
+                                      ),
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: _openInMaps,
+                                icon: Icon(
+                                  Icons.open_in_new,
+                                  color: Theme.of(context).colorScheme.primary,
+                                  size: 20,
+                                ),
+                                tooltip: 'Open in Maps',
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(
+                                  minWidth: 32,
+                                  minHeight: 32,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          // Coordinates
+                          SelectableText(
+                            '${widget.spot.latitude.toStringAsFixed(6)}, ${widget.spot.longitude.toStringAsFixed(6)}',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                            ),
+                          ),
+                          // Address - prominent and copyable
+                          if (widget.spot.address != null) ...[
+                            const SizedBox(height: 8),
+                            GestureDetector(
+                              onTap: _copyAddressToClipboard,
+                              child: SelectableText(
+                                widget.spot.address!,
+                                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
                     // Additional Info
                     if (widget.spot.createdBy != null ||
                         widget.spot.createdByName != null ||
@@ -2400,12 +2401,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         widget.spot.duplicateOf != null ||
                         _duplicateSpots.isNotEmpty ||
                         _isLoadingDuplicates) ...[
-                      Text(
-                        'Additional Information',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: 8),
                       if (widget.spot.duplicateOf != null || _originalSpot != null) ...[
                         GestureDetector(
                           onTap: _isLoadingOriginalSpot
@@ -2517,37 +2512,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                           }),
                         ],
                       ],
-                      if (widget.spot.createdBy != null ||
-                          widget.spot.createdByName != null) ...[
-                        ListTile(
-                          leading: const Icon(Icons.person),
-                          title: const Text('Added by'),
-                          subtitle: Text(
-                            widget.spot.createdByName ??
-                                widget.spot.createdBy ??
-                                '',
-                          ),
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                      ],
-                      if (widget.spot.spotSource != null) ...[
-                        GestureDetector(
-                          onTap: _showExternalSpotInfo,
-                          child: ListTile(
-                            leading: const Icon(Icons.source),
-                            title: const Text('Source'),
-                            subtitle: Text(
-                              widget.spot.folderName != null
-                                  ? '${widget.spot.spotSourceName ?? 'Unknown Source'} - ${widget.spot.folderName!}'
-                                  : widget.spot.spotSourceName ??
-                                        'Unknown Source',
-                            ),
-                            contentPadding: EdgeInsets.zero,
-                            trailing: const Icon(Icons.info_outline, size: 16),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                      ],
                       if (widget.spot.spotSourceRemoved) ...[
                         Container(
                           margin: const EdgeInsets.only(bottom: 16),
@@ -2578,23 +2542,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                               ),
                             ],
                           ),
-                        ),
-                      ],
-                      if (widget.spot.createdAt != null) ...[
-                        ListTile(
-                          leading: const Icon(Icons.calendar_today),
-                          title: const Text('Created on'),
-                          subtitle: Text(_formatDate(widget.spot.createdAt!)),
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                      ],
-                      if (widget.spot.updatedAt != null &&
-                          widget.spot.updatedAt != widget.spot.createdAt) ...[
-                        ListTile(
-                          leading: const Icon(Icons.update),
-                          title: const Text('Last updated'),
-                          subtitle: Text(_formatDate(widget.spot.updatedAt!)),
-                          contentPadding: EdgeInsets.zero,
                         ),
                       ],
                     ],
@@ -3837,10 +3784,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         },
       ),
     );
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year} at ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }
 
   Widget _buildAccessChip(String accessKey) {
