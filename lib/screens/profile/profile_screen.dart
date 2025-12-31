@@ -519,7 +519,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     );
     
     // Split the text at "Ward Weistra"
-    const beforeLink = 'Built by ';
+    const beforeLink = 'Started by ';
     const linkText = 'Ward Weistra';
     const afterLink = ' from the Utrecht parkour community, the app brings together local knowledge from existing city and regional maps—whether they lived on Facebook, Instagram, websites, or retired apps—so great spot data doesn\'t get lost.';
     
@@ -585,6 +585,39 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         SelectableText(
           'Enjoy discovering and sharing spots with Parkour.spot. Questions or ideas? Tap the contact button—we\'d love to hear from you.',
           style: textStyle,
+        ),
+        const SizedBox(height: 16),
+        SelectableText.rich(
+          TextSpan(
+            style: textStyle,
+            children: [
+              const TextSpan(text: 'Major contributions by '),
+              TextSpan(
+                text: 'Daphne Fontijn',
+                style: linkStyle,
+                recognizer: TapGestureRecognizer()
+                  ..onTap = () async {
+                    final uri = Uri.parse('https://www.instagram.com/daphnefontijn/');
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    }
+                  },
+              ),
+              const TextSpan(text: ' (art), '),
+              TextSpan(
+                text: 'Tim Haerkens',
+                style: linkStyle,
+                recognizer: TapGestureRecognizer()
+                  ..onTap = () async {
+                    final uri = Uri.parse('https://www.instagram.com/tim.haerkens/');
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    }
+                  },
+              ),
+              const TextSpan(text: ' and many others.'),
+            ],
+          ),
         ),
       ],
     );
