@@ -35,27 +35,18 @@ class GaObserver extends NavigatorObserver {
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
     super.didPush(route, previousRoute);
-    if (kDebugMode) {
-      debugPrint('🔄 [GA Router] Route pushed: ${route.settings.name}');
-    }
     _track();
   }
 
   @override
   void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
     super.didPop(route, previousRoute);
-    if (kDebugMode) {
-      debugPrint('🔄 [GA Router] Route popped, tracking previous: ${previousRoute?.settings.name}');
-    }
     _track();
   }
 
   @override
   void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
     super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
-    if (kDebugMode) {
-      debugPrint('🔄 [GA Router] Route replaced: ${oldRoute?.settings.name} -> ${newRoute?.settings.name}');
-    }
     if (newRoute != null) {
       _track();
     }
@@ -71,9 +62,6 @@ class GaObserver extends NavigatorObserver {
         final router = _router;
         if (router != null) {
           final path = router.routerDelegate.currentConfiguration.uri.path;
-          if (kDebugMode) {
-            debugPrint('📍 [GA Router] Tracking route: $path');
-          }
           WebAnalytics.trackPageView(path: path);
         } else {
           // Fallback to browser URL if router is not set yet
@@ -81,9 +69,6 @@ class GaObserver extends NavigatorObserver {
           WebAnalytics.trackPageView(path: path);
         }
       } catch (e) {
-        if (kDebugMode) {
-          debugPrint('⚠️ [GA Router] Error getting route path: $e');
-        }
         // Fallback to browser URL if router state is not available
         final path = web.window.location.pathname;
         WebAnalytics.trackPageView(path: path);

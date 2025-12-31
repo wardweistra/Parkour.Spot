@@ -45,9 +45,6 @@ void main() async {
   runApp(const ParkourSpotApp());
   
   // Initialize Google Analytics
-  if (kDebugMode) {
-    debugPrint('🚀 [Main] Initializing Google Analytics...');
-  }
   WebAnalytics.init();
   WebAnalytics.trackEvent('app_start', {'platform': 'web'});
 }

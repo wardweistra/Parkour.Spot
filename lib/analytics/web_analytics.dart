@@ -1,6 +1,5 @@
 // lib/analytics/web_analytics.dart
 import 'dart:js_interop';
-import 'package:flutter/foundation.dart';
 import 'package:web/web.dart' as web;
 
 // Helper function to call gtag via JS interop
@@ -12,27 +11,20 @@ class WebAnalytics {
 
   static void init() {
     if (_initialized) {
-      debugPrint('🔵 [GA] Already initialized, skipping');
       return;
     }
     _initialized = true;
     
-    debugPrint('🔵 [GA] Initializing Google Analytics...');
-    debugPrint('🔵 [GA] gtag available: $_hasGtag');
-    
     if (!_hasGtag) {
-      debugPrint('⚠️ [GA] gtag function not found. Make sure GA4 scripts are loaded in HTML.');
       return;
     }
 
-    debugPrint('✅ [GA] Google Analytics initialized successfully');
     // Don't track initial page view here - let the router observer handle it
     // to avoid duplicate tracking
   }
 
   static void trackPageView({String? path}) {
     if (!_hasGtag) {
-      debugPrint('⚠️ [GA] Cannot track page view: gtag not available');
       return;
     }
 
@@ -42,10 +34,6 @@ class WebAnalytics {
     final pageLocation = path != null 
         ? '${web.window.location.origin}$path'
         : _href;
-    
-    debugPrint('📊 [GA] Tracking page_view: $pagePath');
-    debugPrint('   └─ Location: $pageLocation');
-    debugPrint('   └─ Title: $_title');
 
     _gtag('event', 'page_view', {
       'page_location': pageLocation,
@@ -56,23 +44,17 @@ class WebAnalytics {
 
   static void trackEvent(String name, Map<String, Object?> params) {
     if (!_hasGtag) {
-      debugPrint('⚠️ [GA] Cannot track event "$name": gtag not available');
       return;
     }
-
-    debugPrint('📊 [GA] Tracking event: $name');
-    debugPrint('   └─ Params: $params');
 
     _gtag('event', name, params);
   }
 
   static void updateConsent(Map<String, String> consent) {
     if (!_hasGtag) {
-      debugPrint('⚠️ [GA] Cannot update consent: gtag not available');
       return;
     }
 
-    debugPrint('🔒 [GA] Updating consent: $consent');
     _gtag('consent', 'update', consent);
   }
 
@@ -82,23 +64,8 @@ class WebAnalytics {
       final checkCode = 'typeof window.gtag !== "undefined"'.toJS;
       final result = _eval(checkCode);
       final hasGtag = (result as JSBoolean).toDart;
-      
-      if (kDebugMode) {
-        debugPrint('🔍 [GA] Checking gtag availability: $hasGtag');
-        if (hasGtag) {
-          try {
-            final idCode = 'window.GA_MEASUREMENT_ID || ""'.toJS;
-            final idResult = _eval(idCode);
-            final measurementId = (idResult as JSString).toDart;
-            debugPrint('   └─ Measurement ID: $measurementId');
-          } catch (_) {
-            debugPrint('   └─ Measurement ID: (not found)');
-          }
-        }
-      }
       return hasGtag;
     } catch (e) {
-      debugPrint('❌ [GA] Error checking gtag availability: $e');
       return false;
     }
   }
@@ -112,23 +79,19 @@ class WebAnalytics {
   static void _gtag(String command, String a1, [Map<String, Object?>? a2]) {
     try {
       if (a2 == null) {
-        debugPrint('   └─ Calling gtag("$command", "$a1")');
         // Call gtag using eval (WASM-compatible)
         // Wrap in IIFE that returns true to avoid null/undefined type errors in dev mode
         final code = '(function() { window.gtag("$command", "$a1"); return true; })()'.toJS;
         _eval(code);
       } else {
-        debugPrint('   └─ Calling gtag("$command", "$a1", $a2)');
         // Convert params to JSON and call gtag
         // Wrap in IIFE that returns true to avoid null/undefined type errors in dev mode
         final jsonParams = _mapToJson(a2);
         final code = '(function() { window.gtag("$command", "$a1", $jsonParams); return true; })()'.toJS;
         _eval(code);
       }
-      debugPrint('✅ [GA] gtag call completed successfully');
-    } catch (e, stackTrace) {
-      debugPrint('❌ [GA] Error calling gtag: $e');
-      debugPrint('   └─ Stack trace: $stackTrace');
+    } catch (e) {
+      // Silently fail - analytics errors shouldn't break the app
     }
   }
 
