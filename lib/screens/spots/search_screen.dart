@@ -2029,7 +2029,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                       crossAxisAlignment: CrossAxisAlignment.center,
                                       children: [
                                         SvgPicture.asset(
-                                          'assets/images/logo-square.svg',
+                                          Theme.of(context).brightness == Brightness.dark
+                                              ? 'assets/images/logo-square-dark.svg'
+                                              : 'assets/images/logo-square.svg',
                                           width: 24,
                                           height: 24,
                                           fit: BoxFit.contain,
