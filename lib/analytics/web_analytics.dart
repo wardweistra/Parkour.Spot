@@ -114,13 +114,15 @@ class WebAnalytics {
       if (a2 == null) {
         debugPrint('   └─ Calling gtag("$command", "$a1")');
         // Call gtag using eval (WASM-compatible)
-        final code = 'window.gtag("$command", "$a1")'.toJS;
+        // Wrap in IIFE that returns true to avoid null/undefined type errors in dev mode
+        final code = '(function() { window.gtag("$command", "$a1"); return true; })()'.toJS;
         _eval(code);
       } else {
         debugPrint('   └─ Calling gtag("$command", "$a1", $a2)');
         // Convert params to JSON and call gtag
+        // Wrap in IIFE that returns true to avoid null/undefined type errors in dev mode
         final jsonParams = _mapToJson(a2);
-        final code = 'window.gtag("$command", "$a1", $jsonParams)'.toJS;
+        final code = '(function() { window.gtag("$command", "$a1", $jsonParams); return true; })()'.toJS;
         _eval(code);
       }
       debugPrint('✅ [GA] gtag call completed successfully');
