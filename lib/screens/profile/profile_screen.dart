@@ -615,6 +615,18 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     }
                   },
               ),
+              const TextSpan(text: ', '),
+              TextSpan(
+                text: 'Marily Bronkhorst',
+                style: linkStyle,
+                recognizer: TapGestureRecognizer()
+                  ..onTap = () async {
+                    final uri = Uri.parse('https://www.instagram.com/marilybronk/');
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    }
+                  },
+              ),
               const TextSpan(text: ' and many others.'),
             ],
           ),
