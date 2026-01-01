@@ -241,7 +241,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                   ? '/spot/${spot.id}'
                   : null;
               if (navigationUrl != null) {
-                context.go(navigationUrl);
+                context.push(navigationUrl);
               }
             },
             onLocate: () => _locateSpot(spot),
@@ -270,7 +270,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                     ? '/spot/${spot.id}'
                     : null;
                 if (navigationUrl != null) {
-                  context.go(navigationUrl);
+                  context.push(navigationUrl);
                 }
               },
               onLocate: () => _locateSpot(spot),

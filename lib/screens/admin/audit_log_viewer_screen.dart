@@ -1526,18 +1526,18 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
           city: spot.city,
         );
         if (mounted) {
-          context.go(navigationUrl);
+          context.push(navigationUrl);
         }
       } else {
         // Fallback to simple route if spot doesn't exist
         if (mounted) {
-          context.go('/spot/$spotId');
+          context.push('/spot/$spotId');
         }
       }
     } catch (e) {
       // Fallback to simple route on error
       if (mounted) {
-        context.go('/spot/$spotId');
+        context.push('/spot/$spotId');
       }
     }
   }

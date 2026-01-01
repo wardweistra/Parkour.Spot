@@ -446,7 +446,7 @@ class _ReportCardState extends State<_ReportCard> {
                     countryCode: widget.report.spotCountryCode,
                     city: widget.report.spotCity,
                   );
-                  context.go(url);
+                  context.push(url);
                 },
                 borderRadius: BorderRadius.circular(4),
                 child: Padding(
@@ -601,7 +601,7 @@ class _ReportCardState extends State<_ReportCard> {
                   // For duplicate spots, we don't have countryCode/city info,
                   // so this will fall back to /spot/<id> format
                   final url = UrlService.generateNavigationUrl(widget.report.duplicateOfSpotId!);
-                  context.go(url);
+                  context.push(url);
                 },
                 icon: const Icon(Icons.open_in_new, size: 18),
                 label: const Text('Open suggested original spot'),
