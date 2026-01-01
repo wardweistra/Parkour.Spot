@@ -325,6 +325,26 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
     });
   }
 
+  void _reorderExistingImage(int oldIndex, int newIndex) {
+    setState(() {
+      if (newIndex > oldIndex) {
+        newIndex -= 1;
+      }
+      final imageUrl = _existingImageUrls.removeAt(oldIndex);
+      _existingImageUrls.insert(newIndex, imageUrl);
+    });
+  }
+
+  void _reorderSelectedImage(int oldIndex, int newIndex) {
+    setState(() {
+      if (newIndex > oldIndex) {
+        newIndex -= 1;
+      }
+      final imageBytes = _selectedImageBytes.removeAt(oldIndex);
+      _selectedImageBytes.insert(newIndex, imageBytes);
+    });
+  }
+
 
   void _toggleSatelliteView(bool value) {
     setState(() {
@@ -447,7 +467,9 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
           .where((id) => id.isNotEmpty)
           .toList();
 
-      // Create updated spot data
+      // Create updated spot data with reordered existing image URLs
+      // The updateSpot method will remove deleted images and add new ones,
+      // but it starts with spot.imageUrls, so we pass the reordered list here
       final updatedSpot = widget.spot.copyWith(
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
@@ -456,6 +478,7 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
         address: _currentAddress,
         city: _currentCity,
         countryCode: _currentCountryCode,
+        imageUrls: _existingImageUrls.isNotEmpty ? _existingImageUrls : null,
         youtubeVideoIds: youtubeIds.isNotEmpty ? youtubeIds : null,
         duplicateOf: _duplicateOf,
         spotAccess: _selectedAccess,
@@ -693,6 +716,8 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
                     onTakePhoto: _takePhoto,
                     onRemoveSelectedAt: _removeSelectedImageAt,
                     onRemoveExistingAt: _removeExistingImageAt,
+                    onReorderExisting: _reorderExistingImage,
+                    onReorderSelected: _reorderSelectedImage,
                   ),
                   const SizedBox(height: 16),
 
