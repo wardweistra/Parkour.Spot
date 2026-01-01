@@ -605,7 +605,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      'Show list on map',
+                      'Highlight list on map',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 11,
