@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:country_flags/country_flags.dart';
+import 'package:go_router/go_router.dart';
 import '../models/spot.dart';
 import '../services/mobile_detection_service.dart';
 import '../services/url_service.dart';
@@ -23,6 +24,8 @@ class SpotCard extends StatefulWidget {
   final VoidCallback? onViewDetails; // For overlay variant
   final double? maxWidth; // For overlay variant
   final VoidCallback? onRemove; // For list variant - shows remove button
+  final String? spotListId; // ID of the spot list this spot belongs to (for highlighting)
+  final String? spotListName; // Name of the spot list this spot belongs to (for highlighting)
 
   const SpotCard({
     super.key,
@@ -35,6 +38,8 @@ class SpotCard extends StatefulWidget {
     this.onViewDetails,
     this.maxWidth,
     this.onRemove,
+    this.spotListId,
+    this.spotListName,
   });
 
   @override
@@ -315,6 +320,44 @@ class _SpotCardState extends State<SpotCard> {
                           textAlign: TextAlign.left,
                           softWrap: true, // Ensure text wraps properly
                         ),
+                        
+                        // "Part of" indicator for highlighted spots (chip/badge style)
+                        if (widget.spotListId != null && widget.spotListName != null) ...[
+                          const SizedBox(height: 8),
+                          GestureDetector(
+                            onTap: () {
+                              context.go('/list/${widget.spotListId}');
+                            },
+                            child: Chip(
+                              avatar: Icon(
+                                Icons.list,
+                                size: 16,
+                                color: Theme.of(context).colorScheme.onPrimaryContainer,
+                              ),
+                              label: Text.rich(
+                                TextSpan(
+                                  text: 'Part of ',
+                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                  ),
+                                  children: [
+                                    TextSpan(
+                                      text: widget.spotListName,
+                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ),
+                        ],
                         
                         // Add bottom padding to make room for the bottom row
                         const SizedBox(height: 50),
@@ -746,6 +789,43 @@ class _SpotCardState extends State<SpotCard> {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      // "Part of" indicator for highlighted spots (chip/badge style)
+                      if (widget.spotListId != null && widget.spotListName != null) ...[
+                        const SizedBox(height: 8),
+                        GestureDetector(
+                          onTap: () {
+                            context.go('/list/${widget.spotListId}');
+                          },
+                          child: Chip(
+                            avatar: Icon(
+                              Icons.list,
+                              size: 16,
+                              color: Theme.of(context).colorScheme.onPrimaryContainer,
+                            ),
+                            label: Text.rich(
+                              TextSpan(
+                                text: 'Part of ',
+                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                ),
+                                children: [
+                                  TextSpan(
+                                    text: widget.spotListName,
+                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ),
+                      ],
                       // Flag + City after description
                       if (widget.spot.city != null || widget.spot.countryCode != null) ...[
                         const SizedBox(height: 12),

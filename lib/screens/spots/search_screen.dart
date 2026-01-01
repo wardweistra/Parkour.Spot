@@ -1260,8 +1260,11 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         itemCount: _visibleSpots.length,
         itemBuilder: (context, index) {
           final spot = _visibleSpots[index];
+          final bool isHighlighted = spot.id != null && _highlightedSpotIds.contains(spot.id);
           return SpotCard(
             spot: spot,
+            spotListId: isHighlighted ? _selectedListId : null,
+            spotListName: isHighlighted ? _selectedListName : null,
             onTap: () {
               // Center map on selected spot
               _mapController?.animateCamera(
@@ -1288,10 +1291,13 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         itemCount: _visibleSpots.length,
         itemBuilder: (context, index) {
           final spot = _visibleSpots[index];
+          final bool isHighlighted = spot.id != null && _highlightedSpotIds.contains(spot.id);
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: SpotCard(
               spot: spot,
+              spotListId: isHighlighted ? _selectedListId : null,
+              spotListName: isHighlighted ? _selectedListName : null,
               onTap: () {
                 // Center map on selected spot
                 _mapController?.animateCamera(
@@ -1971,6 +1977,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                         spot: _selectedSpot!,
                         variant: SpotCardVariant.overlay,
                         maxWidth: 400,
+                        spotListId: (_selectedSpot!.id != null && _highlightedSpotIds.contains(_selectedSpot!.id)) ? _selectedListId : null,
+                        spotListName: (_selectedSpot!.id != null && _highlightedSpotIds.contains(_selectedSpot!.id)) ? _selectedListName : null,
                         onTap: () {
                           final navigationUrl = UrlService.generateNavigationUrl(
                             _selectedSpot!.id!,
@@ -1999,6 +2007,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                           spot: _selectedSpot!,
                           variant: SpotCardVariant.overlay,
                           maxWidth: double.infinity,
+                          spotListId: (_selectedSpot!.id != null && _highlightedSpotIds.contains(_selectedSpot!.id)) ? _selectedListId : null,
+                          spotListName: (_selectedSpot!.id != null && _highlightedSpotIds.contains(_selectedSpot!.id)) ? _selectedListName : null,
                           onTap: () {
                             final navigationUrl = UrlService.generateNavigationUrl(
                               _selectedSpot!.id!,
