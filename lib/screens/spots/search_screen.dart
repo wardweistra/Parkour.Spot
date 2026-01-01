@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:ui' as ui;
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
@@ -22,6 +21,7 @@ import '../../models/spot.dart';
 import '../../widgets/spot_card.dart';
 import '../../widgets/source_details_dialog.dart';
 import '../../config/app_config.dart';
+import '../../utils/marker_icon_utils.dart';
 import 'add_spot_screen.dart';
 
 // Helper widget to ensure icons render properly on mobile web
@@ -928,7 +928,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
 
   Future<void> _loadUserLocationIcon() async {
     try {
-      final icon = await _createUserLocationIcon(size: 24, fillColor: Colors.blue);
+      final icon = await MarkerIconUtils.createUserLocationIcon(size: 24, fillColor: Colors.blue);
       if (mounted) {
         setState(() {
           _userLocationIcon = icon;
@@ -939,43 +939,16 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     }
   }
 
-  Future<BitmapDescriptor> _createUserLocationIcon({double size = 24, Color fillColor = Colors.blue}) async {
-    final ui.PictureRecorder recorder = ui.PictureRecorder();
-    final Canvas canvas = Canvas(recorder);
-    final double radius = size / 2;
-    final Offset center = Offset(radius, radius);
-
-    final Paint shadowPaint = Paint()..color = Colors.black.withValues(alpha: 0.2);
-    final Paint ringPaint = Paint()..color = Colors.white;
-    final Paint fillPaint = Paint()..color = fillColor;
-
-    // Calculate proportional border thickness (was 4px for 96px icon, now scales)
-    final double borderThickness = size * 4 / 96; // Scale from 4px at 96px size
-    final double innerRadius = radius - borderThickness;
-
-    // Shadow circle
-    canvas.drawCircle(center, radius, shadowPaint);
-    // Outer white ring
-    canvas.drawCircle(center, innerRadius, ringPaint);
-    // Inner fill
-    canvas.drawCircle(center, innerRadius - borderThickness * 2, fillPaint);
-
-    final ui.Image image = await recorder.endRecording().toImage(size.toInt(), size.toInt());
-    final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    final Uint8List bytes = byteData!.buffer.asUint8List();
-    return BitmapDescriptor.bytes(bytes);
-  }
-
   Future<void> _loadSpotIcons() async {
     try {
       // Simple circular icons to ensure consistent coloring on web
-      final BitmapDescriptor defaultIcon = await _createUserLocationIcon(size: 22, fillColor: Colors.red);
+      final BitmapDescriptor defaultIcon = await MarkerIconUtils.createMarkerIcon(size: 22, fillColor: Colors.red);
       // Make selected more distinct and smaller
-      final BitmapDescriptor selectedIcon = await _createUserLocationIcon(size: 22, fillColor: Color(0xFFFF8A80));
+      final BitmapDescriptor selectedIcon = await MarkerIconUtils.createMarkerIcon(size: 22, fillColor: Color(0xFFFF8A80));
       // Black icon for highlighted spots from selected list
-      final BitmapDescriptor highlightedIcon = await _createUserLocationIcon(size: 22, fillColor: Colors.black);
+      final BitmapDescriptor highlightedIcon = await MarkerIconUtils.createMarkerIcon(size: 22, fillColor: Colors.black);
       // Lighter grey icon for selected+highlighted spots
-      final BitmapDescriptor selectedHighlightedIcon = await _createUserLocationIcon(size: 22, fillColor: Colors.grey.shade400);
+      final BitmapDescriptor selectedHighlightedIcon = await MarkerIconUtils.createMarkerIcon(size: 22, fillColor: Colors.grey.shade400);
       if (mounted) {
         setState(() {
           _spotDefaultIcon = defaultIcon;

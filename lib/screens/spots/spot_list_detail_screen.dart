@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:pointer_interceptor/pointer_interceptor.dart';
 import '../../models/spot_list.dart';
 import '../../models/spot.dart';
 import '../../services/spot_list_service.dart';
 import '../../services/spot_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/feature_access_service.dart';
+import '../../services/search_state_service.dart';
+import '../../services/mobile_detection_service.dart';
 import '../../widgets/spot_card.dart';
 import '../../services/snackbar_service.dart';
+import '../../utils/marker_icon_utils.dart';
 
 class SpotListDetailScreen extends StatefulWidget {
   final String listId;
@@ -24,11 +30,47 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
   List<Spot> _spots = [];
   bool _isLoading = true;
   String? _error;
+  bool _isSatelliteView = false;
+  GoogleMapController? _mapController;
+  BitmapDescriptor? _spotHighlightedIcon; // Black icon for spots in list
+  BitmapDescriptor? _spotSelectedHighlightedIcon; // Grey icon for selected spot
+  Spot? _selectedSpot; // Currently selected/highlighted spot
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     _loadList();
+    _loadSpotIcons();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadSpotIcons() async {
+    try {
+      // Black icon for spots in list (matching highlighted style from Explore)
+      final BitmapDescriptor highlightedIcon = await MarkerIconUtils.createMarkerIcon(
+        size: 22,
+        fillColor: Colors.black,
+      );
+      // Grey icon for selected spot (matching selectedHighlighted style from Explore)
+      final BitmapDescriptor selectedHighlightedIcon = await MarkerIconUtils.createMarkerIcon(
+        size: 22,
+        fillColor: Colors.grey.shade400,
+      );
+      if (mounted) {
+        setState(() {
+          _spotHighlightedIcon = highlightedIcon;
+          _spotSelectedHighlightedIcon = selectedHighlightedIcon;
+        });
+      }
+    } catch (_) {
+      // Ignore icon errors silently
+    }
   }
 
   Future<void> _loadList() async {
@@ -78,6 +120,13 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       _spots = loadedSpots;
       _isLoading = false;
     });
+    
+    // Fit bounds after spots are loaded
+    if (loadedSpots.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _fitBounds();
+      });
+    }
   }
 
   Future<void> _removeSpot(String spotId) async {
@@ -170,6 +219,8 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       final mainAxisExtent = 440.0; // Height to accommodate bottom content
 
       return GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
           maxCrossAxisExtent: maxCrossAxisExtent,
@@ -191,6 +242,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                 context.go(navigationUrl);
               }
             },
+            onLocate: () => _locateSpot(spot),
             onRemove: canManage && spot.id != null
                 ? () => _removeSpot(spot.id!)
                 : null,
@@ -200,6 +252,8 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     } else {
       // Use list layout on narrower screens
       return ListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: _spots.length,
         itemBuilder: (context, index) {
@@ -217,6 +271,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                   context.go(navigationUrl);
                 }
               },
+              onLocate: () => _locateSpot(spot),
               onRemove: canManage && spot.id != null
                   ? () => _removeSpot(spot.id!)
                   : null,
@@ -309,25 +364,289 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     return featureAccessService.hasFeatureAccess('spotLists');
   }
 
+  // Calculate bounds to fit all spots with 5% margin
+  LatLngBounds? _calculateBounds() {
+    if (_spots.isEmpty) return null;
+
+    double minLat = _spots.first.latitude;
+    double maxLat = _spots.first.latitude;
+    double minLng = _spots.first.longitude;
+    double maxLng = _spots.first.longitude;
+
+    for (final spot in _spots) {
+      if (spot.latitude < minLat) minLat = spot.latitude;
+      if (spot.latitude > maxLat) maxLat = spot.latitude;
+      if (spot.longitude < minLng) minLng = spot.longitude;
+      if (spot.longitude > maxLng) maxLng = spot.longitude;
+    }
+
+    // Add 5% margin
+    final latMargin = (maxLat - minLat) * 0.05;
+    final lngMargin = (maxLng - minLng) * 0.05;
+
+    // Handle edge case where all spots are at the same location
+    if (latMargin == 0) {
+      minLat -= 0.01;
+      maxLat += 0.01;
+    } else {
+      minLat -= latMargin;
+      maxLat += latMargin;
+    }
+
+    if (lngMargin == 0) {
+      minLng -= 0.01;
+      maxLng += 0.01;
+    } else {
+      minLng -= lngMargin;
+      maxLng += lngMargin;
+    }
+
+    return LatLngBounds(
+      southwest: LatLng(minLat, minLng),
+      northeast: LatLng(maxLat, maxLng),
+    );
+  }
+
+  // Build markers for all spots
+  Set<Marker> _buildMarkers() {
+    return _spots.map((spot) {
+      final bool isSelected = _selectedSpot?.id != null
+          ? _selectedSpot!.id == spot.id
+          : _selectedSpot?.name == spot.name;
+      
+      // Use grey icon for selected spot, black for others (matching Explore page style)
+      final BitmapDescriptor icon = kIsWeb
+          ? (isSelected
+              ? (_spotSelectedHighlightedIcon ?? BitmapDescriptor.defaultMarker)
+              : (_spotHighlightedIcon ?? BitmapDescriptor.defaultMarker))
+          : (isSelected
+              ? (_spotSelectedHighlightedIcon ?? BitmapDescriptor.defaultMarker)
+              : (_spotHighlightedIcon ?? BitmapDescriptor.defaultMarker));
+      
+      return Marker(
+        markerId: MarkerId(spot.id ?? spot.name),
+        position: LatLng(spot.latitude, spot.longitude),
+        icon: icon,
+        onTap: null,
+        consumeTapEvents: true,
+        infoWindow: InfoWindow.noText,
+      );
+    }).toSet();
+  }
+
+  // Locate a spot: scroll to map and highlight it
+  Future<void> _locateSpot(Spot spot) async {
+    // Scroll to top to show the map
+    if (_scrollController.hasClients) {
+      await _scrollController.animateTo(
+        0.0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+
+    // Select the spot and refresh markers to show grey highlight
+    if (mounted) {
+      setState(() {
+        _selectedSpot = spot;
+      });
+    }
+  }
+
+  // Navigate to explore page with list highlighted
+  void _showListOnMap() {
+    if (_list?.id != null) {
+      context.go('/explore?listId=${_list!.id}');
+    }
+  }
+
+  // Get initial camera position based on bounds
+  CameraPosition? _getInitialCameraPosition() {
+    final bounds = _calculateBounds();
+    if (bounds == null) return null;
+
+    // Calculate center
+    final centerLat = (bounds.southwest.latitude + bounds.northeast.latitude) / 2;
+    final centerLng = (bounds.southwest.longitude + bounds.northeast.longitude) / 2;
+
+    // Calculate approximate zoom level based on bounds
+    final latDiff = bounds.northeast.latitude - bounds.southwest.latitude;
+    final lngDiff = bounds.northeast.longitude - bounds.southwest.longitude;
+    final maxDiff = latDiff > lngDiff ? latDiff : lngDiff;
+
+    // Approximate zoom calculation (this is a rough estimate)
+    double zoom = 10.0;
+    if (maxDiff > 0.1) {
+      zoom = 8.0;
+    } else if (maxDiff > 0.05) {
+      zoom = 9.0;
+    } else if (maxDiff > 0.01) {
+      zoom = 11.0;
+    } else if (maxDiff > 0.005) {
+      zoom = 12.0;
+    } else {
+      zoom = 13.0;
+    }
+
+    return CameraPosition(
+      target: LatLng(centerLat, centerLng),
+      zoom: zoom,
+    );
+  }
+
+  // Fit map to show all markers with bounds
+  Future<void> _fitBounds() async {
+    if (_mapController == null) return;
+    
+    final bounds = _calculateBounds();
+    if (bounds == null) return;
+
+    await _mapController!.animateCamera(
+      CameraUpdate.newLatLngBounds(bounds, 50.0), // 50px padding
+    );
+  }
+
+  Widget _buildMap() {
+    if (_spots.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final initialCameraPosition = _getInitialCameraPosition();
+    if (initialCameraPosition == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      height: 200,
+      margin: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          GoogleMap(
+            initialCameraPosition: initialCameraPosition,
+            mapType: _isSatelliteView ? MapType.satellite : MapType.normal,
+            markers: _buildMarkers(),
+            onMapCreated: (GoogleMapController controller) {
+              _mapController = controller;
+              // Fit bounds after map is created
+              _fitBounds();
+            },
+            zoomControlsEnabled: false,
+            myLocationButtonEnabled: false,
+            mapToolbarEnabled: false,
+            liteModeEnabled: kIsWeb,
+            compassEnabled: false,
+            zoomGesturesEnabled: false,
+            scrollGesturesEnabled: false,
+            tiltGesturesEnabled: false,
+            rotateGesturesEnabled: false,
+            indoorViewEnabled: false,
+            trafficEnabled: false,
+          ),
+          Positioned.fill(
+            child: PointerInterceptor(
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _showListOnMap,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+          // Map Type Toggle Button
+          Positioned(
+            bottom: 24,
+            right: 10,
+            child: PointerInterceptor(
+              child: FloatingActionButton(
+                onPressed: () {
+                  setState(() {
+                    _isSatelliteView = !_isSatelliteView;
+                  });
+                  final searchState = Provider.of<SearchStateService>(context, listen: false);
+                  searchState.setSatellite(_isSatelliteView);
+                },
+                heroTag: 'mapTypeToggleFab',
+                mini: true,
+                tooltip: _isSatelliteView ? 'Switch to Map' : 'Switch to Satellite',
+                child: Icon(
+                  _isSatelliteView ? Icons.map : Icons.terrain,
+                ),
+              ),
+            ),
+          ),
+          // Hint text
+          Positioned(
+            top: 8,
+            right: 8,
+            child: PointerInterceptor(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.7),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      MobileDetectionService.isMobileDevice
+                          ? Icons.phone_android
+                          : Icons.touch_app,
+                      color: Colors.white,
+                      size: 14,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Show list on map',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final canManage = _canManageList();
     
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            // Check if we can pop back to a previous page
+            if (Navigator.canPop(context)) {
+              // If there's a previous page, go back to it
+              Navigator.pop(context);
+            } else {
+              // If no previous page (direct link), go to explore
+              context.go('/explore');
+            }
+          },
+        ),
         title: Text(_list?.name ?? 'Spot List'),
+        centerTitle: true,
         actions: [
-          if (_list != null && _spots.isNotEmpty) ...[
-            IconButton(
-              icon: const Icon(Icons.map),
-              tooltip: 'Show on Map',
-              onPressed: () {
-                if (_list!.id != null) {
-                  context.go('/explore?listId=${_list!.id}');
-                }
-              },
-            ),
-          ],
           if (_list != null && canManage) ...[
             IconButton(
               icon: const Icon(Icons.edit),
@@ -342,52 +661,66 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
           ],
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 64,
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        _error!,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: () => context.pop(),
-                        child: const Text('Go Back'),
-                      ),
-                    ],
-                  ),
-                )
-              : _list == null
-                  ? const Center(child: Text('List not found'))
-                  : Column(
-                      children: [
-                        // List info header
-                        if (_list!.description != null && _list!.description!.isNotEmpty)
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(16),
-                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                            child: Text(
-                              _list!.description!,
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1200),
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _error != null
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 64,
+                            color: Theme.of(context).colorScheme.error,
                           ),
-                        // Spots list
-                        Expanded(
-                          child: _buildSpotsList(),
+                          const SizedBox(height: 16),
+                          Text(
+                            _error!,
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton(
+                            onPressed: () {
+                              // Check if we can pop back to a previous page
+                              if (Navigator.canPop(context)) {
+                                Navigator.pop(context);
+                              } else {
+                                context.go('/explore');
+                              }
+                            },
+                            child: const Text('Go Back'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : _list == null
+                      ? const Center(child: Text('List not found'))
+                      : SingleChildScrollView(
+                          controller: _scrollController,
+                          child: Column(
+                            children: [
+                              // Map showing all spots
+                              if (_spots.isNotEmpty) _buildMap(),
+                              // List info header
+                              if (_list!.description != null && _list!.description!.isNotEmpty)
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(16),
+                                  child: Text(
+                                    _list!.description!,
+                                    style: Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                ),
+                              // Spots list
+                              _buildSpotsList(),
+                            ],
+                          ),
                         ),
-                      ],
-                    ),
+        ),
+      ),
     );
   }
 }
