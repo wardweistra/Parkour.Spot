@@ -636,9 +636,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           // Delay navigation to ensure PopupMenu fully closes before navigation
           Future.delayed(const Duration(milliseconds: 400), () {
             if (!mounted) return;
-            // Use context.go to ensure URL updates properly for nested routes
+            // Use context.push to maintain navigation stack so back button works correctly
             // EditSpotRoute will fetch the spot by ID from the path parameters
-            context.go(editPath);
+            context.push(editPath);
           });
         } else if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
