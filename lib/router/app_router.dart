@@ -231,7 +231,9 @@ class AppRouter {
         path: '/list/:listId',
         builder: (context, state) {
           final listId = state.pathParameters['listId']!;
-          return SpotListDetailScreen(listId: listId);
+          // Pass the referrer (previous location) to the screen
+          final referrer = state.uri.queryParameters['from'];
+          return SpotListDetailScreen(listId: listId, referrer: referrer);
         },
       ),
         // Admin routes (screen will self-guard on admin status)

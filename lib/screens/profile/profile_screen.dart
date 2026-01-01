@@ -439,7 +439,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                                           ),
                                           onTap: () {
                                             if (list.id != null) {
-                                              context.go('/list/${list.id}');
+                                              context.go('/list/${list.id}?from=profile');
                                             }
                                           },
                                         ),

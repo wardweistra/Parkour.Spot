@@ -20,8 +20,9 @@ import 'package:flutter/services.dart';
 
 class SpotListDetailScreen extends StatefulWidget {
   final String listId;
+  final String? referrer;
 
-  const SpotListDetailScreen({super.key, required this.listId});
+  const SpotListDetailScreen({super.key, required this.listId, this.referrer});
 
   @override
   State<SpotListDetailScreen> createState() => _SpotListDetailScreenState();
@@ -622,108 +623,145 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     );
   }
 
+  Widget _buildCustomAppBar() {
+    final canManage = _canManageList();
+    final theme = Theme.of(context);
+    final appBarHeight = kToolbarHeight;
+    
+    return Container(
+      height: appBarHeight + MediaQuery.of(context).padding.top,
+      color: theme.colorScheme.surface,
+      child: SafeArea(
+        bottom: false,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1200),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () {
+                    // If we have a referrer, go back to that location
+                    if (widget.referrer == 'profile') {
+                      context.go('/explore?tab=profile');
+                    } else if (Navigator.canPop(context)) {
+                      // If there's a previous page, go back to it
+                      Navigator.pop(context);
+                    } else {
+                      // If no previous page (direct link), go to explore
+                      context.go('/explore');
+                    }
+                  },
+                ),
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      _list?.name ?? 'Spot List',
+                      style: theme.textTheme.titleLarge,
+                    ),
+                  ),
+                ),
+                // Share button for all users
+                if (_list != null && _list!.id != null)
+                  IconButton(
+                    icon: const Icon(Icons.share),
+                    tooltip: 'Share List',
+                    onPressed: _copyListToClipboard,
+                  ),
+                if (_list != null && canManage) ...[
+                  IconButton(
+                    icon: const Icon(Icons.edit),
+                    tooltip: 'Edit List',
+                    onPressed: _editList,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete),
+                    tooltip: 'Delete List',
+                    onPressed: _deleteList,
+                  ),
+                ],
+                // Spacer to balance the back button
+                if (_list == null || (_list!.id == null && !canManage))
+                  const SizedBox(width: 48),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final canManage = _canManageList();
-    
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            // Check if we can pop back to a previous page
-            if (Navigator.canPop(context)) {
-              // If there's a previous page, go back to it
-              Navigator.pop(context);
-            } else {
-              // If no previous page (direct link), go to explore
-              context.go('/explore');
-            }
-          },
-        ),
-        title: Text(_list?.name ?? 'Spot List'),
-        centerTitle: true,
-        actions: [
-          // Share button for all users
-          if (_list != null && _list!.id != null)
-            IconButton(
-              icon: const Icon(Icons.share),
-              tooltip: 'Share List',
-              onPressed: _copyListToClipboard,
-            ),
-          if (_list != null && canManage) ...[
-            IconButton(
-              icon: const Icon(Icons.edit),
-              tooltip: 'Edit List',
-              onPressed: _editList,
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete),
-              tooltip: 'Delete List',
-              onPressed: _deleteList,
-            ),
-          ],
-        ],
-      ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1200),
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _error != null
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.error_outline,
-                            size: 64,
-                            color: Theme.of(context).colorScheme.error,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            _error!,
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 24),
-                          ElevatedButton(
-                            onPressed: () {
-                              // Check if we can pop back to a previous page
-                              if (Navigator.canPop(context)) {
-                                Navigator.pop(context);
-                              } else {
-                                context.go('/explore');
-                              }
-                            },
-                            child: const Text('Go Back'),
-                          ),
-                        ],
-                      ),
-                    )
-                  : _list == null
-                      ? const Center(child: Text('List not found'))
-                      : SingleChildScrollView(
-                          controller: _scrollController,
-                          child: Column(
-                            children: [
-                              // Map showing all spots
-                              if (_spots.isNotEmpty) _buildMap(),
-                              // List info header
-                              if (_list!.description != null && _list!.description!.isNotEmpty)
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.all(16),
-                                  child: Text(
-                                    _list!.description!,
-                                    style: Theme.of(context).textTheme.bodyMedium,
-                                  ),
+      body: Column(
+        children: [
+          _buildCustomAppBar(),
+          Expanded(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1200),
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _error != null
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.error_outline,
+                                  size: 64,
+                                  color: Theme.of(context).colorScheme.error,
                                 ),
-                              // Spots list
-                              _buildSpotsList(),
-                            ],
-                          ),
-                        ),
-        ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  _error!,
+                                  style: Theme.of(context).textTheme.titleMedium,
+                                ),
+                                const SizedBox(height: 24),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    // If we have a referrer, go back to that location
+                                    if (widget.referrer == 'profile') {
+                                      context.go('/explore?tab=profile');
+                                    } else if (Navigator.canPop(context)) {
+                                      Navigator.pop(context);
+                                    } else {
+                                      context.go('/explore');
+                                    }
+                                  },
+                                  child: const Text('Go Back'),
+                                ),
+                              ],
+                            ),
+                          )
+                        : _list == null
+                            ? const Center(child: Text('List not found'))
+                            : SingleChildScrollView(
+                                controller: _scrollController,
+                                child: Column(
+                                  children: [
+                                    // Map showing all spots
+                                    if (_spots.isNotEmpty) _buildMap(),
+                                    // List info header
+                                    if (_list!.description != null && _list!.description!.isNotEmpty)
+                                      Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.all(16),
+                                        child: Text(
+                                          _list!.description!,
+                                          style: Theme.of(context).textTheme.bodyMedium,
+                                        ),
+                                      ),
+                                    // Spots list
+                                    _buildSpotsList(),
+                                  ],
+                                ),
+                              ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
