@@ -22,6 +22,7 @@ import '../../widgets/spot_card.dart';
 import '../../widgets/source_details_dialog.dart';
 import '../../config/app_config.dart';
 import '../../utils/marker_icon_utils.dart';
+import '../../utils/map_bounds_utils.dart';
 import 'add_spot_screen.dart';
 
 // Helper widget to ensure icons render properly on mobile web
@@ -986,9 +987,41 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
           // Rebuild markers to reflect highlighting
           _markers = _buildMarkers(_visibleSpots);
         });
+        
+        // Fit map to show all spots in the list with 5% padding
+        await _fitMapToSpotList(list.spotIds);
       }
     } catch (e) {
       debugPrint('Error loading spot list: $e');
+    }
+  }
+  
+  /// Fit the map to show all spots in a list with 5% padding
+  Future<void> _fitMapToSpotList(List<String> spotIds) async {
+    if (spotIds.isEmpty || _mapController == null) return;
+    
+    try {
+      // Fetch all spots by their IDs
+      final spotService = Provider.of<SpotService>(context, listen: false);
+      final spots = await Future.wait(
+        spotIds.map((id) => spotService.getSpotById(id)),
+      );
+      
+      // Filter out null spots (spots that don't exist)
+      final validSpots = spots.whereType<Spot>().toList();
+      
+      if (validSpots.isEmpty) return;
+      
+      // Calculate bounds with 5% padding
+      final bounds = calculateBoundsForSpots(validSpots);
+      if (bounds == null) return;
+      
+      // Fit the map to the bounds with padding
+      await _mapController!.animateCamera(
+        CameraUpdate.newLatLngBounds(bounds, 50.0), // 50px padding
+      );
+    } catch (e) {
+      debugPrint('Error fitting map to spot list: $e');
     }
   }
   
@@ -1386,6 +1419,13 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                       _spotIdToLocate = null; // Clear before attempting to locate
                       Future.delayed(const Duration(milliseconds: 300), () {
                         _locateSpotById(spotId);
+                      });
+                    }
+                    
+                    // If we have a list ID, fit the map to show all spots in the list
+                    if (_selectedListId != null && _highlightedSpotIds.isNotEmpty) {
+                      Future.delayed(const Duration(milliseconds: 300), () {
+                        _fitMapToSpotList(_highlightedSpotIds.toList());
                       });
                     }
                   });
