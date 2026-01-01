@@ -674,6 +674,7 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
                   SpotLocationSection(
                     currentLocation: _currentLocation,
                     address: _currentAddress,
+                    countryCode: _currentCountryCode,
                     isGettingLocation: _isGettingLocation,
                     isGeocoding: _isGeocoding,
                     isSatelliteView: _isSatelliteView,
