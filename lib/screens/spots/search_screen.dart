@@ -188,7 +188,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     
     return !_includeSpotsWithoutPictures || // Default is true, so false means active
            _selectedSpotSource != null || // null means all sources (default)
-           hasFolderFilter; // Folder filter is active
+           hasFolderFilter || // Folder filter is active
+           _selectedListId != null; // Spot list is highlighted/filtered
   }
 
   @override
@@ -633,23 +634,34 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                         ),
                   ),
                   const SizedBox(width: 8),
-                  Chip(
-                    label: Text(_selectedListName!),
-                    avatar: Icon(
-                      Icons.list,
-                      size: 18,
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  InkWell(
+                    onTap: () {
+                      // Close the filters dialog
+                      setState(() {
+                        _showFiltersDialog = false;
+                      });
+                      // Navigate to the spot list detail page
+                      context.go('/list/${_selectedListId}');
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: Chip(
+                      label: Text(_selectedListName!),
+                      avatar: Icon(
+                        Icons.list,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                      labelStyle: TextStyle(
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                      deleteIcon: Icon(
+                        Icons.close,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                      onDeleted: _clearSpotListSelection,
                     ),
-                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                    labelStyle: TextStyle(
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                    ),
-                    deleteIcon: Icon(
-                      Icons.close,
-                      size: 18,
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                    ),
-                    onDeleted: _clearSpotListSelection,
                   ),
                 ],
               ),
