@@ -17,6 +17,7 @@ import '../../services/url_service.dart';
 import '../../services/geocoding_service.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/spot_list_service.dart';
 import '../../models/spot.dart';
 import '../../widgets/spot_card.dart';
 import '../../widgets/source_details_dialog.dart';
@@ -61,8 +62,9 @@ class ReliableIcon extends StatelessWidget {
 
 class SearchScreen extends StatefulWidget {
   final String? initialLocationQuery;
+  final String? initialListId;
   
-  const SearchScreen({super.key, this.initialLocationQuery});
+  const SearchScreen({super.key, this.initialLocationQuery, this.initialListId});
 
   @override
   State<SearchScreen> createState() => SearchScreenState();
@@ -77,6 +79,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   BitmapDescriptor? _userLocationIcon;
   BitmapDescriptor? _spotDefaultIcon; // Web fallback
   BitmapDescriptor? _spotSelectedIcon; // Web fallback
+  BitmapDescriptor? _spotHighlightedIcon; // Web fallback for purple highlighted spots
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   String _searchQuery = '';
@@ -112,6 +115,10 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   Offset? _longPressStartPosition; // Starting position for long press detection
   bool _longPressHandled = false; // Flag to track if long press was successfully handled
   String? _spotIdToLocate; // Spot ID to locate from query parameter
+  // Spot list highlighting
+  String? _selectedListId; // Currently selected spot list ID
+  String? _selectedListName; // Name of the selected spot list
+  Set<String> _highlightedSpotIds = {}; // Spot IDs from selected list
   
   void _onSpotsChanged() {
     if (mounted) {
@@ -132,16 +139,33 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     final newSelectedSpotSource = searchState.selectedSpotSource;
     final newIncludeSpotsWithoutPictures = searchState.includeSpotsWithoutPictures;
     final newIsSatelliteView = searchState.isSatellite;
+    final newSelectedListId = searchState.selectedListId;
     
     // Check if selectedSpotSource changed - if so, reload spots
     final spotSourceChanged = _selectedSpotSource != newSelectedSpotSource;
     final pictureFilterChanged = _includeSpotsWithoutPictures != newIncludeSpotsWithoutPictures;
+    final listIdChanged = _selectedListId != newSelectedListId;
     
     setState(() {
       _isSatelliteView = newIsSatelliteView;
       _includeSpotsWithoutPictures = newIncludeSpotsWithoutPictures;
       _selectedSpotSource = newSelectedSpotSource;
+      _selectedListId = newSelectedListId;
     });
+    
+    // Load list if it changed
+    if (listIdChanged) {
+      if (newSelectedListId != null) {
+        _loadSpotList(newSelectedListId);
+      } else {
+        // Clear highlighting
+        setState(() {
+          _selectedListName = null;
+          _highlightedSpotIds.clear();
+          _markers = _buildMarkers(_visibleSpots);
+        });
+      }
+    }
     
     // Reload spots if the source filter or picture filter changed
     // Note: Folder filter changes are handled directly in the FilterChip onSelected callback
@@ -178,6 +202,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       _searchQuery = widget.initialLocationQuery!;
     }
     
+    // Set initial list ID - prioritize URL parameter, then fall back to stored value
+    // Will be set from SearchStateService in post-frame callback if not provided via URL
+    
     _loadUserLocationIcon();
     _loadSpotIcons();
     
@@ -205,11 +232,27 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       _searchStateServiceRef!.addListener(_onSearchStateChanged);
       
       // Initial state load (will be updated when storage finishes loading via listener)
+      // Prioritize URL parameter over stored value
+      final listIdFromUrl = widget.initialListId;
+      final listIdFromStorage = _searchStateServiceRef!.selectedListId;
+      final initialListId = listIdFromUrl ?? listIdFromStorage;
+      
+      // If URL has a listId, save it to storage
+      if (listIdFromUrl != null && listIdFromUrl != listIdFromStorage) {
+        _searchStateServiceRef!.setSelectedListId(listIdFromUrl);
+      }
+      
       setState(() {
         _isSatelliteView = _searchStateServiceRef!.isSatellite;
         _includeSpotsWithoutPictures = _searchStateServiceRef!.includeSpotsWithoutPictures;
         _selectedSpotSource = _searchStateServiceRef!.selectedSpotSource; // null = all sources (default)
+        _selectedListId = initialListId;
       });
+      
+      // If we have a list ID (from URL or storage), load it
+      if (initialListId != null) {
+        _loadSpotList(initialListId);
+      }
 
       // Listen to SpotService changes to refresh visible spots when data updates
       _spotServiceRef = Provider.of<SpotService>(context, listen: false);
@@ -577,7 +620,40 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                 }
               },
             ),
-            const SizedBox(height: 16),
+            // Spot List Highlight Indicator (only shown when a list is selected)
+            if (_selectedListId != null && _selectedListName != null) ...[
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Text(
+                    'Highlighting:',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                        ),
+                  ),
+                  const SizedBox(width: 8),
+                  Chip(
+                    label: Text(_selectedListName!),
+                    avatar: Icon(
+                      Icons.list,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                    labelStyle: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                    deleteIcon: Icon(
+                      Icons.close,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                    onDeleted: _clearSpotListSelection,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ],
             Text(
               'Spot Source',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -775,14 +851,21 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       final bool isSelected = _selectedSpot?.id != null
           ? _selectedSpot!.id == spot.id
           : _selectedSpot?.name == spot.name;
+      final bool isHighlighted = spot.id != null && _highlightedSpotIds.contains(spot.id);
+      
+      // Marker color priority: 1. Selected (rose/pink), 2. Highlighted (purple), 3. Default (red)
       // On web, use generated icons because hue-based markers are not supported.
       final BitmapDescriptor icon = kIsWeb
           ? (isSelected
               ? (_spotSelectedIcon ?? BitmapDescriptor.defaultMarker)
-              : (_spotDefaultIcon ?? BitmapDescriptor.defaultMarker))
+              : (isHighlighted
+                  ? (_spotHighlightedIcon ?? BitmapDescriptor.defaultMarker)
+                  : (_spotDefaultIcon ?? BitmapDescriptor.defaultMarker)))
           : (isSelected
               ? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose)
-              : BitmapDescriptor.defaultMarker);
+              : (isHighlighted
+                  ? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet)
+                  : BitmapDescriptor.defaultMarker));
       return Marker(
         markerId: MarkerId(spot.id ?? spot.name),
         position: LatLng(spot.latitude, spot.longitude),
@@ -884,14 +967,71 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       final BitmapDescriptor defaultIcon = await _createUserLocationIcon(size: 22, fillColor: Colors.red);
       // Make selected more distinct and smaller
       final BitmapDescriptor selectedIcon = await _createUserLocationIcon(size: 22, fillColor: Color(0xFFFF8A80));
+      // Purple icon for highlighted spots from selected list
+      final BitmapDescriptor highlightedIcon = await _createUserLocationIcon(size: 22, fillColor: Colors.purple);
       if (mounted) {
         setState(() {
           _spotDefaultIcon = defaultIcon;
           _spotSelectedIcon = selectedIcon;
+          _spotHighlightedIcon = highlightedIcon;
         });
       }
     } catch (_) {
       // Ignore icon errors silently
+    }
+  }
+
+  Future<void> _loadSpotList(String listId) async {
+    try {
+      final spotListService = Provider.of<SpotListService>(context, listen: false);
+      final list = await spotListService.getSpotListById(listId);
+      
+      if (mounted && list != null) {
+        setState(() {
+          _selectedListName = list.name;
+          _highlightedSpotIds = list.spotIds.toSet();
+          // Rebuild markers to reflect highlighting
+          _markers = _buildMarkers(_visibleSpots);
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading spot list: $e');
+    }
+  }
+  
+  void _clearSpotListSelection() {
+    setState(() {
+      _selectedListId = null;
+      _selectedListName = null;
+      _highlightedSpotIds.clear();
+      _markers = _buildMarkers(_visibleSpots);
+    });
+    
+    // Update SearchStateService to persist the change
+    final searchState = _searchStateServiceRef;
+    if (searchState != null) {
+      searchState.setSelectedListId(null);
+    }
+    
+    // Update URL query parameter, preserving existing params
+    try {
+      final routerState = GoRouterState.of(context);
+      final currentUri = routerState.uri;
+      final queryParams = Map<String, String>.from(currentUri.queryParameters);
+      queryParams.remove('listId');
+      
+      // Build new URL with updated query params
+      final queryString = queryParams.entries
+          .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+          .join('&');
+      final newPath = queryString.isNotEmpty 
+          ? '${currentUri.path}?$queryString'
+          : currentUri.path;
+      
+      context.go(newPath);
+    } catch (e) {
+      // Fallback: simple URL update
+      context.go('/explore');
     }
   }
 
@@ -2313,6 +2453,10 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                         final allSourceIds = searchState.selectedFolders.keys.toList();
                         for (final sourceId in allSourceIds) {
                           searchState.setSelectedFolderForSource(sourceId, null);
+                        }
+                        // Clear spot list highlighting
+                        if (_selectedListId != null) {
+                          _clearSpotListSelection();
                         }
                         // Reload spots with cleared filters
                         _loadSpotsForCurrentView();

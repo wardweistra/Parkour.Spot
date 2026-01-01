@@ -317,6 +317,17 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       appBar: AppBar(
         title: Text(_list?.name ?? 'Spot List'),
         actions: [
+          if (_list != null && _spots.isNotEmpty) ...[
+            IconButton(
+              icon: const Icon(Icons.map),
+              tooltip: 'Show on Map',
+              onPressed: () {
+                if (_list!.id != null) {
+                  context.go('/explore?listId=${_list!.id}');
+                }
+              },
+            ),
+          ],
           if (_list != null && canManage) ...[
             IconButton(
               icon: const Icon(Icons.edit),

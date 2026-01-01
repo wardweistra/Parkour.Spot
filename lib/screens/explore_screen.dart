@@ -25,8 +25,9 @@ const _countriesWithArticle = {
 class ExploreScreen extends StatefulWidget {
   final int initialTab;
   final String? initialLocationQuery;
+  final String? initialListId;
   
-  const ExploreScreen({super.key, this.initialTab = 0, this.initialLocationQuery});
+  const ExploreScreen({super.key, this.initialTab = 0, this.initialLocationQuery, this.initialListId});
 
   @override
   State<ExploreScreen> createState() => _ExploreScreenState();
@@ -239,6 +240,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
       SearchScreen(
         key: _searchKey,
         initialLocationQuery: widget.initialLocationQuery,
+        initialListId: widget.initialListId,
       ),
       // Show login prompt for unauthenticated users trying to add spots
       authService.isAuthenticated 

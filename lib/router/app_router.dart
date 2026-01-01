@@ -204,9 +204,13 @@ class AppRouter {
           // Parse location query parameter
           final locationQuery = state.uri.queryParameters['location'];
           
+          // Parse listId query parameter
+          final listId = state.uri.queryParameters['listId'];
+          
           return ExploreScreen(
             initialTab: initialTab,
             initialLocationQuery: locationQuery,
+            initialListId: listId,
           );
         },
       ),
