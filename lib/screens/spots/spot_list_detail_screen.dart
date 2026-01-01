@@ -16,6 +16,7 @@ import '../../widgets/spot_card.dart';
 import '../../services/snackbar_service.dart';
 import '../../utils/marker_icon_utils.dart';
 import '../../utils/map_bounds_utils.dart';
+import 'package:flutter/services.dart';
 
 class SpotListDetailScreen extends StatefulWidget {
   final String listId;
@@ -365,6 +366,39 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     return featureAccessService.hasFeatureAccess('spotLists');
   }
 
+  // Copy list URL to clipboard (same style as spot detail page)
+  void _copyListToClipboard() async {
+    if (_list?.id == null || _list?.name == null) return;
+    
+    try {
+      const baseUrl = 'https://parkour.spot';
+      final url = '$baseUrl/list/${_list!.id}';
+      final text = '${_list!.name.trim()} 👉 $url';
+
+      await Clipboard.setData(ClipboardData(text: text));
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('List copied to clipboard!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to copy list: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
   // Calculate bounds to fit all spots with 5% margin
   LatLngBounds? _calculateBounds() {
     return calculateBoundsForSpots(_spots);
@@ -610,6 +644,13 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
         title: Text(_list?.name ?? 'Spot List'),
         centerTitle: true,
         actions: [
+          // Share button for all users
+          if (_list != null && _list!.id != null)
+            IconButton(
+              icon: const Icon(Icons.share),
+              tooltip: 'Share List',
+              onPressed: _copyListToClipboard,
+            ),
           if (_list != null && canManage) ...[
             IconButton(
               icon: const Icon(Icons.edit),
