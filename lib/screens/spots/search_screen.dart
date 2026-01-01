@@ -79,7 +79,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   BitmapDescriptor? _userLocationIcon;
   BitmapDescriptor? _spotDefaultIcon; // Web fallback
   BitmapDescriptor? _spotSelectedIcon; // Web fallback
-  BitmapDescriptor? _spotHighlightedIcon; // Web fallback for purple highlighted spots
+  BitmapDescriptor? _spotHighlightedIcon; // Web fallback for black highlighted spots
+  BitmapDescriptor? _spotSelectedHighlightedIcon; // Web fallback for selected+highlighted spots (lighter grey)
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   String _searchQuery = '';
@@ -853,19 +854,23 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
           : _selectedSpot?.name == spot.name;
       final bool isHighlighted = spot.id != null && _highlightedSpotIds.contains(spot.id);
       
-      // Marker color priority: 1. Selected (rose/pink), 2. Highlighted (purple), 3. Default (red)
+      // Marker color priority: 1. Selected+Highlighted (lighter grey), 2. Selected (rose/pink), 3. Highlighted (black), 4. Default (red)
       // On web, use generated icons because hue-based markers are not supported.
       final BitmapDescriptor icon = kIsWeb
-          ? (isSelected
-              ? (_spotSelectedIcon ?? BitmapDescriptor.defaultMarker)
-              : (isHighlighted
-                  ? (_spotHighlightedIcon ?? BitmapDescriptor.defaultMarker)
-                  : (_spotDefaultIcon ?? BitmapDescriptor.defaultMarker)))
-          : (isSelected
-              ? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose)
-              : (isHighlighted
-                  ? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet)
-                  : BitmapDescriptor.defaultMarker));
+          ? (isSelected && isHighlighted
+              ? (_spotSelectedHighlightedIcon ?? BitmapDescriptor.defaultMarker)
+              : (isSelected
+                  ? (_spotSelectedIcon ?? BitmapDescriptor.defaultMarker)
+                  : (isHighlighted
+                      ? (_spotHighlightedIcon ?? BitmapDescriptor.defaultMarker)
+                      : (_spotDefaultIcon ?? BitmapDescriptor.defaultMarker))))
+          : (isSelected && isHighlighted
+              ? (_spotSelectedHighlightedIcon ?? BitmapDescriptor.defaultMarker)
+              : (isSelected
+                  ? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose)
+                  : (isHighlighted
+                      ? (_spotHighlightedIcon ?? BitmapDescriptor.defaultMarker)
+                      : BitmapDescriptor.defaultMarker)));
       return Marker(
         markerId: MarkerId(spot.id ?? spot.name),
         position: LatLng(spot.latitude, spot.longitude),
@@ -967,13 +972,16 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       final BitmapDescriptor defaultIcon = await _createUserLocationIcon(size: 22, fillColor: Colors.red);
       // Make selected more distinct and smaller
       final BitmapDescriptor selectedIcon = await _createUserLocationIcon(size: 22, fillColor: Color(0xFFFF8A80));
-      // Purple icon for highlighted spots from selected list
-      final BitmapDescriptor highlightedIcon = await _createUserLocationIcon(size: 22, fillColor: Colors.purple);
+      // Black icon for highlighted spots from selected list
+      final BitmapDescriptor highlightedIcon = await _createUserLocationIcon(size: 22, fillColor: Colors.black);
+      // Lighter grey icon for selected+highlighted spots
+      final BitmapDescriptor selectedHighlightedIcon = await _createUserLocationIcon(size: 22, fillColor: Colors.grey.shade400);
       if (mounted) {
         setState(() {
           _spotDefaultIcon = defaultIcon;
           _spotSelectedIcon = selectedIcon;
           _spotHighlightedIcon = highlightedIcon;
+          _spotSelectedHighlightedIcon = selectedHighlightedIcon;
         });
       }
     } catch (_) {
