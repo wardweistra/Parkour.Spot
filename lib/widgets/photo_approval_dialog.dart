@@ -25,14 +25,16 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
   bool _isApproving = false;
   String? _error;
   Spot? _originalSpot;
+  Spot? _currentSpot;
   bool _isLoadingOriginalSpot = false;
+  bool _isSpotFromSource = false;
   final TextEditingController _notesController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _targetSpotId = widget.report.spotId;
-    _loadOriginalSpotIfDuplicate();
+    _loadSpotAndCheckSource();
   }
 
   @override
@@ -41,16 +43,30 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
     super.dispose();
   }
 
-  Future<void> _loadOriginalSpotIfDuplicate() async {
+  Future<void> _loadSpotAndCheckSource() async {
     try {
       final spotService = Provider.of<SpotService>(context, listen: false);
       final spot = await spotService.getSpotById(widget.report.spotId);
       
-      if (spot != null && spot.duplicateOf != null && mounted) {
+      if (spot == null) {
+        if (mounted) {
+          setState(() {
+            _isLoadingOriginalSpot = false;
+          });
+        }
+        return;
+      }
+
+      if (mounted) {
         setState(() {
+          _currentSpot = spot;
+          _isSpotFromSource = spot.spotSource != null && spot.spotSource!.isNotEmpty;
           _isLoadingOriginalSpot = true;
         });
+      }
 
+      // If spot is a duplicate, load the original spot
+      if (spot.duplicateOf != null) {
         final originalSpot = await spotService.getSpotById(spot.duplicateOf!);
         
         if (mounted) {
@@ -59,9 +75,15 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
             _isLoadingOriginalSpot = false;
           });
         }
+      } else {
+        if (mounted) {
+          setState(() {
+            _isLoadingOriginalSpot = false;
+          });
+        }
       }
     } catch (e) {
-      debugPrint('Error loading original spot: $e');
+      debugPrint('Error loading spot: $e');
       if (mounted) {
         setState(() {
           _isLoadingOriginalSpot = false;
@@ -70,10 +92,36 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
     }
   }
 
+  bool get _isTargetSpotFromSource {
+    // If target spot is the original spot, check if it's from a source
+    if (_targetSpotId != null && _targetSpotId != widget.report.spotId && _originalSpot != null) {
+      return _originalSpot!.spotSource != null && _originalSpot!.spotSource!.isNotEmpty;
+    }
+    // Otherwise check the current spot
+    return _isSpotFromSource;
+  }
+
+  Spot? get _targetSpot {
+    if (_targetSpotId != null && _targetSpotId != widget.report.spotId && _originalSpot != null) {
+      return _originalSpot;
+    }
+    return _currentSpot;
+  }
+
   Future<void> _approvePhotos() async {
     if (widget.report.suggestedPhotoUrls == null || widget.report.suggestedPhotoUrls!.isEmpty) {
       setState(() {
         _error = 'No photos to approve';
+      });
+      return;
+    }
+
+    // Prevent approval if target spot is from a spot source
+    if (_isTargetSpotFromSource) {
+      final targetSpot = _targetSpot;
+      final sourceName = targetSpot?.spotSourceName ?? 'external source';
+      setState(() {
+        _error = 'Photos cannot be approved for spots from external sources ($sourceName). Please create a native spot first.';
       });
       return;
     }
@@ -243,6 +291,56 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
                   ),
                   const SizedBox(height: 16),
                 ],
+                // Warning if target spot is from a spot source
+                if (_isTargetSpotFromSource) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: colorScheme.error,
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          color: colorScheme.onErrorContainer,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Cannot Approve Photos',
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: colorScheme.onErrorContainer,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'The selected spot is from an external source (${_targetSpot?.spotSourceName ?? "external source"}). '
+                                'Photos can only be approved for native spots.\n\n'
+                                'To approve these photos, please first create a native spot from this spot. '
+                                'You can do this by viewing the spot details and selecting "Create Native Spot" from the menu.',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onErrorContainer,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 // Target spot selection (if spot is duplicate)
                 if (_isLoadingOriginalSpot)
                   const Center(child: CircularProgressIndicator())
@@ -256,10 +354,12 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
                   const SizedBox(height: 8),
                   RadioListTile<String>(
                     title: Text('Current spot: ${widget.report.spotName}'),
-                    subtitle: const Text('The reported spot'),
+                    subtitle: _isSpotFromSource
+                        ? Text('The reported spot (from ${_currentSpot?.spotSourceName ?? "external source"})')
+                        : const Text('The reported spot'),
                     value: widget.report.spotId,
                     groupValue: _targetSpotId,
-                    onChanged: _isApproving ? null : (value) {
+                    onChanged: (_isApproving || _isSpotFromSource) ? null : (value) {
                       setState(() {
                         _targetSpotId = value;
                       });
@@ -268,10 +368,12 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
                   ),
                   RadioListTile<String>(
                     title: Text('Original spot: ${_originalSpot!.name}'),
-                    subtitle: const Text('The original spot (recommended)'),
+                    subtitle: Text(_originalSpot!.spotSource != null && _originalSpot!.spotSource!.isNotEmpty
+                        ? 'The original spot (from ${_originalSpot!.spotSourceName ?? "external source"})'
+                        : 'The original spot (recommended)'),
                     value: _originalSpot!.id!,
                     groupValue: _targetSpotId,
-                    onChanged: _isApproving ? null : (value) {
+                    onChanged: (_isApproving || (_originalSpot!.spotSource != null && _originalSpot!.spotSource!.isNotEmpty)) ? null : (value) {
                       setState(() {
                         _targetSpotId = value;
                       });
@@ -320,7 +422,7 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: _isApproving ? null : _approvePhotos,
+            onPressed: (_isApproving || _isTargetSpotFromSource) ? null : _approvePhotos,
             child: _isApproving
                 ? const SizedBox(
                     width: 16,
