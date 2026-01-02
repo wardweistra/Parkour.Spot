@@ -639,6 +639,13 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
             // Use context.push to maintain navigation stack so back button works correctly
             // EditSpotRoute will fetch the spot by ID from the path parameters
             context.push(editPath);
+            // Update browser URL after a delay to ensure GoRouter has finished
+            if (kIsWeb) {
+              Future.delayed(const Duration(milliseconds: 200), () {
+                // Push new state to update URL while maintaining back button
+                web.window.history.pushState(null, '', editPath);
+              });
+            }
           });
         } else if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
