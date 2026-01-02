@@ -101,6 +101,20 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
     return _isSpotFromSource;
   }
 
+  bool get _isTargetSpotDuplicate {
+    // If target spot is the current spot, check if it's a duplicate
+    if (_targetSpotId == widget.report.spotId) {
+      return _currentSpot?.duplicateOf != null && _currentSpot!.duplicateOf!.isNotEmpty;
+    }
+    // If target spot is the original spot, it's not a duplicate
+    return false;
+  }
+
+  bool get _canApprovePhotos {
+    // Cannot approve if target spot is from a source or is a duplicate
+    return !_isTargetSpotFromSource && !_isTargetSpotDuplicate;
+  }
+
   Spot? get _targetSpot {
     if (_targetSpotId != null && _targetSpotId != widget.report.spotId && _originalSpot != null) {
       return _originalSpot;
@@ -122,6 +136,14 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
       final sourceName = targetSpot?.spotSourceName ?? 'external source';
       setState(() {
         _error = 'Photos cannot be approved for spots from external sources ($sourceName). Please create a native spot first.';
+      });
+      return;
+    }
+
+    // Prevent approval if target spot is a duplicate
+    if (_isTargetSpotDuplicate) {
+      setState(() {
+        _error = 'Photos cannot be approved for duplicate spots. Please approve photos to the original spot instead.';
       });
       return;
     }
@@ -341,6 +363,55 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
                   ),
                   const SizedBox(height: 16),
                 ],
+                // Warning if target spot is a duplicate
+                if (_isTargetSpotDuplicate) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: colorScheme.error,
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          color: colorScheme.onErrorContainer,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Cannot Approve Photos',
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: colorScheme.onErrorContainer,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'The selected spot is a duplicate of another spot. '
+                                'Photos can only be approved for the original spot, not duplicates.\n\n'
+                                'Please select the original spot below to approve these photos.',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onErrorContainer,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 // Target spot selection (if spot is duplicate)
                 if (_isLoadingOriginalSpot)
                   const Center(child: CircularProgressIndicator())
@@ -354,12 +425,14 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
                   const SizedBox(height: 8),
                   RadioListTile<String>(
                     title: Text('Current spot: ${widget.report.spotName}'),
-                    subtitle: _isSpotFromSource
-                        ? Text('The reported spot (from ${_currentSpot?.spotSourceName ?? "external source"})')
-                        : const Text('The reported spot'),
+                    subtitle: (_currentSpot?.duplicateOf != null && _currentSpot!.duplicateOf!.isNotEmpty)
+                        ? Text('The reported spot (duplicate of ${_originalSpot?.name ?? "another spot"})')
+                        : _isSpotFromSource
+                            ? Text('The reported spot (from ${_currentSpot?.spotSourceName ?? "external source"})')
+                            : const Text('The reported spot'),
                     value: widget.report.spotId,
                     groupValue: _targetSpotId,
-                    onChanged: (_isApproving || _isSpotFromSource) ? null : (value) {
+                    onChanged: (_isApproving || _isSpotFromSource || (_currentSpot?.duplicateOf != null && _currentSpot!.duplicateOf!.isNotEmpty)) ? null : (value) {
                       setState(() {
                         _targetSpotId = value;
                       });
@@ -422,7 +495,7 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: (_isApproving || _isTargetSpotFromSource) ? null : _approvePhotos,
+            onPressed: (_isApproving || !_canApprovePhotos) ? null : _approvePhotos,
             child: _isApproving
                 ? const SizedBox(
                     width: 16,
