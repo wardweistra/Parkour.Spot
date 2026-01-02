@@ -1533,6 +1533,76 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       ),
                     ),
 
+                    // Hidden spot banner
+                    if (_spot.hidden || widget.spot.spotSourceRemoved)
+                      const SizedBox(height: 16),
+                    if (_spot.hidden)
+                      Container(
+                        margin: EdgeInsets.only(
+                          bottom: widget.spot.spotSourceRemoved ? 0 : 16,
+                        ),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.error.withValues(alpha: 0.6),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.visibility_off,
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'This spot is hidden from public view. It likely no longer exists or doesn\'t meet our policies. It will not appear in search results or on the map.',
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: Theme.of(context).colorScheme.onErrorContainer,
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    // Spot source removed banner
+                    if (widget.spot.spotSourceRemoved)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.error.withValues(alpha: 0.6),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.warning_amber_rounded,
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'This spot is no longer listed in ${widget.spot.spotSourceName ?? 'its original source'}. Details might be outdated, so double-check before visiting.',
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: Theme.of(context).colorScheme.onErrorContainer,
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
                     const SizedBox(height: 24),
 
                     // Attributes Grid Section
@@ -2589,38 +2659,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             );
                           }),
                         ],
-                      ],
-                      if (widget.spot.spotSourceRemoved) ...[
-                        Container(
-                          margin: const EdgeInsets.only(bottom: 16),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Theme.of(context).colorScheme.error.withValues(alpha: 0.6),
-                              width: 1,
-                            ),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Icon(
-                                Icons.warning_amber_rounded,
-                                color: Theme.of(context).colorScheme.error,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  'This spot is no longer listed in ${widget.spot.spotSourceName ?? 'its original source'}. Details might be outdated, so double-check before visiting.',
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                        color: Theme.of(context).colorScheme.onErrorContainer,
-                                      ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                       ],
                     ],
 
