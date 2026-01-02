@@ -34,6 +34,8 @@ import 'package:web/web.dart' as web;
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 import 'dart:io';
+import 'package:photo_view/photo_view.dart';
+import 'package:photo_view/photo_view_gallery.dart';
 
 class SpotDetailScreen extends StatefulWidget {
   final Spot spot;
@@ -2759,56 +2761,81 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
             ),
 
           // Hybrid image carousel with both swiping and arrow buttons
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            child: CachedNetworkImage(
-              key: ValueKey(_currentImageIndex),
-              imageUrl: getResizedImageUrl(widget.spot.imageUrls![_currentImageIndex]),
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: 400,
-              placeholder: (context, url) => Container(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                child: Center(child: CircularProgressIndicator()),
-              ),
-              errorWidget: (context, url, error) {
-                debugPrint('Image error: $error');
-                return Container(
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _openFullScreenViewer(_currentImageIndex),
+            onHorizontalDragUpdate: (details) {
+              // Track horizontal drag to distinguish from vertical scroll
+            },
+            onHorizontalDragEnd: (details) {
+              // Only handle swipe if it's a significant swipe (not just a tap)
+              if (details.primaryVelocity != null) {
+                // Swipe left (negative velocity) = next image
+                if (details.primaryVelocity! < -500) {
+                  _nextImage();
+                }
+                // Swipe right (positive velocity) = previous image
+                else if (details.primaryVelocity! > 500) {
+                  _previousImage();
+                }
+              }
+            },
+            child: Material(
+              color: Colors.transparent,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: CachedNetworkImage(
+                  key: ValueKey(_currentImageIndex),
+                  imageUrl: getResizedImageUrl(widget.spot.imageUrls![_currentImageIndex]),
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: 400,
+                placeholder: (context, url) => Container(
                   color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.broken_image,
-                        size: 64,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Image failed to load',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                errorWidget: (context, url, error) {
+                  debugPrint('Image error: $error');
+                  return Container(
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.broken_image,
+                          size: 64,
                           color: Theme.of(context).colorScheme.onSurface,
                         ),
-                      ),
-                    ],
-                  ),
-                );
-              },
+                        const SizedBox(height: 8),
+                        Text(
+                          'Image failed to load',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                ),
+              ),
             ),
           ),
 
-          // Gradient overlay for better text readability
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Colors.black.withValues(alpha: 0.3),
-                  Colors.black.withValues(alpha: 0.7),
-                ],
-                stops: const [0.0, 0.7, 1.0],
+          // Gradient overlay for better text readability (ignores pointer events)
+          IgnorePointer(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.3),
+                    Colors.black.withValues(alpha: 0.7),
+                  ],
+                  stops: const [0.0, 0.7, 1.0],
+                ),
               ),
             ),
           ),
@@ -2968,6 +2995,28 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     if (index >= 0 && index < widget.spot.imageUrls!.length) {
       setState(() {
         _currentImageIndex = index;
+      });
+    }
+  }
+
+  void _openFullScreenViewer(int initialIndex) async {
+    if (widget.spot.imageUrls == null || widget.spot.imageUrls!.isEmpty) {
+      return;
+    }
+
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => _FullScreenPhotoViewer(
+          imageUrls: widget.spot.imageUrls!,
+          initialIndex: initialIndex,
+        ),
+      ),
+    );
+
+    // Update the current image index if the viewer returned a new index
+    if (result != null && result is int && mounted) {
+      setState(() {
+        _currentImageIndex = result;
       });
     }
   }
@@ -6048,6 +6097,91 @@ class _AddToListDialogState extends State<_AddToListDialog> {
                 : const Text('Create & Add'),
           ),
       ],
+    );
+  }
+}
+
+class _FullScreenPhotoViewer extends StatefulWidget {
+  final List<String> imageUrls;
+  final int initialIndex;
+
+  const _FullScreenPhotoViewer({
+    required this.imageUrls,
+    required this.initialIndex,
+  });
+
+  @override
+  State<_FullScreenPhotoViewer> createState() => _FullScreenPhotoViewerState();
+}
+
+class _FullScreenPhotoViewerState extends State<_FullScreenPhotoViewer> {
+  late PageController _pageController;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+    _pageController = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _onPageChanged(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.close, color: Colors.white),
+          onPressed: () => Navigator.of(context).pop(_currentIndex),
+        ),
+        title: Text(
+          '${_currentIndex + 1} / ${widget.imageUrls.length}',
+          style: const TextStyle(color: Colors.white),
+        ),
+      ),
+      body: PhotoViewGallery.builder(
+        scrollPhysics: const BouncingScrollPhysics(),
+        builder: (BuildContext context, int index) {
+          return PhotoViewGalleryPageOptions(
+            imageProvider: CachedNetworkImageProvider(
+              getResizedImageUrl(widget.imageUrls[index]),
+            ),
+            initialScale: PhotoViewComputedScale.contained,
+            minScale: PhotoViewComputedScale.contained,
+            maxScale: PhotoViewComputedScale.covered * 2,
+            heroAttributes: PhotoViewHeroAttributes(
+              tag: widget.imageUrls[index],
+            ),
+          );
+        },
+        itemCount: widget.imageUrls.length,
+        loadingBuilder: (context, event) => Center(
+          child: CircularProgressIndicator(
+            value: event == null
+                ? 0
+                : event.cumulativeBytesLoaded / event.expectedTotalBytes!,
+          ),
+        ),
+        pageController: _pageController,
+        onPageChanged: _onPageChanged,
+        backgroundDecoration: const BoxDecoration(
+          color: Colors.black,
+        ),
+      ),
     );
   }
 }
