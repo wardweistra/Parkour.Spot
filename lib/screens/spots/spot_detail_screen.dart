@@ -39,8 +39,13 @@ import 'package:photo_view/photo_view_gallery.dart';
 
 class SpotDetailScreen extends StatefulWidget {
   final Spot spot;
+  final int? initialImageIndex;
 
-  const SpotDetailScreen({super.key, required this.spot});
+  const SpotDetailScreen({
+    super.key,
+    required this.spot,
+    this.initialImageIndex,
+  });
 
   @override
   State<SpotDetailScreen> createState() => _SpotDetailScreenState();
@@ -99,6 +104,13 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     _scrollController = ScrollController();
     _videoPageController = PageController();
     _currentSpot = widget.spot; // Initialize current spot
+    // Initialize image index from parameter or default to 0
+    _currentImageIndex = widget.initialImageIndex != null &&
+            widget.initialImageIndex! >= 0 &&
+            widget.spot.imageUrls != null &&
+            widget.initialImageIndex! < widget.spot.imageUrls!.length
+        ? widget.initialImageIndex!
+        : 0;
     _loadRatingStats(); // Load rating stats once on init
     // Note: User rating will be loaded when auth state is restored via FutureBuilder
 

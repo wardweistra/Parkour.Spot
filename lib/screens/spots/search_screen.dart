@@ -1283,19 +1283,20 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
             spot: spot,
             spotListId: isHighlighted ? _selectedListId : null,
             spotListName: isHighlighted ? _selectedListName : null,
-            onTap: () {
+            onTapWithImageIndex: (imageIndex) {
               // Center map on selected spot
               _mapController?.animateCamera(
                 CameraUpdate.newLatLng(
                   LatLng(spot.latitude, spot.longitude),
                 ),
               );
-              // Navigate to spot detail using proper URL format
-              final navigationUrl = UrlService.generateNavigationUrl(
+              // Navigate to spot detail using proper URL format with image index
+              final baseUrl = UrlService.generateNavigationUrl(
                 spot.id!,
                 countryCode: spot.countryCode,
                 city: spot.city,
               );
+              final navigationUrl = imageIndex > 0 ? '$baseUrl?imageIndex=$imageIndex' : baseUrl;
               context.go(navigationUrl);
             },
             onLocate: () => _locateSpot(spot),
@@ -1316,19 +1317,20 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
               spot: spot,
               spotListId: isHighlighted ? _selectedListId : null,
               spotListName: isHighlighted ? _selectedListName : null,
-              onTap: () {
+              onTapWithImageIndex: (imageIndex) {
                 // Center map on selected spot
                 _mapController?.animateCamera(
                   CameraUpdate.newLatLng(
                     LatLng(spot.latitude, spot.longitude),
                   ),
                 );
-                // Navigate to spot detail using proper URL format
-                final navigationUrl = UrlService.generateNavigationUrl(
+                // Navigate to spot detail using proper URL format with image index
+                final baseUrl = UrlService.generateNavigationUrl(
                   spot.id!,
                   countryCode: spot.countryCode,
                   city: spot.city,
                 );
+                final navigationUrl = imageIndex > 0 ? '$baseUrl?imageIndex=$imageIndex' : baseUrl;
                 context.go(navigationUrl);
               },
               onLocate: () => _locateSpot(spot),
@@ -2004,21 +2006,23 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                         maxWidth: 400,
                         spotListId: (_selectedSpot!.id != null && _highlightedSpotIds.contains(_selectedSpot!.id)) ? _selectedListId : null,
                         spotListName: (_selectedSpot!.id != null && _highlightedSpotIds.contains(_selectedSpot!.id)) ? _selectedListName : null,
-                        onTap: () {
-                          final navigationUrl = UrlService.generateNavigationUrl(
+                        onTapWithImageIndex: (imageIndex) {
+                          final baseUrl = UrlService.generateNavigationUrl(
                             _selectedSpot!.id!,
                             countryCode: _selectedSpot!.countryCode,
                             city: _selectedSpot!.city,
                           );
+                          final navigationUrl = imageIndex > 0 ? '$baseUrl?imageIndex=$imageIndex' : baseUrl;
                           context.go(navigationUrl);
                         },
                         onViewDetails: () {
-                          final navigationUrl = UrlService.generateNavigationUrl(
+                          final baseUrl = UrlService.generateNavigationUrl(
                             _selectedSpot!.id!,
                             countryCode: _selectedSpot!.countryCode,
                             city: _selectedSpot!.city,
                           );
-                          context.go(navigationUrl);
+                          // For onViewDetails, we don't have access to image index, so just use base URL
+                          context.go(baseUrl);
                         },
                         onClose: () {
                           setState(() {
@@ -2034,21 +2038,23 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                           maxWidth: double.infinity,
                           spotListId: (_selectedSpot!.id != null && _highlightedSpotIds.contains(_selectedSpot!.id)) ? _selectedListId : null,
                           spotListName: (_selectedSpot!.id != null && _highlightedSpotIds.contains(_selectedSpot!.id)) ? _selectedListName : null,
-                          onTap: () {
-                            final navigationUrl = UrlService.generateNavigationUrl(
+                          onTapWithImageIndex: (imageIndex) {
+                            final baseUrl = UrlService.generateNavigationUrl(
                               _selectedSpot!.id!,
                               countryCode: _selectedSpot!.countryCode,
                               city: _selectedSpot!.city,
                             );
+                            final navigationUrl = imageIndex > 0 ? '$baseUrl?imageIndex=$imageIndex' : baseUrl;
                             context.go(navigationUrl);
                           },
                           onViewDetails: () {
-                            final navigationUrl = UrlService.generateNavigationUrl(
+                            final baseUrl = UrlService.generateNavigationUrl(
                               _selectedSpot!.id!,
                               countryCode: _selectedSpot!.countryCode,
                               city: _selectedSpot!.city,
                             );
-                            context.go(navigationUrl);
+                            // For onViewDetails, we don't have access to image index, so just use base URL
+                            context.go(baseUrl);
                           },
                           onClose: () {
                             setState(() {

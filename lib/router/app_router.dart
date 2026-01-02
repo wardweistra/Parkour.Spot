@@ -281,7 +281,9 @@ class AppRouter {
         path: '/spot/:spotId',
         builder: (context, state) {
           final spotId = state.pathParameters['spotId']!;
-          return SpotDetailRoute(spotId: spotId);
+          final imageIndexParam = state.uri.queryParameters['imageIndex'];
+          final imageIndex = imageIndexParam != null ? int.tryParse(imageIndexParam) : null;
+          return SpotDetailRoute(spotId: spotId, initialImageIndex: imageIndex);
         },
         routes: [
           // Edit route: /spot/:spotId/edit
@@ -385,7 +387,9 @@ class AppRouter {
             return const ExploreScreen();
           }
           
-          return SpotDetailRoute(spotId: spotId);
+          final imageIndexParam = state.uri.queryParameters['imageIndex'];
+          final imageIndex = imageIndexParam != null ? int.tryParse(imageIndexParam) : null;
+          return SpotDetailRoute(spotId: spotId, initialImageIndex: imageIndex);
         },
         routes: [
           // Edit route: /:countryCode/:city/:spotId/edit
@@ -460,8 +464,13 @@ class AppRouter {
 
 class SpotDetailRoute extends StatelessWidget {
   final String spotId;
+  final int? initialImageIndex;
   
-  const SpotDetailRoute({super.key, required this.spotId});
+  const SpotDetailRoute({
+    super.key,
+    required this.spotId,
+    this.initialImageIndex,
+  });
 
 
   @override
@@ -532,7 +541,10 @@ class SpotDetailRoute extends StatelessWidget {
             }
 
             final spot = snapshot.data!;
-            return SpotDetailScreen(spot: spot);
+            return SpotDetailScreen(
+              spot: spot,
+              initialImageIndex: initialImageIndex,
+            );
           },
         );
       },

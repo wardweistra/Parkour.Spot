@@ -237,12 +237,11 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
           final spot = _spots[index];
           return SpotCard(
             spot: spot,
-            onTap: () {
-              // Navigate to spot detail
-              final navigationUrl = spot.id != null
-                  ? '/spot/${spot.id}'
-                  : null;
-              if (navigationUrl != null) {
+            onTapWithImageIndex: (imageIndex) {
+              // Navigate to spot detail with image index
+              final baseUrl = spot.id != null ? '/spot/${spot.id}' : null;
+              if (baseUrl != null) {
+                final navigationUrl = imageIndex > 0 ? '$baseUrl?imageIndex=$imageIndex' : baseUrl;
                 // Use push to maintain navigation stack
                 context.push(navigationUrl);
                 // Update browser URL after a delay to ensure GoRouter has finished
@@ -274,12 +273,11 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
             padding: const EdgeInsets.only(bottom: 12),
             child: SpotCard(
               spot: spot,
-              onTap: () {
-                // Navigate to spot detail
-                final navigationUrl = spot.id != null
-                    ? '/spot/${spot.id}'
-                    : null;
-                if (navigationUrl != null) {
+              onTapWithImageIndex: (imageIndex) {
+                // Navigate to spot detail with image index
+                final baseUrl = spot.id != null ? '/spot/${spot.id}' : null;
+                if (baseUrl != null) {
+                  final navigationUrl = imageIndex > 0 ? '$baseUrl?imageIndex=$imageIndex' : baseUrl;
                   context.push(navigationUrl);
                 }
               },

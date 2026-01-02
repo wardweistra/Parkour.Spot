@@ -17,6 +17,7 @@ enum SpotCardVariant {
 class SpotCard extends StatefulWidget {
   final Spot spot;
   final VoidCallback? onTap;
+  final ValueChanged<int>? onTapWithImageIndex; // Callback that provides current image index
   final VoidCallback? onLocate;
   final bool showRating;
   final SpotCardVariant variant;
@@ -31,6 +32,7 @@ class SpotCard extends StatefulWidget {
     super.key,
     required this.spot,
     this.onTap,
+    this.onTapWithImageIndex,
     this.onLocate,
     this.showRating = true,
     this.variant = SpotCardVariant.list,
@@ -79,7 +81,9 @@ class _SpotCardState extends State<SpotCard> {
         borderRadius: BorderRadius.circular(16),
       ),
       child: InkWell(
-        onTap: widget.onTap,
+        onTap: widget.onTapWithImageIndex != null
+            ? () => widget.onTapWithImageIndex!(_currentPage)
+            : widget.onTap,
         borderRadius: BorderRadius.circular(16),
         child: Stack(
           children: [
@@ -512,7 +516,9 @@ class _SpotCardState extends State<SpotCard> {
   Widget _buildOverlayCard(BuildContext context) {
     return PointerInterceptor(
       child: GestureDetector(
-      onTap: widget.onTap,
+      onTap: widget.onTapWithImageIndex != null
+          ? () => widget.onTapWithImageIndex!(_currentPage)
+          : widget.onTap,
       child: Container(
         constraints: BoxConstraints(
           maxWidth: widget.maxWidth ?? double.infinity,
