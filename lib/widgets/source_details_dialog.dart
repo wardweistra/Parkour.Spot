@@ -17,8 +17,7 @@ class SourceDetailsDialog extends StatelessWidget {
     // Get spot count from lastSyncStats.total
     final spotCount = source.lastSyncStats?['total'] ?? 0;
     
-    return PointerInterceptor(
-      child: AlertDialog(
+    return AlertDialog(
       title: SelectableText(source.name),
       content: SingleChildScrollView(
         child: Column(
@@ -98,18 +97,22 @@ class SourceDetailsDialog extends StatelessWidget {
             ],
             if (source.publicUrl != null && source.publicUrl!.isNotEmpty) ...[
               const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () => _launchUrl(source.publicUrl!),
-                  icon: const Icon(Icons.open_in_new),
-                  label: const Text('Go to Source'),
+              PointerInterceptor(
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _launchUrl(source.publicUrl!),
+                    icon: const Icon(Icons.open_in_new),
+                    label: const Text('Go to Source'),
+                  ),
                 ),
               ),
             ],
             if (source.instagramHandle != null && source.instagramHandle!.isNotEmpty) ...[
               const SizedBox(height: 16),
-              InstagramButton(handle: source.instagramHandle!),
+              PointerInterceptor(
+                child: InstagramButton(handle: source.instagramHandle!),
+              ),
             ],
             if (source.createdAt != null) ...[
               const SizedBox(height: 16),
@@ -133,12 +136,13 @@ class SourceDetailsDialog extends StatelessWidget {
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Close'),
+        PointerInterceptor(
+          child: TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
         ),
       ],
-    ),
     );
   }
 

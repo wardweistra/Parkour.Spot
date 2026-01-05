@@ -716,6 +716,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                   onTap: () {
                                     showDialog(
                                       context: context,
+                                      barrierDismissible: true,
                                       builder: (context) => SourceDetailsDialog(source: source),
                                     );
                                   },

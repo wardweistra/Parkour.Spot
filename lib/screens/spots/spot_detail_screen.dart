@@ -242,6 +242,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       if (!mounted) return;
       showDialog(
         context: context,
+        barrierDismissible: true,
         builder: (context) => SourceDetailsDialog(source: source),
       );
     } catch (e) {
