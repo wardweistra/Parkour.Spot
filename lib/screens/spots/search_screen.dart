@@ -18,6 +18,7 @@ import '../../services/mobile_detection_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/spot_list_service.dart';
 import '../../models/spot.dart';
+import '../../models/spot_list.dart';
 import '../../widgets/spot_card.dart';
 import '../../widgets/source_details_dialog.dart';
 import '../../config/app_config.dart';
@@ -120,6 +121,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   // Spot list highlighting
   String? _selectedListId; // Currently selected spot list ID
   String? _selectedListName; // Name of the selected spot list
+  SpotList? _selectedList; // Full spot list object for preview
+  bool _showListPreview = false; // Whether to show the list preview card
   Set<String> _highlightedSpotIds = {}; // Spot IDs from selected list
   
   void _onSpotsChanged() {
@@ -162,7 +165,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       } else {
         // Clear highlighting
         setState(() {
+          _selectedList = null;
           _selectedListName = null;
+          _showListPreview = false;
           _highlightedSpotIds.clear();
           _markers = _buildMarkers(_visibleSpots);
         });
@@ -255,6 +260,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       // If we have a list ID (from URL or storage), load it
       if (initialListId != null) {
         _loadSpotList(initialListId);
+        // If listId came from URL (not storage), we'll open the preview card
+        // after the map is ready (handled in onMapCreated)
       }
 
       // Listen to SpotService changes to refresh visible spots when data updates
@@ -896,6 +903,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
           // Select the spot and show detail card
           setState(() {
             _selectedSpot = spot;
+            _showListPreview = false; // Close list preview if open
             // Rebuild markers to reflect selection color
             _markers = _buildMarkers(_visibleSpots);
           });
@@ -982,17 +990,39 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       
       if (mounted && list != null) {
         setState(() {
+          _selectedList = list;
           _selectedListName = list.name;
           _highlightedSpotIds = list.spotIds.toSet();
           // Rebuild markers to reflect highlighting
           _markers = _buildMarkers(_visibleSpots);
         });
-        
-        // Fit map to show all spots in the list with 5% padding
-        await _fitMapToSpotList(list.spotIds);
       }
     } catch (e) {
       debugPrint('Error loading spot list: $e');
+    }
+  }
+
+  /// Open the spot list preview card for a given list ID
+  Future<void> _openSpotListPreview(String listId) async {
+    // Load the list if not already loaded
+    if (_selectedListId != listId || _selectedList == null) {
+      await _loadSpotList(listId);
+    }
+    
+    // Collapse bottom sheet if open
+    if (_isBottomSheetOpen) {
+      _toggleBottomSheet();
+    }
+    
+    setState(() {
+      _showListPreview = true;
+      // Close spot detail if open
+      _selectedSpot = null;
+    });
+    
+    // Fit map to show all spots in the list
+    if (_selectedList != null && _selectedList!.spotIds.isNotEmpty) {
+      await _fitMapToSpotList(_selectedList!.spotIds);
     }
   }
   
@@ -1027,8 +1057,10 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   
   void _clearSpotListSelection() {
     setState(() {
+      _selectedList = null;
       _selectedListId = null;
       _selectedListName = null;
+      _showListPreview = false;
       _highlightedSpotIds.clear();
       _markers = _buildMarkers(_visibleSpots);
     });
@@ -1283,6 +1315,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
             spot: spot,
             spotListId: isHighlighted ? _selectedListId : null,
             spotListName: isHighlighted ? _selectedListName : null,
+            onSpotListTap: isHighlighted && _selectedListId != null
+                ? () => _openSpotListPreview(_selectedListId!)
+                : null,
             onTapWithImageIndex: (imageIndex) {
               // Center map on selected spot
               _mapController?.animateCamera(
@@ -1317,6 +1352,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
               spot: spot,
               spotListId: isHighlighted ? _selectedListId : null,
               spotListName: isHighlighted ? _selectedListName : null,
+              onSpotListTap: isHighlighted && _selectedListId != null
+                  ? () => _openSpotListPreview(_selectedListId!)
+                  : null,
               onTapWithImageIndex: (imageIndex) {
                 // Center map on selected spot
                 _mapController?.animateCamera(
@@ -1339,6 +1377,111 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         },
       );
     }
+  }
+
+  Widget _buildSpotListPreviewCard({required double maxWidth}) {
+    if (_selectedList == null) return const SizedBox.shrink();
+
+    final spotCount = _selectedList!.spotIds.length;
+    final spotCountText = spotCount == 1 ? '1 spot' : '$spotCount spots';
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth),
+      child: PointerInterceptor(
+        child: InkWell(
+          onTap: _selectedListId != null
+              ? () {
+                  // Navigate to full spot list detail page
+                  // Get current location for referrer
+                  final currentLocation = GoRouterState.of(context).uri.path;
+                  final referrer = currentLocation.isNotEmpty ? currentLocation : '/explore';
+                  context.go('/list/${_selectedListId}?from=${Uri.encodeComponent(referrer)}');
+                }
+              : null,
+          borderRadius: BorderRadius.circular(12),
+          child: Card(
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header with close button
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.list,
+                              color: Theme.of(context).colorScheme.primary,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _selectedList!.name,
+                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () {
+                          setState(() {
+                            _showListPreview = false;
+                          });
+                        },
+                        tooltip: 'Close',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Description if available
+                  if (_selectedList!.description != null && _selectedList!.description!.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        _selectedList!.description!,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  // Spot count
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.location_on,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        spotCountText,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -1376,12 +1519,12 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                 mapType: _isSatelliteView ? MapType.satellite : MapType.normal,
                 markers: _markers,
                 myLocationEnabled: true,
-                myLocationButtonEnabled: !_isBottomSheetOpen && _selectedSpot == null && !_showFiltersDialog, // Disable location button when expanded, spot detail is open, or filters dialog is open
+                myLocationButtonEnabled: !_isBottomSheetOpen && _selectedSpot == null && !_showListPreview && !_showFiltersDialog, // Disable location button when expanded, spot detail is open, list preview is open, or filters dialog is open
                 zoomControlsEnabled: false,
-                zoomGesturesEnabled: !_isBottomSheetOpen && !_showFiltersDialog && (_selectedSpot == null || !MobileDetectionService.isMobileDevice), // Allow zooming when spot detail card is open on non-mobile
-                scrollGesturesEnabled: !_isBottomSheetOpen && !_showFiltersDialog && (_selectedSpot == null || !MobileDetectionService.isMobileDevice), // Allow panning when spot detail card is open on non-mobile
-                rotateGesturesEnabled: !_isBottomSheetOpen && !_showFiltersDialog && (_selectedSpot == null || !MobileDetectionService.isMobileDevice), // Allow rotation when spot detail card is open on non-mobile
-                tiltGesturesEnabled: !_isBottomSheetOpen && !_showFiltersDialog && (_selectedSpot == null || !MobileDetectionService.isMobileDevice), // Allow tilting when spot detail card is open on non-mobile
+                zoomGesturesEnabled: !_isBottomSheetOpen && !_showFiltersDialog && (_selectedSpot == null && !_showListPreview || !MobileDetectionService.isMobileDevice), // Allow zooming when spot detail card or list preview is open on non-mobile
+                scrollGesturesEnabled: !_isBottomSheetOpen && !_showFiltersDialog && (_selectedSpot == null && !_showListPreview || !MobileDetectionService.isMobileDevice), // Allow panning when spot detail card or list preview is open on non-mobile
+                rotateGesturesEnabled: !_isBottomSheetOpen && !_showFiltersDialog && (_selectedSpot == null && !_showListPreview || !MobileDetectionService.isMobileDevice), // Allow rotation when spot detail card or list preview is open on non-mobile
+                tiltGesturesEnabled: !_isBottomSheetOpen && !_showFiltersDialog && (_selectedSpot == null && !_showListPreview || !MobileDetectionService.isMobileDevice), // Allow tilting when spot detail card or list preview is open on non-mobile
                 liteModeEnabled: kIsWeb,
                 compassEnabled: false,
                 onMapCreated: (GoogleMapController controller) {
@@ -1394,6 +1537,16 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                     Future.delayed(const Duration(milliseconds: 500), () {
                       if (mounted && _mapController != null) {
                         _searchAndNavigateToLocation();
+                      }
+                    });
+                  }
+                  
+                  // Open spot list preview if listId came from URL
+                  if (widget.initialListId != null && _selectedListId == widget.initialListId) {
+                    // Wait a bit for the map to be fully ready
+                    Future.delayed(const Duration(milliseconds: 500), () {
+                      if (mounted && _mapController != null && _selectedListId != null) {
+                        _openSpotListPreview(_selectedListId!);
                       }
                     });
                   }
@@ -1424,12 +1577,6 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                       });
                     }
                     
-                    // If we have a list ID, fit the map to show all spots in the list
-                    if (_selectedListId != null && _highlightedSpotIds.isNotEmpty) {
-                      Future.delayed(const Duration(milliseconds: 300), () {
-                        _fitMapToSpotList(_highlightedSpotIds.toList());
-                      });
-                    }
                   });
                   
                   // Restore persisted camera after map is ready (in case state loaded late)
@@ -1456,10 +1603,11 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                   _onMapCameraMove(position);
                 },
                 onTap: (LatLng position) {
-                  // Dismiss spot detail card when map is tapped (but not when markers are tapped)
-                  if (_selectedSpot != null && !_isBottomSheetOpen) {
+                  // Dismiss spot detail card or list preview when map is tapped (but not when markers are tapped)
+                  if ((_selectedSpot != null || _showListPreview) && !_isBottomSheetOpen) {
                     setState(() {
                       _selectedSpot = null;
+                      _showListPreview = false;
                       // Rebuild markers to clear selection color
                       _markers = _buildMarkers(_visibleSpots);
                     });
@@ -1500,7 +1648,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
 
               // Long press detection overlay for mobile web (Google Maps doesn't support onLongPress on mobile web)
               // Uses Listener to detect pointer events without blocking map gestures
-              if (kIsWeb && MobileDetectionService.isMobileDevice && !_isBottomSheetOpen && !_showFiltersDialog && _selectedSpot == null && _longPressedLocation == null)
+              if (kIsWeb && MobileDetectionService.isMobileDevice && !_isBottomSheetOpen && !_showFiltersDialog && _selectedSpot == null && !_showListPreview && _longPressedLocation == null)
                 Positioned.fill(
                   child: Listener(
                     behavior: HitTestBehavior.translucent,
@@ -2006,6 +2154,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                         maxWidth: 400,
                         spotListId: (_selectedSpot!.id != null && _highlightedSpotIds.contains(_selectedSpot!.id)) ? _selectedListId : null,
                         spotListName: (_selectedSpot!.id != null && _highlightedSpotIds.contains(_selectedSpot!.id)) ? _selectedListName : null,
+                        onSpotListTap: (_selectedSpot!.id != null && _highlightedSpotIds.contains(_selectedSpot!.id) && _selectedListId != null)
+                            ? () => _openSpotListPreview(_selectedListId!)
+                            : null,
                         onTapWithImageIndex: (imageIndex) {
                           final baseUrl = UrlService.generateNavigationUrl(
                             _selectedSpot!.id!,
@@ -2038,6 +2189,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                           maxWidth: double.infinity,
                           spotListId: (_selectedSpot!.id != null && _highlightedSpotIds.contains(_selectedSpot!.id)) ? _selectedListId : null,
                           spotListName: (_selectedSpot!.id != null && _highlightedSpotIds.contains(_selectedSpot!.id)) ? _selectedListName : null,
+                          onSpotListTap: (_selectedSpot!.id != null && _highlightedSpotIds.contains(_selectedSpot!.id) && _selectedListId != null)
+                              ? () => _openSpotListPreview(_selectedListId!)
+                              : null,
                           onTapWithImageIndex: (imageIndex) {
                             final baseUrl = UrlService.generateNavigationUrl(
                               _selectedSpot!.id!,
@@ -2066,8 +2220,21 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                       ),
                 ),
 
+              // Spot List Preview Card (when chip is clicked)
+              if (_showListPreview && _selectedList != null && !_isBottomSheetOpen && _selectedSpot == null)
+                Positioned(
+                  left: 16,
+                  right: MediaQuery.of(context).size.width >= 600 ? null : 16,
+                  bottom: 16,
+                  child: MediaQuery.of(context).size.width >= 600 
+                    ? _buildSpotListPreviewCard(maxWidth: 400)
+                    : Center(
+                        child: _buildSpotListPreviewCard(maxWidth: double.infinity),
+                      ),
+                ),
+
               // Add Spot Button (when long press is detected)
-              if (_longPressedLocation != null && _selectedSpot == null && !_showFiltersDialog)
+              if (_longPressedLocation != null && _selectedSpot == null && !_showListPreview && !_showFiltersDialog)
                 Stack(
                   children: [
                     // Transparent overlay to dismiss on tap outside
@@ -2173,8 +2340,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                   ],
                 ),
 
-              // Bottom Sheet with Spots List - hide when spot detail card or add spot button is visible
-              if (_selectedSpot == null && _longPressedLocation == null)
+              // Bottom Sheet with Spots List - hide when spot detail card, list preview, or add spot button is visible
+              if (_selectedSpot == null && !_showListPreview && _longPressedLocation == null)
                 Positioned(
                   left: 0,
                   right: 0,
@@ -2303,8 +2470,65 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                 ),
                 ),
 
+              // Spot List Chip - Shows when spots are highlighted from a list
+              if (_selectedListName != null && _highlightedSpotIds.isNotEmpty)
+                Builder(
+                  builder: (context) {
+                    final screenWidth = MediaQuery.of(context).size.width;
+                    final rightPosition = screenWidth > 1200 ? (screenWidth - 1200) / 2 + 16 : 16.0;
+                    return Positioned(
+                      top: MediaQuery.of(context).padding.top + 16 + 64 + 8, // Below search bar (16 top padding + 16 margin + ~64 search bar height + 8 spacing)
+                      right: rightPosition,
+                      child: PointerInterceptor(
+                        child: InkWell(
+                          onTap: _selectedList != null
+                              ? () async {
+                                  // Show spot list preview card
+                                  // Collapse bottom sheet if open
+                                  if (_isBottomSheetOpen) {
+                                    _toggleBottomSheet();
+                                  }
+                                  setState(() {
+                                    _showListPreview = true;
+                                    // Close spot detail if open
+                                    _selectedSpot = null;
+                                  });
+                                  // Fit map to show all spots in the list
+                                  if (_selectedList != null && _selectedList!.spotIds.isNotEmpty) {
+                                    await _fitMapToSpotList(_selectedList!.spotIds);
+                                  }
+                                }
+                              : null,
+                          borderRadius: BorderRadius.circular(16),
+                          child: Chip(
+                            label: Text(_selectedListName!),
+                            avatar: Icon(Icons.list, size: 18),
+                            backgroundColor: Theme.of(context).colorScheme.surface,
+                            elevation: 2,
+                            onDeleted: () {
+        // Clear highlighting
+        setState(() {
+          _selectedList = null;
+          _selectedListName = null;
+          _selectedListId = null;
+          _showListPreview = false;
+          _highlightedSpotIds.clear();
+          _markers = _buildMarkers(_visibleSpots);
+        });
+                              // Clear from SearchStateService
+                              final searchState = Provider.of<SearchStateService>(context, listen: false);
+                              searchState.setSelectedListId(null);
+                            },
+                            deleteIcon: Icon(Icons.close, size: 18),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+
               // Refresh Spots Button - Floating Action Button
-              if (!_isBottomSheetOpen && _selectedSpot == null)
+              if (!_isBottomSheetOpen && _selectedSpot == null && !_showListPreview)
                 Builder(
                   builder: (context) {
                     final screenWidth = MediaQuery.of(context).size.width;
@@ -2339,7 +2563,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                 ),
 
               // Map Type Toggle Button - Floating Action Button
-              if (!_isBottomSheetOpen && _selectedSpot == null)
+              if (!_isBottomSheetOpen && _selectedSpot == null && !_showListPreview)
                 Builder(
                   builder: (context) {
                     final screenWidth = MediaQuery.of(context).size.width;
@@ -2369,7 +2593,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                 ),
 
               // Location Button - Floating Action Button (only show when bottom sheet is collapsed and no spot selected)
-              if (!_isBottomSheetOpen && _selectedSpot == null)
+              if (!_isBottomSheetOpen && _selectedSpot == null && !_showListPreview)
                 Builder(
                   builder: (context) {
                     final screenWidth = MediaQuery.of(context).size.width;

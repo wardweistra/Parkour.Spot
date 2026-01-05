@@ -27,6 +27,7 @@ class SpotCard extends StatefulWidget {
   final VoidCallback? onRemove; // For list variant - shows remove button
   final String? spotListId; // ID of the spot list this spot belongs to (for highlighting)
   final String? spotListName; // Name of the spot list this spot belongs to (for highlighting)
+  final VoidCallback? onSpotListTap; // Callback when "Part of" chip is tapped
 
   const SpotCard({
     super.key,
@@ -42,6 +43,7 @@ class SpotCard extends StatefulWidget {
     this.onRemove,
     this.spotListId,
     this.spotListName,
+    this.onSpotListTap,
   });
 
   @override
@@ -329,7 +331,8 @@ class _SpotCardState extends State<SpotCard> {
                         if (widget.spotListId != null && widget.spotListName != null) ...[
                           const SizedBox(height: 8),
                           GestureDetector(
-                            onTap: () {
+                            onTap: widget.onSpotListTap ?? () {
+                              // Fallback to navigation if no callback provided
                               context.go('/list/${widget.spotListId}');
                             },
                             child: Chip(
@@ -799,7 +802,8 @@ class _SpotCardState extends State<SpotCard> {
                       if (widget.spotListId != null && widget.spotListName != null) ...[
                         const SizedBox(height: 8),
                         GestureDetector(
-                          onTap: () {
+                          onTap: widget.onSpotListTap ?? () {
+                            // Fallback to navigation if no callback provided
                             context.go('/list/${widget.spotListId}');
                           },
                           child: Chip(
