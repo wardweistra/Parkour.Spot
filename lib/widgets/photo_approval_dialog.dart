@@ -157,8 +157,13 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
       final reportService = Provider.of<SpotReportService>(context, listen: false);
       final authService = Provider.of<AuthService>(context, listen: false);
 
-      final userId = authService.currentUser?.uid;
-      final userName = authService.userProfile?.displayName ??
+      // Use reporter's information for contributors list
+      final userId = widget.report.reporterUserId;
+      final userName = widget.report.reporterName;
+
+      // Use moderator's information for audit log
+      final approvedByUserId = authService.currentUser?.uid;
+      final approvedByUserName = authService.userProfile?.displayName ??
           authService.currentUser?.displayName ??
           authService.currentUser?.email;
 
@@ -174,6 +179,8 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
         reportId: widget.report.id,
         notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
         targetSpotId: _targetSpotId,
+        approvedByUserId: approvedByUserId,
+        approvedByUserName: approvedByUserName,
       );
 
       if (!mounted) return;

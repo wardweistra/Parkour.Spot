@@ -541,6 +541,8 @@ class SpotService extends ChangeNotifier {
     String? reportId,
     String? notes,
     String? targetSpotId, // Optional: if spot is duplicate, add to original spot instead
+    String? approvedByUserId, // Optional: userId of the approver (for audit log)
+    String? approvedByUserName, // Optional: userName of the approver (for audit log)
   }) async {
     try {
       _isLoading = true;
@@ -654,13 +656,15 @@ class SpotService extends ChangeNotifier {
 
       await _firestore.collection('spots').doc(finalSpotId).update(updatedSpot.toFirestore());
       
-      // Log audit trail
-      if (userId != null && userName != null) {
+      // Log audit trail (use approver info if provided, otherwise use contributor info)
+      final auditUserId = approvedByUserId ?? userId;
+      final auditUserName = approvedByUserName ?? userName;
+      if (auditUserId != null && auditUserName != null) {
         await _auditLogService.logPhotoAdded(
           spotId: finalSpotId,
           photoUrls: finalPhotoUrls,
-          userId: userId,
-          userName: userName,
+          userId: auditUserId,
+          userName: auditUserName,
           reportId: reportId,
           originalPhotoUrls: photoUrls, // Keep track of original URLs from suggestions
           notes: notes,
