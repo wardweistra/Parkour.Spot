@@ -194,8 +194,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     
     return !_includeSpotsWithoutPictures || // Default is true, so false means active
            _selectedSpotSource != null || // null means all sources (default)
-           hasFolderFilter || // Folder filter is active
-           _selectedListId != null; // Spot list is highlighted/filtered
+           hasFolderFilter; // Folder filter is active
   }
 
   @override
@@ -630,51 +629,6 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                 }
               },
             ),
-            // Spot List Highlight Indicator (only shown when a list is selected)
-            if (_selectedListId != null && _selectedListName != null) ...[
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Text(
-                    'Highlighting:',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                        ),
-                  ),
-                  const SizedBox(width: 8),
-                  InkWell(
-                    onTap: () {
-                      // Close the filters dialog
-                      setState(() {
-                        _showFiltersDialog = false;
-                      });
-                      // Navigate to the spot list detail page
-                      context.go('/list/$_selectedListId');
-                    },
-                    borderRadius: BorderRadius.circular(16),
-                    child: Chip(
-                      label: Text(_selectedListName!),
-                      avatar: Icon(
-                        Icons.list,
-                        size: 18,
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
-                      ),
-                      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                      labelStyle: TextStyle(
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
-                      ),
-                      deleteIcon: Icon(
-                        Icons.close,
-                        size: 18,
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
-                      ),
-                      onDeleted: _clearSpotListSelection,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-            ],
             Text(
               'Spot Source',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -2506,15 +2460,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                             backgroundColor: Theme.of(context).colorScheme.surface,
                             elevation: 2,
                             onDeleted: () {
-        // Clear highlighting
-        setState(() {
-          _selectedList = null;
-          _selectedListName = null;
-          _selectedListId = null;
-          _showListPreview = false;
-          _highlightedSpotIds.clear();
-          _markers = _buildMarkers(_visibleSpots);
-        });
+                              _clearSpotListSelection();
                               // Clear from SearchStateService
                               final searchState = Provider.of<SearchStateService>(context, listen: false);
                               searchState.setSelectedListId(null);
@@ -2726,10 +2672,6 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                         final allSourceIds = searchState.selectedFolders.keys.toList();
                         for (final sourceId in allSourceIds) {
                           searchState.setSelectedFolderForSource(sourceId, null);
-                        }
-                        // Clear spot list highlighting
-                        if (_selectedListId != null) {
-                          _clearSpotListSelection();
                         }
                         // Reload spots with cleared filters
                         _loadSpotsForCurrentView();
