@@ -6,7 +6,6 @@ import '../models/spot.dart';
 import '../services/spot_service.dart';
 import '../services/auth_service.dart';
 import '../services/spot_report_service.dart';
-import 'package:flutter/foundation.dart' show debugPrint;
 
 class PhotoApprovalDialog extends StatefulWidget {
   final SpotReport report;

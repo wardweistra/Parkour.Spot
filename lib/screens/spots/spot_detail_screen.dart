@@ -32,7 +32,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/audit_log_service.dart';
 import 'package:web/web.dart' as web;
 import 'package:image_picker/image_picker.dart';
-import 'dart:typed_data';
 import 'dart:io';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';

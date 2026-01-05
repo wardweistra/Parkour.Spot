@@ -4,7 +4,6 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'dart:io';
 import 'dart:math';
-import 'dart:typed_data';
 import '../models/spot.dart';
 import '../models/rating.dart';
 import 'audit_log_service.dart';

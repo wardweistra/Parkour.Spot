@@ -642,7 +642,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                         _showFiltersDialog = false;
                       });
                       // Navigate to the spot list detail page
-                      context.go('/list/${_selectedListId}');
+                      context.go('/list/$_selectedListId');
                     },
                     borderRadius: BorderRadius.circular(16),
                     child: Chip(
