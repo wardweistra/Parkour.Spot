@@ -722,7 +722,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
     final bool? result = await showDialog<bool>(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (dialogContext) => _ReportDuplicateDialog(spot: widget.spot),
     );
 
@@ -762,7 +762,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
     final bool? result = await showDialog<bool>(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (dialogContext) => _SuggestPhotoDialog(spot: widget.spot),
     );
 
@@ -791,7 +791,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
     final bool? result = await showDialog<bool>(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (dialogContext) => _ReportSpotDialog(spot: widget.spot),
     );
 
