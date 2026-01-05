@@ -340,6 +340,12 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     final textStyle = theme.textTheme.bodyLarge;
     bool hasPreviousContent = false;
 
+    // Check if there will be an updated date part (to determine if we should use commas)
+    final bool willHaveUpdatedDate = (_spot.updatedAt != null && 
+        _spot.createdAt != null && 
+        _spot.updatedAt != _spot.createdAt) ||
+        (_spot.updatedAt != null && _spot.createdAt == null);
+
     // Created by
     if (_spot.createdBy != null || _spot.createdByName != null) {
       final createdBy = _spot.createdByName ?? _spot.createdBy ?? '';
@@ -424,15 +430,18 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
             .map((c) => c['userName'] ?? 'Unknown')
             .toList();
         
+        // Use comma if there will be an updated date part, otherwise use "and"
+        final String connector = willHaveUpdatedDate ? ',' : ' and';
+        
         String contributorsText;
         if (contributorNames.length == 1) {
-          contributorsText = ' and improved by ${contributorNames.first}';
+          contributorsText = '$connector improved by ${contributorNames.first}';
         } else if (contributorNames.length == 2) {
-          contributorsText = ' and improved by ${contributorNames.first} and ${contributorNames.last}';
+          contributorsText = '$connector improved by ${contributorNames.first} and ${contributorNames.last}';
         } else {
           final last = contributorNames.last;
           final others = contributorNames.sublist(0, contributorNames.length - 1);
-          contributorsText = ' and improved by ${others.join(', ')}, and $last';
+          contributorsText = '$connector improved by ${others.join(', ')}, and $last';
         }
         
         textSpans.add(TextSpan(
@@ -449,16 +458,20 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         _spot.createdAt != null && 
         _spot.updatedAt != _spot.createdAt) {
       final updatedDateText = _formatRelativeDate(_spot.updatedAt!);
+      // Use ", and" if there are previous parts, otherwise just " and"
+      final String connector = (hasPreviousContent || hasContributors) ? ', and' : ' and';
       textSpans.add(TextSpan(
-        text: ' and last updated $updatedDateText.',
+        text: '$connector last updated $updatedDateText.',
         style: textStyle,
       ));
       hasUpdatedDate = true;
     } else if (_spot.updatedAt != null && _spot.createdAt == null) {
       // If no created date but there's an updated date
       final updatedDateText = _formatRelativeDate(_spot.updatedAt!);
+      // Use ", and" if there are previous parts, otherwise just " and"
+      final String connector = (hasPreviousContent || hasContributors) ? ', and' : ' and';
       textSpans.add(TextSpan(
-        text: ' and last updated $updatedDateText.',
+        text: '$connector last updated $updatedDateText.',
         style: textStyle,
       ));
       hasUpdatedDate = true;
