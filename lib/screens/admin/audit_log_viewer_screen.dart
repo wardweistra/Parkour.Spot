@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import '../../models/audit_log.dart';
@@ -12,7 +11,6 @@ import '../../utils/image_url_utils.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:web/web.dart' as web;
 
 enum AuditLogEntryType {
   spotCreation,
@@ -1528,44 +1526,23 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
           city: spot.city,
         );
         if (mounted) {
-          // Use push to maintain navigation stack
-          context.push(navigationUrl);
-          // Update browser URL after a delay to ensure GoRouter has finished
-          if (kIsWeb) {
-            Future.delayed(const Duration(milliseconds: 200), () {
-              // Push new state to update URL while maintaining back button
-              web.window.history.pushState(null, '', navigationUrl);
-            });
-          }
+          // Navigate to spot detail - URL will update automatically
+          context.go(navigationUrl);
         }
       } else {
         // Fallback to simple route if spot doesn't exist
         if (mounted) {
           final fallbackUrl = '/spot/$spotId';
-          // Use push to maintain navigation stack
-          context.push(fallbackUrl);
-          // Update browser URL after a delay to ensure GoRouter has finished
-          if (kIsWeb) {
-            Future.delayed(const Duration(milliseconds: 100), () {
-              // Replace current history entry with the spot URL
-              web.window.history.replaceState(null, '', fallbackUrl);
-            });
-          }
+          // Navigate to spot detail - URL will update automatically
+          context.go(fallbackUrl);
         }
       }
     } catch (e) {
       // Fallback to simple route on error
       if (mounted) {
         final fallbackUrl = '/spot/$spotId';
-        // Use push to maintain navigation stack
-        context.push(fallbackUrl);
-        // Update browser URL after a delay to ensure GoRouter has finished
-        if (kIsWeb) {
-          Future.delayed(const Duration(milliseconds: 100), () {
-            // Replace current history entry with the spot URL
-            web.window.history.replaceState(null, '', fallbackUrl);
-          });
-        }
+        // Navigate to spot detail - URL will update automatically
+        context.go(fallbackUrl);
       }
     }
   }

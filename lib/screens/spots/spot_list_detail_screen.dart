@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
-import 'package:web/web.dart' as web;
 import '../../models/spot_list.dart';
 import '../../models/spot.dart';
 import '../../services/spot_list_service.dart';
@@ -242,15 +241,8 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
               final baseUrl = spot.id != null ? '/spot/${spot.id}' : null;
               if (baseUrl != null) {
                 final navigationUrl = imageIndex > 0 ? '$baseUrl?imageIndex=$imageIndex' : baseUrl;
-                // Use push to maintain navigation stack
-                context.push(navigationUrl);
-                // Update browser URL after a delay to ensure GoRouter has finished
-                if (kIsWeb) {
-                  Future.delayed(const Duration(milliseconds: 200), () {
-                    // Push new state to update URL while maintaining back button
-                    web.window.history.pushState(null, '', navigationUrl);
-                  });
-                }
+                // Navigate to spot detail - URL will update automatically
+                context.go(navigationUrl);
               }
             },
             onLocate: () => _locateSpot(spot),
@@ -278,7 +270,8 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                 final baseUrl = spot.id != null ? '/spot/${spot.id}' : null;
                 if (baseUrl != null) {
                   final navigationUrl = imageIndex > 0 ? '$baseUrl?imageIndex=$imageIndex' : baseUrl;
-                  context.push(navigationUrl);
+                  // Navigate to spot detail - URL will update automatically
+                  context.go(navigationUrl);
                 }
               },
               onLocate: () => _locateSpot(spot),

@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:web/web.dart' as web;
 
 import '../../models/spot_report.dart';
 import '../../services/spot_report_service.dart';
@@ -448,15 +446,8 @@ class _ReportCardState extends State<_ReportCard> {
                     countryCode: widget.report.spotCountryCode,
                     city: widget.report.spotCity,
                   );
-                  // Use push to maintain navigation stack
-                  context.push(url);
-                  // Update browser URL after a delay to ensure GoRouter has finished
-                  if (kIsWeb) {
-                    Future.delayed(const Duration(milliseconds: 200), () {
-                      // Push new state to update URL while maintaining back button
-                      web.window.history.pushState(null, '', url);
-                    });
-                  }
+                  // Navigate to spot detail - URL will update automatically
+                  context.go(url);
                 },
                 borderRadius: BorderRadius.circular(4),
                 child: Padding(
@@ -611,15 +602,8 @@ class _ReportCardState extends State<_ReportCard> {
                   // For duplicate spots, we don't have countryCode/city info,
                   // so this will fall back to /spot/<id> format
                   final url = UrlService.generateNavigationUrl(widget.report.duplicateOfSpotId!);
-                  // Use push to maintain navigation stack
-                  context.push(url);
-                  // Update browser URL after a delay to ensure GoRouter has finished
-                  if (kIsWeb) {
-                    Future.delayed(const Duration(milliseconds: 200), () {
-                      // Push new state to update URL while maintaining back button
-                      web.window.history.pushState(null, '', url);
-                    });
-                  }
+                  // Navigate to spot detail - URL will update automatically
+                  context.go(url);
                 },
                 icon: const Icon(Icons.open_in_new, size: 18),
                 label: const Text('Open suggested original spot'),
