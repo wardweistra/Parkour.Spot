@@ -60,7 +60,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   int _currentVideoIndex = 0;
   late final ScrollController _scrollController;
   late final PageController _videoPageController;
-  bool _isSatelliteView = false;
+  late final ValueNotifier<bool> _isSatelliteViewNotifier;
   SearchStateService? _searchStateServiceRef;
 
   // Add rating cache variables
@@ -102,6 +102,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     super.initState();
     _scrollController = ScrollController();
     _videoPageController = PageController();
+    _isSatelliteViewNotifier = ValueNotifier<bool>(false);
     _currentSpot = widget.spot; // Initialize current spot
     // Initialize image index from parameter or default to 0
     _currentImageIndex = widget.initialImageIndex != null &&
@@ -132,9 +133,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _searchStateServiceRef = Provider.of<SearchStateService>(context, listen: false);
       _searchStateServiceRef!.addListener(_onSearchStateChanged);
-      setState(() {
-        _isSatelliteView = _searchStateServiceRef!.isSatellite;
-      });
+      _isSatelliteViewNotifier.value = _searchStateServiceRef!.isSatellite;
     });
   }
 
@@ -149,9 +148,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     final searchState = _searchStateServiceRef;
     if (searchState == null) return;
     
-    setState(() {
-      _isSatelliteView = searchState.isSatellite;
-    });
+    _isSatelliteViewNotifier.value = searchState.isSatellite;
   }
 
   @override
@@ -162,6 +159,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     }
     _scrollController.dispose();
     _videoPageController.dispose();
+    _isSatelliteViewNotifier.dispose();
     _searchStateServiceRef?.removeListener(_onSearchStateChanged);
     // No controllers to dispose
     super.dispose();
@@ -2433,40 +2431,45 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       clipBehavior: Clip.antiAlias,
                       child: Stack(
                         children: [
-                          GoogleMap(
-                            initialCameraPosition: CameraPosition(
-                              target: LatLng(
-                                widget.spot.latitude,
-                                widget.spot.longitude,
-                              ),
-                              zoom: 16,
-                            ),
-                            mapType: _isSatelliteView
-                                ? MapType.satellite
-                                : MapType.normal,
-                            markers: {
-                              Marker(
-                                markerId: MarkerId(widget.spot.id ?? 'spot'),
-                                position: LatLng(
-                                  widget.spot.latitude,
-                                  widget.spot.longitude,
+                          ValueListenableBuilder<bool>(
+                            valueListenable: _isSatelliteViewNotifier,
+                            builder: (context, isSatellite, child) {
+                              return GoogleMap(
+                                initialCameraPosition: CameraPosition(
+                                  target: LatLng(
+                                    widget.spot.latitude,
+                                    widget.spot.longitude,
+                                  ),
+                                  zoom: 16,
                                 ),
-                                onTap: null,
-                                consumeTapEvents: true,
-                                infoWindow: InfoWindow.noText,
-                              ),
+                                mapType: isSatellite
+                                    ? MapType.satellite
+                                    : MapType.normal,
+                                markers: {
+                                  Marker(
+                                    markerId: MarkerId(widget.spot.id ?? 'spot'),
+                                    position: LatLng(
+                                      widget.spot.latitude,
+                                      widget.spot.longitude,
+                                    ),
+                                    onTap: null,
+                                    consumeTapEvents: true,
+                                    infoWindow: InfoWindow.noText,
+                                  ),
+                                },
+                                zoomControlsEnabled: false,
+                                myLocationButtonEnabled: false,
+                                mapToolbarEnabled: false,
+                                liteModeEnabled: kIsWeb,
+                                compassEnabled: false,
+                                zoomGesturesEnabled: false,
+                                scrollGesturesEnabled: false,
+                                tiltGesturesEnabled: false,
+                                rotateGesturesEnabled: false,
+                                indoorViewEnabled: false,
+                                trafficEnabled: false,
+                              );
                             },
-                            zoomControlsEnabled: false,
-                            myLocationButtonEnabled: false,
-                            mapToolbarEnabled: false,
-                            liteModeEnabled: kIsWeb,
-                            compassEnabled: false,
-                            zoomGesturesEnabled: false,
-                            scrollGesturesEnabled: false,
-                            tiltGesturesEnabled: false,
-                            rotateGesturesEnabled: false,
-                            indoorViewEnabled: false,
-                            trafficEnabled: false,
                           ),
                           Positioned.fill(
                             child: PointerInterceptor(
@@ -2484,20 +2487,23 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             bottom: 24,
                             right: 10,
                             child: PointerInterceptor(
-                              child: FloatingActionButton(
-                                onPressed: () {
-                                  setState(() {
-                                    _isSatelliteView = !_isSatelliteView;
-                                  });
-                                  final searchState = Provider.of<SearchStateService>(context, listen: false);
-                                  searchState.setSatellite(_isSatelliteView);
+                              child: ValueListenableBuilder<bool>(
+                                valueListenable: _isSatelliteViewNotifier,
+                                builder: (context, isSatellite, child) {
+                                  return FloatingActionButton(
+                                    onPressed: () {
+                                      _isSatelliteViewNotifier.value = !isSatellite;
+                                      final searchState = Provider.of<SearchStateService>(context, listen: false);
+                                      searchState.setSatellite(_isSatelliteViewNotifier.value);
+                                    },
+                                    heroTag: 'mapTypeToggleFab',
+                                    mini: true,
+                                    tooltip: isSatellite ? 'Switch to Map' : 'Switch to Satellite',
+                                    child: Icon(
+                                      isSatellite ? Icons.map : Icons.terrain,
+                                    ),
+                                  );
                                 },
-                                heroTag: 'mapTypeToggleFab',
-                                mini: true,
-                                tooltip: _isSatelliteView ? 'Switch to Map' : 'Switch to Satellite',
-                                child: Icon(
-                                  _isSatelliteView ? Icons.map : Icons.terrain,
-                                ),
                               ),
                             ),
                           ),
