@@ -3216,6 +3216,13 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         await Future.delayed(retryDelay);
       }
     }
+    
+    // Always do a final refresh to ensure UI has the latest stats and rebuilds properly
+    // This is important even if we didn't detect a change, as it ensures
+    // the UI rebuilds with the current state (especially when going from 0 to 1 rating)
+    if (mounted) {
+      await _refreshSpotData();
+    }
   }
 
   Future<Map<String, dynamic>?> _showCreateNativeSpotConfirmationDialog() async {
