@@ -16,6 +16,7 @@ import '../../widgets/spot_card.dart';
 import '../../services/snackbar_service.dart';
 import '../../utils/marker_icon_utils.dart';
 import '../../utils/map_bounds_utils.dart';
+import '../../services/url_service.dart';
 import 'package:flutter/services.dart';
 
 class SpotListDetailScreen extends StatefulWidget {
@@ -238,8 +239,12 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
             spot: spot,
             onTapWithImageIndex: (imageIndex) {
               // Navigate to spot detail with image index
-              final baseUrl = spot.id != null ? '/spot/${spot.id}' : null;
-              if (baseUrl != null) {
+              if (spot.id != null) {
+                final baseUrl = UrlService.generateNavigationUrl(
+                  spot.id!,
+                  countryCode: spot.countryCode,
+                  city: spot.city,
+                );
                 final navigationUrl = imageIndex > 0 ? '$baseUrl?imageIndex=$imageIndex' : baseUrl;
                 // Navigate to spot detail - URL will update automatically
                 context.go(navigationUrl);
@@ -267,8 +272,12 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
               spot: spot,
               onTapWithImageIndex: (imageIndex) {
                 // Navigate to spot detail with image index
-                final baseUrl = spot.id != null ? '/spot/${spot.id}' : null;
-                if (baseUrl != null) {
+                if (spot.id != null) {
+                  final baseUrl = UrlService.generateNavigationUrl(
+                    spot.id!,
+                    countryCode: spot.countryCode,
+                    city: spot.city,
+                  );
                   final navigationUrl = imageIndex > 0 ? '$baseUrl?imageIndex=$imageIndex' : baseUrl;
                   // Navigate to spot detail - URL will update automatically
                   context.go(navigationUrl);
