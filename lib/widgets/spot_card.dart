@@ -390,11 +390,15 @@ class _SpotCardState extends State<SpotCard> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         if (widget.spot.countryCode != null)
-                          CountryFlag.fromCountryCode(
-                            widget.spot.countryCode!,
-                            height: 20,
-                            width: 30,
-                            borderRadius: 2,
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(2),
+                            child: SizedBox(
+                              height: 20,
+                              width: 30,
+                              child: CountryFlag.fromCountryCode(
+                                widget.spot.countryCode!,
+                              ),
+                            ),
                           ),
                         if (widget.spot.countryCode != null && widget.spot.city != null)
                           const SizedBox(width: 8),
@@ -843,11 +847,15 @@ class _SpotCardState extends State<SpotCard> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             if (widget.spot.countryCode != null)
-                              CountryFlag.fromCountryCode(
-                                widget.spot.countryCode!,
-                                height: 16,
-                                width: 24,
-                                borderRadius: 2,
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(2),
+                                child: SizedBox(
+                                  height: 16,
+                                  width: 24,
+                                  child: CountryFlag.fromCountryCode(
+                                    widget.spot.countryCode!,
+                                  ),
+                                ),
                               ),
                             if (widget.spot.countryCode != null && widget.spot.city != null)
                               const SizedBox(width: 6),

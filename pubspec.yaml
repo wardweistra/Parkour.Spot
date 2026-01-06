@@ -11,11 +11,11 @@ dependencies:
     sdk: flutter
   
   # Firebase
-  firebase_core: ^3.6.0
-  firebase_auth: ^5.3.3
-  cloud_firestore: ^5.4.3
-  firebase_storage: ^12.3.3
-  cloud_functions: ^5.4.3
+  firebase_core: ^4.3.0
+  firebase_auth: ^6.1.3
+  cloud_firestore: ^6.1.1
+  firebase_storage: ^13.0.5
+  cloud_functions: ^6.0.5
   
   # State Management
   provider: ^6.1.2
@@ -23,28 +23,28 @@ dependencies:
   # UI Components
   cupertino_icons: ^1.0.8
   font_awesome_flutter: ^10.7.0
-  google_fonts: ^6.2.1
+  google_fonts: ^7.0.0
   google_maps_flutter: ^2.12.0
   image_picker: ^1.1.2
   cached_network_image: ^3.4.1
   flutter_svg: ^2.0.10+1
   lottie: ^3.1.2
-  photo_view: ^0.14.0
+  photo_view: ^0.15.0
   
   # Location & Maps
-  geolocator: ^13.0.1
-  geocoding: ^3.0.0
+  geolocator: ^14.0.2
+  geocoding: ^4.0.0
   
   # Utilities
   http: ^1.2.2
   uuid: ^4.5.1
-  intl: ^0.19.0
+  intl: ^0.20.2
   sealed_countries: ^2.0.0
-  country_flags: ^2.1.0
+  country_flags: ^4.1.1
   
   # Deep Linking & Navigation
   url_launcher: ^6.3.1
-  go_router: ^14.2.7
+  go_router: ^17.0.1
   
   # Web
   web: ^1.1.0
@@ -58,7 +58,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
 
 flutter:
   uses-material-design: true

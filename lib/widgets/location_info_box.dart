@@ -43,11 +43,15 @@ class LocationInfoBox extends StatelessWidget {
               children: [
                 // Always show flag
                 countryCode != null
-                    ? CountryFlag.fromCountryCode(
-                        countryCode!,
-                        height: 20,
-                        width: 30,
-                        borderRadius: 2,
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(2),
+                        child: SizedBox(
+                          height: 20,
+                          width: 30,
+                          child: CountryFlag.fromCountryCode(
+                            countryCode!,
+                          ),
+                        ),
                       )
                     : Container(
                         height: 20,
@@ -96,11 +100,15 @@ class LocationInfoBox extends StatelessWidget {
               children: [
                 // Always show flag
                 countryCode != null
-                    ? CountryFlag.fromCountryCode(
-                        countryCode!,
-                        height: 20,
-                        width: 30,
-                        borderRadius: 2,
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(2),
+                        child: SizedBox(
+                          height: 20,
+                          width: 30,
+                          child: CountryFlag.fromCountryCode(
+                            countryCode!,
+                          ),
+                        ),
                       )
                     : Container(
                         height: 20,
