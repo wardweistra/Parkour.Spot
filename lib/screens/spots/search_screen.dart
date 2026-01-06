@@ -76,6 +76,7 @@ class SearchScreen extends StatefulWidget {
 class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixin {
   GoogleMapController? _mapController;
   bool _isGettingLocation = false;
+  bool _isLocationPermissionDenied = false;
   bool _isSatelliteView = false;
   bool _isBottomSheetOpen = false; // Start collapsed by default
   Position? _currentPosition;
@@ -203,6 +204,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     super.initState();
     // Removed automatic location fetching - now user-controlled
     _searchController.addListener(_onSearchChanged);
+    
+    // Check permission status on initialization to show correct icon
+    _checkLocationPermission();
     
     // Set initial location query if provided
     if (widget.initialLocationQuery != null && widget.initialLocationQuery!.isNotEmpty) {
@@ -493,41 +497,88 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     }
   }
 
+  Future<void> _checkLocationPermission() async {
+    final permission = await Geolocator.checkPermission();
+    // Only show as denied if it's permanently denied, not if it's just not asked yet
+    final isDenied = permission == LocationPermission.deniedForever;
+    
+    if (mounted) {
+      setState(() {
+        _isLocationPermissionDenied = isDenied;
+      });
+    }
+  }
+
   Future<void> _getCurrentLocation() async {
     setState(() {
       _isGettingLocation = true;
     });
 
-    final position = await LocationPermissionUtils.getCurrentPositionWithPermission(
+    // Check permission status
+    final permission = await LocationPermissionUtils.checkAndRequestPermission(
       context: context,
       showErrorMessages: true,
-      accuracy: LocationAccuracy.high,
     );
-
-    if (mounted && position != null) {
-      setState(() {
-        _currentPosition = position;
-      });
-      // Move camera to user location if map is ready
-      if (_mapController != null) {
-        _mapController!.animateCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(
-              target: LatLng(position.latitude, position.longitude),
-              zoom: 13.5,
-            ),
-          ),
-        );
-        _lastKnownZoom = 13.5;
-      }
-      // Refresh markers to include current location
-      _updateVisibleSpots();
-    }
-
+    
+    final isPermissionGranted = LocationPermissionUtils.isPermissionGranted(permission);
+    
     if (mounted) {
       setState(() {
-        _isGettingLocation = false;
+        _isLocationPermissionDenied = !isPermissionGranted;
       });
+    }
+
+    if (!isPermissionGranted) {
+      if (mounted) {
+        setState(() {
+          _isGettingLocation = false;
+        });
+      }
+      return;
+    }
+
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+
+      if (mounted) {
+        setState(() {
+          _currentPosition = position;
+          _isLocationPermissionDenied = false;
+        });
+        // Move camera to user location if map is ready
+        if (_mapController != null) {
+          _mapController!.animateCamera(
+            CameraUpdate.newCameraPosition(
+              CameraPosition(
+                target: LatLng(position.latitude, position.longitude),
+                zoom: 13.5,
+              ),
+            ),
+          );
+          _lastKnownZoom = 13.5;
+        }
+        // Refresh markers to include current location
+        _updateVisibleSpots();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error getting location: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGettingLocation = false;
+        });
+      }
     }
   }
 
@@ -2532,7 +2583,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                       onPressed: _getCurrentLocation,
                       heroTag: 'currentLocationFab',
                       mini: true,
-                      tooltip: 'Center on my location',
+                      tooltip: _isLocationPermissionDenied 
+                          ? 'Location permission denied' 
+                          : 'Center on my location',
                       child: _isGettingLocation
                           ? const SizedBox(
                               width: 20,
@@ -2542,7 +2595,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             )
-                          : const Icon(Icons.my_location),
+                          : Icon(_isLocationPermissionDenied 
+                              ? Icons.location_disabled 
+                              : Icons.my_location),
                     ),
                   ),
                     );

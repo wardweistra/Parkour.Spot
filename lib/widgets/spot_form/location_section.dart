@@ -12,6 +12,7 @@ class SpotLocationSection extends StatefulWidget {
   final bool isGettingLocation;
   final bool isGeocoding;
   final bool isSatelliteView;
+  final bool isLocationPermissionDenied;
   final void Function() onRefreshLocation;
   final void Function() onPickOnMap;
   final void Function(bool) onToggleSatellite;
@@ -25,6 +26,7 @@ class SpotLocationSection extends StatefulWidget {
     required this.isGettingLocation,
     required this.isGeocoding,
     required this.isSatelliteView,
+    this.isLocationPermissionDenied = false,
     required this.onRefreshLocation,
     required this.onPickOnMap,
     required this.onToggleSatellite,
@@ -206,7 +208,9 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
                           onPressed: widget.isGettingLocation ? null : widget.onRefreshLocation,
                           heroTag: 'currentLocationFab',
                           mini: true,
-                          tooltip: 'Center on my location',
+                          tooltip: widget.isLocationPermissionDenied 
+                              ? 'Location permission denied' 
+                              : 'Center on my location',
                           child: widget.isGettingLocation
                               ? const SizedBox(
                                   width: 20,
@@ -216,7 +220,9 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
                                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                   ),
                                 )
-                              : const Icon(Icons.my_location),
+                              : Icon(widget.isLocationPermissionDenied 
+                                  ? Icons.location_disabled 
+                                  : Icons.my_location),
                         ),
                       ),
                     ),
@@ -267,5 +273,4 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
     );
   }
 }
-
 

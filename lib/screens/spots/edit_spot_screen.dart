@@ -47,6 +47,7 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
   bool _isGettingLocation = false;
   bool _isGeocoding = false;
   bool _isSatelliteView = false;
+  bool _isLocationPermissionDenied = false;
   SearchStateService? _searchStateServiceRef;
 
   // Image state
@@ -80,6 +81,9 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
   void initState() {
     super.initState();
     _initializeForm();
+    
+    // Check permission status on initialization to show correct icon
+    _checkLocationPermission();
     
     // Initialize satellite view from SearchStateService
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -153,30 +157,77 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
     super.dispose();
   }
 
+  Future<void> _checkLocationPermission() async {
+    final permission = await Geolocator.checkPermission();
+    // Only show as denied if it's permanently denied, not if it's just not asked yet
+    final isDenied = permission == LocationPermission.deniedForever;
+    
+    if (mounted) {
+      setState(() {
+        _isLocationPermissionDenied = isDenied;
+      });
+    }
+  }
+
   Future<void> _getCurrentLocation() async {
     setState(() {
       _isGettingLocation = true;
     });
 
-    final position = await LocationPermissionUtils.getCurrentPositionWithPermission(
+    // Check permission status
+    final permission = await LocationPermissionUtils.checkAndRequestPermission(
       context: context,
       showErrorMessages: true,
-      accuracy: LocationAccuracy.high,
     );
-
-    if (mounted && position != null) {
-      setState(() {
-        _currentLocation = LatLng(position.latitude, position.longitude);
-      });
-      // Center the map on the new current location with a small delay to ensure controller is ready
-      centerMapOnLocationWithDelay(LatLng(position.latitude, position.longitude));
-      await _geocodeLocation(position.latitude, position.longitude);
-    }
-
+    
+    final isPermissionGranted = LocationPermissionUtils.isPermissionGranted(permission);
+    
     if (mounted) {
       setState(() {
-        _isGettingLocation = false;
+        _isLocationPermissionDenied = !isPermissionGranted;
       });
+    }
+
+    if (!isPermissionGranted) {
+      if (mounted) {
+        setState(() {
+          _isGettingLocation = false;
+        });
+      }
+      return;
+    }
+
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+
+      if (mounted) {
+        setState(() {
+          _currentLocation = LatLng(position.latitude, position.longitude);
+          _isLocationPermissionDenied = false;
+        });
+        // Center the map on the new current location with a small delay to ensure controller is ready
+        centerMapOnLocationWithDelay(LatLng(position.latitude, position.longitude));
+        await _geocodeLocation(position.latitude, position.longitude);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error getting location: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGettingLocation = false;
+        });
+      }
     }
   }
 
@@ -693,6 +744,7 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
                     isGettingLocation: _isGettingLocation,
                     isGeocoding: _isGeocoding,
                     isSatelliteView: _isSatelliteView,
+                    isLocationPermissionDenied: _isLocationPermissionDenied,
                     onRefreshLocation: _getCurrentLocation,
                     onPickOnMap: _pickOnMap,
                     onToggleSatellite: _toggleSatelliteView,

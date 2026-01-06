@@ -46,6 +46,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
   bool _isGettingLocation = false;
   bool _isGeocoding = false;
   bool _isSatelliteView = false;
+  bool _isLocationPermissionDenied = false;
   SearchStateService? _searchStateServiceRef;
   
   // Spot attributes
@@ -71,6 +72,10 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
       // Set default location so map is always visible, even if permission is denied
       setState(() {
         _pickedLocation = const LatLng(AppConfig.defaultMapCenterLat, AppConfig.defaultMapCenterLng);
+      });
+      // Geocode the default location
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _geocodeLocation(AppConfig.defaultMapCenterLat, AppConfig.defaultMapCenterLng);
       });
       // Try to get current location, but don't block if permission is denied
       _getCurrentLocation();
@@ -119,36 +124,71 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
       _isGettingLocation = true;
     });
 
-    final position = await LocationPermissionUtils.getCurrentPositionWithPermission(
+    // Check permission status
+    final permission = await LocationPermissionUtils.checkAndRequestPermission(
       context: context,
       showErrorMessages: true,
-      accuracy: LocationAccuracy.high,
     );
-
-    if (mounted && position != null) {
-      setState(() {
-        _currentPosition = position;
-        // Clear picked location so map shows current location instead
-        _pickedLocation = null;
-      });
-      // Center the map on the new current location with a small delay to ensure controller is ready
-      centerMapOnLocationWithDelay(LatLng(position.latitude, position.longitude));
-      // Geocode the coordinates to get address
-      _geocodeCurrentLocation();
-    } else if (mounted) {
-      // If permission denied, ensure we still have a default location for the map
-      // (This should already be set in initState, but ensure it's there)
-      if (_pickedLocation == null && _currentPosition == null) {
-        setState(() {
-          _pickedLocation = const LatLng(AppConfig.defaultMapCenterLat, AppConfig.defaultMapCenterLng);
-        });
-      }
-    }
-
+    
+    final isPermissionGranted = LocationPermissionUtils.isPermissionGranted(permission);
+    
     if (mounted) {
       setState(() {
-        _isGettingLocation = false;
+        _isLocationPermissionDenied = !isPermissionGranted;
       });
+    }
+
+    if (!isPermissionGranted) {
+      if (mounted) {
+        // If permission denied, ensure we still have a default location for the map
+        if (_pickedLocation == null && _currentPosition == null) {
+          setState(() {
+            _pickedLocation = const LatLng(AppConfig.defaultMapCenterLat, AppConfig.defaultMapCenterLng);
+          });
+          // Geocode the default location
+          _geocodeLocation(AppConfig.defaultMapCenterLat, AppConfig.defaultMapCenterLng);
+        }
+        setState(() {
+          _isGettingLocation = false;
+        });
+      }
+      return;
+    }
+
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+
+      if (mounted) {
+        setState(() {
+          _currentPosition = position;
+          // Clear picked location so map shows current location instead
+          _pickedLocation = null;
+          _isLocationPermissionDenied = false;
+        });
+        // Center the map on the new current location with a small delay to ensure controller is ready
+        centerMapOnLocationWithDelay(LatLng(position.latitude, position.longitude));
+        // Geocode the coordinates to get address
+        _geocodeCurrentLocation();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error getting location: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGettingLocation = false;
+        });
+      }
     }
   }
 
@@ -414,6 +454,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
                 isGettingLocation: _isGettingLocation,
                 isGeocoding: _isGeocoding,
                 isSatelliteView: _isSatelliteView,
+                isLocationPermissionDenied: _isLocationPermissionDenied,
                 onRefreshLocation: _getCurrentLocation,
                 onPickOnMap: _pickLocationOnMap,
                 onToggleSatellite: (value) {
