@@ -120,6 +120,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   Offset? _longPressStartPosition; // Starting position for long press detection
   bool _longPressHandled = false; // Flag to track if long press was successfully handled
   String? _spotIdToLocate; // Spot ID to locate from query parameter
+  Timer? _locationPollingTimer; // Timer for polling user location periodically
   // Spot list highlighting
   String? _selectedListId; // Currently selected spot list ID
   String? _selectedListName; // Name of the selected spot list
@@ -303,6 +304,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   void dispose() {
     _cameraMoveDebounce?.cancel();
     _longPressTimer?.cancel();
+    _locationPollingTimer?.cancel();
     _searchController.dispose();
     _searchFocusNode.dispose();
     _bottomSheetAnimationController.dispose();
@@ -501,11 +503,19 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     final permission = await Geolocator.checkPermission();
     // Only show as denied if it's permanently denied, not if it's just not asked yet
     final isDenied = permission == LocationPermission.deniedForever;
+    final isGranted = LocationPermissionUtils.isPermissionGranted(permission);
     
     if (mounted) {
       setState(() {
         _isLocationPermissionDenied = isDenied;
       });
+      
+      // Start or stop location polling based on permission status
+      if (isGranted) {
+        _startLocationPolling();
+      } else {
+        _stopLocationPolling();
+      }
     }
   }
 
@@ -526,6 +536,13 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       setState(() {
         _isLocationPermissionDenied = !isPermissionGranted;
       });
+      
+      // Start or stop location polling based on permission status
+      if (isPermissionGranted) {
+        _startLocationPolling();
+      } else {
+        _stopLocationPolling();
+      }
     }
 
     if (!isPermissionGranted) {
@@ -580,6 +597,49 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         });
       }
     }
+  }
+
+  /// Updates the user's location without centering the map
+  Future<void> _updateLocationWithoutCentering() async {
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+
+      if (mounted) {
+        setState(() {
+          _currentPosition = position;
+        });
+        // Refresh markers to update location marker position
+        _updateVisibleSpots();
+      }
+    } catch (e) {
+      // Silently fail for polling updates - don't show errors to user
+      debugPrint('Error updating location during polling: $e');
+    }
+  }
+
+  /// Starts polling for user location periodically
+  void _startLocationPolling() {
+    // Cancel existing timer if any
+    _stopLocationPolling();
+    
+    // Poll every 5 seconds
+    _locationPollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (mounted) {
+        _updateLocationWithoutCentering();
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
+  /// Stops polling for user location
+  void _stopLocationPolling() {
+    _locationPollingTimer?.cancel();
+    _locationPollingTimer = null;
   }
 
   // Load spots for the current map view
