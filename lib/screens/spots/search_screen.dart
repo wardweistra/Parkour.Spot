@@ -626,7 +626,12 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     // Cancel existing timer if any
     _stopLocationPolling();
     
-    // Poll every 5 seconds
+    // Poll immediately first
+    if (mounted) {
+      _updateLocationWithoutCentering();
+    }
+    
+    // Then poll every 5 seconds
     _locationPollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (mounted) {
         _updateLocationWithoutCentering();
