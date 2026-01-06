@@ -2677,7 +2677,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                           duplicate.spotSourceName ?? duplicate.spotSource ?? '',
                                           style: TextStyle(
                                             fontSize: 12,
-                                            color: Theme.of(context).colorScheme.secondary.withOpacity(0.7),
+                                            color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.7),
                                           ),
                                         )
                                       : null,
@@ -3952,7 +3952,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
                             // Now check if mounted for UI operations
                             if (!mounted) return;
-                            
                             final scaffoldMessenger = ScaffoldMessenger.of(context);
                             scaffoldMessenger.showSnackBar(
                               const SnackBar(
@@ -3977,7 +3976,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                           }
                         } catch (e) {
                           if (!mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          final scaffoldMessenger = ScaffoldMessenger.of(context);
+                          scaffoldMessenger.showSnackBar(
                             SnackBar(
                               content: Text('Error deleting spot: $e'),
                               backgroundColor: Colors.red,
@@ -4625,8 +4625,8 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
     final reportService = Provider.of<SpotReportService>(dialogContext, listen: false);
     final bool isLoggedIn = authService.isAuthenticated && authService.userProfile != null;
 
-    return WillPopScope(
-      onWillPop: () async => !isSubmitting,
+    return PopScope(
+      canPop: !isSubmitting,
       child: AlertDialog(
         title: Row(
           children: [
@@ -4945,10 +4945,10 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
                     );
 
                     if (success) {
-                      if (mounted) {
-                        Navigator.of(dialogContext).pop(true);
-                      }
+                      if (!mounted) return;
+                      Navigator.of(dialogContext).pop(true);
                     } else {
+                      if (!mounted) return;
                       setState(() {
                         isSubmitting = false;
                         submissionError = 'Could not send your report. Please try again.';
@@ -5027,8 +5027,8 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
     final String otherCategoryLabel = SpotReportService.defaultCategories.last;
     final bool otherSelected = selectedCategory == otherCategoryLabel;
 
-    return WillPopScope(
-      onWillPop: () async => !isSubmitting,
+    return PopScope(
+      canPop: !isSubmitting,
       child: AlertDialog(
         title: Row(
           children: [
@@ -5285,10 +5285,10 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
                     );
 
                     if (success) {
-                      if (mounted) {
-                        Navigator.of(dialogContext).pop(true);
-                      }
+                      if (!mounted) return;
+                      Navigator.of(dialogContext).pop(true);
                     } else {
+                      if (!mounted) return;
                       setState(() {
                         isSubmitting = false;
                         submissionError = 'Could not send your report. Please try again.';
@@ -5682,8 +5682,8 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
   Widget build(BuildContext dialogContext) {
     final theme = Theme.of(dialogContext);
 
-    return WillPopScope(
-      onWillPop: () async => !_isSubmitting && !_isUploading,
+    return PopScope(
+      canPop: !_isSubmitting && !_isUploading,
       child: AlertDialog(
         title: Row(
           children: [

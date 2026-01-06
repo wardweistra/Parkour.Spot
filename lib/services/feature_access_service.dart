@@ -2,7 +2,7 @@ import 'auth_service.dart';
 
 /// Service for checking user feature access.
 /// 
-/// Features are stored as a Map<String, bool> in the user's profile,
+/// Features are stored as a `Map<String, bool>` in the user's profile,
 /// where the key is the feature name and the value indicates access.
 class FeatureAccessService {
   final AuthService _authService;

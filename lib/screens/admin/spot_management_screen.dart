@@ -103,6 +103,7 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
     });
 
     try {
+      if (!mounted) return;
       final spotService = Provider.of<SpotService>(context, listen: false);
       int deletedCount = 0;
       int failedCount = 0;

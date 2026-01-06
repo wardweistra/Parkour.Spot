@@ -45,10 +45,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   textInputAction: TextInputAction.done,
                   onFieldSubmitted: (_) async {
                     if (!formKey.currentState!.validate()) return;
+                    final scaffoldMessenger = ScaffoldMessenger.of(context);
                     try {
                       final authService = Provider.of<AuthService>(context, listen: false);
                       final navigator = Navigator.of(context);
-                      final scaffoldMessenger = ScaffoldMessenger.of(context);
                       await authService.resetPassword(emailController.text.trim());
                       if (!mounted) return;
                       navigator.pop();
@@ -61,7 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       );
                     } catch (e) {
                       if (!mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      scaffoldMessenger.showSnackBar(
                         SnackBar(
                           content: Text('Failed to send reset email: $e'),
                           backgroundColor: Colors.red,
@@ -92,10 +92,10 @@ class _LoginScreenState extends State<LoginScreen> {
             ElevatedButton(
               onPressed: () async {
                 if (!formKey.currentState!.validate()) return;
+                final scaffoldMessenger = ScaffoldMessenger.of(context);
                 try {
                   final authService = Provider.of<AuthService>(context, listen: false);
                   final navigator = Navigator.of(context);
-                  final scaffoldMessenger = ScaffoldMessenger.of(context);
                   await authService.resetPassword(emailController.text.trim());
                   if (!mounted) return;
                   navigator.pop();
@@ -108,7 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   );
                 } catch (e) {
                   if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  scaffoldMessenger.showSnackBar(
                     SnackBar(
                       content: Text('Failed to send reset email: $e'),
                       backgroundColor: Colors.red,

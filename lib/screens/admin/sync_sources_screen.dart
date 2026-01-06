@@ -663,8 +663,10 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
       builder: (c) => SyncSourceEditDialog(source: source),
     );
 
-    if (saved == true && mounted) {
+    if (saved == true) {
+      if (!mounted) return;
       final syncService = context.read<SyncSourceService>();
+      if (!mounted) return;
       await syncService.fetchSyncSources(includeInactive: true);
     }
   }
@@ -713,6 +715,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
     );
 
     if (confirmed == true) {
+      if (!mounted) return;
       // Show loading indicator
       showDialog(
         context: context,
@@ -732,7 +735,9 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
       try {
         if (!mounted) return;
         final syncService = context.read<SyncSourceService>();
+        if (!mounted) return;
         final scaffoldMessenger = ScaffoldMessenger.of(context);
+        if (!mounted) return;
         final navigator = Navigator.of(context);
         final cleanupResult = await syncService.cleanupUnusedImages();
         
@@ -764,8 +769,11 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
         }
       } catch (e) {
         if (!mounted) return;
-        Navigator.of(context).pop(); // Close loading dialog
-        ScaffoldMessenger.of(context).showSnackBar(
+        final navigator = Navigator.of(context);
+        if (!mounted) return;
+        final scaffoldMessenger = ScaffoldMessenger.of(context);
+        navigator.pop(); // Close loading dialog
+        scaffoldMessenger.showSnackBar(
           SnackBar(
             content: Text('Cleanup failed: $e'),
             backgroundColor: Colors.red,
@@ -795,7 +803,9 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
     try {
       if (!mounted) return;
       final syncService = context.read<SyncSourceService>();
+      if (!mounted) return;
       final scaffoldMessenger = ScaffoldMessenger.of(context);
+      if (!mounted) return;
       final navigator = Navigator.of(context);
       final result = await syncService.findMissingImages();
       
@@ -837,8 +847,11 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      Navigator.of(context).pop(); // Close loading dialog
-      ScaffoldMessenger.of(context).showSnackBar(
+      final navigator = Navigator.of(context);
+      if (!mounted) return;
+      final scaffoldMessenger = ScaffoldMessenger.of(context);
+      navigator.pop(); // Close loading dialog
+      scaffoldMessenger.showSnackBar(
         SnackBar(
           content: Text('Failed to check missing images: $e'),
           backgroundColor: Colors.red,
@@ -867,7 +880,9 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
     try {
       if (!mounted) return;
       final syncService = context.read<SyncSourceService>();
+      if (!mounted) return;
       final scaffoldMessenger = ScaffoldMessenger.of(context);
+      if (!mounted) return;
       final navigator = Navigator.of(context);
       final result = await syncService.findOrphanedSpots();
       
@@ -888,6 +903,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
             );
           } else {
             // Show detailed dialog with orphaned spots
+            if (!mounted) return;
             showDialog(
               context: context,
               builder: (context) => AlertDialog(
@@ -974,9 +990,11 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      Navigator.of(context).pop(); // Close loading dialog
+      final navigator = Navigator.of(context);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      final scaffoldMessenger = ScaffoldMessenger.of(context);
+      navigator.pop(); // Close loading dialog
+      scaffoldMessenger.showSnackBar(
         SnackBar(
           content: Text('Failed to check orphaned spots: $e'),
           backgroundColor: Colors.red,
@@ -1008,13 +1026,15 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
       ),
     );
 
-    if (confirmed == true && mounted) {
+    if (confirmed == true) {
+      if (!mounted) return;
       await _deleteSpot(context, spotId);
     }
   }
 
   Future<void> _deleteSpot(BuildContext context, String spotId) async {
     try {
+      if (!mounted) return;
       // Show loading indicator
       showDialog(
         context: context,
@@ -1034,14 +1054,19 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
       // Delete the spot using cloud function
       if (!mounted) return;
       final syncService = context.read<SyncSourceService>();
+      if (!mounted) return;
       final result = await syncService.deleteSpot(spotId);
 
       if (!mounted) return;
-      Navigator.of(context).pop(); // Close loading dialog
+      final navigator = Navigator.of(context);
+      if (!mounted) return;
+      navigator.pop(); // Close loading dialog
       
       if (result != null && result['success'] == true) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
+        final scaffoldMessenger = ScaffoldMessenger.of(context);
+        if (!mounted) return;
+        scaffoldMessenger.showSnackBar(
           SnackBar(
             content: Text(result['message'] ?? 'Spot deleted successfully'),
             backgroundColor: Colors.green,
@@ -1050,11 +1075,15 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
 
         // Refresh the orphaned spots dialog
         if (!mounted) return;
-        Navigator.of(context).pop(); // Close the orphaned spots dialog
+        final navigator2 = Navigator.of(context);
+        if (!mounted) return;
+        navigator2.pop(); // Close the orphaned spots dialog
         _showOrphanedSpotsDialog(context); // Reopen to show updated list
       } else {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
+        final scaffoldMessenger = ScaffoldMessenger.of(context);
+        if (!mounted) return;
+        scaffoldMessenger.showSnackBar(
           SnackBar(
             content: Text('Failed to delete spot: ${result?['error'] ?? 'Unknown error'}'),
             backgroundColor: Colors.red,
@@ -1063,9 +1092,11 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      Navigator.of(context).pop(); // Close loading dialog
+      final navigator = Navigator.of(context);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      final scaffoldMessenger = ScaffoldMessenger.of(context);
+      navigator.pop(); // Close loading dialog
+      scaffoldMessenger.showSnackBar(
         SnackBar(
           content: Text('Failed to delete spot: $e'),
           backgroundColor: Colors.red,
@@ -1096,13 +1127,15 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
       ),
     );
 
-    if (confirmed == true && mounted) {
+    if (confirmed == true) {
+      if (!mounted) return;
       await _deleteAllSpots(context, orphanedSpots);
     }
   }
 
   Future<void> _deleteAllSpots(BuildContext context, List<dynamic> orphanedSpots) async {
     try {
+      if (!mounted) return;
       // Show loading indicator
       showDialog(
         context: context,
@@ -1125,14 +1158,19 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
       // Delete all spots using cloud function
       if (!mounted) return;
       final syncService = context.read<SyncSourceService>();
+      if (!mounted) return;
       final result = await syncService.deleteSpots(spotIds);
 
       if (!mounted) return;
-      Navigator.of(context).pop(); // Close loading dialog
+      final navigator = Navigator.of(context);
+      if (!mounted) return;
+      navigator.pop(); // Close loading dialog
       
       if (result != null && result['success'] == true) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
+        final scaffoldMessenger = ScaffoldMessenger.of(context);
+        if (!mounted) return;
+        scaffoldMessenger.showSnackBar(
           SnackBar(
             content: Text(result['message'] ?? 'Successfully deleted ${orphanedSpots.length} orphaned spots'),
             backgroundColor: Colors.green,
@@ -1141,10 +1179,14 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
 
         // Close the orphaned spots dialog
         if (!mounted) return;
-        Navigator.of(context).pop();
+        final navigator2 = Navigator.of(context);
+        if (!mounted) return;
+        navigator2.pop();
       } else {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
+        final scaffoldMessenger = ScaffoldMessenger.of(context);
+        if (!mounted) return;
+        scaffoldMessenger.showSnackBar(
           SnackBar(
             content: Text('Failed to delete spots: ${result?['error'] ?? 'Unknown error'}'),
             backgroundColor: Colors.red,
@@ -1153,9 +1195,11 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      Navigator.of(context).pop(); // Close loading dialog
+      final navigator = Navigator.of(context);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      final scaffoldMessenger = ScaffoldMessenger.of(context);
+      navigator.pop(); // Close loading dialog
+      scaffoldMessenger.showSnackBar(
         SnackBar(
           content: Text('Failed to delete spots: $e'),
           backgroundColor: Colors.red,
@@ -1543,7 +1587,9 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                 SnackBar(content: Text(ok ? 'Saved' : 'Failed to save')),
               );
             }
-            Navigator.pop(context, ok);
+            if (context.mounted) {
+              Navigator.pop(context, ok);
+            }
           },
           child: const Text('Save'),
         ),

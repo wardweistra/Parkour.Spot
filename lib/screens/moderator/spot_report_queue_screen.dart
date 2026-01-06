@@ -292,7 +292,8 @@ class _ReportCardState extends State<_ReportCard> {
       ),
     );
 
-    if (result == true && mounted) {
+    if (result == true) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Photos approved and added to spot.'),
@@ -324,7 +325,8 @@ class _ReportCardState extends State<_ReportCard> {
       ),
     );
 
-    if (confirmed == true && mounted) {
+    if (confirmed == true) {
+      if (!mounted) return;
       final spotService = Provider.of<SpotService>(context, listen: false);
       final reportService = Provider.of<SpotReportService>(context, listen: false);
       final authService = Provider.of<AuthService>(context, listen: false);
@@ -348,14 +350,13 @@ class _ReportCardState extends State<_ReportCard> {
         }
       }
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Photo suggestions rejected. You can undo this action later.'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Photo suggestions rejected. You can undo this action later.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
     }
   }
 
@@ -381,7 +382,8 @@ class _ReportCardState extends State<_ReportCard> {
       ),
     );
 
-    if (confirmed == true && mounted) {
+    if (confirmed == true) {
+      if (!mounted) return;
       final spotService = Provider.of<SpotService>(context, listen: false);
       final reportService = Provider.of<SpotReportService>(context, listen: false);
       final authService = Provider.of<AuthService>(context, listen: false);
@@ -405,14 +407,13 @@ class _ReportCardState extends State<_ReportCard> {
         }
       }
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Rejection undone. Photos restored to suggestions.'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Rejection undone. Photos restored to suggestions.'),
+          backgroundColor: Colors.green,
+        ),
+      );
     }
   }
 

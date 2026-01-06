@@ -658,95 +658,76 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
             else
               Consumer<SearchStateService>(
                 builder: (context, searchState, child) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // All sources option
-                      RadioListTile<String?>(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('All Sources'),
-                        value: null,
-                        groupValue: _selectedSpotSource,
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedSpotSource = null;
-                          });
-                          Provider.of<SearchStateService>(context, listen: false)
-                              .setSelectedSpotSource(null);
-                          // Reload spots with new filter
-                          _loadSpotsForCurrentView();
-                        },
-                      ),
-                      // Native only option
-                      RadioListTile<String?>(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Parkour·Spot (Native)'),
-                        value: "",
-                        groupValue: _selectedSpotSource,
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedSpotSource = "";
-                          });
-                          Provider.of<SearchStateService>(context, listen: false)
-                              .setSelectedSpotSource("");
-                          // Reload spots with new filter
-                          _loadSpotsForCurrentView();
-                        },
-                      ),
-                      // External source options with inline folder filtering
-                      ...sources.expand((source) {
-                        final isWideScreen = MediaQuery.of(context).size.width > 600;
-                        final isSelected = _selectedSpotSource == source.id;
-                        final hasFolders = source.allFolders != null && source.allFolders!.isNotEmpty;
-                        
-                        return [
-                          RadioListTile<String?>(
-                            contentPadding: EdgeInsets.zero,
-                            title: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (isWideScreen)
-                                  Text(source.name)
-                                else
-                                  Expanded(
-                                    child: Text(source.name),
-                                  ),
-                                const SizedBox(width: 4),
-                                GestureDetector(
-                                  onTap: () {
-                                    showDialog(
-                                      context: context,
-                                      barrierDismissible: true,
-                                      builder: (context) => SourceDetailsDialog(source: source),
-                                    );
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(12),
+                  return RadioGroup<String?>(
+                    groupValue: _selectedSpotSource,
+                    onChanged: (String? value) {
+                      setState(() {
+                        _selectedSpotSource = value;
+                      });
+                      Provider.of<SearchStateService>(context, listen: false)
+                          .setSelectedSpotSource(value);
+                      // Reload spots with new filter
+                      _loadSpotsForCurrentView();
+                    },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // All sources option
+                        RadioListTile<String?>(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('All Sources'),
+                          value: null,
+                        ),
+                        // Native only option
+                        RadioListTile<String?>(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('Parkour·Spot (Native)'),
+                          value: "",
+                        ),
+                        // External source options with inline folder filtering
+                        ...sources.expand((source) {
+                          final isWideScreen = MediaQuery.of(context).size.width > 600;
+                          final isSelected = _selectedSpotSource == source.id;
+                          final hasFolders = source.allFolders != null && source.allFolders!.isNotEmpty;
+                          
+                          return [
+                            RadioListTile<String?>(
+                              contentPadding: EdgeInsets.zero,
+                              title: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (isWideScreen)
+                                    Text(source.name)
+                                  else
+                                    Expanded(
+                                      child: Text(source.name),
                                     ),
-                                    child: Icon(
-                                      Icons.info_outline,
-                                      size: 16,
-                                      color: Theme.of(context).colorScheme.primary,
+                                  const SizedBox(width: 4),
+                                  GestureDetector(
+                                    onTap: () {
+                                      showDialog(
+                                        context: context,
+                                        barrierDismissible: true,
+                                        builder: (context) => SourceDetailsDialog(source: source),
+                                      );
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Icon(
+                                        Icons.info_outline,
+                                        size: 16,
+                                        color: Theme.of(context).colorScheme.primary,
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
+                              value: source.id,
                             ),
-                            value: source.id,
-                            groupValue: _selectedSpotSource,
-                            onChanged: (value) {
-                              setState(() {
-                                _selectedSpotSource = source.id;
-                              });
-                              Provider.of<SearchStateService>(context, listen: false)
-                                  .setSelectedSpotSource(source.id);
-                              // Reload spots with new filter
-                              _loadSpotsForCurrentView();
-                            },
-                          ),
                           // Show folder filter right under the selected source
                           if (isSelected && hasFolders)
                             Padding(
@@ -813,6 +794,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                         ];
                       }),
                     ],
+                  ),
                   );
                 },
               ),
@@ -1350,7 +1332,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                   // Get current location for referrer
                   final currentLocation = GoRouterState.of(context).uri.path;
                   final referrer = currentLocation.isNotEmpty ? currentLocation : '/explore';
-                  context.go('/list/${_selectedListId}?from=${Uri.encodeComponent(referrer)}');
+                  context.go('/list/$_selectedListId?from=${Uri.encodeComponent(referrer)}');
                 }
               : null,
           borderRadius: BorderRadius.circular(12),
@@ -1634,6 +1616,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                           final centerLng = (visibleRegion.northeast.longitude + visibleRegion.southwest.longitude) / 2;
                           
                           // Get the screen size
+                          if (!mounted) return;
                           final screenSize = MediaQuery.of(context).size;
                           
                           // Calculate the offset from center (in pixels)
@@ -1763,6 +1746,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                             return const Iterable<Map<String, dynamic>>.empty();
                           }
                           try {
+                            if (!mounted) {
+                              return const Iterable<Map<String, dynamic>>.empty();
+                            }
                             final geocoding = Provider.of<GeocodingService>(context, listen: false);
                             final results = await geocoding.placesAutocomplete(
                               input: query,
@@ -1771,6 +1757,10 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                               biasLng: center?.longitude,
                               radiusMeters: 50000,
                             );
+                            
+                            if (!mounted) {
+                              return const Iterable<Map<String, dynamic>>.empty();
+                            }
                             
                             return results;
                           } catch (e) {

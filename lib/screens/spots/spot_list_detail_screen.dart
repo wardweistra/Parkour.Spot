@@ -169,14 +169,14 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     );
 
     if (shouldDelete == true && _list?.id != null) {
+      if (!mounted) return;
       final spotListService = Provider.of<SpotListService>(context, listen: false);
       final success = await spotListService.deleteSpotList(_list!.id!);
 
       if (success) {
         SnackbarService.showSuccess('List deleted');
-        if (context.mounted) {
-          context.pop();
-        }
+        if (!mounted) return;
+        context.pop();
       } else {
         SnackbarService.showError(spotListService.error ?? 'Failed to delete list');
       }
@@ -346,6 +346,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     );
 
     if (result == true && _list?.id != null) {
+      if (!mounted) return;
       final spotListService = Provider.of<SpotListService>(context, listen: false);
       final success = await spotListService.updateSpotList(
         _list!.id!,

@@ -122,6 +122,7 @@ class _UrbnMigrationScreenState extends State<UrbnMigrationScreen> {
         batches.add(spotsToProcess.sublist(i, (i + batchSize).clamp(0, spotsToProcess.length)));
       }
 
+      if (!mounted) return;
       final spotService = Provider.of<SpotService>(context, listen: false);
 
       // Process each batch

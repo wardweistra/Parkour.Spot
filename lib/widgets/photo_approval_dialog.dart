@@ -228,8 +228,8 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return WillPopScope(
-      onWillPop: () async => !_isApproving,
+    return PopScope(
+      canPop: !_isApproving,
       child: AlertDialog(
         title: Row(
           children: [
@@ -429,35 +429,48 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  RadioListTile<String>(
-                    title: Text('Current spot: ${widget.report.spotName}'),
-                    subtitle: (_currentSpot?.duplicateOf != null && _currentSpot!.duplicateOf!.isNotEmpty)
-                        ? Text('The reported spot (duplicate of ${_originalSpot?.name ?? "another spot"})')
-                        : _isSpotFromSource
-                            ? Text('The reported spot (from ${_currentSpot?.spotSourceName ?? "external source"})')
-                            : const Text('The reported spot'),
-                    value: widget.report.spotId,
+                  RadioGroup<String>(
                     groupValue: _targetSpotId,
-                    onChanged: (_isApproving || _isSpotFromSource || (_currentSpot?.duplicateOf != null && _currentSpot!.duplicateOf!.isNotEmpty)) ? null : (value) {
+                    onChanged: (String? value) {
+                      // Check if the selected value should be disabled
+                      final isCurrentSpotDisabled = _isApproving || _isSpotFromSource || (_currentSpot?.duplicateOf != null && _currentSpot!.duplicateOf!.isNotEmpty);
+                      final isOriginalSpotDisabled = _isApproving || (_originalSpot!.spotSource != null && _originalSpot!.spotSource!.isNotEmpty);
+                      
+                      if (value == widget.report.spotId && isCurrentSpotDisabled) {
+                        return; // Don't allow selection of disabled current spot
+                      }
+                      if (value == _originalSpot!.id && isOriginalSpotDisabled) {
+                        return; // Don't allow selection of disabled original spot
+                      }
+                      
                       setState(() {
                         _targetSpotId = value;
                       });
                     },
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                  RadioListTile<String>(
-                    title: Text('Original spot: ${_originalSpot!.name}'),
-                    subtitle: Text(_originalSpot!.spotSource != null && _originalSpot!.spotSource!.isNotEmpty
-                        ? 'The original spot (from ${_originalSpot!.spotSourceName ?? "external source"})'
-                        : 'The original spot (recommended)'),
-                    value: _originalSpot!.id!,
-                    groupValue: _targetSpotId,
-                    onChanged: (_isApproving || (_originalSpot!.spotSource != null && _originalSpot!.spotSource!.isNotEmpty)) ? null : (value) {
-                      setState(() {
-                        _targetSpotId = value;
-                      });
-                    },
-                    contentPadding: EdgeInsets.zero,
+                    child: Column(
+                      children: [
+                        RadioListTile<String>(
+                          title: Text('Current spot: ${widget.report.spotName}'),
+                          subtitle: (_currentSpot?.duplicateOf != null && _currentSpot!.duplicateOf!.isNotEmpty)
+                              ? Text('The reported spot (duplicate of ${_originalSpot?.name ?? "another spot"})')
+                              : _isSpotFromSource
+                                  ? Text('The reported spot (from ${_currentSpot?.spotSourceName ?? "external source"})')
+                                  : const Text('The reported spot'),
+                          value: widget.report.spotId,
+                          enabled: !(_isApproving || _isSpotFromSource || (_currentSpot?.duplicateOf != null && _currentSpot!.duplicateOf!.isNotEmpty)),
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                        RadioListTile<String>(
+                          title: Text('Original spot: ${_originalSpot!.name}'),
+                          subtitle: Text(_originalSpot!.spotSource != null && _originalSpot!.spotSource!.isNotEmpty
+                              ? 'The original spot (from ${_originalSpot!.spotSourceName ?? "external source"})'
+                              : 'The original spot (recommended)'),
+                          value: _originalSpot!.id!,
+                          enabled: !(_isApproving || (_originalSpot!.spotSource != null && _originalSpot!.spotSource!.isNotEmpty)),
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 16),
                 ],

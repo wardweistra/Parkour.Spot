@@ -1358,7 +1358,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.3),
+                color: Colors.red.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: const Center(
@@ -1665,7 +1665,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                             child: ListTile(
                               leading: CircleAvatar(
                                 backgroundColor:
-                                    _getColorForType(entry.type).withOpacity(0.2),
+                                    _getColorForType(entry.type).withValues(alpha: 0.2),
                                 child: Icon(
                                   _getIconForType(entry.type),
                                   color: _getColorForType(entry.type),

@@ -353,6 +353,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                 if (!mounted) return;
 
                                 if (success) {
+                                  if (!mounted) return;
                                   ScaffoldMessenger.of(rootContext).showSnackBar(
                                     SnackBar(
                                       content: Text(value
@@ -362,6 +363,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                     ),
                                   );
                                 } else {
+                                  if (!mounted) return;
                                   ScaffoldMessenger.of(rootContext).showSnackBar(
                                     SnackBar(
                                       content: const Text('Failed to update moderator status'),
@@ -460,7 +462,7 @@ class _StatTile extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -551,6 +553,7 @@ class _FeatureAccessSectionState extends State<_FeatureAccessSection> {
       setState(() {
         _localFeatureAccess[featureName] = hasAccess;
       });
+      if (!mounted) return;
       ScaffoldMessenger.of(widget.rootContext).showSnackBar(
         SnackBar(
           content: Text(hasAccess
@@ -560,6 +563,7 @@ class _FeatureAccessSectionState extends State<_FeatureAccessSection> {
         ),
       );
     } else {
+      if (!mounted) return;
       ScaffoldMessenger.of(widget.rootContext).showSnackBar(
         const SnackBar(
           content: Text('Failed to update feature access'),
@@ -582,6 +586,7 @@ class _FeatureAccessSectionState extends State<_FeatureAccessSection> {
       setState(() {
         _localFeatureAccess.remove(featureName);
       });
+      if (!mounted) return;
       ScaffoldMessenger.of(widget.rootContext).showSnackBar(
         SnackBar(
           content: Text('Removed "$featureName" access'),
@@ -589,6 +594,7 @@ class _FeatureAccessSectionState extends State<_FeatureAccessSection> {
         ),
       );
     } else {
+      if (!mounted) return;
       ScaffoldMessenger.of(widget.rootContext).showSnackBar(
         const SnackBar(
           content: Text('Failed to remove feature access'),
@@ -633,6 +639,7 @@ class _FeatureAccessSectionState extends State<_FeatureAccessSection> {
         _localFeatureAccess[featureName] = true;
       });
       _newFeatureController.clear();
+      if (!mounted) return;
       ScaffoldMessenger.of(widget.rootContext).showSnackBar(
         SnackBar(
           content: Text('Added "$featureName" access'),
@@ -640,6 +647,7 @@ class _FeatureAccessSectionState extends State<_FeatureAccessSection> {
         ),
       );
     } else {
+      if (!mounted) return;
       ScaffoldMessenger.of(widget.rootContext).showSnackBar(
         const SnackBar(
           content: Text('Failed to add feature access'),
@@ -667,7 +675,7 @@ class _FeatureAccessSectionState extends State<_FeatureAccessSection> {
             child: Text(
               'No feature access configured',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
             ),
           )
