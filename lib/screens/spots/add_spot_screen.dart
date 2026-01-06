@@ -10,6 +10,7 @@ import '../../services/auth_service.dart';
 import '../../services/geocoding_service.dart';
 import '../../services/search_state_service.dart';
 import '../../services/url_service.dart';
+import '../../utils/location_permission_utils.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/spot_form/location_section.dart';
@@ -19,6 +20,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'location_picker_screen.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/map_recentering_mixin.dart';
+import '../../config/app_config.dart';
 
 class AddSpotScreen extends StatefulWidget {
   final LatLng? initialLocation;
@@ -66,6 +68,11 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
         _geocodeLocation(widget.initialLocation!.latitude, widget.initialLocation!.longitude);
       });
     } else {
+      // Set default location so map is always visible, even if permission is denied
+      setState(() {
+        _pickedLocation = const LatLng(AppConfig.defaultMapCenterLat, AppConfig.defaultMapCenterLng);
+      });
+      // Try to get current location, but don't block if permission is denied
       _getCurrentLocation();
     }
     
@@ -112,69 +119,36 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
       _isGettingLocation = true;
     });
 
-    try {
-      // Check permissions
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Location permission denied'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-          return;
-        }
-      }
+    final position = await LocationPermissionUtils.getCurrentPositionWithPermission(
+      context: context,
+      showErrorMessages: true,
+      accuracy: LocationAccuracy.high,
+    );
 
-      if (permission == LocationPermission.deniedForever) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Location permissions are permanently denied'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        return;
-      }
-
-      // Get current position
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-        ),
-      );
-
-      if (mounted) {
+    if (mounted && position != null) {
+      setState(() {
+        _currentPosition = position;
+        // Clear picked location so map shows current location instead
+        _pickedLocation = null;
+      });
+      // Center the map on the new current location with a small delay to ensure controller is ready
+      centerMapOnLocationWithDelay(LatLng(position.latitude, position.longitude));
+      // Geocode the coordinates to get address
+      _geocodeCurrentLocation();
+    } else if (mounted) {
+      // If permission denied, ensure we still have a default location for the map
+      // (This should already be set in initState, but ensure it's there)
+      if (_pickedLocation == null && _currentPosition == null) {
         setState(() {
-          _currentPosition = position;
-          // Clear picked location so map shows current location instead
-          _pickedLocation = null;
-        });
-        // Center the map on the new current location with a small delay to ensure controller is ready
-        centerMapOnLocationWithDelay(LatLng(position.latitude, position.longitude));
-        // Geocode the coordinates to get address
-        _geocodeCurrentLocation();
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error getting location: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isGettingLocation = false;
+          _pickedLocation = const LatLng(AppConfig.defaultMapCenterLat, AppConfig.defaultMapCenterLng);
         });
       }
+    }
+
+    if (mounted) {
+      setState(() {
+        _isGettingLocation = false;
+      });
     }
   }
 

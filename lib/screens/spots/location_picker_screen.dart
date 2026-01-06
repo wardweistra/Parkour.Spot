@@ -6,6 +6,7 @@ import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../config/app_config.dart';
 import '../../services/search_state_service.dart';
+import '../../utils/location_permission_utils.dart';
 
 class LocationPickerScreen extends StatefulWidget {
   final LatLng? initialLocation;
@@ -60,46 +61,34 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       _isGettingLocation = true;
     });
 
-    try {
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
+    final position = await LocationPermissionUtils.getCurrentPositionWithPermission(
+      context: context,
+      showErrorMessages: true,
+      accuracy: LocationAccuracy.high,
+    );
 
-      if (permission == LocationPermission.whileInUse ||
-          permission == LocationPermission.always) {
-        final position = await Geolocator.getCurrentPosition(
-          locationSettings: const LocationSettings(
-            accuracy: LocationAccuracy.high,
+    if (mounted && position != null) {
+      final location = LatLng(position.latitude, position.longitude);
+      setState(() {
+        _pickedLocation = location;
+      });
+      // Move camera to user location if map is ready
+      if (_mapController != null) {
+        _mapController!.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              target: location,
+              zoom: 16,
+            ),
           ),
         );
+      }
+    }
 
-        if (mounted) {
-          final location = LatLng(position.latitude, position.longitude);
-          setState(() {
-            _pickedLocation = location;
-          });
-          // Move camera to user location if map is ready
-          if (_mapController != null) {
-            _mapController!.animateCamera(
-              CameraUpdate.newCameraPosition(
-                CameraPosition(
-                  target: location,
-                  zoom: 16,
-                ),
-              ),
-            );
-          }
-        }
-      }
-    } catch (e) {
-      // Handle error silently for map view
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isGettingLocation = false;
-        });
-      }
+    if (mounted) {
+      setState(() {
+        _isGettingLocation = false;
+      });
     }
   }
 

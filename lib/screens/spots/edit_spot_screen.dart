@@ -20,6 +20,7 @@ import '../../widgets/spot_form/image_section.dart';
 import '../../widgets/spot_form/attributes_section.dart';
 import '../../screens/spots/location_picker_screen.dart';
 import '../../utils/map_recentering_mixin.dart';
+import '../../utils/location_permission_utils.dart';
 
 class EditSpotScreen extends StatefulWidget {
   final Spot spot;
@@ -157,34 +158,25 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
       _isGettingLocation = true;
     });
 
-    try {
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-        ),
-      );
+    final position = await LocationPermissionUtils.getCurrentPositionWithPermission(
+      context: context,
+      showErrorMessages: true,
+      accuracy: LocationAccuracy.high,
+    );
 
-      if (mounted) {
-        setState(() {
-          _currentLocation = LatLng(position.latitude, position.longitude);
-        });
-        // Center the map on the new current location with a small delay to ensure controller is ready
-        centerMapOnLocationWithDelay(LatLng(position.latitude, position.longitude));
-        await _geocodeLocation(position.latitude, position.longitude);
-      }
-    } catch (e) {
-      debugPrint('Error getting location: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error getting location: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isGettingLocation = false;
-        });
-      }
+    if (mounted && position != null) {
+      setState(() {
+        _currentLocation = LatLng(position.latitude, position.longitude);
+      });
+      // Center the map on the new current location with a small delay to ensure controller is ready
+      centerMapOnLocationWithDelay(LatLng(position.latitude, position.longitude));
+      await _geocodeLocation(position.latitude, position.longitude);
+    }
+
+    if (mounted) {
+      setState(() {
+        _isGettingLocation = false;
+      });
     }
   }
 

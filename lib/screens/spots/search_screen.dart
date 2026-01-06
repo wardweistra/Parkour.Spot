@@ -24,6 +24,7 @@ import '../../widgets/source_details_dialog.dart';
 import '../../config/app_config.dart';
 import '../../utils/marker_icon_utils.dart';
 import '../../utils/map_bounds_utils.dart';
+import '../../utils/location_permission_utils.dart';
 import 'add_spot_screen.dart';
 
 // Helper widget to ensure icons render properly on mobile web
@@ -497,48 +498,36 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       _isGettingLocation = true;
     });
 
-    try {
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
+    final position = await LocationPermissionUtils.getCurrentPositionWithPermission(
+      context: context,
+      showErrorMessages: true,
+      accuracy: LocationAccuracy.high,
+    );
 
-      if (permission == LocationPermission.whileInUse ||
-          permission == LocationPermission.always) {
-        final position = await Geolocator.getCurrentPosition(
-          locationSettings: const LocationSettings(
-            accuracy: LocationAccuracy.high,
+    if (mounted && position != null) {
+      setState(() {
+        _currentPosition = position;
+      });
+      // Move camera to user location if map is ready
+      if (_mapController != null) {
+        _mapController!.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              target: LatLng(position.latitude, position.longitude),
+              zoom: 13.5,
+            ),
           ),
         );
+        _lastKnownZoom = 13.5;
+      }
+      // Refresh markers to include current location
+      _updateVisibleSpots();
+    }
 
-        if (mounted) {
-          setState(() {
-            _currentPosition = position;
-          });
-          // Move camera to user location if map is ready
-          if (_mapController != null) {
-            _mapController!.animateCamera(
-              CameraUpdate.newCameraPosition(
-                CameraPosition(
-                  target: LatLng(position.latitude, position.longitude),
-                  zoom: 13.5,
-                ),
-              ),
-            );
-            _lastKnownZoom = 13.5;
-          }
-          // Refresh markers to include current location
-          _updateVisibleSpots();
-        }
-      }
-    } catch (e) {
-      // Handle error silently for map view
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isGettingLocation = false;
-        });
-      }
+    if (mounted) {
+      setState(() {
+        _isGettingLocation = false;
+      });
     }
   }
 
