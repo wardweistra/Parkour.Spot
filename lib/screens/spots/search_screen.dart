@@ -512,6 +512,32 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       
       // Start or stop location polling based on permission status
       if (isGranted) {
+        // Load cached location if available
+        final searchState = Provider.of<SearchStateService>(context, listen: false);
+        final cachedLat = searchState.lastKnownUserLat;
+        final cachedLng = searchState.lastKnownUserLng;
+        
+        if (cachedLat != null && cachedLng != null) {
+          // Create a temporary Position from cached location for the marker
+          // We'll use the last known location until we get a fresh fix
+          try {
+            // Try to get last known position from geolocator first
+            final lastKnownPosition = await Geolocator.getLastKnownPosition();
+            if (lastKnownPosition != null) {
+              setState(() {
+                _currentPosition = lastKnownPosition;
+              });
+              _updateVisibleSpots();
+            } else {
+              // If no last known position from geolocator, we'll wait for polling to get it
+              // The marker will appear once polling gets the first location
+            }
+          } catch (e) {
+            // Silently fail - polling will get location soon
+            debugPrint('Error getting last known position: $e');
+          }
+        }
+        
         _startLocationPolling();
       } else {
         _stopLocationPolling();
@@ -554,7 +580,26 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       return;
     }
 
+    // First, center on cached location if available
+    final searchState = Provider.of<SearchStateService>(context, listen: false);
+    final cachedLat = searchState.lastKnownUserLat;
+    final cachedLng = searchState.lastKnownUserLng;
+    
+    if (cachedLat != null && cachedLng != null && _mapController != null) {
+      // Center on cached location immediately
+      _mapController!.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: LatLng(cachedLat, cachedLng),
+            zoom: 13.5,
+          ),
+        ),
+      );
+      _lastKnownZoom = 13.5;
+    }
+
     try {
+      // Then get fresh location and center again
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
@@ -566,7 +611,11 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
           _currentPosition = position;
           _isLocationPermissionDenied = false;
         });
-        // Move camera to user location if map is ready
+        
+        // Save to cache
+        await searchState.saveLastKnownUserLocation(position.latitude, position.longitude);
+        
+        // Move camera to fresh user location if map is ready
         if (_mapController != null) {
           _mapController!.animateCamera(
             CameraUpdate.newCameraPosition(
@@ -612,6 +661,11 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         setState(() {
           _currentPosition = position;
         });
+        
+        // Save to cache
+        final searchState = Provider.of<SearchStateService>(context, listen: false);
+        await searchState.saveLastKnownUserLocation(position.latitude, position.longitude);
+        
         // Refresh markers to update location marker position
         _updateVisibleSpots();
       }

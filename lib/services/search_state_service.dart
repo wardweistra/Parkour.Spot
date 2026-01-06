@@ -12,6 +12,8 @@ class SearchStateService extends ChangeNotifier {
   static const String _keySelectedSpotSource = 'search_selected_spot_source'; // null = all, "" = native, string = specific source
   static const String _keySelectedFolders = 'search_selected_folders'; // JSON map of sourceId -> String (single folder)
   static const String _keySelectedListId = 'search_selected_list_id'; // Selected spot list ID for highlighting
+  static const String _keyLastKnownUserLat = 'search_last_known_user_lat';
+  static const String _keyLastKnownUserLng = 'search_last_known_user_lng';
 
   // Backing fields
   double? _centerLat;
@@ -22,6 +24,8 @@ class SearchStateService extends ChangeNotifier {
   String? _selectedSpotSource; // null = all sources, "" = native only, string = specific source ID
   Map<String, String?> _selectedFolders = {}; // sourceId -> selected folder name (null = all folders)
   String? _selectedListId; // Selected spot list ID for highlighting
+  double? _lastKnownUserLat;
+  double? _lastKnownUserLng;
 
   // Getters
   double? get centerLat => _centerLat;
@@ -32,6 +36,8 @@ class SearchStateService extends ChangeNotifier {
   String? get selectedSpotSource => _selectedSpotSource;
   Map<String, String?> get selectedFolders => Map.unmodifiable(_selectedFolders);
   String? get selectedListId => _selectedListId;
+  double? get lastKnownUserLat => _lastKnownUserLat;
+  double? get lastKnownUserLng => _lastKnownUserLng;
   
   /// Get selected folder for a specific source (null = all folders)
   String? getSelectedFolderForSource(String sourceId) {
@@ -48,6 +54,8 @@ class SearchStateService extends ChangeNotifier {
       _includeSpotsWithoutPictures = prefs.getBool(_keyIncludeWithoutPictures) ?? true;
       _selectedSpotSource = prefs.getString(_keySelectedSpotSource); // null if not set (all sources)
       _selectedListId = prefs.getString(_keySelectedListId); // null if not set
+      _lastKnownUserLat = prefs.getDouble(_keyLastKnownUserLat);
+      _lastKnownUserLng = prefs.getDouble(_keyLastKnownUserLng);
       
       // Load selected folders (migrate from old format if needed)
       final foldersJson = prefs.getString(_keySelectedFolders);
@@ -160,6 +168,19 @@ class SearchStateService extends ChangeNotifier {
       }
     } catch (e) {
       // Ignore SharedPreferences errors - settings will not persist but app continues to work
+    }
+  }
+
+  /// Save the last known user location
+  Future<void> saveLastKnownUserLocation(double lat, double lng) async {
+    _lastKnownUserLat = lat;
+    _lastKnownUserLng = lng;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble(_keyLastKnownUserLat, lat);
+      await prefs.setDouble(_keyLastKnownUserLng, lng);
+    } catch (e) {
+      // Silent fail - persistence is best-effort
     }
   }
 }
