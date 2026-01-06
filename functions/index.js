@@ -5085,7 +5085,7 @@ exports.checkAndRunAutoSyncs = onSchedule(
       timeZone: "UTC",
       region: "europe-west1",
       memory: "2GiB",
-      timeoutSeconds: 3600,
+      timeoutSeconds: 1800,
       secrets: ["GOOGLE_MAPS_API_KEY"],
     },
     async () => {
