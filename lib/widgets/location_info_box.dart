@@ -79,11 +79,11 @@ class LocationInfoBox extends StatelessWidget {
                   IconButton(
                     onPressed: onOpenInMaps,
                     icon: Icon(
-                      Icons.open_in_new,
+                      Icons.directions,
                       color: Theme.of(context).colorScheme.primary,
                       size: 20,
                     ),
-                    tooltip: 'Open in Maps',
+                    tooltip: 'Directions',
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(
                       minWidth: 32,
@@ -123,11 +123,11 @@ class LocationInfoBox extends StatelessWidget {
                   IconButton(
                     onPressed: onOpenInMaps,
                     icon: Icon(
-                      Icons.open_in_new,
+                      Icons.directions,
                       color: Theme.of(context).colorScheme.primary,
                       size: 20,
                     ),
-                    tooltip: 'Open in Maps',
+                    tooltip: 'Directions',
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(
                       minWidth: 32,
