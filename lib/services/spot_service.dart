@@ -152,10 +152,9 @@ class SpotService extends ChangeNotifier {
 
       List<String>? imageUrls = List.from(spot.imageUrls ?? []);
 
-      // Remove images to delete
+      // Remove images from spot (but don't delete from storage - cleanup will handle that)
       if (imagesToDelete != null && imagesToDelete.isNotEmpty) {
         for (final imageUrl in imagesToDelete) {
-          await deleteImageFromStorage(imageUrl);
           imageUrls.remove(imageUrl);
         }
       }
