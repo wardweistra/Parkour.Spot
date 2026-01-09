@@ -1433,6 +1433,43 @@ class SpotService extends ChangeNotifier {
     }
   }
 
+  // Find all spots with duplicate image URLs in their imageUrls array
+  Future<List<Spot>> findSpotsWithDuplicateImageUrls() async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      // Get all spots that have imageUrls
+      final querySnapshot = await _firestore
+          .collection('spots')
+          .where('imageUrls', isNull: false)
+          .get();
+
+      final spotsWithDuplicates = <Spot>[];
+
+      for (final doc in querySnapshot.docs) {
+        final spot = Spot.fromFirestore(doc);
+        if (spot.imageUrls != null && spot.imageUrls!.isNotEmpty) {
+          // Check for duplicates by comparing the list length with the set length
+          final uniqueUrls = spot.imageUrls!.toSet();
+          if (spot.imageUrls!.length != uniqueUrls.length) {
+            spotsWithDuplicates.add(spot);
+          }
+        }
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return spotsWithDuplicates;
+    } catch (e) {
+      _error = 'Failed to find spots with duplicate image URLs: $e';
+      debugPrint('Error finding spots with duplicate image URLs: $e');
+      _isLoading = false;
+      notifyListeners();
+      return [];
+    }
+  }
+
   // Clear error
   void clearError() {
     _error = null;
