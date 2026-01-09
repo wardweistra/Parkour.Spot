@@ -62,41 +62,72 @@ class SpotImageSection extends StatelessWidget {
                   onReorder: onReorderExisting!,
                 )
               else
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: List.generate(existingImageUrls.length, (index) {
-                    final url = existingImageUrls[index];
-                    return Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.network(
-                            url,
-                            width: 120,
-                            height: 120,
-                            fit: BoxFit.cover,
+                Builder(
+                  builder: (context) {
+                    final duplicateUrls = _findDuplicateUrls(existingImageUrls);
+                    return Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: List.generate(existingImageUrls.length, (index) {
+                        final url = existingImageUrls[index];
+                        final isDuplicate = duplicateUrls.contains(url);
+                        return Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            border: isDuplicate
+                                ? Border.all(color: Colors.orange, width: 3)
+                                : null,
                           ),
-                        ),
-                        Positioned(
-                          top: 6,
-                          right: 6,
-                          child: Material(
-                            color: Colors.black.withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(20),
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(20),
-                              onTap: () => onRemoveExistingAt(index),
-                              child: const Padding(
-                                padding: EdgeInsets.all(4.0),
-                                child: Icon(Icons.delete, size: 18, color: Colors.white),
+                          child: Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.network(
+                                  url,
+                                  width: 120,
+                                  height: 120,
+                                  fit: BoxFit.cover,
+                                ),
                               ),
-                            ),
+                              if (isDuplicate)
+                                Positioned(
+                                  top: 6,
+                                  left: 6,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.orange,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.warning,
+                                      size: 16,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              Positioned(
+                                top: 6,
+                                right: 6,
+                                child: Material(
+                                  color: Colors.black.withValues(alpha: 0.5),
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(20),
+                                    onTap: () => onRemoveExistingAt(index),
+                                    child: const Padding(
+                                      padding: EdgeInsets.all(4.0),
+                                      child: Icon(Icons.delete, size: 18, color: Colors.white),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
+                        );
+                      }),
                     );
-                  }),
+                  },
                 ),
               const SizedBox(height: 12),
               const Divider(height: 24),
@@ -183,6 +214,22 @@ class SpotImageSection extends StatelessWidget {
     );
   }
 
+  // Helper method to find duplicate URLs
+  Set<String> _findDuplicateUrls(List<String> urls) {
+    final seen = <String>{};
+    final duplicates = <String>{};
+    
+    for (final url in urls) {
+      if (seen.contains(url)) {
+        duplicates.add(url);
+      } else {
+        seen.add(url);
+      }
+    }
+    
+    return duplicates;
+  }
+
   Widget _buildReorderableImageGrid(
     BuildContext context, {
     required List<dynamic> items,
@@ -190,6 +237,11 @@ class SpotImageSection extends StatelessWidget {
     required void Function(int) onRemove,
     required void Function(int, int) onReorder,
   }) {
+    // Find duplicate URLs for existing images
+    final duplicateUrls = isExisting && items.isNotEmpty
+        ? _findDuplicateUrls(items.cast<String>())
+        : <String>{};
+    
     return SizedBox(
       height: 120,
       child: ReorderableListView(
@@ -207,16 +259,18 @@ class SpotImageSection extends StatelessWidget {
         },
         children: List.generate(items.length, (index) {
           final item = items[index];
-          // Use stable keys: URL for existing images, index-based for new images
+          // Use index-based keys to preserve duplicates (same URL can appear multiple times)
           final key = isExisting
-              ? ValueKey<String>('existing_${item as String}')
+              ? ValueKey<String>('existing_$index')
               : ValueKey<String>('selected_$index');
+          final isDuplicate = isExisting && duplicateUrls.contains(item as String);
           return _buildReorderableImageItem(
             context,
             key: key,
             item: item,
             index: index,
             isExisting: isExisting,
+            isDuplicate: isDuplicate,
             onRemove: onRemove,
           );
         }),
@@ -230,6 +284,7 @@ class SpotImageSection extends StatelessWidget {
     required dynamic item,
     required int index,
     required bool isExisting,
+    bool isDuplicate = false,
     required void Function(int) onRemove,
   }) {
     return Container(
@@ -240,8 +295,10 @@ class SpotImageSection extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.grey.withValues(alpha: 0.3),
-          width: 1,
+          color: isDuplicate
+              ? Colors.orange
+              : Colors.grey.withValues(alpha: 0.3),
+          width: isDuplicate ? 3 : 1,
         ),
       ),
       child: Stack(
@@ -264,6 +321,24 @@ class SpotImageSection extends StatelessWidget {
                       )
                     : const SizedBox.shrink(),
           ),
+          // Duplicate warning indicator
+          if (isDuplicate)
+            Positioned(
+              top: 6,
+              left: 6,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.orange,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.warning,
+                  size: 16,
+                  color: Colors.white,
+                ),
+              ),
+            ),
           // Delete button
           Positioned(
             top: 6,

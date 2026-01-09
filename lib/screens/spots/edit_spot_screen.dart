@@ -363,8 +363,13 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
   void _removeExistingImageAt(int index) {
     setState(() {
       final imageUrl = _existingImageUrls[index];
-      _imagesToDelete.add(imageUrl);
       _existingImageUrls.removeAt(index);
+      
+      // Only add to _imagesToDelete if this URL no longer exists in the remaining list
+      // This prevents removing all duplicates when we only want to remove one instance
+      if (!_existingImageUrls.contains(imageUrl)) {
+        _imagesToDelete.add(imageUrl);
+      }
     });
   }
 
