@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' show FieldValue;
 
 class Spot {
   final String? id;
@@ -256,7 +257,7 @@ class Spot {
     );
   }
 
-  Map<String, dynamic> toFirestore() {
+  Map<String, dynamic> toFirestore({bool isUpdate = false}) {
     return {
       'name': name,
       'description': description,
@@ -266,7 +267,10 @@ class Spot {
       'city': city,
       'countryCode': countryCode,
       'imageUrls': imageUrls,
-      if (youtubeVideoIds != null) 'youtubeVideoIds': youtubeVideoIds,
+      if (youtubeVideoIds != null)
+        'youtubeVideoIds': (youtubeVideoIds!.isEmpty && isUpdate)
+            ? FieldValue.delete()
+            : (youtubeVideoIds!.isEmpty ? null : youtubeVideoIds),
       'folderName': folderName,
       'createdBy': createdBy,
       'createdByName': createdByName,
@@ -300,7 +304,7 @@ class Spot {
     String? city,
     String? countryCode,
     List<String>? imageUrls,
-    List<String>? youtubeVideoIds,
+    Object? youtubeVideoIds = _unset,
     String? folderName,
     String? createdBy,
     String? createdByName,
@@ -332,7 +336,7 @@ class Spot {
       city: city ?? this.city,
       countryCode: countryCode ?? this.countryCode,
       imageUrls: imageUrls ?? this.imageUrls,
-      youtubeVideoIds: youtubeVideoIds ?? this.youtubeVideoIds,
+      youtubeVideoIds: identical(youtubeVideoIds, _unset) ? this.youtubeVideoIds : youtubeVideoIds as List<String>?,
       folderName: folderName ?? this.folderName,
       createdBy: createdBy ?? this.createdBy,
       createdByName: createdByName ?? this.createdByName,

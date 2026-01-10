@@ -527,7 +527,7 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
         city: _currentCity,
         countryCode: _currentCountryCode,
         imageUrls: _existingImageUrls.isNotEmpty ? _existingImageUrls : null,
-        youtubeVideoIds: youtubeIds.isNotEmpty ? youtubeIds : null,
+        youtubeVideoIds: youtubeIds.isEmpty ? <String>[] : youtubeIds,
         duplicateOf: _duplicateOf,
         spotAccess: _selectedAccess,
         spotFeatures: _selectedFeatures.toList(),

@@ -176,7 +176,7 @@ class SpotService extends ChangeNotifier {
         hidden: spot.hidden, // Preserve existing hidden field
       );
 
-      await _firestore.collection('spots').doc(spot.id).update(updatedSpot.toFirestore());
+      await _firestore.collection('spots').doc(spot.id).update(updatedSpot.toFirestore(isUpdate: true));
       
       // Log audit trail if user info is provided (moderator edit)
       if (userId != null && userName != null && oldSpot != null) {
@@ -653,7 +653,7 @@ class SpotService extends ChangeNotifier {
         updatedAt: DateTime.now(),
       );
 
-      await _firestore.collection('spots').doc(finalSpotId).update(updatedSpot.toFirestore());
+      await _firestore.collection('spots').doc(finalSpotId).update(updatedSpot.toFirestore(isUpdate: true));
       
       // Log audit trail (use approver info if provided, otherwise use contributor info)
       final auditUserId = approvedByUserId ?? userId;
