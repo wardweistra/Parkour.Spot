@@ -51,6 +51,12 @@ function generateHtmlHead(options = {}) {
     description: options.pageDescription,
     address: options.pageAddress,
   });
+  // Only include Organization JSON-LD on home page (non-dynamic pages)
+  const organizationJsonLd = !isDynamic ? generateOrganizationJsonLd({
+    canonicalHost: canonicalHost,
+    siteName: siteName,
+    description: description,
+  }) : "";
 
   return `
   <meta charset="UTF-8">
@@ -126,7 +132,11 @@ function generateHtmlHead(options = {}) {
   <script async defer src="https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&loading=async"></script>
 
   <meta name="theme-color" content="#000000" />
-  ${escapedUrl ? `<link rel="canonical" href="${escapedUrl}" />` : ""}${breadcrumbJsonLd}${pageTypeJsonLd}`;
+  
+  <!-- Identity verification: rel="me" links -->
+  <link rel="me" href="https://www.instagram.com/parkourdotspot/" />
+  
+  ${escapedUrl ? `<link rel="canonical" href="${escapedUrl}" />` : ""}${breadcrumbJsonLd}${pageTypeJsonLd}${organizationJsonLd}`;
 }
 
 /**
@@ -268,6 +278,38 @@ ${JSON.stringify(pageData, null, 2)}
 }
 
 /**
+ * Generate organization structured data (JSON-LD) with sameAs
+ * @param {Object} options - Organization options
+ * @param {string} options.canonicalHost - The canonical host (e.g., "parkour.spot")
+ * @param {string} options.siteName - The site name
+ * @param {string} options.description - The site description
+ * @return {string} JSON-LD script tag
+ */
+function generateOrganizationJsonLd(options = {}) {
+  const {
+    canonicalHost = "parkour.spot",
+    siteName = "Parkour·Spot",
+    description = "Discover and share parkour spots around the world",
+  } = options;
+
+  const organizationData = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": htmlEscape(siteName),
+    "url": `https://${canonicalHost}`,
+    "description": htmlEscape(description),
+    "sameAs": [
+      "https://www.instagram.com/parkourdotspot/"
+    ]
+  };
+
+  return `
+  <script type="application/ld+json">
+${JSON.stringify(organizationData, null, 2)}
+  </script>`;
+}
+
+/**
  * Generate complete HTML page
  * @param {Object} options - Configuration options
  * @return {string} Complete HTML page
@@ -309,6 +351,7 @@ if (typeof module !== "undefined" && module.exports) {
     generateHtmlPage,
     generateBreadcrumbJsonLd,
     generatePageTypeJsonLd,
+    generateOrganizationJsonLd,
     htmlEscape,
     GOOGLE_MAPS_API_KEY,
   };
