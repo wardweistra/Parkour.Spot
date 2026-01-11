@@ -6148,12 +6148,16 @@ class _FullScreenPhotoViewer extends StatefulWidget {
 class _FullScreenPhotoViewerState extends State<_FullScreenPhotoViewer> {
   late PageController _pageController;
   late int _currentIndex;
+  static const int _virtualPageMultiplier = 1000;
+  late int _virtualInitialPage;
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
-    _pageController = PageController(initialPage: widget.initialIndex);
+    // Start at a middle position in the virtual pages to allow scrolling in both directions
+    _virtualInitialPage = _virtualPageMultiplier + widget.initialIndex;
+    _pageController = PageController(initialPage: _virtualInitialPage);
   }
 
   @override
@@ -6162,10 +6166,31 @@ class _FullScreenPhotoViewerState extends State<_FullScreenPhotoViewer> {
     super.dispose();
   }
 
-  void _onPageChanged(int index) {
+  void _onPageChanged(int virtualIndex) {
+    // Map virtual page index to actual image index using modulo
+    final actualIndex = virtualIndex % widget.imageUrls.length;
+    
     setState(() {
-      _currentIndex = index;
+      _currentIndex = actualIndex;
     });
+
+    // If we're getting close to the boundaries, jump to the middle to allow continuous scrolling
+    // This prevents running out of pages in either direction
+    final lowerBound = _virtualPageMultiplier ~/ 2;
+    final upperBound = _virtualPageMultiplier * 2 - 100;
+    if (virtualIndex < lowerBound || virtualIndex > upperBound) {
+      // Jump to a safe middle position without animation
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _pageController.hasClients) {
+          final newVirtualPage = _virtualPageMultiplier + actualIndex;
+          _pageController.jumpToPage(newVirtualPage);
+        }
+      });
+    }
+  }
+
+  int _getActualIndex(int virtualIndex) {
+    return virtualIndex % widget.imageUrls.length;
   }
 
   @override
@@ -6186,20 +6211,23 @@ class _FullScreenPhotoViewerState extends State<_FullScreenPhotoViewer> {
       ),
       body: PhotoViewGallery.builder(
         scrollPhysics: const BouncingScrollPhysics(),
-        builder: (BuildContext context, int index) {
+        builder: (BuildContext context, int virtualIndex) {
+          // Map virtual index to actual image index
+          final actualIndex = _getActualIndex(virtualIndex);
           return PhotoViewGalleryPageOptions(
             imageProvider: CachedNetworkImageProvider(
-              getResizedImageUrl(widget.imageUrls[index]),
+              getResizedImageUrl(widget.imageUrls[actualIndex]),
             ),
             initialScale: PhotoViewComputedScale.contained,
             minScale: PhotoViewComputedScale.contained,
             maxScale: PhotoViewComputedScale.covered * 2,
             heroAttributes: PhotoViewHeroAttributes(
-              tag: widget.imageUrls[index],
+              tag: widget.imageUrls[actualIndex],
             ),
           );
         },
-        itemCount: widget.imageUrls.length,
+        // Use a large item count to enable infinite scrolling
+        itemCount: _virtualPageMultiplier * 2,
         loadingBuilder: (context, event) => Center(
           child: CircularProgressIndicator(
             value: event == null
