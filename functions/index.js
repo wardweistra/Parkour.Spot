@@ -4153,9 +4153,36 @@ exports.cleanupUnusedImages = onCall(
 );
 
 
+// Helper function to extract filename from URL
+function extractFilename(url) {
+  try {
+    const urlObj = new URL(url);
+    const pathname = urlObj.pathname;
+
+    // Handle Firebase Storage URLs with encoded paths
+    if (
+      url.includes("firebasestorage.googleapis.com") &&
+      pathname.includes("/o/")
+    ) {
+      // Format: /v0/b/bucket-name/o/spots%2Ffilename.jpg
+      const encodedPath = pathname.split("/o/")[1];
+      const decodedPath = decodeURIComponent(encodedPath);
+      return decodedPath.split("/").pop();
+    } else {
+      // Format: /bucket-name/spots/filename.jpg
+      return pathname.split("/").pop();
+    }
+  } catch (urlError) {
+    // Fallback to simple extraction
+    const urlParts = url.split("/");
+    const lastPart = urlParts[urlParts.length - 1];
+    return lastPart.split("?")[0]; // Remove query parameters
+  }
+}
+
 // Function to find missing images and provide upload URLs (admin only)
 exports.findMissingImages = onCall(
-    {region: "europe-west1", memory: "512MiB", timeoutSeconds: 300},
+    {region: "europe-west1", memory: "2GiB", timeoutSeconds: 540},
     async (request) => {
       try {
         await ensureAdmin(request);
@@ -4163,52 +4190,31 @@ exports.findMissingImages = onCall(
         console.log("Starting missing images check");
 
         // Get all spots to find which images are referenced
+        // Build a map of filename -> array of spots that reference it
+        // This avoids the nested loop later
         const spotsSnapshot = await db.collection("spots").get();
-        const referencedImages = new Set();
-        const missingImages = [];
+        const filenameToSpots = new Map(); // filename -> [{spotId, spotName, imageUrl}]
 
         spotsSnapshot.forEach((doc) => {
           const spotData = doc.data();
           if (spotData.imageUrls && Array.isArray(spotData.imageUrls)) {
             spotData.imageUrls.forEach((url) => {
-            // Extract filename from URL, handling both Firebase Storage URL formats
-              let filename;
-              try {
-                const urlObj = new URL(url);
-                const pathname = urlObj.pathname;
-
-                // Handle Firebase Storage URLs with encoded paths
-                if (
-                  url.includes("firebasestorage.googleapis.com") &&
-                pathname.includes("/o/")
-                ) {
-                // Format: /v0/b/bucket-name/o/spots%2Ffilename.jpg
-                  const encodedPath = pathname.split("/o/")[1];
-                  const decodedPath = decodeURIComponent(encodedPath);
-                  filename = decodedPath.split("/").pop();
-                } else {
-                // Format: /bucket-name/spots/filename.jpg
-                  filename = pathname.split("/").pop();
+              const filename = extractFilename(url);
+              if (filename) {
+                if (!filenameToSpots.has(filename)) {
+                  filenameToSpots.set(filename, []);
                 }
-
-                if (filename) {
-                  referencedImages.add(filename);
-                }
-              } catch (urlError) {
-                console.warn(`Failed to parse URL: ${url}`, urlError);
-                // Fallback to simple extraction
-                const urlParts = url.split("/");
-                const lastPart = urlParts[urlParts.length - 1];
-                const filename = lastPart.split("?")[0]; // Remove query parameters
-                if (filename) {
-                  referencedImages.add(filename);
-                }
+                filenameToSpots.get(filename).push({
+                  spotId: doc.id,
+                  spotName: spotData.name || "Unnamed Spot",
+                  imageUrl: url,
+                });
               }
             });
           }
         });
 
-        console.log(`Found ${referencedImages.size} referenced images`);
+        console.log(`Found ${filenameToSpots.size} referenced images`);
 
         // List all files in the spots folder
         const [files] = await bucket.getFiles({
@@ -4225,68 +4231,20 @@ exports.findMissingImages = onCall(
           existingFiles.add(fileNameOnly);
         });
 
-        // Find missing images
-        referencedImages.forEach((filename) => {
+        // Find missing images and build result in one pass
+        const missingImagesWithSpots = [];
+        filenameToSpots.forEach((spots, filename) => {
           if (!existingFiles.has(filename)) {
-            missingImages.push({
+            missingImagesWithSpots.push({
               filename: filename,
-              spotId: null, // We'll populate this in the next step
-              spotName: null,
-              imageUrl: null,
+              spots: spots,
             });
           }
         });
 
-        // Find which spots reference each missing image
-        const missingImagesWithSpots = [];
-        for (const missingImage of missingImages) {
-          const spotsWithThisImage = [];
-
-          spotsSnapshot.forEach((doc) => {
-            const spotData = doc.data();
-            if (spotData.imageUrls && Array.isArray(spotData.imageUrls)) {
-              spotData.imageUrls.forEach((url) => {
-                let filename;
-                try {
-                  const urlObj = new URL(url);
-                  const pathname = urlObj.pathname;
-
-                  if (
-                    url.includes("firebasestorage.googleapis.com") &&
-                  pathname.includes("/o/")
-                  ) {
-                    const encodedPath = pathname.split("/o/")[1];
-                    const decodedPath = decodeURIComponent(encodedPath);
-                    filename = decodedPath.split("/").pop();
-                  } else {
-                    filename = pathname.split("/").pop();
-                  }
-
-                  if (filename === missingImage.filename) {
-                    spotsWithThisImage.push({
-                      spotId: doc.id,
-                      spotName: spotData.name || "Unnamed Spot",
-                      imageUrl: url,
-                    });
-                  }
-                } catch (urlError) {
-                // Skip invalid URLs
-                }
-              });
-            }
-          });
-
-          if (spotsWithThisImage.length > 0) {
-            missingImagesWithSpots.push({
-              filename: missingImage.filename,
-              spots: spotsWithThisImage,
-            });
-          }
-        }
-
         const result = {
           success: true,
-          totalReferencedImages: referencedImages.size,
+          totalReferencedImages: filenameToSpots.size,
           totalExistingFiles: existingFiles.size,
           missingImagesCount: missingImagesWithSpots.length,
           missingImages: missingImagesWithSpots,

@@ -1666,12 +1666,12 @@ class _MissingImagesScreenState extends State<MissingImagesScreen> {
                 return Card(
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
-                    title: Text(filename),
+                    title: SelectableText(filename),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('Referenced by ${spots.length} spot(s):'),
-                        ...spots.map((spot) => Text(
+                        ...spots.map((spot) => SelectableText(
                           '• ${spot['spotName']} (${spot['spotId']})',
                           style: const TextStyle(fontSize: 12),
                         )),
