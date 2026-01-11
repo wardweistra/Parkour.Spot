@@ -16,6 +16,7 @@ import 'package:parkour_spot/services/user_management_service.dart';
 import 'package:parkour_spot/services/snackbar_service.dart';
 import 'package:parkour_spot/services/spot_list_service.dart';
 import 'package:parkour_spot/services/feature_access_service.dart';
+import 'package:parkour_spot/services/pwa_install_service.dart';
 import 'package:parkour_spot/router/app_router.dart';
 import 'package:parkour_spot/firebase_options.dart';
 import 'package:parkour_spot/config/app_config.dart';
@@ -116,6 +117,7 @@ class ParkourSpotApp extends StatelessWidget {
             return previous ?? SpotListService(authService, featureAccessService);
           },
         ),
+        ChangeNotifierProvider(create: (_) => PwaInstallService()..initialize()),
       ],
       child: MaterialApp.router(
         title: 'Parkour·Spot',

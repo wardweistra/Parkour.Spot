@@ -24,6 +24,7 @@ import '../models/spot.dart';
 import '../services/spot_service.dart';
 import '../services/auth_service.dart';
 import '../analytics/web_analytics.dart';
+import '../services/pwa_install_service.dart';
 
 /// Router observer that tracks page views for Google Analytics
 class GaObserver extends NavigatorObserver {
@@ -73,6 +74,13 @@ class GaObserver extends NavigatorObserver {
         // Fallback to browser URL if router state is not available
         final path = web.window.location.pathname;
         WebAnalytics.trackPageView(path: path);
+      }
+      
+      // Track page view for PWA install service
+      try {
+        PwaInstallService().trackPageView();
+      } catch (e) {
+        // Silent fail - PWA tracking is not critical
       }
     });
   }

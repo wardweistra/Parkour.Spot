@@ -6,6 +6,7 @@ import 'package:web/web.dart' as web;
 
 import '../services/auth_service.dart';
 import '../widgets/custom_button.dart';
+import '../widgets/pwa_install_prompt.dart';
 import 'spots/search_screen.dart';
 import 'spots/add_spot_screen.dart';
 import 'profile/profile_screen.dart';
@@ -381,30 +382,36 @@ class _ExploreScreenState extends State<ExploreScreen> {
         children: _buildScreens(),
       ),
 
-      bottomNavigationBar: SafeArea(
-        child: BottomNavigationBar(
-          type: BottomNavigationBarType.fixed,
-          currentIndex: _currentIndex,
-          onTap: _onTabTapped,
-          selectedItemColor: Theme.of(context).colorScheme.primary,
-          unselectedItemColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          elevation: 8,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.explore),
-              label: 'Explore',
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const PwaInstallPrompt(),
+          SafeArea(
+            child: BottomNavigationBar(
+              type: BottomNavigationBarType.fixed,
+              currentIndex: _currentIndex,
+              onTap: _onTabTapped,
+              selectedItemColor: Theme.of(context).colorScheme.primary,
+              unselectedItemColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+              backgroundColor: Theme.of(context).colorScheme.surface,
+              elevation: 8,
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.explore),
+                  label: 'Explore',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.add_location),
+                  label: 'Add Spot',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.person),
+                  label: 'Profile',
+                ),
+              ],
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.add_location),
-              label: 'Add Spot',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person),
-              label: 'Profile',
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -59,6 +59,47 @@ class MobileDetectionService {
     }
   }
   
+  /// Detects if the app is running as an installed PWA (standalone mode)
+  /// Returns true if the app is running in standalone, fullscreen, or minimal-ui display mode
+  static bool get isRunningAsPWA {
+    if (!kIsWeb) return false;
+    
+    try {
+      // Standard way: Check display-mode media query
+      // This works for most modern browsers
+      final standaloneMatch = web.window.matchMedia('(display-mode: standalone)');
+      final fullscreenMatch = web.window.matchMedia('(display-mode: fullscreen)');
+      final minimalUiMatch = web.window.matchMedia('(display-mode: minimal-ui)');
+      
+      if (standaloneMatch.matches || fullscreenMatch.matches || minimalUiMatch.matches) {
+        return true;
+      }
+      
+      // iOS Safari specific: Check navigator.standalone
+      // This is a boolean that's true when running from home screen
+      // Note: This property may not exist on all browsers, so we check safely
+      try {
+        final standalone = (web.window.navigator as dynamic).standalone;
+        if (standalone == true) {
+          return true;
+        }
+      } catch (_) {
+        // Property doesn't exist, which is fine
+      }
+      
+      return false;
+    } catch (e) {
+      debugPrint('Error detecting PWA mode: $e');
+      return false;
+    }
+  }
+  
+  /// Detects if the app is running in a regular browser (not PWA)
+  static bool get isRunningInBrowser {
+    if (!kIsWeb) return false;
+    return !isRunningAsPWA;
+  }
+  
   /// Gets the preferred maps app for the current device
   static String get preferredMapsApp {
     if (isIOS) return 'apple_maps';
@@ -85,6 +126,8 @@ class MobileDetectionService {
         'isMobileDevice': isMobileDevice,
         'isIOS': isIOS,
         'isAndroid': isAndroid,
+        'isRunningAsPWA': isRunningAsPWA,
+        'isRunningInBrowser': isRunningInBrowser,
         'preferredMapsApp': preferredMapsApp,
       };
     } catch (e) {
