@@ -23,7 +23,6 @@ class PwaInstallPrompt extends StatefulWidget {
 
 class _PwaInstallPromptState extends State<PwaInstallPrompt> {
   final _pwaService = PwaInstallService();
-  bool _isInstalling = false;
 
   @override
   void initState() {
@@ -44,29 +43,17 @@ class _PwaInstallPromptState extends State<PwaInstallPrompt> {
     }
   }
 
-  Future<void> _handleInstall() async {
-    if (MobileDetectionService.isIOS) {
-      // On iOS, show instructions dialog
-      _showIOSInstructions();
-    } else {
-      // On Android/Chrome, trigger the install prompt
-      setState(() => _isInstalling = true);
-      final success = await _pwaService.promptInstall();
-      setState(() => _isInstalling = false);
-      
-      if (!success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Unable to show install prompt. Please try again later.'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-    }
+  void _handleInstall() {
+    // Always show instructions dialog for both iOS and Android
+    _showInstallInstructions();
   }
 
-  void _showIOSInstructions() {
-    final instructions = _pwaService.getIOSInstallInstructions();
+  void _showInstallInstructions() {
+    final instructions = MobileDetectionService.isIOS
+        ? _pwaService.getIOSInstallInstructions()
+        : _pwaService.getAndroidInstallInstructions();
+    
+    final platformName = MobileDetectionService.isIOS ? 'iPhone' : 'Android device';
     
     showDialog(
       context: context,
@@ -83,7 +70,7 @@ class _PwaInstallPromptState extends State<PwaInstallPrompt> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'To install Parkour·Spot on your iPhone:',
+              'To install Parkour·Spot on your $platformName:',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 16),
@@ -206,11 +193,10 @@ class _PwaInstallPromptState extends State<PwaInstallPrompt> {
             ),
             const SizedBox(width: 8),
             CustomButton(
-              onPressed: _isInstalling ? null : _handleInstall,
-              text: _isInstalling ? 'Installing...' : 'Install',
+              onPressed: _handleInstall,
+              text: 'Install',
               height: 36,
               width: 90,
-              isLoading: _isInstalling,
             ),
             const SizedBox(width: 8),
             IconButton(

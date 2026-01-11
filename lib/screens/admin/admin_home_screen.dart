@@ -117,6 +117,16 @@ class AdminHomeScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Card(
               child: ListTile(
+                leading: const Icon(Icons.phone_android),
+                title: const Text('Device Detection Info'),
+                subtitle: const Text('View device detection and PWA install service status'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () => context.go('/admin/device-detection'),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Card(
+              child: ListTile(
                 leading: const Icon(Icons.star_rate),
                 title: const Text('Recompute Ratings for Rated Spots'),
                 subtitle: const Text('Recalculate average, count, and Wilson lower bound from ratings'),

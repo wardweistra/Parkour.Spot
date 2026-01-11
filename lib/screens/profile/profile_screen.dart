@@ -7,6 +7,8 @@ import 'package:lottie/lottie.dart';
 import '../../services/auth_service.dart';
 import '../../services/spot_list_service.dart';
 import '../../services/feature_access_service.dart';
+import '../../services/pwa_install_service.dart';
+import '../../services/mobile_detection_service.dart';
 import '../../models/spot_list.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/instagram_button.dart';
@@ -242,6 +244,12 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               ),
               
               const SizedBox(height: 16),
+
+              // Install App Banner (for mobile users not on PWA)
+              if (_shouldShowInstallBanner()) ...[
+                _buildInstallBanner(context),
+                const SizedBox(height: 16),
+              ],
 
               if (authService.isModerator || authService.isAdmin) ...[
                 Card(
@@ -1009,6 +1017,143 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           ),
         ],
       ),
+    );
+  }
+
+  /// Check if install banner should be shown
+  /// Always shown on mobile when not running as PWA (regardless of engagement)
+  bool _shouldShowInstallBanner() {
+    if (!MobileDetectionService.isMobileDevice) return false;
+    if (MobileDetectionService.isRunningAsPWA) return false;
+    
+    return true;
+  }
+
+  /// Build the install app banner
+  Widget _buildInstallBanner(BuildContext context) {
+    return Card(
+      child: InkWell(
+        onTap: () => _showInstallInstructions(context),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              Icon(
+                Icons.get_app,
+                color: Theme.of(context).colorScheme.primary,
+                size: 32,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Install the Parkour·Spot app',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Get the full app experience',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Show install instructions dialog
+  void _showInstallInstructions(BuildContext context) {
+    final pwaService = PwaInstallService();
+    final instructions = MobileDetectionService.isIOS
+        ? pwaService.getIOSInstallInstructions()
+        : pwaService.getAndroidInstallInstructions();
+    
+    final platformName = MobileDetectionService.isIOS ? 'iPhone' : 'Android device';
+    
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.get_app, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 8),
+            Expanded(child: Text(instructions['title']!)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'To install Parkour·Spot on your $platformName:',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 16),
+            _buildInstallInstructionStep(dialogContext, '1', instructions['step1']!),
+            const SizedBox(height: 12),
+            _buildInstallInstructionStep(dialogContext, '2', instructions['step2']!),
+            const SizedBox(height: 12),
+            _buildInstallInstructionStep(dialogContext, '3', instructions['step3']!),
+            const SizedBox(height: 12),
+            _buildInstallInstructionStep(dialogContext, '4', instructions['step4']!),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Got it'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInstallInstructionStep(BuildContext context, String number, String text) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary,
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Text(
+              number,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onPrimary,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ),
+      ],
     );
   }
 }

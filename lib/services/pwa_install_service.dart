@@ -73,10 +73,10 @@ class PwaInstallService extends ChangeNotifier {
   bool get isInstalled => _isInstalled;
   
   /// Whether the prompt should be shown (considering all conditions)
+  /// Note: We no longer require isInstallPromptAvailable since we show instructions for all platforms
   bool get shouldShowPrompt {
     if (!kIsWeb) return false;
     if (_isInstalled) return false;
-    if (!_isInstallPromptAvailable && !MobileDetectionService.isIOS) return false;
     if (!MobileDetectionService.isMobileDevice) return false;
     
     // Check if dismissed and within cooldown period
@@ -115,6 +115,27 @@ class PwaInstallService extends ChangeNotifier {
   bool get isInstallSupported {
     if (!kIsWeb) return false;
     return MobileDetectionService.isMobileDevice;
+  }
+  
+  /// Get debug information about the PWA install service state
+  /// Useful for admin screens and testing
+  Map<String, dynamic> get debugInfo {
+    return {
+      // Note: isInstallPromptAvailable is for diagnostics only - we always show instructions
+      'chromeInstallButtonAvailable': _isInstallPromptAvailable, // Whether Chrome might show its own install button
+      'isInstalled': _isInstalled,
+      'isInstallSupported': isInstallSupported,
+      'shouldShowPrompt': shouldShowPrompt, // Controls Explore banner visibility (engagement-based)
+      'showCount': _showCount,
+      'pageViewCount': _pageViewCount,
+      'firstSeenTimestamp': _firstSeenTimestamp,
+      'isDismissed': _isDismissed,
+      'dismissedTimestamp': _dismissedTimestamp,
+      'dismissCooldownDays': _dismissCooldownDays,
+      'maxShowCount': _maxShowCount,
+      'minPageViews': _minPageViews,
+      'minTimeBeforeShow': _minTimeBeforeShow,
+    };
   }
   
   /// Initialize the service and set up event listeners
@@ -270,6 +291,17 @@ class PwaInstallService extends ChangeNotifier {
       'step1': 'Tap the Share button at the bottom of the screen',
       'step2': 'Scroll down and tap "Add to Home Screen"',
       'step3': 'Tap "Add" in the top right corner',
+      'step4': 'The app will appear on your home screen!',
+    };
+  }
+  
+  /// Get installation instructions for Android/Chrome
+  Map<String, String> getAndroidInstallInstructions() {
+    return {
+      'title': 'Install Parkour·Spot',
+      'step1': 'Tap the More menu (⋯) in the top right corner',
+      'step2': 'Tap "Add to home screen"',
+      'step3': 'Tap "Install app"',
       'step4': 'The app will appear on your home screen!',
     };
   }
