@@ -267,6 +267,19 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
     
     final platformName = MobileDetectionService.isIOS ? 'iPhone' : 'Android device';
     
+    _showInstallInstructionsDialog(instructions, platformName);
+  }
+
+  void _testIOSInstructions() {
+    if (!kIsWeb) return;
+    
+    final pwaService = PwaInstallService();
+    final instructions = pwaService.getIOSInstallInstructions();
+    
+    _showInstallInstructionsDialog(instructions, 'iPhone');
+  }
+
+  void _showInstallInstructionsDialog(Map<String, String> instructions, String platformName) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -618,16 +631,33 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      // Test install instructions button
-                      ElevatedButton.icon(
-                        onPressed: _testInstallInstructions,
-                        icon: const Icon(Icons.info_outline, size: 18),
-                        label: Text(MobileDetectionService.isIOS 
-                            ? 'Test iOS Install Instructions'
-                            : 'Test Android Install Instructions'),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        ),
+                      // Test install instructions buttons
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: _testInstallInstructions,
+                              icon: const Icon(Icons.info_outline, size: 18),
+                              label: Text(MobileDetectionService.isIOS 
+                                  ? 'Test iOS Instructions'
+                                  : 'Test Android Instructions'),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: _testIOSInstructions,
+                              icon: const Icon(Icons.phone_iphone, size: 18),
+                              label: const Text('Test iOS Instructions'),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 16),
                       if (_pwaInfo != null)
