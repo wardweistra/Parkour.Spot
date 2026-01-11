@@ -476,51 +476,12 @@ class _ReportCardState extends State<_ReportCard> {
                 ),
               ),
               const SizedBox(height: 12),
-              // Metadata row: category, reporter, time, location
+              // Metadata row: category, reporter, time, location, report ID
               Wrap(
                 spacing: 16,
                 runSpacing: 8,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  // Report ID with copy button
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.description_outlined,
-                        size: 16,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'ID: ${widget.report.id}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      InkWell(
-                        onTap: () {
-                          Clipboard.setData(ClipboardData(text: widget.report.id));
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Report ID copied to clipboard'),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                        },
-                        borderRadius: BorderRadius.circular(4),
-                        child: Padding(
-                          padding: const EdgeInsets.all(2),
-                          child: Icon(
-                            Icons.copy,
-                            size: 14,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
                   // Report type/category first
                   if (widget.report.displayCategories.isNotEmpty)
                     Row(
@@ -594,6 +555,24 @@ class _ReportCardState extends State<_ReportCard> {
                         ),
                       ],
                     ),
+                  // Report ID (selectable, last)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.description_outlined,
+                        size: 16,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 4),
+                      SelectableText(
+                        'ID: ${widget.report.id}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             if (widget.report.duplicateOfSpotId != null) ...[
@@ -612,8 +591,8 @@ class _ReportCardState extends State<_ReportCard> {
             ],
             if (widget.report.otherCategory?.isNotEmpty ?? false) ...[
               const SizedBox(height: 12),
-              RichText(
-                text: TextSpan(
+              SelectableText.rich(
+                TextSpan(
                   style: theme.textTheme.bodyMedium,
                   children: [
                     const TextSpan(
@@ -628,8 +607,8 @@ class _ReportCardState extends State<_ReportCard> {
             ],
             if (widget.report.details?.isNotEmpty ?? false) ...[
               const SizedBox(height: 12),
-              RichText(
-                text: TextSpan(
+              SelectableText.rich(
+                TextSpan(
                   style: theme.textTheme.bodyMedium,
                   children: [
                     const TextSpan(
@@ -925,13 +904,54 @@ class _ReportCardState extends State<_ReportCard> {
                   Expanded(
                     child: TextButton.icon(
                       onPressed: () async {
-                        final Uri emailUri = Uri.parse('mailto:${widget.report.primaryContact}');
+                        // Build email subject
+                        final subject = 'Re: Spot Report - ${widget.report.spotName}';
+                        
+                        // Build email body with report details
+                        final bodyParts = <String>[];
+                        bodyParts.add('Hello,');
+                        bodyParts.add('');
+                        bodyParts.add('Thank you for your spot report. Here are the details:');
+                        bodyParts.add('');
+                        bodyParts.add('Spot: ${widget.report.spotName}');
+                        if (widget.report.locationSummary != null) {
+                          bodyParts.add('Location: ${widget.report.locationSummary}');
+                        }
+                        bodyParts.add('Report ID: ${widget.report.id}');
+                        if (widget.report.displayCategories.isNotEmpty) {
+                          bodyParts.add('Category: ${widget.report.displayCategories.join(", ")}');
+                        }
+                        if (widget.report.otherCategory?.isNotEmpty ?? false) {
+                          bodyParts.add('');
+                          bodyParts.add('Issue Description:');
+                          bodyParts.add(widget.report.otherCategory!);
+                        }
+                        if (widget.report.details?.isNotEmpty ?? false) {
+                          bodyParts.add('');
+                          bodyParts.add('Additional Details:');
+                          bodyParts.add(widget.report.details!);
+                        }
+                        bodyParts.add('');
+                        bodyParts.add('Best regards,');
+                        
+                        final body = bodyParts.join('\n');
+                        
+                        // Create mailto URI with subject and body
+                        final emailUri = Uri(
+                          scheme: 'mailto',
+                          path: widget.report.primaryContact,
+                          queryParameters: {
+                            'subject': subject,
+                            'body': body,
+                          },
+                        );
+                        
                         if (await canLaunchUrl(emailUri)) {
                           await launchUrl(emailUri);
                         }
                       },
-                      icon: const Icon(Icons.open_in_new, size: 18),
-                      label: const Text('Contact user'),
+                      icon: const Icon(Icons.email, size: 18),
+                      label: const Text('Email user'),
                     ),
                   ),
                   IconButton(
