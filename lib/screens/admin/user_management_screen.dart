@@ -174,11 +174,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       return Card(
                         child: ListTile(
                           leading: _UserAvatar(user: user),
-                          title: Text(user.displayName?.isNotEmpty == true ? user.displayName! : user.email),
+                          title: SelectableText(user.displayName?.isNotEmpty == true ? user.displayName! : user.email),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(user.email),
+                              SelectableText(user.email),
                               if (user.createdAt != null)
                                 Text(
                                   'Joined: ${_formatDate(user.createdAt!)}',
@@ -262,12 +262,12 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
+                                SelectableText(
                                   user.displayName?.isNotEmpty == true ? user.displayName! : user.email,
                                   style: Theme.of(sheetContext).textTheme.titleLarge,
                                 ),
                                 const SizedBox(height: 4),
-                                Text(user.email),
+                                SelectableText(user.email),
                               ],
                             ),
                           ),

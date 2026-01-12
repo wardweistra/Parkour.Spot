@@ -1681,7 +1681,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   const SizedBox(height: 4),
-                                  Text(
+                                  SelectableText(
                                     entry.subtitle ?? '',
                                     style: const TextStyle(fontSize: 13),
                                   ),
@@ -1697,7 +1697,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                     ),
                                   ] else if (entry.details != null) ...[
                                     const SizedBox(height: 4),
-                                    Text(
+                                    SelectableText(
                                       entry.details!,
                                       style: TextStyle(
                                         fontSize: 12,
@@ -1786,12 +1786,12 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                             CrossAxisAlignment.start,
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          Text('Type: ${entry.type.name}'),
+                                          SelectableText('Type: ${entry.type.name}'),
                                           const SizedBox(height: 8),
-                                          Text('Timestamp: $formattedDate'),
+                                          SelectableText('Timestamp: $formattedDate'),
                                           if (entry.id != null) ...[
                                             const SizedBox(height: 8),
-                                            Text('ID: ${entry.id}'),
+                                            SelectableText('ID: ${entry.id}'),
                                           ],
                                           // Show changes widget for Spot Edited entries
                                           if (entry.type == AuditLogEntryType.auditLogAction &&
@@ -1825,7 +1825,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                               if (entry.metadata?['reportId'] != null)
                                                 Padding(
                                                   padding: const EdgeInsets.only(bottom: 4),
-                                                  child: Text(
+                                                  child: SelectableText(
                                                     'Linked to report: ${entry.metadata!['reportId']}',
                                                     style: const TextStyle(fontSize: 12),
                                                   ),
@@ -1844,7 +1844,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                                         ),
                                                       ),
                                                       const SizedBox(height: 4),
-                                                      Text(
+                                                      SelectableText(
                                                         entry.metadata!['metadata']!['notes'] as String,
                                                         style: const TextStyle(fontSize: 12),
                                                       ),
@@ -1868,7 +1868,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                                 child: Row(
                                                   children: [
                                                     Expanded(
-                                                      child: Text(
+                                                      child: SelectableText(
                                                         dialogSpotIds.length > 1 && spotEntry.key == 0
                                                             ? 'Original: ${spotEntry.value}'
                                                             : dialogSpotIds.length > 1
@@ -1914,7 +1914,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                               (e) => Padding(
                                                 padding: const EdgeInsets.only(
                                                     bottom: 4),
-                                                child: Text(
+                                                child: SelectableText(
                                                   '${e.key}: ${e.value}',
                                                   style: const TextStyle(
                                                       fontSize: 12),

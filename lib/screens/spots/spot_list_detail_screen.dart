@@ -758,7 +758,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                                       Container(
                                         width: double.infinity,
                                         padding: const EdgeInsets.all(16),
-                                        child: Text(
+                                        child: SelectableText(
                                           _list!.description!,
                                           style: Theme.of(context).textTheme.bodyMedium,
                                         ),
