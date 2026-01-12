@@ -1541,23 +1541,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
                     const SizedBox(height: 8),
 
-                    // Description
-                    SelectableText(
-                      _spot.description.trim().isEmpty
-                          ? 'No description provided'
-                          : _spot.description,
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        fontStyle: _spot.description.trim().isEmpty
-                            ? FontStyle.italic
-                            : FontStyle.normal,
-                        color: _spot.description.trim().isEmpty
-                            ? Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withValues(alpha: 0.6)
-                            : null,
-                      ),
-                    ),
-
                     // Hidden spot banner
                     if (_spot.hidden || widget.spot.spotSourceRemoved)
                       const SizedBox(height: 16),
@@ -1627,6 +1610,23 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                           ],
                         ),
                       ),
+
+                    // Description
+                    SelectableText(
+                      _spot.description.trim().isEmpty
+                          ? 'No description provided'
+                          : _spot.description,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        fontStyle: _spot.description.trim().isEmpty
+                            ? FontStyle.italic
+                            : FontStyle.normal,
+                        color: _spot.description.trim().isEmpty
+                            ? Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.6)
+                            : null,
+                      ),
+                    ),
 
                     const SizedBox(height: 24),
 
