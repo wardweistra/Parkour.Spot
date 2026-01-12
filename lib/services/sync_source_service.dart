@@ -328,6 +328,38 @@ class SyncSourceService extends ChangeNotifier {
     }
   }
 
+  Future<Map<String, dynamic>?> resumeSync(String sourceId) async {
+    try {
+      _syncingSources.add(sourceId);
+      _error = null;
+      notifyListeners();
+
+      final callable = _functions.httpsCallable('resumeSync');
+      final result = await callable.call({
+        'sourceId': sourceId,
+      });
+      
+      _syncingSources.remove(sourceId);
+      notifyListeners();
+      
+      if (result.data['success'] == true) {
+        // Refresh the sources list to update sync progress
+        await fetchSyncSources(includeInactive: true);
+        return Map<String, dynamic>.from(result.data as Map);
+      } else {
+        _error = 'Resume sync failed: ${result.data['error'] ?? 'Unknown error'}';
+        notifyListeners();
+        return null;
+      }
+    } catch (e) {
+      _syncingSources.remove(sourceId);
+      _error = 'Failed to resume sync: $e';
+      debugPrint(_error);
+      notifyListeners();
+      return null;
+    }
+  }
+
   Future<Map<String, dynamic>?> cleanupUnusedImages() async {
     try {
       final callable = _functions.httpsCallable('cleanupUnusedImages');

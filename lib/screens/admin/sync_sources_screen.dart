@@ -501,90 +501,131 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                         Consumer<SyncSourceService>(
                           builder: (context, service, child) {
                             final isThisSourceSyncing = service.syncingSources.contains(s.id);
-                            return PopupMenuButton<String>(
-                              icon: isThisSourceSyncing 
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
-                                    )
-                                  : const Icon(Icons.sync),
-                              tooltip: 'Sync this source',
-                              enabled: !isThisSourceSyncing,
-                              onSelected: (mode) async {
-                                if (!mounted) return;
-                                final updateImages = mode == 'full';
-                                final syncService = context.read<SyncSourceService>();
-                                final scaffoldMessenger = ScaffoldMessenger.of(context);
-                                final result = await syncService.syncSingleSource(
-                                  s.id,
-                                  updateImagesForExistingSpots: updateImages,
-                                );
-                                if (!mounted) return;
-                                if (result != null) {
-                                  final stats = result['stats'] as Map<String, dynamic>?;
-                                  final message = stats != null 
-                                      ? '${s.name} sync completed! Created: ${stats['created']}, Updated: ${stats['updated']}, Geocoded: ${stats['geocoded']}'
-                                      : '${s.name} sync completed successfully';
-                                  scaffoldMessenger.showSnackBar(
-                                    SnackBar(
-                                      content: Text(message),
-                                      backgroundColor: Colors.green,
-                                      duration: const Duration(seconds: 4),
-                                    ),
-                                  );
-                                } else {
-                                  scaffoldMessenger.showSnackBar(
-                                    SnackBar(
-                                      content: Text(syncService.error ?? 'Sync failed for ${s.name}'),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-                                }
-                              },
-                              itemBuilder: (context) => [
-                                const PopupMenuItem(
-                                  value: 'default',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.sync, size: 20),
-                                      SizedBox(width: 8),
-                                      Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text('Default Sync'),
-                                          Text(
-                                            'Skip images for existing spots',
-                                            style: TextStyle(fontSize: 12, color: Colors.grey),
-                                          ),
-                                        ],
+                            // Show resume button if sync is in progress, otherwise show sync button
+                            if (s.syncInProgress == true) {
+                              return IconButton(
+                                icon: isThisSourceSyncing 
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      )
+                                    : const Icon(Icons.play_arrow),
+                                tooltip: 'Resume sync',
+                                onPressed: isThisSourceSyncing ? null : () async {
+                                  if (!mounted) return;
+                                  final syncService = context.read<SyncSourceService>();
+                                  final scaffoldMessenger = ScaffoldMessenger.of(context);
+                                  final result = await syncService.resumeSync(s.id);
+                                  if (!mounted) return;
+                                  if (result != null) {
+                                    final stats = result['stats'] as Map<String, dynamic>?;
+                                    final message = stats != null 
+                                        ? '${s.name} sync resumed! Created: ${stats['created']}, Updated: ${stats['updated']}, Geocoded: ${stats['geocoded']}'
+                                        : result['message'] ?? '${s.name} sync resumed successfully';
+                                    scaffoldMessenger.showSnackBar(
+                                      SnackBar(
+                                        content: Text(message),
+                                        backgroundColor: Colors.green,
+                                        duration: const Duration(seconds: 4),
                                       ),
-                                    ],
-                                  ),
-                                ),
-                                const PopupMenuItem(
-                                  value: 'full',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.sync_problem, size: 20),
-                                      SizedBox(width: 8),
-                                      Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text('Full Sync'),
-                                          Text(
-                                            'Update images for existing spots',
-                                            style: TextStyle(fontSize: 12, color: Colors.grey),
-                                          ),
-                                        ],
+                                    );
+                                  } else {
+                                    scaffoldMessenger.showSnackBar(
+                                      SnackBar(
+                                        content: Text(syncService.error ?? 'Resume sync failed for ${s.name}'),
+                                        backgroundColor: Colors.red,
                                       ),
-                                    ],
+                                    );
+                                  }
+                                },
+                              );
+                            } else {
+                              return PopupMenuButton<String>(
+                                icon: isThisSourceSyncing 
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      )
+                                    : const Icon(Icons.sync),
+                                tooltip: 'Sync this source',
+                                enabled: !isThisSourceSyncing,
+                                onSelected: (mode) async {
+                                  if (!mounted) return;
+                                  final updateImages = mode == 'full';
+                                  final syncService = context.read<SyncSourceService>();
+                                  final scaffoldMessenger = ScaffoldMessenger.of(context);
+                                  final result = await syncService.syncSingleSource(
+                                    s.id,
+                                    updateImagesForExistingSpots: updateImages,
+                                  );
+                                  if (!mounted) return;
+                                  if (result != null) {
+                                    final stats = result['stats'] as Map<String, dynamic>?;
+                                    final message = stats != null 
+                                        ? '${s.name} sync completed! Created: ${stats['created']}, Updated: ${stats['updated']}, Geocoded: ${stats['geocoded']}'
+                                        : '${s.name} sync completed successfully';
+                                    scaffoldMessenger.showSnackBar(
+                                      SnackBar(
+                                        content: Text(message),
+                                        backgroundColor: Colors.green,
+                                        duration: const Duration(seconds: 4),
+                                      ),
+                                    );
+                                  } else {
+                                    scaffoldMessenger.showSnackBar(
+                                      SnackBar(
+                                        content: Text(syncService.error ?? 'Sync failed for ${s.name}'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                },
+                                itemBuilder: (context) => [
+                                  const PopupMenuItem(
+                                    value: 'default',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.sync, size: 20),
+                                        SizedBox(width: 8),
+                                        Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text('Default Sync'),
+                                            Text(
+                                              'Skip images for existing spots',
+                                              style: TextStyle(fontSize: 12, color: Colors.grey),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ],
-                            );
+                                  const PopupMenuItem(
+                                    value: 'full',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.sync_problem, size: 20),
+                                        SizedBox(width: 8),
+                                        Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text('Full Sync'),
+                                            Text(
+                                              'Update images for existing spots',
+                                              style: TextStyle(fontSize: 12, color: Colors.grey),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }
                           },
                         ),
                       PopupMenuButton<String>(

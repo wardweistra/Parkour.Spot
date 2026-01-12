@@ -3068,6 +3068,92 @@ exports.syncSingleSource = onCall(
     },
 );
 
+// Function to resume a sync that is in progress (admin only)
+exports.resumeSync = onCall(
+    {
+      region: "europe-west1",
+      memory: "2GiB",
+      timeoutSeconds: 3600,
+      secrets: ["GOOGLE_MAPS_API_KEY"],
+    },
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const {sourceId} = request.data || {};
+
+        if (!sourceId) {
+          throw new Error("sourceId is required");
+        }
+
+        const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+        if (!apiKey) {
+          throw new Error("Google Maps API key not configured");
+        }
+
+        console.log(`Resuming sync for source: ${sourceId}`);
+
+        // Get the specific sync source
+        const sourceDoc = await db.collection("syncSources").doc(sourceId).get();
+
+        if (!sourceDoc.exists) {
+          throw new Error(`Sync source with ID ${sourceId} not found`);
+        }
+
+        const source = sourceDoc.data();
+
+        if (!source.isActive) {
+          throw new Error(`Sync source ${source.name} is not active`);
+        }
+
+        // Check if there's a sync in progress
+        if (source.syncInProgress !== true) {
+          throw new Error(`No sync in progress for source ${source.name}`);
+        }
+
+        const syncType = source.syncType || "light";
+        const startIndex = source.syncProgress?.lastProcessedIndex || 0;
+        const isFullSync = syncType === "full";
+
+        console.log(`Resuming in-progress ${syncType} sync for source: ${source.name} (${sourceId}) from index ${startIndex}`);
+
+        // Refresh source data to get latest state
+        const refreshedSourceDoc = await db.collection("syncSources").doc(sourceId).get();
+        const refreshedSource = refreshedSourceDoc.data();
+
+        try {
+          const result = await processSyncSource(
+              refreshedSource,
+              sourceId,
+              apiKey,
+              isFullSync,
+              startIndex,
+          );
+
+          const response = {
+            success: true,
+            message: result.partial ? result.message : `Resumed and completed ${syncType} sync for source: ${source.name}`,
+            sourceId: result.sourceId,
+            sourceName: result.sourceName,
+            stats: result.stats,
+            resumed: true,
+            partial: result.partial,
+          };
+
+          console.log(`Resumed sync for source: ${source.name}`, result.stats);
+          return response;
+        } catch (sourceError) {
+          console.error(`Error resuming sync for source ${source.name}:`, sourceError);
+          throw new Error(
+              `Failed to resume sync for source ${source.name}: ${sourceError.message}`,
+          );
+        }
+      } catch (error) {
+        console.error("Error resuming sync:", error);
+        throw new Error(`Failed to resume sync: ${error.message}`);
+      }
+    },
+);
+
 // Function to sync all sources from Firestore collection (admin only)
 exports.syncAllSources = onCall(
     {
