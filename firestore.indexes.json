@@ -118,6 +118,23 @@
         { "fieldPath": "createdBy", "order": "ASCENDING" },
         { "fieldPath": "updatedAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "spots",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "spotSourceRemoved", "order": "ASCENDING" },
+        { "fieldPath": "spotSourceRemovedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "spots",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "spotSource", "order": "ASCENDING" },
+        { "fieldPath": "spotSourceRemoved", "order": "ASCENDING" },
+        { "fieldPath": "spotSourceRemovedAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

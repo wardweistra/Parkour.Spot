@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/spot_service.dart';
 import '../../services/sync_source_service.dart';
+import '../../services/url_service.dart';
 import '../../models/spot.dart';
 
 class SpotManagementScreen extends StatefulWidget {
@@ -13,9 +14,15 @@ class SpotManagementScreen extends StatefulWidget {
   State<SpotManagementScreen> createState() => _SpotManagementScreenState();
 }
 
+enum SearchMode {
+  lastUpdatedBefore,
+  removedSpots,
+}
+
 class _SpotManagementScreenState extends State<SpotManagementScreen> {
   String? _selectedSourceId;
   DateTime? _selectedTimestamp;
+  SearchMode _searchMode = SearchMode.lastUpdatedBefore;
   List<Spot> _spots = [];
   bool _isLoading = false;
   String? _error;
@@ -35,7 +42,7 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
   }
 
   Future<void> _searchSpots() async {
-    if (_selectedTimestamp == null) {
+    if (_searchMode == SearchMode.lastUpdatedBefore && _selectedTimestamp == null) {
       setState(() {
         _error = 'Please select a timestamp';
       });
@@ -51,10 +58,19 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
 
     try {
       final spotService = Provider.of<SpotService>(context, listen: false);
-      final spots = await spotService.getSpotsBySourceAndTimestamp(
-        _selectedSourceId ?? '', // Use empty string for native spots
-        _selectedTimestamp!,
-      );
+      List<Spot> spots;
+      
+      if (_searchMode == SearchMode.removedSpots) {
+        // Search for removed spots
+        // If source is selected, use it; otherwise search all sources (null)
+        spots = await spotService.getRemovedSpotsBySource(_selectedSourceId);
+      } else {
+        // Search for spots last updated before timestamp
+        spots = await spotService.getSpotsBySourceAndTimestamp(
+          _selectedSourceId ?? '', // Use empty string for native spots
+          _selectedTimestamp!,
+        );
+      }
       
       setState(() {
         _spots = spots;
@@ -209,9 +225,61 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
                   ),
                   const SizedBox(height: 16),
                   
+                  // Search mode selection
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Search Mode',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: RadioListTile<SearchMode>(
+                              title: const Text('Last Updated Before'),
+                              value: SearchMode.lastUpdatedBefore,
+                              groupValue: _searchMode,
+                              onChanged: (value) {
+                                setState(() {
+                                  _searchMode = value!;
+                                  _spots = [];
+                                  _selectedSpotIds.clear();
+                                });
+                              },
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ),
+                          Expanded(
+                            child: RadioListTile<SearchMode>(
+                              title: const Text('Removed Spots'),
+                              value: SearchMode.removedSpots,
+                              groupValue: _searchMode,
+                              onChanged: (value) {
+                                setState(() {
+                                  _searchMode = value!;
+                                  _spots = [];
+                                  _selectedSpotIds.clear();
+                                });
+                              },
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
                   // Source selection
                   Consumer<SyncSourceService>(
                     builder: (context, syncSourceService, child) {
+                      // Sort sources alphabetically by name
+                      final sortedSources = List<SyncSource>.from(syncSourceService.sources)
+                        ..sort((a, b) => a.name.compareTo(b.name));
+                      
                       return DropdownButtonFormField<String?>(
                         initialValue: _selectedSourceId,
                         decoration: const InputDecoration(
@@ -223,7 +291,7 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
                             value: null,
                             child: Text('Native Spots (No Source)'),
                           ),
-                          ...syncSourceService.sources.map((source) => DropdownMenuItem<String?>(
+                          ...sortedSources.map((source) => DropdownMenuItem<String?>(
                             value: source.id,
                             child: Text(source.name),
                           )),
@@ -239,35 +307,61 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
                   
                   const SizedBox(height: 16),
                   
-                  // Timestamp selection
-                  InkWell(
-                    onTap: () async {
-                      final date = await showDatePicker(
-                        context: context,
-                        initialDate: _selectedTimestamp ?? DateTime.now(),
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime.now(),
-                      );
-                      if (date != null) {
-                        setState(() {
-                          _selectedTimestamp = date;
-                        });
-                      }
-                    },
-                    child: InputDecorator(
-                      decoration: const InputDecoration(
-                        labelText: 'Last Updated Before',
-                        border: OutlineInputBorder(),
-                        suffixIcon: Icon(Icons.calendar_today),
-                        helperText: 'Find spots last updated before this date',
-                      ),
-                      child: Text(
-                        _selectedTimestamp != null
-                            ? '${_selectedTimestamp!.day}/${_selectedTimestamp!.month}/${_selectedTimestamp!.year}'
-                            : 'Select a date',
+                  // Timestamp selection (only shown for lastUpdatedBefore mode)
+                  if (_searchMode == SearchMode.lastUpdatedBefore)
+                    InkWell(
+                      onTap: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: _selectedTimestamp ?? DateTime.now(),
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime.now(),
+                        );
+                        if (date != null) {
+                          setState(() {
+                            _selectedTimestamp = date;
+                          });
+                        }
+                      },
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: 'Last Updated Before',
+                          border: OutlineInputBorder(),
+                          suffixIcon: Icon(Icons.calendar_today),
+                          helperText: 'Find spots last updated before this date',
+                        ),
+                        child: Text(
+                          _selectedTimestamp != null
+                              ? '${_selectedTimestamp!.day}/${_selectedTimestamp!.month}/${_selectedTimestamp!.year}'
+                              : 'Select a date',
+                        ),
                       ),
                     ),
-                  ),
+                  
+                  // Info text for removed spots mode
+                  if (_searchMode == SearchMode.removedSpots)
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.blue[50],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.blue[200]!),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _selectedSourceId == null
+                                  ? 'Searching for removed spots from all sources'
+                                  : 'Searching for removed spots from selected source',
+                              style: TextStyle(color: Colors.blue[900], fontSize: 12),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   
                   const SizedBox(height: 16),
                   
@@ -332,7 +426,7 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
       );
     }
 
-    if (_spots.isEmpty && _selectedTimestamp != null) {
+    if (_spots.isEmpty && _searchMode == SearchMode.lastUpdatedBefore && _selectedTimestamp != null) {
       return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -348,16 +442,34 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
       );
     }
 
-    if (_spots.isEmpty) {
+    if (_spots.isEmpty && _searchMode == SearchMode.removedSpots) {
       return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.search, size: 64, color: Colors.grey),
+            Icon(Icons.search_off, size: 64, color: Colors.grey),
             SizedBox(height: 16),
             Text(
-              'Select a date to find spots last updated before that date',
+              'No removed spots found',
               style: TextStyle(color: Colors.grey),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_spots.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.search, size: 64, color: Colors.grey),
+            const SizedBox(height: 16),
+            Text(
+              _searchMode == SearchMode.lastUpdatedBefore
+                  ? 'Select a date to find spots last updated before that date'
+                  : 'Click "Search Spots" to find removed spots',
+              style: const TextStyle(color: Colors.grey),
             ),
           ],
         ),
@@ -405,13 +517,15 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
               
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: CheckboxListTile(
-                  value: isSelected,
-                  onChanged: (value) {
-                    if (spot.id != null) {
-                      _toggleSpotSelection(spot.id!);
-                    }
-                  },
+                child: ListTile(
+                  leading: Checkbox(
+                    value: isSelected,
+                    onChanged: (value) {
+                      if (spot.id != null) {
+                        _toggleSpotSelection(spot.id!);
+                      }
+                    },
+                  ),
                   title: Text(
                     spot.name,
                     style: TextStyle(
@@ -453,10 +567,64 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
                           ],
                         ),
                       ],
+                      if (spot.spotSourceRemoved && spot.spotSourceRemovedAt != null) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(Icons.remove_circle_outline, size: 16, color: Colors.red[600]),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Removed: ${spot.spotSourceRemovedAt!.day}/${spot.spotSourceRemovedAt!.month}/${spot.spotSourceRemovedAt!.year}',
+                              style: TextStyle(color: Colors.red[600], fontSize: 12, fontWeight: FontWeight.w500),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
-                  secondary: spot.imageUrls?.isNotEmpty == true
-                      ? ClipRRect(
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // View spot button
+                      IconButton(
+                        icon: const Icon(Icons.open_in_new, size: 20),
+                        tooltip: 'View spot',
+                        onPressed: spot.id != null
+                            ? () {
+                                final navigationUrl = UrlService.generateNavigationUrl(
+                                  spot.id!,
+                                  countryCode: spot.countryCode,
+                                  city: spot.city,
+                                );
+                                context.go(navigationUrl);
+                              }
+                            : null,
+                      ),
+                      // Copy URL button
+                      IconButton(
+                        icon: const Icon(Icons.link, size: 20),
+                        tooltip: 'Copy spot URL',
+                        onPressed: spot.id != null
+                            ? () async {
+                                await UrlService.copySpotUrl(
+                                  spot.id!,
+                                  countryCode: spot.countryCode,
+                                  city: spot.city,
+                                );
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Spot URL copied to clipboard'),
+                                      duration: Duration(seconds: 2),
+                                    ),
+                                  );
+                                }
+                              }
+                            : null,
+                      ),
+                      // Image thumbnail
+                      if (spot.imageUrls?.isNotEmpty == true)
+                        ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: Image.network(
                             spot.imageUrls!.first,
@@ -468,17 +636,20 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
                                 width: 60,
                                 height: 60,
                                 color: Colors.grey[300],
-                                child: const Icon(Icons.image_not_supported),
+                                child: const Icon(Icons.image_not_supported, size: 20),
                               );
                             },
                           ),
                         )
-                      : Container(
+                      else
+                        Container(
                           width: 60,
                           height: 60,
                           color: Colors.grey[300],
-                          child: const Icon(Icons.image_not_supported),
+                          child: const Icon(Icons.image_not_supported, size: 20),
                         ),
+                    ],
+                  ),
                 ),
               );
             },

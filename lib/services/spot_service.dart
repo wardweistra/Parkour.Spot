@@ -1061,6 +1061,59 @@ class SpotService extends ChangeNotifier {
     }
   }
 
+  // Get removed spots by source (admin function)
+  // If sourceId is null, returns removed spots from all sources
+  // If sourceId is empty string, returns removed spots with no source (shouldn't happen, but included for consistency)
+  Future<List<Spot>> getRemovedSpotsBySource(String? sourceId) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      debugPrint('🔍 Searching for removed spots');
+      if (sourceId != null) {
+        debugPrint('📦 Source filter: ${sourceId.isEmpty ? "Native spots (no source)" : sourceId}');
+      } else {
+        debugPrint('📦 Source filter: All sources');
+      }
+
+      Query query = _firestore.collection('spots');
+
+      // Filter by removed status
+      query = query.where('spotSourceRemoved', isEqualTo: true);
+
+      // Filter by source if specified
+      if (sourceId != null) {
+        if (sourceId.isNotEmpty) {
+          query = query.where('spotSource', isEqualTo: sourceId);
+        } else {
+          // If sourceId is empty, get spots with no source (native spots)
+          query = query.where('spotSource', isNull: true);
+        }
+      }
+      // If sourceId is null, don't filter by source (get removed spots from all sources)
+
+      // Order by removal date (most recently removed first)
+      query = query.orderBy('spotSourceRemovedAt', descending: true);
+
+      final querySnapshot = await query.get();
+      
+      final spots = querySnapshot.docs
+          .map((doc) => Spot.fromFirestore(doc))
+          .toList();
+
+      debugPrint('✅ Found ${spots.length} removed spots');
+
+      return spots;
+    } catch (e) {
+      _error = 'Failed to fetch removed spots: $e';
+      debugPrint('Error fetching removed spots: $e');
+      return [];
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   // Delete multiple spots (admin function)
   Future<Map<String, int>> deleteSpots(List<String> spotIds) async {
     try {
