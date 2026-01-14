@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image/image.dart' as img;
+import 'package:http/http.dart' as http;
 
 class ProfilePictureService {
   final FirebaseStorage _storage = FirebaseStorage.instance;
@@ -250,5 +251,73 @@ class ProfilePictureService {
       // If file doesn't exist, that's okay - just log it
       debugPrint('Error deleting profile picture (may not exist): $e');
     }
+  }
+
+  /// Download image from URL and upload to Firebase Storage as profile picture
+  /// This is used to copy Google profile pictures to our Storage
+  /// Returns the Firebase Storage URL
+  Future<String> copyImageFromUrl(String imageUrl) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw Exception('User not authenticated');
+    }
+
+    try {
+      // Download image from URL
+      debugPrint('Downloading profile picture from: $imageUrl');
+      
+      final response = await http.get(Uri.parse(imageUrl));
+      if (response.statusCode != 200) {
+        throw Exception('Failed to download image: HTTP ${response.statusCode}');
+      }
+
+      final imageBytes = response.bodyBytes;
+      if (imageBytes.isEmpty) {
+        throw Exception('Downloaded image is empty');
+      }
+
+      debugPrint('Downloaded ${imageBytes.length} bytes');
+
+      // Process image (crop and resize)
+      final processedBytes = await _cropAndResizeImage(imageBytes);
+
+      // Upload to Firebase Storage
+      final fileName = 'users/${user.uid}/profile.jpg';
+      final ref = _storage.ref().child(fileName);
+
+      final uploadTask = ref.putData(
+        processedBytes,
+        SettableMetadata(
+          contentType: 'image/jpeg',
+          cacheControl: 'public, max-age=31536000',
+        ),
+      );
+
+      final snapshot = await uploadTask;
+      final downloadURL = await snapshot.ref.getDownloadURL();
+      
+      debugPrint('Successfully copied profile picture to Storage: $downloadURL');
+      return downloadURL;
+    } catch (e) {
+      debugPrint('Error copying image from URL: $e');
+      rethrow;
+    }
+  }
+
+  /// Check if a URL is a Google profile picture URL
+  bool isGoogleProfilePictureUrl(String? url) {
+    if (url == null || url.isEmpty) return false;
+    return url.contains('googleusercontent.com') || 
+           url.contains('googleapis.com');
+  }
+
+  /// Check if a URL is a Firebase Storage profile picture URL
+  bool isFirebaseStorageProfilePictureUrl(String? url) {
+    if (url == null || url.isEmpty) return false;
+    final user = _auth.currentUser;
+    if (user == null) return false;
+    return url.contains('users/${user.uid}/') && 
+           (url.contains('firebasestorage.googleapis.com') || 
+            url.contains('storage.googleapis.com'));
   }
 }

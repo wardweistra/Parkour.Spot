@@ -3,11 +3,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../models/user.dart' as app_user;
+import 'profile_picture_service.dart';
 
 class AuthService extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
+  final ProfilePictureService _profilePictureService = ProfilePictureService();
   
   User? get currentUser => _auth.currentUser;
   bool get isAdmin => _userProfile?.isAdmin == true;
@@ -67,11 +69,56 @@ class AuthService extends ChangeNotifier {
         );
         await _firestore.collection('users').doc(uid).set(_userProfile!.toMap());
       }
+
+      // Copy Google profile picture to Firebase Storage if needed
+      _copyGoogleProfilePictureIfNeeded();
     } catch (e) {
       debugPrint('Error loading user profile: $e');
     } finally {
       _isLoading = false; // Auth state restored
       notifyListeners();
+    }
+  }
+
+  /// Copy Google profile picture to Firebase Storage if:
+  /// 1. User has a Google photoURL
+  /// 2. User doesn't already have a Firebase Storage profile picture
+  /// This runs asynchronously and doesn't block the login flow
+  void _copyGoogleProfilePictureIfNeeded() {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null || _userProfile == null) return;
+
+    final googlePhotoURL = currentUser.photoURL;
+    final storedPhotoURL = _userProfile!.photoURL;
+
+    // Check if user has a Google profile picture
+    if (googlePhotoURL == null || googlePhotoURL.isEmpty) {
+      return;
+    }
+
+    // Check if it's a Google URL (not already in Storage)
+    if (!_profilePictureService.isGoogleProfilePictureUrl(googlePhotoURL)) {
+      return;
+    }
+
+    // Check if user already has a Firebase Storage profile picture
+    if (_profilePictureService.isFirebaseStorageProfilePictureUrl(storedPhotoURL)) {
+      return;
+    }
+
+    // Copy Google picture to Storage asynchronously (don't block)
+    _copyGooglePictureToStorage(googlePhotoURL);
+  }
+
+  /// Copy Google profile picture to Storage (async helper)
+  Future<void> _copyGooglePictureToStorage(String googlePhotoURL) async {
+    try {
+      final storageURL = await _profilePictureService.copyImageFromUrl(googlePhotoURL);
+      // Update profile with Storage URL
+      await updateProfile(photoURL: storageURL, deleteOldPhoto: false);
+    } catch (e) {
+      debugPrint('Error copying Google profile picture to Storage: $e');
+      // Non-critical error - user can still use the app with Google URL
     }
   }
 
