@@ -512,32 +512,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       
       // Start or stop location polling based on permission status
       if (isGranted) {
-        // Load cached location if available
-        final searchState = Provider.of<SearchStateService>(context, listen: false);
-        final cachedLat = searchState.lastKnownUserLat;
-        final cachedLng = searchState.lastKnownUserLng;
-        
-        if (cachedLat != null && cachedLng != null) {
-          // Create a temporary Position from cached location for the marker
-          // We'll use the last known location until we get a fresh fix
-          try {
-            // Try to get last known position from geolocator first
-            final lastKnownPosition = await Geolocator.getLastKnownPosition();
-            if (lastKnownPosition != null) {
-              setState(() {
-                _currentPosition = lastKnownPosition;
-              });
-              _updateVisibleSpots();
-            } else {
-              // If no last known position from geolocator, we'll wait for polling to get it
-              // The marker will appear once polling gets the first location
-            }
-          } catch (e) {
-            // Silently fail - polling will get location soon
-            debugPrint('Error getting last known position: $e');
-          }
-        }
-        
+        // Start location polling - it will get the current position
+        // The cached location (if available) is used elsewhere (e.g., centering the map)
         _startLocationPolling();
       } else {
         _stopLocationPolling();
