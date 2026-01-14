@@ -29,6 +29,7 @@ class AuthService extends ChangeNotifier {
   
   bool _isLoading = true; // Start as loading while auth state is being restored
   app_user.User? _userProfile;
+  bool _isCopyingGooglePicture = false; // Track if Google picture copy is in progress
 
   app_user.User? get userProfile => _userProfile;
 
@@ -70,8 +71,8 @@ class AuthService extends ChangeNotifier {
         await _firestore.collection('users').doc(uid).set(_userProfile!.toMap());
       }
 
-      // Copy Google profile picture to Firebase Storage if needed
-      _copyGoogleProfilePictureIfNeeded();
+      // Note: Google profile picture copy is handled in sign-in methods, not here
+      // This prevents copying on every page refresh
     } catch (e) {
       debugPrint('Error loading user profile: $e');
     } finally {
@@ -83,10 +84,17 @@ class AuthService extends ChangeNotifier {
   /// Copy Google profile picture to Firebase Storage if:
   /// 1. User has a Google photoURL
   /// 2. User doesn't already have a Firebase Storage profile picture
+  /// 3. Copy is not already in progress
   /// This runs asynchronously and doesn't block the login flow
   void _copyGoogleProfilePictureIfNeeded() {
     final currentUser = _auth.currentUser;
     if (currentUser == null || _userProfile == null) return;
+
+    // Don't copy if already in progress
+    if (_isCopyingGooglePicture) {
+      debugPrint('Google picture copy already in progress, skipping');
+      return;
+    }
 
     final googlePhotoURL = currentUser.photoURL;
     final storedPhotoURL = _userProfile!.photoURL;
@@ -96,13 +104,16 @@ class AuthService extends ChangeNotifier {
       return;
     }
 
-    // Check if it's a Google URL (not already in Storage)
-    if (!_profilePictureService.isGoogleProfilePictureUrl(googlePhotoURL)) {
+    // Check if user already has a Firebase Storage profile picture
+    if (_profilePictureService.isFirebaseStorageProfilePictureUrl(storedPhotoURL)) {
+      debugPrint('User already has Firebase Storage profile picture, skipping copy');
       return;
     }
 
-    // Check if user already has a Firebase Storage profile picture
-    if (_profilePictureService.isFirebaseStorageProfilePictureUrl(storedPhotoURL)) {
+    // Only copy if stored photoURL is also a Google URL (not already copied)
+    // This prevents re-copying if the profile still has Google URL but copy is in progress
+    if (!_profilePictureService.isGoogleProfilePictureUrl(storedPhotoURL)) {
+      debugPrint('Stored photoURL is not a Google URL, skipping copy');
       return;
     }
 
@@ -112,13 +123,52 @@ class AuthService extends ChangeNotifier {
 
   /// Copy Google profile picture to Storage (async helper)
   Future<void> _copyGooglePictureToStorage(String googlePhotoURL) async {
+    // Set flag to prevent duplicate copies
+    if (_isCopyingGooglePicture) {
+      debugPrint('Copy already in progress, skipping');
+      return;
+    }
+    
+    _isCopyingGooglePicture = true;
+    
     try {
+      // Check if file already exists in Storage before copying
+      final user = _auth.currentUser;
+      if (user != null) {
+        final fileName = 'users/${user.uid}/profile.jpg';
+        final ref = _storage.ref().child(fileName);
+        
+        try {
+          // Try to get metadata - if it exists, we already have the picture
+          await ref.getMetadata();
+          debugPrint('Profile picture already exists in Storage, skipping copy');
+          
+          // Get the download URL and update profile if it's not already set
+          final existingURL = await ref.getDownloadURL();
+          final storedPhotoURL = _userProfile?.photoURL;
+          
+          if (storedPhotoURL != existingURL) {
+            debugPrint('Updating profile with existing Storage URL');
+            await updateProfile(photoURL: existingURL, deleteOldPhoto: false);
+          }
+          
+          return;
+        } catch (e) {
+          // File doesn't exist, proceed with copy
+          debugPrint('Profile picture not found in Storage, proceeding with copy');
+        }
+      }
+      
+      debugPrint('Copying Google profile picture to Storage');
       final storageURL = await _profilePictureService.copyImageFromUrl(googlePhotoURL);
       // Update profile with Storage URL
       await updateProfile(photoURL: storageURL, deleteOldPhoto: false);
+      debugPrint('Successfully copied Google profile picture to Storage');
     } catch (e) {
       debugPrint('Error copying Google profile picture to Storage: $e');
       // Non-critical error - user can still use the app with Google URL
+    } finally {
+      _isCopyingGooglePicture = false;
     }
   }
 
@@ -136,6 +186,9 @@ class AuthService extends ChangeNotifier {
       
       if (_auth.currentUser != null) {
         await _updateLastLogin();
+        // Check if user signed in with Google (might have linked accounts)
+        // and copy Google profile picture if needed
+        _copyGoogleProfilePictureIfNeeded();
       }
       
       return true;
@@ -166,6 +219,8 @@ class AuthService extends ChangeNotifier {
 
       if (userCredential.user != null) {
         await _updateLastLogin();
+        // Copy Google profile picture to Storage on login (not on page refresh)
+        _copyGoogleProfilePictureIfNeeded();
       }
 
       return true;
@@ -217,6 +272,9 @@ class AuthService extends ChangeNotifier {
         
         await _firestore.collection('users').doc(user.id).set(user.toMap());
         _userProfile = user;
+        
+        // Note: Email/password accounts don't have Google profile pictures
+        // so no need to copy profile picture here
       }
       
       return true;
