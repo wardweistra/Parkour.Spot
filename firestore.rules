@@ -103,5 +103,15 @@ service cloud.firestore {
       allow delete: if request.auth != null &&
         resource.data.createdBy == request.auth.uid;
     }
+
+    // DuplicateDetectionResults collection - only admins can read
+    match /duplicateDetectionResults/{runId} {
+      // Only admins can read duplicate detection results
+      allow read: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      // Only Cloud Functions (with admin privileges) can create/update
+      allow create, update, delete: if false;
+    }
   }
 }

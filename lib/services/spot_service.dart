@@ -1523,6 +1523,54 @@ class SpotService extends ChangeNotifier {
     }
   }
 
+  // Find potential duplicate spots (admin only)
+  Future<Map<String, dynamic>> findDuplicateSpots({
+    required String sourceId,
+    int maxDistanceMeters = 50,
+  }) async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
+      final callable = functions.httpsCallable(
+        'findDuplicateSpots',
+        options: HttpsCallableOptions(
+          timeout: const Duration(minutes: 9),
+        ),
+      );
+
+      final result = await callable.call({
+        'sourceId': sourceId,
+        'maxDistanceMeters': maxDistanceMeters,
+      });
+
+      final responseData = result.data as Map<String, dynamic>?;
+      if (responseData == null || responseData['success'] != true) {
+        throw Exception(responseData != null && responseData['error'] is String
+            ? responseData['error']
+            : 'Unknown error');
+      }
+
+      _isLoading = false;
+      notifyListeners();
+
+      return {
+        'runId': responseData['runId'] as String?,
+        'pairsFound': (responseData['pairsFound'] as num?)?.toInt() ?? 0,
+        'spotsChecked': (responseData['spotsChecked'] as num?)?.toInt() ?? 0,
+        'spotsSkipped': (responseData['spotsSkipped'] as num?)?.toInt() ?? 0,
+      };
+    } catch (e) {
+      _error = 'Failed to find duplicate spots: $e';
+      debugPrint('Error finding duplicate spots: $e');
+      _isLoading = false;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
   // Clear error
   void clearError() {
     _error = null;

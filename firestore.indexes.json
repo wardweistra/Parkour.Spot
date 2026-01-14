@@ -135,6 +135,18 @@
         { "fieldPath": "spotSourceRemoved", "order": "ASCENDING" },
         { "fieldPath": "spotSourceRemovedAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "spots",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "city", "order": "ASCENDING" },
+        { "fieldPath": "countryCode", "order": "ASCENDING" },
+        { "fieldPath": "duplicateOf", "order": "ASCENDING" },
+        { "fieldPath": "hidden", "order": "ASCENDING" },
+        { "fieldPath": "latitude", "order": "ASCENDING" },
+        { "fieldPath": "longitude", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

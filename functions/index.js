@@ -5353,6 +5353,273 @@ exports.generateSitemapsScheduled = onSchedule(
 );
 
 /**
+ * Calculate distance between two coordinates using Haversine formula
+ * @param {number} lat1 - Latitude of first point
+ * @param {number} lon1 - Longitude of first point
+ * @param {number} lat2 - Latitude of second point
+ * @param {number} lon2 - Longitude of second point
+ * @return {number} Distance in meters
+ */
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371000; // Earth's radius in meters
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+/**
+ * Calculate bounding box for approximate 50m radius
+ * @param {number} lat - Latitude
+ * @param {number} lon - Longitude
+ * @param {number} distanceMeters - Distance in meters (default 50)
+ * @return {Object} Bounding box with minLat, maxLat, minLng, maxLng
+ */
+function calculateBounds(lat, lon, distanceMeters = 50) {
+  // 1 degree latitude ≈ 111 km = 111,000 m
+  // 50 m ≈ 0.00045 degrees latitude
+  const latOffset = distanceMeters / 111000; // ~0.00045 degrees for 50m
+  // For longitude, account for latitude (longitude lines get closer near poles)
+  const lngOffset = latOffset / Math.abs(Math.cos(lat * Math.PI / 180.0));
+
+  return {
+    minLat: lat - latOffset,
+    maxLat: lat + latOffset,
+    minLng: lon - lngOffset,
+    maxLng: lon + lngOffset,
+  };
+}
+
+/**
+ * Admin function to find potential duplicate spots within ~50m of each other
+ * Compares spots from one source against spots from other sources
+ * Filters by matching country code and city, then calculates actual distance
+ */
+exports.findDuplicateSpots = onCall(
+    {
+      region: "europe-west1",
+      timeoutSeconds: 540, // 9 minutes max
+      memory: "1GiB",
+    },
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const {sourceId, maxDistanceMeters = 50, maxPairs = 1000} = request.data || {};
+
+        if (!sourceId) {
+          throw new Error("sourceId is required");
+        }
+
+        console.log(`Finding potential duplicate spots for source: ${sourceId} (max distance: ${maxDistanceMeters}m)`);
+
+        // Get the source name
+        let sourceName = sourceId;
+        try {
+          const sourceDoc = await db.collection("syncSources").doc(sourceId).get();
+          if (sourceDoc.exists) {
+            sourceName = sourceDoc.data().name || sourceId;
+          }
+        } catch (error) {
+          console.warn(`Could not fetch source name for ${sourceId}:`, error.message);
+        }
+
+        // Get all spots from the selected source (excluding already-marked duplicates)
+        const sourceSpotsSnapshot = await db
+            .collection("spots")
+            .where("spotSource", "==", sourceId)
+            .where("hidden", "==", false)
+            .where("duplicateOf", "==", null)
+            .get();
+
+        console.log(`Found ${sourceSpotsSnapshot.size} spots from source ${sourceId}`);
+
+        const duplicatePairs = [];
+        let spotsChecked = 0;
+        let spotsSkipped = 0;
+
+        // Process each spot from the source
+        for (const sourceSpotDoc of sourceSpotsSnapshot.docs) {
+          const sourceSpot = sourceSpotDoc.data();
+          const sourceLat = sourceSpot.latitude;
+          const sourceLon = sourceSpot.longitude;
+          const sourceCountryCode = sourceSpot.countryCode;
+          const sourceCity = sourceSpot.city;
+
+          // Skip spots without valid coordinates, country code, or city
+          if (
+            typeof sourceLat !== "number" ||
+            typeof sourceLon !== "number" ||
+            !sourceCountryCode ||
+            !sourceCity
+          ) {
+            spotsSkipped++;
+            continue;
+          }
+
+          spotsChecked++;
+
+          // Calculate bounding box for this spot
+          const bounds = calculateBounds(sourceLat, sourceLon, maxDistanceMeters);
+
+          // Normalize longitude for dateline crossing
+          const normalizeLongitude = (lng) => {
+            const normalized = ((lng + 180) % 360 + 360) % 360 - 180;
+            return normalized;
+          };
+
+          const normalizedMinLng = normalizeLongitude(bounds.minLng);
+          const normalizedMaxLng = normalizeLongitude(bounds.maxLng);
+          const crossesDateline = normalizedMinLng > normalizedMaxLng;
+
+          // Build query function
+          const buildQuery = (lngMin, lngMax) => {
+            let query = db
+                .collection("spots")
+                .where("countryCode", "==", sourceCountryCode)
+                .where("city", "==", sourceCity)
+                .where("duplicateOf", "==", null)
+                .where("hidden", "==", false)
+                .where("latitude", ">=", bounds.minLat)
+                .where("latitude", "<=", bounds.maxLat)
+                .where("longitude", ">=", lngMin)
+                .where("longitude", "<=", lngMax);
+
+            // Note: We filter out spots from the same source in memory
+            // since Firestore doesn't support != queries efficiently
+
+            return query;
+          };
+
+          // Execute query(ies)
+          let candidateSpots = [];
+          if (crossesDateline) {
+            // Query both sides of dateline
+            const [snap1, snap2] = await Promise.all([
+              buildQuery(normalizedMinLng, 180).get(),
+              buildQuery(-180, normalizedMaxLng).get(),
+            ]);
+            candidateSpots = [
+              ...snap1.docs.map((d) => ({id: d.id, ...d.data()})),
+              ...snap2.docs.map((d) => ({id: d.id, ...d.data()})),
+            ];
+          } else {
+            const snap = await buildQuery(normalizedMinLng, normalizedMaxLng).get();
+            candidateSpots = snap.docs.map((d) => ({id: d.id, ...d.data()}));
+          }
+
+          // Calculate actual distance and filter
+          for (const candidate of candidateSpots) {
+            const candidateLat = candidate.latitude;
+            const candidateLon = candidate.longitude;
+
+            if (typeof candidateLat !== "number" || typeof candidateLon !== "number") {
+              continue;
+            }
+
+            // Skip if same spot
+            if (candidate.id === sourceSpotDoc.id) {
+              continue;
+            }
+
+            // Skip if from the same source (we want duplicates from OTHER sources)
+            if (candidate.spotSource === sourceId) {
+              continue;
+            }
+
+            // Calculate actual distance
+            const distance = calculateDistance(
+                sourceLat,
+                sourceLon,
+                candidateLat,
+                candidateLon,
+            );
+
+            if (distance <= maxDistanceMeters) {
+              duplicatePairs.push({
+                spot1: {
+                  id: sourceSpotDoc.id,
+                  name: sourceSpot.name || "",
+                  latitude: sourceLat,
+                  longitude: sourceLon,
+                  address: sourceSpot.address,
+                  city: sourceCity,
+                  countryCode: sourceCountryCode,
+                  spotSource: sourceSpot.spotSource,
+                  spotSourceName: sourceSpot.spotSourceName,
+                  hasImages: (sourceSpot.imageUrls || []).length > 0,
+                },
+                spot2: {
+                  id: candidate.id,
+                  name: candidate.name || "",
+                  latitude: candidateLat,
+                  longitude: candidateLon,
+                  address: candidate.address,
+                  city: candidate.city,
+                  countryCode: candidate.countryCode,
+                  spotSource: candidate.spotSource,
+                  spotSourceName: candidate.spotSourceName,
+                  hasImages: (candidate.imageUrls || []).length > 0,
+                },
+                distanceMeters: Math.round(distance),
+              });
+
+              // Limit results to prevent timeout
+              if (duplicatePairs.length >= maxPairs) {
+                console.log(`Reached max pairs limit (${maxPairs}), stopping`);
+                break;
+              }
+            }
+          }
+
+          // Stop if we've reached the limit
+          if (duplicatePairs.length >= maxPairs) {
+            break;
+          }
+        }
+
+        // Sort by distance (closest first)
+        duplicatePairs.sort((a, b) => a.distanceMeters - b.distanceMeters);
+
+        // Generate run ID
+        const runId = db.collection("duplicateDetectionResults").doc().id;
+
+        // Store results in Firestore
+        const resultData = {
+          runId: runId,
+          sourceId: sourceId,
+          sourceName: sourceName,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          stats: {
+            spotsChecked: spotsChecked,
+            spotsSkipped: spotsSkipped,
+            pairsFound: duplicatePairs.length,
+          },
+          pairs: duplicatePairs,
+        };
+
+        await db.collection("duplicateDetectionResults").doc(runId).set(resultData);
+
+        console.log(`Found ${duplicatePairs.length} potential duplicate pairs (checked ${spotsChecked} spots, skipped ${spotsSkipped})`);
+
+        return {
+          success: true,
+          runId: runId,
+          pairsFound: duplicatePairs.length,
+          spotsChecked: spotsChecked,
+          spotsSkipped: spotsSkipped,
+        };
+      } catch (error) {
+        console.error("Error finding potential duplicates:", error);
+        throw new Error(`Failed to find potential duplicates: ${error.message}`);
+      }
+    },
+);
+
+/**
  * HTTP function to serve sitemaps on-demand
  * Handles requests for:
  * - /sitemap.xml (sitemap index)

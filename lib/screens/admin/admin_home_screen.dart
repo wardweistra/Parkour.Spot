@@ -117,6 +117,16 @@ class AdminHomeScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Card(
               child: ListTile(
+                leading: const Icon(Icons.compare_arrows),
+                title: const Text('Duplicate Spot Detection'),
+                subtitle: const Text('Find potential duplicate spots within 50m from different sources'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () => context.go('/admin/duplicate-spots'),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Card(
+              child: ListTile(
                 leading: const Icon(Icons.phone_android),
                 title: const Text('Device Detection Info'),
                 subtitle: const Text('View device detection and PWA install service status'),
