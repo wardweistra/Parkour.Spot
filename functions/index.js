@@ -2804,31 +2804,38 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
   }
 
   // Identify and label spots that were not present in this sync
-  const sourceSpotsSnapshot = await db
-      .collection("spots")
-      .where("spotSource", "==", sourceId)
-      .get();
+  // Only do this when we've processed ALL placemarks from the beginning
+  // (i.e., when startIndex === 0 and we completed the full sync)
+  // This prevents incorrectly marking spots as removed during multi-stage syncs
+  if (startIndex === 0) {
+    const sourceSpotsSnapshot = await db
+        .collection("spots")
+        .where("spotSource", "==", sourceId)
+        .get();
 
-  for (const doc of sourceSpotsSnapshot.docs) {
-    if (processedSpotIds.has(doc.id)) {
-      continue;
+    for (const doc of sourceSpotsSnapshot.docs) {
+      if (processedSpotIds.has(doc.id)) {
+        continue;
+      }
+
+      const spotRecord = doc.data() || {};
+      if (spotRecord.spotSourceRemoved === true) {
+        continue; // Already labeled as removed
+      }
+
+      await doc.ref.update({
+        spotSourceRemoved: true,
+        spotSourceRemovedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      removed++;
+      removedSpotSummaries.push({
+        id: doc.id,
+        name: spotRecord.name || doc.id,
+      });
     }
-
-    const spotRecord = doc.data() || {};
-    if (spotRecord.spotSourceRemoved === true) {
-      continue; // Already labeled as removed
-    }
-
-    await doc.ref.update({
-      spotSourceRemoved: true,
-      spotSourceRemovedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
-
-    removed++;
-    removedSpotSummaries.push({
-      id: doc.id,
-      name: spotRecord.name || doc.id,
-    });
+  } else {
+    console.log(`Skipping removal check: sync resumed from index ${startIndex}, will check removals when sync completes from beginning`);
   }
 
   const geocodingSuccessRate =
