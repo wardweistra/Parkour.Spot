@@ -1,11 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import '../models/user.dart' as app_user;
 
 class AuthService extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
   
   User? get currentUser => _auth.currentUser;
   bool get isAdmin => _userProfile?.isAdmin == true;
@@ -212,27 +214,70 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  Future<void> updateProfile({
+  /// Update user profile with optional display name and photo URL
+  /// Returns true on success, false on failure
+  /// If removePhoto is true, photoURL will be set to null (removing the profile picture)
+  Future<bool> updateProfile({
     String? displayName,
     String? photoURL,
+    bool deleteOldPhoto = false,
+    bool removePhoto = false,
   }) async {
-    if (_auth.currentUser != null && _userProfile != null) {
-      try {
-        final updates = <String, dynamic>{};
-        if (displayName != null) updates['displayName'] = displayName;
-        if (photoURL != null) updates['photoURL'] = photoURL;
-        
-        await _firestore.collection('users').doc(_auth.currentUser!.uid).update(updates);
-        
-        _userProfile = _userProfile!.copyWith(
-          displayName: displayName ?? _userProfile!.displayName,
-          photoURL: photoURL ?? _userProfile!.photoURL,
-        );
-        
-        notifyListeners();
-      } catch (e) {
-        debugPrint('Error updating profile: $e');
+    if (_auth.currentUser == null || _userProfile == null) {
+      debugPrint('Cannot update profile: user not authenticated or profile not loaded');
+      return false;
+    }
+
+    try {
+      final userId = _auth.currentUser!.uid;
+      final oldPhotoURL = _userProfile!.photoURL;
+      final updates = <String, dynamic>{};
+
+      if (displayName != null) {
+        updates['displayName'] = displayName;
       }
+
+      // Handle photoURL update
+      if (removePhoto) {
+        // Explicitly removing profile picture
+        updates['photoURL'] = null;
+      } else if (photoURL != null) {
+        // Setting new photo URL
+        updates['photoURL'] = photoURL;
+      }
+
+      // Delete old profile picture from Storage if requested and it exists
+      if (deleteOldPhoto && oldPhotoURL != null && oldPhotoURL.isNotEmpty) {
+        try {
+          // Check if it's a Firebase Storage URL
+          if (oldPhotoURL.contains('users/$userId/')) {
+            final fileName = 'users/$userId/profile.jpg';
+            final ref = _storage.ref().child(fileName);
+            await ref.delete();
+            debugPrint('Deleted old profile picture from Storage');
+          }
+        } catch (e) {
+          // Non-critical error - log but continue
+          debugPrint('Error deleting old profile picture: $e');
+        }
+      }
+
+      // Update Firestore
+      if (updates.isNotEmpty) {
+        await _firestore.collection('users').doc(userId).update(updates);
+      }
+
+      // Update local profile
+      _userProfile = _userProfile!.copyWith(
+        displayName: displayName ?? _userProfile!.displayName,
+        photoURL: removePhoto ? null : (photoURL ?? _userProfile!.photoURL),
+      );
+
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Error updating profile: $e');
+      return false;
     }
   }
 

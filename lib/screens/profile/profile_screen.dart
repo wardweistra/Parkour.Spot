@@ -1,14 +1,19 @@
+import 'dart:async';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:lottie/lottie.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../services/auth_service.dart';
 import '../../services/spot_list_service.dart';
 import '../../services/feature_access_service.dart';
 import '../../services/pwa_install_service.dart';
 import '../../services/mobile_detection_service.dart';
+import '../../services/profile_picture_service.dart';
 import '../../models/spot_list.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/instagram_button.dart';
@@ -27,6 +32,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   bool _isExpanded = false;
   late AnimationController _lottieController;
   bool _hasAnimatedOnLoad = false;
+  bool _isUploadingProfilePicture = false;
+  final ProfilePictureService _profilePictureService = ProfilePictureService();
 
   @override
   void initState() {
@@ -203,22 +210,55 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   padding: const EdgeInsets.all(24.0),
                   child: Column(
                     children: [
-                      // Profile Picture
-                      CircleAvatar(
-                        radius: 50,
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        backgroundImage: user?.photoURL != null
-                            ? NetworkImage(user!.photoURL!)
-                            : null,
-                        child: user?.photoURL == null
-                            ? Text(
-                                user?.displayName?.substring(0, 1).toUpperCase() ?? 'U',
-                                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
+                      // Profile Picture with edit functionality
+                      Stack(
+                        children: [
+                          GestureDetector(
+                            onTap: _isUploadingProfilePicture ? null : _showProfilePictureOptions,
+                            child: CircleAvatar(
+                              key: ValueKey(user?.photoURL ?? 'no-photo'), // Force rebuild when photoURL changes
+                              radius: 50,
+                              backgroundColor: Theme.of(context).colorScheme.primary,
+                              backgroundImage: user?.photoURL != null && user!.photoURL!.isNotEmpty
+                                  ? NetworkImage(_getCacheBustedImageUrl(user.photoURL!))
+                                  : null,
+                              child: _isUploadingProfilePicture
+                                  ? const CircularProgressIndicator(
+                                      color: Colors.white,
+                                    )
+                                  : (user?.photoURL == null || user!.photoURL!.isEmpty)
+                                      ? Text(
+                                          user?.displayName?.substring(0, 1).toUpperCase() ?? 'U',
+                                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        )
+                                      : null,
+                            ),
+                          ),
+                          if (!_isUploadingProfilePicture)
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Theme.of(context).colorScheme.surface,
+                                    width: 2,
+                                  ),
                                 ),
-                              )
-                            : null,
+                                padding: const EdgeInsets.all(6),
+                                child: Icon(
+                                  Icons.camera_alt,
+                                  size: 20,
+                                  color: Theme.of(context).colorScheme.onPrimary,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                       
                       const SizedBox(height: 16),
@@ -1124,6 +1164,41 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     );
   }
 
+  /// Add cache-busting query parameter to image URL
+  /// For Firebase Storage URLs (which we control), use timestamp to bust cache
+  /// For other URLs, use URL hash to allow caching but bust when URL changes
+  String _getCacheBustedImageUrl(String url) {
+    try {
+      final uri = Uri.parse(url);
+      
+      // For Firebase Storage URLs, use timestamp to ensure fresh image
+      // This is important because the same URL can have different content after upload
+      final isFirebaseStorage = url.contains('firebasestorage.googleapis.com') ||
+          url.contains('storage.googleapis.com');
+      
+      final version = isFirebaseStorage
+          ? DateTime.now().millisecondsSinceEpoch.toString()
+          : url.hashCode.toString();
+      
+      final cacheBustedUri = uri.replace(
+        queryParameters: {
+          ...uri.queryParameters,
+          'v': version,
+        },
+      );
+      return cacheBustedUri.toString();
+    } catch (e) {
+      // If URL parsing fails, return original URL with query param appended
+      final separator = url.contains('?') ? '&' : '?';
+      final isFirebaseStorage = url.contains('firebasestorage.googleapis.com') ||
+          url.contains('storage.googleapis.com');
+      final version = isFirebaseStorage
+          ? DateTime.now().millisecondsSinceEpoch.toString()
+          : url.hashCode.toString();
+      return '$url${separator}v=$version';
+    }
+  }
+
   Widget _buildInstallInstructionStep(BuildContext context, String number, String text) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1155,5 +1230,375 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         ),
       ],
     );
+  }
+
+  /// Show dialog with options to change profile picture
+  void _showProfilePictureOptions() {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final user = authService.userProfile;
+    final hasPhoto = user?.photoURL != null && user!.photoURL!.isNotEmpty;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Change Profile Picture'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Choose from Gallery'),
+              onTap: () {
+                Navigator.pop(dialogContext);
+                _pickImageFromGallery();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Take Photo'),
+              onTap: () {
+                Navigator.pop(dialogContext);
+                _takePhoto();
+              },
+            ),
+            if (hasPhoto)
+              ListTile(
+                leading: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
+                title: Text(
+                  'Remove Picture',
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+                onTap: () {
+                  Navigator.pop(dialogContext);
+                  _removeProfilePicture();
+                },
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Pick image from gallery
+  Future<void> _pickImageFromGallery() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1920,
+        maxHeight: 1920,
+        imageQuality: 90,
+      );
+
+      if (pickedFile != null) {
+        await _uploadProfilePicture(pickedFile);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error picking image: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Take photo with camera
+  Future<void> _takePhoto() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? pickedFile = await picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 1920,
+        maxHeight: 1920,
+        imageQuality: 90,
+      );
+
+      if (pickedFile != null) {
+        await _uploadProfilePicture(pickedFile);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error taking photo: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Upload profile picture from XFile
+  Future<void> _uploadProfilePicture(XFile pickedFile) async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+
+    if (!mounted) return;
+
+    setState(() {
+      _isUploadingProfilePicture = true;
+    });
+
+    // Show progress dialog with state management
+    double uploadProgress = 0.0;
+    String statusMessage = 'Processing image...';
+    
+    BuildContext? dialogContext;
+    StateSetter? dialogSetState;
+    final dialogReady = Completer<void>();
+
+    // Helper function to update progress
+    void updateProgress(double progress, String message) {
+      uploadProgress = progress;
+      statusMessage = message;
+      if (mounted && dialogSetState != null) {
+        dialogSetState!(() {});
+      }
+    }
+
+    // Show dialog (don't await, we'll wait for the completer instead)
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        dialogContext = context;
+        return StatefulBuilder(
+          builder: (context, setState) {
+            // Set dialogSetState and complete the completer when dialog is built
+            if (dialogSetState == null) {
+              dialogSetState = setState;
+              if (!dialogReady.isCompleted) {
+                dialogReady.complete();
+              }
+            }
+            return WillPopScope(
+              onWillPop: () async => false, // Prevent dismissing during upload
+              child: AlertDialog(
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text(
+                      statusMessage,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 16),
+                    LinearProgressIndicator(
+                      value: uploadProgress,
+                      minHeight: 8,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${(uploadProgress * 100).toInt()}%',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    // Wait for dialog to be built before starting upload
+    await dialogReady.future;
+
+    try {
+      String photoURL;
+
+      if (kIsWeb) {
+        // Web: read as bytes
+        updateProgress(0.1, 'Reading image...');
+        final bytes = await pickedFile.readAsBytes();
+        
+        // Upload with progress updates
+        photoURL = await _profilePictureService.uploadProfilePictureBytes(
+          bytes,
+          onProgress: (progress) {
+            String message;
+            if (progress < 0.3) {
+              message = 'Processing image...';
+            } else if (progress < 0.9) {
+              message = 'Uploading...';
+            } else {
+              message = 'Finishing...';
+            }
+            updateProgress(progress, message);
+          },
+        );
+      } else {
+        // Mobile: use File
+        updateProgress(0.1, 'Reading image...');
+        final file = File(pickedFile.path);
+        
+        // Upload with progress updates
+        photoURL = await _profilePictureService.uploadProfilePicture(
+          file,
+          onProgress: (progress) {
+            String message;
+            if (progress < 0.3) {
+              message = 'Processing image...';
+            } else if (progress < 0.9) {
+              message = 'Uploading...';
+            } else {
+              message = 'Finishing...';
+            }
+            updateProgress(progress, message);
+          },
+        );
+      }
+
+      // Update profile
+      updateProgress(0.95, 'Updating profile...');
+      final success = await authService.updateProfile(
+        photoURL: photoURL,
+        deleteOldPhoto: true,
+      );
+
+      // Close progress dialog
+      if (mounted && dialogContext != null) {
+        Navigator.of(dialogContext!, rootNavigator: true).pop();
+      }
+
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profile picture updated successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to update profile picture'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Close progress dialog
+      if (mounted && dialogContext != null) {
+        Navigator.of(dialogContext!, rootNavigator: true).pop();
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error uploading profile picture: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploadingProfilePicture = false;
+        });
+      }
+    }
+  }
+
+  /// Remove profile picture
+  Future<void> _removeProfilePicture() async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final user = authService.userProfile;
+
+    if (user?.photoURL == null || user!.photoURL!.isEmpty) {
+      return;
+    }
+
+    // Show confirmation dialog
+    final shouldRemove = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Remove Profile Picture'),
+        content: const Text('Are you sure you want to remove your profile picture?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldRemove != true) {
+      return;
+    }
+
+    setState(() {
+      _isUploadingProfilePicture = true;
+    });
+
+    try {
+      // Delete from Storage first
+      await _profilePictureService.deleteProfilePicture();
+
+      // Update profile to remove photoURL
+      final success = await authService.updateProfile(
+        removePhoto: true,
+        deleteOldPhoto: false,
+      );
+
+      // Wait a frame to ensure UI updates
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      if (mounted) {
+        if (success) {
+          // Force a rebuild of the profile content
+          setState(() {});
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profile picture removed successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to remove profile picture'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error removing profile picture: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploadingProfilePicture = false;
+        });
+      }
+    }
   }
 }
