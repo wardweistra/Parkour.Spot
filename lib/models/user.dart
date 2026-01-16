@@ -5,6 +5,7 @@ class User {
   final String? photoURL;
   final DateTime? createdAt;
   final DateTime? lastLoginAt;
+  final DateTime? lastActiveAt;
   final List<String>? favoriteSpots;
   final bool isEmailVerified;
   final bool isAdmin;
@@ -18,6 +19,7 @@ class User {
     this.photoURL,
     this.createdAt,
     this.lastLoginAt,
+    this.lastActiveAt,
     this.favoriteSpots,
     this.isEmailVerified = false,
     this.isAdmin = false,
@@ -33,6 +35,7 @@ class User {
       photoURL: map['photoURL'],
       createdAt: map['createdAt']?.toDate(),
       lastLoginAt: map['lastLoginAt']?.toDate(),
+      lastActiveAt: map['lastActiveAt']?.toDate(),
       favoriteSpots: map['favoriteSpots'] != null 
           ? List<String>.from(map['favoriteSpots']) 
           : null,
@@ -53,6 +56,7 @@ class User {
       'photoURL': photoURL,
       'createdAt': createdAt,
       'lastLoginAt': lastLoginAt,
+      'lastActiveAt': lastActiveAt,
       'favoriteSpots': favoriteSpots,
       'isEmailVerified': isEmailVerified,
       'isAdmin': isAdmin,
@@ -68,6 +72,7 @@ class User {
     String? photoURL,
     DateTime? createdAt,
     DateTime? lastLoginAt,
+    DateTime? lastActiveAt,
     List<String>? favoriteSpots,
     bool? isEmailVerified,
     bool? isAdmin,
@@ -81,6 +86,7 @@ class User {
       photoURL: photoURL ?? this.photoURL,
       createdAt: createdAt ?? this.createdAt,
       lastLoginAt: lastLoginAt ?? this.lastLoginAt,
+      lastActiveAt: lastActiveAt ?? this.lastActiveAt,
       favoriteSpots: favoriteSpots ?? this.favoriteSpots,
       isEmailVerified: isEmailVerified ?? this.isEmailVerified,
       isAdmin: isAdmin ?? this.isAdmin,

@@ -97,7 +97,18 @@ class ParkourSpotApp extends StatelessWidget {
 
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthService()),
+        ChangeNotifierProvider(
+          create: (_) {
+            final authService = AuthService();
+            debugPrint('🔧 Creating AuthService instance');
+            // Set AuthService reference in router observer for lastActiveAt tracking
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              debugPrint('🔧 Setting AuthService reference in AppRouter');
+              AppRouter.setAuthService(authService);
+            });
+            return authService;
+          },
+        ),
         ChangeNotifierProvider(create: (_) => UserManagementService()),
         ChangeNotifierProvider(create: (_) => SpotService()),
         ChangeNotifierProvider(create: (_) => SyncSourceService()),

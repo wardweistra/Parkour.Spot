@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
+import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode, debugPrint;
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:web/web.dart' as web;
@@ -32,9 +32,15 @@ import '../services/pwa_install_service.dart';
 /// Router observer that tracks page views for Google Analytics
 class GaObserver extends NavigatorObserver {
   static GoRouter? _router;
+  static AuthService? _authService;
   
   static void setRouter(GoRouter router) {
     _router = router;
+  }
+  
+  static void setAuthService(AuthService authService) {
+    _authService = authService;
+    debugPrint('✅ GaObserver: AuthService reference set');
   }
   
   @override
@@ -58,8 +64,10 @@ class GaObserver extends NavigatorObserver {
   }
 
   void _track() {
+    debugPrint('📍 GaObserver._track() called');
     // Use a post-frame callback to ensure the router state has updated
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      debugPrint('📍 GaObserver._track() post-frame callback executing');
       try {
         // Get the current route path from GoRouter's state
         // This gives us the actual matched location (e.g., /us/new-york/spot-123)
@@ -84,6 +92,26 @@ class GaObserver extends NavigatorObserver {
         PwaInstallService().trackPageView();
       } catch (e) {
         // Silent fail - PWA tracking is not critical
+      }
+      
+      // Update lastActiveAt for logged-in users
+      try {
+        final authService = _authService;
+        if (authService == null) {
+          debugPrint('⚠️ GaObserver: AuthService is null, cannot update lastActiveAt');
+        } else {
+          final isAuthenticated = authService.isAuthenticated;
+          debugPrint('🔍 GaObserver: Checking auth state - isAuthenticated: $isAuthenticated');
+          if (isAuthenticated) {
+            debugPrint('🚀 GaObserver: Calling updateLastActiveAt for authenticated user');
+            authService.updateLastActiveAt();
+          } else {
+            debugPrint('⚠️ GaObserver: User not authenticated, skipping lastActiveAt update');
+          }
+        }
+      } catch (e) {
+        debugPrint('❌ GaObserver: Error updating lastActiveAt: $e');
+        debugPrint('❌ GaObserver: Stack trace: ${StackTrace.current}');
       }
     });
   }
@@ -150,6 +178,11 @@ class AppRouter {
     _routerInstance ??= _createRouter();
     GaObserver.setRouter(_routerInstance!);
     return _routerInstance!;
+  }
+  
+  /// Set the AuthService reference for lastActiveAt tracking
+  static void setAuthService(AuthService authService) {
+    GaObserver.setAuthService(authService);
   }
   
   static GoRouter _createRouter() {

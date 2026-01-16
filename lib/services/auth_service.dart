@@ -64,12 +64,18 @@ class AuthService extends ChangeNotifier {
           photoURL: _auth.currentUser?.photoURL,
           createdAt: DateTime.now(),
           lastLoginAt: DateTime.now(),
+          lastActiveAt: DateTime.now(),
           isAdmin: false,
           isModerator: false,
           featureAccess: null,
         );
         await _firestore.collection('users').doc(uid).set(_userProfile!.toMap());
       }
+
+      // Update lastActiveAt on initial page load/refresh when user profile is loaded
+      // This ensures we track activity even when the router observer doesn't fire
+      debugPrint('🔄 User profile loaded, updating lastActiveAt for initial page load');
+      await updateLastActiveAt();
 
       // Note: Google profile picture copy is handled in sign-in methods, not here
       // This prevents copying on every page refresh
@@ -266,6 +272,7 @@ class AuthService extends ChangeNotifier {
           displayName: displayName,
           createdAt: DateTime.now(),
           lastLoginAt: DateTime.now(),
+          lastActiveAt: DateTime.now(),
           isAdmin: false,
           featureAccess: null,
         );
@@ -310,12 +317,55 @@ class AuthService extends ChangeNotifier {
   Future<void> _updateLastLogin() async {
     if (_auth.currentUser != null) {
       try {
+        final now = DateTime.now();
         await _firestore.collection('users').doc(_auth.currentUser!.uid).update({
-          'lastLoginAt': DateTime.now(),
+          'lastLoginAt': now,
+          'lastActiveAt': now, // Also update lastActiveAt on login
         });
+        // Update local profile if it exists
+        if (_userProfile != null) {
+          _userProfile = _userProfile!.copyWith(
+            lastLoginAt: now,
+            lastActiveAt: now,
+          );
+        }
       } catch (e) {
         debugPrint('Error updating last login: $e');
       }
+    }
+  }
+
+  /// Update lastActiveAt timestamp for the current user
+  /// This is called on every page view for logged-in users
+  Future<void> updateLastActiveAt() async {
+    final currentUser = _auth.currentUser;
+    debugPrint('🔄 updateLastActiveAt called - currentUser: ${currentUser != null ? currentUser.uid : "null"}');
+    
+    if (currentUser != null) {
+      try {
+        final now = DateTime.now();
+        final userId = currentUser.uid;
+        debugPrint('📝 Updating lastActiveAt for user $userId at $now');
+        
+        await _firestore.collection('users').doc(userId).update({
+          'lastActiveAt': now,
+        });
+        
+        debugPrint('✅ Successfully updated lastActiveAt in Firestore for user $userId');
+        
+        // Update local profile if it exists
+        if (_userProfile != null) {
+          _userProfile = _userProfile!.copyWith(lastActiveAt: now);
+          debugPrint('✅ Updated local user profile with lastActiveAt');
+        } else {
+          debugPrint('⚠️ Local user profile is null, skipping local update');
+        }
+      } catch (e) {
+        debugPrint('❌ Error updating last active: $e');
+        debugPrint('❌ Stack trace: ${StackTrace.current}');
+      }
+    } else {
+      debugPrint('⚠️ No current user, skipping lastActiveAt update');
     }
   }
 
