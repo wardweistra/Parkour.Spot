@@ -3,6 +3,8 @@ class User {
   final String email;
   final String? displayName;
   final String? photoURL;
+  final String? username;
+  final bool isPublicProfile;
   final DateTime? createdAt;
   final DateTime? lastLoginAt;
   final DateTime? lastActiveAt;
@@ -17,6 +19,8 @@ class User {
     required this.email,
     this.displayName,
     this.photoURL,
+    this.username,
+    this.isPublicProfile = true,
     this.createdAt,
     this.lastLoginAt,
     this.lastActiveAt,
@@ -33,6 +37,8 @@ class User {
       email: map['email'] ?? '',
       displayName: map['displayName'],
       photoURL: map['photoURL'],
+      username: map['username'],
+      isPublicProfile: map['isPublicProfile'] ?? true,
       createdAt: map['createdAt']?.toDate(),
       lastLoginAt: map['lastLoginAt']?.toDate(),
       lastActiveAt: map['lastActiveAt']?.toDate(),
@@ -54,6 +60,8 @@ class User {
       'email': email,
       'displayName': displayName,
       'photoURL': photoURL,
+      'username': username,
+      'isPublicProfile': isPublicProfile,
       'createdAt': createdAt,
       'lastLoginAt': lastLoginAt,
       'lastActiveAt': lastActiveAt,
@@ -70,6 +78,8 @@ class User {
     String? email,
     String? displayName,
     String? photoURL,
+    String? username,
+    bool? isPublicProfile,
     DateTime? createdAt,
     DateTime? lastLoginAt,
     DateTime? lastActiveAt,
@@ -84,6 +94,8 @@ class User {
       email: email ?? this.email,
       displayName: displayName ?? this.displayName,
       photoURL: photoURL ?? this.photoURL,
+      username: username ?? this.username,
+      isPublicProfile: isPublicProfile ?? this.isPublicProfile,
       createdAt: createdAt ?? this.createdAt,
       lastLoginAt: lastLoginAt ?? this.lastLoginAt,
       lastActiveAt: lastActiveAt ?? this.lastActiveAt,

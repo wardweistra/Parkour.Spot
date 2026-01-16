@@ -4,12 +4,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../models/user.dart' as app_user;
 import 'profile_picture_service.dart';
+import 'user_profile_service.dart';
 
 class AuthService extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final ProfilePictureService _profilePictureService = ProfilePictureService();
+  final UserProfileService _userProfileService = UserProfileService();
   
   User? get currentUser => _auth.currentUser;
   bool get isAdmin => _userProfile?.isAdmin == true;
@@ -437,6 +439,62 @@ class AuthService extends ChangeNotifier {
       debugPrint('Error updating profile: $e');
       return false;
     }
+  }
+
+  /// Update username for the current user
+  /// Returns true on success, false on failure
+  Future<bool> updateUsername(String username) async {
+    if (_auth.currentUser == null || _userProfile == null) {
+      debugPrint('Cannot update username: user not authenticated or profile not loaded');
+      return false;
+    }
+
+    try {
+      final userId = _auth.currentUser!.uid;
+      final success = await _userProfileService.updateUsername(userId, username);
+      
+      if (success) {
+        // Update local profile
+        _userProfile = _userProfile!.copyWith(username: username.trim().toLowerCase());
+        notifyListeners();
+      }
+      
+      return success;
+    } catch (e) {
+      debugPrint('Error updating username: $e');
+      return false;
+    }
+  }
+
+  /// Update profile privacy setting for the current user
+  /// Returns true on success, false on failure
+  Future<bool> updateProfilePrivacy(bool isPublic) async {
+    if (_auth.currentUser == null || _userProfile == null) {
+      debugPrint('Cannot update profile privacy: user not authenticated or profile not loaded');
+      return false;
+    }
+
+    try {
+      final userId = _auth.currentUser!.uid;
+      final success = await _userProfileService.updateProfilePrivacy(userId, isPublic);
+      
+      if (success) {
+        // Update local profile
+        _userProfile = _userProfile!.copyWith(isPublicProfile: isPublic);
+        notifyListeners();
+      }
+      
+      return success;
+    } catch (e) {
+      debugPrint('Error updating profile privacy: $e');
+      return false;
+    }
+  }
+
+  /// Check if a username is available
+  /// Returns true if username is available, false if already taken
+  Future<bool> checkUsernameAvailability(String username) async {
+    return await _userProfileService.checkUsernameAvailability(username);
   }
 
   Future<void> resetPassword(String email) async {

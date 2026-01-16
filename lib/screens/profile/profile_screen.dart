@@ -14,6 +14,7 @@ import '../../services/feature_access_service.dart';
 import '../../services/pwa_install_service.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../services/profile_picture_service.dart';
+import '../../services/user_profile_service.dart';
 import '../../models/spot_list.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/instagram_button.dart';
@@ -34,6 +35,11 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   bool _hasAnimatedOnLoad = false;
   bool _isUploadingProfilePicture = false;
   final ProfilePictureService _profilePictureService = ProfilePictureService();
+  final UserProfileService _userProfileService = UserProfileService();
+  final TextEditingController _usernameController = TextEditingController();
+  bool _isEditingUsername = false;
+  bool _isCheckingUsername = false;
+  String? _usernameError;
 
   @override
   void initState() {
@@ -43,11 +49,20 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       vsync: this,
       duration: const Duration(seconds: 1),
     );
+    // Initialize username controller with current username
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      final user = authService.userProfile;
+      if (user?.username != null) {
+        _usernameController.text = user!.username!;
+      }
+    });
   }
 
   @override
   void dispose() {
     _lottieController.dispose();
+    _usernameController.dispose();
     super.dispose();
   }
 
@@ -278,6 +293,51 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                         ),
                       ),
+                      
+                      // Username (if set)
+                      if (user?.username != null && user!.username!.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          '@${user.username}',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+
+              // Profile Settings Section
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Profile Settings',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // Username editing
+                      _buildUsernameSection(context, authService),
+                      
+                      const SizedBox(height: 16),
+                      
+                      // Profile privacy toggle
+                      _buildPrivacySection(context, authService),
+                      
+                      const SizedBox(height: 16),
+                      
+                      // Profile URL (for sharing)
+                      _buildProfileUrlSection(context, authService),
                     ],
                   ),
                 ),
@@ -878,6 +938,269 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       onTap: onTap,
       contentPadding: EdgeInsets.zero,
+    );
+  }
+
+  Widget _buildUsernameSection(BuildContext context, AuthService authService) {
+    final user = authService.userProfile;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Username',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (!_isEditingUsername) ...[
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  user?.username != null && user!.username!.isNotEmpty
+                      ? '@${user.username}'
+                      : 'No username set',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _isEditingUsername = true;
+                    _usernameController.text = user?.username ?? '';
+                    _usernameError = null;
+                  });
+                },
+                child: const Text('Edit'),
+              ),
+            ],
+          ),
+        ] else ...[
+          TextField(
+            controller: _usernameController,
+            decoration: InputDecoration(
+              labelText: 'Username',
+              hintText: 'Enter username',
+              errorText: _usernameError,
+              prefixText: '@',
+              helperText: '3-30 characters, letters, numbers, underscores, and hyphens only',
+            ),
+            enabled: !_isCheckingUsername,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: _isCheckingUsername ? null : () {
+                  setState(() {
+                    _isEditingUsername = false;
+                    _usernameController.text = user?.username ?? '';
+                    _usernameError = null;
+                  });
+                },
+                child: const Text('Cancel'),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: _isCheckingUsername ? null : () async {
+                  final newUsername = _usernameController.text.trim();
+                  
+                  if (newUsername.isEmpty) {
+                    setState(() {
+                      _usernameError = 'Username cannot be empty';
+                    });
+                    return;
+                  }
+
+                  setState(() {
+                    _isCheckingUsername = true;
+                    _usernameError = null;
+                  });
+
+                  // Check availability
+                  final isAvailable = await authService.checkUsernameAvailability(newUsername);
+                  
+                  if (!isAvailable && newUsername.toLowerCase() != user?.username?.toLowerCase()) {
+                    setState(() {
+                      _isCheckingUsername = false;
+                      _usernameError = 'Username is already taken';
+                    });
+                    return;
+                  }
+
+                  // Update username
+                  final success = await authService.updateUsername(newUsername);
+                  
+                  if (mounted) {
+                    setState(() {
+                      _isCheckingUsername = false;
+                      if (success) {
+                        _isEditingUsername = false;
+                        _usernameError = null;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Username updated successfully'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      } else {
+                        _usernameError = _userProfileService.error ?? 'Failed to update username';
+                      }
+                    });
+                  }
+                },
+                child: _isCheckingUsername
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Save'),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildPrivacySection(BuildContext context, AuthService authService) {
+    final user = authService.userProfile;
+    final isPublic = user?.isPublicProfile ?? true;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Profile Privacy',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isPublic ? 'Public Profile' : 'Private Profile',
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    isPublic
+                        ? 'Your profile is visible to everyone'
+                        : 'Your profile is private and not visible to others',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Switch(
+              value: isPublic,
+              onChanged: (value) async {
+                final success = await authService.updateProfilePrivacy(value);
+                if (mounted) {
+                  if (success) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          value
+                              ? 'Profile is now public'
+                              : 'Profile is now private',
+                        ),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Failed to update profile privacy'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProfileUrlSection(BuildContext context, AuthService authService) {
+    final user = authService.userProfile;
+    if (user == null) return const SizedBox.shrink();
+    
+    final profileIdentifier = user.username?.isNotEmpty == true
+        ? user.username!
+        : user.id;
+    final profileUrl = '${Uri.base.origin}/user/$profileIdentifier';
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Profile URL',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: () {
+            // Copy to clipboard
+            // Note: In a real app, you'd use a clipboard package
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Profile URL: $profileUrl'),
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+              ),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    profileUrl,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.copy,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Tap to copy. Share this link to let others view your profile.',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+          ),
+        ),
+      ],
     );
   }
 

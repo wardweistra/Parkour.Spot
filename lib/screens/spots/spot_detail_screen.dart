@@ -349,20 +349,42 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     // Created by
     if (_spot.createdBy != null || _spot.createdByName != null) {
       final createdBy = _spot.createdByName ?? _spot.createdBy ?? '';
-      String createdText;
+      final createdById = _spot.createdBy;
       
       // Add created date if available
       if (_spot.createdAt != null) {
         final createdDateText = _formatRelativeDate(_spot.createdAt!);
-        createdText = 'Spot created $createdDateText by $createdBy';
+        textSpans.add(TextSpan(
+          text: 'Spot created $createdDateText by ',
+          style: textStyle,
+        ));
       } else {
-        createdText = 'Spot created by $createdBy';
+        textSpans.add(TextSpan(
+          text: 'Spot created by ',
+          style: textStyle,
+        ));
       }
       
-      textSpans.add(TextSpan(
-        text: createdText,
-        style: textStyle,
-      ));
+      // Make creator name clickable if we have a user ID
+      if (createdById != null) {
+        textSpans.add(TextSpan(
+          text: createdBy,
+          style: textStyle?.copyWith(
+            color: theme.colorScheme.primary,
+            decoration: TextDecoration.underline,
+          ),
+          recognizer: TapGestureRecognizer()
+            ..onTap = () {
+              context.go('/user/$createdById');
+            },
+        ));
+      } else {
+        textSpans.add(TextSpan(
+          text: createdBy,
+          style: textStyle,
+        ));
+      }
+      
       hasPreviousContent = true;
     }
 
@@ -426,28 +448,55 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       }).toList();
       
       if (filteredContributors.isNotEmpty) {
-        final contributorNames = filteredContributors
-            .map((c) => c['userName'] ?? 'Unknown')
-            .toList();
-        
         // Use comma if there will be an updated date part, otherwise use "and"
         final String connector = willHaveUpdatedDate ? ',' : ' and';
         
-        String contributorsText;
-        if (contributorNames.length == 1) {
-          contributorsText = '$connector improved by ${contributorNames.first}';
-        } else if (contributorNames.length == 2) {
-          contributorsText = '$connector improved by ${contributorNames.first} and ${contributorNames.last}';
-        } else {
-          final last = contributorNames.last;
-          final others = contributorNames.sublist(0, contributorNames.length - 1);
-          contributorsText = '$connector improved by ${others.join(', ')}, and $last';
-        }
-        
         textSpans.add(TextSpan(
-          text: contributorsText,
+          text: '$connector improved by ',
           style: textStyle,
         ));
+        
+        // Add each contributor name as a clickable link
+        for (int i = 0; i < filteredContributors.length; i++) {
+          final contributor = filteredContributors[i];
+          final userName = contributor['userName'] ?? 'Unknown';
+          final userId = contributor['userId'];
+          
+          if (i > 0) {
+            if (i == filteredContributors.length - 1) {
+              textSpans.add(TextSpan(
+                text: ' and ',
+                style: textStyle,
+              ));
+            } else {
+              textSpans.add(TextSpan(
+                text: ', ',
+                style: textStyle,
+              ));
+            }
+          }
+          
+          // Make contributor name clickable if we have a user ID
+          if (userId != null) {
+            textSpans.add(TextSpan(
+              text: userName,
+              style: textStyle?.copyWith(
+                color: theme.colorScheme.primary,
+                decoration: TextDecoration.underline,
+              ),
+              recognizer: TapGestureRecognizer()
+                ..onTap = () {
+                  context.go('/user/$userId');
+                },
+            ));
+          } else {
+            textSpans.add(TextSpan(
+              text: userName,
+              style: textStyle,
+            ));
+          }
+        }
+        
         hasContributors = true;
       }
     }

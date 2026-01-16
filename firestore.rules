@@ -13,12 +13,17 @@ service cloud.firestore {
     }
     
     // Users collection - users can only manage their own profile, admins can read/update all
+    // Public profiles (isPublicProfile == true) are readable by anyone
     match /users/{userId} {
-      // Users can read their own profile, admins can read any profile
+      // Allow read if:
+      // 1. User is reading their own profile, OR
+      // 2. User is an admin, OR
+      // 3. Profile is public (isPublicProfile == true, defaulting to true if field doesn't exist)
       allow read: if request.auth != null && 
         (request.auth.uid == userId ||
          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true));
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true)) ||
+        (resource.data.isPublicProfile == true || !('isPublicProfile' in resource.data));
       // Allow create only for self and forbid setting privileged flags
       allow create: if request.auth != null && request.auth.uid == userId &&
         request.resource.data.isAdmin == false &&

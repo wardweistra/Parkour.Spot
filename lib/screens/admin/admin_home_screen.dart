@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/spot_service.dart';
+import '../../widgets/page_scaffold.dart';
 
 class AdminHomeScreen extends StatelessWidget {
   const AdminHomeScreen({super.key});
@@ -11,39 +12,33 @@ class AdminHomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final isAdmin = context.select<AuthService, bool>((s) => s.isAdmin);
     if (!isAdmin) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Admin')),
+      return PageScaffold(
+        title: 'Admin',
         body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.lock_outline, size: 64),
-                const SizedBox(height: 12),
-                const Text('Administrator access required'),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: () => context.go('/explore?tab=profile'),
-                  child: const Text('Back to Profile'),
-                ),
-              ],
-            ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.lock_outline, size: 64),
+              const SizedBox(height: 12),
+              const Text('Administrator access required'),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                onPressed: () => context.go('/explore?tab=profile'),
+                child: const Text('Back to Profile'),
+              ),
+            ],
           ),
         ),
+        scrollable: false,
+        padding: const EdgeInsets.all(24.0),
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Admin Tools'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/explore?tab=profile'),
-        ),
-      ),
+    return PageScaffold(
+      title: 'Admin Tools',
+      onBack: () => context.go('/explore?tab=profile'),
+      scrollable: false,
       body: ListView(
-        padding: const EdgeInsets.all(16),
         children: [
             Card(
               child: ListTile(
