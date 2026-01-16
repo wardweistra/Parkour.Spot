@@ -371,7 +371,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           text: createdBy,
           style: textStyle?.copyWith(
             color: theme.colorScheme.primary,
-            decoration: TextDecoration.underline,
           ),
           recognizer: TapGestureRecognizer()
             ..onTap = () {
@@ -482,7 +481,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
               text: userName,
               style: textStyle?.copyWith(
                 color: theme.colorScheme.primary,
-                decoration: TextDecoration.underline,
               ),
               recognizer: TapGestureRecognizer()
                 ..onTap = () {
