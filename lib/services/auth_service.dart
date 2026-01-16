@@ -30,6 +30,8 @@ class AuthService extends ChangeNotifier {
   bool _isLoading = true; // Start as loading while auth state is being restored
   app_user.User? _userProfile;
   bool _isCopyingGooglePicture = false; // Track if Google picture copy is in progress
+  bool _isLoadingProfile = false; // Prevent concurrent profile loads
+  String? _loadingProfileUid; // Track which UID is currently being loaded
 
   app_user.User? get userProfile => _userProfile;
 
@@ -42,12 +44,27 @@ class AuthService extends ChangeNotifier {
       _loadUserProfile(user.uid);
     } else {
       _userProfile = null;
+      _isLoadingProfile = false; // Reset flag on logout
+      _loadingProfileUid = null; // Reset UID tracking on logout
       _isLoading = false; // Auth state restored, no user
       notifyListeners();
     }
   }
 
   Future<void> _loadUserProfile(String uid) async {
+    // Prevent concurrent or duplicate profile loads for the same UID
+    // Set flags synchronously BEFORE any async operations to prevent race conditions
+    if (_isLoadingProfile) {
+      if (_loadingProfileUid == uid) {
+        return;
+      } else {
+        return;
+      }
+    }
+    
+    // Set flags immediately (synchronously) to prevent race conditions
+    _isLoadingProfile = true;
+    _loadingProfileUid = uid;
     try {
       final doc = await _firestore.collection('users').doc(uid).get();
       if (doc.exists) {
@@ -72,16 +89,17 @@ class AuthService extends ChangeNotifier {
         await _firestore.collection('users').doc(uid).set(_userProfile!.toMap());
       }
 
-      // Update lastActiveAt on initial page load/refresh when user profile is loaded
-      // This ensures we track activity even when the router observer doesn't fire
-      debugPrint('🔄 User profile loaded, updating lastActiveAt for initial page load');
-      await updateLastActiveAt();
+      // Note: lastActiveAt is updated by the router observer on page views/navigation
+      // We don't update it here to avoid duplicate updates on initial page load
+      // The router observer's retry mechanism handles the initial page load case
 
       // Note: Google profile picture copy is handled in sign-in methods, not here
       // This prevents copying on every page refresh
     } catch (e) {
       debugPrint('Error loading user profile: $e');
     } finally {
+      _isLoadingProfile = false;
+      _loadingProfileUid = null;
       _isLoading = false; // Auth state restored
       notifyListeners();
     }
@@ -338,34 +356,19 @@ class AuthService extends ChangeNotifier {
   /// Update lastActiveAt timestamp for the current user
   /// This is called on every page view for logged-in users
   Future<void> updateLastActiveAt() async {
-    final currentUser = _auth.currentUser;
-    debugPrint('🔄 updateLastActiveAt called - currentUser: ${currentUser != null ? currentUser.uid : "null"}');
-    
-    if (currentUser != null) {
+    if (_auth.currentUser != null) {
       try {
         final now = DateTime.now();
-        final userId = currentUser.uid;
-        debugPrint('📝 Updating lastActiveAt for user $userId at $now');
-        
-        await _firestore.collection('users').doc(userId).update({
+        await _firestore.collection('users').doc(_auth.currentUser!.uid).update({
           'lastActiveAt': now,
         });
-        
-        debugPrint('✅ Successfully updated lastActiveAt in Firestore for user $userId');
-        
         // Update local profile if it exists
         if (_userProfile != null) {
           _userProfile = _userProfile!.copyWith(lastActiveAt: now);
-          debugPrint('✅ Updated local user profile with lastActiveAt');
-        } else {
-          debugPrint('⚠️ Local user profile is null, skipping local update');
         }
       } catch (e) {
-        debugPrint('❌ Error updating last active: $e');
-        debugPrint('❌ Stack trace: ${StackTrace.current}');
+        debugPrint('Error updating last active: $e');
       }
-    } else {
-      debugPrint('⚠️ No current user, skipping lastActiveAt update');
     }
   }
 

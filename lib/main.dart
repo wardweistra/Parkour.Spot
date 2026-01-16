@@ -100,10 +100,8 @@ class ParkourSpotApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) {
             final authService = AuthService();
-            debugPrint('🔧 Creating AuthService instance');
             // Set AuthService reference in router observer for lastActiveAt tracking
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              debugPrint('🔧 Setting AuthService reference in AppRouter');
               AppRouter.setAuthService(authService);
             });
             return authService;

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode, debugPrint;
+import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:web/web.dart' as web;
@@ -40,7 +40,6 @@ class GaObserver extends NavigatorObserver {
   
   static void setAuthService(AuthService authService) {
     _authService = authService;
-    debugPrint('✅ GaObserver: AuthService reference set');
   }
   
   @override
@@ -64,10 +63,8 @@ class GaObserver extends NavigatorObserver {
   }
 
   void _track() {
-    debugPrint('📍 GaObserver._track() called');
     // Use a post-frame callback to ensure the router state has updated
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      debugPrint('📍 GaObserver._track() post-frame callback executing');
       try {
         // Get the current route path from GoRouter's state
         // This gives us the actual matched location (e.g., /us/new-york/spot-123)
@@ -95,23 +92,24 @@ class GaObserver extends NavigatorObserver {
       }
       
       // Update lastActiveAt for logged-in users
+      // If AuthService isn't available yet, retry after a short delay (for initial page load)
       try {
         final authService = _authService;
         if (authService == null) {
-          debugPrint('⚠️ GaObserver: AuthService is null, cannot update lastActiveAt');
+          // Retry after a short delay to allow AuthService to be set
+          Future.delayed(const Duration(milliseconds: 500), () {
+            final retryAuthService = _authService;
+            if (retryAuthService != null && retryAuthService.isAuthenticated) {
+              retryAuthService.updateLastActiveAt();
+            }
+          });
         } else {
-          final isAuthenticated = authService.isAuthenticated;
-          debugPrint('🔍 GaObserver: Checking auth state - isAuthenticated: $isAuthenticated');
-          if (isAuthenticated) {
-            debugPrint('🚀 GaObserver: Calling updateLastActiveAt for authenticated user');
+          if (authService.isAuthenticated) {
             authService.updateLastActiveAt();
-          } else {
-            debugPrint('⚠️ GaObserver: User not authenticated, skipping lastActiveAt update');
           }
         }
       } catch (e) {
-        debugPrint('❌ GaObserver: Error updating lastActiveAt: $e');
-        debugPrint('❌ GaObserver: Stack trace: ${StackTrace.current}');
+        // Silent fail - lastActiveAt tracking is not critical
       }
     });
   }
@@ -203,7 +201,8 @@ class AppRouter {
       }
       
       // Check authentication for protected routes
-      final authService = AuthService();
+      // Use Provider to get the AuthService instance (don't create a new one!)
+      final authService = Provider.of<AuthService>(context, listen: false);
       final isAuthenticated = authService.isAuthenticated;
       
       // Routes that require authentication
