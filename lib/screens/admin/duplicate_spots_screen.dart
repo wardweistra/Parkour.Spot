@@ -17,9 +17,6 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
   String? _selectedSourceId;
   bool _isRunning = false;
   String? _error;
-  String? _currentRunId;
-  int? _pairsFound;
-  int? _spotsChecked;
 
   @override
   void initState() {
@@ -28,6 +25,7 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
       _loadSyncSources();
     });
   }
+
 
   Future<void> _loadSyncSources() async {
     final syncSourceService = Provider.of<SyncSourceService>(context, listen: false);
@@ -45,9 +43,6 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
     setState(() {
       _isRunning = true;
       _error = null;
-      _currentRunId = null;
-      _pairsFound = null;
-      _spotsChecked = null;
     });
 
     try {
@@ -59,10 +54,12 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
       if (mounted) {
         setState(() {
           _isRunning = false;
-          _currentRunId = result['runId'] as String?;
-          _pairsFound = result['pairsFound'] as int?;
-          _spotsChecked = result['spotsChecked'] as int?;
         });
+        // Navigate to results page
+        final runId = result['runId'] as String?;
+        if (runId != null) {
+          context.go('/admin/duplicate-spots/$runId');
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -125,7 +122,6 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
                           : (value) {
                               setState(() {
                                 _selectedSourceId = value;
-                                _currentRunId = null;
                               });
                             },
                     );
@@ -168,48 +164,12 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
                     ),
                   ),
                 ],
-                if (_currentRunId != null && _pairsFound != null) ...[
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.green[50],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.green[200]!),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.check_circle, color: Colors.green[700], size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Detection completed',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.green[900],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Found $_pairsFound potential duplicate pair${_pairsFound == 1 ? '' : 's'} (checked $_spotsChecked spots)',
-                          style: TextStyle(color: Colors.green[900]),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
               ],
             ),
           ),
           // Results section
           Expanded(
-            child: _currentRunId != null
-                ? _buildResults(_currentRunId!)
-                : _buildPastRuns(),
+            child: _buildPastRuns(),
           ),
         ],
       ),
@@ -282,9 +242,7 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
                 ),
                 trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                 onTap: () {
-                  setState(() {
-                    _currentRunId = doc.id;
-                  });
+                  context.go('/admin/duplicate-spots/${doc.id}');
                 },
               ),
             );
@@ -294,224 +252,4 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
     );
   }
 
-  Widget _buildResults(String runId) {
-    return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('duplicateDetectionResults')
-          .doc(runId)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
-        }
-
-        if (!snapshot.hasData || !snapshot.data!.exists) {
-          return const Center(child: Text('Results not found'));
-        }
-
-        final data = snapshot.data!.data() as Map<String, dynamic>;
-        final pairs = (data['pairs'] as List<dynamic>?) ?? [];
-
-        if (pairs.isEmpty) {
-          return const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.check_circle, size: 64, color: Colors.green),
-                SizedBox(height: 16),
-                Text(
-                  'No duplicate pairs found',
-                  style: TextStyle(color: Colors.grey, fontSize: 16),
-                ),
-              ],
-            ),
-          );
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: pairs.length,
-          itemBuilder: (context, index) {
-            final pair = pairs[index] as Map<String, dynamic>;
-            final spot1 = pair['spot1'] as Map<String, dynamic>;
-            final spot2 = pair['spot2'] as Map<String, dynamic>;
-            final distanceMeters = pair['distanceMeters'] as int? ?? 0;
-
-            return Card(
-              margin: const EdgeInsets.only(bottom: 16),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Distance header
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.orange[50],
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.orange[200]!),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.warning_amber, size: 16, color: Colors.orange[700]),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${distanceMeters}m apart',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.orange[900],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // Spot 1
-                    _buildSpotCard(spot1, 'Spot 1'),
-                    const SizedBox(height: 12),
-                    // Arrow
-                    Center(
-                      child: Icon(Icons.compare_arrows, color: Colors.grey[400]),
-                    ),
-                    const SizedBox(height: 12),
-                    // Spot 2
-                    _buildSpotCard(spot2, 'Spot 2'),
-                    const SizedBox(height: 16),
-                    // Actions
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            icon: const Icon(Icons.visibility, size: 18),
-                            label: const Text('View Spot 1'),
-                            onPressed: () {
-                              final spotId = spot1['id'] as String?;
-                              if (spotId != null) {
-                                context.go('/spot/$spotId');
-                              }
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            icon: const Icon(Icons.visibility, size: 18),
-                            label: const Text('View Spot 2'),
-                            onPressed: () {
-                              final spotId = spot2['id'] as String?;
-                              if (spotId != null) {
-                                context.go('/spot/$spotId');
-                              }
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildSpotCard(Map<String, dynamic> spot, String label) {
-    final name = spot['name'] as String? ?? 'Unknown';
-    final address = spot['address'] as String?;
-    final city = spot['city'] as String?;
-    final countryCode = spot['countryCode'] as String?;
-    final spotSource = spot['spotSource'] as String?;
-    final spotSourceName = spot['spotSourceName'] as String?;
-    final hasImages = spot['hasImages'] as bool? ?? false;
-    final latitude = spot['latitude'] as num?;
-    final longitude = spot['longitude'] as num?;
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[600],
-                ),
-              ),
-              if (hasImages) ...[
-                const SizedBox(width: 8),
-                Icon(Icons.image, size: 16, color: Colors.grey[600]),
-              ],
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            name,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
-          if (address != null) ...[
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Icon(Icons.location_on, size: 14, color: Colors.grey[600]),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    address,
-                    style: TextStyle(fontSize: 12, color: Colors.grey[700]),
-                  ),
-                ),
-              ],
-            ),
-          ],
-          if (city != null || countryCode != null) ...[
-            const SizedBox(height: 2),
-            Text(
-              [city, countryCode].whereType<String>().join(', '),
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            ),
-          ],
-          if (spotSourceName != null || spotSource != null) ...[
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Icon(Icons.source, size: 14, color: Colors.grey[600]),
-                const SizedBox(width: 4),
-                Text(
-                  spotSourceName ?? spotSource ?? 'Unknown source',
-                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                ),
-              ],
-            ),
-          ],
-          if (latitude != null && longitude != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              '${latitude.toStringAsFixed(6)}, ${longitude.toStringAsFixed(6)}',
-              style: TextStyle(fontSize: 10, color: Colors.grey[500], fontFamily: 'monospace'),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
 }

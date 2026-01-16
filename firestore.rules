@@ -110,8 +110,14 @@ service cloud.firestore {
       allow read: if request.auth != null &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
-      // Only Cloud Functions (with admin privileges) can create/update
-      allow create, update, delete: if false;
+      // Only Cloud Functions (with admin privileges) can create/delete
+      allow create, delete: if false;
+      // Admins can update the collapsedPairs field for UI preferences
+      allow update: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true &&
+        // Ensure collapsedPairs is a list if present
+        (!('collapsedPairs' in request.resource.data) || request.resource.data.collapsedPairs is list);
     }
   }
 }
