@@ -333,11 +333,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       
                       // Profile privacy toggle
                       _buildPrivacySection(context, authService),
-                      
-                      const SizedBox(height: 16),
-                      
-                      // Profile URL (for sharing)
-                      _buildProfileUrlSection(context, authService),
                     ],
                   ),
                 ),
@@ -1131,74 +1126,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               },
             ),
           ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildProfileUrlSection(BuildContext context, AuthService authService) {
-    final user = authService.userProfile;
-    if (user == null) return const SizedBox.shrink();
-    
-    final profileIdentifier = user.username?.isNotEmpty == true
-        ? user.username!
-        : user.id;
-    final profileUrl = '${Uri.base.origin}/user/$profileIdentifier';
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Profile URL',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        InkWell(
-          onTap: () {
-            // Copy to clipboard
-            // Note: In a real app, you'd use a clipboard package
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Profile URL: $profileUrl'),
-                duration: const Duration(seconds: 3),
-              ),
-            );
-          },
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
-              ),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    profileUrl,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Icon(
-                  Icons.copy,
-                  size: 18,
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Tap to copy. Share this link to let others view your profile.',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-          ),
         ),
       ],
     );
