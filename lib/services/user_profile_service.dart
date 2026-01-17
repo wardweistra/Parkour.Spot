@@ -85,14 +85,19 @@ class UserProfileService extends ChangeNotifier {
         return false;
       }
 
-      // Validate username format (alphanumeric, underscore, hyphen, 3-30 chars)
-      if (!RegExp(r'^[a-zA-Z0-9_-]{3,30}$').hasMatch(username)) {
+      // Validate username format (alphanumeric, underscore, hyphen, 3-27 chars)
+      // Max length is 27 to prevent conflicts with 28-character user IDs
+      final trimmedUsername = username.trim();
+      if (trimmedUsername.length >= 28) {
+        return false;
+      }
+      if (!RegExp(r'^[a-zA-Z0-9_-]{3,27}$').hasMatch(trimmedUsername)) {
         return false;
       }
 
       final querySnapshot = await _firestore
           .collection('users')
-          .where('username', isEqualTo: username.trim().toLowerCase())
+          .where('username', isEqualTo: trimmedUsername.toLowerCase())
           .limit(1)
           .get();
 
@@ -112,21 +117,29 @@ class UserProfileService extends ChangeNotifier {
       notifyListeners();
 
       // Validate username format
-      if (username.trim().isEmpty) {
+      final trimmedUsername = username.trim();
+      if (trimmedUsername.isEmpty) {
         _error = 'Username cannot be empty';
         _isLoading = false;
         notifyListeners();
         return false;
       }
 
-      if (!RegExp(r'^[a-zA-Z0-9_-]{3,30}$').hasMatch(username)) {
-        _error = 'Username must be 3-30 characters and contain only letters, numbers, underscores, and hyphens';
+      // Validate username length (max 27 to prevent conflicts with 28-character user IDs)
+      if (trimmedUsername.length >= 28) {
+        _error = 'Username must be 27 characters or less to avoid conflicts with user IDs';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+      if (!RegExp(r'^[a-zA-Z0-9_-]{3,27}$').hasMatch(trimmedUsername)) {
+        _error = 'Username must be 3-27 characters and contain only letters, numbers, underscores, and hyphens';
         _isLoading = false;
         notifyListeners();
         return false;
       }
 
-      final normalizedUsername = username.trim().toLowerCase();
+      final normalizedUsername = trimmedUsername.toLowerCase();
 
       // Check if username is available
       final isAvailable = await checkUsernameAvailability(normalizedUsername);

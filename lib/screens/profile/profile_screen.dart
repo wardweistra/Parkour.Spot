@@ -980,7 +980,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               hintText: 'Enter username',
               errorText: _usernameError,
               prefixText: '@',
-              helperText: '3-30 characters, letters, numbers, underscores, and hyphens only',
+              helperText: '3-27 characters, letters, numbers, underscores, and hyphens only',
             ),
             enabled: !_isCheckingUsername,
           ),
