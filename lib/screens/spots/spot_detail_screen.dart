@@ -26,6 +26,7 @@ import '../../services/spot_list_service.dart';
 import '../../services/feature_access_service.dart';
 import '../../models/spot_list.dart';
 import '../../utils/image_url_utils.dart';
+import '../../services/user_profile_service.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode, debugPrint;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -95,6 +96,28 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     Future.microtask(() {
       SnackbarService.showError(message);
     });
+  }
+
+  /// Navigate to user profile, preferring username if available
+  Future<void> _navigateToUserProfile(String userId) async {
+    try {
+      final userProfileService = Provider.of<UserProfileService>(context, listen: false);
+      final user = await userProfileService.getUserProfile(userId);
+      
+      // Use username if available, otherwise fall back to user ID
+      final identifier = user?.username?.isNotEmpty == true 
+          ? user!.username! 
+          : userId;
+      
+      if (mounted) {
+        context.go('/user/$identifier');
+      }
+    } catch (e) {
+      // If fetching fails, fall back to user ID
+      if (mounted) {
+        context.go('/user/$userId');
+      }
+    }
   }
 
   @override
@@ -367,21 +390,21 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       
       // Make creator name clickable if we have a user ID
       if (createdById != null) {
-        textSpans.add(TextSpan(
+      textSpans.add(TextSpan(
           text: createdBy,
           style: textStyle?.copyWith(
             color: theme.colorScheme.primary,
           ),
           recognizer: TapGestureRecognizer()
             ..onTap = () {
-              context.go('/user/$createdById');
+              _navigateToUserProfile(createdById);
             },
         ));
       } else {
         textSpans.add(TextSpan(
           text: createdBy,
-          style: textStyle,
-        ));
+        style: textStyle,
+      ));
       }
       
       hasPreviousContent = true;
@@ -467,7 +490,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                 text: ' and ',
                 style: textStyle,
               ));
-            } else {
+        } else {
               textSpans.add(TextSpan(
                 text: ', ',
                 style: textStyle,
@@ -477,21 +500,21 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           
           // Make contributor name clickable if we have a user ID
           if (userId != null) {
-            textSpans.add(TextSpan(
+        textSpans.add(TextSpan(
               text: userName,
               style: textStyle?.copyWith(
                 color: theme.colorScheme.primary,
               ),
               recognizer: TapGestureRecognizer()
                 ..onTap = () {
-                  context.go('/user/$userId');
+                  _navigateToUserProfile(userId);
                 },
             ));
           } else {
             textSpans.add(TextSpan(
               text: userName,
-              style: textStyle,
-            ));
+          style: textStyle,
+        ));
           }
         }
         
