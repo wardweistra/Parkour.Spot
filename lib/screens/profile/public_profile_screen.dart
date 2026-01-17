@@ -1,9 +1,17 @@
+import 'dart:async';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../services/user_profile_service.dart';
+import '../../services/auth_service.dart';
+import '../../services/profile_picture_service.dart';
+import '../../services/url_service.dart';
 import '../../models/user.dart' as app_user;
 import '../../widgets/page_scaffold.dart';
+import 'package:flutter/services.dart';
 
 class PublicProfileScreen extends StatefulWidget {
   final String userIdOrUsername;
@@ -19,6 +27,13 @@ class PublicProfileScreen extends StatefulWidget {
 
 class _PublicProfileScreenState extends State<PublicProfileScreen> {
   Future<app_user.User?>? _profileFuture;
+  bool _isUploadingProfilePicture = false;
+  final ProfilePictureService _profilePictureService = ProfilePictureService();
+  final UserProfileService _userProfileService = UserProfileService();
+  final TextEditingController _usernameController = TextEditingController();
+  bool _isEditingUsername = false;
+  bool _isCheckingUsername = false;
+  String? _usernameError;
 
   @override
   void didChangeDependencies() {
@@ -26,25 +41,64 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     // Cache the future to avoid multiple calls
     if (_profileFuture == null) {
       final userProfileService = Provider.of<UserProfileService>(context, listen: false);
-      _profileFuture = userProfileService.getUserProfile(widget.userIdOrUsername);
+      final authService = Provider.of<AuthService>(context, listen: false);
+      final currentUserId = authService.currentUser?.uid;
+      _profileFuture = userProfileService.getUserProfile(
+        widget.userIdOrUsername,
+        currentUserId: currentUserId,
+      );
     }
   }
 
   @override
-  Widget build(BuildContext context) {
-    return PageScaffold(
-      title: 'Profile',
-      body: FutureBuilder<app_user.User?>(
-        future: _profileFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
+  void dispose() {
+    _usernameController.dispose();
+    super.dispose();
+  }
 
-          if (snapshot.hasError) {
-            return Center(
+  bool _isOwnProfile(app_user.User user) {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final currentUser = authService.currentUser;
+    if (currentUser == null) return false;
+    
+    // Check if userIdOrUsername matches current user's ID or username
+    if (widget.userIdOrUsername == currentUser.uid) return true;
+    if (widget.userIdOrUsername == user.username) return true;
+    if (user.id == currentUser.uid) return true;
+    
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<app_user.User?>(
+      future: _profileFuture,
+      builder: (context, snapshot) {
+        final user = snapshot.data;
+        final displayName = user?.displayName ?? 'User';
+        final userIdOrUsername = user?.username != null && user!.username!.isNotEmpty
+            ? user.username!
+            : user?.id ?? '';
+        
+        return PageScaffold(
+          title: 'Profile',
+          actions: userIdOrUsername.isNotEmpty ? [
+            IconButton(
+              icon: const Icon(Icons.share),
+              tooltip: 'Share Profile',
+              onPressed: () => _copyProfileToClipboard(userIdOrUsername, displayName),
+            ),
+          ] : null,
+          body: Builder(
+            builder: (context) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              }
+
+              if (snapshot.hasError) {
+                return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -66,70 +120,146 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                   ),
                 ],
               ),
-            );
-          }
+                );
+              }
 
-          final user = snapshot.data;
+              final user = snapshot.data;
 
-          if (user == null) {
-            // Profile not found or is private
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.lock_outline, size: 64, color: Colors.grey),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Profile not found',
-                    style: Theme.of(context).textTheme.headlineSmall,
+              if (user == null) {
+                // Profile not found or is private
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.lock_outline, size: 64, color: Colors.grey),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Profile not found',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'This profile does not exist or is private.',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: () => context.go('/explore'),
+                        child: const Text('Go to Explore'),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'This profile does not exist or is private.',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: () => context.go('/explore'),
-                    child: const Text('Go to Explore'),
-                  ),
-                ],
-              ),
-            );
-          }
+                );
+              }
 
-          return _buildProfileContent(context, user);
-        },
-      ),
+              final isOwnProfile = _isOwnProfile(user);
+              return _buildProfileContent(context, user, isOwnProfile);
+            },
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildProfileContent(BuildContext context, app_user.User user) {
-    return Column(
-      children: [
+  Widget _buildProfileContent(BuildContext context, app_user.User user, bool isOwnProfile) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1200),
+          child: Column(
+            children: [
               // Profile Header
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(24.0),
                   child: Column(
                     children: [
-                      // Profile Picture
-                      CircleAvatar(
-                        radius: 50,
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        backgroundImage: user.photoURL != null && user.photoURL!.isNotEmpty
-                            ? NetworkImage(_getCacheBustedImageUrl(user.photoURL!))
-                            : null,
-                        child: user.photoURL == null || user.photoURL!.isEmpty
-                            ? Text(
-                                user.displayName?.substring(0, 1).toUpperCase() ?? 'U',
-                                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
+                      // Private profile badge (only for own profile)
+                      if (isOwnProfile && !user.isPublicProfile) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surfaceVariant,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.visibility_off,
+                                size: 16,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Only visible to you',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w500,
                                 ),
-                              )
-                            : null,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      
+                      // Profile Picture
+                      Stack(
+                        children: [
+                          GestureDetector(
+                            onTap: isOwnProfile && !_isUploadingProfilePicture
+                                ? _showProfilePictureOptions
+                                : null,
+                            child: CircleAvatar(
+                              key: ValueKey(user.photoURL ?? 'no-photo'),
+                              radius: 50,
+                              backgroundColor: Theme.of(context).colorScheme.primary,
+                              backgroundImage: user.photoURL != null && user.photoURL!.isNotEmpty
+                                  ? NetworkImage(_getCacheBustedImageUrl(user.photoURL!))
+                                  : null,
+                              child: _isUploadingProfilePicture
+                                  ? const CircularProgressIndicator(
+                                      color: Colors.white,
+                                    )
+                                  : (user.photoURL == null || user.photoURL!.isEmpty)
+                                      ? Text(
+                                          user.displayName?.substring(0, 1).toUpperCase() ?? 'U',
+                                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        )
+                                      : null,
+                            ),
+                          ),
+                          if (isOwnProfile && !_isUploadingProfilePicture)
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Theme.of(context).colorScheme.surface,
+                                    width: 2,
+                                  ),
+                                ),
+                                padding: const EdgeInsets.all(6),
+                                child: Icon(
+                                  Icons.camera_alt,
+                                  size: 20,
+                                  color: Theme.of(context).colorScheme.onPrimary,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                       
                       const SizedBox(height: 16),
@@ -142,13 +272,24 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                         ),
                       ),
                       
+                      // User Email (only for own profile)
+                      if (isOwnProfile && user.email.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          user.email,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
+                      
                       // Username (if set)
                       if (user.username != null && user.username!.isNotEmpty) ...[
                         const SizedBox(height: 4),
                         Text(
                           '@${user.username}',
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                       ],
@@ -163,12 +304,643 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                           ),
                         ),
                       ],
+                      
+                      // User Stats
+                      const SizedBox(height: 16),
+                      _buildUserStats(context, user.id),
                     ],
                   ),
                 ),
               ),
+              
+              // Edit options (only for own profile)
+              if (isOwnProfile) ...[
+                const SizedBox(height: 16),
+                
+                // Profile Settings Section
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Profile Settings',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        // Username editing
+                        _buildUsernameSection(context, user),
+                        
+                        const SizedBox(height: 16),
+                        
+                        // Profile privacy toggle
+                        _buildPrivacySection(context, user),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUsernameSection(BuildContext context, app_user.User user) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Username',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (!_isEditingUsername) ...[
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  user.username != null && user.username!.isNotEmpty
+                      ? '@${user.username}'
+                      : 'No username set',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _isEditingUsername = true;
+                    _usernameController.text = user.username ?? '';
+                    _usernameError = null;
+                  });
+                },
+                child: const Text('Edit'),
+              ),
+            ],
+          ),
+        ] else ...[
+          TextField(
+            controller: _usernameController,
+            decoration: InputDecoration(
+              labelText: 'Username',
+              hintText: 'Enter username',
+              errorText: _usernameError,
+              prefixText: '@',
+              helperText: '3-27 characters, letters, numbers, underscores, and hyphens only',
+            ),
+            enabled: !_isCheckingUsername,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: _isCheckingUsername ? null : () {
+                  setState(() {
+                    _isEditingUsername = false;
+                    _usernameController.text = user.username ?? '';
+                    _usernameError = null;
+                  });
+                },
+                child: const Text('Cancel'),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: _isCheckingUsername ? null : () async {
+                  final newUsername = _usernameController.text.trim();
+                  
+                  if (newUsername.isEmpty) {
+                    setState(() {
+                      _usernameError = 'Username cannot be empty';
+                    });
+                    return;
+                  }
+
+                  setState(() {
+                    _isCheckingUsername = true;
+                    _usernameError = null;
+                  });
+
+                  final authService = Provider.of<AuthService>(context, listen: false);
+                  
+                  // Check availability
+                  final isAvailable = await authService.checkUsernameAvailability(newUsername);
+                  
+                  if (!isAvailable && newUsername.toLowerCase() != user.username?.toLowerCase()) {
+                    setState(() {
+                      _isCheckingUsername = false;
+                      _usernameError = 'Username is already taken';
+                    });
+                    return;
+                  }
+
+                  // Update username
+                  final success = await authService.updateUsername(newUsername);
+                  
+                  if (mounted) {
+                    setState(() {
+                      _isCheckingUsername = false;
+                      if (success) {
+                        _isEditingUsername = false;
+                        _usernameError = null;
+                        // Refresh profile
+                        final userProfileService = Provider.of<UserProfileService>(context, listen: false);
+                        final currentUserId = authService.currentUser?.uid;
+                        _profileFuture = userProfileService.getUserProfile(
+                          widget.userIdOrUsername,
+                          currentUserId: currentUserId,
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Username updated successfully'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      } else {
+                        _usernameError = _userProfileService.error ?? 'Failed to update username';
+                      }
+                    });
+                  }
+                },
+                child: _isCheckingUsername
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Save'),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildPrivacySection(BuildContext context, app_user.User user) {
+    final isPublic = user.isPublicProfile;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Profile Privacy',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isPublic ? 'Public Profile' : 'Private Profile',
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    isPublic
+                        ? 'Your profile is visible to everyone'
+                        : 'Your profile is private and not visible to others',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Switch(
+              value: isPublic,
+              onChanged: (value) async {
+                final authService = Provider.of<AuthService>(context, listen: false);
+                final success = await authService.updateProfilePrivacy(value);
+                if (mounted) {
+                  if (success) {
+                    // Refresh profile
+                    final userProfileService = Provider.of<UserProfileService>(context, listen: false);
+                    final currentUserId = authService.currentUser?.uid;
+                    _profileFuture = userProfileService.getUserProfile(
+                      widget.userIdOrUsername,
+                      currentUserId: currentUserId,
+                    );
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          value
+                              ? 'Profile is now public'
+                              : 'Profile is now private',
+                        ),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Failed to update profile privacy'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// Show dialog with options to change profile picture
+  void _showProfilePictureOptions() {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final user = authService.userProfile;
+    final hasPhoto = user?.photoURL != null && user!.photoURL!.isNotEmpty;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Change Profile Picture'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Choose from Gallery'),
+              onTap: () {
+                Navigator.pop(dialogContext);
+                _pickImageFromGallery();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Take Photo'),
+              onTap: () {
+                Navigator.pop(dialogContext);
+                _takePhoto();
+              },
+            ),
+            if (hasPhoto)
+              ListTile(
+                leading: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
+                title: Text(
+                  'Remove Picture',
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+                onTap: () {
+                  Navigator.pop(dialogContext);
+                  _removeProfilePicture();
+                },
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Pick image from gallery
+  Future<void> _pickImageFromGallery() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1920,
+        maxHeight: 1920,
+        imageQuality: 90,
+      );
+
+      if (pickedFile != null) {
+        await _uploadProfilePicture(pickedFile);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error picking image: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Take photo with camera
+  Future<void> _takePhoto() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? pickedFile = await picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 1920,
+        maxHeight: 1920,
+        imageQuality: 90,
+      );
+
+      if (pickedFile != null) {
+        await _uploadProfilePicture(pickedFile);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error taking photo: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Upload profile picture from XFile
+  Future<void> _uploadProfilePicture(XFile pickedFile) async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+
+    if (!mounted) return;
+
+    setState(() {
+      _isUploadingProfilePicture = true;
+    });
+
+    // Show progress dialog with state management
+    double uploadProgress = 0.0;
+    String statusMessage = 'Processing image...';
+    
+    BuildContext? dialogContext;
+    StateSetter? dialogSetState;
+    final dialogReady = Completer<void>();
+
+    // Helper function to update progress
+    void updateProgress(double progress, String message) {
+      uploadProgress = progress;
+      statusMessage = message;
+      if (mounted && dialogSetState != null) {
+        dialogSetState!(() {});
+      }
+    }
+
+    // Show dialog (don't await, we'll wait for the completer instead)
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        dialogContext = context;
+        return StatefulBuilder(
+          builder: (context, setState) {
+            // Set dialogSetState and complete the completer when dialog is built
+            if (dialogSetState == null) {
+              dialogSetState = setState;
+              if (!dialogReady.isCompleted) {
+                dialogReady.complete();
+              }
+            }
+            return WillPopScope(
+              onWillPop: () async => false, // Prevent dismissing during upload
+              child: AlertDialog(
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text(
+                      statusMessage,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 16),
+                    LinearProgressIndicator(
+                      value: uploadProgress,
+                      minHeight: 8,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${(uploadProgress * 100).toInt()}%',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    // Wait for dialog to be built before starting upload
+    await dialogReady.future;
+
+    try {
+      String photoURL;
+
+      if (kIsWeb) {
+        // Web: read as bytes
+        updateProgress(0.1, 'Reading image...');
+        final bytes = await pickedFile.readAsBytes();
+        
+        // Upload with progress updates
+        photoURL = await _profilePictureService.uploadProfilePictureBytes(
+          bytes,
+          onProgress: (progress) {
+            String message;
+            if (progress < 0.3) {
+              message = 'Processing image...';
+            } else if (progress < 0.9) {
+              message = 'Uploading...';
+            } else {
+              message = 'Finishing...';
+            }
+            updateProgress(progress, message);
+          },
+        );
+      } else {
+        // Mobile: use File
+        updateProgress(0.1, 'Reading image...');
+        final file = File(pickedFile.path);
+        
+        // Upload with progress updates
+        photoURL = await _profilePictureService.uploadProfilePicture(
+          file,
+          onProgress: (progress) {
+            String message;
+            if (progress < 0.3) {
+              message = 'Processing image...';
+            } else if (progress < 0.9) {
+              message = 'Uploading...';
+            } else {
+              message = 'Finishing...';
+            }
+            updateProgress(progress, message);
+          },
+        );
+      }
+
+      // Update profile
+      updateProgress(0.95, 'Updating profile...');
+      final success = await authService.updateProfile(
+        photoURL: photoURL,
+        deleteOldPhoto: true,
+      );
+
+      // Close progress dialog
+      if (mounted && dialogContext != null) {
+        Navigator.of(dialogContext!, rootNavigator: true).pop();
+      }
+
+      if (mounted) {
+        if (success) {
+          // Refresh profile
+          final userProfileService = Provider.of<UserProfileService>(context, listen: false);
+          final currentUserId = authService.currentUser?.uid;
+          _profileFuture = userProfileService.getUserProfile(
+            widget.userIdOrUsername,
+            currentUserId: currentUserId,
           );
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profile picture updated successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to update profile picture'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Close progress dialog
+      if (mounted && dialogContext != null) {
+        Navigator.of(dialogContext!, rootNavigator: true).pop();
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error uploading profile picture: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploadingProfilePicture = false;
+        });
+      }
+    }
+  }
+
+  /// Remove profile picture
+  Future<void> _removeProfilePicture() async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final user = authService.userProfile;
+
+    if (user?.photoURL == null || user!.photoURL!.isEmpty) {
+      return;
+    }
+
+    // Show confirmation dialog
+    final shouldRemove = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Remove Profile Picture'),
+        content: const Text('Are you sure you want to remove your profile picture?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldRemove != true) {
+      return;
+    }
+
+    setState(() {
+      _isUploadingProfilePicture = true;
+    });
+
+    try {
+      // Delete from Storage first
+      await _profilePictureService.deleteProfilePicture();
+
+      // Update profile to remove photoURL
+      final success = await authService.updateProfile(
+        removePhoto: true,
+        deleteOldPhoto: false,
+      );
+
+      // Wait a frame to ensure UI updates
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      if (mounted) {
+        if (success) {
+          // Refresh profile
+          final userProfileService = Provider.of<UserProfileService>(context, listen: false);
+          final authService = Provider.of<AuthService>(context, listen: false);
+          final currentUserId = authService.currentUser?.uid;
+          _profileFuture = userProfileService.getUserProfile(
+            widget.userIdOrUsername,
+            currentUserId: currentUserId,
+          );
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profile picture removed successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to remove profile picture'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error removing profile picture: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploadingProfilePicture = false;
+        });
+      }
+    }
   }
 
   String _formatDate(DateTime date) {
@@ -177,6 +949,123 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       'July', 'August', 'September', 'October', 'November', 'December'
     ];
     return '${months[date.month - 1]} ${date.year}';
+  }
+
+  void _copyProfileToClipboard(String userIdOrUsername, String displayName) async {
+    try {
+      final url = UrlService.generateUserProfileUrl(userIdOrUsername);
+      final text = '$displayName 👉 $url';
+
+      await Clipboard.setData(ClipboardData(text: text));
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile copied to clipboard!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to copy profile: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildUserStats(BuildContext context, String userId) {
+    final userProfileService = UserProfileService();
+    
+    return FutureBuilder<Map<String, int>?>(
+      future: userProfileService.getUserStats(userId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox(
+            height: 60,
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (snapshot.hasError || snapshot.data == null) {
+          return const SizedBox.shrink();
+        }
+
+        final stats = snapshot.data!;
+        final spotsCount = stats['spotsCreated'] ?? 0;
+        final reportsCount = stats['spotReports'] ?? 0;
+        final ratingsCount = stats['ratings'] ?? 0;
+
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final isWideScreen = constraints.maxWidth > 400;
+            
+            if (isWideScreen) {
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildStatItem(context, Icons.add_location, spotsCount, 'Spots'),
+                  _buildStatItem(context, Icons.flag, reportsCount, 'Reports'),
+                  _buildStatItem(context, Icons.star, ratingsCount, 'Ratings'),
+                ],
+              );
+            } else {
+              return Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildStatItem(context, Icons.add_location, spotsCount, 'Spots'),
+                      _buildStatItem(context, Icons.flag, reportsCount, 'Reports'),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildStatItem(context, Icons.star, ratingsCount, 'Ratings'),
+                    ],
+                  ),
+                ],
+              );
+            }
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildStatItem(BuildContext context, IconData icon, int count, String label) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          size: 24,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          count.toString(),
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+          ),
+        ),
+      ],
+    );
   }
 
   /// Add cache-busting query parameter to image URL

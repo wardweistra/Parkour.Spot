@@ -12,9 +12,10 @@ class UserProfileService extends ChangeNotifier {
   String? get error => _error;
 
   /// Get user profile by ID or username
-  /// Returns null if user not found or profile is private
-  /// Note: Email is excluded from public profiles
-  Future<app_user.User?> getUserProfile(String userIdOrUsername) async {
+  /// Returns null if user not found or profile is private (unless currentUserId matches)
+  /// Note: Email is excluded from public profiles unless viewing own profile
+  /// [currentUserId] - Optional current user ID to allow viewing own private profile
+  Future<app_user.User?> getUserProfile(String userIdOrUsername, {String? currentUserId}) async {
     try {
       _isLoading = true;
       _error = null;
@@ -22,11 +23,15 @@ class UserProfileService extends ChangeNotifier {
       Future.microtask(() => notifyListeners());
 
       DocumentSnapshot? doc;
+      String? resolvedUserId;
 
       // Try to fetch by user ID first (if it looks like a Firebase UID)
       // Firebase UIDs are typically 28 characters
       if (userIdOrUsername.length == 28) {
         doc = await _firestore.collection('users').doc(userIdOrUsername).get();
+        if (doc.exists) {
+          resolvedUserId = doc.id;
+        }
       }
 
       // If not found by ID, try username lookup (case-insensitive)
@@ -39,6 +44,7 @@ class UserProfileService extends ChangeNotifier {
         
         if (querySnapshot.docs.isNotEmpty) {
           doc = querySnapshot.docs.first;
+          resolvedUserId = doc.id;
         }
       }
 
@@ -52,17 +58,21 @@ class UserProfileService extends ChangeNotifier {
       
       // Check if profile is public
       final isPublicProfile = data['isPublicProfile'] ?? true;
-      if (!isPublicProfile) {
+      final isOwnProfile = currentUserId != null && resolvedUserId == currentUserId;
+      
+      // Allow viewing own profile even if private
+      if (!isPublicProfile && !isOwnProfile) {
         _isLoading = false;
         Future.microtask(() => notifyListeners());
-        return null; // Profile is private
+        return null; // Profile is private and not own profile
       }
 
-      // Create user object, excluding email for public profiles
+      // Create user object
+      // Exclude email for public profiles, include for own profile
       final user = app_user.User.fromMap({
         'id': doc.id,
         ...data,
-        'email': '', // Exclude email from public profiles
+        'email': isOwnProfile ? (data['email'] ?? '') : '', // Include email only for own profile
       });
 
       _isLoading = false;
@@ -201,6 +211,46 @@ class UserProfileService extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       return false;
+    }
+  }
+
+  /// Get user statistics (spots created, reports made, ratings given)
+  /// Returns a map with 'spotsCreated', 'spotReports', and 'ratings' counts
+  Future<Map<String, int>?> getUserStats(String userId) async {
+    try {
+      final int spotsCreatedCount = await _countDocuments(
+        _firestore.collection('spots').where('createdBy', isEqualTo: userId),
+      );
+      final int reportedCount = await _countDocuments(
+        _firestore.collection('spotReports').where('reporterUserId', isEqualTo: userId),
+      );
+      final int ratingsCount = await _countDocuments(
+        _firestore.collection('ratings').where('userId', isEqualTo: userId),
+      );
+
+      return {
+        'spotsCreated': spotsCreatedCount,
+        'spotReports': reportedCount,
+        'ratings': ratingsCount,
+      };
+    } catch (e) {
+      debugPrint('Error getting user stats: $e');
+      return null;
+    }
+  }
+
+  /// Helper method to count documents with fallback for missing indexes
+  Future<int> _countDocuments(Query<Map<String, dynamic>> query) async {
+    try {
+      final aggregateSnapshot = await query.count().get();
+      return aggregateSnapshot.count ?? 0;
+    } on FirebaseException catch (e) {
+      if (e.code == 'failed-precondition') {
+        // Firestore requires an index; fall back to client-side count.
+        final snapshot = await query.get();
+        return snapshot.docs.length;
+      }
+      rethrow;
     }
   }
 }

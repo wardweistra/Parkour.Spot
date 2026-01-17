@@ -6,6 +6,12 @@ import 'mobile_detection_service.dart';
 class UrlService {
   static const String _baseUrl = 'https://parkour.spot';
   
+  /// Generate a shareable URL for a user profile
+  /// Prefers username if available, otherwise uses user ID
+  static String generateUserProfileUrl(String userIdOrUsername) {
+    return '$_baseUrl/user/$userIdOrUsername';
+  }
+  
   /// Generate a shareable URL for a spot
   /// Uses format: parkour.spot/nl/amsterdam/&lt;spot-id&gt;
   static String generateSpotUrl(String spotId, {String? countryCode, String? city}) {
