@@ -599,6 +599,8 @@ exports.getTopSpotsInBounds = onCall(
           "tags",
           "spotSource",
           "spotSourceName",
+          "spotSourceRemoved",
+          "spotSourceRemovedAt",
           "folderName",
           "averageRating",
           "ratingCount",
