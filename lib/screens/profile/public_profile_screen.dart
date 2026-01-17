@@ -27,6 +27,7 @@ class PublicProfileScreen extends StatefulWidget {
 
 class _PublicProfileScreenState extends State<PublicProfileScreen> {
   Future<app_user.User?>? _profileFuture;
+  String? _lastUserIdOrUsername; // Track the last userIdOrUsername used to create the future
   bool _isUploadingProfilePicture = false;
   final ProfilePictureService _profilePictureService = ProfilePictureService();
   final UserProfileService _userProfileService = UserProfileService();
@@ -38,15 +39,33 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Cache the future to avoid multiple calls
-    if (_profileFuture == null) {
-      final userProfileService = Provider.of<UserProfileService>(context, listen: false);
-      final authService = Provider.of<AuthService>(context, listen: false);
-      final currentUserId = authService.currentUser?.uid;
-      _profileFuture = userProfileService.getUserProfile(
-        widget.userIdOrUsername,
-        currentUserId: currentUserId,
-      );
+    // Reset future if userIdOrUsername has changed
+    if (_profileFuture == null || _lastUserIdOrUsername != widget.userIdOrUsername) {
+      _loadProfile();
+    }
+  }
+
+  @override
+  void didUpdateWidget(PublicProfileScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // If userIdOrUsername changed, reload the profile
+    if (oldWidget.userIdOrUsername != widget.userIdOrUsername) {
+      _loadProfile();
+    }
+  }
+
+  void _loadProfile() {
+    final userProfileService = Provider.of<UserProfileService>(context, listen: false);
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final currentUserId = authService.currentUser?.uid;
+    _lastUserIdOrUsername = widget.userIdOrUsername;
+    _profileFuture = userProfileService.getUserProfile(
+      widget.userIdOrUsername,
+      currentUserId: currentUserId,
+    );
+    // Force a rebuild to show the new data
+    if (mounted) {
+      setState(() {});
     }
   }
 
@@ -63,15 +82,27 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     
     // Check if userIdOrUsername matches current user's ID or username
     if (widget.userIdOrUsername == currentUser.uid) return true;
-    if (widget.userIdOrUsername == user.username) return true;
+    // Check if the profile's ID matches current user's ID (definitive check)
     if (user.id == currentUser.uid) return true;
+    // Check if userIdOrUsername matches current user's username
+    final currentUserProfile = authService.userProfile;
+    if (currentUserProfile != null && 
+        currentUserProfile.username != null && 
+        currentUserProfile.username!.isNotEmpty &&
+        widget.userIdOrUsername == currentUserProfile.username) return true;
     
     return false;
   }
 
   @override
   Widget build(BuildContext context) {
+    // Ensure the future matches the current userIdOrUsername
+    if (_lastUserIdOrUsername != widget.userIdOrUsername) {
+      _loadProfile();
+    }
+    
     return FutureBuilder<app_user.User?>(
+      key: ValueKey(widget.userIdOrUsername), // Force rebuild when userIdOrUsername changes
       future: _profileFuture,
       builder: (context, snapshot) {
         final user = snapshot.data;
@@ -450,13 +481,36 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                       if (success) {
                         _isEditingUsername = false;
                         _usernameError = null;
-                        // Refresh profile
-                        final userProfileService = Provider.of<UserProfileService>(context, listen: false);
-                        final currentUserId = authService.currentUser?.uid;
-                        _profileFuture = userProfileService.getUserProfile(
-                          widget.userIdOrUsername,
-                          currentUserId: currentUserId,
-                        );
+                        
+                        // Check if we're viewing by username (not user ID)
+                        // User IDs are typically 28 characters, usernames are shorter
+                        final isViewingByUsername = widget.userIdOrUsername.length != 28;
+                        final usernameChanged = newUsername.toLowerCase() != user.username?.toLowerCase();
+                        
+                        if (isViewingByUsername && usernameChanged) {
+                          // Clear the future before redirecting to force a fresh load
+                          _profileFuture = null;
+                          _lastUserIdOrUsername = null;
+                          // Redirect to new username URL
+                          // Use a post-frame callback to ensure state is updated before navigation
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (mounted) {
+                              context.go('/user/$newUsername');
+                            }
+                          });
+                        } else {
+                          // Refresh profile using user ID (more reliable)
+                          final userProfileService = Provider.of<UserProfileService>(context, listen: false);
+                          final currentUserId = authService.currentUser?.uid;
+                          if (currentUserId != null) {
+                            _lastUserIdOrUsername = currentUserId;
+                            _profileFuture = userProfileService.getUserProfile(
+                              currentUserId,
+                              currentUserId: currentUserId,
+                            );
+                          }
+                        }
+                        
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Username updated successfully'),
@@ -529,6 +583,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                     // Refresh profile
                     final userProfileService = Provider.of<UserProfileService>(context, listen: false);
                     final currentUserId = authService.currentUser?.uid;
+                    _lastUserIdOrUsername = widget.userIdOrUsername;
                     _profileFuture = userProfileService.getUserProfile(
                       widget.userIdOrUsername,
                       currentUserId: currentUserId,
@@ -805,6 +860,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           // Refresh profile
           final userProfileService = Provider.of<UserProfileService>(context, listen: false);
           final currentUserId = authService.currentUser?.uid;
+          _lastUserIdOrUsername = widget.userIdOrUsername;
           _profileFuture = userProfileService.getUserProfile(
             widget.userIdOrUsername,
             currentUserId: currentUserId,
@@ -905,6 +961,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           final userProfileService = Provider.of<UserProfileService>(context, listen: false);
           final authService = Provider.of<AuthService>(context, listen: false);
           final currentUserId = authService.currentUser?.uid;
+          _lastUserIdOrUsername = widget.userIdOrUsername;
           _profileFuture = userProfileService.getUserProfile(
             widget.userIdOrUsername,
             currentUserId: currentUserId,
