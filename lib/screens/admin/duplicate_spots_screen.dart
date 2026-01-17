@@ -106,7 +106,7 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
                       ..sort((a, b) => a.name.compareTo(b.name));
                     
                     return DropdownButtonFormField<String>(
-                      value: _selectedSourceId,
+                      initialValue: _selectedSourceId,
                       decoration: const InputDecoration(
                         labelText: 'Select Source',
                         border: OutlineInputBorder(),
@@ -235,7 +235,7 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
                     Text('Found $pairsFound pair${pairsFound == 1 ? '' : 's'} (checked $spotsChecked spots)'),
                     if (createdAt != null)
                       Text(
-                        '${createdAt.toDate().toString().substring(0, 19)}',
+                        createdAt.toDate().toString().substring(0, 19),
                         style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                   ],
