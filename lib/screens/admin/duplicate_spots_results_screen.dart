@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/auth_service.dart';
+import '../../services/url_service.dart';
 
 class DuplicateSpotsResultsScreen extends StatefulWidget {
   final String runId;
@@ -20,6 +21,7 @@ class _DuplicateSpotsResultsScreenState extends State<DuplicateSpotsResultsScree
   final Set<int> _collapsedPairs = {}; // Track which pairs are collapsed
   String? _lastLoadedRunId; // Track which runId we last loaded collapsed pairs for
   final ScrollController _scrollController = ScrollController();
+  bool _hideCheckedPairs = true; // Hide checked pairs by default
 
   @override
   void dispose() {
@@ -117,20 +119,50 @@ class _DuplicateSpotsResultsScreenState extends State<DuplicateSpotsResultsScree
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      sourceName,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Found $pairsFound potential duplicate pair${pairsFound == 1 ? '' : 's'} (checked $spotsChecked spots)',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[700],
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                sourceName,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Found $pairsFound potential duplicate pair${pairsFound == 1 ? '' : 's'} (checked $spotsChecked spots)',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[700],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            Text(
+                              'Hide checked',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                            Switch(
+                              value: _hideCheckedPairs,
+                              onChanged: (value) {
+                                setState(() {
+                                  _hideCheckedPairs = value;
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -151,17 +183,90 @@ class _DuplicateSpotsResultsScreenState extends State<DuplicateSpotsResultsScree
                           ],
                         ),
                       )
-                    : ListView.builder(
-                        controller: _scrollController,
-                        key: PageStorageKey<String>('duplicate-results-${widget.runId}'),
-                        padding: const EdgeInsets.all(16),
-                        itemCount: pairs.length,
-                        itemBuilder: (context, index) {
-                          final pair = pairs[index] as Map<String, dynamic>;
-                          final spot1 = pair['spot1'] as Map<String, dynamic>;
-                          final spot2 = pair['spot2'] as Map<String, dynamic>;
-                          final distanceMeters = pair['distanceMeters'] as int? ?? 0;
-                          final isCollapsed = _collapsedPairs.contains(index);
+                    : _buildPairsList(pairs),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildPairsList(List<dynamic> pairs) {
+    // Filter pairs based on hideCheckedPairs setting, maintaining original order
+    final List<Map<String, dynamic>> displayPairs = [];
+    
+    for (int i = 0; i < pairs.length; i++) {
+      // If hiding checked pairs, skip collapsed ones; otherwise include all
+      if (_hideCheckedPairs && _collapsedPairs.contains(i)) {
+        continue;
+      }
+      displayPairs.add({
+        'pair': pairs[i] as Map<String, dynamic>,
+        'index': i,
+      });
+    }
+    
+    final int checkedCount = _collapsedPairs.length;
+    final int visibleCount = displayPairs.length;
+    
+    if (_hideCheckedPairs && visibleCount == 0) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.check_circle, size: 64, color: Colors.green),
+            const SizedBox(height: 16),
+            Text(
+              'All pairs checked',
+              style: TextStyle(color: Colors.grey, fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Toggle "Hide checked" to see all pairs',
+              style: TextStyle(color: Colors.grey[600], fontSize: 14),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    return Column(
+      children: [
+        if (_hideCheckedPairs && checkedCount > 0)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: Colors.blue[50],
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, size: 16, color: Colors.blue[700]),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '$checkedCount checked pair${checkedCount == 1 ? '' : 's'} hidden. Toggle switch to show.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.blue[900],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        Expanded(
+          child: ListView.builder(
+            controller: _scrollController,
+            key: PageStorageKey<String>('duplicate-results-${widget.runId}'),
+            padding: const EdgeInsets.all(16),
+            itemCount: displayPairs.length,
+            itemBuilder: (context, listIndex) {
+              final pairData = displayPairs[listIndex];
+              final pair = pairData['pair'] as Map<String, dynamic>;
+              final index = pairData['index'] as int;
+              final spot1 = pair['spot1'] as Map<String, dynamic>;
+              final spot2 = pair['spot2'] as Map<String, dynamic>;
+              final distanceMeters = pair['distanceMeters'] as int? ?? 0;
+              final isCollapsed = _collapsedPairs.contains(index);
 
                           return Card(
                             key: ValueKey('pair-$index'),
@@ -233,37 +338,6 @@ class _DuplicateSpotsResultsScreenState extends State<DuplicateSpotsResultsScree
                                     const SizedBox(height: 12),
                                     // Spot 2
                                     _buildSpotCard(spot2, 'Spot 2'),
-                                    const SizedBox(height: 16),
-                                    // Actions
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: OutlinedButton.icon(
-                                            icon: const Icon(Icons.visibility, size: 18),
-                                            label: const Text('View Spot 1'),
-                                            onPressed: () {
-                                              final spotId = spot1['id'] as String?;
-                                              if (spotId != null) {
-                                                context.go('/spot/$spotId');
-                                              }
-                                            },
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: OutlinedButton.icon(
-                                            icon: const Icon(Icons.visibility, size: 18),
-                                            label: const Text('View Spot 2'),
-                                            onPressed: () {
-                                              final spotId = spot2['id'] as String?;
-                                              if (spotId != null) {
-                                                context.go('/spot/$spotId');
-                                              }
-                                            },
-                                          ),
-                                        ),
-                                      ],
-                                    ),
                                   ],
                                 ],
                               ),
@@ -271,11 +345,8 @@ class _DuplicateSpotsResultsScreenState extends State<DuplicateSpotsResultsScree
                           );
                         },
                       ),
-              ),
-            ],
-          );
-        },
-      ),
+        ),
+      ],
     );
   }
 
@@ -289,84 +360,124 @@ class _DuplicateSpotsResultsScreenState extends State<DuplicateSpotsResultsScree
     final hasImages = spot['hasImages'] as bool? ?? false;
     final latitude = spot['latitude'] as num?;
     final longitude = spot['longitude'] as num?;
+    final spotId = spot['id'] as String?;
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[600],
-                ),
-              ),
-              if (hasImages) ...[
-                const SizedBox(width: 8),
-                Icon(Icons.image, size: 16, color: Colors.grey[600]),
-              ],
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            name,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
-          if (address != null) ...[
-            const SizedBox(height: 4),
+    return InkWell(
+      onTap: spotId != null
+          ? () {
+              final navigationUrl = UrlService.generateNavigationUrl(
+                spotId,
+                countryCode: countryCode,
+                city: city,
+              );
+              context.go(navigationUrl);
+            }
+          : null,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey[300]!),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Row(
               children: [
-                Icon(Icons.location_on, size: 14, color: Colors.grey[600]),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    address,
-                    style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[600],
                   ),
                 ),
+                if (hasImages) ...[
+                  const SizedBox(width: 8),
+                  Icon(Icons.image, size: 16, color: Colors.grey[600]),
+                ],
+                const Spacer(),
+                if (spotId != null) ...[
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        context.go('/explore?locateSpotId=$spotId');
+                      },
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        child: Icon(
+                          Icons.my_location,
+                          size: 18,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.open_in_new,
+                    size: 16,
+                    color: Colors.grey[600],
+                  ),
+                ],
               ],
             ),
-          ],
-          if (city != null || countryCode != null) ...[
-            const SizedBox(height: 2),
-            Text(
-              [city, countryCode].whereType<String>().join(', '),
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            ),
-          ],
-          if (spotSourceName != null || spotSource != null) ...[
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Icon(Icons.source, size: 14, color: Colors.grey[600]),
-                const SizedBox(width: 4),
-                Text(
-                  spotSourceName ?? spotSource ?? 'Unknown source',
-                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                ),
-              ],
-            ),
-          ],
-          if (latitude != null && longitude != null) ...[
             const SizedBox(height: 4),
             Text(
-              '${latitude.toStringAsFixed(6)}, ${longitude.toStringAsFixed(6)}',
-              style: TextStyle(fontSize: 10, color: Colors.grey[500], fontFamily: 'monospace'),
+              name,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
             ),
+            if (address != null) ...[
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(Icons.location_on, size: 14, color: Colors.grey[600]),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      address,
+                      style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            if (city != null || countryCode != null) ...[
+              const SizedBox(height: 2),
+              Text(
+                [city, countryCode].whereType<String>().join(', '),
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+            ],
+            if (spotSourceName != null || spotSource != null) ...[
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(Icons.source, size: 14, color: Colors.grey[600]),
+                  const SizedBox(width: 4),
+                  Text(
+                    spotSourceName ?? spotSource ?? 'Unknown source',
+                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                  ),
+                ],
+              ),
+            ],
+            if (latitude != null && longitude != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                '${latitude.toStringAsFixed(6)}, ${longitude.toStringAsFixed(6)}',
+                style: TextStyle(fontSize: 10, color: Colors.grey[500], fontFamily: 'monospace'),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

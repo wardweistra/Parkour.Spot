@@ -15,20 +15,20 @@ class AdminHomeScreen extends StatelessWidget {
       return PageScaffold(
         title: 'Admin',
         body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.lock_outline, size: 64),
-              const SizedBox(height: 12),
-              const Text('Administrator access required'),
-              const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: () => context.go('/explore?tab=profile'),
-                child: const Text('Back to Profile'),
-              ),
-            ],
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.lock_outline, size: 64),
+                const SizedBox(height: 12),
+                const Text('Administrator access required'),
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: () => context.go('/explore?tab=profile'),
+                  child: const Text('Back to Profile'),
+                ),
+              ],
+            ),
           ),
-        ),
         scrollable: false,
         padding: const EdgeInsets.all(24.0),
       );
