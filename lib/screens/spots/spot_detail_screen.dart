@@ -2526,7 +2526,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                   zoom: 16,
                                 ),
                                 mapType: isSatellite
-                                    ? MapType.satellite
+                                    ? MapType.hybrid
                                     : MapType.normal,
                                 markers: {
                                   Marker(

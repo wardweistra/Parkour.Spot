@@ -123,7 +123,7 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
                         target: widget.currentLocation!,
                         zoom: 16,
                       ),
-                      mapType: widget.isSatelliteView ? MapType.satellite : MapType.normal,
+                      mapType: widget.isSatelliteView ? MapType.hybrid : MapType.normal,
                       onMapCreated: widget.onMapCreated,
                       markers: {
                         Marker(

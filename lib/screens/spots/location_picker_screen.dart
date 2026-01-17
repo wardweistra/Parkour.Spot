@@ -110,7 +110,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         children: [
           GoogleMap(
             initialCameraPosition: initialCameraPosition,
-            mapType: _isSatelliteView ? MapType.satellite : MapType.normal,
+            mapType: _isSatelliteView ? MapType.hybrid : MapType.normal,
             myLocationEnabled: true,
             myLocationButtonEnabled: true,
             zoomControlsEnabled: false,

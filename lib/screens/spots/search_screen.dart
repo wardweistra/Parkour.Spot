@@ -1588,7 +1588,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
               // Map View
               GoogleMap(
                 initialCameraPosition: initialCameraPosition,
-                mapType: _isSatelliteView ? MapType.satellite : MapType.normal,
+                mapType: _isSatelliteView ? MapType.hybrid : MapType.normal,
                 markers: _markers,
                 myLocationEnabled: true,
                 myLocationButtonEnabled: !_isBottomSheetOpen && _selectedSpot == null && !_showListPreview && !_showFiltersDialog, // Disable location button when expanded, spot detail is open, list preview is open, or filters dialog is open

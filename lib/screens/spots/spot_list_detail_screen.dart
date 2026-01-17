@@ -539,7 +539,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
         children: [
           GoogleMap(
             initialCameraPosition: initialCameraPosition,
-            mapType: _isSatelliteView ? MapType.satellite : MapType.normal,
+            mapType: _isSatelliteView ? MapType.hybrid : MapType.normal,
             markers: _buildMarkers(),
             onMapCreated: (GoogleMapController controller) {
               _mapController = controller;
