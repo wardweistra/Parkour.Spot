@@ -301,7 +301,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                               }
                             },
                             style: IconButton.styleFrom(
-                              backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                             ),
                           ),
                         ],
