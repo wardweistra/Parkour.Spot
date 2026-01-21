@@ -62,6 +62,16 @@ class AdminHomeScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Card(
               child: ListTile(
+                leading: const Icon(Icons.analytics),
+                title: const Text('User Activity Metrics'),
+                subtitle: const Text('Calculate and sync DAU/WAU/MAU metrics to Google Sheets'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () => context.go('/admin/user-activity-metrics'),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Card(
+              child: ListTile(
                 leading: const Icon(Icons.place),
                 title: const Text('Geocode Missing Addresses'),
                 subtitle: const Text('Fill address, city, country for spots with empty fields'),

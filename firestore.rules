@@ -124,5 +124,15 @@ service cloud.firestore {
         // Ensure collapsedPairs is a list if present
         (!('collapsedPairs' in request.resource.data) || request.resource.data.collapsedPairs is list);
     }
+
+    // UserActivityMetrics collection - only admins can read, only Cloud Functions can write
+    match /userActivityMetrics/{dateId} {
+      // Only admins can read activity metrics
+      allow read: if request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      // Only Cloud Functions (with admin privileges) can create/update/delete
+      allow create, update, delete: if false;
+    }
   }
 }

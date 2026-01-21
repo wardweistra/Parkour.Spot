@@ -103,6 +103,81 @@ This key should have at least the following APIs enabled:
 
 The Flutter client calls callable functions `placesAutocomplete`, `placeDetails`, `geocodeCoordinates`, and `reverseGeocodeAddress`, which proxy Google APIs securely using the backend key.
 
+### **User Activity Metrics (DAU/WAU/MAU)**
+
+A scheduled Cloud Function runs nightly at midnight UTC to calculate and store user activity metrics:
+
+- **DAU** (Daily Active Users): Users active in the last 24 hours
+- **WAU** (Weekly Active Users): Users active in the last 7 days
+- **MAU** (Monthly Active Users): Users active in the last 30 days
+
+Metrics are stored in Firestore (`userActivityMetrics` collection) and automatically synced to a Google Sheet for Looker Studio dashboards.
+
+#### **Setup Instructions**
+
+1. **Create Google Cloud Service Account:**
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Navigate to IAM & Admin > Service Accounts
+   - Create a new service account (e.g., `parkourspot-sheets-sync`)
+   - Enable the Google Sheets API for your project
+   - Create a JSON key for the service account and download it
+
+2. **Share Google Sheet with Service Account:**
+   - Open your Google Sheet (or create a new one)
+   - Click "Share" and add the service account email (found in the JSON key file, e.g., `parkourspot-sheets-sync@project-id.iam.gserviceaccount.com`)
+   - Give it "Editor" access
+
+3. **Get Google Sheet ID:**
+   - Open your Google Sheet
+   - The Sheet ID is in the URL: `https://docs.google.com/spreadsheets/d/SHEET_ID_HERE/edit`
+   - Copy the `SHEET_ID_HERE` part
+
+4. **Set Firebase Secrets:**
+   ```bash
+   # Set the service account JSON (paste the entire JSON content)
+   firebase functions:secrets:set GOOGLE_SHEETS_SERVICE_ACCOUNT
+   
+   # Set the Google Sheet ID
+   firebase functions:secrets:set GOOGLE_SHEET_ID
+   
+   # Optional: Set the sheet/tab name (defaults to "Sheet1" if not set)
+   firebase functions:secrets:set GOOGLE_SHEET_NAME
+   ```
+
+   **Note:** The function uses the first sheet named "Sheet1" by default. If your sheet uses a different name, set `GOOGLE_SHEET_NAME` to match your sheet tab name (e.g., "Metrics", "User Activity", etc.).
+
+5. **Deploy the Function:**
+   ```bash
+   firebase deploy --only functions:calculateUserActivityMetrics,functions:testCalculateUserActivityMetrics
+   ```
+
+The function will run automatically every night at midnight UTC. The Google Sheet will have columns: `Date`, `DAU`, `WAU`, `MAU` with one row per day.
+
+#### **Testing the Function**
+
+You can manually trigger the function for testing without waiting for midnight:
+
+**Option 1: Using the Callable Function (Recommended)**
+```bash
+# Call the test function from your Flutter app or via Firebase CLI
+# The function requires admin authentication
+```
+
+**Option 2: Using Google Cloud Console**
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Navigate to **Cloud Scheduler**
+3. Find the job `calculateUserActivityMetrics`
+4. Click **RUN NOW**
+
+**Option 3: Using gcloud CLI**
+```bash
+gcloud scheduler jobs run calculateUserActivityMetrics \
+  --location=europe-west1 \
+  --project=your-project-id
+```
+
+**Note:** The function requires the `googleapis` package, which is already included in `functions/package.json`. Make sure to run `npm install` in the `functions/` directory after pulling changes.
+
 ### **Common Workflows**
 
 #### **Production Build**

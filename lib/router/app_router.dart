@@ -11,6 +11,7 @@ import '../screens/admin/sync_sources_screen.dart';
 import '../screens/admin/geocoding_admin_screen.dart';
 import '../screens/admin/spot_management_screen.dart';
 import '../screens/admin/user_management_screen.dart';
+import '../screens/admin/user_activity_metrics_screen.dart';
 import '../screens/admin/urbn_migration_screen.dart';
 import '../screens/admin/audit_log_viewer_screen.dart';
 import '../screens/admin/duplicate_images_screen.dart';
@@ -308,6 +309,10 @@ class AppRouter {
         GoRoute(
           path: '/admin/users',
           builder: (context, state) => const UserManagementScreen(),
+        ),
+        GoRoute(
+          path: '/admin/user-activity-metrics',
+          builder: (context, state) => const UserActivityMetricsScreen(),
         ),
         GoRoute(
           path: '/admin/urbn-migration',

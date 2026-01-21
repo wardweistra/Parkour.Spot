@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 
 import '../models/user.dart' as app_user;
@@ -37,6 +38,9 @@ class UserManagementService extends ChangeNotifier {
   final Set<String> _loadingStatsFor = <String>{};
   final Set<String> _updatingModeratorFor = <String>{};
   final Set<String> _updatingFeatureAccessFor = <String>{};
+  bool _calculatingMetrics = false;
+  String? _metricsError;
+  Map<String, dynamic>? _lastMetricsResult;
 
   /// Unmodifiable list of all loaded users.
   List<app_user.User> get users => List<app_user.User>.unmodifiable(_users);
@@ -58,6 +62,15 @@ class UserManagementService extends ChangeNotifier {
 
   /// Whether the service is currently updating feature access for the user.
   bool isUpdatingFeatureAccess(String userId) => _updatingFeatureAccessFor.contains(userId);
+
+  /// Whether the service is currently calculating user activity metrics.
+  bool get isCalculatingMetrics => _calculatingMetrics;
+
+  /// Returns the latest error message for metrics calculation, if present.
+  String? get metricsError => _metricsError;
+
+  /// Returns the last metrics calculation result, if available.
+  Map<String, dynamic>? get lastMetricsResult => _lastMetricsResult;
 
   /// Returns cached statistics for the given user if available.
   UserStats? getStats(String userId) => _statsCache[userId];
@@ -223,6 +236,42 @@ class UserManagementService extends ChangeNotifier {
       return false;
     } finally {
       _updatingFeatureAccessFor.remove(userId);
+      notifyListeners();
+    }
+  }
+
+  /// Triggers the calculation of user activity metrics (DAU/WAU/MAU)
+  /// and syncs them to Google Sheets.
+  Future<Map<String, dynamic>?> calculateUserActivityMetrics() async {
+    if (_calculatingMetrics) {
+      return _lastMetricsResult;
+    }
+
+    _calculatingMetrics = true;
+    _metricsError = null;
+    notifyListeners();
+
+    try {
+      final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
+      final callable = functions.httpsCallable(
+        'testCalculateUserActivityMetrics',
+        options: HttpsCallableOptions(
+          timeout: const Duration(minutes: 9),
+        ),
+      );
+
+      final result = await callable.call();
+      final data = result.data as Map<String, dynamic>?;
+
+      _lastMetricsResult = data;
+      return data;
+    } catch (e, stackTrace) {
+      _metricsError = 'Failed to calculate metrics: $e';
+      debugPrint('UserManagementService.calculateUserActivityMetrics error: $e');
+      debugPrint('$stackTrace');
+      return null;
+    } finally {
+      _calculatingMetrics = false;
       notifyListeners();
     }
   }

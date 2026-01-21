@@ -28,6 +28,7 @@ const path = require("path");
 const crypto = require("crypto");
 const {S3Client, GetObjectCommand, HeadObjectCommand} = require("@aws-sdk/client-s3");
 const {getSignedUrl} = require("@aws-sdk/s3-request-presigner");
+const {google} = require("googleapis");
 const countries = require("i18n-iso-countries");
 const cronParser = require("cron-parser");
 
@@ -5358,6 +5359,214 @@ exports.generateSitemapsScheduled = onSchedule(
         console.error("Error in scheduled sitemap generation:", error);
         throw error;
       }
+    },
+);
+
+/**
+ * Helper function to calculate and store user activity metrics (DAU/WAU/MAU)
+ * Can be called by both scheduled and manual test functions
+ * @return {Promise<Object>} Result object with metrics and status
+ */
+async function calculateUserActivityMetrics() {
+  console.log("User activity metrics calculation started");
+  const now = new Date();
+  const startOfDay = new Date(Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate(),
+      0, 0, 0, 0,
+  ));
+  const dateString = startOfDay.toISOString().split("T")[0]; // YYYY-MM-DD
+
+  try {
+    // Calculate time thresholds
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    console.log(`Calculating metrics for ${dateString}`);
+    console.log(`Thresholds: DAU >= ${oneDayAgo.toISOString()}, WAU >= ${sevenDaysAgo.toISOString()}, MAU >= ${thirtyDaysAgo.toISOString()}`);
+
+    // Query all users (we'll process in memory for now)
+    // For very large user bases, this could be optimized with pagination
+    const usersSnapshot = await db.collection("users").get();
+    console.log(`Found ${usersSnapshot.size} total users`);
+
+    let dau = 0;
+    let wau = 0;
+    let mau = 0;
+
+    // Count active users for each metric
+    usersSnapshot.forEach((doc) => {
+      const userData = doc.data();
+      const lastActiveAt = userData.lastActiveAt;
+
+      // Skip users without lastActiveAt (treat as inactive)
+      if (!lastActiveAt) {
+        return;
+      }
+
+      // Convert Firestore Timestamp to Date if needed
+      const lastActiveDate = lastActiveAt.toDate ? lastActiveAt.toDate() : new Date(lastActiveAt);
+
+      // Count for MAU (30 days)
+      if (lastActiveDate >= thirtyDaysAgo) {
+        mau++;
+        // Count for WAU (7 days)
+        if (lastActiveDate >= sevenDaysAgo) {
+          wau++;
+          // Count for DAU (24 hours)
+          if (lastActiveDate >= oneDayAgo) {
+            dau++;
+          }
+        }
+      }
+    });
+
+    console.log(`Calculated metrics - DAU: ${dau}, WAU: ${wau}, MAU: ${mau}`);
+
+    // Store metrics in Firestore
+    const metricsData = {
+      date: admin.firestore.Timestamp.fromDate(startOfDay),
+      dau: dau,
+      wau: wau,
+      mau: mau,
+      calculatedAt: admin.firestore.Timestamp.fromDate(now),
+    };
+
+    await db.collection("userActivityMetrics").doc(dateString).set(metricsData);
+    console.log(`Stored metrics in Firestore for ${dateString}`);
+
+    // Read all metrics from Firestore for Google Sheets sync
+    const allMetricsSnapshot = await db
+        .collection("userActivityMetrics")
+        .orderBy("date", "asc")
+        .get();
+
+    console.log(`Retrieved ${allMetricsSnapshot.size} metric records from Firestore`);
+
+    // Prepare data for Google Sheets
+    const sheetData = [["Date", "DAU", "WAU", "MAU"]]; // Header row
+
+    allMetricsSnapshot.forEach((doc) => {
+      const data = doc.data();
+      const date = data.date.toDate ? data.date.toDate() : new Date(data.date);
+      const dateStr = date.toISOString().split("T")[0]; // YYYY-MM-DD format
+      sheetData.push([
+        dateStr,
+        data.dau || 0,
+        data.wau || 0,
+        data.mau || 0,
+      ]);
+    });
+
+    console.log(`Prepared ${sheetData.length} rows for Google Sheets`);
+
+    // Sync to Google Sheets
+    const serviceAccountJson = process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT;
+    const sheetId = process.env.GOOGLE_SHEET_ID;
+    const sheetName = process.env.GOOGLE_SHEET_NAME || "Sheet1"; // Default to "Sheet1"
+
+    if (!serviceAccountJson) {
+      throw new Error("GOOGLE_SHEETS_SERVICE_ACCOUNT secret not configured");
+    }
+    if (!sheetId) {
+      throw new Error("GOOGLE_SHEET_ID secret not configured");
+    }
+
+    // Parse service account credentials
+    let serviceAccount;
+    try {
+      serviceAccount = JSON.parse(serviceAccountJson);
+    } catch (error) {
+      throw new Error(`Failed to parse GOOGLE_SHEETS_SERVICE_ACCOUNT: ${error.message}`);
+    }
+
+    // Authenticate with Google Sheets API
+    const auth = new google.auth.GoogleAuth({
+      credentials: serviceAccount,
+      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+    });
+
+    const sheets = google.sheets({version: "v4", auth});
+
+    // Clear existing data (assuming data starts at A1)
+    const clearRange = `${sheetName}!A1:Z10000`; // Adjust range as needed
+    await sheets.spreadsheets.values.clear({
+      spreadsheetId: sheetId,
+      range: clearRange,
+    });
+    console.log(`Cleared existing sheet data from ${sheetName}`);
+
+    // Write all data
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: sheetId,
+      range: `${sheetName}!A1`,
+      valueInputOption: "RAW",
+      resource: {
+        values: sheetData,
+      },
+    });
+    console.log(`Successfully synced ${sheetData.length} rows to Google Sheets`);
+
+    console.log("User activity metrics calculation completed successfully");
+
+    return {
+      success: true,
+      date: dateString,
+      metrics: {dau, wau, mau},
+      rowsSynced: sheetData.length,
+    };
+  } catch (error) {
+    console.error("Error in user activity metrics calculation:", error);
+    // Store error in Firestore for monitoring
+    try {
+      await db.collection("userActivityMetrics").doc(dateString).set({
+        date: admin.firestore.Timestamp.fromDate(startOfDay),
+        error: error.message,
+        errorAt: admin.firestore.Timestamp.fromDate(new Date()),
+      }, {merge: true});
+    } catch (firestoreError) {
+      console.error("Failed to store error in Firestore:", firestoreError);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Scheduled function to calculate and store user activity metrics (DAU/WAU/MAU)
+ * Runs at midnight UTC every day
+ * Stores metrics in Firestore and syncs to Google Sheets
+ */
+exports.calculateUserActivityMetrics = onSchedule(
+    {
+      schedule: "every day 00:00",
+      timeZone: "UTC",
+      region: "europe-west1",
+      memory: "512MiB",
+      timeoutSeconds: 540, // 9 minutes (max for scheduled functions)
+      secrets: ["GOOGLE_SHEETS_SERVICE_ACCOUNT", "GOOGLE_SHEET_ID", "GOOGLE_SHEET_NAME"],
+    },
+    async () => {
+      return await calculateUserActivityMetrics();
+    },
+);
+
+/**
+ * Callable function to manually trigger user activity metrics calculation
+ * Useful for testing without waiting for the scheduled run
+ * Requires admin authentication
+ */
+exports.testCalculateUserActivityMetrics = onCall(
+    {
+      region: "europe-west1",
+      secrets: ["GOOGLE_SHEETS_SERVICE_ACCOUNT", "GOOGLE_SHEET_ID", "GOOGLE_SHEET_NAME"],
+    },
+    async (request) => {
+      await ensureAdmin(request);
+      console.log(`Manual metrics calculation triggered by admin: ${request.auth.uid}`);
+      const result = await calculateUserActivityMetrics();
+      return result;
     },
 );
 
