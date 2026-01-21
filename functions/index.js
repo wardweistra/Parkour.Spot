@@ -5465,7 +5465,7 @@ async function calculateUserActivityMetrics() {
     // Sync to Google Sheets
     const serviceAccountJson = process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT;
     const sheetId = process.env.GOOGLE_SHEET_ID;
-    const sheetName = process.env.GOOGLE_SHEET_NAME || "Sheet1"; // Default to "Sheet1"
+    const sheetName = "Active_Users"; // Hardcoded sheet tab name
 
     if (!serviceAccountJson) {
       throw new Error("GOOGLE_SHEETS_SERVICE_ACCOUNT secret not configured");
@@ -5545,7 +5545,7 @@ exports.calculateUserActivityMetrics = onSchedule(
       region: "europe-west1",
       memory: "512MiB",
       timeoutSeconds: 540, // 9 minutes (max for scheduled functions)
-      secrets: ["GOOGLE_SHEETS_SERVICE_ACCOUNT", "GOOGLE_SHEET_ID", "GOOGLE_SHEET_NAME"],
+      secrets: ["GOOGLE_SHEETS_SERVICE_ACCOUNT", "GOOGLE_SHEET_ID"],
     },
     async () => {
       return await calculateUserActivityMetrics();
@@ -5560,7 +5560,7 @@ exports.calculateUserActivityMetrics = onSchedule(
 exports.testCalculateUserActivityMetrics = onCall(
     {
       region: "europe-west1",
-      secrets: ["GOOGLE_SHEETS_SERVICE_ACCOUNT", "GOOGLE_SHEET_ID", "GOOGLE_SHEET_NAME"],
+      secrets: ["GOOGLE_SHEETS_SERVICE_ACCOUNT", "GOOGLE_SHEET_ID"],
     },
     async (request) => {
       await ensureAdmin(request);
