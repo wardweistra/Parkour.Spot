@@ -5509,6 +5509,190 @@ async function calculateUserActivityMetrics() {
     });
     console.log(`Successfully synced ${sheetData.length} rows to Google Sheets`);
 
+    // Export all spots to Spots sheet (processed in batches to reduce memory usage)
+    let spotsExported = 0;
+    try {
+      console.log("Starting spots export to Google Sheets");
+
+      // Check if Spots sheet exists, create if missing
+      const spotsSheetName = "Spots";
+      let spotsSheetExists = false;
+
+      try {
+        const spreadsheet = await sheets.spreadsheets.get({
+          spreadsheetId: sheetId,
+        });
+
+        spotsSheetExists = spreadsheet.data.sheets.some(
+            (sheet) => sheet.properties.title === spotsSheetName,
+        );
+      } catch (error) {
+        console.warn(`Error checking for Spots sheet: ${error.message}`);
+      }
+
+      if (!spotsSheetExists) {
+        console.log(`Creating ${spotsSheetName} sheet`);
+        await sheets.spreadsheets.batchUpdate({
+          spreadsheetId: sheetId,
+          resource: {
+            requests: [
+              {
+                addSheet: {
+                  properties: {
+                    title: spotsSheetName,
+                  },
+                },
+              },
+            ],
+          },
+        });
+        console.log(`Successfully created ${spotsSheetName} sheet`);
+      }
+
+      // Clear existing data from Spots sheet
+      const spotsClearRange = `${spotsSheetName}!A1:Z100000`;
+      await sheets.spreadsheets.values.clear({
+        spreadsheetId: sheetId,
+        range: spotsClearRange,
+      });
+      console.log(`Cleared existing data from ${spotsSheetName} sheet`);
+
+      // Write header row first
+      const headerRow = [
+        [
+          "Spot ID",
+          "Country Code",
+          "City",
+          "Spot Source Name",
+          "Image Count",
+          "Is Duplicate",
+          "Is Hidden",
+          "Removed From Source",
+          "Has Spot Features",
+          "Rating Count",
+          "Average Rating",
+          "Wilson Lower Bound",
+          "Created At",
+          "Updated At",
+        ],
+      ];
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: sheetId,
+        range: `${spotsSheetName}!A1`,
+        valueInputOption: "RAW",
+        resource: {
+          values: headerRow,
+        },
+      });
+
+      // Process spots in batches to reduce memory usage
+      const BATCH_SIZE = 500; // Process 500 spots at a time
+      let lastDoc = null;
+      let batchNumber = 0;
+      let currentRow = 2; // Start at row 2 (row 1 is header)
+
+      // Format dates helper function
+      const formatDate = (timestamp) => {
+        if (!timestamp) return "";
+        const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+        return date.toISOString();
+      };
+
+      let processing = true;
+      while (processing) {
+        batchNumber++;
+        console.log(`Processing batch ${batchNumber}...`);
+
+        // Build query for next batch
+        let query = db.collection("spots").limit(BATCH_SIZE);
+        if (lastDoc) {
+          query = query.startAfter(lastDoc);
+        }
+
+        const batchSnapshot = await query.get();
+
+        if (batchSnapshot.empty) {
+          console.log(`No more spots to process. Completed ${batchNumber - 1} batches.`);
+          processing = false;
+          continue;
+        }
+
+        console.log(`Batch ${batchNumber}: Processing ${batchSnapshot.size} spots...`);
+
+        // Prepare batch data
+        const batchData = [];
+        batchSnapshot.forEach((doc) => {
+          const spotData = doc.data();
+
+          // Extract and format fields
+          const imageUrls = spotData.imageUrls || [];
+          const imageCount = Array.isArray(imageUrls) ? imageUrls.length : 0;
+          const isDuplicate = spotData.duplicateOf != null;
+          const isHidden = spotData.hidden === true;
+          const removedFromSource = spotData.spotSourceRemoved === true;
+          const spotFeatures = spotData.spotFeatures || [];
+          const hasSpotFeatures = Array.isArray(spotFeatures) && spotFeatures.length > 0;
+          const ratingCount = spotData.ratingCount || 0;
+          const averageRating = spotData.averageRating != null ?
+            Number(spotData.averageRating.toFixed(4)) :
+            0;
+          const wilsonLowerBound = spotData.wilsonLowerBound != null ?
+            Number(spotData.wilsonLowerBound.toFixed(4)) :
+            0;
+
+          batchData.push([
+            doc.id, // Spot ID
+            spotData.countryCode || "", // Country Code
+            spotData.city || "", // City
+            spotData.spotSourceName || "", // Spot Source Name
+            imageCount, // Image Count
+            isDuplicate, // Is Duplicate
+            isHidden, // Is Hidden
+            removedFromSource, // Removed From Source
+            hasSpotFeatures, // Has Spot Features
+            ratingCount, // Rating Count
+            averageRating, // Average Rating
+            wilsonLowerBound, // Wilson Lower Bound
+            formatDate(spotData.createdAt), // Created At
+            formatDate(spotData.updatedAt), // Updated At
+          ]);
+        });
+
+        // Write batch to Google Sheets
+        if (batchData.length > 0) {
+          await sheets.spreadsheets.values.update({
+            spreadsheetId: sheetId,
+            range: `${spotsSheetName}!A${currentRow}`,
+            valueInputOption: "RAW",
+            resource: {
+              values: batchData,
+            },
+          });
+
+          spotsExported += batchData.length;
+          currentRow += batchData.length;
+
+          console.log(
+              `Batch ${batchNumber}: Wrote ${batchData.length} spots ` +
+              `(total exported: ${spotsExported})`,
+          );
+        }
+
+        // Update lastDoc for pagination
+        lastDoc = batchSnapshot.docs[batchSnapshot.docs.length - 1];
+
+        // If we got fewer than BATCH_SIZE, we're done
+        if (batchSnapshot.size < BATCH_SIZE) {
+          processing = false;
+        }
+      }
+
+      console.log(`Successfully synced ${spotsExported} spots to ${spotsSheetName} sheet`);
+    } catch (spotsError) {
+      console.error("Error exporting spots to Google Sheets:", spotsError);
+      // Don't throw - allow main metrics calculation to succeed even if spots export fails
+    }
+
     console.log("User activity metrics calculation completed successfully");
 
     return {
@@ -5516,6 +5700,7 @@ async function calculateUserActivityMetrics() {
       date: dateString,
       metrics: {dau, wau, mau},
       rowsSynced: sheetData.length,
+      spotsExported: spotsExported,
     };
   } catch (error) {
     console.error("Error in user activity metrics calculation:", error);
@@ -5544,7 +5729,7 @@ exports.calculateUserActivityMetrics = onSchedule(
       timeZone: "UTC",
       region: "europe-west1",
       memory: "512MiB",
-      timeoutSeconds: 540, // 9 minutes (max for scheduled functions)
+      timeoutSeconds: 1800, // 30 minutes (max for scheduled functions)
       secrets: ["GOOGLE_SHEETS_SERVICE_ACCOUNT", "GOOGLE_SHEET_ID"],
     },
     async () => {
@@ -5560,6 +5745,8 @@ exports.calculateUserActivityMetrics = onSchedule(
 exports.testCalculateUserActivityMetrics = onCall(
     {
       region: "europe-west1",
+      timeoutSeconds: 1800, // 30 minutes (same as scheduled function)
+      memory: "512MiB",
       secrets: ["GOOGLE_SHEETS_SERVICE_ACCOUNT", "GOOGLE_SHEET_ID"],
     },
     async (request) => {
