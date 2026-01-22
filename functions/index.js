@@ -5693,6 +5693,173 @@ async function calculateUserActivityMetrics() {
       // Don't throw - allow main metrics calculation to succeed even if spots export fails
     }
 
+    // Export all users to Users sheet (processed in batches to reduce memory usage)
+    let usersExported = 0;
+    try {
+      console.log("Starting users export to Google Sheets");
+
+      // Check if Users sheet exists, create if missing
+      const usersSheetName = "Users";
+      let usersSheetExists = false;
+
+      try {
+        const spreadsheet = await sheets.spreadsheets.get({
+          spreadsheetId: sheetId,
+        });
+
+        usersSheetExists = spreadsheet.data.sheets.some(
+            (sheet) => sheet.properties.title === usersSheetName,
+        );
+      } catch (error) {
+        console.warn(`Error checking for Users sheet: ${error.message}`);
+      }
+
+      if (!usersSheetExists) {
+        console.log(`Creating ${usersSheetName} sheet`);
+        await sheets.spreadsheets.batchUpdate({
+          spreadsheetId: sheetId,
+          resource: {
+            requests: [
+              {
+                addSheet: {
+                  properties: {
+                    title: usersSheetName,
+                  },
+                },
+              },
+            ],
+          },
+        });
+        console.log(`Successfully created ${usersSheetName} sheet`);
+      }
+
+      // Clear existing data from Users sheet
+      const usersClearRange = `${usersSheetName}!A1:Z100000`;
+      await sheets.spreadsheets.values.clear({
+        spreadsheetId: sheetId,
+        range: usersClearRange,
+      });
+      console.log(`Cleared existing data from ${usersSheetName} sheet`);
+
+      // Write header row first
+      const usersHeaderRow = [
+        [
+          "User ID",
+          "Created At",
+          "Last Login At",
+          "Is Admin",
+          "Is Moderator",
+          "Has Photo URL",
+          "Has Username",
+          "Is Public Profile",
+        ],
+      ];
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: sheetId,
+        range: `${usersSheetName}!A1`,
+        valueInputOption: "RAW",
+        resource: {
+          values: usersHeaderRow,
+        },
+      });
+
+      // Process users in batches to reduce memory usage
+      const USER_BATCH_SIZE = 500; // Process 500 users at a time
+      let lastUserDoc = null;
+      let userBatchNumber = 0;
+      let currentUserRow = 2; // Start at row 2 (row 1 is header)
+
+      // Format dates helper function
+      const formatDate = (timestamp) => {
+        if (!timestamp) return "";
+        const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+        return date.toISOString();
+      };
+
+      let processingUsers = true;
+      while (processingUsers) {
+        userBatchNumber++;
+        console.log(`Processing user batch ${userBatchNumber}...`);
+
+        // Build query for next batch
+        let userQuery = db.collection("users").limit(USER_BATCH_SIZE);
+        if (lastUserDoc) {
+          userQuery = userQuery.startAfter(lastUserDoc);
+        }
+
+        const userBatchSnapshot = await userQuery.get();
+
+        if (userBatchSnapshot.empty) {
+          console.log(
+              `No more users to process. Completed ${userBatchNumber - 1} batches.`,
+          );
+          processingUsers = false;
+          continue;
+        }
+
+        console.log(
+            `User batch ${userBatchNumber}: Processing ${userBatchSnapshot.size} users...`,
+        );
+
+        // Prepare batch data
+        const userBatchData = [];
+        userBatchSnapshot.forEach((doc) => {
+          const userData = doc.data();
+
+          // Extract and format fields
+          const hasPhotoURL = !!(userData.photoURL && userData.photoURL !== "");
+          const hasUsername = !!(userData.username && userData.username !== "");
+          const isAdmin = userData.isAdmin === true;
+          const isModerator = userData.isModerator === true;
+          const isPublicProfile = userData.isPublicProfile !== false; // Defaults to true
+
+          userBatchData.push([
+            doc.id, // User ID
+            formatDate(userData.createdAt), // Created At
+            formatDate(userData.lastLoginAt), // Last Login At
+            isAdmin, // Is Admin
+            isModerator, // Is Moderator
+            hasPhotoURL, // Has Photo URL
+            hasUsername, // Has Username
+            isPublicProfile, // Is Public Profile
+          ]);
+        });
+
+        // Write batch to Google Sheets
+        if (userBatchData.length > 0) {
+          await sheets.spreadsheets.values.update({
+            spreadsheetId: sheetId,
+            range: `${usersSheetName}!A${currentUserRow}`,
+            valueInputOption: "RAW",
+            resource: {
+              values: userBatchData,
+            },
+          });
+
+          usersExported += userBatchData.length;
+          currentUserRow += userBatchData.length;
+
+          console.log(
+              `User batch ${userBatchNumber}: Wrote ${userBatchData.length} users ` +
+              `(total exported: ${usersExported})`,
+          );
+        }
+
+        // Update lastUserDoc for pagination
+        lastUserDoc = userBatchSnapshot.docs[userBatchSnapshot.docs.length - 1];
+
+        // If we got fewer than USER_BATCH_SIZE, we're done
+        if (userBatchSnapshot.size < USER_BATCH_SIZE) {
+          processingUsers = false;
+        }
+      }
+
+      console.log(`Successfully synced ${usersExported} users to ${usersSheetName} sheet`);
+    } catch (usersError) {
+      console.error("Error exporting users to Google Sheets:", usersError);
+      // Don't throw - allow main metrics calculation to succeed even if users export fails
+    }
+
     console.log("User activity metrics calculation completed successfully");
 
     return {
@@ -5701,6 +5868,7 @@ async function calculateUserActivityMetrics() {
       metrics: {dau, wau, mau},
       rowsSynced: sheetData.length,
       spotsExported: spotsExported,
+      usersExported: usersExported,
     };
   } catch (error) {
     console.error("Error in user activity metrics calculation:", error);
