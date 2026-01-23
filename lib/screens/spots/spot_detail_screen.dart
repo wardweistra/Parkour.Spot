@@ -447,8 +447,14 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       
       if (_spot.folderName != null) {
         textSpans.add(TextSpan(
-          text: ' from the folder ${_spot.folderName}',
+          text: ' from the folder ',
           style: textStyle,
+        ));
+        textSpans.add(TextSpan(
+          text: _spot.folderName!,
+          style: textStyle?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ));
       }
       
