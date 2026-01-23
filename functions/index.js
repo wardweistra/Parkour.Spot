@@ -5365,18 +5365,36 @@ exports.generateSitemapsScheduled = onSchedule(
 /**
  * Helper function to calculate and store user activity metrics (DAU/WAU/MAU)
  * Can be called by both scheduled and manual test functions
+ * @param {boolean} useYesterdayDate - If true, store metrics with yesterday's date (for scheduled runs)
  * @return {Promise<Object>} Result object with metrics and status
  */
-async function calculateUserActivityMetrics() {
+async function calculateUserActivityMetrics(useYesterdayDate = false) {
   console.log("User activity metrics calculation started");
   const now = new Date();
-  const startOfDay = new Date(Date.UTC(
-      now.getUTCFullYear(),
-      now.getUTCMonth(),
-      now.getUTCDate(),
-      0, 0, 0, 0,
-  ));
-  const dateString = startOfDay.toISOString().split("T")[0]; // YYYY-MM-DD
+  
+  // Determine which date to use for storing metrics
+  let targetDate;
+  if (useYesterdayDate) {
+    // For scheduled runs, use yesterday's date (since we're calculating metrics for the last 24 hours)
+    const yesterday = new Date(now);
+    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+    targetDate = new Date(Date.UTC(
+        yesterday.getUTCFullYear(),
+        yesterday.getUTCMonth(),
+        yesterday.getUTCDate(),
+        0, 0, 0, 0,
+    ));
+  } else {
+    // For manual runs, use today's date
+    targetDate = new Date(Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate(),
+        0, 0, 0, 0,
+    ));
+  }
+  
+  const dateString = targetDate.toISOString().split("T")[0]; // YYYY-MM-DD
 
   try {
     // Calculate time thresholds
@@ -5427,7 +5445,7 @@ async function calculateUserActivityMetrics() {
 
     // Store metrics in Firestore
     const metricsData = {
-      date: admin.firestore.Timestamp.fromDate(startOfDay),
+      date: admin.firestore.Timestamp.fromDate(targetDate),
       dau: dau,
       wau: wau,
       mau: mau,
@@ -5875,7 +5893,7 @@ async function calculateUserActivityMetrics() {
     // Store error in Firestore for monitoring
     try {
       await db.collection("userActivityMetrics").doc(dateString).set({
-        date: admin.firestore.Timestamp.fromDate(startOfDay),
+        date: admin.firestore.Timestamp.fromDate(targetDate),
         error: error.message,
         errorAt: admin.firestore.Timestamp.fromDate(new Date()),
       }, {merge: true});
@@ -5888,12 +5906,13 @@ async function calculateUserActivityMetrics() {
 
 /**
  * Scheduled function to calculate and store user activity metrics (DAU/WAU/MAU)
- * Runs at midnight UTC every day
+ * Runs at 1 minute after midnight UTC every day
  * Stores metrics in Firestore and syncs to Google Sheets
+ * Uses yesterday's date since it calculates metrics for the last 24 hours
  */
 exports.calculateUserActivityMetrics = onSchedule(
     {
-      schedule: "every day 00:00",
+      schedule: "every day 00:01",
       timeZone: "UTC",
       region: "europe-west1",
       memory: "512MiB",
@@ -5901,7 +5920,7 @@ exports.calculateUserActivityMetrics = onSchedule(
       secrets: ["GOOGLE_SHEETS_SERVICE_ACCOUNT", "GOOGLE_SHEET_ID"],
     },
     async () => {
-      return await calculateUserActivityMetrics();
+      return await calculateUserActivityMetrics(true); // Use yesterday's date for scheduled runs
     },
 );
 

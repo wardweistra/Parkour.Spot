@@ -171,7 +171,7 @@ class _UserActivityMetricsScreenState extends State<UserActivityMetricsScreen> {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    'Note: This function runs automatically every night at midnight UTC. '
+                    'Note: This function runs automatically every night at 1 minute after midnight UTC. '
                     'You can trigger it manually here for testing.',
                     style: TextStyle(fontStyle: FontStyle.italic),
                   ),
