@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -34,6 +35,7 @@ class AuthService extends ChangeNotifier {
   bool _isCopyingGooglePicture = false; // Track if Google picture copy is in progress
   bool _isLoadingProfile = false; // Prevent concurrent profile loads
   String? _loadingProfileUid; // Track which UID is currently being loaded
+  final Map<String, Completer<void>> _profileLoadCompleters = {}; // Track profile load completers by UID
 
   app_user.User? get userProfile => _userProfile;
 
@@ -58,11 +60,19 @@ class AuthService extends ChangeNotifier {
     // Set flags synchronously BEFORE any async operations to prevent race conditions
     if (_isLoadingProfile) {
       if (_loadingProfileUid == uid) {
-        return;
+        // Profile is already being loaded for this UID, wait for it to complete
+        final completer = _profileLoadCompleters[uid];
+        if (completer != null) {
+          return completer.future;
+        }
       } else {
         return;
       }
     }
+    
+    // Create a completer to track this profile load
+    final completer = Completer<void>();
+    _profileLoadCompleters[uid] = completer;
     
     // Set flags immediately (synchronously) to prevent race conditions
     _isLoadingProfile = true;
@@ -97,14 +107,62 @@ class AuthService extends ChangeNotifier {
 
       // Note: Google profile picture copy is handled in sign-in methods, not here
       // This prevents copying on every page refresh
+      
+      // Complete the completer to signal that profile loading is done
+      completer.complete();
     } catch (e) {
       debugPrint('Error loading user profile: $e');
+      completer.completeError(e);
     } finally {
       _isLoadingProfile = false;
       _loadingProfileUid = null;
       _isLoading = false; // Auth state restored
+      _profileLoadCompleters.remove(uid);
       notifyListeners();
     }
+  }
+
+  /// Wait for the user profile to be loaded for the current user
+  /// Returns true if profile is loaded, false if user is not authenticated
+  Future<bool> _ensureProfileLoaded() async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      return false;
+    }
+
+    final uid = currentUser.uid;
+
+    // If profile is already loaded for this UID, return immediately
+    if (_userProfile != null && _userProfile!.id == uid && !_isLoadingProfile) {
+      return true;
+    }
+
+    // If profile is currently being loaded, wait for it
+    if (_isLoadingProfile && _loadingProfileUid == uid) {
+      final completer = _profileLoadCompleters[uid];
+      if (completer != null) {
+        try {
+          await completer.future;
+          return _userProfile != null && _userProfile!.id == uid;
+        } catch (e) {
+          debugPrint('Error waiting for profile load: $e');
+          return false;
+        }
+      }
+    }
+
+    // If profile is not loaded and not loading, trigger load and wait
+    if (!_isLoadingProfile || _loadingProfileUid != uid) {
+      try {
+        await _loadUserProfile(uid);
+        return _userProfile != null && _userProfile!.id == uid;
+      } catch (e) {
+        debugPrint('Error loading profile: $e');
+        return false;
+      }
+    }
+
+    return false;
   }
 
   /// Copy Google profile picture to Firebase Storage if:
@@ -335,42 +393,68 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> _updateLastLogin() async {
-    if (_auth.currentUser != null) {
-      try {
-        final now = DateTime.now();
-        await _firestore.collection('users').doc(_auth.currentUser!.uid).update({
-          'lastLoginAt': now,
-          'lastActiveAt': now, // Also update lastActiveAt on login
-        });
-        // Update local profile if it exists
-        if (_userProfile != null) {
-          _userProfile = _userProfile!.copyWith(
-            lastLoginAt: now,
-            lastActiveAt: now,
-          );
-        }
-      } catch (e) {
-        debugPrint('Error updating last login: $e');
+    if (_auth.currentUser == null) {
+      return;
+    }
+
+    // CRITICAL: Wait for profile to be loaded before updating lastLoginAt
+    // This prevents race conditions where createdAt might be overwritten
+    final profileLoaded = await _ensureProfileLoaded();
+    if (!profileLoaded) {
+      debugPrint('Warning: Could not load profile before updating last login');
+      return;
+    }
+
+    try {
+      final now = DateTime.now();
+      final uid = _auth.currentUser!.uid;
+      
+      // Use update() to only modify lastLoginAt and lastActiveAt
+      // This ensures createdAt is never overwritten
+      await _firestore.collection('users').doc(uid).update({
+        'lastLoginAt': now,
+        'lastActiveAt': now, // Also update lastActiveAt on login
+      });
+      
+      // Update local profile if it exists
+      if (_userProfile != null) {
+        _userProfile = _userProfile!.copyWith(
+          lastLoginAt: now,
+          lastActiveAt: now,
+        );
       }
+    } catch (e) {
+      debugPrint('Error updating last login: $e');
+      // If update fails because document doesn't exist, that's okay
+      // The profile loader will create it on next load
     }
   }
 
   /// Update lastActiveAt timestamp for the current user
   /// This is called on every page view for logged-in users
   Future<void> updateLastActiveAt() async {
-    if (_auth.currentUser != null) {
-      try {
-        final now = DateTime.now();
-        await _firestore.collection('users').doc(_auth.currentUser!.uid).update({
-          'lastActiveAt': now,
-        });
-        // Update local profile if it exists
-        if (_userProfile != null) {
-          _userProfile = _userProfile!.copyWith(lastActiveAt: now);
-        }
-      } catch (e) {
-        debugPrint('Error updating last active: $e');
+    if (_auth.currentUser == null) {
+      return;
+    }
+
+    try {
+      final now = DateTime.now();
+      final uid = _auth.currentUser!.uid;
+      
+      // Use update() to only modify lastActiveAt
+      // This ensures createdAt and other fields are never overwritten
+      await _firestore.collection('users').doc(uid).update({
+        'lastActiveAt': now,
+      });
+      
+      // Update local profile if it exists
+      if (_userProfile != null) {
+        _userProfile = _userProfile!.copyWith(lastActiveAt: now);
       }
+    } catch (e) {
+      debugPrint('Error updating last active: $e');
+      // If update fails because document doesn't exist, that's okay
+      // The profile loader will create it on next load
     }
   }
 
