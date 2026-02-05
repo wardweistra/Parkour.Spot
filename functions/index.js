@@ -5732,6 +5732,7 @@ async function calculateUserActivityMetrics(useYesterdayDate = false) {
           "Country Code",
           "City",
           "Spot Source Name",
+          "Folder Name",
           "Image Count",
           "Is Duplicate",
           "Is Hidden",
@@ -5813,6 +5814,7 @@ async function calculateUserActivityMetrics(useYesterdayDate = false) {
             spotData.countryCode || "", // Country Code
             spotData.city || "", // City
             spotData.spotSourceName || "", // Spot Source Name
+            spotData.folderName || "", // Folder Name
             imageCount, // Image Count
             isDuplicate, // Is Duplicate
             isHidden, // Is Hidden
