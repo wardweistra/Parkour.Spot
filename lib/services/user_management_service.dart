@@ -41,6 +41,9 @@ class UserManagementService extends ChangeNotifier {
   bool _calculatingMetrics = false;
   String? _metricsError;
   Map<String, dynamic>? _lastMetricsResult;
+  bool _syncingCreatedAt = false;
+  String? _syncCreatedAtError;
+  Map<String, dynamic>? _lastSyncCreatedAtResult;
 
   /// Unmodifiable list of all loaded users.
   List<app_user.User> get users => List<app_user.User>.unmodifiable(_users);
@@ -71,6 +74,15 @@ class UserManagementService extends ChangeNotifier {
 
   /// Returns the last metrics calculation result, if available.
   Map<String, dynamic>? get lastMetricsResult => _lastMetricsResult;
+
+  /// Whether the service is currently syncing user createdAt from Auth.
+  bool get isSyncingCreatedAt => _syncingCreatedAt;
+
+  /// Returns the latest error message for createdAt sync, if present.
+  String? get syncCreatedAtError => _syncCreatedAtError;
+
+  /// Returns the last createdAt sync result, if available.
+  Map<String, dynamic>? get lastSyncCreatedAtResult => _lastSyncCreatedAtResult;
 
   /// Returns cached statistics for the given user if available.
   UserStats? getStats(String userId) => _statsCache[userId];
@@ -272,6 +284,56 @@ class UserManagementService extends ChangeNotifier {
       return null;
     } finally {
       _calculatingMetrics = false;
+      notifyListeners();
+    }
+  }
+
+  /// Syncs user.createdAt from Firebase Auth creation time.
+  /// 
+  /// [dryRun] if true, previews changes without updating.
+  /// [limit] optional limit on number of users to process (for testing).
+  Future<Map<String, dynamic>?> syncUserCreatedAtFromAuth({
+    bool dryRun = false,
+    int? limit,
+  }) async {
+    if (_syncingCreatedAt) {
+      return _lastSyncCreatedAtResult;
+    }
+
+    _syncingCreatedAt = true;
+    _syncCreatedAtError = null;
+    notifyListeners();
+
+    try {
+      final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
+      final callable = functions.httpsCallable(
+        'syncUserCreatedAtFromAuth',
+        options: HttpsCallableOptions(
+          timeout: const Duration(minutes: 9),
+        ),
+      );
+
+      final result = await callable.call({
+        'dryRun': dryRun,
+        if (limit != null) 'limit': limit,
+      });
+      final data = result.data as Map<String, dynamic>?;
+
+      _lastSyncCreatedAtResult = data;
+      
+      // Refresh users list if sync was successful and not a dry run
+      if (data?['success'] == true && !dryRun) {
+        await fetchUsers(forceRefresh: true);
+      }
+      
+      return data;
+    } catch (e, stackTrace) {
+      _syncCreatedAtError = 'Failed to sync user createdAt: $e';
+      debugPrint('UserManagementService.syncUserCreatedAtFromAuth error: $e');
+      debugPrint('$stackTrace');
+      return null;
+    } finally {
+      _syncingCreatedAt = false;
       notifyListeners();
     }
   }

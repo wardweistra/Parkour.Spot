@@ -3563,6 +3563,156 @@ exports.setUserAdmin = onCall({region: "europe-west1"}, async (request) => {
   }
 });
 
+// Admin function to overwrite user.createdAt based on Firebase Auth creation time
+exports.syncUserCreatedAtFromAuth = onCall(
+    {region: "europe-west1"},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const {dryRun = false, limit = null} = request.data || {};
+
+        console.log(`Starting sync of user.createdAt from Firebase Auth${dryRun ? " (DRY RUN)" : ""}`);
+
+        let totalProcessed = 0;
+        let totalUpdated = 0;
+        let totalSkipped = 0;
+        let totalErrors = 0;
+        const errors = [];
+        const changes = []; // Track changes for dry run preview
+
+        // List all users from Firebase Auth (paginated)
+        let nextPageToken;
+        do {
+          const listUsersResult = await admin.auth().listUsers(1000, nextPageToken);
+          nextPageToken = listUsersResult.pageToken;
+
+          for (const userRecord of listUsersResult.users) {
+            totalProcessed++;
+
+            try {
+              // Get creation time from Firebase Auth metadata
+              const authCreatedAt = userRecord.metadata.creationTime;
+              if (!authCreatedAt) {
+                console.log(`Skipping user ${userRecord.uid}: no creation time in Auth`);
+                totalSkipped++;
+                continue;
+              }
+
+              // Convert to Firestore Timestamp
+              const createdAtTimestamp = admin.firestore.Timestamp.fromDate(
+                  new Date(authCreatedAt),
+              );
+
+              // Get current Firestore document
+              const userDocRef = db.collection("users").doc(userRecord.uid);
+              const userDocSnapshot = await userDocRef.get();
+
+              if (!userDocSnapshot.exists) {
+                console.log(`Skipping user ${userRecord.uid}: no Firestore document`);
+                totalSkipped++;
+                continue;
+              }
+
+              const userDocData = userDocSnapshot.data();
+              const currentCreatedAt = userDocData?.createdAt;
+
+              // Check if update is needed
+              if (currentCreatedAt) {
+                let currentTimestamp;
+                if (currentCreatedAt instanceof admin.firestore.Timestamp) {
+                  currentTimestamp = currentCreatedAt;
+                } else {
+                  currentTimestamp = admin.firestore.Timestamp.fromDate(
+                      currentCreatedAt.toDate(),
+                  );
+                }
+                if (currentTimestamp.isEqual(createdAtTimestamp)) {
+                  console.log(`Skipping user ${userRecord.uid}: createdAt already matches`);
+                  totalSkipped++;
+                  continue;
+                }
+              }
+
+              // Format timestamps for display
+              const formatTimestamp = (ts) => {
+                if (!ts) return null;
+                let date;
+                if (ts instanceof admin.firestore.Timestamp) {
+                  date = ts.toDate();
+                } else {
+                  date = ts.toDate();
+                }
+                return date.toISOString();
+              };
+
+              if (!dryRun) {
+                // Update Firestore document
+                await userDocRef.update({
+                  createdAt: createdAtTimestamp,
+                });
+                console.log(
+                    `Updated user ${userRecord.uid}: createdAt = ${authCreatedAt}`,
+                );
+              } else {
+                // In dry run, collect change details
+                changes.push({
+                  uid: userRecord.uid,
+                  email: userRecord.email || "N/A",
+                  displayName: userDocData?.displayName || null,
+                  from: formatTimestamp(currentCreatedAt),
+                  to: formatTimestamp(createdAtTimestamp),
+                });
+                console.log(
+                    `[DRY RUN] Would update user ${userRecord.uid}: createdAt = ${authCreatedAt}`,
+                );
+              }
+
+              totalUpdated++;
+            } catch (error) {
+              console.error(`Error processing user ${userRecord.uid}:`, error);
+              totalErrors++;
+              errors.push({
+                uid: userRecord.uid,
+                email: userRecord.email,
+                error: error.message,
+              });
+            }
+
+            // Apply limit if specified (for testing)
+            if (limit && totalProcessed >= limit) {
+              nextPageToken = undefined;
+              break;
+            }
+          }
+        } while (nextPageToken);
+
+        const result = {
+          success: true,
+          dryRun: dryRun,
+          totalProcessed: totalProcessed,
+          totalUpdated: totalUpdated,
+          totalSkipped: totalSkipped,
+          totalErrors: totalErrors,
+        };
+
+        if (errors.length > 0) {
+          result.errors = errors;
+        }
+
+        // Include changes in dry run mode
+        if (dryRun && changes.length > 0) {
+          result.changes = changes;
+        }
+
+        console.log(`Sync completed:`, result);
+        return result;
+      } catch (error) {
+        console.error("Error syncing user createdAt:", error);
+        throw new Error(`Failed to sync user createdAt: ${error.message}`);
+      }
+    },
+);
+
 // Admin function to update spot source names for existing spots
 exports.updateSpotSourceNames = onCall(
     {region: "europe-west1"},

@@ -63,6 +63,48 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         actions: [
           Consumer<UserManagementService>(
             builder: (context, service, _) {
+              return PopupMenuButton<String>(
+                icon: service.isSyncingCreatedAt
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.more_vert),
+                onSelected: (value) async {
+                  if (value == 'sync_created_at') {
+                    await _syncUserCreatedAt(context, service, dryRun: false);
+                  } else if (value == 'sync_created_at_dry_run') {
+                    await _syncUserCreatedAt(context, service, dryRun: true);
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'sync_created_at_dry_run',
+                    child: Row(
+                      children: [
+                        Icon(Icons.preview, size: 20),
+                        SizedBox(width: 8),
+                        Text('Preview Sync CreatedAt'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'sync_created_at',
+                    child: Row(
+                      children: [
+                        Icon(Icons.sync, size: 20),
+                        SizedBox(width: 8),
+                        Text('Sync CreatedAt from Auth'),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          Consumer<UserManagementService>(
+            builder: (context, service, _) {
               return IconButton(
                 tooltip: 'Refresh',
                 icon: service.isLoading
@@ -405,6 +447,241 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     final month = date.month.toString().padLeft(2, '0');
     final day = date.day.toString().padLeft(2, '0');
     return '${date.year}-$month-$day';
+  }
+
+  String _formatTimestamp(String isoString) {
+    try {
+      final date = DateTime.parse(isoString);
+      return '${_formatDate(date)} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}:${date.second.toString().padLeft(2, '0')} UTC';
+    } catch (e) {
+      return isoString;
+    }
+  }
+
+  Future<void> _syncUserCreatedAt(
+    BuildContext context,
+    UserManagementService service, {
+    required bool dryRun,
+  }) async {
+    if (!mounted) return;
+
+    if (!dryRun) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Sync User CreatedAt'),
+          content: const Text(
+            'This will overwrite user.createdAt fields in Firestore with '
+            'creation timestamps from Firebase Authentication. This action cannot be undone. Continue?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Sync'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true) return;
+    }
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(dryRun
+            ? 'Previewing sync of user createdAt...'
+            : 'Syncing user createdAt from Auth...'),
+      ),
+    );
+
+    try {
+      final result = await service.syncUserCreatedAtFromAuth(dryRun: dryRun);
+      if (!mounted) return;
+
+      if (result != null && result['success'] == true) {
+        final totalProcessed = result['totalProcessed'] ?? 0;
+        final totalUpdated = result['totalUpdated'] ?? 0;
+        final totalSkipped = result['totalSkipped'] ?? 0;
+        final totalErrors = result['totalErrors'] ?? 0;
+
+        // Show changes dialog for dry run
+        if (dryRun && result['changes'] != null) {
+          final changes = result['changes'] as List<dynamic>;
+          if (!mounted) return;
+          await showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Preview: Changes to be Made'),
+              content: ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 600),
+                child: SizedBox(
+                  width: double.maxFinite,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Would update $totalUpdated of $totalProcessed users '
+                        '($totalSkipped skipped, $totalErrors errors)',
+                        style: Theme.of(ctx).textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 16),
+                      Flexible(
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: changes.length,
+                          itemBuilder: (context, index) {
+                          final change = changes[index] as Map<String, dynamic>;
+                          final from = change['from'] as String?;
+                          final to = change['to'] as String?;
+                          final email = change['email'] as String? ?? 'N/A';
+                          final displayName = change['displayName'] as String?;
+                          final uid = change['uid'] as String? ?? 'Unknown';
+
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    displayName != null && displayName.isNotEmpty
+                                        ? '$displayName ($email)'
+                                        : email,
+                                    style: Theme.of(ctx).textTheme.titleSmall?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  if (from != null) ...[
+                                    Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text('From: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                                        Expanded(
+                                          child: Text(
+                                            _formatTimestamp(from),
+                                            style: const TextStyle(color: Colors.red),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                  ] else
+                                    const Text('From: (not set)', style: TextStyle(fontStyle: FontStyle.italic)),
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text('To:   ', style: TextStyle(fontWeight: FontWeight.bold)),
+                                      Expanded(
+                                        child: Text(
+                                          _formatTimestamp(to ?? ''),
+                                          style: const TextStyle(color: Colors.green),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'UID: $uid',
+                                    style: Theme.of(ctx).textTheme.bodySmall,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Close'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              dryRun
+                  ? 'Preview: Would update $totalUpdated of $totalProcessed users '
+                      '($totalSkipped skipped, $totalErrors errors)'
+                  : 'Sync complete: Updated $totalUpdated of $totalProcessed users '
+                      '($totalSkipped skipped, $totalErrors errors)',
+            ),
+            backgroundColor: totalErrors > 0 ? Colors.orange : Colors.green,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+
+        // Show detailed results if there were errors
+        if (totalErrors > 0 && result['errors'] != null) {
+          if (!mounted) return;
+          final errors = result['errors'] as List<dynamic>;
+          await showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Sync Errors'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: errors.length,
+                  itemBuilder: (context, index) {
+                    final error = errors[index] as Map<String, dynamic>;
+                    return ListTile(
+                      title: Text(error['email'] ?? error['uid'] ?? 'Unknown'),
+                      subtitle: Text(error['error'] ?? 'Unknown error'),
+                      dense: true,
+                    );
+                  },
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Close'),
+                ),
+              ],
+            ),
+          );
+        }
+      } else {
+        final errorMsg = service.syncCreatedAtError ?? 'Unknown error';
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Sync failed: $errorMsg'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }
 
