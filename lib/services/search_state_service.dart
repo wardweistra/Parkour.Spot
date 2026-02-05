@@ -10,7 +10,7 @@ class SearchStateService extends ChangeNotifier {
   static const String _keyIsSatellite = 'search_is_satellite';
   static const String _keyIncludeWithoutPictures = 'search_include_without_pictures';
   static const String _keySelectedSpotSource = 'search_selected_spot_source'; // null = all, "" = native, string = specific source
-  static const String _keySelectedFolders = 'search_selected_folders'; // JSON map of sourceId -> String (single folder)
+  static const String _keySelectedFolders = 'search_selected_folders'; // JSON map of sourceId -> List<String> (multiple folders, empty list = all folders)
   static const String _keySelectedListId = 'search_selected_list_id'; // Selected spot list ID for highlighting
   static const String _keyLastKnownUserLat = 'search_last_known_user_lat';
   static const String _keyLastKnownUserLng = 'search_last_known_user_lng';
@@ -22,7 +22,7 @@ class SearchStateService extends ChangeNotifier {
   bool _isSatellite = false;
   bool _includeSpotsWithoutPictures = true; // Default: include spots without pictures
   String? _selectedSpotSource; // null = all sources, "" = native only, string = specific source ID
-  Map<String, String?> _selectedFolders = {}; // sourceId -> selected folder name (null = all folders)
+  Map<String, List<String>> _selectedFolders = {}; // sourceId -> list of selected folder names (empty list = all folders)
   String? _selectedListId; // Selected spot list ID for highlighting
   double? _lastKnownUserLat;
   double? _lastKnownUserLng;
@@ -34,14 +34,58 @@ class SearchStateService extends ChangeNotifier {
   bool get isSatellite => _isSatellite;
   bool get includeSpotsWithoutPictures => _includeSpotsWithoutPictures;
   String? get selectedSpotSource => _selectedSpotSource;
-  Map<String, String?> get selectedFolders => Map.unmodifiable(_selectedFolders);
+  Map<String, List<String>> get selectedFolders => Map.unmodifiable(_selectedFolders);
   String? get selectedListId => _selectedListId;
   double? get lastKnownUserLat => _lastKnownUserLat;
   double? get lastKnownUserLng => _lastKnownUserLng;
   
-  /// Get selected folder for a specific source (null = all folders)
-  String? getSelectedFolderForSource(String sourceId) {
-    return _selectedFolders[sourceId];
+  /// Get selected folders for a specific source (empty list = all folders)
+  List<String> getSelectedFoldersForSource(String sourceId) {
+    return _selectedFolders[sourceId] ?? [];
+  }
+  
+  /// Check if a specific folder is selected for a source
+  bool isFolderSelectedForSource(String sourceId, String folder) {
+    final folders = _selectedFolders[sourceId];
+    return folders != null && folders.contains(folder);
+  }
+  
+  /// Toggle folder selection for a source (add if not selected, remove if selected)
+  Future<void> toggleFolderForSource(String sourceId, String folder) async {
+    final currentFolders = _selectedFolders[sourceId] ?? [];
+    if (currentFolders.contains(folder)) {
+      // Remove folder
+      final updated = List<String>.from(currentFolders)..remove(folder);
+      if (updated.isEmpty) {
+        _selectedFolders.remove(sourceId);
+      } else {
+        _selectedFolders[sourceId] = updated;
+      }
+    } else {
+      // Add folder
+      _selectedFolders[sourceId] = List<String>.from(currentFolders)..add(folder);
+    }
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final foldersJson = jsonEncode(_selectedFolders.map((key, value) => MapEntry(key, value)));
+      await prefs.setString(_keySelectedFolders, foldersJson);
+    } catch (e) {
+      // Ignore SharedPreferences errors - settings will not persist but app continues to work
+    }
+  }
+  
+  /// Clear all folder selections for a source (select all folders)
+  Future<void> clearFoldersForSource(String sourceId) async {
+    _selectedFolders.remove(sourceId);
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final foldersJson = jsonEncode(_selectedFolders.map((key, value) => MapEntry(key, value)));
+      await prefs.setString(_keySelectedFolders, foldersJson);
+    } catch (e) {
+      // Ignore SharedPreferences errors - settings will not persist but app continues to work
+    }
   }
 
   Future<void> loadFromStorage() async {
@@ -63,14 +107,16 @@ class SearchStateService extends ChangeNotifier {
         try {
           final decoded = jsonDecode(foldersJson) as Map<String, dynamic>;
           _selectedFolders = decoded.map((key, value) {
-            // Handle migration from old List format to new String? format
-            if (value is List && value.isNotEmpty) {
-              // Take first folder from old list format
-              return MapEntry(key, value[0] as String?);
+            // Handle migration from old String format to new List<String> format
+            if (value is List) {
+              // Already in new format
+              return MapEntry(key, List<String>.from(value.map((v) => v.toString())));
             } else if (value is String) {
-              return MapEntry(key, value);
+              // Old single folder format - convert to list
+              return MapEntry(key, [value]);
             } else {
-              return MapEntry(key, null);
+              // null or invalid - return empty list (all folders)
+              return MapEntry(key, <String>[]);
             }
           });
         } catch (e) {
@@ -138,17 +184,18 @@ class SearchStateService extends ChangeNotifier {
     }
   }
 
-  /// Set selected folder for a specific source (null = all folders)
-  Future<void> setSelectedFolderForSource(String sourceId, String? folder) async {
-    if (folder == null) {
+  /// Set selected folders for a specific source (empty list = all folders)
+  /// This method is kept for backward compatibility but prefer using toggleFolderForSource
+  Future<void> setSelectedFoldersForSource(String sourceId, List<String> folders) async {
+    if (folders.isEmpty) {
       _selectedFolders.remove(sourceId);
     } else {
-      _selectedFolders[sourceId] = folder;
+      _selectedFolders[sourceId] = List<String>.from(folders);
     }
     notifyListeners();
     try {
       final prefs = await SharedPreferences.getInstance();
-      final foldersJson = jsonEncode(_selectedFolders);
+      final foldersJson = jsonEncode(_selectedFolders.map((key, value) => MapEntry(key, value)));
       await prefs.setString(_keySelectedFolders, foldersJson);
     } catch (e) {
       // Ignore SharedPreferences errors - settings will not persist but app continues to work

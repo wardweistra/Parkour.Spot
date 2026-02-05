@@ -500,7 +500,8 @@ exports.getTopSpotsInBounds = onCall(
           limit = 100,
           spotSource = null, // null = all sources, empty string = native only, string = specific source
           hasImages = false, // true = only spots with images, false = all spots
-          folder = null, // Optional single folder name to filter by (only used when spotSource is set, null = all folders)
+          folder = null, // DEPRECATED: Optional single folder name (for backward compatibility)
+          folders = null, // Optional array of folder names to filter by (only used when spotSource is set, null = all folders)
         } = request.data || {};
 
         if (
@@ -613,10 +614,19 @@ exports.getTopSpotsInBounds = onCall(
 
         const maxItems = Math.max(0, Math.min(200, Number(limit) || 100));
 
-        // Normalize folder string
-        let normalizedFolder = null;
-        if (folder && typeof folder === "string" && folder.trim().length > 0 && spotSource !== null && spotSource !== undefined) {
-          normalizedFolder = String(folder).trim();
+        // Normalize folders array (handle backward compatibility with single folder)
+        let normalizedFolders = null;
+        if (folders && Array.isArray(folders) && folders.length > 0 && spotSource !== null && spotSource !== undefined) {
+          // New format: array of folders
+          normalizedFolders = folders
+              .filter(f => f && typeof f === "string" && f.trim().length > 0)
+              .map(f => String(f).trim());
+          if (normalizedFolders.length === 0) {
+            normalizedFolders = null;
+          }
+        } else if (folder && typeof folder === "string" && folder.trim().length > 0 && spotSource !== null && spotSource !== undefined) {
+          // Backward compatibility: single folder string
+          normalizedFolders = [String(folder).trim()];
         }
 
         // Build query function with source, image, and folder filtering
@@ -645,8 +655,15 @@ exports.getTopSpotsInBounds = onCall(
 
           // Apply folder filter if specified (only when spotSource is set)
           // Note: This requires a composite index on (spotSource, folderName, ranking)
-          if (normalizedFolder) {
-            query = query.where("folderName", "==", normalizedFolder);
+          // Use whereIn for multiple folders, or == for single folder (backward compatibility)
+          if (normalizedFolders && normalizedFolders.length > 0) {
+            if (normalizedFolders.length === 1) {
+              // Single folder: use == for better index usage
+              query = query.where("folderName", "==", normalizedFolders[0]);
+            } else {
+              // Multiple folders: use whereIn
+              query = query.where("folderName", "in", normalizedFolders);
+            }
           }
 
           // Apply image filter if specified

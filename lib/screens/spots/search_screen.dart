@@ -193,7 +193,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     final hasFolderFilter = _selectedSpotSource != null && 
                             _selectedSpotSource!.isNotEmpty &&
                             searchState != null &&
-                            searchState.getSelectedFolderForSource(_selectedSpotSource!) != null;
+                            searchState.getSelectedFoldersForSource(_selectedSpotSource!).isNotEmpty;
     
     return !_includeSpotsWithoutPictures || // Default is true, so false means active
            _selectedSpotSource != null || // null means all sources (default)
@@ -694,10 +694,10 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       final spotService = Provider.of<SpotService>(context, listen: false);
       final searchState = Provider.of<SearchStateService>(context, listen: false);
       
-      // Get selected folder for the current source
-      String? selectedFolder;
+      // Get selected folders for the current source
+      List<String> selectedFolders = [];
       if (_selectedSpotSource != null && _selectedSpotSource!.isNotEmpty) {
-        selectedFolder = searchState.getSelectedFolderForSource(_selectedSpotSource!);
+        selectedFolders = searchState.getSelectedFoldersForSource(_selectedSpotSource!);
       }
       
       // Load ranked top spots within the current map bounds (and total count)
@@ -710,7 +710,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         limit: 100,
         spotSource: _selectedSpotSource, // null = all, "" = native, string = specific source
         hasImages: !_includeSpotsWithoutPictures, // true = only spots with images, false = all spots
-        folder: selectedFolder, // Optional single folder filter when source is selected (null = all folders)
+        folders: selectedFolders.isEmpty ? null : selectedFolders, // Optional list of folders to filter by (null = all folders)
       );
 
       _loadedSpots = (ranked['spots'] as List<Spot>?) ?? <Spot>[];
@@ -874,14 +874,15 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                   // All folders option
                                   Builder(
                                     builder: (context) {
-                                      final isAllSelected = searchState.getSelectedFolderForSource(source.id) == null;
+                                      final selectedFolders = searchState.getSelectedFoldersForSource(source.id);
+                                      final isAllSelected = selectedFolders.isEmpty;
                                       return FilterChip(
                                         label: const Text('All Folders'),
                                         selected: isAllSelected,
                                         onSelected: (selected) {
-                                          // Only allow selection, not deselection (radio button behavior)
                                           if (selected && !isAllSelected) {
-                                            searchState.setSelectedFolderForSource(source.id, null);
+                                            // Clear all folder selections (select all folders)
+                                            searchState.clearFoldersForSource(source.id);
                                             // Reload spots with new folder filter
                                             if (_mapController != null) {
                                               _loadSpotsForCurrentView();
@@ -900,18 +901,16 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                   ),
                                   // Individual folder options
                                   ...(source.allFolders ?? []).map((folder) {
-                                    final isFolderSelected = searchState.getSelectedFolderForSource(source.id) == folder;
+                                    final isFolderSelected = searchState.isFolderSelectedForSource(source.id, folder);
                                     return FilterChip(
                                       label: Text(folder),
                                       selected: isFolderSelected,
                                       onSelected: (selected) {
-                                        // Only allow selection, not deselection (radio button behavior)
-                                        if (selected && !isFolderSelected) {
-                                          searchState.setSelectedFolderForSource(source.id, folder);
-                                          // Reload spots with new folder filter
-                                          if (_mapController != null) {
-                                            _loadSpotsForCurrentView();
-                                          }
+                                        // Toggle folder selection (allow multiple selections)
+                                        searchState.toggleFolderForSource(source.id, folder);
+                                        // Reload spots with new folder filter
+                                        if (_mapController != null) {
+                                          _loadSpotsForCurrentView();
                                         }
                                       },
                                       selectedColor: Theme.of(context).colorScheme.primaryContainer,
@@ -2801,7 +2800,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                         // Clear all folder filters
                         final allSourceIds = searchState.selectedFolders.keys.toList();
                         for (final sourceId in allSourceIds) {
-                          searchState.setSelectedFolderForSource(sourceId, null);
+                          searchState.clearFoldersForSource(sourceId);
                         }
                         // Reload spots with cleared filters
                         _loadSpotsForCurrentView();
