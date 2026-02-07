@@ -17,6 +17,7 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
   String? _selectedSourceId;
   bool _isRunning = false;
   String? _error;
+  bool _hideCheckedResults = true; // Hide checked results by default
 
   @override
   void initState() {
@@ -58,7 +59,7 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
         // Navigate to results page
         final runId = result['runId'] as String?;
         if (runId != null) {
-          context.go('/admin/duplicate-spots/$runId');
+          context.go('/moderator/duplicate-spots/$runId');
         }
       }
     } catch (e) {
@@ -73,12 +74,13 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isAdmin = context.select<AuthService, bool>((s) => s.isAdmin);
-    if (!isAdmin) {
+    final authService = context.watch<AuthService>();
+    final hasModeratorAccess = authService.isModerator || authService.isAdmin;
+    if (!hasModeratorAccess) {
       return Scaffold(
         appBar: AppBar(title: const Text('Duplicate Spots')),
         body: const Center(
-          child: Text('Administrator access required'),
+          child: Text('Moderator access required'),
         ),
       );
     }
@@ -88,11 +90,46 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
         title: const Text('Duplicate Spot Detection'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/admin'),
+          onPressed: () => context.go('/moderator'),
         ),
       ),
       body: Column(
         children: [
+          // Instructions section
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Colors.blue[50],
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'How to use Duplicate Spot Detection',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue[900],
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Select a source from the dropdown below and click "Find Duplicates" to scan for potential duplicate spots within 50 meters of each other. The system will check spots from the selected source against all other spots in the database. Review the results to identify and merge duplicate entries.',
+                        style: TextStyle(
+                          color: Colors.blue[900],
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
           // Controls section
           Container(
             padding: const EdgeInsets.all(16),
@@ -140,6 +177,26 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
                         )
                       : const Icon(Icons.search),
                   label: Text(_isRunning ? 'Finding Duplicates...' : 'Find Duplicates'),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Text(
+                      'Hide checked',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                    Switch(
+                      value: _hideCheckedResults,
+                      onChanged: (value) {
+                        setState(() {
+                          _hideCheckedResults = value;
+                        });
+                      },
+                    ),
+                  ],
                 ),
                 if (_error != null) ...[
                   const SizedBox(height: 8),
@@ -213,43 +270,130 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
           );
         }
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: snapshot.data!.docs.length,
-          itemBuilder: (context, index) {
-            final doc = snapshot.data!.docs[index];
-            final data = doc.data() as Map<String, dynamic>;
-            final stats = data['stats'] as Map<String, dynamic>? ?? {};
-            final pairsFound = stats['pairsFound'] as int? ?? 0;
-            final spotsChecked = stats['spotsChecked'] as int? ?? 0;
-            final sourceId = data['sourceId'] as String? ?? 'Unknown';
-            final sourceName = data['sourceName'] as String? ?? sourceId;
-            final createdAt = data['createdAt'] as Timestamp?;
+        // Filter results based on hideCheckedResults setting
+        final allDocs = snapshot.data!.docs;
+        final filteredDocs = _hideCheckedResults
+            ? allDocs.where((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                final isChecked = data['isChecked'] as bool? ?? false;
+                return !isChecked;
+              }).toList()
+            : allDocs;
 
-            return Card(
-              child: ListTile(
-                title: Text(sourceName),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        final checkedCount = allDocs.length - filteredDocs.length;
+
+        if (filteredDocs.isEmpty && allDocs.isNotEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.check_circle, size: 64, color: Colors.green),
+                const SizedBox(height: 16),
+                Text(
+                  'All results checked',
+                  style: TextStyle(color: Colors.grey, fontSize: 16),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Toggle "Hide checked" to see all results',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return Column(
+          children: [
+            if (_hideCheckedResults && checkedCount > 0)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                color: Colors.blue[50],
+                child: Row(
                   children: [
-                    Text('Found $pairsFound pair${pairsFound == 1 ? '' : 's'} (checked $spotsChecked spots)'),
-                    if (createdAt != null)
-                      Text(
-                        createdAt.toDate().toString().substring(0, 19),
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    Icon(Icons.info_outline, size: 16, color: Colors.blue[700]),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '$checkedCount checked result${checkedCount == 1 ? '' : 's'} hidden. Toggle switch to show.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.blue[900],
+                        ),
                       ),
+                    ),
                   ],
                 ),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                onTap: () {
-                  context.go('/admin/duplicate-spots/${doc.id}');
+              ),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: filteredDocs.length,
+                itemBuilder: (context, index) {
+                  final doc = filteredDocs[index];
+                  final data = doc.data() as Map<String, dynamic>;
+                  final stats = data['stats'] as Map<String, dynamic>? ?? {};
+                  final pairsFound = stats['pairsFound'] as int? ?? 0;
+                  final spotsChecked = stats['spotsChecked'] as int? ?? 0;
+                  final sourceId = data['sourceId'] as String? ?? 'Unknown';
+                  final sourceName = data['sourceName'] as String? ?? sourceId;
+                  final createdAt = data['createdAt'] as Timestamp?;
+                  final isChecked = data['isChecked'] as bool? ?? false;
+
+                  return Card(
+                    child: ListTile(
+                      leading: Checkbox(
+                        value: isChecked,
+                        onChanged: (value) async {
+                          try {
+                            await FirebaseFirestore.instance
+                                .collection('duplicateDetectionResults')
+                                .doc(doc.id)
+                                .update({
+                              'isChecked': value ?? false,
+                            });
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Failed to update: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                      ),
+                      title: Text(
+                        sourceName,
+                        style: TextStyle(
+                          decoration: isChecked ? TextDecoration.lineThrough : null,
+                          color: isChecked ? Colors.grey : null,
+                        ),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Found $pairsFound pair${pairsFound == 1 ? '' : 's'} (checked $spotsChecked spots)'),
+                          if (createdAt != null)
+                            Text(
+                              createdAt.toDate().toString().substring(0, 19),
+                              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                            ),
+                        ],
+                      ),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: () {
+                        context.go('/moderator/duplicate-spots/${doc.id}');
+                      },
+                    ),
+                  );
                 },
               ),
-            );
-          },
+            ),
+          ],
         );
       },
     );
   }
-
 }

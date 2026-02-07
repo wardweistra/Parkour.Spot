@@ -109,18 +109,20 @@ service cloud.firestore {
         resource.data.createdBy == request.auth.uid;
     }
 
-    // DuplicateDetectionResults collection - only admins can read
+    // DuplicateDetectionResults collection - moderators and admins can read
     match /duplicateDetectionResults/{runId} {
-      // Only admins can read duplicate detection results
+      // Moderators and admins can read duplicate detection results
       allow read: if request.auth != null &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isModerator == true);
       // Only Cloud Functions (with admin privileges) can create/delete
       allow create, delete: if false;
-      // Admins can update the collapsedPairs field for UI preferences
+      // Moderators and admins can update the collapsedPairs field for UI preferences
       allow update: if request.auth != null &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isModerator == true) &&
         // Ensure collapsedPairs is a list if present
         (!('collapsedPairs' in request.resource.data) || request.resource.data.collapsedPairs is list);
     }

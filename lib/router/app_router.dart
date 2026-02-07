@@ -327,19 +327,6 @@ class AppRouter {
           builder: (context, state) => const DuplicateImagesScreen(),
         ),
         GoRoute(
-          path: '/admin/duplicate-spots',
-          builder: (context, state) => const DuplicateSpotsScreen(),
-          routes: [
-            GoRoute(
-              path: ':runId',
-              builder: (context, state) {
-                final runId = state.pathParameters['runId']!;
-                return DuplicateSpotsResultsScreen(runId: runId);
-              },
-            ),
-          ],
-        ),
-        GoRoute(
           path: '/admin/device-detection',
           builder: (context, state) => const DeviceDetectionScreen(),
         ),
@@ -350,6 +337,19 @@ class AppRouter {
           GoRoute(
             path: 'reports',
             builder: (context, state) => const SpotReportQueueScreen(),
+          ),
+          GoRoute(
+            path: 'duplicate-spots',
+            builder: (context, state) => const DuplicateSpotsScreen(),
+            routes: [
+              GoRoute(
+                path: ':runId',
+                builder: (context, state) {
+                  final runId = state.pathParameters['runId']!;
+                  return DuplicateSpotsResultsScreen(runId: runId);
+                },
+              ),
+            ],
           ),
         ],
       ),

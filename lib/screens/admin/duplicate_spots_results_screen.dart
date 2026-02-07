@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/auth_service.dart';
-import '../../services/url_service.dart';
 
 class DuplicateSpotsResultsScreen extends StatefulWidget {
   final String runId;
@@ -45,12 +44,13 @@ class _DuplicateSpotsResultsScreenState extends State<DuplicateSpotsResultsScree
 
   @override
   Widget build(BuildContext context) {
-    final isAdmin = context.select<AuthService, bool>((s) => s.isAdmin);
-    if (!isAdmin) {
+    final authService = context.watch<AuthService>();
+    final hasModeratorAccess = authService.isModerator || authService.isAdmin;
+    if (!hasModeratorAccess) {
       return Scaffold(
         appBar: AppBar(title: const Text('Duplicate Spot Results')),
         body: const Center(
-          child: Text('Administrator access required'),
+          child: Text('Moderator access required'),
         ),
       );
     }
@@ -60,7 +60,7 @@ class _DuplicateSpotsResultsScreenState extends State<DuplicateSpotsResultsScree
         title: const Text('Duplicate Spot Results'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/admin/duplicate-spots'),
+          onPressed: () => context.go('/moderator/duplicate-spots'),
         ),
       ),
       body: StreamBuilder<DocumentSnapshot>(
@@ -112,6 +112,41 @@ class _DuplicateSpotsResultsScreenState extends State<DuplicateSpotsResultsScree
 
           return Column(
             children: [
+              // Instructions section
+              Container(
+                padding: const EdgeInsets.all(16),
+                color: Colors.blue[50],
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Reviewing Duplicate Pairs',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue[900],
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Review each pair of spots to determine if they are duplicates. Click on a spot card to view its details, or use the location icon to locate it on the map. Check the checkbox when you\'ve reviewed a pair to mark it as checked. Use the "Hide checked" toggle to focus on pairs that still need review.',
+                            style: TextStyle(
+                              color: Colors.blue[900],
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               // Header with stats
               Container(
                 padding: const EdgeInsets.all(16),
@@ -365,12 +400,7 @@ class _DuplicateSpotsResultsScreenState extends State<DuplicateSpotsResultsScree
     return InkWell(
       onTap: spotId != null
           ? () {
-              final navigationUrl = UrlService.generateNavigationUrl(
-                spotId,
-                countryCode: countryCode,
-                city: city,
-              );
-              context.go(navigationUrl);
+              context.go('/explore?locateSpotId=$spotId');
             }
           : null,
       borderRadius: BorderRadius.circular(8),
@@ -397,32 +427,6 @@ class _DuplicateSpotsResultsScreenState extends State<DuplicateSpotsResultsScree
                 if (hasImages) ...[
                   const SizedBox(width: 8),
                   Icon(Icons.image, size: 16, color: Colors.grey[600]),
-                ],
-                const Spacer(),
-                if (spotId != null) ...[
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () {
-                        context.go('/explore?locateSpotId=$spotId');
-                      },
-                      borderRadius: BorderRadius.circular(20),
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        child: Icon(
-                          Icons.my_location,
-                          size: 18,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    Icons.open_in_new,
-                    size: 16,
-                    color: Colors.grey[600],
-                  ),
                 ],
               ],
             ),
