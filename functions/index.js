@@ -5615,6 +5615,53 @@ exports.generateSitemapsScheduled = onSchedule(
  * @param {boolean} useYesterdayDate - If true, store metrics with yesterday's date (for scheduled runs)
  * @return {Promise<Object>} Result object with metrics and status
  */
+/**
+ * Helper function to make rate-limited Google Sheets API calls with retry logic
+ * Implements exponential backoff for quota errors and adds delays between calls
+ * @param {Function} apiCall - Function that returns a Promise for the API call
+ * @param {number} delayMs - Delay in milliseconds before making the call (default: 1000ms)
+ * @param {number} maxRetries - Maximum number of retries (default: 5)
+ * @returns {Promise} The result of the API call
+ */
+async function rateLimitedSheetsCall(apiCall, delayMs = 1000, maxRetries = 5) {
+  // Add delay before making the call to respect rate limits
+  // Google Sheets API allows 60 write requests per minute per user
+  // With 1 second delay, we stay well under the limit (max 60/min)
+  await new Promise((resolve) => setTimeout(resolve, delayMs));
+
+  let lastError;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await apiCall();
+    } catch (error) {
+      lastError = error;
+      
+      // Check if it's a quota error
+      const isQuotaError = error.code === 429 || 
+                          (error.response && error.response.status === 429) ||
+                          (error.message && error.message.includes("Quota exceeded")) ||
+                          (error.message && error.message.includes("quota metric"));
+
+      if (isQuotaError && attempt < maxRetries) {
+        // Exponential backoff: 2^attempt seconds, with a max of 60 seconds
+        const backoffMs = Math.min(1000 * Math.pow(2, attempt), 60000);
+        console.warn(
+            `Quota error on attempt ${attempt + 1}/${maxRetries + 1}. ` +
+            `Retrying in ${backoffMs}ms...`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, backoffMs));
+        continue;
+      }
+
+      // For non-quota errors or if we've exhausted retries, throw immediately
+      throw error;
+    }
+  }
+  
+  // Should never reach here, but just in case
+  throw lastError;
+}
+
 async function calculateUserActivityMetrics(useYesterdayDate = false) {
   console.log("User activity metrics calculation started");
   const now = new Date();
@@ -5757,21 +5804,27 @@ async function calculateUserActivityMetrics(useYesterdayDate = false) {
 
     // Clear existing data (assuming data starts at A1)
     const clearRange = `${sheetName}!A1:Z10000`; // Adjust range as needed
-    await sheets.spreadsheets.values.clear({
-      spreadsheetId: sheetId,
-      range: clearRange,
-    });
+    await rateLimitedSheetsCall(
+        () => sheets.spreadsheets.values.clear({
+          spreadsheetId: sheetId,
+          range: clearRange,
+        }),
+        1000, // 1 second delay
+    );
     console.log(`Cleared existing sheet data from ${sheetName}`);
 
     // Write all data
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: sheetId,
-      range: `${sheetName}!A1`,
-      valueInputOption: "RAW",
-      resource: {
-        values: sheetData,
-      },
-    });
+    await rateLimitedSheetsCall(
+        () => sheets.spreadsheets.values.update({
+          spreadsheetId: sheetId,
+          range: `${sheetName}!A1`,
+          valueInputOption: "RAW",
+          resource: {
+            values: sheetData,
+          },
+        }),
+        1000, // 1 second delay
+    );
     console.log(`Successfully synced ${sheetData.length} rows to Google Sheets`);
 
     // Export all spots to Spots sheet (processed in batches to reduce memory usage)
@@ -5797,29 +5850,35 @@ async function calculateUserActivityMetrics(useYesterdayDate = false) {
 
       if (!spotsSheetExists) {
         console.log(`Creating ${spotsSheetName} sheet`);
-        await sheets.spreadsheets.batchUpdate({
-          spreadsheetId: sheetId,
-          resource: {
-            requests: [
-              {
-                addSheet: {
-                  properties: {
-                    title: spotsSheetName,
+        await rateLimitedSheetsCall(
+            () => sheets.spreadsheets.batchUpdate({
+              spreadsheetId: sheetId,
+              resource: {
+                requests: [
+                  {
+                    addSheet: {
+                      properties: {
+                        title: spotsSheetName,
+                      },
+                    },
                   },
-                },
+                ],
               },
-            ],
-          },
-        });
+            }),
+            1000, // 1 second delay
+        );
         console.log(`Successfully created ${spotsSheetName} sheet`);
       }
 
       // Clear existing data from Spots sheet
       const spotsClearRange = `${spotsSheetName}!A1:Z100000`;
-      await sheets.spreadsheets.values.clear({
-        spreadsheetId: sheetId,
-        range: spotsClearRange,
-      });
+      await rateLimitedSheetsCall(
+          () => sheets.spreadsheets.values.clear({
+            spreadsheetId: sheetId,
+            range: spotsClearRange,
+          }),
+          1000, // 1 second delay
+      );
       console.log(`Cleared existing data from ${spotsSheetName} sheet`);
 
       // Write header row first
@@ -5842,14 +5901,17 @@ async function calculateUserActivityMetrics(useYesterdayDate = false) {
           "Updated At",
         ],
       ];
-      await sheets.spreadsheets.values.update({
-        spreadsheetId: sheetId,
-        range: `${spotsSheetName}!A1`,
-        valueInputOption: "RAW",
-        resource: {
-          values: headerRow,
-        },
-      });
+      await rateLimitedSheetsCall(
+          () => sheets.spreadsheets.values.update({
+            spreadsheetId: sheetId,
+            range: `${spotsSheetName}!A1`,
+            valueInputOption: "RAW",
+            resource: {
+              values: headerRow,
+            },
+          }),
+          1000, // 1 second delay
+      );
 
       // Process spots in batches to reduce memory usage
       const BATCH_SIZE = 500; // Process 500 spots at a time
@@ -5927,14 +5989,17 @@ async function calculateUserActivityMetrics(useYesterdayDate = false) {
 
         // Write batch to Google Sheets
         if (batchData.length > 0) {
-          await sheets.spreadsheets.values.update({
-            spreadsheetId: sheetId,
-            range: `${spotsSheetName}!A${currentRow}`,
-            valueInputOption: "RAW",
-            resource: {
-              values: batchData,
-            },
-          });
+          await rateLimitedSheetsCall(
+              () => sheets.spreadsheets.values.update({
+                spreadsheetId: sheetId,
+                range: `${spotsSheetName}!A${currentRow}`,
+                valueInputOption: "RAW",
+                resource: {
+                  values: batchData,
+                },
+              }),
+              1000, // 1 second delay between batches
+          );
 
           spotsExported += batchData.length;
           currentRow += batchData.length;
@@ -5983,29 +6048,35 @@ async function calculateUserActivityMetrics(useYesterdayDate = false) {
 
       if (!usersSheetExists) {
         console.log(`Creating ${usersSheetName} sheet`);
-        await sheets.spreadsheets.batchUpdate({
-          spreadsheetId: sheetId,
-          resource: {
-            requests: [
-              {
-                addSheet: {
-                  properties: {
-                    title: usersSheetName,
+        await rateLimitedSheetsCall(
+            () => sheets.spreadsheets.batchUpdate({
+              spreadsheetId: sheetId,
+              resource: {
+                requests: [
+                  {
+                    addSheet: {
+                      properties: {
+                        title: usersSheetName,
+                      },
+                    },
                   },
-                },
+                ],
               },
-            ],
-          },
-        });
+            }),
+            1000, // 1 second delay
+        );
         console.log(`Successfully created ${usersSheetName} sheet`);
       }
 
       // Clear existing data from Users sheet
       const usersClearRange = `${usersSheetName}!A1:Z100000`;
-      await sheets.spreadsheets.values.clear({
-        spreadsheetId: sheetId,
-        range: usersClearRange,
-      });
+      await rateLimitedSheetsCall(
+          () => sheets.spreadsheets.values.clear({
+            spreadsheetId: sheetId,
+            range: usersClearRange,
+          }),
+          1000, // 1 second delay
+      );
       console.log(`Cleared existing data from ${usersSheetName} sheet`);
 
       // Write header row first
@@ -6021,14 +6092,17 @@ async function calculateUserActivityMetrics(useYesterdayDate = false) {
           "Is Public Profile",
         ],
       ];
-      await sheets.spreadsheets.values.update({
-        spreadsheetId: sheetId,
-        range: `${usersSheetName}!A1`,
-        valueInputOption: "RAW",
-        resource: {
-          values: usersHeaderRow,
-        },
-      });
+      await rateLimitedSheetsCall(
+          () => sheets.spreadsheets.values.update({
+            spreadsheetId: sheetId,
+            range: `${usersSheetName}!A1`,
+            valueInputOption: "RAW",
+            resource: {
+              values: usersHeaderRow,
+            },
+          }),
+          1000, // 1 second delay
+      );
 
       // Process users in batches to reduce memory usage
       const USER_BATCH_SIZE = 500; // Process 500 users at a time
@@ -6094,14 +6168,17 @@ async function calculateUserActivityMetrics(useYesterdayDate = false) {
 
         // Write batch to Google Sheets
         if (userBatchData.length > 0) {
-          await sheets.spreadsheets.values.update({
-            spreadsheetId: sheetId,
-            range: `${usersSheetName}!A${currentUserRow}`,
-            valueInputOption: "RAW",
-            resource: {
-              values: userBatchData,
-            },
-          });
+          await rateLimitedSheetsCall(
+              () => sheets.spreadsheets.values.update({
+                spreadsheetId: sheetId,
+                range: `${usersSheetName}!A${currentUserRow}`,
+                valueInputOption: "RAW",
+                resource: {
+                  values: userBatchData,
+                },
+              }),
+              1000, // 1 second delay between batches
+          );
 
           usersExported += userBatchData.length;
           currentUserRow += userBatchData.length;
