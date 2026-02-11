@@ -300,6 +300,52 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     }
   }
 
+  /// Called when the map tab becomes visible. Processes locateSpotId/listId from
+  /// the URL and refreshes map tiles (fixes "one tile" issue when map was built off-screen).
+  void onMapTabActivated() {
+    if (!mounted) return;
+
+    String? locateSpotId;
+    String? listIdFromUrl;
+    try {
+      final state = GoRouterState.of(context);
+      locateSpotId = state.uri.queryParameters['locateSpotId'];
+      listIdFromUrl = state.uri.queryParameters['listId'];
+    } catch (_) {}
+
+    final listId = listIdFromUrl ?? widget.initialListId;
+    final hasFocusIntent = (locateSpotId != null && locateSpotId.isNotEmpty) ||
+        (listId != null && listId.isNotEmpty);
+
+    // Zoom nudge forces tile refresh when map was built off-screen. Skip when
+    // we have list/locate - the subsequent camera move will achieve the same.
+    if (_mapController != null && !hasFocusIntent) {
+      _mapController!.getZoomLevel().then((zoom) async {
+        if (!mounted || _mapController == null) return;
+        await _mapController!.animateCamera(CameraUpdate.zoomTo(zoom + 0.01));
+        if (mounted && _mapController != null) {
+          await _mapController!.animateCamera(CameraUpdate.zoomTo(zoom));
+        }
+      });
+    }
+
+    if (listId != null && listId.isNotEmpty) {
+      _searchStateServiceRef?.setSelectedListId(listId);
+      setState(() => _selectedListId = listId);
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted && _mapController != null) {
+          _openSpotListPreview(listId);
+        }
+      });
+    }
+
+    if (locateSpotId != null && locateSpotId.isNotEmpty) {
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) _locateSpotById(locateSpotId!);
+      });
+    }
+  }
+
   @override
   void dispose() {
     _cameraMoveDebounce?.cancel();

@@ -48,13 +48,41 @@ class _ExploreScreenState extends State<ExploreScreen> {
     // Update document title and meta description for country/city pages
     _updateDocumentMeta();
     
-    // Initialize page controller position if needed
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // If we have an initial tab that's not 0, ensure the page controller is at the right position
       if (widget.initialTab != 0 && _pageController.hasClients) {
         _pageController.jumpToPage(widget.initialTab);
+      } else if (widget.initialTab == 0) {
+        // Starting on map tab - onPageChanged won't fire, so process URL params after map is ready
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) _searchKey.currentState?.onMapTabActivated();
+        });
       }
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant ExploreScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // When navigating to Explore with map-focused params (listId, locateSpotId) or
+    // a different initialTab, sync the selected tab. This fixes the case where
+    // the user was on Account tab, navigated away, then used "locate spot" or
+    // "show list on map" - without this, GoRouter may reuse the ExploreScreen
+    // instance and it would stay on the previously selected Account tab.
+    if (widget.initialTab != _currentIndex) {
+      setState(() => _currentIndex = widget.initialTab);
+      if (_pageController.hasClients) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || !_pageController.hasClients) return;
+          _pageController.animateToPage(
+            widget.initialTab,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        });
+      }
+    } else if (widget.initialTab == 0) {
+      _searchKey.currentState?.onMapTabActivated();
+    }
   }
 
   @override
@@ -387,6 +415,11 @@ class _ExploreScreenState extends State<ExploreScreen> {
           });
           // Update URL when swiping between tabs
           _updateUrlForTab(index);
+          if (index == 0) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) _searchKey.currentState?.onMapTabActivated();
+            });
+          }
         },
         children: _buildScreens(),
       ),
