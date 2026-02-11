@@ -1205,7 +1205,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   }
 
   Future<void> _openInstagramProfile(String instagramUrl) async {
-    final uri = Uri.tryParse(instagramUrl);
+    final normalizedUrl =
+        UrlService.normalizeInstagramProfileUrl(instagramUrl) ?? instagramUrl.trim();
+    final uri = Uri.tryParse(normalizedUrl);
     if (uri == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
