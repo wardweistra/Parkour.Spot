@@ -93,7 +93,13 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
         title: const Text('Sync Sources'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/admin'),
+          onPressed: () {
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          } else {
+            context.go('/admin');
+          }
+        },
         ),
         actions: [
           Consumer<SyncSourceService>(

@@ -110,12 +110,12 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           : userId;
       
       if (mounted) {
-        context.go('/user/$identifier');
+        context.push('/user/$identifier');
       }
     } catch (e) {
       // If fetching fails, fall back to user ID
       if (mounted) {
-        context.go('/user/$userId');
+        context.push('/user/$userId');
       }
     }
   }
@@ -737,9 +737,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           // Delay navigation to ensure PopupMenu fully closes before navigation
           Future.delayed(const Duration(milliseconds: 400), () {
             if (!mounted) return;
-            // Navigate to edit screen - URL will update automatically
-            // EditSpotRoute will fetch the spot by ID from the path parameters
-            context.go(editPath);
+            context.push(editPath);
           });
         } else if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -2669,10 +2667,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                       countryCode: _originalSpot!.countryCode,
                                       city: _originalSpot!.city,
                                     );
-                                    context.go(navigationUrl);
+                                    context.push(navigationUrl);
                                   } else {
                                     // Fallback to simple spot ID route
-                                    context.go('/spot/${widget.spot.duplicateOf}');
+                                    context.push('/spot/${widget.spot.duplicateOf}');
                                   }
                                 },
                           child: ListTile(
@@ -2732,7 +2730,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                   countryCode: duplicate.countryCode,
                                   city: duplicate.city,
                                 );
-                                context.go(navigationUrl);
+                                context.push(navigationUrl);
                               },
                               child: Padding(
                                 padding: const EdgeInsets.only(left: 48.0),

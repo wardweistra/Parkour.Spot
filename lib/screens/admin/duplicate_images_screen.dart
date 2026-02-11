@@ -114,7 +114,13 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/admin'),
+          onPressed: () {
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          } else {
+            context.go('/admin');
+          }
+        },
         ),
         actions: [
           IconButton(
@@ -227,7 +233,7 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
                 child: InkWell(
                   onTap: () {
                     if (spot.id != null) {
-                      context.go('/spot/${spot.id}');
+                      context.push('/spot/${spot.id}');
                     }
                   },
                   child: Padding(
@@ -250,7 +256,7 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
                               IconButton(
                                 icon: const Icon(Icons.edit),
                                 onPressed: () {
-                                  context.go('/spot/${spot.id}/edit');
+                                  context.push('/spot/${spot.id}/edit');
                                 },
                                 tooltip: 'Edit spot',
                               ),
@@ -277,7 +283,7 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
                         if (spot.id != null)
                           InkWell(
                             onTap: () {
-                              context.go('/spot/${spot.id}');
+                              context.push('/spot/${spot.id}');
                             },
                             child: Padding(
                               padding: const EdgeInsets.symmetric(vertical: 4),

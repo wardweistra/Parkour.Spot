@@ -32,7 +32,13 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
         title: const Text('Geocode Missing Addresses'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/admin'),
+          onPressed: () {
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          } else {
+            context.go('/admin');
+          }
+        },
         ),
         actions: [
           TextButton.icon(

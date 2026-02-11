@@ -58,7 +58,13 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         title: const Text('User Management'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/admin'),
+          onPressed: () {
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          } else {
+            context.go('/admin');
+          }
+        },
         ),
         actions: [
           Consumer<UserManagementService>(

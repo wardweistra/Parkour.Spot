@@ -1403,7 +1403,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                 city: spot.city,
               );
               final navigationUrl = imageIndex > 0 ? '$baseUrl?imageIndex=$imageIndex' : baseUrl;
-              context.go(navigationUrl);
+              context.push(navigationUrl);
             },
             onLocate: () => _locateSpot(spot),
           );
@@ -1440,7 +1440,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                   city: spot.city,
                 );
                 final navigationUrl = imageIndex > 0 ? '$baseUrl?imageIndex=$imageIndex' : baseUrl;
-                context.go(navigationUrl);
+                context.push(navigationUrl);
               },
               onLocate: () => _locateSpot(spot),
             ),
@@ -1463,10 +1463,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
           onTap: _selectedListId != null
               ? () {
                   // Navigate to full spot list detail page
-                  // Get current location for referrer
-                  final currentLocation = GoRouterState.of(context).uri.path;
-                  final referrer = currentLocation.isNotEmpty ? currentLocation : '/explore';
-                  context.go('/list/$_selectedListId?from=${Uri.encodeComponent(referrer)}');
+                  context.push('/list/$_selectedListId');
                 }
               : null,
           borderRadius: BorderRadius.circular(12),
@@ -2243,7 +2240,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                             city: _selectedSpot!.city,
                           );
                           final navigationUrl = imageIndex > 0 ? '$baseUrl?imageIndex=$imageIndex' : baseUrl;
-                          context.go(navigationUrl);
+                          context.push(navigationUrl);
                         },
                         onViewDetails: () {
                           final baseUrl = UrlService.generateNavigationUrl(
@@ -2252,7 +2249,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                             city: _selectedSpot!.city,
                           );
                           // For onViewDetails, we don't have access to image index, so just use base URL
-                          context.go(baseUrl);
+                          context.push(baseUrl);
                         },
                         onClose: () {
                           setState(() {
@@ -2278,7 +2275,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                               city: _selectedSpot!.city,
                             );
                             final navigationUrl = imageIndex > 0 ? '$baseUrl?imageIndex=$imageIndex' : baseUrl;
-                            context.go(navigationUrl);
+                            context.push(navigationUrl);
                           },
                           onViewDetails: () {
                             final baseUrl = UrlService.generateNavigationUrl(
@@ -2287,7 +2284,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                               city: _selectedSpot!.city,
                             );
                             // For onViewDetails, we don't have access to image index, so just use base URL
-                            context.go(baseUrl);
+                            context.push(baseUrl);
                           },
                           onClose: () {
                             setState(() {

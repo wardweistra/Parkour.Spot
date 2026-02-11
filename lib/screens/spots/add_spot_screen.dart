@@ -401,6 +401,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
             countryCode: _currentCountryCode, 
             city: _currentCity
           );
+          // Use go so back from the new spot doesn't return to the add form
           context.go(navigationUrl);
         }
       }

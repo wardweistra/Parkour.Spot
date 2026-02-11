@@ -121,7 +121,13 @@ class _UserActivityMetricsScreenState extends State<UserActivityMetricsScreen> {
 
     return PageScaffold(
       title: 'User Activity Metrics',
-      onBack: () => context.go('/admin'),
+      onBack: () {
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        } else {
+          context.go('/admin');
+        }
+      },
       actions: [
         if (isCalculating)
           const Padding(

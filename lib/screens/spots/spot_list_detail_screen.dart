@@ -22,9 +22,8 @@ import 'package:flutter/services.dart';
 
 class SpotListDetailScreen extends StatefulWidget {
   final String listId;
-  final String? referrer;
 
-  const SpotListDetailScreen({super.key, required this.listId, this.referrer});
+  const SpotListDetailScreen({super.key, required this.listId});
 
   @override
   State<SpotListDetailScreen> createState() => _SpotListDetailScreenState();
@@ -247,8 +246,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                   city: spot.city,
                 );
                 final navigationUrl = imageIndex > 0 ? '$baseUrl?imageIndex=$imageIndex' : baseUrl;
-                // Navigate to spot detail - URL will update automatically
-                context.go(navigationUrl);
+                context.push(navigationUrl);
               }
             },
             onLocate: () => _locateSpot(spot),
@@ -280,8 +278,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                     city: spot.city,
                   );
                   final navigationUrl = imageIndex > 0 ? '$baseUrl?imageIndex=$imageIndex' : baseUrl;
-                  // Navigate to spot detail - URL will update automatically
-                  context.go(navigationUrl);
+                  context.push(navigationUrl);
                 }
               },
               onLocate: () => _locateSpot(spot),
@@ -670,14 +667,10 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
   }
 
   void _handleBack() {
-    // If we have a referrer, go back to that location
-    if (widget.referrer == 'profile') {
-      context.go('/explore?tab=profile');
-    } else if (Navigator.canPop(context)) {
-      // If there's a previous page, go back to it
+    if (Navigator.canPop(context)) {
       Navigator.pop(context);
     } else {
-      // If no previous page (direct link), go to explore
+      // No previous page (direct link) - go to explore
       context.go('/explore');
     }
   }

@@ -206,7 +206,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               if (profileUrl != null)
                 Card(
                   child: InkWell(
-                    onTap: () => context.go(profileUrl),
+                    onTap: () => context.push(profileUrl),
                     borderRadius: BorderRadius.circular(12),
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
@@ -289,7 +289,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           'Moderator Tools',
                           'Review and resolve incoming spot reports',
                           () {
-                            context.go('/moderator');
+                            context.push('/moderator');
                           },
                         ),
                       ],
@@ -321,7 +321,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           'Admin Tools',
                           'Manage sources and administrative tasks',
                           () {
-                            context.go('/admin');
+                            context.push('/admin');
                           },
                         ),
                       ],

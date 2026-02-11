@@ -538,7 +538,13 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
         title: const Text('Device Detection Info'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/admin'),
+          onPressed: () {
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          } else {
+            context.go('/admin');
+          }
+        },
         ),
       ),
       body: RefreshIndicator(

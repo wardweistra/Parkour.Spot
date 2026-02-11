@@ -511,7 +511,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                             ),
                             onTap: () {
                               if (list.id != null) {
-                                context.go('/list/${list.id}?from=profile');
+                                context.push('/list/${list.id}');
                               }
                             },
                           ),

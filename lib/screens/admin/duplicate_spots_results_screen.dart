@@ -60,7 +60,13 @@ class _DuplicateSpotsResultsScreenState extends State<DuplicateSpotsResultsScree
         title: const Text('Duplicate Spot Results'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/moderator/duplicate-spots'),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              context.go('/moderator/duplicate-spots');
+            }
+          },
         ),
       ),
       body: StreamBuilder<DocumentSnapshot>(

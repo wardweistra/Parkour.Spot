@@ -270,7 +270,13 @@ class _UrbnMigrationScreenState extends State<UrbnMigrationScreen> {
         title: const Text('URBN Migration'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/admin'),
+          onPressed: () {
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          } else {
+            context.go('/admin');
+          }
+        },
         ),
       ),
       body: SingleChildScrollView(

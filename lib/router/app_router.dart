@@ -186,6 +186,9 @@ class AppRouter {
   }
   
   static GoRouter _createRouter() {
+    // Allow push() to update the browser URL so profile and other drill-down
+    // navigation shows the correct URL (for sharing, bookmarks, etc.)
+    GoRouter.optionURLReflectsImperativeAPIs = true;
     return GoRouter(
     initialLocation: '/',
     observers: [_titleObserver, _gaObserver],
@@ -277,9 +280,7 @@ class AppRouter {
         path: '/list/:listId',
         builder: (context, state) {
           final listId = state.pathParameters['listId']!;
-          // Pass the referrer (previous location) to the screen
-          final referrer = state.uri.queryParameters['from'];
-          return SpotListDetailScreen(listId: listId, referrer: referrer);
+          return SpotListDetailScreen(listId: listId);
         },
       ),
       GoRoute(

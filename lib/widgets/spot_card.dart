@@ -333,7 +333,7 @@ class _SpotCardState extends State<SpotCard> {
                           GestureDetector(
                             onTap: widget.onSpotListTap ?? () {
                               // Fallback to navigation if no callback provided
-                              context.go('/list/${widget.spotListId}');
+                              context.push('/list/${widget.spotListId}');
                             },
                             child: Chip(
                               avatar: Icon(
@@ -808,7 +808,7 @@ class _SpotCardState extends State<SpotCard> {
                         GestureDetector(
                           onTap: widget.onSpotListTap ?? () {
                             // Fallback to navigation if no callback provided
-                            context.go('/list/${widget.spotListId}');
+                            context.push('/list/${widget.spotListId}');
                           },
                           child: Chip(
                             avatar: Icon(

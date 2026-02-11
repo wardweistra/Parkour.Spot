@@ -36,7 +36,13 @@ class AdminHomeScreen extends StatelessWidget {
 
     return PageScaffold(
       title: 'Admin Tools',
-      onBack: () => context.go('/explore?tab=profile'),
+      onBack: () {
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        } else {
+          context.go('/explore?tab=profile');
+        }
+      },
       scrollable: false,
       body: ListView(
         children: [
@@ -46,7 +52,7 @@ class AdminHomeScreen extends StatelessWidget {
                 title: const Text('Sync Sources'),
                 subtitle: const Text('Add, edit, delete, and sync external sources'),
                 trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                onTap: () => context.go('/admin/sources'),
+                onTap: () => context.push('/admin/sources'),
               ),
             ),
             const SizedBox(height: 8),
@@ -56,7 +62,7 @@ class AdminHomeScreen extends StatelessWidget {
                 title: const Text('User Management'),
                 subtitle: const Text('Review users, stats, and moderator access'),
                 trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                onTap: () => context.go('/admin/users'),
+                onTap: () => context.push('/admin/users'),
               ),
             ),
             const SizedBox(height: 8),
@@ -66,7 +72,7 @@ class AdminHomeScreen extends StatelessWidget {
                 title: const Text('User Activity Metrics'),
                 subtitle: const Text('Calculate and sync DAU/WAU/MAU metrics to Google Sheets'),
                 trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                onTap: () => context.go('/admin/user-activity-metrics'),
+                onTap: () => context.push('/admin/user-activity-metrics'),
               ),
             ),
             const SizedBox(height: 8),
@@ -76,7 +82,7 @@ class AdminHomeScreen extends StatelessWidget {
                 title: const Text('Geocode Missing Addresses'),
                 subtitle: const Text('Fill address, city, country for spots with empty fields'),
                 trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                onTap: () => context.go('/admin/geocoding'),
+                onTap: () => context.push('/admin/geocoding'),
               ),
             ),
             const SizedBox(height: 8),
@@ -86,7 +92,7 @@ class AdminHomeScreen extends StatelessWidget {
                 title: const Text('Spot Management'),
                 subtitle: const Text('Search and delete spots by source and last updated date'),
                 trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                onTap: () => context.go('/admin/spot-management'),
+                onTap: () => context.push('/admin/spot-management'),
               ),
             ),
             const SizedBox(height: 8),
@@ -96,7 +102,7 @@ class AdminHomeScreen extends StatelessWidget {
                 title: const Text('URBN Migration'),
                 subtitle: const Text('Import spots from URBN Jumpers JSON file'),
                 trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                onTap: () => context.go('/admin/urbn-migration'),
+                onTap: () => context.push('/admin/urbn-migration'),
               ),
             ),
             const SizedBox(height: 8),
@@ -106,7 +112,7 @@ class AdminHomeScreen extends StatelessWidget {
                 title: const Text('Audit Log Viewer'),
                 subtitle: const Text('View spot creations, user creations, and audit log actions'),
                 trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                onTap: () => context.go('/admin/audit-log'),
+                onTap: () => context.push('/admin/audit-log'),
               ),
             ),
             const SizedBox(height: 8),
@@ -116,7 +122,7 @@ class AdminHomeScreen extends StatelessWidget {
                 title: const Text('Duplicate Image URLs'),
                 subtitle: const Text('Find all spots with duplicate image URLs in their image array'),
                 trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                onTap: () => context.go('/admin/duplicate-images'),
+                onTap: () => context.push('/admin/duplicate-images'),
               ),
             ),
             const SizedBox(height: 8),
@@ -126,7 +132,7 @@ class AdminHomeScreen extends StatelessWidget {
                 title: const Text('Device Detection Info'),
                 subtitle: const Text('View device detection and PWA install service status'),
                 trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                onTap: () => context.go('/admin/device-detection'),
+                onTap: () => context.push('/admin/device-detection'),
               ),
             ),
             const SizedBox(height: 8),

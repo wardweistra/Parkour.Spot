@@ -1526,23 +1526,18 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
           city: spot.city,
         );
         if (mounted) {
-          // Navigate to spot detail - URL will update automatically
-          context.go(navigationUrl);
+          context.push(navigationUrl);
         }
       } else {
         // Fallback to simple route if spot doesn't exist
         if (mounted) {
-          final fallbackUrl = '/spot/$spotId';
-          // Navigate to spot detail - URL will update automatically
-          context.go(fallbackUrl);
+          context.push('/spot/$spotId');
         }
       }
     } catch (e) {
       // Fallback to simple route on error
       if (mounted) {
-        final fallbackUrl = '/spot/$spotId';
-        // Navigate to spot detail - URL will update automatically
-        context.go(fallbackUrl);
+        context.push('/spot/$spotId');
       }
     }
   }
@@ -1591,7 +1586,13 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/admin'),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              context.go('/admin');
+            }
+          },
         ),
         actions: [
           IconButton(
@@ -1753,7 +1754,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                               size: 20,
                                             ),
                                             tooltip: 'Open Spot Report Queue',
-                                            onPressed: () => context.go('/moderator/reports'),
+                                            onPressed: () => context.push('/moderator/reports'),
                                             padding: EdgeInsets.zero,
                                             constraints: const BoxConstraints(),
                                           ),
@@ -1765,7 +1766,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                               size: 20,
                                             ),
                                             tooltip: 'Open User Management',
-                                            onPressed: () => context.go('/admin/users'),
+                                            onPressed: () => context.push('/admin/users'),
                                             padding: EdgeInsets.zero,
                                             constraints: const BoxConstraints(),
                                           ),
@@ -1959,7 +1960,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                           label: const Text('Open Report Queue'),
                                           onPressed: () {
                                             Navigator.of(context).pop();
-                                            context.go('/moderator/reports');
+                                            context.push('/moderator/reports');
                                           },
                                         ),
                                       if (_isUserCreation(entry))
@@ -1971,7 +1972,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                           label: const Text('Open User Management'),
                                           onPressed: () {
                                             Navigator.of(context).pop();
-                                            context.go('/admin/users');
+                                            context.push('/admin/users');
                                           },
                                         ),
                                       TextButton(

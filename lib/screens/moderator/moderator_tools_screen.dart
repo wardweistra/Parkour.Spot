@@ -81,7 +81,13 @@ class ModeratorToolsScreen extends StatelessWidget {
         title: const Text('Moderator Tools'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/explore?tab=profile'),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              context.go('/explore?tab=profile');
+            }
+          },
         ),
       ),
       body: ListView(
@@ -93,7 +99,7 @@ class ModeratorToolsScreen extends StatelessWidget {
               title: const Text('Spot Report Queue'),
               subtitle: const Text('Work through new spot reports, keeping moderators aligned on progress'),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => context.go('/moderator/reports'),
+              onTap: () => context.push('/moderator/reports'),
             ),
           ),
           const SizedBox(height: 8),
@@ -103,7 +109,7 @@ class ModeratorToolsScreen extends StatelessWidget {
               title: const Text('Duplicate Spot Detection'),
               subtitle: const Text('Find potential duplicate spots within 50m from different sources'),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => context.go('/moderator/duplicate-spots'),
+              onTap: () => context.push('/moderator/duplicate-spots'),
             ),
           ),
         ],

@@ -59,7 +59,7 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
         // Navigate to results page
         final runId = result['runId'] as String?;
         if (runId != null) {
-          context.go('/moderator/duplicate-spots/$runId');
+          context.push('/moderator/duplicate-spots/$runId');
         }
       }
     } catch (e) {
@@ -90,7 +90,13 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
         title: const Text('Duplicate Spot Detection'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/moderator'),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              context.go('/moderator');
+            }
+          },
         ),
       ),
       body: Column(
@@ -384,7 +390,7 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
                       ),
                       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                       onTap: () {
-                        context.go('/moderator/duplicate-spots/${doc.id}');
+                        context.push('/moderator/duplicate-spots/${doc.id}');
                       },
                     ),
                   );
