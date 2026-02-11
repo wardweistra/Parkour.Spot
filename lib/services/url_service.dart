@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
@@ -38,6 +39,45 @@ class UrlService {
     }
 
     return 'https://www.instagram.com/$handle/';
+  }
+
+  /// Returns display-ready text for an Instagram URL (e.g. @handle or raw URL).
+  static String getInstagramDisplayText(String instagramUrl) {
+    final handle = extractInstagramHandle(instagramUrl);
+    if (handle != null) {
+      return '@$handle';
+    }
+    return instagramUrl;
+  }
+
+  /// Opens an Instagram profile URL in an external app. Shows error snackbar on failure.
+  static Future<void> openInstagramProfile(String instagramUrl, BuildContext context) async {
+    final normalizedUrl =
+        normalizeInstagramProfileUrl(instagramUrl) ?? instagramUrl.trim();
+    final uri = Uri.tryParse(normalizedUrl);
+    if (uri == null) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invalid Instagram link'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      return;
+    }
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Could not open Instagram link'),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 
   /// Extracts an Instagram handle from URL/handle input.

@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../services/user_profile_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/profile_picture_service.dart';
@@ -348,9 +347,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                     ),
                                   )
                                 : TextButton.icon(
-                                    onPressed: () => _openInstagramProfile(user.instagramUrl!),
+                                    onPressed: () => UrlService.openInstagramProfile(user.instagramUrl!, context),
                                     icon: const Icon(Icons.camera_alt_outlined, size: 18),
-                                    label: Text(_getInstagramDisplayText(user.instagramUrl!)),
+                                    label: Text(UrlService.getInstagramDisplayText(user.instagramUrl!)),
                                     style: TextButton.styleFrom(
                                       foregroundColor: Theme.of(context).colorScheme.primary,
                                       visualDensity: VisualDensity.compact,
@@ -598,12 +597,12 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
               Expanded(
                 child: hasInstagramUrl
                     ? InkWell(
-                        onTap: () => _openInstagramProfile(currentInstagramUrl),
+                        onTap: () => UrlService.openInstagramProfile(currentInstagramUrl, context),
                         borderRadius: BorderRadius.circular(8),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 4.0),
                           child: Text(
-                            _getInstagramDisplayText(currentInstagramUrl),
+                            UrlService.getInstagramDisplayText(currentInstagramUrl),
                             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                                   color: Theme.of(context).colorScheme.primary,
                                   decoration: TextDecoration.underline,
@@ -1207,44 +1206,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       'July', 'August', 'September', 'October', 'November', 'December'
     ];
     return '${months[date.month - 1]} ${date.year}';
-  }
-
-  String _getInstagramDisplayText(String instagramUrl) {
-    final handle = UrlService.extractInstagramHandle(instagramUrl);
-    if (handle != null) {
-      return '@$handle';
-    }
-
-    return instagramUrl;
-  }
-
-  Future<void> _openInstagramProfile(String instagramUrl) async {
-    final normalizedUrl =
-        UrlService.normalizeInstagramProfileUrl(instagramUrl) ?? instagramUrl.trim();
-    final uri = Uri.tryParse(normalizedUrl);
-    if (uri == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invalid Instagram link'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-      return;
-    }
-
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Could not open Instagram link'),
-        backgroundColor: Colors.red,
-      ),
-    );
   }
 
   void _copyProfileToClipboard(String userIdOrUsername, String displayName) async {
