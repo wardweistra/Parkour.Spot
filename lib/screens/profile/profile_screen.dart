@@ -267,14 +267,28 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       if (user?.instagramUrl != null &&
                           user!.instagramUrl!.isNotEmpty) ...[
                         const SizedBox(height: 8),
-                        TextButton.icon(
-                          onPressed: () => _openInstagramProfile(user.instagramUrl!),
-                          icon: const Icon(Icons.camera_alt_outlined, size: 18),
-                          label: Text(_getInstagramDisplayText(user.instagramUrl!)),
-                          style: TextButton.styleFrom(
-                            foregroundColor: Theme.of(context).colorScheme.primary,
-                            visualDensity: VisualDensity.compact,
-                          ),
+                        Builder(
+                          builder: (context) {
+                            final handle =
+                                UrlService.extractInstagramHandle(user.instagramUrl!);
+                            return handle != null
+                                ? ConstrainedBox(
+                                    constraints: const BoxConstraints(maxWidth: 350),
+                                    child: InstagramButton(
+                                      handle: handle,
+                                      label: '@$handle',
+                                    ),
+                                  )
+                                : TextButton.icon(
+                                    onPressed: () => _openInstagramProfile(user.instagramUrl!),
+                                    icon: const Icon(Icons.camera_alt_outlined, size: 18),
+                                    label: Text(_getInstagramDisplayText(user.instagramUrl!)),
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: Theme.of(context).colorScheme.primary,
+                                      visualDensity: VisualDensity.compact,
+                                    ),
+                                  );
+                          },
                         ),
                       ],
                       

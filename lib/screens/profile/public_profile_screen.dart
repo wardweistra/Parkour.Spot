@@ -11,6 +11,7 @@ import '../../services/auth_service.dart';
 import '../../services/profile_picture_service.dart';
 import '../../services/url_service.dart';
 import '../../models/user.dart' as app_user;
+import '../../widgets/instagram_button.dart';
 import '../../widgets/page_scaffold.dart';
 import 'package:flutter/services.dart';
 
@@ -335,14 +336,27 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 
                       if (user.instagramUrl != null && user.instagramUrl!.isNotEmpty) ...[
                         const SizedBox(height: 8),
-                        TextButton.icon(
-                          onPressed: () => _openInstagramProfile(user.instagramUrl!),
-                          icon: const Icon(Icons.camera_alt_outlined, size: 18),
-                          label: Text(_getInstagramDisplayText(user.instagramUrl!)),
-                          style: TextButton.styleFrom(
-                            foregroundColor: Theme.of(context).colorScheme.primary,
-                            visualDensity: VisualDensity.compact,
-                          ),
+                        Builder(
+                          builder: (context) {
+                            final handle = UrlService.extractInstagramHandle(user.instagramUrl!);
+                            return handle != null
+                                ? ConstrainedBox(
+                                    constraints: const BoxConstraints(maxWidth: 350),
+                                    child: InstagramButton(
+                                      handle: handle,
+                                      label: '@$handle',
+                                    ),
+                                  )
+                                : TextButton.icon(
+                                    onPressed: () => _openInstagramProfile(user.instagramUrl!),
+                                    icon: const Icon(Icons.camera_alt_outlined, size: 18),
+                                    label: Text(_getInstagramDisplayText(user.instagramUrl!)),
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: Theme.of(context).colorScheme.primary,
+                                      visualDensity: VisualDensity.compact,
+                                    ),
+                                  );
+                          },
                         ),
                       ],
                       
