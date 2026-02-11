@@ -967,6 +967,8 @@ class SpotService extends ChangeNotifier {
     String? spotSource, // null = all sources, empty string = native only, string = specific source
     bool hasImages = false, // true = only spots with images, false = all spots
     List<String>? folders, // Optional list of folder names to filter by (only used when spotSource is set, null = all folders)
+    String? spotAccess, // Optional spot access key (e.g. public/restricted/paid)
+    List<String>? requiredFacilities, // Optional facility keys that must be available ("yes")
   }) async {
     try {
       final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
@@ -989,6 +991,21 @@ class SpotService extends ChangeNotifier {
       // Only include folders if provided and spotSource is set
       if (folders != null && folders.isNotEmpty && spotSource != null) {
         requestData['folders'] = folders;
+      }
+      // Only include spotAccess if provided
+      if (spotAccess != null && spotAccess.trim().isNotEmpty) {
+        requestData['spotAccess'] = spotAccess.trim();
+      }
+      // Only include required facilities if provided
+      if (requiredFacilities != null && requiredFacilities.isNotEmpty) {
+        final normalizedFacilities = requiredFacilities
+            .map((f) => f.trim())
+            .where((f) => f.isNotEmpty)
+            .toSet()
+            .toList();
+        if (normalizedFacilities.isNotEmpty) {
+          requestData['facilities'] = normalizedFacilities;
+        }
       }
       final result = await callable.call(requestData);
 

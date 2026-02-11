@@ -11,6 +11,8 @@ class SearchStateService extends ChangeNotifier {
   static const String _keyIncludeWithoutPictures = 'search_include_without_pictures';
   static const String _keySelectedSpotSource = 'search_selected_spot_source'; // null = all, "" = native, string = specific source
   static const String _keySelectedFolders = 'search_selected_folders'; // JSON map of sourceId -> List<String> (multiple folders, empty list = all folders)
+  static const String _keySelectedSpotAccess = 'search_selected_spot_access'; // null = all access types, string = specific access key
+  static const String _keyRequiredFacilities = 'search_required_facilities'; // List<String> facility keys that must be "yes"
   static const String _keySelectedListId = 'search_selected_list_id'; // Selected spot list ID for highlighting
   static const String _keyLastKnownUserLat = 'search_last_known_user_lat';
   static const String _keyLastKnownUserLng = 'search_last_known_user_lng';
@@ -23,6 +25,8 @@ class SearchStateService extends ChangeNotifier {
   bool _includeSpotsWithoutPictures = true; // Default: include spots without pictures
   String? _selectedSpotSource; // null = all sources, "" = native only, string = specific source ID
   Map<String, List<String>> _selectedFolders = {}; // sourceId -> list of selected folder names (empty list = all folders)
+  String? _selectedSpotAccess; // null = all access types, string = specific access key
+  List<String> _requiredFacilities = []; // Facility keys that must be "yes"
   String? _selectedListId; // Selected spot list ID for highlighting
   double? _lastKnownUserLat;
   double? _lastKnownUserLng;
@@ -35,6 +39,8 @@ class SearchStateService extends ChangeNotifier {
   bool get includeSpotsWithoutPictures => _includeSpotsWithoutPictures;
   String? get selectedSpotSource => _selectedSpotSource;
   Map<String, List<String>> get selectedFolders => Map.unmodifiable(_selectedFolders);
+  String? get selectedSpotAccess => _selectedSpotAccess;
+  List<String> get requiredFacilities => List.unmodifiable(_requiredFacilities);
   String? get selectedListId => _selectedListId;
   double? get lastKnownUserLat => _lastKnownUserLat;
   double? get lastKnownUserLng => _lastKnownUserLng;
@@ -97,6 +103,16 @@ class SearchStateService extends ChangeNotifier {
       _isSatellite = prefs.getBool(_keyIsSatellite) ?? false;
       _includeSpotsWithoutPictures = prefs.getBool(_keyIncludeWithoutPictures) ?? true;
       _selectedSpotSource = prefs.getString(_keySelectedSpotSource); // null if not set (all sources)
+      _selectedSpotAccess = prefs.getString(_keySelectedSpotAccess);
+      if (_selectedSpotAccess != null && _selectedSpotAccess!.trim().isEmpty) {
+        _selectedSpotAccess = null;
+      }
+      _requiredFacilities = (prefs.getStringList(_keyRequiredFacilities) ?? <String>[])
+          .map((f) => f.trim())
+          .where((f) => f.isNotEmpty)
+          .toSet()
+          .toList()
+        ..sort();
       _selectedListId = prefs.getString(_keySelectedListId); // null if not set
       _lastKnownUserLat = prefs.getDouble(_keyLastKnownUserLat);
       _lastKnownUserLng = prefs.getDouble(_keyLastKnownUserLng);
@@ -182,6 +198,65 @@ class SearchStateService extends ChangeNotifier {
     } catch (e) {
       // Ignore SharedPreferences errors - settings will not persist but app continues to work
     }
+  }
+
+  /// Set the selected spot access filter
+  /// null = all access types, string = specific access key
+  Future<void> setSelectedSpotAccess(String? spotAccess) async {
+    _selectedSpotAccess = (spotAccess != null && spotAccess.trim().isNotEmpty)
+        ? spotAccess.trim()
+        : null;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (_selectedSpotAccess == null) {
+        await prefs.remove(_keySelectedSpotAccess);
+      } else {
+        await prefs.setString(_keySelectedSpotAccess, _selectedSpotAccess!);
+      }
+    } catch (e) {
+      // Ignore SharedPreferences errors - settings will not persist but app continues to work
+    }
+  }
+
+  /// Set required facilities (facilities that must be available/"yes")
+  Future<void> setRequiredFacilities(List<String> facilities) async {
+    final normalized = facilities
+        .map((f) => f.trim())
+        .where((f) => f.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort();
+    _requiredFacilities = normalized;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (_requiredFacilities.isEmpty) {
+        await prefs.remove(_keyRequiredFacilities);
+      } else {
+        await prefs.setStringList(_keyRequiredFacilities, _requiredFacilities);
+      }
+    } catch (e) {
+      // Ignore SharedPreferences errors - settings will not persist but app continues to work
+    }
+  }
+
+  /// Toggle a required facility key
+  Future<void> toggleRequiredFacility(String facilityKey) async {
+    final key = facilityKey.trim();
+    if (key.isEmpty) return;
+    final updated = Set<String>.from(_requiredFacilities);
+    if (updated.contains(key)) {
+      updated.remove(key);
+    } else {
+      updated.add(key);
+    }
+    await setRequiredFacilities(updated.toList());
+  }
+
+  /// Clear all required facilities
+  Future<void> clearRequiredFacilities() async {
+    await setRequiredFacilities(const []);
   }
 
   /// Set selected folders for a specific source (empty list = all folders)
