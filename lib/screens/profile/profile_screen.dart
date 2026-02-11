@@ -263,6 +263,20 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           ),
                         ),
                       ],
+
+                      if (user?.instagramUrl != null &&
+                          user!.instagramUrl!.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        TextButton.icon(
+                          onPressed: () => _openInstagramProfile(user.instagramUrl!),
+                          icon: const Icon(Icons.camera_alt_outlined, size: 18),
+                          label: Text(_getInstagramDisplayText(user.instagramUrl!)),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Theme.of(context).colorScheme.primary,
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ),
+                      ],
                       
                       // User Stats
                       if (user?.id != null) ...[
@@ -1280,6 +1294,42 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           },
         );
       },
+    );
+  }
+
+  String _getInstagramDisplayText(String instagramUrl) {
+    final handle = UrlService.extractInstagramHandle(instagramUrl);
+    if (handle != null) {
+      return '@$handle';
+    }
+
+    return instagramUrl;
+  }
+
+  Future<void> _openInstagramProfile(String instagramUrl) async {
+    final uri = Uri.tryParse(instagramUrl);
+    if (uri == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invalid Instagram link'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      return;
+    }
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Could not open Instagram link'),
+        backgroundColor: Colors.red,
+      ),
     );
   }
 

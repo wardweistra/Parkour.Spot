@@ -5,11 +5,96 @@ import 'mobile_detection_service.dart';
 
 class UrlService {
   static const String _baseUrl = 'https://parkour.spot';
+  static final RegExp _instagramHandleRegex = RegExp(r'^[a-zA-Z0-9._]{1,30}$');
+  static const Set<String> _instagramReservedPaths = {
+    'about',
+    'accounts',
+    'blog',
+    'challenge',
+    'developer',
+    'directory',
+    'direct',
+    'explore',
+    'legal',
+    'p',
+    'reel',
+    'reels',
+    'stories',
+    'tv',
+  };
   
   /// Generate a shareable URL for a user profile
   /// Prefers username if available, otherwise uses user ID
   static String generateUserProfileUrl(String userIdOrUsername) {
     return '$_baseUrl/user/$userIdOrUsername';
+  }
+
+  /// Normalizes Instagram profile input to a canonical URL.
+  /// Accepts full URLs, @handles, and plain handles.
+  static String? normalizeInstagramProfileUrl(String input) {
+    final handle = extractInstagramHandle(input);
+    if (handle == null) {
+      return null;
+    }
+
+    return 'https://www.instagram.com/$handle/';
+  }
+
+  /// Extracts an Instagram handle from URL/handle input.
+  static String? extractInstagramHandle(String input) {
+    final raw = input.trim();
+    if (raw.isEmpty) {
+      return null;
+    }
+
+    if (raw.startsWith('@')) {
+      return _normalizeInstagramHandle(raw.substring(1));
+    }
+
+    final hasScheme = raw.startsWith('http://') || raw.startsWith('https://');
+    final looksLikeInstagramUrl =
+        hasScheme ||
+        raw.startsWith('instagram.com/') ||
+        raw.startsWith('www.instagram.com/');
+
+    if (!looksLikeInstagramUrl) {
+      return _normalizeInstagramHandle(raw);
+    }
+
+    final normalizedInput = hasScheme ? raw : 'https://$raw';
+    final uri = Uri.tryParse(normalizedInput);
+    if (uri == null || uri.host.isEmpty || uri.pathSegments.isEmpty) {
+      return null;
+    }
+
+    final host = uri.host.toLowerCase();
+    if (host != 'instagram.com' && host != 'www.instagram.com') {
+      return null;
+    }
+
+    final segment = uri.pathSegments.first;
+    if (segment.isEmpty) {
+      return null;
+    }
+
+    if (_instagramReservedPaths.contains(segment.toLowerCase())) {
+      return null;
+    }
+
+    return _normalizeInstagramHandle(segment);
+  }
+
+  static String? _normalizeInstagramHandle(String input) {
+    final cleanedHandle = input.trim().replaceFirst('@', '');
+    if (cleanedHandle.isEmpty) {
+      return null;
+    }
+
+    if (!_instagramHandleRegex.hasMatch(cleanedHandle)) {
+      return null;
+    }
+
+    return cleanedHandle;
   }
   
   /// Generate a shareable URL for a spot
