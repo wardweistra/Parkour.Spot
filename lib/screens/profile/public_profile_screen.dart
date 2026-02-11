@@ -314,17 +314,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                         ),
                       ),
                       
-                      // User Email (only for own profile)
-                      if (isOwnProfile && user.email.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          user.email,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                          ),
-                        ),
-                      ],
-                      
                       // Username (if set)
                       if (user.username != null && user.username!.isNotEmpty) ...[
                         const SizedBox(height: 4),
@@ -399,6 +388,11 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                           ),
                         ),
                         const SizedBox(height: 16),
+                        
+                        // Email (account info, not shown on public profile)
+                        if (user.email.isNotEmpty)
+                          _buildEmailSection(context, user),
+                        if (user.email.isNotEmpty) const SizedBox(height: 16),
                         
                         // Username editing
                         _buildUsernameSection(context, user),
@@ -751,6 +745,34 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildEmailSection(BuildContext context, app_user.User user) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Email',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          user.email,
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Your email is not shown on your public profile.',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+          ),
+        ),
+      ],
     );
   }
 
