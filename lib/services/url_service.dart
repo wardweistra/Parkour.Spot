@@ -68,11 +68,22 @@ class UrlService {
     }
 
     final host = uri.host.toLowerCase();
-    if (host != 'instagram.com' && host != 'www.instagram.com') {
+    if (host != 'instagram.com' &&
+        host != 'www.instagram.com' &&
+        host != 'm.instagram.com') {
       return null;
     }
 
-    final segment = uri.pathSegments.first;
+    final pathSegments = uri.pathSegments.where((segment) => segment.isNotEmpty).toList();
+    if (pathSegments.isEmpty) {
+      return null;
+    }
+
+    String segment = pathSegments.first;
+    if (segment == '_u' && pathSegments.length > 1) {
+      segment = pathSegments[1];
+    }
+
     if (segment.isEmpty) {
       return null;
     }
