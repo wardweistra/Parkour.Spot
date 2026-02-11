@@ -1135,7 +1135,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                 final success = await authService.updateProfilePrivacy(value);
                 if (mounted) {
                   if (success) {
-                    // Refresh profile
+                    // Refresh profile and rebuild to show updated state
                     final userProfileService = Provider.of<UserProfileService>(context, listen: false);
                     final currentUserId = authService.currentUser?.uid;
                     _lastUserIdOrUsername = widget.userIdOrUsername;
@@ -1143,6 +1143,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                       widget.userIdOrUsername,
                       currentUserId: currentUserId,
                     );
+                    setState(() {});
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
