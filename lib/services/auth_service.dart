@@ -464,8 +464,10 @@ class AuthService extends ChangeNotifier {
   Future<bool> updateProfile({
     String? displayName,
     String? photoURL,
+    String? instagramUrl,
     bool deleteOldPhoto = false,
     bool removePhoto = false,
+    bool removeInstagramUrl = false,
   }) async {
     if (_auth.currentUser == null || _userProfile == null) {
       debugPrint('Cannot update profile: user not authenticated or profile not loaded');
@@ -488,6 +490,12 @@ class AuthService extends ChangeNotifier {
       } else if (photoURL != null) {
         // Setting new photo URL
         updates['photoURL'] = photoURL;
+      }
+
+      if (removeInstagramUrl) {
+        updates['instagramUrl'] = null;
+      } else if (instagramUrl != null) {
+        updates['instagramUrl'] = instagramUrl;
       }
 
       // Delete old profile picture from Storage if requested and it exists
@@ -515,6 +523,9 @@ class AuthService extends ChangeNotifier {
       _userProfile = _userProfile!.copyWith(
         displayName: displayName ?? _userProfile!.displayName,
         photoURL: removePhoto ? null : (photoURL ?? _userProfile!.photoURL),
+        instagramUrl: removeInstagramUrl
+            ? ''
+            : (instagramUrl ?? _userProfile!.instagramUrl),
       );
 
       notifyListeners();

@@ -4,6 +4,7 @@ class User {
   final String? displayName;
   final String? photoURL;
   final String? username;
+  final String? instagramUrl;
   final bool isPublicProfile;
   final DateTime? createdAt;
   final DateTime? lastLoginAt;
@@ -20,6 +21,7 @@ class User {
     this.displayName,
     this.photoURL,
     this.username,
+    this.instagramUrl,
     this.isPublicProfile = true,
     this.createdAt,
     this.lastLoginAt,
@@ -38,6 +40,7 @@ class User {
       displayName: map['displayName'],
       photoURL: map['photoURL'],
       username: map['username'],
+      instagramUrl: map['instagramUrl'],
       isPublicProfile: map['isPublicProfile'] ?? true,
       createdAt: map['createdAt']?.toDate(),
       lastLoginAt: map['lastLoginAt']?.toDate(),
@@ -61,6 +64,7 @@ class User {
       'displayName': displayName,
       'photoURL': photoURL,
       'username': username,
+      'instagramUrl': instagramUrl,
       'isPublicProfile': isPublicProfile,
       'createdAt': createdAt,
       'lastLoginAt': lastLoginAt,
@@ -79,6 +83,7 @@ class User {
     String? displayName,
     String? photoURL,
     String? username,
+    String? instagramUrl,
     bool? isPublicProfile,
     DateTime? createdAt,
     DateTime? lastLoginAt,
@@ -95,6 +100,7 @@ class User {
       displayName: displayName ?? this.displayName,
       photoURL: photoURL ?? this.photoURL,
       username: username ?? this.username,
+      instagramUrl: instagramUrl ?? this.instagramUrl,
       isPublicProfile: isPublicProfile ?? this.isPublicProfile,
       createdAt: createdAt ?? this.createdAt,
       lastLoginAt: lastLoginAt ?? this.lastLoginAt,

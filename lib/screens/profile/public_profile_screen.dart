@@ -5,11 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../services/user_profile_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/profile_picture_service.dart';
 import '../../services/url_service.dart';
 import '../../models/user.dart' as app_user;
+import '../../widgets/instagram_button.dart';
 import '../../widgets/page_scaffold.dart';
 import 'package:flutter/services.dart';
 
@@ -32,9 +34,13 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   final ProfilePictureService _profilePictureService = ProfilePictureService();
   final UserProfileService _userProfileService = UserProfileService();
   final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _instagramUrlController = TextEditingController();
   bool _isEditingUsername = false;
   bool _isCheckingUsername = false;
   String? _usernameError;
+  bool _isEditingInstagramUrl = false;
+  bool _isUpdatingInstagramUrl = false;
+  String? _instagramUrlError;
 
   @override
   void didChangeDependencies() {
@@ -72,6 +78,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   @override
   void dispose() {
     _usernameController.dispose();
+    _instagramUrlController.dispose();
     super.dispose();
   }
 
@@ -326,6 +333,32 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                           ),
                         ),
                       ],
+
+                      if (user.instagramUrl != null && user.instagramUrl!.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Builder(
+                          builder: (context) {
+                            final handle = UrlService.extractInstagramHandle(user.instagramUrl!);
+                            return handle != null
+                                ? ConstrainedBox(
+                                    constraints: const BoxConstraints(maxWidth: 350),
+                                    child: InstagramButton(
+                                      handle: handle,
+                                      label: '@$handle',
+                                    ),
+                                  )
+                                : TextButton.icon(
+                                    onPressed: () => _openInstagramProfile(user.instagramUrl!),
+                                    icon: const Icon(Icons.camera_alt_outlined, size: 18),
+                                    label: Text(_getInstagramDisplayText(user.instagramUrl!)),
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: Theme.of(context).colorScheme.primary,
+                                      visualDensity: VisualDensity.compact,
+                                    ),
+                                  );
+                          },
+                        ),
+                      ],
                       
                       // Member since
                       if (user.createdAt != null) ...[
@@ -368,6 +401,11 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                         // Username editing
                         _buildUsernameSection(context, user),
                         
+                        const SizedBox(height: 16),
+
+                        // Instagram URL editing
+                        _buildInstagramSection(context, user),
+
                         const SizedBox(height: 16),
                         
                         // Profile privacy toggle
@@ -526,6 +564,167 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                   }
                 },
                 child: _isCheckingUsername
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Save'),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildInstagramSection(BuildContext context, app_user.User user) {
+    final currentInstagramUrl = user.instagramUrl?.trim() ?? '';
+    final hasInstagramUrl = currentInstagramUrl.isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Instagram',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (!_isEditingInstagramUrl) ...[
+          Row(
+            children: [
+              Expanded(
+                child: hasInstagramUrl
+                    ? InkWell(
+                        onTap: () => _openInstagramProfile(currentInstagramUrl),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                          child: Text(
+                            _getInstagramDisplayText(currentInstagramUrl),
+                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  decoration: TextDecoration.underline,
+                                ),
+                          ),
+                        ),
+                      )
+                    : Text(
+                        'No Instagram link set',
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+              ),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _isEditingInstagramUrl = true;
+                    _instagramUrlController.text = currentInstagramUrl;
+                    _instagramUrlError = null;
+                  });
+                },
+                child: Text(hasInstagramUrl ? 'Edit' : 'Add'),
+              ),
+            ],
+          ),
+        ] else ...[
+          TextField(
+            controller: _instagramUrlController,
+            decoration: InputDecoration(
+              labelText: 'Instagram Link',
+              hintText: 'https://www.instagram.com/your_handle/',
+              helperText: 'You can also paste @handle or just the handle',
+              errorText: _instagramUrlError,
+            ),
+            enabled: !_isUpdatingInstagramUrl,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: _isUpdatingInstagramUrl
+                    ? null
+                    : () {
+                        setState(() {
+                          _isEditingInstagramUrl = false;
+                          _instagramUrlController.text = currentInstagramUrl;
+                          _instagramUrlError = null;
+                        });
+                      },
+                child: const Text('Cancel'),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: _isUpdatingInstagramUrl
+                    ? null
+                    : () async {
+                        final rawInput = _instagramUrlController.text.trim();
+                        final normalizedInstagramUrl = rawInput.isEmpty
+                            ? null
+                            : UrlService.normalizeInstagramProfileUrl(rawInput);
+
+                        if (rawInput.isNotEmpty && normalizedInstagramUrl == null) {
+                          setState(() {
+                            _instagramUrlError =
+                                'Enter a valid Instagram profile URL or handle';
+                          });
+                          return;
+                        }
+
+                        setState(() {
+                          _isUpdatingInstagramUrl = true;
+                          _instagramUrlError = null;
+                        });
+
+                        final authService =
+                            Provider.of<AuthService>(context, listen: false);
+                        final success = await authService.updateProfile(
+                          instagramUrl: normalizedInstagramUrl,
+                          removeInstagramUrl: rawInput.isEmpty,
+                        );
+
+                        if (!mounted) {
+                          return;
+                        }
+
+                        setState(() {
+                          _isUpdatingInstagramUrl = false;
+                        });
+
+                        if (success) {
+                          final userProfileService =
+                              Provider.of<UserProfileService>(context, listen: false);
+                          final currentUserId = authService.currentUser?.uid;
+                          _lastUserIdOrUsername = widget.userIdOrUsername;
+                          _profileFuture = userProfileService.getUserProfile(
+                            widget.userIdOrUsername,
+                            currentUserId: currentUserId,
+                          );
+
+                          setState(() {
+                            _isEditingInstagramUrl = false;
+                            _instagramUrlError = null;
+                          });
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                rawInput.isEmpty
+                                    ? 'Instagram link removed'
+                                    : 'Instagram link updated successfully',
+                              ),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        } else {
+                          setState(() {
+                            _instagramUrlError = 'Failed to update Instagram link';
+                          });
+                        }
+                      },
+                child: _isUpdatingInstagramUrl
                     ? const SizedBox(
                         width: 16,
                         height: 16,
@@ -1008,6 +1207,44 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       'July', 'August', 'September', 'October', 'November', 'December'
     ];
     return '${months[date.month - 1]} ${date.year}';
+  }
+
+  String _getInstagramDisplayText(String instagramUrl) {
+    final handle = UrlService.extractInstagramHandle(instagramUrl);
+    if (handle != null) {
+      return '@$handle';
+    }
+
+    return instagramUrl;
+  }
+
+  Future<void> _openInstagramProfile(String instagramUrl) async {
+    final normalizedUrl =
+        UrlService.normalizeInstagramProfileUrl(instagramUrl) ?? instagramUrl.trim();
+    final uri = Uri.tryParse(normalizedUrl);
+    if (uri == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invalid Instagram link'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      return;
+    }
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Could not open Instagram link'),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 
   void _copyProfileToClipboard(String userIdOrUsername, String displayName) async {
