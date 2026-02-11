@@ -95,7 +95,8 @@ class UrlService {
     final looksLikeInstagramUrl =
         hasScheme ||
         raw.startsWith('instagram.com/') ||
-        raw.startsWith('www.instagram.com/');
+        raw.startsWith('www.instagram.com/') ||
+        raw.startsWith('m.instagram.com/');
 
     if (!looksLikeInstagramUrl) {
       return _normalizeInstagramHandle(raw);
