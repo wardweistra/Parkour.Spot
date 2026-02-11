@@ -81,7 +81,11 @@ class _ExploreScreenState extends State<ExploreScreen> {
         });
       }
     } else if (widget.initialTab == 0) {
-      _searchKey.currentState?.onMapTabActivated();
+      // Defer to avoid setState/markNeedsBuild during build - onMapTabActivated
+      // updates SearchStateService and calls setState, which cannot run mid-frame.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _searchKey.currentState?.onMapTabActivated();
+      });
     }
   }
 
