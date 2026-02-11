@@ -415,7 +415,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 ),
                 BottomNavigationBarItem(
                   icon: Icon(Icons.person),
-                  label: 'Profile',
+                  label: 'Account',
                 ),
               ],
             ),
