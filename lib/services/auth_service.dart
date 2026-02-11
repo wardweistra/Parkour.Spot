@@ -524,7 +524,7 @@ class AuthService extends ChangeNotifier {
         displayName: displayName ?? _userProfile!.displayName,
         photoURL: removePhoto ? null : (photoURL ?? _userProfile!.photoURL),
         instagramUrl: removeInstagramUrl
-            ? ''
+            ? null
             : (instagramUrl ?? _userProfile!.instagramUrl),
       );
 

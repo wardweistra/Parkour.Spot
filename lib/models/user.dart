@@ -77,13 +77,15 @@ class User {
     };
   }
 
+  static const _omit = Object();
+
   User copyWith({
     String? id,
     String? email,
     String? displayName,
-    String? photoURL,
+    Object? photoURL = _omit,
     String? username,
-    String? instagramUrl,
+    Object? instagramUrl = _omit,
     bool? isPublicProfile,
     DateTime? createdAt,
     DateTime? lastLoginAt,
@@ -98,9 +100,9 @@ class User {
       id: id ?? this.id,
       email: email ?? this.email,
       displayName: displayName ?? this.displayName,
-      photoURL: photoURL ?? this.photoURL,
+      photoURL: photoURL == _omit ? this.photoURL : photoURL as String?,
       username: username ?? this.username,
-      instagramUrl: instagramUrl ?? this.instagramUrl,
+      instagramUrl: instagramUrl == _omit ? this.instagramUrl : instagramUrl as String?,
       isPublicProfile: isPublicProfile ?? this.isPublicProfile,
       createdAt: createdAt ?? this.createdAt,
       lastLoginAt: lastLoginAt ?? this.lastLoginAt,
