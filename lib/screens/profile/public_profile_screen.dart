@@ -34,15 +34,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   String? _lastUserIdOrUsername; // Track the last userIdOrUsername used to create the future
   bool _isUploadingProfilePicture = false;
   final ProfilePictureService _profilePictureService = ProfilePictureService();
-  final UserProfileService _userProfileService = UserProfileService();
-  final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _instagramUrlController = TextEditingController();
-  bool _isEditingUsername = false;
-  bool _isCheckingUsername = false;
-  String? _usernameError;
-  bool _isEditingInstagramUrl = false;
-  bool _isUpdatingInstagramUrl = false;
-  String? _instagramUrlError;
 
   @override
   void didChangeDependencies() {
@@ -75,13 +66,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     if (mounted) {
       setState(() {});
     }
-  }
-
-  @override
-  void dispose() {
-    _usernameController.dispose();
-    _instagramUrlController.dispose();
-    super.dispose();
   }
 
   bool _isOwnProfile(app_user.User user) {
@@ -216,8 +200,10 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(24.0),
-                  child: Column(
+                  child: Stack(
                     children: [
+                      Column(
+                        children: [
                       // Private profile badge (only for own profile)
                       if (isOwnProfile && !user.isPublicProfile) ...[
                         Container(
@@ -365,53 +351,26 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                       // User Stats
                       const SizedBox(height: 16),
                       _buildUserStats(context, user.id),
+                        ],
+                      ),
+                      if (isOwnProfile)
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: IconButton(
+                            icon: const Icon(Icons.edit),
+                            tooltip: 'Edit Profile',
+                            onPressed: () => _showProfileSettingsSheet(context, user),
+                          ),
+                        ),
                     ],
                   ),
                 ),
               ),
               
-              // Edit options (only for own profile)
+              // Spot Lists (only for own profile)
               if (isOwnProfile) ...[
                 const SizedBox(height: 16),
-                
-                // Profile Settings Section
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Profile Settings',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        
-                        // Email (account info, not shown on public profile)
-                        if (user.email.isNotEmpty)
-                          _buildEmailSection(context, user),
-                        if (user.email.isNotEmpty) const SizedBox(height: 16),
-                        
-                        // Username editing
-                        _buildUsernameSection(context, user),
-                        
-                        const SizedBox(height: 16),
-
-                        // Instagram URL editing
-                        _buildInstagramSection(context, user),
-
-                        const SizedBox(height: 16),
-                        
-                        // Profile privacy toggle
-                        _buildPrivacySection(context, user),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Spot Lists Section
                 _buildSpotListsSection(context),
               ],
             ],
@@ -748,426 +707,36 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     );
   }
 
-  Widget _buildEmailSection(BuildContext context, app_user.User user) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Email',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
+  void _showProfileSettingsSheet(BuildContext context, app_user.User user) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          user.email,
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Your email is not shown on your public profile.',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildUsernameSection(BuildContext context, app_user.User user) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Username',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        if (!_isEditingUsername) ...[
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  user.username != null && user.username!.isNotEmpty
-                      ? '@${user.username}'
-                      : 'No username set',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  setState(() {
-                    _isEditingUsername = true;
-                    _usernameController.text = user.username ?? '';
-                    _usernameError = null;
-                  });
-                },
-                child: const Text('Edit'),
-              ),
-            ],
-          ),
-        ] else ...[
-          TextField(
-            controller: _usernameController,
-            decoration: InputDecoration(
-              labelText: 'Username',
-              hintText: 'Enter username',
-              errorText: _usernameError,
-              prefixText: '@',
-              helperText: '3-27 characters, letters, numbers, underscores, and hyphens only',
-            ),
-            enabled: !_isCheckingUsername,
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              TextButton(
-                onPressed: _isCheckingUsername ? null : () {
-                  setState(() {
-                    _isEditingUsername = false;
-                    _usernameController.text = user.username ?? '';
-                    _usernameError = null;
-                  });
-                },
-                child: const Text('Cancel'),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: _isCheckingUsername ? null : () async {
-                  final newUsername = _usernameController.text.trim();
-                  
-                  if (newUsername.isEmpty) {
-                    setState(() {
-                      _usernameError = 'Username cannot be empty';
-                    });
-                    return;
-                  }
-
-                  setState(() {
-                    _isCheckingUsername = true;
-                    _usernameError = null;
-                  });
-
-                  final authService = Provider.of<AuthService>(context, listen: false);
-                  
-                  // Check availability
-                  final isAvailable = await authService.checkUsernameAvailability(newUsername);
-                  
-                  if (!isAvailable && newUsername.toLowerCase() != user.username?.toLowerCase()) {
-                    setState(() {
-                      _isCheckingUsername = false;
-                      _usernameError = 'Username is already taken';
-                    });
-                    return;
-                  }
-
-                  // Update username
-                  final success = await authService.updateUsername(newUsername);
-                  
-                  if (mounted) {
-                    setState(() {
-                      _isCheckingUsername = false;
-                      if (success) {
-                        _isEditingUsername = false;
-                        _usernameError = null;
-                        
-                        // Check if we're viewing by username (not user ID)
-                        // User IDs are typically 28 characters, usernames are shorter
-                        final isViewingByUsername = widget.userIdOrUsername.length != 28;
-                        final usernameChanged = newUsername.toLowerCase() != user.username?.toLowerCase();
-                        
-                        if (isViewingByUsername && usernameChanged) {
-                          // Clear the future before redirecting to force a fresh load
-                          _profileFuture = null;
-                          _lastUserIdOrUsername = null;
-                          // Redirect to new username URL
-                          // Use a post-frame callback to ensure state is updated before navigation
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (mounted) {
-                              context.go('/user/$newUsername');
-                            }
-                          });
-                        } else {
-                          // Refresh profile using user ID (more reliable)
-                          final userProfileService = Provider.of<UserProfileService>(context, listen: false);
-                          final currentUserId = authService.currentUser?.uid;
-                          if (currentUserId != null) {
-                            _lastUserIdOrUsername = currentUserId;
-                            _profileFuture = userProfileService.getUserProfile(
-                              currentUserId,
-                              currentUserId: currentUserId,
-                            );
-                          }
-                        }
-                        
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Username updated successfully'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                      } else {
-                        _usernameError = _userProfileService.error ?? 'Failed to update username';
-                      }
-                    });
-                  }
-                },
-                child: _isCheckingUsername
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Save'),
-              ),
-            ],
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildInstagramSection(BuildContext context, app_user.User user) {
-    final currentInstagramUrl = user.instagramUrl?.trim() ?? '';
-    final hasInstagramUrl = currentInstagramUrl.isNotEmpty;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Instagram',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        if (!_isEditingInstagramUrl) ...[
-          Row(
-            children: [
-              Expanded(
-                child: hasInstagramUrl
-                    ? InkWell(
-                        onTap: () => UrlService.openInstagramProfile(currentInstagramUrl, context),
-                        borderRadius: BorderRadius.circular(8),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4.0),
-                          child: Text(
-                            UrlService.getInstagramDisplayText(currentInstagramUrl),
-                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  decoration: TextDecoration.underline,
-                                ),
-                          ),
-                        ),
-                      )
-                    : Text(
-                        'No Instagram link set',
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-              ),
-              TextButton(
-                onPressed: () {
-                  setState(() {
-                    _isEditingInstagramUrl = true;
-                    _instagramUrlController.text = currentInstagramUrl;
-                    _instagramUrlError = null;
-                  });
-                },
-                child: Text(hasInstagramUrl ? 'Edit' : 'Add'),
-              ),
-            ],
-          ),
-        ] else ...[
-          TextField(
-            controller: _instagramUrlController,
-            decoration: InputDecoration(
-              labelText: 'Instagram Link',
-              hintText: 'https://www.instagram.com/your_handle/',
-              helperText: 'You can also paste @handle or just the handle',
-              errorText: _instagramUrlError,
-            ),
-            enabled: !_isUpdatingInstagramUrl,
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              TextButton(
-                onPressed: _isUpdatingInstagramUrl
-                    ? null
-                    : () {
-                        setState(() {
-                          _isEditingInstagramUrl = false;
-                          _instagramUrlController.text = currentInstagramUrl;
-                          _instagramUrlError = null;
-                        });
-                      },
-                child: const Text('Cancel'),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: _isUpdatingInstagramUrl
-                    ? null
-                    : () async {
-                        final rawInput = _instagramUrlController.text.trim();
-                        final normalizedInstagramUrl = rawInput.isEmpty
-                            ? null
-                            : UrlService.normalizeInstagramProfileUrl(rawInput);
-
-                        if (rawInput.isNotEmpty && normalizedInstagramUrl == null) {
-                          setState(() {
-                            _instagramUrlError =
-                                'Enter a valid Instagram profile URL or handle';
-                          });
-                          return;
-                        }
-
-                        setState(() {
-                          _isUpdatingInstagramUrl = true;
-                          _instagramUrlError = null;
-                        });
-
-                        final authService =
-                            Provider.of<AuthService>(context, listen: false);
-                        final success = await authService.updateProfile(
-                          instagramUrl: normalizedInstagramUrl,
-                          removeInstagramUrl: rawInput.isEmpty,
-                        );
-
-                        if (!mounted) {
-                          return;
-                        }
-
-                        setState(() {
-                          _isUpdatingInstagramUrl = false;
-                        });
-
-                        if (success) {
-                          final userProfileService =
-                              Provider.of<UserProfileService>(context, listen: false);
-                          final currentUserId = authService.currentUser?.uid;
-                          _lastUserIdOrUsername = widget.userIdOrUsername;
-                          _profileFuture = userProfileService.getUserProfile(
-                            widget.userIdOrUsername,
-                            currentUserId: currentUserId,
-                          );
-
-                          setState(() {
-                            _isEditingInstagramUrl = false;
-                            _instagramUrlError = null;
-                          });
-
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                rawInput.isEmpty
-                                    ? 'Instagram link removed'
-                                    : 'Instagram link updated successfully',
-                              ),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
-                        } else {
-                          setState(() {
-                            _instagramUrlError = 'Failed to update Instagram link';
-                          });
-                        }
-                      },
-                child: _isUpdatingInstagramUrl
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Save'),
-              ),
-            ],
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildPrivacySection(BuildContext context, app_user.User user) {
-    final isPublic = user.isPublicProfile;
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Profile Privacy',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    isPublic ? 'Public Profile' : 'Private Profile',
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    isPublic
-                        ? 'Your profile is visible to everyone'
-                        : 'Your profile is private and not visible to others',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Switch(
-              value: isPublic,
-              onChanged: (value) async {
-                final authService = Provider.of<AuthService>(context, listen: false);
-                final success = await authService.updateProfilePrivacy(value);
-                if (mounted) {
-                  if (success) {
-                    // Refresh profile and rebuild to show updated state
-                    final userProfileService = Provider.of<UserProfileService>(context, listen: false);
-                    final currentUserId = authService.currentUser?.uid;
-                    _lastUserIdOrUsername = widget.userIdOrUsername;
-                    _profileFuture = userProfileService.getUserProfile(
-                      widget.userIdOrUsername,
-                      currentUserId: currentUserId,
-                    );
-                    setState(() {});
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          value
-                              ? 'Profile is now public'
-                              : 'Profile is now private',
-                        ),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Failed to update profile privacy'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                }
+          child: DraggableScrollableSheet(
+            initialChildSize: 0.7,
+            minChildSize: 0.5,
+            maxChildSize: 0.95,
+            expand: false,
+            builder: (context, scrollController) => _ProfileSettingsSheetContent(
+              user: user,
+              userIdOrUsername: widget.userIdOrUsername,
+              scrollController: scrollController,
+              onSaved: () {
+                Navigator.pop(sheetContext);
+                _loadProfile();
+              },
+              onUsernameRedirect: (String newUsername) {
+                Navigator.pop(sheetContext);
+                context.go('/user/$newUsername');
               },
             ),
-          ],
+          ),
         ),
-      ],
+      ),
     );
   }
 
@@ -1709,5 +1278,523 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           : url.hashCode.toString();
       return '$url${separator}v=$version';
     }
+  }
+}
+
+class _ProfileSettingsSheetContent extends StatefulWidget {
+  final app_user.User user;
+  final String userIdOrUsername;
+  final ScrollController scrollController;
+  final VoidCallback onSaved;
+  final void Function(String newUsername) onUsernameRedirect;
+
+  const _ProfileSettingsSheetContent({
+    required this.user,
+    required this.userIdOrUsername,
+    required this.scrollController,
+    required this.onSaved,
+    required this.onUsernameRedirect,
+  });
+
+  @override
+  State<_ProfileSettingsSheetContent> createState() =>
+      _ProfileSettingsSheetContentState();
+}
+
+class _ProfileSettingsSheetContentState
+    extends State<_ProfileSettingsSheetContent> {
+  late TextEditingController _usernameController;
+  late TextEditingController _instagramUrlController;
+  bool _isEditingUsername = false;
+  bool _isCheckingUsername = false;
+  String? _usernameError;
+  bool _isEditingInstagramUrl = false;
+  bool _isUpdatingInstagramUrl = false;
+  String? _instagramUrlError;
+
+  @override
+  void initState() {
+    super.initState();
+    _usernameController = TextEditingController(text: widget.user.username ?? '');
+    _instagramUrlController =
+        TextEditingController(text: widget.user.instagramUrl?.trim() ?? '');
+  }
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _instagramUrlController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+          child: Row(
+            children: [
+              Text(
+                'Profile Settings',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.close),
+                tooltip: 'Close',
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+        ),
+        Flexible(
+          child: SingleChildScrollView(
+            controller: widget.scrollController,
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (widget.user.email.isNotEmpty) ...[
+                  _buildEmailSection(context),
+                  const SizedBox(height: 16),
+                ],
+                _buildUsernameSection(context),
+                const SizedBox(height: 16),
+                _buildInstagramSection(context),
+                const SizedBox(height: 16),
+                _buildPrivacySection(context),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmailSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Email',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          widget.user.email,
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Your email is not shown on your public profile.',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildUsernameSection(BuildContext context) {
+    final user = widget.user;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Username',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (!_isEditingUsername) ...[
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  user.username != null && user.username!.isNotEmpty
+                      ? '@${user.username}'
+                      : 'No username set',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _isEditingUsername = true;
+                    _usernameController.text = user.username ?? '';
+                    _usernameError = null;
+                  });
+                },
+                child: const Text('Edit'),
+              ),
+            ],
+          ),
+        ] else ...[
+          TextField(
+            controller: _usernameController,
+            decoration: InputDecoration(
+              labelText: 'Username',
+              hintText: 'Enter username',
+              errorText: _usernameError,
+              prefixText: '@',
+              helperText:
+                  '3-27 characters, letters, numbers, underscores, and hyphens only',
+            ),
+            enabled: !_isCheckingUsername,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: _isCheckingUsername
+                    ? null
+                    : () {
+                        setState(() {
+                          _isEditingUsername = false;
+                          _usernameController.text = user.username ?? '';
+                          _usernameError = null;
+                        });
+                      },
+                child: const Text('Cancel'),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: _isCheckingUsername
+                    ? null
+                    : () async {
+                        final newUsername =
+                            _usernameController.text.trim();
+
+                        if (newUsername.isEmpty) {
+                          setState(() {
+                            _usernameError = 'Username cannot be empty';
+                          });
+                          return;
+                        }
+
+                        setState(() {
+                          _isCheckingUsername = true;
+                          _usernameError = null;
+                        });
+
+                        final authService =
+                            Provider.of<AuthService>(context, listen: false);
+                        final userProfileService =
+                            Provider.of<UserProfileService>(context,
+                                listen: false);
+
+                        final isAvailable =
+                            await authService.checkUsernameAvailability(
+                                newUsername);
+
+                        if (!isAvailable &&
+                            newUsername.toLowerCase() !=
+                                user.username?.toLowerCase()) {
+                          if (mounted) {
+                            setState(() {
+                              _isCheckingUsername = false;
+                              _usernameError = 'Username is already taken';
+                            });
+                          }
+                          return;
+                        }
+
+                        final success =
+                            await authService.updateUsername(newUsername);
+
+                        if (!mounted) return;
+
+                        setState(() {
+                          _isCheckingUsername = false;
+                        });
+
+                        if (success) {
+                          final isViewingByUsername =
+                              widget.userIdOrUsername.length != 28;
+                          final usernameChanged = newUsername.toLowerCase() !=
+                              user.username?.toLowerCase();
+
+                          if (isViewingByUsername && usernameChanged) {
+                            widget.onUsernameRedirect(newUsername);
+                          } else {
+                            widget.onSaved();
+                          }
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Username updated successfully'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        } else {
+                          setState(() {
+                            _usernameError = userProfileService.error ??
+                                'Failed to update username';
+                          });
+                        }
+                      },
+                child: _isCheckingUsername
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Save'),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildInstagramSection(BuildContext context) {
+    final user = widget.user;
+    final currentInstagramUrl = user.instagramUrl?.trim() ?? '';
+    final hasInstagramUrl = currentInstagramUrl.isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Instagram',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (!_isEditingInstagramUrl) ...[
+          Row(
+            children: [
+              Expanded(
+                child: hasInstagramUrl
+                    ? InkWell(
+                        onTap: () => UrlService.openInstagramProfile(
+                            currentInstagramUrl, context),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                          child: Text(
+                            UrlService.getInstagramDisplayText(
+                                currentInstagramUrl),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyLarge
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .primary,
+                                  decoration: TextDecoration.underline,
+                                ),
+                          ),
+                        ),
+                      )
+                    : Text(
+                        'No Instagram link set',
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+              ),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _isEditingInstagramUrl = true;
+                    _instagramUrlController.text = currentInstagramUrl;
+                    _instagramUrlError = null;
+                  });
+                },
+                child: Text(hasInstagramUrl ? 'Edit' : 'Add'),
+              ),
+            ],
+          ),
+        ] else ...[
+          TextField(
+            controller: _instagramUrlController,
+            decoration: InputDecoration(
+              labelText: 'Instagram Link',
+              hintText: 'https://www.instagram.com/your_handle/',
+              helperText:
+                  'You can also paste @handle or just the handle',
+              errorText: _instagramUrlError,
+            ),
+            enabled: !_isUpdatingInstagramUrl,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: _isUpdatingInstagramUrl
+                    ? null
+                    : () {
+                        setState(() {
+                          _isEditingInstagramUrl = false;
+                          _instagramUrlController.text = currentInstagramUrl;
+                          _instagramUrlError = null;
+                        });
+                      },
+                child: const Text('Cancel'),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: _isUpdatingInstagramUrl
+                    ? null
+                    : () async {
+                        final rawInput =
+                            _instagramUrlController.text.trim();
+                        final normalizedInstagramUrl = rawInput.isEmpty
+                            ? null
+                            : UrlService.normalizeInstagramProfileUrl(
+                                rawInput);
+
+                        if (rawInput.isNotEmpty &&
+                            normalizedInstagramUrl == null) {
+                          setState(() {
+                            _instagramUrlError =
+                                'Enter a valid Instagram profile URL or handle';
+                          });
+                          return;
+                        }
+
+                        setState(() {
+                          _isUpdatingInstagramUrl = true;
+                          _instagramUrlError = null;
+                        });
+
+                        final authService =
+                            Provider.of<AuthService>(context, listen: false);
+                        final success = await authService.updateProfile(
+                          instagramUrl: normalizedInstagramUrl,
+                          removeInstagramUrl: rawInput.isEmpty,
+                        );
+
+                        if (!mounted) return;
+
+                        setState(() {
+                          _isUpdatingInstagramUrl = false;
+                        });
+
+                        if (success) {
+                          setState(() {
+                            _isEditingInstagramUrl = false;
+                            _instagramUrlError = null;
+                          });
+                          widget.onSaved();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                rawInput.isEmpty
+                                    ? 'Instagram link removed'
+                                    : 'Instagram link updated successfully',
+                              ),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        } else {
+                          setState(() {
+                            _instagramUrlError =
+                                'Failed to update Instagram link';
+                          });
+                        }
+                      },
+                child: _isUpdatingInstagramUrl
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Save'),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildPrivacySection(BuildContext context) {
+    final user = widget.user;
+    final isPublic = user.isPublicProfile;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Profile Privacy',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isPublic ? 'Public Profile' : 'Private Profile',
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    isPublic
+                        ? 'Your profile is visible to everyone'
+                        : 'Your profile is private and not visible to others',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.7),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Switch(
+              value: isPublic,
+              onChanged: (value) async {
+                final authService =
+                    Provider.of<AuthService>(context, listen: false);
+                final success =
+                    await authService.updateProfilePrivacy(value);
+                if (mounted) {
+                  if (success) {
+                    widget.onSaved();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          value
+                              ? 'Profile is now public'
+                              : 'Profile is now private',
+                        ),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                            'Failed to update profile privacy'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+            ),
+          ],
+        ),
+      ],
+    );
   }
 }
