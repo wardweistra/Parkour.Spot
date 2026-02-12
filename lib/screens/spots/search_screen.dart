@@ -827,6 +827,11 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                 }
               },
             ),
+            const SizedBox(height: 16),
+            _buildFacilitiesFilters(context),
+            const SizedBox(height: 16),
+            _buildAccessFilters(context),
+            const SizedBox(height: 16),
             Text(
               'Spot Source',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -846,11 +851,23 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
             else if (syncService.error != null)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Text(
-                  'Failed to load sources',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Failed to load sources',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    FilledButton.tonal(
+                      onPressed: syncService.isLoading
+                          ? null
+                          : () => syncService.fetchSyncSources(),
+                      child: const Text('Try again'),
+                    ),
+                  ],
                 ),
               )
             else
@@ -995,10 +1012,6 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                   );
                 },
               ),
-            const SizedBox(height: 16),
-            _buildAccessFilters(context),
-            const SizedBox(height: 16),
-            _buildFacilitiesFilters(context),
           ],
         );
       },
@@ -1082,13 +1095,6 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
           'Spot Facilities',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-              ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Show spots where selected facilities are marked as available.',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
               ),
         ),
         const SizedBox(height: 8),
