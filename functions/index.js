@@ -1117,8 +1117,9 @@ exports.backfillSpotNormalizedFilterFields = onCall(
         let unchanged = 0;
         let failed = 0;
         let lastDoc = null;
+        let hasMore = true;
 
-        while (true) {
+        while (hasMore) {
           let query = db
               .collection("spots")
               .orderBy(admin.firestore.FieldPath.documentId())
@@ -1129,7 +1130,10 @@ exports.backfillSpotNormalizedFilterFields = onCall(
           }
 
           const snapshot = await query.get();
-          if (snapshot.empty) break;
+          if (snapshot.empty) {
+            hasMore = false;
+            continue;
+          }
 
           const batch = db.batch();
           let updatesInBatch = 0;
@@ -1171,7 +1175,9 @@ exports.backfillSpotNormalizedFilterFields = onCall(
           }
 
           lastDoc = snapshot.docs[snapshot.docs.length - 1];
-          if (snapshot.size < pageSize) break;
+          if (snapshot.size < pageSize) {
+            hasMore = false;
+          }
         }
 
         return {
