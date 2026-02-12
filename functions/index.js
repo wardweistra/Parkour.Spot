@@ -483,6 +483,142 @@ function cleanUndefinedValues(obj) {
   return cleaned;
 }
 
+const spotNormalizedFilterField = "normalizedFilterFields";
+
+/**
+ * Normalizes an arbitrary value into a lowercase token.
+ * @param {any} value
+ * @return {string|null}
+ */
+function normalizeFilterToken(value) {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().toLowerCase();
+  return normalized.length > 0 ? normalized : null;
+}
+
+/**
+ * Converts a raw field value into a normalized string array.
+ * @param {any} value
+ * @return {Array<string>}
+ */
+function normalizeFilterArray(value) {
+  const normalized = new Set();
+  if (!Array.isArray(value)) return [];
+
+  for (const item of value) {
+    const token = normalizeFilterToken(item);
+    if (token) normalized.add(token);
+  }
+
+  return Array.from(normalized).sort();
+}
+
+/**
+ * Checks whether a spot facility should be considered available.
+ * @param {any} value
+ * @return {boolean}
+ */
+function hasFacility(value) {
+  if (value === true || value === 1) return true;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    return normalized === "yes" || normalized === "true" || normalized === "1";
+  }
+  return false;
+}
+
+/**
+ * Checks if a spot has at least one image URL.
+ * @param {Object} spotData
+ * @return {boolean}
+ */
+function spotHasImages(spotData) {
+  if (!spotData || !Array.isArray(spotData.imageUrls)) return false;
+  return spotData.imageUrls.some((url) => typeof url === "string" && url.trim().length > 0);
+}
+
+/**
+ * Builds normalized filter fields from a spot document.
+ * @param {Object} spotData
+ * @return {Array<string>}
+ */
+function buildSpotNormalizedFilterFields(spotData = {}) {
+  const filters = new Set();
+
+  const spotFacilities = spotData.spotFacilities;
+  if (
+    spotFacilities &&
+    typeof spotFacilities === "object" &&
+    !Array.isArray(spotFacilities)
+  ) {
+    for (const [key, value] of Object.entries(spotFacilities)) {
+      const normalizedKey = normalizeFilterToken(key);
+      if (!normalizedKey) continue;
+      if (hasFacility(value)) {
+        filters.add(`spotFacilities-${normalizedKey}`);
+      }
+    }
+  }
+
+  const spotFeatures = Array.isArray(spotData.spotFeatures) ? spotData.spotFeatures : [];
+  for (const feature of spotFeatures) {
+    const normalizedFeature = normalizeFilterToken(feature);
+    if (normalizedFeature) {
+      filters.add(`spotFeatures-${normalizedFeature}`);
+    }
+  }
+
+  if (spotHasImages(spotData)) {
+    filters.add("hasImages");
+  }
+
+  const spotAccess = normalizeFilterToken(spotData.spotAccess);
+  if (spotAccess) {
+    filters.add(`spotAccess-${spotAccess}`);
+  }
+
+  const goodFor = Array.isArray(spotData.goodFor) ? spotData.goodFor : [];
+  for (const goodForValue of goodFor) {
+    const normalizedGoodFor = normalizeFilterToken(goodForValue);
+    if (normalizedGoodFor) {
+      filters.add(`goodFor-${normalizedGoodFor}`);
+    }
+  }
+
+  if (spotData.hidden === true) {
+    filters.add("hidden");
+  }
+
+  if (
+    spotData.duplicateOf !== null &&
+    spotData.duplicateOf !== undefined &&
+    String(spotData.duplicateOf).trim().length > 0
+  ) {
+    filters.add("duplicate");
+  }
+
+  if (spotData.spotSourceRemoved === true) {
+    filters.add("spotSourceRemoved");
+  }
+
+  return Array.from(filters).sort();
+}
+
+/**
+ * Compares two string arrays for equality (order-sensitive).
+ * @param {Array<string>} a
+ * @param {Array<string>} b
+ * @return {boolean}
+ */
+function stringArraysEqual(a, b) {
+  if (!Array.isArray(a) || !Array.isArray(b)) return false;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
 // ========== Ranked Spots within Bounds ==========
 /**
  * Returns the top N spots within given map bounds ranked by ranking field,
@@ -968,6 +1104,90 @@ exports.recomputeSpotRankings = onCall(
     },
 );
 
+// ========== Admin Callable: Backfill normalized spot filter fields ==========
+exports.backfillSpotNormalizedFilterFields = onCall(
+    {region: "europe-west1", memory: "512MiB", timeoutSeconds: 540},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+
+        const pageSize = 400;
+        let processed = 0;
+        let updated = 0;
+        let unchanged = 0;
+        let failed = 0;
+        let lastDoc = null;
+
+        while (true) {
+          let query = db
+              .collection("spots")
+              .orderBy(admin.firestore.FieldPath.documentId())
+              .limit(pageSize);
+
+          if (lastDoc) {
+            query = query.startAfter(lastDoc);
+          }
+
+          const snapshot = await query.get();
+          if (snapshot.empty) break;
+
+          const batch = db.batch();
+          let updatesInBatch = 0;
+
+          for (const spotDoc of snapshot.docs) {
+            processed++;
+            const spotData = spotDoc.data() || {};
+
+            try {
+              const normalizedFilterFields =
+                buildSpotNormalizedFilterFields(spotData);
+              const currentNormalizedFields = normalizeFilterArray(
+                  spotData[spotNormalizedFilterField],
+              );
+
+              if (
+                stringArraysEqual(currentNormalizedFields, normalizedFilterFields)
+              ) {
+                unchanged++;
+                continue;
+              }
+
+              batch.update(spotDoc.ref, {
+                [spotNormalizedFilterField]: normalizedFilterFields,
+              });
+              updatesInBatch++;
+              updated++;
+            } catch (docError) {
+              failed++;
+              console.error(
+                  `Failed to normalize spot ${spotDoc.id}`,
+                  docError,
+              );
+            }
+          }
+
+          if (updatesInBatch > 0) {
+            await batch.commit();
+          }
+
+          lastDoc = snapshot.docs[snapshot.docs.length - 1];
+          if (snapshot.size < pageSize) break;
+        }
+
+        return {
+          success: true,
+          processed,
+          updated,
+          unchanged,
+          failed,
+        };
+      } catch (error) {
+        console.error("backfillSpotNormalizedFilterFields error", error);
+        return {success: false, error: error.message};
+      }
+    },
+);
+
 // ========== Rating Triggers ==========
 exports.onRatingCreated = onDocumentCreated(
     {document: "ratings/{ratingId}", region: "europe-west1"},
@@ -1022,38 +1242,66 @@ exports.onRatingDeleted = onDocumentDeleted(
 // Trigger when a new spot is created
 exports.onSpotCreated = onDocumentCreated(
     {document: "spots/{spotId}", region: "europe-west1"},
-    (event) => {
-      const spotData = event.data.data();
-      console.log("New parkour spot created:", {
-        spotId: event.params.spotId,
-        name: spotData.name,
-        createdBy: spotData.createdBy,
-      });
+    async (event) => {
+      try {
+        if (!event.data) return;
+        const spotData = event.data.data() || {};
 
-    // You can add logic here like:
-    // - Send notifications to nearby users
-    // - Update search indexes
-    // - Validate spot data
+        console.log("New parkour spot created:", {
+          spotId: event.params.spotId,
+          name: spotData.name,
+          createdBy: spotData.createdBy,
+        });
+
+        const normalizedFilterFields = buildSpotNormalizedFilterFields(spotData);
+        const currentNormalizedFields = normalizeFilterArray(
+            spotData[spotNormalizedFilterField],
+        );
+
+        if (stringArraysEqual(currentNormalizedFields, normalizedFilterFields)) {
+          return;
+        }
+
+        await event.data.ref.set(
+            {[spotNormalizedFilterField]: normalizedFilterFields},
+            {merge: true},
+        );
+      } catch (e) {
+        console.error("onSpotCreated error", e);
+      }
     },
 );
 
 // Trigger when a spot is updated
 exports.onSpotUpdated = onDocumentUpdated(
     {document: "spots/{spotId}", region: "europe-west1"},
-    (event) => {
-      const beforeData = event.data.before.data();
-      const afterData = event.data.after.data();
+    async (event) => {
+      try {
+        const beforeData = event.data.before.data() || {};
+        const afterData = event.data.after.data() || {};
 
-      console.log("Parkour spot updated:", {
-        spotId: event.params.spotId,
-        name: afterData.name,
-        ratingChanged: beforeData.rating !== afterData.rating,
-      });
+        console.log("Parkour spot updated:", {
+          spotId: event.params.spotId,
+          name: afterData.name,
+          ratingChanged: beforeData.rating !== afterData.rating,
+        });
 
-    // You can add logic here like:
-    // - Update search indexes
-    // - Send notifications about changes
-    // - Log rating changes
+        const normalizedFilterFields = buildSpotNormalizedFilterFields(afterData);
+        const currentNormalizedFields = normalizeFilterArray(
+            afterData[spotNormalizedFilterField],
+        );
+
+        if (stringArraysEqual(currentNormalizedFields, normalizedFilterFields)) {
+          return;
+        }
+
+        await event.data.after.ref.set(
+            {[spotNormalizedFilterField]: normalizedFilterFields},
+            {merge: true},
+        );
+      } catch (e) {
+        console.error("onSpotUpdated error", e);
+      }
     },
 );
 

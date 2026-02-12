@@ -957,6 +957,24 @@ class SpotService extends ChangeNotifier {
     }
   }
 
+  Future<Map<String, dynamic>> backfillSpotNormalizedFilterFields() async {
+    try {
+      final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
+      final callable = functions.httpsCallable(
+        'backfillSpotNormalizedFilterFields',
+        options: HttpsCallableOptions(
+          timeout: const Duration(minutes: 9),
+        ),
+      );
+      final result = await callable.call();
+      final data = result.data as Map<String, dynamic>;
+      return data;
+    } catch (e) {
+      debugPrint('Error backfilling normalized spot filter fields: $e');
+      rethrow;
+    }
+  }
+
   // Get top ranked spots within bounds using backend Wilson logic
   Future<Map<String, dynamic>> getTopRankedSpotsInBounds(
     double minLat,

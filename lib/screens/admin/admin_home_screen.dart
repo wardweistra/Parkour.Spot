@@ -231,6 +231,67 @@ class AdminHomeScreen extends StatelessWidget {
               },
             ),
             ),
+            const SizedBox(height: 8),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.filter_alt),
+                title: const Text('Backfill Spot Normalized Filters'),
+                subtitle: const Text('Generate normalizedFilterFields for all existing spots'),
+                onTap: () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Backfill Spot Normalized Filters'),
+                      content: const Text(
+                        'This will compute normalizedFilterFields for every spot document. Continue?',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(false),
+                          child: const Text('Cancel'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Navigator.of(ctx).pop(true),
+                          child: const Text('Run'),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (confirmed != true) return;
+
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Backfilling normalized spot filters...')),
+                  );
+
+                  try {
+                    final spotService = Provider.of<SpotService>(context, listen: false);
+                    final result = await spotService.backfillSpotNormalizedFilterFields();
+                    if (!context.mounted) return;
+
+                    if (result['success'] == true) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Done. Processed ${result['processed']}, updated ${result['updated']}, unchanged ${result['unchanged']}, failed ${result['failed']}',
+                          ),
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error: ${result['error'] ?? 'Unknown error'}')),
+                      );
+                    }
+                  } catch (e) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: $e')),
+                    );
+                  }
+                },
+              ),
+            ),
           ],
         ),
       );
