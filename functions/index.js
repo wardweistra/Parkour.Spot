@@ -585,20 +585,23 @@ function buildSpotNormalizedFilterFields(spotData = {}) {
     }
   }
 
-  if (spotData.hidden === true) {
-    filters.add("hidden");
+  const isHidden = spotData.hidden === true;
+  if (!isHidden) {
+    filters.add("hidden-not");
   }
 
-  if (
+  const isDuplicate = (
     spotData.duplicateOf !== null &&
     spotData.duplicateOf !== undefined &&
     String(spotData.duplicateOf).trim().length > 0
-  ) {
-    filters.add("duplicate");
+  );
+  if (!isDuplicate) {
+    filters.add("duplicate-not");
   }
 
-  if (spotData.spotSourceRemoved === true) {
-    filters.add("spotSourceRemoved");
+  const isSpotSourceRemoved = spotData.spotSourceRemoved === true;
+  if (!isSpotSourceRemoved) {
+    filters.add("spotSourceRemoved-not");
   }
 
   return Array.from(filters).sort();
