@@ -499,9 +499,15 @@ exports.getTopSpotsInBounds = onCall(
           maxLng,
           limit = 100,
           spotSource = null, // null = all sources, empty string = native only, string = specific source
-          hasImages = false, // true = only spots with images, false = all spots
           folder = null, // DEPRECATED: Optional single folder name (for backward compatibility)
           folders = null, // Optional array of folder names to filter by (only used when spotSource is set, null = all folders)
+          filterArea = null, // "amenities" | "source" | null (default = source)
+          spotAccess = null, // when filterArea=amenities: "public" | "restricted" | "paid"
+          spotFacilitiesCovered = null, // when filterArea=amenities: "yes"
+          spotFacilitiesLighting = null, // when filterArea=amenities: "yes"
+          spotFacilitiesWaterTap = null, // when filterArea=amenities: "yes"
+          spotFacilitiesToilet = null, // when filterArea=amenities: "yes"
+          spotFacilitiesParking = null, // when filterArea=amenities: "yes"
         } = request.data || {};
 
         if (
@@ -610,6 +616,8 @@ exports.getTopSpotsInBounds = onCall(
           "createdAt",
           "updatedAt",
           "ranking",
+          "spotAccess",
+          "spotFacilities",
         ];
 
         const maxItems = Math.max(0, Math.min(200, Number(limit) || 100));
@@ -629,7 +637,16 @@ exports.getTopSpotsInBounds = onCall(
           normalizedFolders = [String(folder).trim()];
         }
 
-        // Build query function with source, image, and folder filtering
+        const useAmenitiesFilter = filterArea === "amenities" && (
+          (spotAccess && typeof spotAccess === "string") ||
+          (spotFacilitiesCovered === "yes") ||
+          (spotFacilitiesLighting === "yes") ||
+          (spotFacilitiesWaterTap === "yes") ||
+          (spotFacilitiesToilet === "yes") ||
+          (spotFacilitiesParking === "yes")
+        );
+
+        // Build query function - different logic for amenities vs source area
         const buildQuery = (lngMin, lngMax) => {
           let query = db
               .collection("spots")
@@ -638,42 +655,52 @@ exports.getTopSpotsInBounds = onCall(
               .where("longitude", ">=", lngMin)
               .where("longitude", "<=", lngMax);
 
-          // Apply source filter if specified
-          if (spotSource !== null && spotSource !== undefined) {
-            if (spotSource === "") {
-              // Empty string means native spots only (spotSource is null)
-              query = query.where("spotSource", "==", null);
-            } else {
-              // Specific source ID
-              query = query.where("spotSource", "==", spotSource);
+          if (useAmenitiesFilter) {
+            // Amenities area: duplicateOf, hidden, then amenity filters in index order
+            query = query.where("duplicateOf", "==", null);
+            query = query.where("hidden", "==", false);
+
+            // Add amenity where-clauses in order matching composite indexes
+            if (spotAccess && typeof spotAccess === "string") {
+              query = query.where("spotAccess", "==", spotAccess);
+            }
+            if (spotFacilitiesCovered === "yes") {
+              query = query.where("spotFacilities.covered", "==", "yes");
+            }
+            if (spotFacilitiesLighting === "yes") {
+              query = query.where("spotFacilities.lighting", "==", "yes");
+            }
+            if (spotFacilitiesWaterTap === "yes") {
+              query = query.where("spotFacilities.water_tap", "==", "yes");
+            }
+            if (spotFacilitiesToilet === "yes") {
+              query = query.where("spotFacilities.toilet", "==", "yes");
+            }
+            if (spotFacilitiesParking === "yes") {
+              query = query.where("spotFacilities.parking", "==", "yes");
             }
           } else {
-            // If spotSource is null, no source filter is applied (all sources)
-            // Exclude spots marked as duplicates when searching all sources
-            query = query.where("duplicateOf", "==", null);
-          }
+            // Source area: spotSource, folder, or duplicateOf (all sources)
+            if (spotSource !== null && spotSource !== undefined) {
+              if (spotSource === "") {
+                query = query.where("spotSource", "==", null);
+              } else {
+                query = query.where("spotSource", "==", spotSource);
+              }
 
-          // Apply folder filter if specified (only when spotSource is set)
-          // Note: This requires a composite index on (spotSource, folderName, ranking)
-          // Use whereIn for multiple folders, or == for single folder (backward compatibility)
-          if (normalizedFolders && normalizedFolders.length > 0) {
-            if (normalizedFolders.length === 1) {
-              // Single folder: use == for better index usage
-              query = query.where("folderName", "==", normalizedFolders[0]);
+              if (normalizedFolders && normalizedFolders.length > 0) {
+                if (normalizedFolders.length === 1) {
+                  query = query.where("folderName", "==", normalizedFolders[0]);
+                } else {
+                  query = query.where("folderName", "in", normalizedFolders);
+                }
+              }
             } else {
-              // Multiple folders: use whereIn
-              query = query.where("folderName", "in", normalizedFolders);
+              query = query.where("duplicateOf", "==", null);
             }
-          }
 
-          // Apply image filter if specified
-          if (hasImages === true) {
-            query = query.where("imageUrls", "!=", []);
+            query = query.where("hidden", "==", false);
           }
-
-          // Exclude hidden spots from public view
-          // Use == false instead of != true to avoid inequality filter conflict
-          query = query.where("hidden", "==", false);
 
           return query.orderBy("ranking", "desc");
         };

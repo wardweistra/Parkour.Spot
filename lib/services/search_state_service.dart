@@ -8,8 +8,14 @@ class SearchStateService extends ChangeNotifier {
   static const String _keyCenterLng = 'search_center_lng';
   static const String _keyZoom = 'search_zoom';
   static const String _keyIsSatellite = 'search_is_satellite';
-  static const String _keyIncludeWithoutPictures = 'search_include_without_pictures';
   static const String _keySelectedSpotSource = 'search_selected_spot_source'; // null = all, "" = native, string = specific source
+  static const String _keyFilterArea = 'search_filter_area'; // "amenities" | "source" | null
+  static const String _keySpotAccess = 'search_spot_access'; // when amenities: "public" | "restricted" | "paid"
+  static const String _keySpotFacilitiesCovered = 'search_spot_facilities_covered'; // when amenities: "yes"
+  static const String _keySpotFacilitiesLighting = 'search_spot_facilities_lighting'; // when amenities: "yes"
+  static const String _keySpotFacilitiesWaterTap = 'search_spot_facilities_water_tap'; // when amenities: "yes"
+  static const String _keySpotFacilitiesToilet = 'search_spot_facilities_toilet'; // when amenities: "yes"
+  static const String _keySpotFacilitiesParking = 'search_spot_facilities_parking'; // when amenities: "yes"
   static const String _keySelectedFolders = 'search_selected_folders'; // JSON map of sourceId -> List<String> (multiple folders, empty list = all folders)
   static const String _keySelectedListId = 'search_selected_list_id'; // Selected spot list ID for highlighting
   static const String _keyLastKnownUserLat = 'search_last_known_user_lat';
@@ -20,8 +26,14 @@ class SearchStateService extends ChangeNotifier {
   double? _centerLng;
   double? _zoom;
   bool _isSatellite = false;
-  bool _includeSpotsWithoutPictures = true; // Default: include spots without pictures
+  String? _filterArea; // "amenities" | "source" | null (default = source)
   String? _selectedSpotSource; // null = all sources, "" = native only, string = specific source ID
+  String? _spotAccess; // when filterArea=amenities: "public" | "restricted" | "paid"
+  bool? _spotFacilitiesCovered; // when filterArea=amenities: true = "yes"
+  bool? _spotFacilitiesLighting; // when filterArea=amenities: true = "yes"
+  bool? _spotFacilitiesWaterTap; // when filterArea=amenities: true = "yes"
+  bool? _spotFacilitiesToilet; // when filterArea=amenities: true = "yes"
+  bool? _spotFacilitiesParking; // when filterArea=amenities: true = "yes"
   Map<String, List<String>> _selectedFolders = {}; // sourceId -> list of selected folder names (empty list = all folders)
   String? _selectedListId; // Selected spot list ID for highlighting
   double? _lastKnownUserLat;
@@ -32,8 +44,14 @@ class SearchStateService extends ChangeNotifier {
   double? get centerLng => _centerLng;
   double? get zoom => _zoom;
   bool get isSatellite => _isSatellite;
-  bool get includeSpotsWithoutPictures => _includeSpotsWithoutPictures;
+  String? get filterArea => _filterArea;
   String? get selectedSpotSource => _selectedSpotSource;
+  String? get spotAccess => _spotAccess;
+  bool? get spotFacilitiesCovered => _spotFacilitiesCovered;
+  bool? get spotFacilitiesLighting => _spotFacilitiesLighting;
+  bool? get spotFacilitiesWaterTap => _spotFacilitiesWaterTap;
+  bool? get spotFacilitiesToilet => _spotFacilitiesToilet;
+  bool? get spotFacilitiesParking => _spotFacilitiesParking;
   Map<String, List<String>> get selectedFolders => Map.unmodifiable(_selectedFolders);
   String? get selectedListId => _selectedListId;
   double? get lastKnownUserLat => _lastKnownUserLat;
@@ -95,8 +113,14 @@ class SearchStateService extends ChangeNotifier {
       _centerLng = prefs.getDouble(_keyCenterLng);
       _zoom = prefs.getDouble(_keyZoom);
       _isSatellite = prefs.getBool(_keyIsSatellite) ?? false;
-      _includeSpotsWithoutPictures = prefs.getBool(_keyIncludeWithoutPictures) ?? true;
+      _filterArea = prefs.getString(_keyFilterArea);
       _selectedSpotSource = prefs.getString(_keySelectedSpotSource); // null if not set (all sources)
+      _spotAccess = prefs.getString(_keySpotAccess);
+      _spotFacilitiesCovered = prefs.getBool(_keySpotFacilitiesCovered);
+      _spotFacilitiesLighting = prefs.getBool(_keySpotFacilitiesLighting);
+      _spotFacilitiesWaterTap = prefs.getBool(_keySpotFacilitiesWaterTap);
+      _spotFacilitiesToilet = prefs.getBool(_keySpotFacilitiesToilet);
+      _spotFacilitiesParking = prefs.getBool(_keySpotFacilitiesParking);
       _selectedListId = prefs.getString(_keySelectedListId); // null if not set
       _lastKnownUserLat = prefs.getDouble(_keyLastKnownUserLat);
       _lastKnownUserLng = prefs.getDouble(_keyLastKnownUserLng);
@@ -156,14 +180,110 @@ class SearchStateService extends ChangeNotifier {
     }
   }
 
-  Future<void> setIncludeSpotsWithoutPictures(bool value) async {
-    _includeSpotsWithoutPictures = value;
+  /// Set filter area: "amenities" | "source" | null (null = source)
+  /// When switching to amenities, clears source/folder. When switching to source, clears amenities.
+  Future<void> setFilterArea(String? filterArea) async {
+    if (_filterArea == filterArea) return;
+    _filterArea = filterArea;
+    if (filterArea == 'amenities') {
+      _selectedSpotSource = null;
+      _selectedFolders = {};
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove(_keySelectedSpotSource);
+        await prefs.setString(_keySelectedFolders, '{}');
+      } catch (e) {
+        // Ignore SharedPreferences errors
+      }
+    } else if (filterArea == 'source' || filterArea == null) {
+      _spotAccess = null;
+      _spotFacilitiesCovered = null;
+      _spotFacilitiesLighting = null;
+      _spotFacilitiesWaterTap = null;
+      _spotFacilitiesToilet = null;
+      _spotFacilitiesParking = null;
+    }
     notifyListeners();
+    await _persistFilterState();
+  }
+
+  /// Set amenity filters (only used when filterArea == "amenities")
+  Future<void> setSpotAccess(String? value) async {
+    _spotAccess = value;
+    notifyListeners();
+    await _persistFilterState();
+  }
+
+  Future<void> setSpotFacilitiesCovered(bool? value) async {
+    _spotFacilitiesCovered = value;
+    notifyListeners();
+    await _persistFilterState();
+  }
+
+  Future<void> setSpotFacilitiesLighting(bool? value) async {
+    _spotFacilitiesLighting = value;
+    notifyListeners();
+    await _persistFilterState();
+  }
+
+  Future<void> setSpotFacilitiesWaterTap(bool? value) async {
+    _spotFacilitiesWaterTap = value;
+    notifyListeners();
+    await _persistFilterState();
+  }
+
+  Future<void> setSpotFacilitiesToilet(bool? value) async {
+    _spotFacilitiesToilet = value;
+    notifyListeners();
+    await _persistFilterState();
+  }
+
+  Future<void> setSpotFacilitiesParking(bool? value) async {
+    _spotFacilitiesParking = value;
+    notifyListeners();
+    await _persistFilterState();
+  }
+
+  Future<void> _persistFilterState() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_keyIncludeWithoutPictures, value);
+      if (_filterArea == null) {
+        await prefs.remove(_keyFilterArea);
+      } else {
+        await prefs.setString(_keyFilterArea, _filterArea!);
+      }
+      if (_spotAccess == null) {
+        await prefs.remove(_keySpotAccess);
+      } else {
+        await prefs.setString(_keySpotAccess, _spotAccess!);
+      }
+      if (_spotFacilitiesCovered == null) {
+        await prefs.remove(_keySpotFacilitiesCovered);
+      } else {
+        await prefs.setBool(_keySpotFacilitiesCovered, _spotFacilitiesCovered!);
+      }
+      if (_spotFacilitiesLighting == null) {
+        await prefs.remove(_keySpotFacilitiesLighting);
+      } else {
+        await prefs.setBool(_keySpotFacilitiesLighting, _spotFacilitiesLighting!);
+      }
+      if (_spotFacilitiesWaterTap == null) {
+        await prefs.remove(_keySpotFacilitiesWaterTap);
+      } else {
+        await prefs.setBool(_keySpotFacilitiesWaterTap, _spotFacilitiesWaterTap!);
+      }
+      if (_spotFacilitiesToilet == null) {
+        await prefs.remove(_keySpotFacilitiesToilet);
+      } else {
+        await prefs.setBool(_keySpotFacilitiesToilet, _spotFacilitiesToilet!);
+      }
+      if (_spotFacilitiesParking == null) {
+        await prefs.remove(_keySpotFacilitiesParking);
+      } else {
+        await prefs.setBool(_keySpotFacilitiesParking, _spotFacilitiesParking!);
+      }
     } catch (e) {
-      // Ignore SharedPreferences errors - settings will not persist but app continues to work
+      // Ignore SharedPreferences errors
     }
   }
 

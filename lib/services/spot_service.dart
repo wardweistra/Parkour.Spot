@@ -964,9 +964,15 @@ class SpotService extends ChangeNotifier {
     double minLng,
     double maxLng, {
     int limit = 100,
-    String? spotSource, // null = all sources, empty string = native only, string = specific source
-    bool hasImages = false, // true = only spots with images, false = all spots
-    List<String>? folders, // Optional list of folder names to filter by (only used when spotSource is set, null = all folders)
+    String? filterArea, // "amenities" | "source" | null (null = source)
+    String? spotSource, // when source: null = all, "" = native, string = specific source
+    List<String>? folders, // when source: list of folder names (null = all folders)
+    String? spotAccess, // when amenities: "public" | "restricted" | "paid"
+    bool? spotFacilitiesCovered, // when amenities: true = "yes"
+    bool? spotFacilitiesLighting, // when amenities: true = "yes"
+    bool? spotFacilitiesWaterTap, // when amenities: true = "yes"
+    bool? spotFacilitiesToilet, // when amenities: true = "yes"
+    bool? spotFacilitiesParking, // when amenities: true = "yes"
   }) async {
     try {
       final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
@@ -978,17 +984,23 @@ class SpotService extends ChangeNotifier {
         'maxLng': maxLng,
         'limit': limit,
       };
-      // Only include spotSource if it's not null (null means all sources)
-      if (spotSource != null) {
-        requestData['spotSource'] = spotSource;
+      if (filterArea != null) {
+        requestData['filterArea'] = filterArea;
       }
-      // Only include hasImages if it's true (false means all spots)
-      if (hasImages) {
-        requestData['hasImages'] = true;
-      }
-      // Only include folders if provided and spotSource is set
-      if (folders != null && folders.isNotEmpty && spotSource != null) {
-        requestData['folders'] = folders;
+      if (filterArea == 'amenities') {
+        if (spotAccess != null) requestData['spotAccess'] = spotAccess;
+        if (spotFacilitiesCovered == true) requestData['spotFacilitiesCovered'] = 'yes';
+        if (spotFacilitiesLighting == true) requestData['spotFacilitiesLighting'] = 'yes';
+        if (spotFacilitiesWaterTap == true) requestData['spotFacilitiesWaterTap'] = 'yes';
+        if (spotFacilitiesToilet == true) requestData['spotFacilitiesToilet'] = 'yes';
+        if (spotFacilitiesParking == true) requestData['spotFacilitiesParking'] = 'yes';
+      } else {
+        if (spotSource != null) {
+          requestData['spotSource'] = spotSource;
+        }
+        if (folders != null && folders.isNotEmpty && spotSource != null) {
+          requestData['folders'] = folders;
+        }
       }
       final result = await callable.call(requestData);
 

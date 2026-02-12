@@ -31,18 +31,6 @@
       "collectionGroup": "spots",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "spotSource", "order": "ASCENDING" },
-        { "fieldPath": "hidden", "order": "ASCENDING" },
-        { "fieldPath": "ranking", "order": "DESCENDING" },
-        { "fieldPath": "imageUrls", "order": "DESCENDING" },
-        { "fieldPath": "latitude", "order": "DESCENDING" },
-        { "fieldPath": "longitude", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "spots",
-      "queryScope": "COLLECTION",
-      "fields": [
         { "fieldPath": "duplicateOf", "order": "ASCENDING" },
         { "fieldPath": "hidden", "order": "ASCENDING" },
         { "fieldPath": "ranking", "order": "DESCENDING" },
@@ -56,8 +44,68 @@
       "fields": [
         { "fieldPath": "duplicateOf", "order": "ASCENDING" },
         { "fieldPath": "hidden", "order": "ASCENDING" },
+        { "fieldPath": "spotAccess", "order": "ASCENDING" },
         { "fieldPath": "ranking", "order": "DESCENDING" },
-        { "fieldPath": "imageUrls", "order": "DESCENDING" },
+        { "fieldPath": "latitude", "order": "DESCENDING" },
+        { "fieldPath": "longitude", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "spots",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "duplicateOf", "order": "ASCENDING" },
+        { "fieldPath": "hidden", "order": "ASCENDING" },
+        { "fieldPath": "spotFacilities.covered", "order": "ASCENDING" },
+        { "fieldPath": "ranking", "order": "DESCENDING" },
+        { "fieldPath": "latitude", "order": "DESCENDING" },
+        { "fieldPath": "longitude", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "spots",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "duplicateOf", "order": "ASCENDING" },
+        { "fieldPath": "hidden", "order": "ASCENDING" },
+        { "fieldPath": "spotFacilities.lighting", "order": "ASCENDING" },
+        { "fieldPath": "ranking", "order": "DESCENDING" },
+        { "fieldPath": "latitude", "order": "DESCENDING" },
+        { "fieldPath": "longitude", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "spots",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "duplicateOf", "order": "ASCENDING" },
+        { "fieldPath": "hidden", "order": "ASCENDING" },
+        { "fieldPath": "spotFacilities.water_tap", "order": "ASCENDING" },
+        { "fieldPath": "ranking", "order": "DESCENDING" },
+        { "fieldPath": "latitude", "order": "DESCENDING" },
+        { "fieldPath": "longitude", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "spots",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "duplicateOf", "order": "ASCENDING" },
+        { "fieldPath": "hidden", "order": "ASCENDING" },
+        { "fieldPath": "spotFacilities.toilet", "order": "ASCENDING" },
+        { "fieldPath": "ranking", "order": "DESCENDING" },
+        { "fieldPath": "latitude", "order": "DESCENDING" },
+        { "fieldPath": "longitude", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "spots",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "duplicateOf", "order": "ASCENDING" },
+        { "fieldPath": "hidden", "order": "ASCENDING" },
+        { "fieldPath": "spotFacilities.parking", "order": "ASCENDING" },
+        { "fieldPath": "ranking", "order": "DESCENDING" },
         { "fieldPath": "latitude", "order": "DESCENDING" },
         { "fieldPath": "longitude", "order": "DESCENDING" }
       ]
@@ -94,19 +142,6 @@
         { "fieldPath": "hidden", "order": "ASCENDING" },
         { "fieldPath": "spotSource", "order": "ASCENDING" },
         { "fieldPath": "ranking", "order": "DESCENDING" },
-        { "fieldPath": "latitude", "order": "DESCENDING" },
-        { "fieldPath": "longitude", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "spots",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "folderName", "order": "ASCENDING" },
-        { "fieldPath": "hidden", "order": "ASCENDING" },
-        { "fieldPath": "spotSource", "order": "ASCENDING" },
-        { "fieldPath": "ranking", "order": "DESCENDING" },
-        { "fieldPath": "imageUrls", "order": "DESCENDING" },
         { "fieldPath": "latitude", "order": "DESCENDING" },
         { "fieldPath": "longitude", "order": "DESCENDING" }
       ]

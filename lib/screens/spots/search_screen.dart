@@ -25,6 +25,7 @@ import '../../config/app_config.dart';
 import '../../utils/marker_icon_utils.dart';
 import '../../utils/map_bounds_utils.dart';
 import '../../utils/location_permission_utils.dart';
+import '../../constants/spot_attributes.dart';
 import 'add_spot_screen.dart';
 
 // Helper widget to ensure icons render properly on mobile web
@@ -109,8 +110,14 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   bool _isDragging = false;
   double _lastKnownZoom = 14.0;
   // Filters
-  bool _includeSpotsWithoutPictures = true; // Default: include spots without pictures
+  String? _filterArea; // "amenities" | "source" | null (default = source)
   String? _selectedSpotSource; // null = all sources, "" = native only, string = specific source ID
+  String? _spotAccess; // when amenities: "public" | "restricted" | "paid"
+  bool? _spotFacilitiesCovered; // when amenities: true = "yes"
+  bool? _spotFacilitiesLighting; // when amenities: true = "yes"
+  bool? _spotFacilitiesWaterTap; // when amenities: true = "yes"
+  bool? _spotFacilitiesToilet; // when amenities: true = "yes"
+  bool? _spotFacilitiesParking; // when amenities: true = "yes"
   bool _showFiltersDialog = false; // Controls filters dialog visibility
   SpotService? _spotServiceRef; // To attach a listener for spot updates
   SyncSourceService? _syncSourceServiceRef; // To attach a listener for sync source updates
@@ -144,29 +151,44 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     if (searchState == null) return;
     
     // Update local state from SearchStateService
+    final newFilterArea = searchState.filterArea;
     final newSelectedSpotSource = searchState.selectedSpotSource;
-    final newIncludeSpotsWithoutPictures = searchState.includeSpotsWithoutPictures;
+    final newSpotAccess = searchState.spotAccess;
+    final newSpotFacilitiesCovered = searchState.spotFacilitiesCovered;
+    final newSpotFacilitiesLighting = searchState.spotFacilitiesLighting;
+    final newSpotFacilitiesWaterTap = searchState.spotFacilitiesWaterTap;
+    final newSpotFacilitiesToilet = searchState.spotFacilitiesToilet;
+    final newSpotFacilitiesParking = searchState.spotFacilitiesParking;
     final newIsSatelliteView = searchState.isSatellite;
     final newSelectedListId = searchState.selectedListId;
     
-    // Check if selectedSpotSource changed - if so, reload spots
-    final spotSourceChanged = _selectedSpotSource != newSelectedSpotSource;
-    final pictureFilterChanged = _includeSpotsWithoutPictures != newIncludeSpotsWithoutPictures;
+    final filterChanged = _filterArea != newFilterArea ||
+        _selectedSpotSource != newSelectedSpotSource ||
+        _spotAccess != newSpotAccess ||
+        _spotFacilitiesCovered != newSpotFacilitiesCovered ||
+        _spotFacilitiesLighting != newSpotFacilitiesLighting ||
+        _spotFacilitiesWaterTap != newSpotFacilitiesWaterTap ||
+        _spotFacilitiesToilet != newSpotFacilitiesToilet ||
+        _spotFacilitiesParking != newSpotFacilitiesParking;
     final listIdChanged = _selectedListId != newSelectedListId;
     
     setState(() {
       _isSatelliteView = newIsSatelliteView;
-      _includeSpotsWithoutPictures = newIncludeSpotsWithoutPictures;
+      _filterArea = newFilterArea;
       _selectedSpotSource = newSelectedSpotSource;
+      _spotAccess = newSpotAccess;
+      _spotFacilitiesCovered = newSpotFacilitiesCovered;
+      _spotFacilitiesLighting = newSpotFacilitiesLighting;
+      _spotFacilitiesWaterTap = newSpotFacilitiesWaterTap;
+      _spotFacilitiesToilet = newSpotFacilitiesToilet;
+      _spotFacilitiesParking = newSpotFacilitiesParking;
       _selectedListId = newSelectedListId;
     });
     
-    // Load list if it changed
     if (listIdChanged) {
       if (newSelectedListId != null) {
         _loadSpotList(newSelectedListId);
       } else {
-        // Clear highlighting
         setState(() {
           _selectedList = null;
           _selectedListName = null;
@@ -177,27 +199,28 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       }
     }
     
-    // Reload spots if the source filter or picture filter changed
-    // Note: Folder filter changes are handled directly in the FilterChip onSelected callback
-    if ((spotSourceChanged || pictureFilterChanged) && _mapController != null) {
+    if (filterChanged && _mapController != null) {
       _loadSpotsForCurrentView();
-    } else if (pictureFilterChanged) {
-      // Fallback when map controller not ready yet
+    } else if (filterChanged) {
       _updateVisibleSpots();
     }
   }
 
   bool _hasActiveFilters() {
-    // Check if any filters are different from defaults
     final searchState = _searchStateServiceRef;
-    final hasFolderFilter = _selectedSpotSource != null && 
-                            _selectedSpotSource!.isNotEmpty &&
-                            searchState != null &&
-                            searchState.getSelectedFoldersForSource(_selectedSpotSource!).isNotEmpty;
-    
-    return !_includeSpotsWithoutPictures || // Default is true, so false means active
-           _selectedSpotSource != null || // null means all sources (default)
-           hasFolderFilter; // Folder filter is active
+    if (_filterArea == 'amenities') {
+      return _spotAccess != null ||
+          _spotFacilitiesCovered == true ||
+          _spotFacilitiesLighting == true ||
+          _spotFacilitiesWaterTap == true ||
+          _spotFacilitiesToilet == true ||
+          _spotFacilitiesParking == true;
+    }
+    final hasFolderFilter = _selectedSpotSource != null &&
+        _selectedSpotSource!.isNotEmpty &&
+        searchState != null &&
+        searchState.getSelectedFoldersForSource(_selectedSpotSource!).isNotEmpty;
+    return _selectedSpotSource != null || hasFolderFilter;
   }
 
   @override
@@ -257,8 +280,14 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       
       setState(() {
         _isSatelliteView = _searchStateServiceRef!.isSatellite;
-        _includeSpotsWithoutPictures = _searchStateServiceRef!.includeSpotsWithoutPictures;
-        _selectedSpotSource = _searchStateServiceRef!.selectedSpotSource; // null = all sources (default)
+        _filterArea = _searchStateServiceRef!.filterArea;
+        _selectedSpotSource = _searchStateServiceRef!.selectedSpotSource;
+        _spotAccess = _searchStateServiceRef!.spotAccess;
+        _spotFacilitiesCovered = _searchStateServiceRef!.spotFacilitiesCovered;
+        _spotFacilitiesLighting = _searchStateServiceRef!.spotFacilitiesLighting;
+        _spotFacilitiesWaterTap = _searchStateServiceRef!.spotFacilitiesWaterTap;
+        _spotFacilitiesToilet = _searchStateServiceRef!.spotFacilitiesToilet;
+        _spotFacilitiesParking = _searchStateServiceRef!.spotFacilitiesParking;
         _selectedListId = initialListId;
       });
       
@@ -740,23 +769,26 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       final spotService = Provider.of<SpotService>(context, listen: false);
       final searchState = Provider.of<SearchStateService>(context, listen: false);
       
-      // Get selected folders for the current source
       List<String> selectedFolders = [];
       if (_selectedSpotSource != null && _selectedSpotSource!.isNotEmpty) {
         selectedFolders = searchState.getSelectedFoldersForSource(_selectedSpotSource!);
       }
-      
-      // Load ranked top spots within the current map bounds (and total count)
-      // Source, image, and folder filtering are now done at database level
+
       final ranked = await spotService.getTopRankedSpotsInBounds(
         bounds.southwest.latitude,
         bounds.northeast.latitude,
         bounds.southwest.longitude,
         bounds.northeast.longitude,
         limit: 100,
-        spotSource: _selectedSpotSource, // null = all, "" = native, string = specific source
-        hasImages: !_includeSpotsWithoutPictures, // true = only spots with images, false = all spots
-        folders: selectedFolders.isEmpty ? null : selectedFolders, // Optional list of folders to filter by (null = all folders)
+        filterArea: _filterArea ?? 'source',
+        spotSource: _filterArea == 'amenities' ? null : _selectedSpotSource,
+        folders: selectedFolders.isEmpty ? null : selectedFolders,
+        spotAccess: _spotAccess,
+        spotFacilitiesCovered: _spotFacilitiesCovered,
+        spotFacilitiesLighting: _spotFacilitiesLighting,
+        spotFacilitiesWaterTap: _spotFacilitiesWaterTap,
+        spotFacilitiesToilet: _spotFacilitiesToilet,
+        spotFacilitiesParking: _spotFacilitiesParking,
       );
 
       _loadedSpots = (ranked['spots'] as List<Spot>?) ?? <Spot>[];
@@ -792,30 +824,155 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Row 1: Include spots without pictures
-            SwitchListTile.adaptive(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Include spots without pictures'),
-              value: _includeSpotsWithoutPictures,
-              onChanged: (val) {
-                setState(() {
-                  _includeSpotsWithoutPictures = val;
-                });
-                Provider.of<SearchStateService>(context, listen: false)
-                    .setIncludeSpotsWithoutPictures(val);
-                if (_mapController != null) {
-                  _loadSpotsForCurrentView();
-                } else {
-                  _updateVisibleSpots();
-                }
-              },
-            ),
             Text(
-              'Spot Source',
+              'Filter by',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
             ),
+            const SizedBox(height: 8),
+            SegmentedButton<String?>(
+              segments: const [
+                ButtonSegment(value: 'source', label: Text('Source'), icon: Icon(Icons.folder)),
+                ButtonSegment(value: 'amenities', label: Text('Amenities'), icon: Icon(Icons.workspace_premium)),
+              ],
+              selected: {_filterArea ?? 'source'},
+              onSelectionChanged: (Set<String?> selected) {
+                final value = selected.first;
+                Provider.of<SearchStateService>(context, listen: false).setFilterArea(value);
+                setState(() {
+                  _filterArea = value;
+                });
+                if (_mapController != null) _loadSpotsForCurrentView();
+              },
+            ),
+            const SizedBox(height: 16),
+            if (_filterArea == 'amenities') _buildAmenitiesFilters() else _buildSourceFilters(syncService, sources),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildAmenitiesFilters() {
+    return Consumer<SearchStateService>(
+      builder: (context, searchState, child) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Access',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                FilterChip(
+                  label: const Text('Any'),
+                  selected: _spotAccess == null,
+                  onSelected: (selected) {
+                    if (selected) {
+                      searchState.setSpotAccess(null);
+                      setState(() => _spotAccess = null);
+                      if (_mapController != null) _loadSpotsForCurrentView();
+                    }
+                  },
+                ),
+                ...SpotAttributes.spotAccess.keys.map((key) {
+                  final label = SpotAttributes.getLabel('access', key);
+                  return FilterChip(
+                    label: Text(label),
+                    selected: _spotAccess == key,
+                    onSelected: (selected) {
+                      if (selected) {
+                        searchState.setSpotAccess(key);
+                        setState(() => _spotAccess = key);
+                        if (_mapController != null) _loadSpotsForCurrentView();
+                      }
+                    },
+                  );
+                }),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Facilities',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                FilterChip(
+                  label: Text(SpotAttributes.getLabel('facilities', 'covered')),
+                  selected: _spotFacilitiesCovered == true,
+                  onSelected: (selected) {
+                    searchState.setSpotFacilitiesCovered(selected ? true : null);
+                    setState(() => _spotFacilitiesCovered = selected ? true : null);
+                    if (_mapController != null) _loadSpotsForCurrentView();
+                  },
+                ),
+                FilterChip(
+                  label: Text(SpotAttributes.getLabel('facilities', 'lighting')),
+                  selected: _spotFacilitiesLighting == true,
+                  onSelected: (selected) {
+                    searchState.setSpotFacilitiesLighting(selected ? true : null);
+                    setState(() => _spotFacilitiesLighting = selected ? true : null);
+                    if (_mapController != null) _loadSpotsForCurrentView();
+                  },
+                ),
+                FilterChip(
+                  label: Text(SpotAttributes.getLabel('facilities', 'water_tap')),
+                  selected: _spotFacilitiesWaterTap == true,
+                  onSelected: (selected) {
+                    searchState.setSpotFacilitiesWaterTap(selected ? true : null);
+                    setState(() => _spotFacilitiesWaterTap = selected ? true : null);
+                    if (_mapController != null) _loadSpotsForCurrentView();
+                  },
+                ),
+                FilterChip(
+                  label: Text(SpotAttributes.getLabel('facilities', 'toilet')),
+                  selected: _spotFacilitiesToilet == true,
+                  onSelected: (selected) {
+                    searchState.setSpotFacilitiesToilet(selected ? true : null);
+                    setState(() => _spotFacilitiesToilet = selected ? true : null);
+                    if (_mapController != null) _loadSpotsForCurrentView();
+                  },
+                ),
+                FilterChip(
+                  label: Text(SpotAttributes.getLabel('facilities', 'parking')),
+                  selected: _spotFacilitiesParking == true,
+                  onSelected: (selected) {
+                    searchState.setSpotFacilitiesParking(selected ? true : null);
+                    setState(() => _spotFacilitiesParking = selected ? true : null);
+                    if (_mapController != null) _loadSpotsForCurrentView();
+                  },
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSourceFilters(SyncSourceService syncService, List<dynamic> sources) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Spot Source',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+          ),
+        ),
             const SizedBox(height: 8),
             if (syncService.isLoading && sources.isEmpty)
               const Padding(
@@ -980,8 +1137,6 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
               ),
           ],
         );
-      },
-    );
   }
 
   Set<Marker> _buildMarkers(List<Spot> spots) {
@@ -2831,21 +2986,22 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                   Expanded(
                     child: TextButton(
                       onPressed: () {
-                        // Clear all filters to defaults
                         final searchState = Provider.of<SearchStateService>(context, listen: false);
-                        setState(() {
-                          _includeSpotsWithoutPictures = true;
-                          _selectedSpotSource = null;
-                        });
-                        // Update SearchStateService
-                        searchState.setIncludeSpotsWithoutPictures(true);
+                        searchState.setFilterArea('source');
                         searchState.setSelectedSpotSource(null);
-                        // Clear all folder filters
-                        final allSourceIds = searchState.selectedFolders.keys.toList();
-                        for (final sourceId in allSourceIds) {
+                        for (final sourceId in searchState.selectedFolders.keys.toList()) {
                           searchState.clearFoldersForSource(sourceId);
                         }
-                        // Reload spots with cleared filters
+                        setState(() {
+                          _filterArea = 'source';
+                          _selectedSpotSource = null;
+                          _spotAccess = null;
+                          _spotFacilitiesCovered = null;
+                          _spotFacilitiesLighting = null;
+                          _spotFacilitiesWaterTap = null;
+                          _spotFacilitiesToilet = null;
+                          _spotFacilitiesParking = null;
+                        });
                         _loadSpotsForCurrentView();
                         // Close dialog
                         setState(() {
