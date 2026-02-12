@@ -761,8 +761,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       }
       
       // Load ranked top spots within the current map bounds (and total count).
-      // Source/image/folder filtering happens in Firestore query; access/facilities
-      // are applied in callable post-processing to stay within query operator/index limits.
+      // Filters are applied at database level in the backend callable query.
       final ranked = await spotService.getTopRankedSpotsInBounds(
         bounds.southwest.latitude,
         bounds.northeast.latitude,
@@ -780,7 +779,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       _totalSpotsInView = ranked['totalCount'] as int?;
       _bestShownCount = ranked['shownCount'] as int?;
       
-      // Filters are applied in the backend callable, so we only update UI state here.
+      // Filters are already applied by the backend callable query.
       _updateVisibleSpots();
     } catch (e) {
       debugPrint('Error loading spots for current view: $e');

@@ -502,8 +502,8 @@ exports.getTopSpotsInBounds = onCall(
           hasImages = false, // true = only spots with images, false = all spots
           folder = null, // DEPRECATED: Optional single folder name (for backward compatibility)
           folders = null, // Optional array of folder names to filter by (only used when spotSource is set, null = all folders)
-          spotAccess = null, // Optional access key to filter on (applied in-memory)
-          facilities = null, // Optional facility keys that must be available (applied in-memory)
+          spotAccess = null, // Optional access key to filter on
+          facilities = null, // Optional facility keys that must be available
         } = request.data || {};
 
         if (
@@ -642,13 +642,6 @@ exports.getTopSpotsInBounds = onCall(
               .filter((f) => f && typeof f === "string" && f.trim().length > 0)
               .map((f) => String(f).trim()))] :
           [];
-        const hasInMemoryFilters =
-          Boolean(normalizedSpotAccess) || normalizedFacilities.length > 0;
-        const candidateFetchLimit = maxItems === 0 ?
-          0 :
-          (hasInMemoryFilters ?
-            Math.min(1000, Math.max(maxItems * 6, 300)) :
-            maxItems);
 
         // Build query function with source, image, and folder filtering
         const buildQuery = (lngMin, lngMax) => {
@@ -692,6 +685,16 @@ exports.getTopSpotsInBounds = onCall(
             query = query.where("imageUrls", "!=", []);
           }
 
+          // Apply access filter directly at database level.
+          if (normalizedSpotAccess) {
+            query = query.where("spotAccess", "==", normalizedSpotAccess);
+          }
+
+          // Apply each selected facility at database level (AND behavior).
+          for (const facilityKey of normalizedFacilities) {
+            query = query.where(`spotFacilities.${facilityKey}`, "==", "yes");
+          }
+
           // Exclude hidden spots from public view
           // Use == false instead of != true to avoid inequality filter conflict
           query = query.where("hidden", "==", false);
@@ -707,7 +710,7 @@ exports.getTopSpotsInBounds = onCall(
           // Viewport spans entire globe or more - use full longitude range (-180 to 180)
           // This allows Firestore to use indexes that include longitude
           const [snap, count] = await Promise.all([
-            buildQuery(-180, 180).select(...projection).limit(candidateFetchLimit).get(),
+            buildQuery(-180, 180).select(...projection).limit(maxItems).get(),
             buildQuery(-180, 180).count().get(),
           ]);
 
@@ -716,8 +719,8 @@ exports.getTopSpotsInBounds = onCall(
         } else if (crossesDateline) {
           // Query both sides of dateline
           const [snap1, snap2, count1, count2] = await Promise.all([
-            buildQuery(normalizedMinLng, 180).select(...projection).limit(candidateFetchLimit).get(),
-            buildQuery(-180, normalizedMaxLng).select(...projection).limit(candidateFetchLimit).get(),
+            buildQuery(normalizedMinLng, 180).select(...projection).limit(maxItems).get(),
+            buildQuery(-180, normalizedMaxLng).select(...projection).limit(maxItems).get(),
             buildQuery(normalizedMinLng, 180).count().get(),
             buildQuery(-180, normalizedMaxLng).count().get(),
           ]);
@@ -730,7 +733,7 @@ exports.getTopSpotsInBounds = onCall(
         } else {
           // Single query
           const [snap, count] = await Promise.all([
-            buildQuery(normalizedMinLng, normalizedMaxLng).select(...projection).limit(candidateFetchLimit).get(),
+            buildQuery(normalizedMinLng, normalizedMaxLng).select(...projection).limit(maxItems).get(),
             buildQuery(normalizedMinLng, normalizedMaxLng).count().get(),
           ]);
 
@@ -760,33 +763,8 @@ exports.getTopSpotsInBounds = onCall(
             uniqueSpots.set(spot.id, spot);
           }
         }
-        let rankedSpots = Array.from(uniqueSpots.values())
+        const rankedSpots = Array.from(uniqueSpots.values())
             .sort((a, b) => getRankingValue(b) - getRankingValue(a));
-
-        // Apply access/facility filters in-memory to avoid adding more Firestore
-        // disjunctive operators ("in"/"not-in"/"array-contains-any") and index
-        // combinations to the base geo/source/folder/image query.
-        if (hasInMemoryFilters) {
-          rankedSpots = rankedSpots.filter((spot) => {
-            if (normalizedSpotAccess && spot.spotAccess !== normalizedSpotAccess) {
-              return false;
-            }
-            if (normalizedFacilities.length > 0) {
-              const spotFacilities = spot.spotFacilities &&
-                  typeof spot.spotFacilities === "object" ?
-                    spot.spotFacilities :
-                    {};
-              for (const facilityKey of normalizedFacilities) {
-                if (spotFacilities[facilityKey] !== "yes") {
-                  return false;
-                }
-              }
-            }
-            return true;
-          });
-          // After in-memory filtering, totalCount should reflect the filtered set.
-          totalCount = rankedSpots.length;
-        }
 
         const finalSpots = rankedSpots.slice(0, maxItems);
 
