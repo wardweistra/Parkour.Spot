@@ -10,7 +10,7 @@ class SearchStateService extends ChangeNotifier {
   static const String _keyIsSatellite = 'search_is_satellite';
   static const String _keySelectedSpotSource = 'search_selected_spot_source'; // null = all, "" = native, string = specific source
   static const String _keyFilterArea = 'search_filter_area'; // "amenities" | "source" | null
-  static const String _keySpotAccess = 'search_spot_access'; // when amenities: "public" | "restricted" | "paid"
+  static const String _keySpotAccess = 'search_spot_access'; // when amenities: list of "public" | "restricted" | "paid" for OR query
   static const String _keySpotFacilitiesCovered = 'search_spot_facilities_covered'; // when amenities: "yes"
   static const String _keySpotFacilitiesLighting = 'search_spot_facilities_lighting'; // when amenities: "yes"
   static const String _keySpotFacilitiesWaterTap = 'search_spot_facilities_water_tap'; // when amenities: "yes"
@@ -28,7 +28,7 @@ class SearchStateService extends ChangeNotifier {
   bool _isSatellite = false;
   String? _filterArea; // "amenities" | "source" | null (default = source)
   String? _selectedSpotSource; // null = all sources, "" = native only, string = specific source ID
-  String? _spotAccess; // when filterArea=amenities: "public" | "restricted" | "paid"
+  List<String> _spotAccess = []; // when filterArea=amenities: ["public", "restricted", "paid"] for OR query, empty = any
   bool? _spotFacilitiesCovered; // when filterArea=amenities: true = "yes"
   bool? _spotFacilitiesLighting; // when filterArea=amenities: true = "yes"
   bool? _spotFacilitiesWaterTap; // when filterArea=amenities: true = "yes"
@@ -46,7 +46,7 @@ class SearchStateService extends ChangeNotifier {
   bool get isSatellite => _isSatellite;
   String? get filterArea => _filterArea;
   String? get selectedSpotSource => _selectedSpotSource;
-  String? get spotAccess => _spotAccess;
+  List<String> get spotAccess => List.unmodifiable(_spotAccess);
   bool? get spotFacilitiesCovered => _spotFacilitiesCovered;
   bool? get spotFacilitiesLighting => _spotFacilitiesLighting;
   bool? get spotFacilitiesWaterTap => _spotFacilitiesWaterTap;
@@ -115,7 +115,23 @@ class SearchStateService extends ChangeNotifier {
       _isSatellite = prefs.getBool(_keyIsSatellite) ?? false;
       _filterArea = prefs.getString(_keyFilterArea);
       _selectedSpotSource = prefs.getString(_keySelectedSpotSource); // null if not set (all sources)
-      _spotAccess = prefs.getString(_keySpotAccess);
+      final accessJson = prefs.getString(_keySpotAccess);
+      if (accessJson != null && accessJson.isNotEmpty) {
+        try {
+          final decoded = jsonDecode(accessJson);
+          if (decoded is List) {
+            _spotAccess = List<String>.from(decoded.map((v) => v.toString()));
+          } else if (decoded is String) {
+            _spotAccess = [decoded]; // Migrate old single-value JSON format
+          } else {
+            _spotAccess = [];
+          }
+        } catch (e) {
+          _spotAccess = [accessJson]; // Migrate old format: raw string stored directly
+        }
+      } else {
+        _spotAccess = [];
+      }
       _spotFacilitiesCovered = prefs.getBool(_keySpotFacilitiesCovered);
       _spotFacilitiesLighting = prefs.getBool(_keySpotFacilitiesLighting);
       _spotFacilitiesWaterTap = prefs.getBool(_keySpotFacilitiesWaterTap);
@@ -196,7 +212,7 @@ class SearchStateService extends ChangeNotifier {
         // Ignore SharedPreferences errors
       }
     } else if (filterArea == 'source' || filterArea == null) {
-      _spotAccess = null;
+      _spotAccess = [];
       _spotFacilitiesCovered = null;
       _spotFacilitiesLighting = null;
       _spotFacilitiesWaterTap = null;
@@ -207,9 +223,20 @@ class SearchStateService extends ChangeNotifier {
     await _persistFilterState();
   }
 
-  /// Set amenity filters (only used when filterArea == "amenities")
-  Future<void> setSpotAccess(String? value) async {
-    _spotAccess = value;
+  /// Toggle access level (add if not selected, remove if selected). Empty = any.
+  Future<void> toggleSpotAccess(String accessKey) async {
+    if (_spotAccess.contains(accessKey)) {
+      _spotAccess = List<String>.from(_spotAccess)..remove(accessKey);
+    } else {
+      _spotAccess = List<String>.from(_spotAccess)..add(accessKey);
+    }
+    notifyListeners();
+    await _persistFilterState();
+  }
+
+  /// Clear all access selections (any)
+  Future<void> clearSpotAccess() async {
+    _spotAccess = [];
     notifyListeners();
     await _persistFilterState();
   }
@@ -252,10 +279,10 @@ class SearchStateService extends ChangeNotifier {
       } else {
         await prefs.setString(_keyFilterArea, _filterArea!);
       }
-      if (_spotAccess == null) {
+      if (_spotAccess.isEmpty) {
         await prefs.remove(_keySpotAccess);
       } else {
-        await prefs.setString(_keySpotAccess, _spotAccess!);
+        await prefs.setString(_keySpotAccess, jsonEncode(_spotAccess));
       }
       if (_spotFacilitiesCovered == null) {
         await prefs.remove(_keySpotFacilitiesCovered);

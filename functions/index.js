@@ -502,7 +502,7 @@ exports.getTopSpotsInBounds = onCall(
           folder = null, // DEPRECATED: Optional single folder name (for backward compatibility)
           folders = null, // Optional array of folder names to filter by (only used when spotSource is set, null = all folders)
           filterArea = null, // "amenities" | "source" | null (default = source)
-          spotAccess = null, // when filterArea=amenities: "public" | "restricted" | "paid"
+          spotAccess = null, // when filterArea=amenities: single string or array of strings for OR query
           spotFacilitiesCovered = null, // when filterArea=amenities: "yes"
           spotFacilitiesLighting = null, // when filterArea=amenities: "yes"
           spotFacilitiesWaterTap = null, // when filterArea=amenities: "yes"
@@ -638,7 +638,7 @@ exports.getTopSpotsInBounds = onCall(
         }
 
         const useAmenitiesFilter = filterArea === "amenities" && (
-          (spotAccess && typeof spotAccess === "string") ||
+          (spotAccess && (typeof spotAccess === "string" || (Array.isArray(spotAccess) && spotAccess.length > 0))) ||
           (spotFacilitiesCovered === "yes") ||
           (spotFacilitiesLighting === "yes") ||
           (spotFacilitiesWaterTap === "yes") ||
@@ -661,8 +661,13 @@ exports.getTopSpotsInBounds = onCall(
             query = query.where("hidden", "==", false);
 
             // Add amenity where-clauses in order matching composite indexes
-            if (spotAccess && typeof spotAccess === "string") {
-              query = query.where("spotAccess", "==", spotAccess);
+            const accessValues = Array.isArray(spotAccess)
+              ? spotAccess.filter(v => v && typeof v === "string")
+              : (spotAccess && typeof spotAccess === "string" ? [spotAccess] : []);
+            if (accessValues.length === 1) {
+              query = query.where("spotAccess", "==", accessValues[0]);
+            } else if (accessValues.length > 1) {
+              query = query.where("spotAccess", "in", accessValues.slice(0, 10)); // Firestore in limit is 10
             }
             if (spotFacilitiesCovered === "yes") {
               query = query.where("spotFacilities.covered", "==", "yes");

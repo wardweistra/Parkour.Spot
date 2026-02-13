@@ -967,7 +967,7 @@ class SpotService extends ChangeNotifier {
     String? filterArea, // "amenities" | "source" | null (null = source)
     String? spotSource, // when source: null = all, "" = native, string = specific source
     List<String>? folders, // when source: list of folder names (null = all folders)
-    String? spotAccess, // when amenities: "public" | "restricted" | "paid"
+    List<String>? spotAccess, // when amenities: ["public", "restricted", "paid"] for OR query, empty = any
     bool? spotFacilitiesCovered, // when amenities: true = "yes"
     bool? spotFacilitiesLighting, // when amenities: true = "yes"
     bool? spotFacilitiesWaterTap, // when amenities: true = "yes"
@@ -988,7 +988,9 @@ class SpotService extends ChangeNotifier {
         requestData['filterArea'] = filterArea;
       }
       if (filterArea == 'amenities') {
-        if (spotAccess != null) requestData['spotAccess'] = spotAccess;
+        if (spotAccess != null && spotAccess.isNotEmpty) {
+          requestData['spotAccess'] = spotAccess.length == 1 ? spotAccess.first : spotAccess;
+        }
         if (spotFacilitiesCovered == true) requestData['spotFacilitiesCovered'] = 'yes';
         if (spotFacilitiesLighting == true) requestData['spotFacilitiesLighting'] = 'yes';
         if (spotFacilitiesWaterTap == true) requestData['spotFacilitiesWaterTap'] = 'yes';

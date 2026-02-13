@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint, listEquals;
 import 'dart:async';
 import 'package:uuid/uuid.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
@@ -112,7 +112,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   // Filters
   String? _filterArea; // "amenities" | "source" | null (default = source)
   String? _selectedSpotSource; // null = all sources, "" = native only, string = specific source ID
-  String? _spotAccess; // when amenities: "public" | "restricted" | "paid"
+  List<String> _spotAccess = []; // when amenities: ["public", "restricted", "paid"] for OR query
   bool? _spotFacilitiesCovered; // when amenities: true = "yes"
   bool? _spotFacilitiesLighting; // when amenities: true = "yes"
   bool? _spotFacilitiesWaterTap; // when amenities: true = "yes"
@@ -153,7 +153,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     // Update local state from SearchStateService
     final newFilterArea = searchState.filterArea;
     final newSelectedSpotSource = searchState.selectedSpotSource;
-    final newSpotAccess = searchState.spotAccess;
+    final newSpotAccess = List<String>.from(searchState.spotAccess);
     final newSpotFacilitiesCovered = searchState.spotFacilitiesCovered;
     final newSpotFacilitiesLighting = searchState.spotFacilitiesLighting;
     final newSpotFacilitiesWaterTap = searchState.spotFacilitiesWaterTap;
@@ -164,7 +164,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     
     final filterChanged = _filterArea != newFilterArea ||
         _selectedSpotSource != newSelectedSpotSource ||
-        _spotAccess != newSpotAccess ||
+        !listEquals(_spotAccess, newSpotAccess) ||
         _spotFacilitiesCovered != newSpotFacilitiesCovered ||
         _spotFacilitiesLighting != newSpotFacilitiesLighting ||
         _spotFacilitiesWaterTap != newSpotFacilitiesWaterTap ||
@@ -209,7 +209,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   bool _hasActiveFilters() {
     final searchState = _searchStateServiceRef;
     if (_filterArea == 'amenities') {
-      return _spotAccess != null ||
+      return _spotAccess.isNotEmpty ||
           _spotFacilitiesCovered == true ||
           _spotFacilitiesLighting == true ||
           _spotFacilitiesWaterTap == true ||
@@ -282,7 +282,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         _isSatelliteView = _searchStateServiceRef!.isSatellite;
         _filterArea = _searchStateServiceRef!.filterArea;
         _selectedSpotSource = _searchStateServiceRef!.selectedSpotSource;
-        _spotAccess = _searchStateServiceRef!.spotAccess;
+        _spotAccess = List<String>.from(_searchStateServiceRef!.spotAccess);
         _spotFacilitiesCovered = _searchStateServiceRef!.spotFacilitiesCovered;
         _spotFacilitiesLighting = _searchStateServiceRef!.spotFacilitiesLighting;
         _spotFacilitiesWaterTap = _searchStateServiceRef!.spotFacilitiesWaterTap;
@@ -783,7 +783,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         filterArea: _filterArea ?? 'source',
         spotSource: _filterArea == 'amenities' ? null : _selectedSpotSource,
         folders: selectedFolders.isEmpty ? null : selectedFolders,
-        spotAccess: _spotAccess,
+        spotAccess: _spotAccess.isEmpty ? null : _spotAccess,
         spotFacilitiesCovered: _spotFacilitiesCovered,
         spotFacilitiesLighting: _spotFacilitiesLighting,
         spotFacilitiesWaterTap: _spotFacilitiesWaterTap,
@@ -873,11 +873,11 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
               children: [
                 FilterChip(
                   label: const Text('Any'),
-                  selected: _spotAccess == null,
+                  selected: _spotAccess.isEmpty,
                   onSelected: (selected) {
                     if (selected) {
-                      searchState.setSpotAccess(null);
-                      setState(() => _spotAccess = null);
+                      searchState.clearSpotAccess();
+                      setState(() => _spotAccess = []);
                       if (_mapController != null) _loadSpotsForCurrentView();
                     }
                   },
@@ -886,13 +886,17 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                   final label = SpotAttributes.getLabel('access', key);
                   return FilterChip(
                     label: Text(label),
-                    selected: _spotAccess == key,
+                    selected: _spotAccess.contains(key),
                     onSelected: (selected) {
-                      if (selected) {
-                        searchState.setSpotAccess(key);
-                        setState(() => _spotAccess = key);
-                        if (_mapController != null) _loadSpotsForCurrentView();
-                      }
+                      searchState.toggleSpotAccess(key);
+                      setState(() {
+                        if (selected) {
+                          _spotAccess = List<String>.from(_spotAccess)..add(key);
+                        } else {
+                          _spotAccess = List<String>.from(_spotAccess)..remove(key);
+                        }
+                      });
+                      if (_mapController != null) _loadSpotsForCurrentView();
                     },
                   );
                 }),
@@ -2995,7 +2999,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                         setState(() {
                           _filterArea = 'source';
                           _selectedSpotSource = null;
-                          _spotAccess = null;
+                          _spotAccess = [];
                           _spotFacilitiesCovered = null;
                           _spotFacilitiesLighting = null;
                           _spotFacilitiesWaterTap = null;
