@@ -110,7 +110,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   bool _isDragging = false;
   double _lastKnownZoom = 14.0;
   // Filters
-  String? _filterArea; // "amenities" | "source" | null (default = source)
+  String? _filterArea; // "amenities" | "source" | null (default = amenities)
   String? _selectedSpotSource; // null = all sources, "" = native only, string = specific source ID
   List<String> _spotAccess = []; // when amenities: ["public", "restricted", "paid"] for OR query
   bool? _spotFacilitiesCovered; // when amenities: true = "yes"
@@ -419,7 +419,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     });
 
     // Let the dialog paint first, then load source metadata in the background.
-    if (shouldOpen && (_filterArea ?? 'source') == 'source') {
+    if (shouldOpen && (_filterArea ?? 'amenities') == 'source') {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _ensureSyncSourcesLoaded();
       });
@@ -828,8 +828,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         bounds.southwest.longitude,
         bounds.northeast.longitude,
         limit: 100,
-        filterArea: _filterArea ?? 'source',
-        spotSource: _filterArea == 'amenities' ? null : _selectedSpotSource,
+        filterArea: _filterArea ?? 'amenities',
+        spotSource: (_filterArea ?? 'amenities') == 'amenities' ? null : _selectedSpotSource,
         folders: selectedFolders.isEmpty ? null : selectedFolders,
         spotAccess: _spotAccess.isEmpty ? null : _spotAccess,
         spotFacilitiesCovered: _spotFacilitiesCovered,
@@ -868,7 +868,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   }
 
   Widget _buildFilters() {
-    final selectedFilterArea = _filterArea ?? 'source';
+    final selectedFilterArea = _filterArea ?? 'amenities';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -881,8 +881,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         const SizedBox(height: 8),
         SegmentedButton<String?>(
           segments: const [
-            ButtonSegment(value: 'source', label: Text('Source'), icon: Icon(Icons.folder)),
             ButtonSegment(value: 'amenities', label: Text('Amenities'), icon: Icon(Icons.workspace_premium)),
+            ButtonSegment(value: 'source', label: Text('Sources'), icon: Icon(Icons.folder)),
           ],
           selected: {selectedFilterArea},
           onSelectionChanged: (Set<String?> selected) {
@@ -3370,13 +3370,13 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                     child: TextButton(
                       onPressed: () {
                         final searchState = Provider.of<SearchStateService>(context, listen: false);
-                        searchState.setFilterArea('source');
+                        searchState.setFilterArea('amenities');
                         searchState.setSelectedSpotSource(null);
                         for (final sourceId in searchState.selectedFolders.keys.toList()) {
                           searchState.clearFoldersForSource(sourceId);
                         }
                         setState(() {
-                          _filterArea = 'source';
+                          _filterArea = 'amenities';
                           _selectedSpotSource = null;
                           _spotAccess = [];
                           _spotFacilitiesCovered = null;
