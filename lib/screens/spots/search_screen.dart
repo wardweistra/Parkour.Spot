@@ -89,6 +89,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   String _searchQuery = '';
+  bool _isSpotNameSearchActive = false;
   String? _placesSessionToken;
   TextEditingController? _autocompleteController; // Keep reference to autocomplete's controller
   FocusNode? _autocompleteFocusNode; // Keep reference to autocomplete's focus node
@@ -146,6 +147,22 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   
   void _onSyncSourcesChanged() {
     // Sync sources changed - no action needed for single source selection
+  }
+
+  bool get _hasSpotNameSearchQuery =>
+      _isSpotNameSearchActive && _searchQuery.trim().isNotEmpty;
+
+  void _setSearchQuery(
+    String query, {
+    required bool enableSpotNameFilter,
+  }) {
+    final activeSpotNameFilter = enableSpotNameFilter && query.trim().isNotEmpty;
+    if (_searchQuery == query && _isSpotNameSearchActive == activeSpotNameFilter) {
+      return;
+    }
+    _searchQuery = query;
+    _isSpotNameSearchActive = activeSpotNameFilter;
+    _updateVisibleSpots();
   }
 
   void _onSearchStateChanged() {
@@ -241,7 +258,6 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   void initState() {
     super.initState();
     // Removed automatic location fetching - now user-controlled
-    _searchController.addListener(_onSearchChanged);
     
     // Check permission status on initialization to show correct icon
     _checkLocationPermission();
@@ -408,13 +424,6 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     super.dispose();
   }
 
-  void _onSearchChanged() {
-    setState(() {
-      _searchQuery = _searchController.text;
-    });
-    // Suggestions are fetched directly by Autocomplete.optionsBuilder
-  }
-
   // Removed debounce-based suggestion fetching; Autocomplete.optionsBuilder now fetches live
 
   double _getZoomLevelForPlace(Map<String, dynamic> details) {
@@ -504,7 +513,6 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       setState(() {
         controllerToUpdate.text = newText;
         controllerToUpdate.selection = TextSelection.fromPosition(TextPosition(offset: controllerToUpdate.text.length));
-        _searchQuery = newText; // Keep _searchQuery in sync
         // Clear selection index to collapse autocomplete dropdown
         _selectedAutocompleteIndex = null;
         // Only clear loading state if we're managing it
@@ -516,8 +524,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       if (_autocompleteFocusNode != null && _autocompleteFocusNode!.hasFocus) {
         _autocompleteFocusNode!.unfocus();
       }
-      // Trigger a refresh of visible spots for new area
-      _updateVisibleSpots();
+      // Location results should not activate spot-name filtering.
+      _setSearchQuery(newText, enableSpotNameFilter: false);
     } catch (e) {
       // Log errors for debugging
       debugPrint('Error selecting place: $e');
@@ -814,7 +822,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       _totalSpotsInView = ranked['totalCount'] as int?;
       _bestShownCount = ranked['shownCount'] as int?;
       
-      // All filtering is now done at database level, just update visible spots
+      // Source/amenities filters are applied server-side; spot-name filtering is client-side.
       _updateVisibleSpots();
     } catch (e) {
       debugPrint('Error loading spots for current view: $e');
@@ -826,13 +834,17 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   }
 
   void _updateVisibleSpots() {
-    // Note: Search query is now only used for location autocomplete, not spot name filtering
-    // Source and image filtering are now done at database level, so no client-side filtering needed
+    final normalizedQuery = _searchQuery.trim().toLowerCase();
+    final filteredSpots = _hasSpotNameSearchQuery
+        ? _loadedSpots
+            .where((spot) => spot.name.toLowerCase().contains(normalizedQuery))
+            .toList()
+        : _loadedSpots;
 
     // Update visible spots and markers
     setState(() {
-      _visibleSpots = _loadedSpots;
-      _markers = _buildMarkers(_loadedSpots);
+      _visibleSpots = filteredSpots;
+      _markers = _buildMarkers(filteredSpots);
     });
   }
 
@@ -2387,13 +2399,6 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                             return const Iterable<Map<String, dynamic>>.empty();
                           }
 
-                          // Keep _searchQuery in sync (without triggering external fetches)
-                          if (_searchQuery != query) {
-                            setState(() {
-                              _searchQuery = query;
-                            });
-                          }
-
                           // Ensure session token
                           _placesSessionToken ??= const Uuid().v4();
 
@@ -2495,7 +2500,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                               controller: textEditingController,
                               focusNode: focusNode,
                               decoration: InputDecoration(
-                              hintText: 'Search location…',
+                              hintText: 'Search location or spot name…',
                               prefixIcon: Padding(
                                 padding: const EdgeInsets.only(left: 6),
                                 child: Icon(Icons.search),
@@ -2525,8 +2530,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                       tooltip: 'Clear',
                                       onPressed: () {
                                         textEditingController.clear();
-                                        // optionsBuilder will return empty for empty query
-                                        setState(() {});
+                                        _setSearchQuery('', enableSpotNameFilter: false);
                                       },
                                     ),
                                   Padding(
@@ -2573,11 +2577,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                               ),
                             ),
                             onChanged: (value) {
-                              setState(() {
-                                _searchQuery = value;
-                                // Don't reset selection here - let optionsViewBuilder handle it
-                                // This prevents flickering when typing
-                              });
+                              // Keep location autocomplete and spot-name filtering in sync.
+                              _setSearchQuery(value, enableSpotNameFilter: true);
                             },
                             onSubmitted: (value) {
                               // When Enter is pressed, if there's a selected option, select it
@@ -3010,7 +3011,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                           text: TextSpan(
                                             children: [
                                               TextSpan(
-                                                text: _totalSpotsInView != null && _bestShownCount != null
+                                                text: !_hasSpotNameSearchQuery &&
+                                                        _totalSpotsInView != null &&
+                                                        _bestShownCount != null
                                                     ? '$_totalSpotsInView spots'
                                                     : '${_visibleSpots.length} ${_visibleSpots.length == 1 ? 'spot' : 'spots'} found',
                                                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -3018,7 +3021,10 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                                   color: Theme.of(context).colorScheme.onSurface,
                                                 ),
                                               ),
-                                              if (_totalSpotsInView != null && _bestShownCount != null && _bestShownCount! < _totalSpotsInView!)
+                                              if (!_hasSpotNameSearchQuery &&
+                                                  _totalSpotsInView != null &&
+                                                  _bestShownCount != null &&
+                                                  _bestShownCount! < _totalSpotsInView!)
                                                 TextSpan(
                                                   text: ' ($_bestShownCount best shown)',
                                                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -3048,18 +3054,18 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                             mainAxisAlignment: MainAxisAlignment.center,
                                             children: [
                                               Icon(
-                                                _searchQuery.isNotEmpty ? Icons.search_off : Icons.location_off,
+                                                _hasSpotNameSearchQuery ? Icons.search_off : Icons.location_off,
                                                 size: 64,
                                                 color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                                               ),
                                               const SizedBox(height: 16),
                                               Text(
-                                                _searchQuery.isNotEmpty ? 'No spots found' : 'No spots in this area',
+                                                _hasSpotNameSearchQuery ? 'No spots found' : 'No spots in this area',
                                                 style: Theme.of(context).textTheme.headlineSmall,
                                               ),
                                               const SizedBox(height: 8),
                                               Text(
-                                                _searchQuery.isNotEmpty
+                                                _hasSpotNameSearchQuery
                                                     ? 'Try adjusting your search terms'
                                                     : 'Move the map to explore different areas',
                                                 textAlign: TextAlign.center,
