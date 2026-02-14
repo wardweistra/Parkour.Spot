@@ -16,6 +16,9 @@ class SearchStateService extends ChangeNotifier {
   static const String _keySpotFacilitiesWaterTap = 'search_spot_facilities_water_tap'; // when amenities: "yes"
   static const String _keySpotFacilitiesToilet = 'search_spot_facilities_toilet'; // when amenities: "yes"
   static const String _keySpotFacilitiesParking = 'search_spot_facilities_parking'; // when amenities: "yes"
+  static const String _keyGoodFor = 'search_good_for'; // when amenities: list for array-contains-any
+  static const String _keySpotFeatures = 'search_spot_features'; // when amenities: list for array-contains-any
+  static const String _keyAttributeFilterMode = 'search_attribute_filter_mode'; // "goodFor" | "spotFeatures"
   static const String _keySelectedFolders = 'search_selected_folders'; // JSON map of sourceId -> List<String> (multiple folders, empty list = all folders)
   static const String _keySelectedListId = 'search_selected_list_id'; // Selected spot list ID for highlighting
   static const String _keyLastKnownUserLat = 'search_last_known_user_lat';
@@ -34,6 +37,9 @@ class SearchStateService extends ChangeNotifier {
   bool? _spotFacilitiesWaterTap; // when filterArea=amenities: true = "yes"
   bool? _spotFacilitiesToilet; // when filterArea=amenities: true = "yes"
   bool? _spotFacilitiesParking; // when filterArea=amenities: true = "yes"
+  List<String> _goodFor = []; // when filterArea=amenities: array-contains-any
+  List<String> _spotFeatures = []; // when filterArea=amenities: array-contains-any
+  String _attributeFilterMode = 'goodFor'; // "goodFor" | "spotFeatures" - which attribute chip section to show
   Map<String, List<String>> _selectedFolders = {}; // sourceId -> list of selected folder names (empty list = all folders)
   String? _selectedListId; // Selected spot list ID for highlighting
   double? _lastKnownUserLat;
@@ -52,6 +58,9 @@ class SearchStateService extends ChangeNotifier {
   bool? get spotFacilitiesWaterTap => _spotFacilitiesWaterTap;
   bool? get spotFacilitiesToilet => _spotFacilitiesToilet;
   bool? get spotFacilitiesParking => _spotFacilitiesParking;
+  List<String> get goodFor => List.unmodifiable(_goodFor);
+  List<String> get spotFeatures => List.unmodifiable(_spotFeatures);
+  String get attributeFilterMode => _attributeFilterMode;
   Map<String, List<String>> get selectedFolders => Map.unmodifiable(_selectedFolders);
   String? get selectedListId => _selectedListId;
   double? get lastKnownUserLat => _lastKnownUserLat;
@@ -137,6 +146,12 @@ class SearchStateService extends ChangeNotifier {
       _spotFacilitiesWaterTap = prefs.getBool(_keySpotFacilitiesWaterTap);
       _spotFacilitiesToilet = prefs.getBool(_keySpotFacilitiesToilet);
       _spotFacilitiesParking = prefs.getBool(_keySpotFacilitiesParking);
+      _goodFor = _loadStringListFromPrefs(prefs, _keyGoodFor);
+      _spotFeatures = _loadStringListFromPrefs(prefs, _keySpotFeatures);
+      _attributeFilterMode = prefs.getString(_keyAttributeFilterMode) ?? 'goodFor';
+      if (_attributeFilterMode != 'goodFor' && _attributeFilterMode != 'spotFeatures') {
+        _attributeFilterMode = 'goodFor';
+      }
       _selectedListId = prefs.getString(_keySelectedListId); // null if not set
       _lastKnownUserLat = prefs.getDouble(_keyLastKnownUserLat);
       _lastKnownUserLng = prefs.getDouble(_keyLastKnownUserLng);
@@ -218,6 +233,9 @@ class SearchStateService extends ChangeNotifier {
       _spotFacilitiesWaterTap = null;
       _spotFacilitiesToilet = null;
       _spotFacilitiesParking = null;
+      _goodFor = [];
+      _spotFeatures = [];
+      _attributeFilterMode = 'goodFor';
     }
     notifyListeners();
     await _persistFilterState();
@@ -271,6 +289,40 @@ class SearchStateService extends ChangeNotifier {
     await _persistFilterState();
   }
 
+  /// Switch attribute filter mode: 'goodFor' clears spotFeatures, 'spotFeatures' clears goodFor.
+  Future<void> setAttributeFilterMode(String mode) async {
+    _attributeFilterMode = mode;
+    if (mode == 'goodFor') {
+      _spotFeatures = [];
+    } else if (mode == 'spotFeatures') {
+      _goodFor = [];
+    }
+    notifyListeners();
+    await _persistFilterState();
+  }
+
+  Future<void> toggleGoodFor(String key) async {
+    if (_goodFor.contains(key)) {
+      _goodFor = List<String>.from(_goodFor)..remove(key);
+    } else {
+      _spotFeatures = []; // Mutual exclusivity: Good For clears Spot Features
+      _goodFor = List<String>.from(_goodFor)..add(key);
+    }
+    notifyListeners();
+    await _persistFilterState();
+  }
+
+  Future<void> toggleSpotFeatures(String key) async {
+    if (_spotFeatures.contains(key)) {
+      _spotFeatures = List<String>.from(_spotFeatures)..remove(key);
+    } else {
+      _goodFor = []; // Mutual exclusivity: Spot Features clears Good For
+      _spotFeatures = List<String>.from(_spotFeatures)..add(key);
+    }
+    notifyListeners();
+    await _persistFilterState();
+  }
+
   Future<void> _persistFilterState() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -309,6 +361,17 @@ class SearchStateService extends ChangeNotifier {
       } else {
         await prefs.setBool(_keySpotFacilitiesParking, _spotFacilitiesParking!);
       }
+      if (_goodFor.isEmpty) {
+        await prefs.remove(_keyGoodFor);
+      } else {
+        await prefs.setString(_keyGoodFor, jsonEncode(_goodFor));
+      }
+      if (_spotFeatures.isEmpty) {
+        await prefs.remove(_keySpotFeatures);
+      } else {
+        await prefs.setString(_keySpotFeatures, jsonEncode(_spotFeatures));
+      }
+      await prefs.setString(_keyAttributeFilterMode, _attributeFilterMode);
     } catch (e) {
       // Ignore SharedPreferences errors
     }
@@ -363,6 +426,18 @@ class SearchStateService extends ChangeNotifier {
     } catch (e) {
       // Ignore SharedPreferences errors - settings will not persist but app continues to work
     }
+  }
+
+  static List<String> _loadStringListFromPrefs(SharedPreferences prefs, String key) {
+    final json = prefs.getString(key);
+    if (json == null || json.isEmpty) return [];
+    try {
+      final decoded = jsonDecode(json);
+      if (decoded is List) {
+        return List<String>.from(decoded.map((v) => v.toString()));
+      }
+    } catch (_) {}
+    return [];
   }
 
   /// Save the last known user location

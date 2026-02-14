@@ -973,6 +973,8 @@ class SpotService extends ChangeNotifier {
     bool? spotFacilitiesWaterTap, // when amenities: true = "yes"
     bool? spotFacilitiesToilet, // when amenities: true = "yes"
     bool? spotFacilitiesParking, // when amenities: true = "yes"
+    List<String>? goodFor, // when amenities: array-contains-any
+    List<String>? spotFeatures, // when amenities: array-contains-any
   }) async {
     try {
       final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
@@ -996,6 +998,8 @@ class SpotService extends ChangeNotifier {
         if (spotFacilitiesWaterTap == true) requestData['spotFacilitiesWaterTap'] = 'yes';
         if (spotFacilitiesToilet == true) requestData['spotFacilitiesToilet'] = 'yes';
         if (spotFacilitiesParking == true) requestData['spotFacilitiesParking'] = 'yes';
+        if (goodFor != null && goodFor.isNotEmpty) requestData['goodFor'] = goodFor.take(10).toList();
+        if (spotFeatures != null && spotFeatures.isNotEmpty) requestData['spotFeatures'] = spotFeatures.take(10).toList();
       } else {
         if (spotSource != null) {
           requestData['spotSource'] = spotSource;

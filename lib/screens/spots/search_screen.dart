@@ -118,6 +118,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   bool? _spotFacilitiesWaterTap; // when amenities: true = "yes"
   bool? _spotFacilitiesToilet; // when amenities: true = "yes"
   bool? _spotFacilitiesParking; // when amenities: true = "yes"
+  List<String> _goodFor = []; // when amenities: array-contains-any
+  List<String> _spotFeatures = []; // when amenities: array-contains-any
+  String _attributeFilterMode = 'goodFor'; // "goodFor" | "spotFeatures"
   bool _showFiltersDialog = false; // Controls filters dialog visibility
   SpotService? _spotServiceRef; // To attach a listener for spot updates
   SyncSourceService? _syncSourceServiceRef; // To attach a listener for sync source updates
@@ -159,6 +162,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     final newSpotFacilitiesWaterTap = searchState.spotFacilitiesWaterTap;
     final newSpotFacilitiesToilet = searchState.spotFacilitiesToilet;
     final newSpotFacilitiesParking = searchState.spotFacilitiesParking;
+    final newGoodFor = List<String>.from(searchState.goodFor);
+    final newSpotFeatures = List<String>.from(searchState.spotFeatures);
+    final newAttributeFilterMode = searchState.attributeFilterMode;
     final newIsSatelliteView = searchState.isSatellite;
     final newSelectedListId = searchState.selectedListId;
     
@@ -169,7 +175,10 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         _spotFacilitiesLighting != newSpotFacilitiesLighting ||
         _spotFacilitiesWaterTap != newSpotFacilitiesWaterTap ||
         _spotFacilitiesToilet != newSpotFacilitiesToilet ||
-        _spotFacilitiesParking != newSpotFacilitiesParking;
+        _spotFacilitiesParking != newSpotFacilitiesParking ||
+        !listEquals(_goodFor, newGoodFor) ||
+        !listEquals(_spotFeatures, newSpotFeatures) ||
+        _attributeFilterMode != newAttributeFilterMode;
     final listIdChanged = _selectedListId != newSelectedListId;
     
     setState(() {
@@ -182,6 +191,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       _spotFacilitiesWaterTap = newSpotFacilitiesWaterTap;
       _spotFacilitiesToilet = newSpotFacilitiesToilet;
       _spotFacilitiesParking = newSpotFacilitiesParking;
+      _goodFor = newGoodFor;
+      _spotFeatures = newSpotFeatures;
+      _attributeFilterMode = newAttributeFilterMode;
       _selectedListId = newSelectedListId;
     });
     
@@ -214,7 +226,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
           _spotFacilitiesLighting == true ||
           _spotFacilitiesWaterTap == true ||
           _spotFacilitiesToilet == true ||
-          _spotFacilitiesParking == true;
+          _spotFacilitiesParking == true ||
+          _goodFor.isNotEmpty ||
+          _spotFeatures.isNotEmpty;
     }
     final hasFolderFilter = _selectedSpotSource != null &&
         _selectedSpotSource!.isNotEmpty &&
@@ -288,6 +302,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         _spotFacilitiesWaterTap = _searchStateServiceRef!.spotFacilitiesWaterTap;
         _spotFacilitiesToilet = _searchStateServiceRef!.spotFacilitiesToilet;
         _spotFacilitiesParking = _searchStateServiceRef!.spotFacilitiesParking;
+        _goodFor = List<String>.from(_searchStateServiceRef!.goodFor);
+        _spotFeatures = List<String>.from(_searchStateServiceRef!.spotFeatures);
+        _attributeFilterMode = _searchStateServiceRef!.attributeFilterMode;
         _selectedListId = initialListId;
       });
       
@@ -789,6 +806,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         spotFacilitiesWaterTap: _spotFacilitiesWaterTap,
         spotFacilitiesToilet: _spotFacilitiesToilet,
         spotFacilitiesParking: _spotFacilitiesParking,
+        goodFor: _goodFor.isEmpty ? null : _goodFor,
+        spotFeatures: _spotFeatures.isEmpty ? null : _spotFeatures,
       );
 
       _loadedSpots = (ranked['spots'] as List<Spot>?) ?? <Spot>[];
@@ -961,6 +980,82 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                 ),
               ],
             ),
+            const SizedBox(height: 12),
+            Text(
+              'With any of these attributes',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+            ),
+            const SizedBox(height: 8),
+            SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(value: 'goodFor', label: Text('Good For')),
+                ButtonSegment(value: 'spotFeatures', label: Text('Spot Features')),
+              ],
+              selected: {_attributeFilterMode},
+              onSelectionChanged: (Set<String> selected) {
+                final mode = selected.first;
+                searchState.setAttributeFilterMode(mode);
+                setState(() {
+                  _attributeFilterMode = mode;
+                  if (mode == 'goodFor') {
+                    _spotFeatures = [];
+                  } else {
+                    _goodFor = [];
+                  }
+                });
+                if (_mapController != null) _loadSpotsForCurrentView();
+              },
+            ),
+            const SizedBox(height: 12),
+            if (_attributeFilterMode == 'spotFeatures') ...[
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: SpotAttributes.spotFeatures.keys.map((key) {
+                  final label = SpotAttributes.getLabel('features', key);
+                  return FilterChip(
+                    label: Text(label),
+                    selected: _spotFeatures.contains(key),
+                    onSelected: (selected) {
+                      searchState.toggleSpotFeatures(key);
+                      setState(() {
+                        if (selected) {
+                          _spotFeatures = List<String>.from(_spotFeatures)..add(key);
+                        } else {
+                          _spotFeatures = List<String>.from(_spotFeatures)..remove(key);
+                        }
+                      });
+                      if (_mapController != null) _loadSpotsForCurrentView();
+                    },
+                  );
+                }).toList(),
+              ),
+            ] else ...[
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: SpotAttributes.goodForSkills.keys.map((key) {
+                  final label = SpotAttributes.getLabel('goodFor', key);
+                  return FilterChip(
+                    label: Text(label),
+                    selected: _goodFor.contains(key),
+                    onSelected: (selected) {
+                      searchState.toggleGoodFor(key);
+                      setState(() {
+                        if (selected) {
+                          _goodFor = List<String>.from(_goodFor)..add(key);
+                        } else {
+                          _goodFor = List<String>.from(_goodFor)..remove(key);
+                        }
+                      });
+                      if (_mapController != null) _loadSpotsForCurrentView();
+                    },
+                  );
+                }).toList(),
+              ),
+            ],
           ],
         );
       },
@@ -3005,6 +3100,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                           _spotFacilitiesWaterTap = null;
                           _spotFacilitiesToilet = null;
                           _spotFacilitiesParking = null;
+                          _goodFor = [];
+                          _spotFeatures = [];
+                          _attributeFilterMode = 'goodFor';
                         });
                         _loadSpotsForCurrentView();
                         // Close dialog

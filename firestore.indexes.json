@@ -111,6 +111,30 @@
       ]
     },
     {
+      "collectionGroup": "spots",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "goodFor", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "duplicateOf", "order": "ASCENDING" },
+        { "fieldPath": "hidden", "order": "ASCENDING" },
+        { "fieldPath": "ranking", "order": "DESCENDING" },
+        { "fieldPath": "latitude", "order": "DESCENDING" },
+        { "fieldPath": "longitude", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "spots",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "spotFeatures", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "duplicateOf", "order": "ASCENDING" },
+        { "fieldPath": "hidden", "order": "ASCENDING" },
+        { "fieldPath": "ranking", "order": "DESCENDING" },
+        { "fieldPath": "latitude", "order": "DESCENDING" },
+        { "fieldPath": "longitude", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "ratings",
       "queryScope": "COLLECTION",
       "fields": [

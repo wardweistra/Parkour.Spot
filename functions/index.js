@@ -508,6 +508,8 @@ exports.getTopSpotsInBounds = onCall(
           spotFacilitiesWaterTap = null, // when filterArea=amenities: "yes"
           spotFacilitiesToilet = null, // when filterArea=amenities: "yes"
           spotFacilitiesParking = null, // when filterArea=amenities: "yes"
+          goodFor = null, // when filterArea=amenities: array of keys for array-contains-any
+          spotFeatures = null, // when filterArea=amenities: array of keys for array-contains-any
         } = request.data || {};
 
         if (
@@ -618,6 +620,8 @@ exports.getTopSpotsInBounds = onCall(
           "ranking",
           "spotAccess",
           "spotFacilities",
+          "goodFor",
+          "spotFeatures",
         ];
 
         const maxItems = Math.max(0, Math.min(200, Number(limit) || 100));
@@ -643,8 +647,13 @@ exports.getTopSpotsInBounds = onCall(
           (spotFacilitiesLighting === "yes") ||
           (spotFacilitiesWaterTap === "yes") ||
           (spotFacilitiesToilet === "yes") ||
-          (spotFacilitiesParking === "yes")
+          (spotFacilitiesParking === "yes") ||
+          (goodFor && Array.isArray(goodFor) && goodFor.length > 0) ||
+          (spotFeatures && Array.isArray(spotFeatures) && spotFeatures.length > 0)
         );
+
+        const goodForArr = Array.isArray(goodFor) ? goodFor.filter(v => v && typeof v === "string") : [];
+        const spotFeaturesArr = Array.isArray(spotFeatures) ? spotFeatures.filter(v => v && typeof v === "string") : [];
 
         // Build query function - different logic for amenities vs source area
         const buildQuery = (lngMin, lngMax) => {
@@ -683,6 +692,12 @@ exports.getTopSpotsInBounds = onCall(
             }
             if (spotFacilitiesParking === "yes") {
               query = query.where("spotFacilities.parking", "==", "yes");
+            }
+            // Firestore allows only one array-contains-any per query. Apply one in query, filter the other in-memory if both set.
+            if (goodForArr.length > 0) {
+              query = query.where("goodFor", "array-contains-any", goodForArr.slice(0, 10));
+            } else if (spotFeaturesArr.length > 0) {
+              query = query.where("spotFeatures", "array-contains-any", spotFeaturesArr.slice(0, 10));
             }
           } else {
             // Source area: spotSource, folder, or duplicateOf (all sources)
@@ -750,7 +765,8 @@ exports.getTopSpotsInBounds = onCall(
         }
 
         // Folder filtering is now done at database level via whereIn query
-        // No additional in-memory filtering needed
+        // No additional in-memory filtering needed. Good For and Spot Features are mutually
+        // exclusive in the UI, so we never have both; no in-memory filter needed.
 
         // Normalize Firestore Timestamp fields to ISO strings for client
         const normalize = (s) => {
