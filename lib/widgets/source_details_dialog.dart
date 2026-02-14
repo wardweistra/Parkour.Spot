@@ -1,22 +1,100 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import '../services/sync_source_service.dart';
 import 'instagram_button.dart';
 
-class SourceDetailsDialog extends StatelessWidget {
-  final SyncSource source;
+/// Displays full details for a sync source.
+/// Pass [source] when already loaded (e.g. from spot detail), or [sourceId]
+/// for lazy loading (e.g. from filter tab - fetches on open).
+class SourceDetailsDialog extends StatefulWidget {
+  final SyncSource? source;
+  final String? sourceId;
 
-  const SourceDetailsDialog({
+  SourceDetailsDialog({
     super.key,
-    required this.source,
-  });
+    this.source,
+    this.sourceId,
+  }) : assert(source != null || sourceId != null,
+       'Either source or sourceId must be provided');
+
+  @override
+  State<SourceDetailsDialog> createState() => _SourceDetailsDialogState();
+}
+
+class _SourceDetailsDialogState extends State<SourceDetailsDialog> {
+  SyncSource? _source;
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.source != null) {
+      _source = widget.source;
+      _isLoading = false;
+    } else {
+      _loadSource();
+    }
+  }
+
+  Future<void> _loadSource() async {
+    final service = Provider.of<SyncSourceService>(context, listen: false);
+    final source = await service.fetchSyncSourceById(widget.sourceId!);
+    if (!mounted) return;
+    setState(() {
+      _source = source;
+      _isLoading = false;
+      _error = source == null ? 'Failed to load source' : null;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return AlertDialog(
+        content: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 16),
+              Text(
+                'Loading source...',
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_error != null || _source == null) {
+      return AlertDialog(
+        title: const Text('Error'),
+        content: Text(_error ?? 'Source not found'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      );
+    }
+
+    return _buildContent(_source!);
+  }
+
+  Widget _buildContent(SyncSource source) {
     // Get spot count from lastSyncStats.total
     final spotCount = source.lastSyncStats?['total'] ?? 0;
-    
+
     return AlertDialog(
       title: SelectableText(source.name),
       content: SingleChildScrollView(
@@ -146,11 +224,10 @@ class SourceDetailsDialog extends StatelessWidget {
     );
   }
 
-
   String _formatDateTime(DateTime dateTime) {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
-    
+
     if (difference.inDays > 0) {
       return '${difference.inDays} day${difference.inDays == 1 ? '' : 's'} ago';
     } else if (difference.inHours > 0) {

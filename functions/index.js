@@ -3625,7 +3625,7 @@ exports.deleteSyncSource = onCall(
 // Function to get all sync sources. includeInactive allowed only for admins
 exports.getSyncSources = onCall({region: "europe-west1"}, async (request) => {
   try {
-    let {includeInactive = false} = request.data;
+    let {includeInactive = false, summaryOnly = false} = request.data;
 
     // Only admins may include inactive sources
     try {
@@ -3652,10 +3652,23 @@ exports.getSyncSources = onCall({region: "europe-west1"}, async (request) => {
       snapshot = await query.get();
     }
 
-    const sources = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    let sources;
+    if (summaryOnly) {
+      sources = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          name: data.name || "",
+          recordFolderName: data.recordFolderName ?? null,
+          allFolders: data.allFolders ?? null,
+        };
+      });
+    } else {
+      sources = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+    }
 
     return {
       success: true,
@@ -3665,6 +3678,32 @@ exports.getSyncSources = onCall({region: "europe-west1"}, async (request) => {
   } catch (error) {
     console.error("Error getting sync sources:", error);
     throw new Error(`Failed to get sync sources: ${error.message}`);
+  }
+});
+
+// Function to get a single sync source by ID (full details, for details dialog)
+exports.getSyncSource = onCall({region: "europe-west1"}, async (request) => {
+  try {
+    const {sourceId} = request.data;
+    if (!sourceId || typeof sourceId !== "string") {
+      throw new Error("sourceId is required");
+    }
+
+    const doc = await db.collection("syncSources").doc(sourceId).get();
+    if (!doc.exists) {
+      return {success: false, error: "Source not found", source: null};
+    }
+
+    const data = doc.data();
+    const source = {id: doc.id, ...data};
+
+    return {
+      success: true,
+      source: source,
+    };
+  } catch (error) {
+    console.error("Error getting sync source:", error);
+    throw new Error(`Failed to get sync source: ${error.message}`);
   }
 });
 
