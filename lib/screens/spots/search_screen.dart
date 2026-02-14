@@ -275,8 +275,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     // Initialize image page controller
     _imagePageController = PageController();
 
-    // Preload external sync sources for filters
-    // Safe to call with listen: false in initState
+    // Initialize provider references and listeners.
+    // Safe to call with listen: false in initState.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Listen to SearchStateService changes to update filters when storage loads
       _searchStateServiceRef = Provider.of<SearchStateService>(context, listen: false);
