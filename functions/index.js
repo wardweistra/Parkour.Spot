@@ -2449,14 +2449,19 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
   // Mark sync as in progress (if not already marked)
   const sourceDocRef = db.collection("syncSources").doc(sourceId);
   if (!isResuming) {
+    const initialSyncProgress = {
+      processedCount: 0,
+      totalCount: placemarks.length,
+      lastProcessedIndex: 0,
+    };
+    if (source.recordFolderName === true) {
+      initialSyncProgress.collectedFolders = [];
+    }
+
     await sourceDocRef.update({
       syncInProgress: true,
       syncType: syncType,
-      syncProgress: {
-        processedCount: 0,
-        totalCount: placemarks.length,
-        lastProcessedIndex: 0,
-      },
+      syncProgress: initialSyncProgress,
     });
   }
 
@@ -2471,8 +2476,19 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
   const updatedSpotSummaries = [];
   const removedSpotSummaries = [];
 
-  // Collect all unique folder names from successfully processed spots if recordFolderName is enabled
-  const allFolders = new Set();
+  // Collect all unique folder names from successfully processed spots if recordFolderName is enabled.
+  // On resumed syncs, restore folders collected in earlier partial runs.
+  const previouslyCollectedFolders = (
+    isResuming &&
+    source.recordFolderName === true &&
+    Array.isArray(source.syncProgress?.collectedFolders)
+  ) ? source.syncProgress.collectedFolders : [];
+  const allFolders = new Set(
+      previouslyCollectedFolders
+          .filter((folder) => typeof folder === "string")
+          .map((folder) => folder.trim())
+          .filter((folder) => folder.length > 0),
+  );
 
   if (source.recordFolderName === true) {
     console.log(
@@ -2481,6 +2497,11 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
     console.log(
         `[FOLDER COLLECTION] Total placemarks to process: ${placemarks.length}`,
     );
+    if (isResuming) {
+      console.log(
+          `[FOLDER COLLECTION] Restored ${allFolders.size} folder(s) from previous partial runs`,
+      );
+    }
 
     // Log all folder names found in placemarks before processing
     const foldersInPlacemarks = new Set();
@@ -2504,12 +2525,16 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
       console.log(`Approaching timeout. Processed ${i - startIndex} spots (${i}/${placemarks.length} total). Saving progress...`);
 
       // Save progress
+      const syncProgressUpdate = {
+        processedCount: i,
+        totalCount: placemarks.length,
+        lastProcessedIndex: i,
+      };
+      if (source.recordFolderName === true) {
+        syncProgressUpdate.collectedFolders = Array.from(allFolders);
+      }
       await sourceDocRef.update({
-        syncProgress: {
-          processedCount: i,
-          totalCount: placemarks.length,
-          lastProcessedIndex: i,
-        },
+        syncProgress: syncProgressUpdate,
       });
 
       // Return partial result
@@ -2860,12 +2885,16 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
 
     // Update progress after each batch
     if ((i + 1) % BATCH_SIZE === 0 || (i + 1) === placemarks.length) {
+      const syncProgressUpdate = {
+        processedCount: i + 1,
+        totalCount: placemarks.length,
+        lastProcessedIndex: i + 1,
+      };
+      if (source.recordFolderName === true) {
+        syncProgressUpdate.collectedFolders = Array.from(allFolders);
+      }
       await sourceDocRef.update({
-        syncProgress: {
-          processedCount: i + 1,
-          totalCount: placemarks.length,
-          lastProcessedIndex: i + 1,
-        },
+        syncProgress: syncProgressUpdate,
       });
       console.log(`Progress update: ${i + 1}/${placemarks.length} spots processed`);
     }
