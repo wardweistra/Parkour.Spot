@@ -122,6 +122,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   List<String> _spotFeatures = []; // when amenities: array-contains-any
   String _attributeFilterMode = 'goodFor'; // "goodFor" | "spotFeatures"
   bool _showFiltersDialog = false; // Controls filters dialog visibility
+  bool _hasRequestedSyncSourcesForFilters = false;
   SpotService? _spotServiceRef; // To attach a listener for spot updates
   SyncSourceService? _syncSourceServiceRef; // To attach a listener for sync source updates
   SearchStateService? _searchStateServiceRef; // To attach a listener for search state updates
@@ -322,10 +323,6 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       // Listen to SyncSourceService changes to update selected sources
       _syncSourceServiceRef = Provider.of<SyncSourceService>(context, listen: false);
       _syncSourceServiceRef!.addListener(_onSyncSourcesChanged);
-
-      if (_syncSourceServiceRef!.sources.isEmpty && !_syncSourceServiceRef!.isLoading) {
-        _syncSourceServiceRef!.fetchSyncSources(includeInactive: false);
-      }
     });
   }
 
@@ -413,6 +410,40 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       _searchQuery = _searchController.text;
     });
     // Suggestions are fetched directly by Autocomplete.optionsBuilder
+  }
+
+  void _toggleFiltersDialog() {
+    final shouldOpen = !_showFiltersDialog;
+    setState(() {
+      _showFiltersDialog = shouldOpen;
+    });
+
+    // Let the dialog paint first, then load source metadata in the background.
+    if (shouldOpen && (_filterArea ?? 'source') == 'source') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _ensureSyncSourcesLoaded();
+      });
+    }
+  }
+
+  void _ensureSyncSourcesLoaded({bool force = false}) {
+    final syncService = _syncSourceServiceRef ??
+        Provider.of<SyncSourceService>(context, listen: false);
+
+    if (syncService.isLoading) return;
+    if (!force) {
+      if (syncService.sources.isNotEmpty) return;
+      if (_hasRequestedSyncSourcesForFilters && syncService.error == null) return;
+    }
+
+    _hasRequestedSyncSourcesForFilters = true;
+    unawaited(
+      syncService.fetchSyncSources(includeInactive: false).whenComplete(() {
+        if (syncService.error != null) {
+          _hasRequestedSyncSourcesForFilters = false;
+        }
+      }),
+    );
   }
 
   // Removed debounce-based suggestion fetching; Autocomplete.optionsBuilder now fetches live
@@ -837,39 +868,47 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   }
 
   Widget _buildFilters() {
-    return Consumer<SyncSourceService>(
-      builder: (context, syncService, child) {
-        final sources = syncService.sources..sort((a, b) => a.name.compareTo(b.name));
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Filter by',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                  ),
-            ),
-            const SizedBox(height: 8),
-            SegmentedButton<String?>(
-              segments: const [
-                ButtonSegment(value: 'source', label: Text('Source'), icon: Icon(Icons.folder)),
-                ButtonSegment(value: 'amenities', label: Text('Amenities'), icon: Icon(Icons.workspace_premium)),
-              ],
-              selected: {_filterArea ?? 'source'},
-              onSelectionChanged: (Set<String?> selected) {
-                final value = selected.first;
-                Provider.of<SearchStateService>(context, listen: false).setFilterArea(value);
-                setState(() {
-                  _filterArea = value;
-                });
-                if (_mapController != null) _loadSpotsForCurrentView();
-              },
-            ),
-            const SizedBox(height: 16),
-            if (_filterArea == 'amenities') _buildAmenitiesFilters() else _buildSourceFilters(syncService, sources),
+    final selectedFilterArea = _filterArea ?? 'source';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Filter by',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
+        ),
+        const SizedBox(height: 8),
+        SegmentedButton<String?>(
+          segments: const [
+            ButtonSegment(value: 'source', label: Text('Source'), icon: Icon(Icons.folder)),
+            ButtonSegment(value: 'amenities', label: Text('Amenities'), icon: Icon(Icons.workspace_premium)),
           ],
-        );
-      },
+          selected: {selectedFilterArea},
+          onSelectionChanged: (Set<String?> selected) {
+            final value = selected.first;
+            Provider.of<SearchStateService>(context, listen: false).setFilterArea(value);
+            setState(() {
+              _filterArea = value;
+            });
+            if (value == 'source') {
+              _ensureSyncSourcesLoaded();
+            }
+            if (_mapController != null) _loadSpotsForCurrentView();
+          },
+        ),
+        const SizedBox(height: 16),
+        if (selectedFilterArea == 'amenities')
+          _buildAmenitiesFilters()
+        else
+          Consumer<SyncSourceService>(
+            builder: (context, syncService, child) {
+              final sources = List<SyncSource>.from(syncService.sources)
+                ..sort((a, b) => a.name.compareTo(b.name));
+              return _buildSourceFilters(syncService, sources);
+            },
+          ),
+      ],
     );
   }
 
@@ -1299,7 +1338,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     );
   }
 
-  Widget _buildSourceFilters(SyncSourceService syncService, List<dynamic> sources) {
+  Widget _buildSourceFilters(SyncSourceService syncService, List<SyncSource> sources) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1322,11 +1361,21 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
             else if (syncService.error != null)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Text(
-                  'Failed to load sources',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.error,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Failed to load sources',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
                       ),
+                    ),
+                    TextButton(
+                      onPressed: () => _ensureSyncSourcesLoaded(force: true),
+                      child: const Text('Retry'),
+                    ),
+                  ],
                 ),
               )
             else
@@ -2540,9 +2589,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                           ),
                                           tooltip: 'Filters',
                                           onPressed: () {
-                                            setState(() {
-                                              _showFiltersDialog = !_showFiltersDialog;
-                                            });
+                                            _toggleFiltersDialog();
                                           },
                                         ),
                                         if (_hasActiveFilters())
