@@ -123,14 +123,17 @@ class SearchStateService extends ChangeNotifier {
       _zoom = prefs.getDouble(_keyZoom);
       _isSatellite = prefs.getBool(_keyIsSatellite) ?? false;
       final storedFilterArea = prefs.getString(_keyFilterArea);
-      // Migration: "source" was the old default; treat as null so new default (amenities) applies
-      if (storedFilterArea == 'source') {
+      _selectedSpotSource = prefs.getString(_keySelectedSpotSource); // null if not set (all sources)
+      final foldersJson = prefs.getString(_keySelectedFolders);
+      // Migration: "source" used to be the default value.
+      // Keep legacy migration, but preserve explicit source filters.
+      final hasStoredSourceFilters = _selectedSpotSource != null || _hasStoredFolderSelections(foldersJson);
+      if (storedFilterArea == 'source' && !hasStoredSourceFilters) {
         _filterArea = null;
         await prefs.remove(_keyFilterArea);
       } else {
         _filterArea = storedFilterArea;
       }
-      _selectedSpotSource = prefs.getString(_keySelectedSpotSource); // null if not set (all sources)
       final accessJson = prefs.getString(_keySpotAccess);
       if (accessJson != null && accessJson.isNotEmpty) {
         try {
@@ -164,7 +167,6 @@ class SearchStateService extends ChangeNotifier {
       _lastKnownUserLng = prefs.getDouble(_keyLastKnownUserLng);
       
       // Load selected folders (migrate from old format if needed)
-      final foldersJson = prefs.getString(_keySelectedFolders);
       if (foldersJson != null) {
         try {
           final decoded = jsonDecode(foldersJson) as Map<String, dynamic>;
@@ -473,6 +475,21 @@ class SearchStateService extends ChangeNotifier {
       }
     } catch (_) {}
     return [];
+  }
+
+  static bool _hasStoredFolderSelections(String? foldersJson) {
+    if (foldersJson == null || foldersJson.isEmpty) return false;
+    try {
+      final decoded = jsonDecode(foldersJson);
+      if (decoded is Map<String, dynamic>) {
+        return decoded.values.any((value) {
+          if (value is List) return value.isNotEmpty;
+          if (value is String) return value.isNotEmpty;
+          return false;
+        });
+      }
+    } catch (_) {}
+    return false;
   }
 
   /// Save the last known user location
