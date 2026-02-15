@@ -29,7 +29,7 @@ class SearchStateService extends ChangeNotifier {
   double? _centerLng;
   double? _zoom;
   bool _isSatellite = false;
-  String? _filterArea; // "amenities" | "source" | null (default = source)
+  String? _filterArea; // "amenities" | "source" | null (default = amenities)
   String? _selectedSpotSource; // null = all sources, "" = native only, string = specific source ID
   List<String> _spotAccess = []; // when filterArea=amenities: ["public", "restricted", "paid"] for OR query, empty = any
   bool? _spotFacilitiesCovered; // when filterArea=amenities: true = "yes"
@@ -122,7 +122,14 @@ class SearchStateService extends ChangeNotifier {
       _centerLng = prefs.getDouble(_keyCenterLng);
       _zoom = prefs.getDouble(_keyZoom);
       _isSatellite = prefs.getBool(_keyIsSatellite) ?? false;
-      _filterArea = prefs.getString(_keyFilterArea);
+      final storedFilterArea = prefs.getString(_keyFilterArea);
+      // Migration: "source" was the old default; treat as null so new default (amenities) applies
+      if (storedFilterArea == 'source') {
+        _filterArea = null;
+        await prefs.remove(_keyFilterArea);
+      } else {
+        _filterArea = storedFilterArea;
+      }
       _selectedSpotSource = prefs.getString(_keySelectedSpotSource); // null if not set (all sources)
       final accessJson = prefs.getString(_keySpotAccess);
       if (accessJson != null && accessJson.isNotEmpty) {
@@ -211,7 +218,7 @@ class SearchStateService extends ChangeNotifier {
     }
   }
 
-  /// Set filter area: "amenities" | "source" | null (null = source)
+  /// Set filter area: "amenities" | "source" | null (null = amenities)
   /// When switching to amenities, clears source/folder. When switching to source, clears amenities.
   Future<void> setFilterArea(String? filterArea) async {
     if (_filterArea == filterArea) return;

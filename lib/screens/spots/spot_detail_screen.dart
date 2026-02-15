@@ -240,121 +240,14 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     }
   }
 
-  void _showExternalSpotInfo() async {
+  void _showExternalSpotInfo() {
     if (widget.spot.spotSource == null) return;
 
-    try {
-      final syncSourceService = Provider.of<SyncSourceService>(
-        context,
-        listen: false,
-      );
-
-      // Ensure sources are loaded before trying to find the specific source
-      if (syncSourceService.sources.isEmpty && !syncSourceService.isLoading) {
-        await syncSourceService.fetchSyncSources(includeInactive: false);
-      }
-
-      // Find the source by ID
-      final source = syncSourceService.sources.firstWhere(
-        (s) => s.id == widget.spot.spotSource,
-        orElse: () => throw Exception('Source not found'),
-      );
-
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        barrierDismissible: true,
-        builder: (context) => SourceDetailsDialog(source: source),
-      );
-    } catch (e) {
-      // Fallback to simple info dialog if source not found
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Row(
-            children: [
-              Icon(Icons.source, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(width: 8),
-              const Text('External Spot'),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'This spot comes from an external source.',
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'External spots:',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 8),
-              ...[
-                '• May not have all features of native spots',
-                '• Could be removed if the source is unavailable',
-                '• May have limited editing capabilities',
-                '• Data accuracy depends on the original source',
-              ].map(
-                (item) => Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Text(
-                    item,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ),
-              ),
-              if (widget.spot.spotSourceName != null) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        size: 16,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.7),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Source: ${widget.spot.spotSourceName}',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withValues(alpha: 0.7),
-                              ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Got it'),
-            ),
-          ],
-        ),
-      );
-    }
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => SourceDetailsDialog(sourceId: widget.spot.spotSource!),
+    );
   }
 
   Widget _buildMergedSourceInfo() {
