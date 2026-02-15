@@ -2,6 +2,33 @@ import 'package:flutter/foundation.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// Lightweight summary for filter lists. Only id, name, and folder data.
+/// Use fetchSyncSourceById for full details when opening the details dialog.
+class SyncSourceSummary {
+  final String id;
+  final String name;
+  final bool? recordFolderName;
+  final List<String>? allFolders;
+
+  const SyncSourceSummary({
+    required this.id,
+    required this.name,
+    this.recordFolderName,
+    this.allFolders,
+  });
+
+  factory SyncSourceSummary.fromMap(Map<String, dynamic> data) {
+    return SyncSourceSummary(
+      id: data['id'] ?? '',
+      name: data['name'] ?? '',
+      recordFolderName: data['recordFolderName'] is bool ? data['recordFolderName'] as bool : null,
+      allFolders: data['allFolders'] != null
+          ? List<String>.from((data['allFolders'] as List).map((e) => e.toString()))
+          : null,
+    );
+  }
+}
+
 class SyncSource {
   final String id;
   final String name;
@@ -111,14 +138,21 @@ class SyncSourceService extends ChangeNotifier {
   final FirebaseFunctions _functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
   
   List<SyncSource> _sources = [];
+  List<SyncSourceSummary> _sourceSummaries = [];
   bool _isLoading = false;
+  bool _isLoadingSummaries = false;
   bool _isSyncingAll = false;
   final Set<String> _syncingSources = <String>{};
   String? _error;
+  String? _summariesError;
   final Map<String, String> _sourceNameCache = {};
+  final Map<String, SyncSource> _sourceDetailsCache = {};
 
   List<SyncSource> get sources => _sources;
+  List<SyncSourceSummary> get sourceSummaries => _sourceSummaries;
   bool get isLoading => _isLoading;
+  bool get isLoadingSummaries => _isLoadingSummaries;
+  String? get summariesError => _summariesError;
   bool get isSyncingAll => _isSyncingAll;
   Set<String> get syncingSources => _syncingSources;
   String? get error => _error;
@@ -155,6 +189,62 @@ class SyncSourceService extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  /// Fetches lightweight summaries (id, name, folders) for filter lists.
+  /// Much faster than fetchSyncSources. Use fetchSyncSourceById for full details.
+  Future<void> fetchSyncSourceSummaries({bool includeInactive = false}) async {
+    try {
+      _isLoadingSummaries = true;
+      _summariesError = null;
+      notifyListeners();
+
+      final callable = _functions.httpsCallable('getSyncSources');
+      final result = await callable.call({
+        'includeInactive': includeInactive,
+        'summaryOnly': true,
+      });
+
+      if (result.data['success'] == true) {
+        _sourceSummaries = (result.data['sources'] as List)
+            .map((s) => SyncSourceSummary.fromMap(s))
+            .toList();
+        _sourceNameCache.addAll({
+          for (final s in _sourceSummaries) s.id: s.name,
+        });
+      } else {
+        _summariesError = 'Failed to load sources';
+      }
+    } catch (e) {
+      _summariesError = 'Failed to load sources: $e';
+      debugPrint('Error fetching sync source summaries: $e');
+    } finally {
+      _isLoadingSummaries = false;
+      notifyListeners();
+    }
+  }
+
+  /// Fetches full source details by ID. Results are cached.
+  /// Use when opening the source details dialog.
+  Future<SyncSource?> fetchSyncSourceById(String sourceId) async {
+    if (_sourceDetailsCache.containsKey(sourceId)) {
+      return _sourceDetailsCache[sourceId];
+    }
+    try {
+      final callable = _functions.httpsCallable('getSyncSource');
+      final result = await callable.call({'sourceId': sourceId});
+      if (result.data['success'] == true && result.data['source'] != null) {
+        final source = SyncSource.fromMap(
+          Map<String, dynamic>.from(result.data['source'] as Map),
+        );
+        _sourceDetailsCache[sourceId] = source;
+        _sourceNameCache[sourceId] = source.name;
+        return source;
+      }
+    } catch (e) {
+      debugPrint('Error fetching sync source $sourceId: $e');
+    }
+    return null;
   }
 
   Future<bool> createSource({
@@ -251,7 +341,9 @@ class SyncSourceService extends ChangeNotifier {
       final success = result.data['success'] == true;
       if (success) {
         _sources.removeWhere((s) => s.id == sourceId);
+        _sourceSummaries.removeWhere((s) => s.id == sourceId);
         _sourceNameCache.remove(sourceId);
+        _sourceDetailsCache.remove(sourceId);
         notifyListeners();
       }
       return success;

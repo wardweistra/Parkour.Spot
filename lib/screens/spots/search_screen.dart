@@ -110,7 +110,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   bool _isDragging = false;
   double _lastKnownZoom = 14.0;
   // Filters
-  String? _filterArea; // "amenities" | "source" | null (default = source)
+  String? _filterArea; // "amenities" | "source" | null (default = amenities)
   String? _selectedSpotSource; // null = all sources, "" = native only, string = specific source ID
   List<String> _spotAccess = []; // when amenities: ["public", "restricted", "paid"] for OR query
   bool? _spotFacilitiesCovered; // when amenities: true = "yes"
@@ -122,6 +122,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   List<String> _spotFeatures = []; // when amenities: array-contains-any
   String _attributeFilterMode = 'goodFor'; // "goodFor" | "spotFeatures"
   bool _showFiltersDialog = false; // Controls filters dialog visibility
+  bool _hasRequestedSyncSourcesForFilters = false;
   SpotService? _spotServiceRef; // To attach a listener for spot updates
   SyncSourceService? _syncSourceServiceRef; // To attach a listener for sync source updates
   SearchStateService? _searchStateServiceRef; // To attach a listener for search state updates
@@ -274,8 +275,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     // Initialize image page controller
     _imagePageController = PageController();
 
-    // Preload external sync sources for filters
-    // Safe to call with listen: false in initState
+    // Initialize provider references and listeners.
+    // Safe to call with listen: false in initState.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Listen to SearchStateService changes to update filters when storage loads
       _searchStateServiceRef = Provider.of<SearchStateService>(context, listen: false);
@@ -322,10 +323,6 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       // Listen to SyncSourceService changes to update selected sources
       _syncSourceServiceRef = Provider.of<SyncSourceService>(context, listen: false);
       _syncSourceServiceRef!.addListener(_onSyncSourcesChanged);
-
-      if (_syncSourceServiceRef!.sources.isEmpty && !_syncSourceServiceRef!.isLoading) {
-        _syncSourceServiceRef!.fetchSyncSources(includeInactive: false);
-      }
     });
   }
 
@@ -413,6 +410,48 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       _searchQuery = _searchController.text;
     });
     // Suggestions are fetched directly by Autocomplete.optionsBuilder
+  }
+
+  void _toggleFiltersDialog() {
+    final shouldOpen = !_showFiltersDialog;
+    setState(() {
+      _showFiltersDialog = shouldOpen;
+    });
+
+    // Let the dialog paint first, then load source metadata in the background.
+    if (shouldOpen && (_filterArea ?? 'amenities') == 'source') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _ensureSyncSourcesLoaded();
+      });
+    }
+  }
+
+  void _showSourceDetailsDialog(String sourceId) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => SourceDetailsDialog(sourceId: sourceId),
+    );
+  }
+
+  void _ensureSyncSourcesLoaded({bool force = false}) {
+    final syncService = _syncSourceServiceRef ??
+        Provider.of<SyncSourceService>(context, listen: false);
+
+    if (syncService.isLoadingSummaries) return;
+    if (!force) {
+      if (syncService.sourceSummaries.isNotEmpty) return;
+      if (_hasRequestedSyncSourcesForFilters && syncService.summariesError == null) return;
+    }
+
+    _hasRequestedSyncSourcesForFilters = true;
+    unawaited(
+      syncService.fetchSyncSourceSummaries(includeInactive: false).whenComplete(() {
+        if (syncService.summariesError != null) {
+          _hasRequestedSyncSourcesForFilters = false;
+        }
+      }),
+    );
   }
 
   // Removed debounce-based suggestion fetching; Autocomplete.optionsBuilder now fetches live
@@ -797,8 +836,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         bounds.southwest.longitude,
         bounds.northeast.longitude,
         limit: 100,
-        filterArea: _filterArea ?? 'source',
-        spotSource: _filterArea == 'amenities' ? null : _selectedSpotSource,
+        filterArea: _filterArea ?? 'amenities',
+        spotSource: (_filterArea ?? 'amenities') == 'amenities' ? null : _selectedSpotSource,
         folders: selectedFolders.isEmpty ? null : selectedFolders,
         spotAccess: _spotAccess.isEmpty ? null : _spotAccess,
         spotFacilitiesCovered: _spotFacilitiesCovered,
@@ -837,39 +876,52 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   }
 
   Widget _buildFilters() {
-    return Consumer<SyncSourceService>(
-      builder: (context, syncService, child) {
-        final sources = syncService.sources..sort((a, b) => a.name.compareTo(b.name));
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Filter by',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                  ),
-            ),
-            const SizedBox(height: 8),
-            SegmentedButton<String?>(
-              segments: const [
-                ButtonSegment(value: 'source', label: Text('Source'), icon: Icon(Icons.folder)),
-                ButtonSegment(value: 'amenities', label: Text('Amenities'), icon: Icon(Icons.workspace_premium)),
-              ],
-              selected: {_filterArea ?? 'source'},
-              onSelectionChanged: (Set<String?> selected) {
-                final value = selected.first;
-                Provider.of<SearchStateService>(context, listen: false).setFilterArea(value);
-                setState(() {
-                  _filterArea = value;
-                });
-                if (_mapController != null) _loadSpotsForCurrentView();
-              },
-            ),
-            const SizedBox(height: 16),
-            if (_filterArea == 'amenities') _buildAmenitiesFilters() else _buildSourceFilters(syncService, sources),
+    final selectedFilterArea = _filterArea ?? 'amenities';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Filter by',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
+        ),
+        const SizedBox(height: 8),
+        SegmentedButton<String?>(
+          segments: const [
+            ButtonSegment(value: 'amenities', label: Text('Amenities'), icon: Icon(Icons.workspace_premium)),
+            ButtonSegment(value: 'source', label: Text('Sources'), icon: Icon(Icons.folder)),
           ],
-        );
-      },
+          selected: {selectedFilterArea},
+          onSelectionChanged: (Set<String?> selected) {
+            final value = selected.first;
+            Provider.of<SearchStateService>(context, listen: false).setFilterArea(value);
+            setState(() {
+              _filterArea = value;
+            });
+            if (value == 'source') {
+              _ensureSyncSourcesLoaded();
+            }
+            // Defer spot reload so the tab switch paints immediately
+            if (_mapController != null) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && _mapController != null) _loadSpotsForCurrentView();
+              });
+            }
+          },
+        ),
+        const SizedBox(height: 16),
+        if (selectedFilterArea == 'amenities')
+          _buildAmenitiesFilters()
+        else
+          Consumer<SyncSourceService>(
+            builder: (context, syncService, child) {
+              final summaries = List<SyncSourceSummary>.from(syncService.sourceSummaries)
+                ..sort((a, b) => a.name.compareTo(b.name));
+              return _buildSourceFilters(syncService, summaries);
+            },
+          ),
+      ],
     );
   }
 
@@ -1299,7 +1351,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     );
   }
 
-  Widget _buildSourceFilters(SyncSourceService syncService, List<dynamic> sources) {
+  Widget _buildSourceFilters(SyncSourceService syncService, List<SyncSourceSummary> summaries) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1310,7 +1362,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
           ),
         ),
             const SizedBox(height: 8),
-            if (syncService.isLoading && sources.isEmpty)
+            if (syncService.isLoadingSummaries && summaries.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 8),
                 child: SizedBox(
@@ -1319,14 +1371,24 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),
               )
-            else if (syncService.error != null)
+            else if (syncService.summariesError != null)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Text(
-                  'Failed to load sources',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.error,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Failed to load sources',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
                       ),
+                    ),
+                    TextButton(
+                      onPressed: () => _ensureSyncSourcesLoaded(force: true),
+                      child: const Text('Retry'),
+                    ),
+                  ],
                 ),
               )
             else
@@ -1343,131 +1405,139 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                       // Reload spots with new filter
                       _loadSpotsForCurrentView();
                     },
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // All sources option
-                        RadioListTile<String?>(
-                          contentPadding: EdgeInsets.zero,
-                          title: const Text('All Sources'),
-                          value: null,
-                        ),
-                        // Native only option
-                        RadioListTile<String?>(
-                          contentPadding: EdgeInsets.zero,
-                          title: const Text('Parkour·Spot (Native)'),
-                          value: "",
-                        ),
-                        // External source options with inline folder filtering
-                        ...sources.expand((source) {
-                          final isWideScreen = MediaQuery.of(context).size.width > 600;
-                          final isSelected = _selectedSpotSource == source.id;
-                          final hasFolders = source.allFolders != null && source.allFolders!.isNotEmpty;
-                          
-                          return [
-                            RadioListTile<String?>(
+                    child: SizedBox(
+                      height: (MediaQuery.of(context).size.height * 0.5).clamp(200.0, 450.0),
+                      child: ListView.builder(
+                        itemCount: 2 + summaries.length,
+                        itemBuilder: (context, index) {
+                          if (index == 0) {
+                            return RadioListTile<String?>(
                               contentPadding: EdgeInsets.zero,
-                              title: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (isWideScreen)
-                                    Text(source.name)
-                                  else
-                                    Expanded(
-                                      child: Text(source.name),
-                                    ),
-                                  const SizedBox(width: 4),
-                                  GestureDetector(
-                                    onTap: () {
-                                      showDialog(
-                                        context: context,
-                                        barrierDismissible: true,
-                                        builder: (context) => SourceDetailsDialog(source: source),
-                                      );
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.all(4),
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(12),
+                              title: const Text('All Sources'),
+                              value: null,
+                            );
+                          }
+                          if (index == 1) {
+                            return RadioListTile<String?>(
+                              contentPadding: EdgeInsets.zero,
+                              title: const Text('Parkour·Spot (Native)'),
+                              value: "",
+                            );
+                          }
+                          final summary = summaries[index - 2];
+                          final isWideScreen = MediaQuery.of(context).size.width > 600;
+                          final isSelected = _selectedSpotSource == summary.id;
+                          final hasFolders = summary.allFolders != null &&
+                              summary.allFolders!.isNotEmpty;
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              RadioListTile<String?>(
+                                contentPadding: EdgeInsets.zero,
+                                title: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (isWideScreen)
+                                      Text(summary.name)
+                                    else
+                                      Expanded(
+                                        child: Text(summary.name),
                                       ),
-                                      child: Icon(
-                                        Icons.info_outline,
-                                        size: 16,
-                                        color: Theme.of(context).colorScheme.primary,
+                                    const SizedBox(width: 4),
+                                    GestureDetector(
+                                      onTap: () => _showSourceDetailsDialog(summary.id),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary
+                                              .withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Icon(
+                                          Icons.info_outline,
+                                          size: 16,
+                                          color: Theme.of(context).colorScheme.primary,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
+                                value: summary.id,
                               ),
-                              value: source.id,
-                            ),
-                          // Show folder filter right under the selected source
-                          if (isSelected && hasFolders)
-                            Padding(
-                              padding: const EdgeInsets.only(left: 40, top: 8, bottom: 8),
-                              child: Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: [
-                                  // All folders option
-                                  Builder(
-                                    builder: (context) {
-                                      final selectedFolders = searchState.getSelectedFoldersForSource(source.id);
-                                      final isAllSelected = selectedFolders.isEmpty;
-                                      return FilterChip(
-                                        label: const Text('All Folders'),
-                                        selected: isAllSelected,
-                                        onSelected: (selected) {
-                                          if (selected && !isAllSelected) {
-                                            // Clear all folder selections (select all folders)
-                                            searchState.clearFoldersForSource(source.id);
-                                            // Reload spots with new folder filter
+                              if (isSelected && hasFolders)
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 40, top: 8, bottom: 8),
+                                  child: Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: [
+                                      Builder(
+                                        builder: (context) {
+                                          final selectedFolders =
+                                              searchState.getSelectedFoldersForSource(summary.id);
+                                          final isAllSelected = selectedFolders.isEmpty;
+                                          return FilterChip(
+                                            label: const Text('All Folders'),
+                                            selected: isAllSelected,
+                                            onSelected: (selected) {
+                                              if (selected && !isAllSelected) {
+                                                searchState.clearFoldersForSource(summary.id);
+                                                if (_mapController != null) {
+                                                  _loadSpotsForCurrentView();
+                                                }
+                                              }
+                                            },
+                                            selectedColor:
+                                                Theme.of(context).colorScheme.primaryContainer,
+                                            checkmarkColor:
+                                                Theme.of(context).colorScheme.onPrimaryContainer,
+                                            labelStyle: TextStyle(
+                                              color: isAllSelected
+                                                  ? Theme.of(context)
+                                                      .colorScheme
+                                                      .onPrimaryContainer
+                                                  : null,
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                      ...(summary.allFolders ?? []).map((folder) {
+                                        final isFolderSelected = searchState
+                                            .isFolderSelectedForSource(summary.id, folder);
+                                        return FilterChip(
+                                          label: Text(folder),
+                                          selected: isFolderSelected,
+                                          onSelected: (selected) {
+                                            searchState.toggleFolderForSource(summary.id, folder);
                                             if (_mapController != null) {
                                               _loadSpotsForCurrentView();
                                             }
-                                          }
-                                        },
-                                        selectedColor: Theme.of(context).colorScheme.primaryContainer,
-                                        checkmarkColor: Theme.of(context).colorScheme.onPrimaryContainer,
-                                        labelStyle: TextStyle(
-                                          color: isAllSelected
-                                              ? Theme.of(context).colorScheme.onPrimaryContainer
-                                              : null,
-                                        ),
-                                      );
-                                    },
+                                          },
+                                          selectedColor:
+                                              Theme.of(context).colorScheme.primaryContainer,
+                                          checkmarkColor:
+                                              Theme.of(context).colorScheme.onPrimaryContainer,
+                                          labelStyle: TextStyle(
+                                            color: isFolderSelected
+                                                ? Theme.of(context)
+                                                    .colorScheme
+                                                    .onPrimaryContainer
+                                                : null,
+                                          ),
+                                        );
+                                      }),
+                                    ],
                                   ),
-                                  // Individual folder options
-                                  ...(source.allFolders ?? []).map((folder) {
-                                    final isFolderSelected = searchState.isFolderSelectedForSource(source.id, folder);
-                                    return FilterChip(
-                                      label: Text(folder),
-                                      selected: isFolderSelected,
-                                      onSelected: (selected) {
-                                        // Toggle folder selection (allow multiple selections)
-                                        searchState.toggleFolderForSource(source.id, folder);
-                                        // Reload spots with new folder filter
-                                        if (_mapController != null) {
-                                          _loadSpotsForCurrentView();
-                                        }
-                                      },
-                                      selectedColor: Theme.of(context).colorScheme.primaryContainer,
-                                      checkmarkColor: Theme.of(context).colorScheme.onPrimaryContainer,
-                                      labelStyle: TextStyle(
-                                        color: isFolderSelected
-                                            ? Theme.of(context).colorScheme.onPrimaryContainer
-                                            : null,
-                                      ),
-                                    );
-                                  }),
-                                ],
-                              ),
-                            ),
-                        ];
-                      }),
-                    ],
-                  ),
+                                ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
                   );
                 },
               ),
@@ -2540,9 +2610,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                           ),
                                           tooltip: 'Filters',
                                           onPressed: () {
-                                            setState(() {
-                                              _showFiltersDialog = !_showFiltersDialog;
-                                            });
+                                            _toggleFiltersDialog();
                                           },
                                         ),
                                         if (_hasActiveFilters())
@@ -3323,13 +3391,13 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                     child: TextButton(
                       onPressed: () {
                         final searchState = Provider.of<SearchStateService>(context, listen: false);
-                        searchState.setFilterArea('source');
+                        searchState.setFilterArea('amenities');
                         searchState.setSelectedSpotSource(null);
                         for (final sourceId in searchState.selectedFolders.keys.toList()) {
                           searchState.clearFoldersForSource(sourceId);
                         }
                         setState(() {
-                          _filterArea = 'source';
+                          _filterArea = 'amenities';
                           _selectedSpotSource = null;
                           _spotAccess = [];
                           _spotFacilitiesCovered = null;
