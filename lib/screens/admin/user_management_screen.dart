@@ -219,6 +219,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     separatorBuilder: (_, __) => const SizedBox(height: 8),
                     itemBuilder: (context, index) {
                       final user = filteredUsers[index];
+                      final profilePath = _profilePathForUser(user);
                       return Card(
                         child: ListTile(
                           leading: _UserAvatar(user: user),
@@ -232,6 +233,20 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                   'Joined: ${_formatDate(user.createdAt!)}',
                                   style: Theme.of(context).textTheme.bodySmall,
                                 ),
+                              InkWell(
+                                onTap: () => _openUserProfile(user),
+                                borderRadius: BorderRadius.circular(4),
+                                child: Padding(
+                                  padding: const EdgeInsets.only(top: 2, bottom: 2),
+                                  child: Text(
+                                    profilePath,
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          color: Theme.of(context).colorScheme.primary,
+                                          decoration: TextDecoration.underline,
+                                        ),
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                           isThreeLine: true,
@@ -453,6 +468,17 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     final month = date.month.toString().padLeft(2, '0');
     final day = date.day.toString().padLeft(2, '0');
     return '${date.year}-$month-$day';
+  }
+
+  String _profilePathForUser(app_user.User user) {
+    final username = user.username?.trim();
+    final identifier = username != null && username.isNotEmpty ? username : user.id;
+    return '/user/$identifier';
+  }
+
+  void _openUserProfile(app_user.User user) {
+    if (!mounted) return;
+    context.push(_profilePathForUser(user));
   }
 
   String _formatTimestamp(String isoString) {
