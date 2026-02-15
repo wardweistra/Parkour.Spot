@@ -3389,28 +3389,10 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                 children: [
                   Expanded(
                     child: TextButton(
-                      onPressed: () {
+                      onPressed: () async {
                         final searchState = Provider.of<SearchStateService>(context, listen: false);
-                        searchState.setFilterArea('amenities');
-                        searchState.setSelectedSpotSource(null);
-                        for (final sourceId in searchState.selectedFolders.keys.toList()) {
-                          searchState.clearFoldersForSource(sourceId);
-                        }
-                        setState(() {
-                          _filterArea = 'amenities';
-                          _selectedSpotSource = null;
-                          _spotAccess = [];
-                          _spotFacilitiesCovered = null;
-                          _spotFacilitiesLighting = null;
-                          _spotFacilitiesWaterTap = null;
-                          _spotFacilitiesToilet = null;
-                          _spotFacilitiesParking = null;
-                          _goodFor = [];
-                          _spotFeatures = [];
-                          _attributeFilterMode = 'goodFor';
-                        });
-                        _loadSpotsForCurrentView();
-                        // Close dialog
+                        await searchState.clearAllFilters();
+                        if (!mounted) return;
                         setState(() {
                           _showFiltersDialog = false;
                         });

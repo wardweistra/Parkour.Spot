@@ -248,6 +248,34 @@ class SearchStateService extends ChangeNotifier {
     await _persistFilterState();
   }
 
+  /// Reset all source and amenities filters to defaults.
+  Future<void> clearAllFilters() async {
+    _filterArea = 'source';
+    _selectedSpotSource = null;
+    _selectedFolders = {};
+    _spotAccess = [];
+    _spotFacilitiesCovered = null;
+    _spotFacilitiesLighting = null;
+    _spotFacilitiesWaterTap = null;
+    _spotFacilitiesToilet = null;
+    _spotFacilitiesParking = null;
+    _goodFor = [];
+    _spotFeatures = [];
+    _attributeFilterMode = 'goodFor';
+
+    notifyListeners();
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_keySelectedSpotSource);
+      await prefs.setString(_keySelectedFolders, '{}');
+    } catch (e) {
+      // Ignore SharedPreferences errors - settings will not persist but app continues to work
+    }
+
+    await _persistFilterState();
+  }
+
   /// Toggle access level (add if not selected, remove if selected). Empty = any.
   Future<void> toggleSpotAccess(String accessKey) async {
     if (_spotAccess.contains(accessKey)) {
