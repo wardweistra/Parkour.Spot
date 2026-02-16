@@ -33,6 +33,39 @@ class SpotService extends ChangeNotifier {
     }
   }
 
+  /// Search spots by title across all spots in the database.
+  Future<List<Spot>> searchSpotsByTitle({
+    required String query,
+    int limit = 8,
+  }) async {
+    final trimmedQuery = query.trim();
+    if (trimmedQuery.isEmpty) return [];
+
+    try {
+      final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
+      final callable = functions.httpsCallable('searchSpotsByTitle');
+      final result = await callable.call({
+        'query': trimmedQuery,
+        'limit': limit,
+      });
+
+      final data = result.data as Map<String, dynamic>?;
+      if (data == null || data['success'] != true) {
+        return [];
+      }
+
+      final items = (data['spots'] as List<dynamic>? ?? <dynamic>[]);
+      return items
+          .whereType<Map<String, dynamic>>()
+          .map((item) => Spot.fromMap(item))
+          .where((spot) => spot.id != null)
+          .toList();
+    } catch (e) {
+      debugPrint('Error searching spots by title: $e');
+      return [];
+    }
+  }
+
   // Create a native spot from an existing spot (copies name, description, location, photos, youtube link)
   Future<String?> createNativeSpotFromExisting(Spot sourceSpot, String createdBy, String createdByName) async {
     try {

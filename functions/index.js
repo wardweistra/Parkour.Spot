@@ -4110,6 +4110,97 @@ exports.geocodeCoordinates = onCall(
     },
 );
 
+// Spot title search for Explore autocomplete
+exports.searchSpotsByTitle = onCall(
+    {region: "europe-west1", memory: "512MiB", timeoutSeconds: 30},
+    async (request) => {
+      try {
+        const {query, limit = 8} = request.data || {};
+        if (!query || typeof query !== "string") {
+          throw new Error("query is required");
+        }
+
+        const trimmedQuery = query.trim();
+        if (!trimmedQuery) {
+          return {success: true, spots: []};
+        }
+
+        const normalizedQuery = trimmedQuery.toLowerCase();
+        const parsedLimit = Number(limit);
+        const maxResults = Number.isFinite(parsedLimit) ?
+          Math.max(1, Math.min(Math.floor(parsedLimit), 20)) :
+          8;
+
+        const snapshot = await db
+            .collection("spots")
+            .where("duplicateOf", "==", null)
+            .where("hidden", "==", false)
+            .select(
+                "name",
+                "address",
+                "city",
+                "countryCode",
+                "latitude",
+                "longitude",
+                "ranking",
+            )
+            .get();
+
+        const matches = [];
+        snapshot.forEach((doc) => {
+          const data = doc.data() || {};
+          const name = typeof data.name === "string" ? data.name.trim() : "";
+          if (!name) return;
+
+          const normalizedName = name.toLowerCase();
+          const matchIndex = normalizedName.indexOf(normalizedQuery);
+          if (matchIndex < 0) return;
+
+          const charBefore = matchIndex > 0 ? normalizedName[matchIndex - 1] : "";
+          const isWordStart = matchIndex > 0 && !/[a-z0-9]/.test(charBefore);
+          const matchScore = matchIndex === 0 ? 3 : (isWordStart ? 2 : 1);
+          const ranking = typeof data.ranking === "number" ? data.ranking : 0;
+
+          matches.push({
+            id: doc.id,
+            name,
+            address: typeof data.address === "string" ? data.address : null,
+            city: typeof data.city === "string" ? data.city : null,
+            countryCode: typeof data.countryCode === "string" ?
+              data.countryCode :
+              null,
+            latitude: typeof data.latitude === "number" ? data.latitude : 0,
+            longitude: typeof data.longitude === "number" ? data.longitude : 0,
+            ranking,
+            matchScore,
+          });
+        });
+
+        matches.sort((a, b) => {
+          if (a.matchScore !== b.matchScore) return b.matchScore - a.matchScore;
+          if (a.ranking !== b.ranking) return b.ranking - a.ranking;
+          return String(a.name).localeCompare(String(b.name));
+        });
+
+        return {
+          success: true,
+          spots: matches.slice(0, maxResults).map((spot) => ({
+            id: spot.id,
+            name: spot.name,
+            address: spot.address,
+            city: spot.city,
+            countryCode: spot.countryCode,
+            latitude: spot.latitude,
+            longitude: spot.longitude,
+          })),
+        };
+      } catch (error) {
+        console.error("Error in searchSpotsByTitle:", error);
+        return {success: false, error: error.message};
+      }
+    },
+);
+
 // Places Autocomplete (addresses, cities, countries)
 exports.placesAutocomplete = onCall(
     {region: "europe-west1", secrets: ["GOOGLE_MAPS_API_KEY"]},
