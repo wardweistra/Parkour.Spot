@@ -571,7 +571,10 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
 
   String _formatSpotSuggestionLocation(Spot spot) {
     final city = spot.city?.trim();
-    final countryCode = spot.countryCode?.trim().toUpperCase();
+    final trimmedCountryCode = spot.countryCode?.trim();
+    final countryCode = trimmedCountryCode != null && trimmedCountryCode.isNotEmpty
+        ? trimmedCountryCode.toUpperCase()
+        : null;
     final address = spot.address?.trim();
 
     if (city != null && city.isNotEmpty && countryCode != null && countryCode.isNotEmpty) {
