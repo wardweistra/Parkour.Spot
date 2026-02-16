@@ -13,6 +13,7 @@ class AuthService extends ChangeNotifier {
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final ProfilePictureService _profilePictureService = ProfilePictureService();
   final UserProfileService _userProfileService = UserProfileService();
+  static const Duration _createdAtDriftTolerance = Duration(minutes: 1);
   
   User? get currentUser => _auth.currentUser;
   bool get isAdmin => _userProfile?.isAdmin == true;
@@ -38,6 +39,82 @@ class AuthService extends ChangeNotifier {
   final Map<String, Completer<void>> _profileLoadCompleters = {}; // Track profile load completers by UID
 
   app_user.User? get userProfile => _userProfile;
+
+  DateTime _resolveAuthCreatedAt(User? user, DateTime fallback) {
+    return user?.metadata.creationTime ?? fallback;
+  }
+
+  DateTime? _parseDateTimeValue(dynamic value) {
+    if (value is Timestamp) {
+      return value.toDate();
+    }
+    if (value is DateTime) {
+      return value;
+    }
+    return null;
+  }
+
+  Future<DateTime?> _repairCreatedAtIfNeeded({
+    required String uid,
+    required Map<String, dynamic> userData,
+    required User? authUser,
+  }) async {
+    final authCreatedAt = authUser?.metadata.creationTime;
+    if (authCreatedAt == null) {
+      return _parseDateTimeValue(userData['createdAt']);
+    }
+
+    final storedCreatedAt = _parseDateTimeValue(userData['createdAt']);
+    final shouldRepair = storedCreatedAt == null ||
+        storedCreatedAt.isAfter(authCreatedAt.add(_createdAtDriftTolerance));
+
+    if (!shouldRepair) {
+      return storedCreatedAt;
+    }
+
+    try {
+      await _firestore.collection('users').doc(uid).update({
+        'createdAt': authCreatedAt,
+      });
+      return authCreatedAt;
+    } catch (e) {
+      debugPrint('Error repairing createdAt for user $uid: $e');
+      return storedCreatedAt;
+    }
+  }
+
+  Future<app_user.User> _buildProfileFromFirestoreData({
+    required String uid,
+    required Map<String, dynamic> userData,
+    required User? authUser,
+  }) async {
+    final repairedCreatedAt = await _repairCreatedAtIfNeeded(
+      uid: uid,
+      userData: userData,
+      authUser: authUser,
+    );
+    final loadedProfile = app_user.User.fromMap({
+      'id': uid,
+      ...userData,
+    });
+
+    if (repairedCreatedAt != null &&
+        (loadedProfile.createdAt == null ||
+            !loadedProfile.createdAt!.isAtSameMomentAs(repairedCreatedAt))) {
+      return loadedProfile.copyWith(createdAt: repairedCreatedAt);
+    }
+    return loadedProfile;
+  }
+
+  Future<void> _createUserProfileIfMissing(app_user.User user) async {
+    final docRef = _firestore.collection('users').doc(user.id);
+    await _firestore.runTransaction((transaction) async {
+      final existingDoc = await transaction.get(docRef);
+      if (!existingDoc.exists) {
+        transaction.set(docRef, user.toMap());
+      }
+    });
+  }
 
   AuthService() {
     _auth.authStateChanges().listen(_onAuthStateChanged);
@@ -78,27 +155,43 @@ class AuthService extends ChangeNotifier {
     _isLoadingProfile = true;
     _loadingProfileUid = uid;
     try {
-      final doc = await _firestore.collection('users').doc(uid).get();
+      final docRef = _firestore.collection('users').doc(uid);
+      final doc = await docRef.get();
       if (doc.exists) {
-        _userProfile = app_user.User.fromMap({
-          'id': uid,
-          ...doc.data() as Map<String, dynamic>,
-        });
+        final userData = doc.data() as Map<String, dynamic>;
+        _userProfile = await _buildProfileFromFirestoreData(
+          uid: uid,
+          userData: userData,
+          authUser: _auth.currentUser,
+        );
       } else {
         // Create user profile if it doesn't exist
-        _userProfile = app_user.User(
+        final now = DateTime.now();
+        final newProfile = app_user.User(
           id: uid,
           email: _auth.currentUser?.email ?? '',
           displayName: _auth.currentUser?.displayName,
           photoURL: _auth.currentUser?.photoURL,
-          createdAt: DateTime.now(),
-          lastLoginAt: DateTime.now(),
-          lastActiveAt: DateTime.now(),
+          createdAt: _resolveAuthCreatedAt(_auth.currentUser, now),
+          lastLoginAt: now,
+          lastActiveAt: now,
           isAdmin: false,
           isModerator: false,
           featureAccess: null,
         );
-        await _firestore.collection('users').doc(uid).set(_userProfile!.toMap());
+        await _createUserProfileIfMissing(newProfile);
+
+        final refreshedDoc = await docRef.get();
+        if (refreshedDoc.exists) {
+          final refreshedUserData = refreshedDoc.data() as Map<String, dynamic>;
+          _userProfile = await _buildProfileFromFirestoreData(
+            uid: uid,
+            userData: refreshedUserData,
+            authUser: _auth.currentUser,
+          );
+        } else {
+          _userProfile = newProfile;
+        }
       }
 
       // Note: lastActiveAt is updated by the router observer on page views/navigation
@@ -344,18 +437,19 @@ class AuthService extends ChangeNotifier {
         }
         
         // Create user profile in Firestore
+        final now = DateTime.now();
         final user = app_user.User(
           id: userCredential.user!.uid,
           email: email,
           displayName: displayName,
-          createdAt: DateTime.now(),
-          lastLoginAt: DateTime.now(),
-          lastActiveAt: DateTime.now(),
+          createdAt: _resolveAuthCreatedAt(userCredential.user, now),
+          lastLoginAt: now,
+          lastActiveAt: now,
           isAdmin: false,
           featureAccess: null,
         );
         
-        await _firestore.collection('users').doc(user.id).set(user.toMap());
+        await _createUserProfileIfMissing(user);
         _userProfile = user;
         
         // Note: Email/password accounts don't have Google profile pictures

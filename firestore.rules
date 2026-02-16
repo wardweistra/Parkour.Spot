@@ -37,14 +37,22 @@ service cloud.firestore {
           ('isAdmin' in request.resource.data ? request.resource.data.isAdmin : ('isAdmin' in resource.data ? resource.data.isAdmin : false)) == 
           ('isAdmin' in resource.data ? resource.data.isAdmin : false) &&
           ('isModerator' in request.resource.data ? request.resource.data.isModerator : ('isModerator' in resource.data ? resource.data.isModerator : false)) == 
-          ('isModerator' in resource.data ? resource.data.isModerator : false)) ||
+          ('isModerator' in resource.data ? resource.data.isModerator : false) &&
+          // Allow createdAt to remain unchanged or move earlier for backfills; never later.
+          (!('createdAt' in resource.data) ||
+            ('createdAt' in request.resource.data &&
+             request.resource.data.createdAt <= resource.data.createdAt))) ||
          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true &&
           // Admins can only update isModerator flag, not isAdmin
           // Handle case where isAdmin field might not exist in old documents
           // If isAdmin not in request.resource, it's unchanged, so use resource value (or false if missing)
           ('isAdmin' in request.resource.data ? request.resource.data.isAdmin : ('isAdmin' in resource.data ? resource.data.isAdmin : false)) == 
-          ('isAdmin' in resource.data ? resource.data.isAdmin : false)));
+          ('isAdmin' in resource.data ? resource.data.isAdmin : false) &&
+          // Same createdAt rule for admin updates performed from client SDK.
+          (!('createdAt' in resource.data) ||
+            ('createdAt' in request.resource.data &&
+             request.resource.data.createdAt <= resource.data.createdAt))));
     }
     
     // Ratings collection - users can read all ratings, authenticated users can create their own
