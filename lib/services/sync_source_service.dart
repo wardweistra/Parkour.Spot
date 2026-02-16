@@ -40,6 +40,8 @@ class SyncSource {
   final List<String>? includeFolders; // Optional list of folders to include
   final bool? recordFolderName; // Whether to store folder name on spots
   final List<String>? allFolders; // List of all folders found during sync (when recordFolderName is true)
+  final Map<String, dynamic>? defaultSpotAttributes; // Defaults for all new spots in this source
+  final Map<String, Map<String, dynamic>>? folderSpotAttributes; // Folder-specific defaults for new spots
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final DateTime? lastSyncAt;
@@ -64,6 +66,8 @@ class SyncSource {
     this.includeFolders,
     this.recordFolderName,
     this.allFolders,
+    this.defaultSpotAttributes,
+    this.folderSpotAttributes,
     this.createdAt,
     this.updatedAt,
     this.lastSyncAt,
@@ -94,6 +98,8 @@ class SyncSource {
       allFolders: data['allFolders'] != null
           ? List<String>.from((data['allFolders'] as List).map((e) => e.toString()))
           : null,
+      defaultSpotAttributes: _parseDefaultSpotAttributes(data['defaultSpotAttributes']),
+      folderSpotAttributes: _parseFolderSpotAttributes(data['folderSpotAttributes']),
       createdAt: _parseTimestamp(data['createdAt']),
       updatedAt: _parseTimestamp(data['updatedAt']),
       lastSyncAt: _parseTimestamp(data['lastSyncAt']),
@@ -131,6 +137,26 @@ class SyncSource {
     }
     
     return null;
+  }
+
+  static Map<String, dynamic>? _parseDefaultSpotAttributes(dynamic raw) {
+    if (raw is! Map) return null;
+    final parsed = Map<String, dynamic>.from(raw);
+    return parsed.isEmpty ? null : parsed;
+  }
+
+  static Map<String, Map<String, dynamic>>? _parseFolderSpotAttributes(dynamic raw) {
+    if (raw is! Map) return null;
+    final parsed = <String, Map<String, dynamic>>{};
+    for (final entry in raw.entries) {
+      final key = entry.key.toString().trim();
+      if (key.isEmpty) continue;
+      if (entry.value is! Map) continue;
+      final valueMap = Map<String, dynamic>.from(entry.value as Map);
+      if (valueMap.isEmpty) continue;
+      parsed[key] = valueMap;
+    }
+    return parsed.isEmpty ? null : parsed;
   }
 }
 
@@ -256,6 +282,8 @@ class SyncSourceService extends ChangeNotifier {
     bool isActive = true,
     List<String>? includeFolders,
     bool? recordFolderName,
+    Map<String, dynamic>? defaultSpotAttributes,
+    Map<String, dynamic>? folderSpotAttributes,
     String? lightSyncSchedule,
     String? fullSyncSchedule,
     bool autoSyncEnabled = false,
@@ -271,6 +299,8 @@ class SyncSourceService extends ChangeNotifier {
         'isActive': isActive,
         if (includeFolders != null) 'includeFolders': includeFolders,
         if (recordFolderName != null) 'recordFolderName': recordFolderName,
+        if (defaultSpotAttributes != null) 'defaultSpotAttributes': defaultSpotAttributes,
+        if (folderSpotAttributes != null) 'folderSpotAttributes': folderSpotAttributes,
         if (lightSyncSchedule != null && lightSyncSchedule.isNotEmpty) 'lightSyncSchedule': lightSyncSchedule,
         if (fullSyncSchedule != null && fullSyncSchedule.isNotEmpty) 'fullSyncSchedule': fullSyncSchedule,
         'autoSyncEnabled': autoSyncEnabled,
@@ -298,6 +328,9 @@ class SyncSourceService extends ChangeNotifier {
     bool? isActive,
     List<String>? includeFolders,
     bool? recordFolderName,
+    Map<String, dynamic>? defaultSpotAttributes,
+    Map<String, dynamic>? folderSpotAttributes,
+    bool updateSpotAttributeDefaults = false,
     String? lightSyncSchedule,
     String? fullSyncSchedule,
     bool? autoSyncEnabled,
@@ -313,6 +346,10 @@ class SyncSourceService extends ChangeNotifier {
       if (isActive != null) payload['isActive'] = isActive;
       if (includeFolders != null) payload['includeFolders'] = includeFolders;
       if (recordFolderName != null) payload['recordFolderName'] = recordFolderName;
+      if (updateSpotAttributeDefaults) {
+        payload['defaultSpotAttributes'] = defaultSpotAttributes;
+        payload['folderSpotAttributes'] = folderSpotAttributes;
+      }
       if (lightSyncSchedule != null) {
         payload['lightSyncSchedule'] = lightSyncSchedule.isEmpty ? null : lightSyncSchedule;
       }
@@ -569,6 +606,26 @@ class SyncSourceService extends ChangeNotifier {
       return result.data;
     } catch (e) {
       _error = 'Failed to update spot source names: $e';
+      debugPrint(_error);
+      notifyListeners();
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> backfillSourceSpotAttributes({String? sourceId}) async {
+    try {
+      final callable = _functions.httpsCallable(
+        'backfillSourceSpotAttributes',
+        options: HttpsCallableOptions(
+          timeout: const Duration(minutes: 9),
+        ),
+      );
+      final result = await callable.call({
+        if (sourceId != null) 'sourceId': sourceId,
+      });
+      return result.data;
+    } catch (e) {
+      _error = 'Failed to backfill source spot attributes: $e';
       debugPrint(_error);
       notifyListeners();
       return null;
