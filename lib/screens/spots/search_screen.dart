@@ -645,6 +645,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     try {
       final geocoding = Provider.of<GeocodingService>(context, listen: false);
       final spotService = Provider.of<SpotService>(context, listen: false);
+      final shouldSearchSpotTitles = trimmedQuery.length >= 2;
 
       final results = await Future.wait([
         geocoding.placesAutocomplete(
@@ -654,7 +655,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
           biasLng: center?.longitude,
           radiusMeters: 50000,
         ),
-        spotService.searchSpotsByTitle(query: trimmedQuery, limit: 6),
+        shouldSearchSpotTitles
+            ? spotService.searchSpotsByTitle(query: trimmedQuery, limit: 6)
+            : Future.value(<Spot>[]),
       ]);
 
       if (!mounted) return [];
