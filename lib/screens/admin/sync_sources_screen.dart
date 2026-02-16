@@ -6,8 +6,10 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../constants/spot_attributes.dart';
 import '../../services/auth_service.dart';
 import '../../services/sync_source_service.dart';
+import '../../widgets/spot_form/attributes_section.dart';
 
 class SyncSourcesScreen extends StatefulWidget {
   const SyncSourcesScreen({super.key});
@@ -208,6 +210,11 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
             icon: const Icon(Icons.update),
             tooltip: 'Update Spot Source Names',
             onPressed: () => _showUpdateSourceNamesDialog(context),
+          ),
+          IconButton(
+            icon: const Icon(Icons.auto_fix_high),
+            tooltip: 'Backfill Source Attributes',
+            onPressed: () => _showBackfillSpotAttributesDialog(context),
           ),
           IconButton(
             icon: const Icon(Icons.add),
@@ -494,6 +501,32 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                               label: Text(folder, style: const TextStyle(fontSize: 11)),
                               backgroundColor: Colors.blue.shade100,
                             )),
+                          ],
+                        ),
+                      ],
+                      if ((s.defaultSpotAttributes?.isNotEmpty ?? false) ||
+                          (s.folderSpotAttributes?.isNotEmpty ?? false)) ...[
+                        const SizedBox(height: 4),
+                        Wrap(
+                          spacing: 4,
+                          runSpacing: 2,
+                          children: [
+                            if (s.defaultSpotAttributes?.isNotEmpty ?? false)
+                              Chip(
+                                label: const Text(
+                                  'Source defaults enabled',
+                                  style: TextStyle(fontSize: 11),
+                                ),
+                                backgroundColor: Colors.teal.shade100,
+                              ),
+                            if (s.folderSpotAttributes?.isNotEmpty ?? false)
+                              Chip(
+                                label: Text(
+                                  'Folder defaults: ${s.folderSpotAttributes!.length}',
+                                  style: const TextStyle(fontSize: 11),
+                                ),
+                                backgroundColor: Colors.indigo.shade100,
+                              ),
                           ],
                         ),
                       ],
@@ -1255,6 +1288,147 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
     }
   }
 
+  Future<void> _showBackfillSpotAttributesDialog(BuildContext context) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Backfill Source Attributes'),
+          content: const Text(
+            'This will apply configured source/folder default attributes to existing spots. '
+            'If a matching source spot is marked as duplicateOf another spot, the defaults are also merged into that original spot.\n\n'
+            'Do you want to backfill all sources or select one source?'
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('All Sources'),
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await _runBackfillSpotAttributes(context, null);
+              },
+            ),
+            TextButton(
+              child: const Text('Select Source'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _showBackfillSourceSelectionDialog(context);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showBackfillSourceSelectionDialog(BuildContext context) async {
+    final syncService = context.read<SyncSourceService>();
+    final sortedSources = [...syncService.sources]..sort((a, b) => a.name.compareTo(b.name));
+
+    return showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Select Source'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: sortedSources.length,
+              itemBuilder: (context, index) {
+                final source = sortedSources[index];
+                return ListTile(
+                  title: Text(source.name),
+                  subtitle: Text(source.id),
+                  onTap: () async {
+                    Navigator.of(context).pop();
+                    await _runBackfillSpotAttributes(context, source.id);
+                  },
+                );
+              },
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _runBackfillSpotAttributes(BuildContext context, String? sourceId) async {
+    final syncService = context.read<SyncSourceService>();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    late NavigatorState navigator;
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        navigator = Navigator.of(dialogContext);
+        return const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Backfilling source attributes...'),
+            ],
+          ),
+        );
+      },
+    );
+
+    try {
+      final result = await syncService.backfillSourceSpotAttributes(sourceId: sourceId);
+
+      navigator.pop();
+
+      if (!mounted) return;
+      if (result != null && result['success'] == true) {
+        final summary = result['summary'] as Map<String, dynamic>?;
+        final message = summary != null
+            ? 'Backfill done! Sources: ${summary['sourcesRequested']}, '
+                'spots updated: ${summary['spotsUpdated']}, '
+                'originals updated: ${summary['originalSpotsUpdated']}'
+            : (result['message']?.toString() ?? 'Backfill completed');
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      } else {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text(syncService.error ?? 'Backfill failed'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      navigator.pop();
+      if (!mounted) return;
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('Backfill failed: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   Future<void> _showUpdateSourceNamesDialog(BuildContext context) async {
     return showDialog<void>(
       context: context,
@@ -1417,11 +1591,14 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
   late final TextEditingController publicUrlCtrl;
   late final TextEditingController instagramHandleCtrl;
   late final TextEditingController includeFoldersCtrl;
+  late final TextEditingController folderRuleNameCtrl;
   late final TextEditingController lightSyncScheduleCtrl;
   late final TextEditingController fullSyncScheduleCtrl;
   late bool isActive;
   late bool recordFolderName;
   late bool autoSyncEnabled;
+  late _EditableSpotAttributes _sourceDefaultAttributes;
+  final Map<String, _EditableSpotAttributes> _folderDefaultAttributes = {};
 
   @override
   void initState() {
@@ -1436,11 +1613,23 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
           ? ''
           : widget.source!.includeFolders!.join('\n'),
     );
+    folderRuleNameCtrl = TextEditingController();
     lightSyncScheduleCtrl = TextEditingController(text: widget.source?.lightSyncSchedule ?? '');
     fullSyncScheduleCtrl = TextEditingController(text: widget.source?.fullSyncSchedule ?? '');
     isActive = widget.source?.isActive ?? true;
     recordFolderName = widget.source?.recordFolderName ?? false;
     autoSyncEnabled = widget.source?.autoSyncEnabled ?? false;
+    _sourceDefaultAttributes = _EditableSpotAttributes.fromMap(
+      widget.source?.defaultSpotAttributes,
+    );
+    final existingFolderDefaults = widget.source?.folderSpotAttributes ?? const {};
+    for (final entry in existingFolderDefaults.entries) {
+      final folderName = entry.key.trim();
+      if (folderName.isEmpty) continue;
+      _folderDefaultAttributes[folderName] = _EditableSpotAttributes.fromMap(
+        entry.value,
+      );
+    }
   }
 
   @override
@@ -1451,9 +1640,51 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
     publicUrlCtrl.dispose();
     instagramHandleCtrl.dispose();
     includeFoldersCtrl.dispose();
+    folderRuleNameCtrl.dispose();
     lightSyncScheduleCtrl.dispose();
     fullSyncScheduleCtrl.dispose();
     super.dispose();
+  }
+
+  String? _findExistingFolderRuleKey(String folderName) {
+    final target = folderName.trim().toLowerCase();
+    for (final key in _folderDefaultAttributes.keys) {
+      if (key.trim().toLowerCase() == target) {
+        return key;
+      }
+    }
+    return null;
+  }
+
+  void _addFolderRule(String rawFolderName) {
+    final folderName = rawFolderName.trim();
+    if (folderName.isEmpty) return;
+
+    final existingKey = _findExistingFolderRuleKey(folderName);
+    if (existingKey != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Folder rule for "$existingKey" already exists'),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _folderDefaultAttributes[folderName] = _EditableSpotAttributes.empty();
+      folderRuleNameCtrl.clear();
+    });
+  }
+
+  Map<String, dynamic>? _serializeFolderDefaultAttributes() {
+    final result = <String, dynamic>{};
+    for (final entry in _folderDefaultAttributes.entries) {
+      final serialized = entry.value.toMapOrNull();
+      if (serialized != null) {
+        result[entry.key] = serialized;
+      }
+    }
+    return result.isEmpty ? null : result;
   }
 
   @override
@@ -1506,6 +1737,199 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                 maxLines: 5,
                 minLines: 3,
               ),
+              const SizedBox(height: 8),
+              const Divider(),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Default Spot Attributes',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Applied to all newly created spots in this source.',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ),
+              const SizedBox(height: 8),
+              SpotAttributesSection(
+                selectedAccess: _sourceDefaultAttributes.selectedAccess,
+                selectedFeatures: _sourceDefaultAttributes.selectedFeatures,
+                selectedFacilities: _sourceDefaultAttributes.selectedFacilities,
+                selectedGoodFor: _sourceDefaultAttributes.selectedGoodFor,
+                onAccessChanged: (value) {
+                  setState(() {
+                    _sourceDefaultAttributes.selectedAccess = value;
+                  });
+                },
+                onToggleFeature: (key, selected) {
+                  setState(() {
+                    if (selected) {
+                      _sourceDefaultAttributes.selectedFeatures.add(key);
+                    } else {
+                      _sourceDefaultAttributes.selectedFeatures.remove(key);
+                    }
+                  });
+                },
+                onFacilityChanged: (key, value) {
+                  setState(() {
+                    if (value == 'unknown') {
+                      _sourceDefaultAttributes.selectedFacilities.remove(key);
+                    } else {
+                      _sourceDefaultAttributes.selectedFacilities[key] = value;
+                    }
+                  });
+                },
+                onToggleGoodFor: (key, selected) {
+                  setState(() {
+                    if (selected) {
+                      _sourceDefaultAttributes.selectedGoodFor.add(key);
+                    } else {
+                      _sourceDefaultAttributes.selectedGoodFor.remove(key);
+                    }
+                  });
+                },
+              ),
+              const SizedBox(height: 8),
+              const Divider(),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Folder-specific Defaults',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Optional overrides/additions for newly created spots in specific folders.',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: folderRuleNameCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Folder name',
+                        hintText: 'e.g. Dry spots',
+                      ),
+                      onFieldSubmitted: _addFolderRule,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () => _addFolderRule(folderRuleNameCtrl.text),
+                    child: const Text('Add'),
+                  ),
+                ],
+              ),
+              if (widget.source?.allFolders != null &&
+                  widget.source!.allFolders!.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: widget.source!.allFolders!
+                        .where((folder) =>
+                            _findExistingFolderRuleKey(folder) == null)
+                        .map((folder) => ActionChip(
+                              label: Text(folder),
+                              onPressed: () => _addFolderRule(folder),
+                            ))
+                        .toList(),
+                  ),
+                ),
+              ],
+              if (_folderDefaultAttributes.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                ..._folderDefaultAttributes.entries.map((entry) {
+                  final folderName = entry.key;
+                  final folderAttributes = entry.value;
+                  return Card(
+                    margin: const EdgeInsets.symmetric(vertical: 6),
+                    child: ExpansionTile(
+                      tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                      title: Text(folderName),
+                      subtitle: Text(folderAttributes.summary),
+                      children: [
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                _folderDefaultAttributes.remove(folderName);
+                              });
+                            },
+                            icon: const Icon(Icons.delete, size: 18),
+                            label: const Text('Remove rule'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.red,
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                          child: SpotAttributesSection(
+                            selectedAccess:
+                                folderAttributes.selectedAccess,
+                            selectedFeatures:
+                                folderAttributes.selectedFeatures,
+                            selectedFacilities:
+                                folderAttributes.selectedFacilities,
+                            selectedGoodFor:
+                                folderAttributes.selectedGoodFor,
+                            onAccessChanged: (value) {
+                              setState(() {
+                                folderAttributes.selectedAccess = value;
+                              });
+                            },
+                            onToggleFeature: (key, selected) {
+                              setState(() {
+                                if (selected) {
+                                  folderAttributes.selectedFeatures.add(key);
+                                } else {
+                                  folderAttributes.selectedFeatures.remove(key);
+                                }
+                              });
+                            },
+                            onFacilityChanged: (key, value) {
+                              setState(() {
+                                if (value == 'unknown') {
+                                  folderAttributes.selectedFacilities.remove(key);
+                                } else {
+                                  folderAttributes.selectedFacilities[key] = value;
+                                }
+                              });
+                            },
+                            onToggleGoodFor: (key, selected) {
+                              setState(() {
+                                if (selected) {
+                                  folderAttributes.selectedGoodFor.add(key);
+                                } else {
+                                  folderAttributes.selectedGoodFor.remove(key);
+                                }
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ],
               const SizedBox(height: 8),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
@@ -1586,6 +2010,10 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
           onPressed: () async {
             if (!formKey.currentState!.validate()) return;
             final service = context.read<SyncSourceService>();
+            final sourceDefaultAttributesPayload =
+                _sourceDefaultAttributes.toMapOrNull();
+            final folderDefaultAttributesPayload =
+                _serializeFolderDefaultAttributes();
             bool ok;
             if (widget.source == null) {
               ok = await service.createSource(
@@ -1603,6 +2031,8 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                         .where((s) => s.isNotEmpty)
                         .toList(),
                 recordFolderName: recordFolderName,
+                defaultSpotAttributes: sourceDefaultAttributesPayload,
+                folderSpotAttributes: folderDefaultAttributesPayload,
                 lightSyncSchedule: lightSyncScheduleCtrl.text.trim().isEmpty ? null : lightSyncScheduleCtrl.text.trim(),
                 fullSyncSchedule: fullSyncScheduleCtrl.text.trim().isEmpty ? null : fullSyncScheduleCtrl.text.trim(),
                 autoSyncEnabled: autoSyncEnabled,
@@ -1624,6 +2054,9 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                         .where((s) => s.isNotEmpty)
                         .toList(),
                 recordFolderName: recordFolderName,
+                defaultSpotAttributes: sourceDefaultAttributesPayload,
+                folderSpotAttributes: folderDefaultAttributesPayload,
+                updateSpotAttributeDefaults: true,
                 lightSyncSchedule: lightSyncScheduleCtrl.text.trim(),
                 fullSyncSchedule: fullSyncScheduleCtrl.text.trim(),
                 autoSyncEnabled: autoSyncEnabled,
@@ -1642,6 +2075,132 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
         ),
       ],
     );
+  }
+}
+
+class _EditableSpotAttributes {
+  _EditableSpotAttributes({
+    required this.selectedAccess,
+    required Set<String> selectedFeatures,
+    required Map<String, String> selectedFacilities,
+    required Set<String> selectedGoodFor,
+  })  : selectedFeatures = selectedFeatures,
+        selectedFacilities = selectedFacilities,
+        selectedGoodFor = selectedGoodFor;
+
+  factory _EditableSpotAttributes.empty() {
+    return _EditableSpotAttributes(
+      selectedAccess: null,
+      selectedFeatures: <String>{},
+      selectedFacilities: <String, String>{},
+      selectedGoodFor: <String>{},
+    );
+  }
+
+  factory _EditableSpotAttributes.fromMap(Map<String, dynamic>? map) {
+    if (map == null) {
+      return _EditableSpotAttributes.empty();
+    }
+
+    final validAccess = SpotAttributes.getKeys('access').toSet();
+    final validFeatures = SpotAttributes.getKeys('features').toSet();
+    final validGoodFor = SpotAttributes.getKeys('goodFor').toSet();
+    final validFacilities = SpotAttributes.getKeys('facilities').toSet();
+
+    String? selectedAccess;
+    final rawAccess = map['spotAccess'];
+    if (rawAccess is String && validAccess.contains(rawAccess)) {
+      selectedAccess = rawAccess;
+    }
+
+    final selectedFeatures = <String>{};
+    final rawFeatures = map['spotFeatures'];
+    if (rawFeatures is List) {
+      for (final value in rawFeatures) {
+        if (value is String && validFeatures.contains(value)) {
+          selectedFeatures.add(value);
+        }
+      }
+    }
+
+    final selectedGoodFor = <String>{};
+    final rawGoodFor = map['goodFor'];
+    if (rawGoodFor is List) {
+      for (final value in rawGoodFor) {
+        if (value is String && validGoodFor.contains(value)) {
+          selectedGoodFor.add(value);
+        }
+      }
+    }
+
+    final selectedFacilities = <String, String>{};
+    final rawFacilities = map['spotFacilities'];
+    if (rawFacilities is Map) {
+      for (final entry in rawFacilities.entries) {
+        final key = entry.key.toString();
+        final value = entry.value?.toString();
+        if (!validFacilities.contains(key)) continue;
+        if (value == 'yes' || value == 'no') {
+          selectedFacilities[key] = value!;
+        }
+      }
+    }
+
+    return _EditableSpotAttributes(
+      selectedAccess: selectedAccess,
+      selectedFeatures: selectedFeatures,
+      selectedFacilities: selectedFacilities,
+      selectedGoodFor: selectedGoodFor,
+    );
+  }
+
+  String? selectedAccess;
+  final Set<String> selectedFeatures;
+  final Map<String, String> selectedFacilities;
+  final Set<String> selectedGoodFor;
+
+  Map<String, dynamic>? toMapOrNull() {
+    final map = <String, dynamic>{};
+    if (selectedAccess != null && selectedAccess!.isNotEmpty) {
+      map['spotAccess'] = selectedAccess;
+    }
+    if (selectedFeatures.isNotEmpty) {
+      final list = selectedFeatures.toList()..sort();
+      map['spotFeatures'] = list;
+    }
+    if (selectedGoodFor.isNotEmpty) {
+      final list = selectedGoodFor.toList()..sort();
+      map['goodFor'] = list;
+    }
+    if (selectedFacilities.isNotEmpty) {
+      final cleaned = <String, String>{};
+      for (final entry in selectedFacilities.entries) {
+        if (entry.value == 'yes' || entry.value == 'no') {
+          cleaned[entry.key] = entry.value;
+        }
+      }
+      if (cleaned.isNotEmpty) {
+        map['spotFacilities'] = cleaned;
+      }
+    }
+    return map.isEmpty ? null : map;
+  }
+
+  String get summary {
+    final parts = <String>[];
+    if (selectedAccess != null) {
+      parts.add('Access: ${SpotAttributes.getLabel('access', selectedAccess!)}');
+    }
+    if (selectedFeatures.isNotEmpty) {
+      parts.add('${selectedFeatures.length} feature${selectedFeatures.length == 1 ? '' : 's'}');
+    }
+    if (selectedGoodFor.isNotEmpty) {
+      parts.add('${selectedGoodFor.length} good-for');
+    }
+    if (selectedFacilities.isNotEmpty) {
+      parts.add('${selectedFacilities.length} facilit${selectedFacilities.length == 1 ? 'y' : 'ies'}');
+    }
+    return parts.isEmpty ? 'No attributes configured' : parts.join(' • ');
   }
 }
 

@@ -483,6 +483,445 @@ function cleanUndefinedValues(obj) {
   return cleaned;
 }
 
+// Spot attribute defaults supported for sync source defaults/backfills.
+const VALID_SPOT_ACCESS_VALUES = new Set(["public", "restricted", "paid"]);
+const VALID_SPOT_FEATURE_VALUES = new Set([
+  "walls_low",
+  "walls_medium",
+  "walls_high",
+  "bars_low",
+  "bars_medium",
+  "bars_high",
+  "climbing_tree",
+  "rocks",
+  "soft_landing_pit",
+  "roof_gap",
+  "bouncy_equipment",
+]);
+const VALID_GOOD_FOR_VALUES = new Set([
+  "vaults",
+  "balance",
+  "ascend",
+  "descend",
+  "speed_run",
+  "water_challenges",
+  "pole_slide",
+  "precisions",
+  "wall_runs",
+  "strides",
+  "rolls",
+  "cats",
+  "flow",
+  "flips",
+  "swings",
+]);
+const VALID_SPOT_FACILITY_KEYS = new Set([
+  "covered",
+  "lighting",
+  "water_tap",
+  "toilet",
+  "parking",
+]);
+const VALID_SPOT_FACILITY_VALUES = new Set(["yes", "no"]);
+
+/**
+ * Normalizes a list of strings.
+ * @param {Array<*>} values
+ * @param {Set<string>=} allowedValues
+ * @return {Array<string>}
+ */
+function normalizeStringArray(values, allowedValues = undefined) {
+  if (!Array.isArray(values)) return [];
+  const result = [];
+  const seen = new Set();
+  for (const value of values) {
+    if (typeof value !== "string") continue;
+    const cleaned = value.trim().toLowerCase();
+    if (!cleaned) continue;
+    if (allowedValues && !allowedValues.has(cleaned)) continue;
+    if (seen.has(cleaned)) continue;
+    seen.add(cleaned);
+    result.push(cleaned);
+  }
+  return result;
+}
+
+/**
+ * Keeps existing string arrays stable without dropping unknown values.
+ * @param {Array<*>} values
+ * @return {Array<string>}
+ */
+function normalizeExistingStringArray(values) {
+  if (!Array.isArray(values)) return [];
+  const result = [];
+  const seen = new Set();
+  for (const value of values) {
+    if (typeof value !== "string") continue;
+    const cleaned = value.trim();
+    if (!cleaned) continue;
+    if (seen.has(cleaned)) continue;
+    seen.add(cleaned);
+    result.push(cleaned);
+  }
+  return result;
+}
+
+/**
+ * Normalizes one default-attributes object.
+ * @param {*} rawDefaults
+ * @return {Object|null}
+ */
+function normalizeSpotAttributeDefaults(rawDefaults) {
+  if (!rawDefaults || typeof rawDefaults !== "object" || Array.isArray(rawDefaults)) {
+    return null;
+  }
+
+  const normalized = {};
+
+  if (typeof rawDefaults.spotAccess === "string") {
+    const access = rawDefaults.spotAccess.trim().toLowerCase();
+    if (VALID_SPOT_ACCESS_VALUES.has(access)) {
+      normalized.spotAccess = access;
+    }
+  }
+
+  const normalizedSpotFeatures = normalizeStringArray(
+      rawDefaults.spotFeatures,
+      VALID_SPOT_FEATURE_VALUES,
+  );
+  if (normalizedSpotFeatures.length > 0) {
+    normalized.spotFeatures = normalizedSpotFeatures;
+  }
+
+  const normalizedGoodFor = normalizeStringArray(
+      rawDefaults.goodFor,
+      VALID_GOOD_FOR_VALUES,
+  );
+  if (normalizedGoodFor.length > 0) {
+    normalized.goodFor = normalizedGoodFor;
+  }
+
+  if (
+    rawDefaults.spotFacilities &&
+    typeof rawDefaults.spotFacilities === "object" &&
+    !Array.isArray(rawDefaults.spotFacilities)
+  ) {
+    const facilities = {};
+    for (const [key, value] of Object.entries(rawDefaults.spotFacilities)) {
+      const facilityKey = String(key).trim().toLowerCase();
+      const facilityValue = typeof value === "string" ?
+        value.trim().toLowerCase() :
+        "";
+      if (!VALID_SPOT_FACILITY_KEYS.has(facilityKey)) continue;
+      if (!VALID_SPOT_FACILITY_VALUES.has(facilityValue)) continue;
+      facilities[facilityKey] = facilityValue;
+    }
+    if (Object.keys(facilities).length > 0) {
+      normalized.spotFacilities = facilities;
+    }
+  }
+
+  return Object.keys(normalized).length > 0 ? normalized : null;
+}
+
+/**
+ * Normalizes folder-specific default attributes map.
+ * @param {*} rawFolderDefaults
+ * @return {Object<string, Object>}
+ */
+function normalizeFolderSpotAttributeDefaults(rawFolderDefaults) {
+  if (
+    !rawFolderDefaults ||
+    typeof rawFolderDefaults !== "object" ||
+    Array.isArray(rawFolderDefaults)
+  ) {
+    return {};
+  }
+
+  const normalized = {};
+  for (const [rawFolderName, rawDefaults] of Object.entries(rawFolderDefaults)) {
+    if (typeof rawFolderName !== "string") continue;
+    const folderName = rawFolderName.trim();
+    if (!folderName) continue;
+    const defaults = normalizeSpotAttributeDefaults(rawDefaults);
+    if (defaults) {
+      normalized[folderName] = defaults;
+    }
+  }
+  return normalized;
+}
+
+/**
+ * Builds case-insensitive lookup for folder defaults.
+ * @param {Object<string, Object>} folderDefaults
+ * @return {Object<string, Object>}
+ */
+function buildFolderDefaultsLookup(folderDefaults) {
+  const lookup = {};
+  for (const [folderName, defaults] of Object.entries(folderDefaults || {})) {
+    const key = folderName.trim().toLowerCase();
+    if (!key) continue;
+    lookup[key] = defaults;
+  }
+  return lookup;
+}
+
+/**
+ * Merges two default-attribute objects into one effective set.
+ * Arrays are unioned, facilities/access in overrideDefaults win.
+ * @param {Object|null} baseDefaults
+ * @param {Object|null} overrideDefaults
+ * @return {Object|null}
+ */
+function mergeSpotAttributeDefaults(baseDefaults, overrideDefaults) {
+  const hasBase = baseDefaults && typeof baseDefaults === "object";
+  const hasOverride = overrideDefaults && typeof overrideDefaults === "object";
+  if (!hasBase && !hasOverride) return null;
+
+  const merged = {};
+
+  const baseSpotFeatures = hasBase ?
+    normalizeStringArray(baseDefaults.spotFeatures, VALID_SPOT_FEATURE_VALUES) :
+    [];
+  const overrideSpotFeatures = hasOverride ?
+    normalizeStringArray(overrideDefaults.spotFeatures, VALID_SPOT_FEATURE_VALUES) :
+    [];
+  const mergedSpotFeatures = mergeUniqueStringArrays(
+      baseSpotFeatures,
+      overrideSpotFeatures,
+  );
+  if (mergedSpotFeatures.length > 0) {
+    merged.spotFeatures = mergedSpotFeatures;
+  }
+
+  const baseGoodFor = hasBase ?
+    normalizeStringArray(baseDefaults.goodFor, VALID_GOOD_FOR_VALUES) :
+    [];
+  const overrideGoodFor = hasOverride ?
+    normalizeStringArray(overrideDefaults.goodFor, VALID_GOOD_FOR_VALUES) :
+    [];
+  const mergedGoodFor = mergeUniqueStringArrays(baseGoodFor, overrideGoodFor);
+  if (mergedGoodFor.length > 0) {
+    merged.goodFor = mergedGoodFor;
+  }
+
+  const baseFacilities = (
+    hasBase &&
+    baseDefaults.spotFacilities &&
+    typeof baseDefaults.spotFacilities === "object" &&
+    !Array.isArray(baseDefaults.spotFacilities)
+  ) ? baseDefaults.spotFacilities : {};
+  const overrideFacilities = (
+    hasOverride &&
+    overrideDefaults.spotFacilities &&
+    typeof overrideDefaults.spotFacilities === "object" &&
+    !Array.isArray(overrideDefaults.spotFacilities)
+  ) ? overrideDefaults.spotFacilities : {};
+  const mergedFacilities = {};
+  for (const [key, value] of Object.entries(baseFacilities)) {
+    const facilityKey = String(key).trim().toLowerCase();
+    const facilityValue = typeof value === "string" ?
+      value.trim().toLowerCase() :
+      "";
+    if (!VALID_SPOT_FACILITY_KEYS.has(facilityKey)) continue;
+    if (!VALID_SPOT_FACILITY_VALUES.has(facilityValue)) continue;
+    mergedFacilities[facilityKey] = facilityValue;
+  }
+  for (const [key, value] of Object.entries(overrideFacilities)) {
+    const facilityKey = String(key).trim().toLowerCase();
+    const facilityValue = typeof value === "string" ?
+      value.trim().toLowerCase() :
+      "";
+    if (!VALID_SPOT_FACILITY_KEYS.has(facilityKey)) continue;
+    if (!VALID_SPOT_FACILITY_VALUES.has(facilityValue)) continue;
+    mergedFacilities[facilityKey] = facilityValue;
+  }
+  if (Object.keys(mergedFacilities).length > 0) {
+    merged.spotFacilities = mergedFacilities;
+  }
+
+  const baseAccess = hasBase && typeof baseDefaults.spotAccess === "string" ?
+    baseDefaults.spotAccess.trim().toLowerCase() :
+    null;
+  if (baseAccess && VALID_SPOT_ACCESS_VALUES.has(baseAccess)) {
+    merged.spotAccess = baseAccess;
+  }
+  const overrideAccess = hasOverride && typeof overrideDefaults.spotAccess === "string" ?
+    overrideDefaults.spotAccess.trim().toLowerCase() :
+    null;
+  if (overrideAccess && VALID_SPOT_ACCESS_VALUES.has(overrideAccess)) {
+    merged.spotAccess = overrideAccess;
+  }
+
+  return Object.keys(merged).length > 0 ? merged : null;
+}
+
+/**
+ * Returns effective defaults for a spot based on source + folder scope.
+ * @param {Object|null} sourceDefaults
+ * @param {Object<string, Object>} folderDefaultsLookup
+ * @param {string|null|undefined} folderName
+ * @return {Object|null}
+ */
+function getEffectiveSpotAttributeDefaults(
+    sourceDefaults,
+    folderDefaultsLookup,
+    folderName,
+) {
+  const folderKey = typeof folderName === "string" ?
+    folderName.trim().toLowerCase() :
+    "";
+  const folderDefaults = folderKey ? folderDefaultsLookup[folderKey] || null : null;
+  return mergeSpotAttributeDefaults(sourceDefaults, folderDefaults);
+}
+
+/**
+ * Merges unique string arrays preserving original order.
+ * @param {Array<string>} existingValues
+ * @param {Array<string>} valuesToAdd
+ * @return {Array<string>}
+ */
+function mergeUniqueStringArrays(existingValues, valuesToAdd) {
+  const merged = normalizeExistingStringArray(existingValues);
+  for (const value of normalizeExistingStringArray(valuesToAdd)) {
+    if (!merged.includes(value)) {
+      merged.push(value);
+    }
+  }
+  return merged;
+}
+
+/**
+ * Compares two string arrays for exact equality.
+ * @param {Array<string>} a
+ * @param {Array<string>} b
+ * @return {boolean}
+ */
+function areStringArraysEqual(a, b) {
+  if (!Array.isArray(a) || !Array.isArray(b)) return false;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
+/**
+ * Applies defaults into spotData. Returns true if any field changed.
+ * @param {Object} spotData
+ * @param {Object|null} defaults
+ * @return {boolean}
+ */
+function applySpotAttributeDefaultsToSpotData(spotData, defaults) {
+  if (!spotData || !defaults) return false;
+  let changed = false;
+
+  if (
+    typeof defaults.spotAccess === "string" &&
+    VALID_SPOT_ACCESS_VALUES.has(defaults.spotAccess)
+  ) {
+    if (spotData.spotAccess !== defaults.spotAccess) {
+      spotData.spotAccess = defaults.spotAccess;
+      changed = true;
+    }
+  }
+
+  if (Array.isArray(defaults.spotFeatures) && defaults.spotFeatures.length > 0) {
+    const existingSpotFeatures = normalizeExistingStringArray(spotData.spotFeatures);
+    const mergedSpotFeatures = mergeUniqueStringArrays(
+        existingSpotFeatures,
+        defaults.spotFeatures,
+    );
+    if (!areStringArraysEqual(existingSpotFeatures, mergedSpotFeatures)) {
+      spotData.spotFeatures = mergedSpotFeatures;
+      changed = true;
+    }
+  }
+
+  if (Array.isArray(defaults.goodFor) && defaults.goodFor.length > 0) {
+    const existingGoodFor = normalizeExistingStringArray(spotData.goodFor);
+    const mergedGoodFor = mergeUniqueStringArrays(
+        existingGoodFor,
+        defaults.goodFor,
+    );
+    if (!areStringArraysEqual(existingGoodFor, mergedGoodFor)) {
+      spotData.goodFor = mergedGoodFor;
+      changed = true;
+    }
+  }
+
+  if (
+    defaults.spotFacilities &&
+    typeof defaults.spotFacilities === "object" &&
+    !Array.isArray(defaults.spotFacilities)
+  ) {
+    const existingFacilities = (
+      spotData.spotFacilities &&
+      typeof spotData.spotFacilities === "object" &&
+      !Array.isArray(spotData.spotFacilities)
+    ) ? {...spotData.spotFacilities} : {};
+    const mergedFacilities = {...existingFacilities};
+    let facilitiesChanged = false;
+    for (const [key, value] of Object.entries(defaults.spotFacilities)) {
+      if (mergedFacilities[key] !== value) {
+        mergedFacilities[key] = value;
+        facilitiesChanged = true;
+      }
+    }
+    if (facilitiesChanged) {
+      spotData.spotFacilities = mergedFacilities;
+      changed = true;
+    }
+  }
+
+  return changed;
+}
+
+/**
+ * Builds a Firestore update payload for spot attributes.
+ * @param {Object} spotData
+ * @return {Object}
+ */
+function buildSpotAttributeUpdateData(spotData) {
+  return cleanUndefinedValues({
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    spotAccess: spotData.spotAccess,
+    spotFeatures: spotData.spotFeatures,
+    goodFor: spotData.goodFor,
+    spotFacilities: spotData.spotFacilities,
+  });
+}
+
+/**
+ * Queues a batched update and flushes when needed.
+ * @param {Object} batchState
+ * @param {FirebaseFirestore.DocumentReference} docRef
+ * @param {Object} updateData
+ * @return {Promise<void>}
+ */
+async function queueBatchUpdate(batchState, docRef, updateData) {
+  batchState.batch.update(docRef, updateData);
+  batchState.operationCount += 1;
+  if (batchState.operationCount >= 450) {
+    await batchState.batch.commit();
+    batchState.batch = db.batch();
+    batchState.operationCount = 0;
+  }
+}
+
+/**
+ * Flushes pending batched writes if any remain.
+ * @param {Object} batchState
+ * @return {Promise<void>}
+ */
+async function commitPendingBatch(batchState) {
+  if (batchState.operationCount > 0) {
+    await batchState.batch.commit();
+    batchState.batch = db.batch();
+    batchState.operationCount = 0;
+  }
+}
+
 // ========== Ranked Spots within Bounds ==========
 /**
  * Returns the top N spots within given map bounds ranked by ranking field,
@@ -2443,6 +2882,26 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
     );
   }
 
+  const sourceDefaultSpotAttributes = normalizeSpotAttributeDefaults(
+      source.defaultSpotAttributes,
+  );
+  const folderSpotAttributeDefaults = normalizeFolderSpotAttributeDefaults(
+      source.folderSpotAttributes,
+  );
+  const folderSpotAttributeDefaultsLookup = buildFolderDefaultsLookup(
+      folderSpotAttributeDefaults,
+  );
+  const hasAnySpotAttributeDefaults = Boolean(sourceDefaultSpotAttributes) ||
+    Object.keys(folderSpotAttributeDefaultsLookup).length > 0;
+
+  if (hasAnySpotAttributeDefaults) {
+    console.log(
+        `[ATTRIBUTE DEFAULTS] Source ${source.name} has defaults configured ` +
+        `(source=${Boolean(sourceDefaultSpotAttributes)}, ` +
+        `folders=${Object.keys(folderSpotAttributeDefaultsLookup).length})`,
+    );
+  }
+
   // Clear file buffer to free memory
   fileBuffer = null;
 
@@ -2716,6 +3175,11 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
 
     // Clean the description to remove HTML
     const cleanedDescription = cleanDescription(description);
+    const effectiveSpotAttributeDefaults = getEffectiveSpotAttributeDefaults(
+        sourceDefaultSpotAttributes,
+        folderSpotAttributeDefaultsLookup,
+        placemark.folderName,
+    );
 
     const spotData = {
       name: name.trim(),
@@ -2738,6 +3202,13 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
       } else {
         spotData.folderName = null;
       }
+    }
+
+    if (existingSpots.empty && effectiveSpotAttributeDefaults) {
+      applySpotAttributeDefaultsToSpotData(
+          spotData,
+          effectiveSpotAttributeDefaults,
+      );
     }
 
     // Add YouTube video IDs
@@ -3472,6 +3943,8 @@ exports.createSyncSource = onCall(
           isActive = true,
           includeFolders,
           recordFolderName,
+          defaultSpotAttributes,
+          folderSpotAttributes,
           lightSyncSchedule,
           fullSyncSchedule,
           autoSyncEnabled = false,
@@ -3509,6 +3982,20 @@ exports.createSyncSource = onCall(
 
         if (typeof recordFolderName === "boolean") {
           sourceData.recordFolderName = recordFolderName;
+        }
+
+        const normalizedDefaultSpotAttributes = normalizeSpotAttributeDefaults(
+            defaultSpotAttributes,
+        );
+        if (normalizedDefaultSpotAttributes) {
+          sourceData.defaultSpotAttributes = normalizedDefaultSpotAttributes;
+        }
+
+        const normalizedFolderSpotAttributes = normalizeFolderSpotAttributeDefaults(
+            folderSpotAttributes,
+        );
+        if (Object.keys(normalizedFolderSpotAttributes).length > 0) {
+          sourceData.folderSpotAttributes = normalizedFolderSpotAttributes;
         }
 
         if (lightSyncSchedule) {
@@ -3550,6 +4037,8 @@ exports.updateSyncSource = onCall(
           isActive,
           includeFolders,
           recordFolderName,
+          defaultSpotAttributes,
+          folderSpotAttributes,
           lightSyncSchedule,
           fullSyncSchedule,
           autoSyncEnabled,
@@ -3591,6 +4080,34 @@ exports.updateSyncSource = onCall(
             updateData.recordFolderName = recordFolderName;
           } else if (recordFolderName === null) {
             updateData.recordFolderName = admin.firestore.FieldValue.delete();
+          }
+        }
+        if (defaultSpotAttributes !== undefined) {
+          if (defaultSpotAttributes === null) {
+            updateData.defaultSpotAttributes = admin.firestore.FieldValue.delete();
+          } else {
+            const normalizedDefaultSpotAttributes = normalizeSpotAttributeDefaults(
+                defaultSpotAttributes,
+            );
+            if (normalizedDefaultSpotAttributes) {
+              updateData.defaultSpotAttributes = normalizedDefaultSpotAttributes;
+            } else {
+              updateData.defaultSpotAttributes = admin.firestore.FieldValue.delete();
+            }
+          }
+        }
+        if (folderSpotAttributes !== undefined) {
+          if (folderSpotAttributes === null) {
+            updateData.folderSpotAttributes = admin.firestore.FieldValue.delete();
+          } else {
+            const normalizedFolderSpotAttributes = normalizeFolderSpotAttributeDefaults(
+                folderSpotAttributes,
+            );
+            if (Object.keys(normalizedFolderSpotAttributes).length > 0) {
+              updateData.folderSpotAttributes = normalizedFolderSpotAttributes;
+            } else {
+              updateData.folderSpotAttributes = admin.firestore.FieldValue.delete();
+            }
           }
         }
         if (lightSyncSchedule !== undefined) {
@@ -3735,6 +4252,211 @@ exports.getSyncSource = onCall({region: "europe-west1"}, async (request) => {
     throw new Error(`Failed to get sync source: ${error.message}`);
   }
 });
+
+// Admin callable to backfill source/folder default spot attributes.
+exports.backfillSourceSpotAttributes = onCall(
+    {
+      region: "europe-west1",
+      timeoutSeconds: 540,
+      memory: "1GiB",
+    },
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const {sourceId = null} = request.data || {};
+        if (sourceId !== null && sourceId !== undefined && typeof sourceId !== "string") {
+          throw new Error("sourceId must be a string when provided");
+        }
+
+        let sourceDocs = [];
+        if (sourceId && sourceId.trim().length > 0) {
+          const sourceDoc = await db.collection("syncSources").doc(sourceId).get();
+          if (!sourceDoc.exists) {
+            throw new Error(`Sync source with ID ${sourceId} not found`);
+          }
+          sourceDocs = [sourceDoc];
+        } else {
+          const sourcesSnapshot = await db.collection("syncSources").get();
+          sourceDocs = sourcesSnapshot.docs;
+        }
+
+        const batchState = {
+          batch: db.batch(),
+          operationCount: 0,
+        };
+
+        const results = [];
+        let totalSpotsScanned = 0;
+        let totalSpotsUpdated = 0;
+        let totalOriginalSpotsUpdated = 0;
+        let sourcesWithDefaults = 0;
+        let sourcesSkippedNoDefaults = 0;
+        let sourcesFailed = 0;
+
+        for (const sourceDoc of sourceDocs) {
+          const sourceData = sourceDoc.data() || {};
+          const sourceName = sourceData.name || sourceDoc.id;
+
+          try {
+            const sourceDefaults = normalizeSpotAttributeDefaults(
+                sourceData.defaultSpotAttributes,
+            );
+            const folderDefaults = normalizeFolderSpotAttributeDefaults(
+                sourceData.folderSpotAttributes,
+            );
+            const folderDefaultsLookup = buildFolderDefaultsLookup(folderDefaults);
+            const hasDefaults = Boolean(sourceDefaults) ||
+              Object.keys(folderDefaultsLookup).length > 0;
+
+            if (!hasDefaults) {
+              sourcesSkippedNoDefaults += 1;
+              results.push({
+                sourceId: sourceDoc.id,
+                sourceName: sourceName,
+                skipped: true,
+                reason: "No default attributes configured",
+                spotsScanned: 0,
+                spotsUpdated: 0,
+                originalSpotsUpdated: 0,
+              });
+              continue;
+            }
+
+            sourcesWithDefaults += 1;
+
+            const sourceResult = {
+              sourceId: sourceDoc.id,
+              sourceName: sourceName,
+              skipped: false,
+              spotsScanned: 0,
+              spotsUpdated: 0,
+              originalSpotsUpdated: 0,
+            };
+
+            const sourceSpotsSnapshot = await db
+                .collection("spots")
+                .where("spotSource", "==", sourceDoc.id)
+                .get();
+
+            sourceResult.spotsScanned = sourceSpotsSnapshot.size;
+            totalSpotsScanned += sourceSpotsSnapshot.size;
+
+            // For duplicate spots, accumulate defaults to also apply to originals.
+            const originalDefaultsBySpotId = new Map();
+
+            for (const spotDoc of sourceSpotsSnapshot.docs) {
+              const currentSpotData = spotDoc.data() || {};
+              const effectiveDefaults = getEffectiveSpotAttributeDefaults(
+                  sourceDefaults,
+                  folderDefaultsLookup,
+                  currentSpotData.folderName,
+              );
+              if (!effectiveDefaults) {
+                continue;
+              }
+
+              const mutableSpotData = {...currentSpotData};
+              const changedSpot = applySpotAttributeDefaultsToSpotData(
+                  mutableSpotData,
+                  effectiveDefaults,
+              );
+              if (changedSpot) {
+                await queueBatchUpdate(
+                    batchState,
+                    spotDoc.ref,
+                    buildSpotAttributeUpdateData(mutableSpotData),
+                );
+                sourceResult.spotsUpdated += 1;
+                totalSpotsUpdated += 1;
+              }
+
+              const duplicateOfId = typeof currentSpotData.duplicateOf === "string" ?
+                currentSpotData.duplicateOf.trim() :
+                "";
+              if (duplicateOfId) {
+                const previousDefaults = originalDefaultsBySpotId.get(duplicateOfId) || null;
+                const mergedDefaults = mergeSpotAttributeDefaults(
+                    previousDefaults,
+                    effectiveDefaults,
+                );
+                if (mergedDefaults) {
+                  originalDefaultsBySpotId.set(duplicateOfId, mergedDefaults);
+                }
+              }
+            }
+
+            const originalIds = Array.from(originalDefaultsBySpotId.keys());
+            for (let i = 0; i < originalIds.length; i += 200) {
+              const chunk = originalIds.slice(i, i + 200);
+              const refs = chunk.map((id) => db.collection("spots").doc(id));
+              const originalDocs = await db.getAll(...refs);
+
+              for (const originalDoc of originalDocs) {
+                if (!originalDoc.exists) continue;
+
+                const defaultsForOriginal = originalDefaultsBySpotId.get(originalDoc.id);
+                if (!defaultsForOriginal) continue;
+
+                const mutableOriginalData = {...(originalDoc.data() || {})};
+                const changedOriginal = applySpotAttributeDefaultsToSpotData(
+                    mutableOriginalData,
+                    defaultsForOriginal,
+                );
+                if (changedOriginal) {
+                  await queueBatchUpdate(
+                      batchState,
+                      originalDoc.ref,
+                      buildSpotAttributeUpdateData(mutableOriginalData),
+                  );
+                  sourceResult.originalSpotsUpdated += 1;
+                  totalOriginalSpotsUpdated += 1;
+                }
+              }
+            }
+
+            results.push(sourceResult);
+          } catch (sourceError) {
+            sourcesFailed += 1;
+            console.error(
+                `Failed backfilling spot attributes for source ${sourceDoc.id}:`,
+                sourceError,
+            );
+            results.push({
+              sourceId: sourceDoc.id,
+              sourceName: sourceName,
+              skipped: false,
+              spotsScanned: 0,
+              spotsUpdated: 0,
+              originalSpotsUpdated: 0,
+              error: sourceError.message,
+            });
+          }
+        }
+
+        await commitPendingBatch(batchState);
+
+        return {
+          success: true,
+          message: sourceId && sourceId.trim().length > 0 ?
+            `Backfill completed for source ${sourceId}` :
+            `Backfill completed for ${sourceDocs.length} source(s)`,
+          summary: {
+            sourcesRequested: sourceDocs.length,
+            sourcesWithDefaults: sourcesWithDefaults,
+            sourcesSkippedNoDefaults: sourcesSkippedNoDefaults,
+            sourcesFailed: sourcesFailed,
+            spotsScanned: totalSpotsScanned,
+            spotsUpdated: totalSpotsUpdated,
+            originalSpotsUpdated: totalOriginalSpotsUpdated,
+          },
+          results: results,
+        };
+      } catch (error) {
+        console.error("Error backfilling source spot attributes:", error);
+        throw new Error(`Failed to backfill source spot attributes: ${error.message}`);
+      }
+    },
+);
 
 // Admin tool: set or unset a user's admin status
 exports.setUserAdmin = onCall({region: "europe-west1"}, async (request) => {
