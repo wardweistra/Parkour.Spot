@@ -138,7 +138,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   SpotList? _selectedList; // Full spot list object for preview
   bool _showListPreview = false; // Whether to show the list preview card
   Set<String> _highlightedSpotIds = {}; // Spot IDs from selected list
-  
+  DateTime? _lastAutocompleteSpotSelection; // Guard against mobile tap-through
+
   void _onSpotsChanged() {
     if (mounted) {
       _updateVisibleSpots();
@@ -609,6 +610,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       _autocompleteFocusNode!.unfocus();
     }
 
+    _lastAutocompleteSpotSelection = DateTime.now();
     await _locateSpot(spot);
     if (spot.id != null) {
       _loadFullSpotInBackground(spot.id!);
@@ -2413,6 +2415,14 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                   _onMapCameraMove(position);
                 },
                 onTap: (LatLng position) {
+                  // On mobile web, tap on autocomplete can pass through when overlay dismisses.
+                  // Ignore map taps for a short window after selecting a spot from autocomplete.
+                  if (kIsWeb && MobileDetectionService.isMobileDevice &&
+                      _lastAutocompleteSpotSelection != null &&
+                      DateTime.now().difference(_lastAutocompleteSpotSelection!).inMilliseconds < 400) {
+                    _lastAutocompleteSpotSelection = null;
+                    return;
+                  }
                   // Dismiss spot detail card or list preview when map is tapped (but not when markers are tapped)
                   if ((_selectedSpot != null || _showListPreview) && !_isBottomSheetOpen) {
                     setState(() {
