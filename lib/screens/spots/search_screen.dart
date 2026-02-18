@@ -610,6 +610,22 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     }
 
     await _locateSpot(spot);
+    if (spot.id != null) {
+      _loadFullSpotInBackground(spot.id!);
+    }
+  }
+
+  /// Load full spot details in background and update the card when available.
+  void _loadFullSpotInBackground(String spotId) {
+    _spotServiceRef ??= Provider.of<SpotService>(context, listen: false);
+    _spotServiceRef!.getSpotById(spotId).then((fullSpot) {
+      if (fullSpot != null && mounted && _selectedSpot?.id == spotId) {
+        setState(() {
+          _selectedSpot = fullSpot;
+          _markers = _buildMarkers(_visibleSpots);
+        });
+      }
+    });
   }
 
   Future<void> _selectAutocompleteOption(Map<String, dynamic> option) async {
@@ -2813,7 +2829,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                       final isSelected = currentSelection == index;
                                       final leadingIcon = isSpotSuggestion
                                           ? (isSelected ? Icons.place : Icons.place_outlined)
-                                          : (isSelected ? Icons.location_on : Icons.location_on_outlined);
+                                          : (isSelected ? Icons.public : Icons.public_outlined);
                                       
                                       return Container(
                                         decoration: isSelected

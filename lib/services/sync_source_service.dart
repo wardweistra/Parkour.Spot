@@ -612,6 +612,26 @@ class SyncSourceService extends ChangeNotifier {
     }
   }
 
+  /// One-time backfill: populates spotSearchTerms for all spots (Explore autocomplete).
+  /// Run once after deploying searchSpotsByTitle changes.
+  Future<Map<String, dynamic>?> backfillSpotNameLower() async {
+    try {
+      final callable = _functions.httpsCallable(
+        'backfillSpotNameLower',
+        options: HttpsCallableOptions(
+          timeout: const Duration(minutes: 9),
+        ),
+      );
+      final result = await callable.call({});
+      return result.data as Map<String, dynamic>?;
+    } catch (e) {
+      _error = 'Failed to backfill spotSearchTerms: $e';
+      debugPrint(_error);
+      notifyListeners();
+      return null;
+    }
+  }
+
   Future<Map<String, dynamic>?> backfillSourceSpotAttributes({String? sourceId}) async {
     try {
       final callable = _functions.httpsCallable(

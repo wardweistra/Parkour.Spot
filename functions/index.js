@@ -524,6 +524,31 @@ const VALID_SPOT_FACILITY_KEYS = new Set([
 ]);
 const VALID_SPOT_FACILITY_VALUES = new Set(["yes", "no"]);
 
+// Stop words to exclude from spot name search index
+const SPOT_NAME_STOP_WORDS = new Set([
+  "the", "a", "an", "of", "in", "on", "at", "to", "for", "and", "or", "but",
+  "is", "it", "as", "with", "by", "from", "de", "la", "le", "und", "der", "die",
+  "et", "en", "van", "het", "een",
+]);
+
+const MIN_WORD_PREFIX_LENGTH = 3;
+
+/**
+ * Builds unique search words from spot name: split, lowercase, remove punctuation
+ * and stop words. Full words only (no prefixes) - used for spotSearchTerms collection.
+ * @param {string} name - Spot name
+ * @return {string[]}
+ */
+function buildSpotSearchWords(name) {
+  if (!name || typeof name !== "string") return [];
+  const normalized = name
+      .replace(/[\s\p{P}\p{S}]/gu, " ")
+      .split(/\s+/)
+      .map((w) => w.toLowerCase().replace(/[^\p{L}\p{N}]/gu, ""))
+      .filter((w) => w && w.length >= MIN_WORD_PREFIX_LENGTH && !SPOT_NAME_STOP_WORDS.has(w));
+  return [...new Set(normalized)];
+}
+
 /**
  * Normalizes a list of strings.
  * @param {Array<*>} values
@@ -1506,41 +1531,71 @@ exports.onRatingDeleted = onDocumentDeleted(
     },
 );
 
-// Trigger when a new spot is created
+// Deterministic doc ID to avoid duplicates when backfilling
+function spotSearchTermDocId(spotId, term) {
+  return `${spotId}_${term}`;
+}
+
+// Trigger when a new spot is created - index words in spotSearchTerms
 exports.onSpotCreated = onDocumentCreated(
     {document: "spots/{spotId}", region: "europe-west1"},
-    (event) => {
+    async (event) => {
+      const spotId = event.params.spotId;
       const spotData = event.data.data();
-      console.log("New parkour spot created:", {
-        spotId: event.params.spotId,
-        name: spotData.name,
-        createdBy: spotData.createdBy,
-      });
-
-    // You can add logic here like:
-    // - Send notifications to nearby users
-    // - Update search indexes
-    // - Validate spot data
+      const name = typeof spotData?.name === "string" ? spotData.name : "";
+      const words = buildSpotSearchWords(name);
+      if (words.length === 0) return;
+      const batch = db.batch();
+      for (const term of words) {
+        const ref = db.collection("spotSearchTerms").doc(spotSearchTermDocId(spotId, term));
+        batch.set(ref, {term, spotId});
+      }
+      await batch.commit();
+      console.log("Indexed spot search terms:", {spotId, name: name.slice(0, 40), wordCount: words.length});
     },
 );
 
-// Trigger when a spot is updated
+// Trigger when a spot is updated - reindex spotSearchTerms if name changed
 exports.onSpotUpdated = onDocumentUpdated(
     {document: "spots/{spotId}", region: "europe-west1"},
-    (event) => {
+    async (event) => {
+      const spotId = event.params.spotId;
       const beforeData = event.data.before.data();
       const afterData = event.data.after.data();
+      const nameBefore = typeof beforeData?.name === "string" ? beforeData.name : "";
+      const nameAfter = typeof afterData?.name === "string" ? afterData.name : "";
+      if (nameBefore === nameAfter) return;
+      const termsSnapshot = await db.collection("spotSearchTerms")
+          .where("spotId", "==", spotId)
+          .get();
+      const batch = db.batch();
+      termsSnapshot.docs.forEach((doc) => batch.delete(doc.ref));
+      if (termsSnapshot.size > 0) await batch.commit();
+      const words = buildSpotSearchWords(nameAfter);
+      if (words.length === 0) return;
+      const writeBatch = db.batch();
+      for (const term of words) {
+        const ref = db.collection("spotSearchTerms").doc(spotSearchTermDocId(spotId, term));
+        writeBatch.set(ref, {term, spotId});
+      }
+      await writeBatch.commit();
+      console.log("Reindexed spot search terms:", {spotId, name: nameAfter.slice(0, 40), wordCount: words.length});
+    },
+);
 
-      console.log("Parkour spot updated:", {
-        spotId: event.params.spotId,
-        name: afterData.name,
-        ratingChanged: beforeData.rating !== afterData.rating,
-      });
-
-    // You can add logic here like:
-    // - Update search indexes
-    // - Send notifications about changes
-    // - Log rating changes
+// Trigger when a spot is deleted - remove from spotSearchTerms
+exports.onSpotDeleted = onDocumentDeleted(
+    {document: "spots/{spotId}", region: "europe-west1"},
+    async (event) => {
+      const spotId = event.params.spotId;
+      const termsSnapshot = await db.collection("spotSearchTerms")
+          .where("spotId", "==", spotId)
+          .get();
+      if (termsSnapshot.empty) return;
+      const batch = db.batch();
+      termsSnapshot.docs.forEach((doc) => batch.delete(doc.ref));
+      await batch.commit();
+      console.log("Removed spot search terms:", {spotId, count: termsSnapshot.size});
     },
 );
 
@@ -4738,6 +4793,65 @@ exports.updateSpotSourceNames = onCall(
     },
 );
 
+// One-time backfill: populate spotSearchTerms for all existing spots.
+// Run once after deploying. Admin only.
+exports.backfillSpotNameLower = onCall(
+    {region: "europe-west1", memory: "256MiB", timeoutSeconds: 540},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const BATCH_SIZE = 250;
+        let lastDoc = null;
+        let totalProcessed = 0;
+        let searchTermsWritten = 0;
+        let hasMore = true;
+        while (hasMore) {
+          let query = db.collection("spots").limit(BATCH_SIZE);
+          if (lastDoc) {
+            query = query.startAfter(lastDoc);
+          }
+          const snapshot = await query.get();
+          if (snapshot.empty) {
+            hasMore = false;
+            break;
+          }
+          let termsBatch = db.batch();
+          let termsCount = 0;
+          const BATCH_LIMIT = 450;
+          for (const doc of snapshot.docs) {
+            const data = doc.data();
+            const name = typeof data.name === "string" ? data.name.trim() : "";
+            const words = buildSpotSearchWords(name);
+            for (const term of words) {
+              if (termsCount >= BATCH_LIMIT) {
+                await termsBatch.commit();
+                termsBatch = db.batch();
+                termsCount = 0;
+              }
+              const ref = db.collection("spotSearchTerms").doc(spotSearchTermDocId(doc.id, term));
+              termsBatch.set(ref, {term, spotId: doc.id});
+              termsCount++;
+              searchTermsWritten++;
+            }
+          }
+          if (termsCount > 0) await termsBatch.commit();
+          totalProcessed += snapshot.size;
+          lastDoc = snapshot.docs[snapshot.docs.length - 1];
+          hasMore = snapshot.size === BATCH_SIZE;
+          console.log(`Backfill: ${totalProcessed} spots, ${searchTermsWritten} terms`);
+        }
+        return {
+          success: true,
+          message: "Backfill completed",
+          stats: {totalProcessed, searchTermsWritten},
+        };
+      } catch (error) {
+        console.error("Error in backfillSpotNameLower:", error);
+        throw new Error(`Failed to backfill: ${error.message}`);
+      }
+    },
+);
+
 // Geocoding function to convert coordinates to address and components
 exports.geocodeCoordinates = onCall(
     {region: "europe-west1", secrets: ["GOOGLE_MAPS_API_KEY"]},
@@ -4832,9 +4946,26 @@ exports.geocodeCoordinates = onCall(
     },
 );
 
-// Spot title search for Explore autocomplete
+// Normalizes search query: lowercase, remove punctuation. Returns string for matching.
+function normalizeSearchQuery(str) {
+  if (!str || typeof str !== "string") return "";
+  return str
+      .toLowerCase()
+      .replace(/[\s\p{P}\p{S}]/gu, " ")
+      .replace(/[^\p{L}\p{N}\s]/gu, "")
+      .replace(/\s+/g, " ")
+      .trim();
+}
+
+// Extracts search tokens from query (same logic as buildSpotSearchWords).
+function getSearchQueryTokens(query) {
+  return buildSpotSearchWords(query);
+}
+
+// Spot title search for Explore autocomplete.
+// Multi-word: query each token, intersect results. Rank by match count, then spot ranking.
 exports.searchSpotsByTitle = onCall(
-    {region: "europe-west1", memory: "512MiB", timeoutSeconds: 30},
+    {region: "europe-west1", memory: "256MiB", timeoutSeconds: 10},
     async (request) => {
       try {
         const {query, limit = 8} = request.data || {};
@@ -4842,47 +4973,60 @@ exports.searchSpotsByTitle = onCall(
           throw new Error("query is required");
         }
 
-        const trimmedQuery = query.trim();
-        if (!trimmedQuery) {
+        const tokens = getSearchQueryTokens(query);
+        if (tokens.length === 0) {
           return {success: true, spots: []};
         }
 
-        const normalizedQuery = trimmedQuery.toLowerCase();
         const parsedLimit = Number(limit);
         const maxResults = Number.isFinite(parsedLimit) ?
           Math.max(1, Math.min(Math.floor(parsedLimit), 20)) :
           8;
 
-        const snapshot = await db
-            .collection("spots")
-            .where("duplicateOf", "==", null)
-            .where("hidden", "==", false)
-            .select(
-                "name",
-                "address",
-                "city",
-                "countryCode",
-                "latitude",
-                "longitude",
-                "ranking",
-            )
-            .get();
+        const spotIdToMatchCount = new Map();
+        for (const token of tokens) {
+          const queryEnd = token + "\uf8ff";
+          const termsSnapshot = await db.collection("spotSearchTerms")
+              .where("term", ">=", token)
+              .where("term", "<", queryEnd)
+              .limit(200)
+              .get();
+          termsSnapshot.docs.forEach((doc) => {
+            const spotId = doc.data().spotId;
+            if (!spotId) return;
+            const prev = spotIdToMatchCount.get(spotId) || 0;
+            spotIdToMatchCount.set(spotId, prev + 1);
+          });
+        }
 
+        let spotIds;
+        const spotsWithAll = [...spotIdToMatchCount.entries()]
+            .filter(([, count]) => count === tokens.length)
+            .map(([id]) => id);
+        if (spotsWithAll.length > 0) {
+          spotIds = spotsWithAll;
+        } else {
+          spotIds = [...spotIdToMatchCount.entries()]
+              .sort((a, b) => b[1] - a[1])
+              .map(([id]) => id);
+        }
+
+        if (spotIds.length === 0) {
+          return {success: true, spots: []};
+        }
+
+        const spotsToFetch = spotIds.slice(0, 60);
+        const spotRefs = spotsToFetch.map((id) => db.collection("spots").doc(id));
+        const spotDocs = await db.getAll(...spotRefs);
         const matches = [];
-        snapshot.forEach((doc) => {
-          const data = doc.data() || {};
+        spotDocs.forEach((doc) => {
+          if (!doc.exists) return;
+          const data = doc.data();
+          if (data.duplicateOf || data.hidden) return;
           const name = typeof data.name === "string" ? data.name.trim() : "";
           if (!name) return;
-
-          const normalizedName = name.toLowerCase();
-          const matchIndex = normalizedName.indexOf(normalizedQuery);
-          if (matchIndex < 0) return;
-
-          const charBefore = matchIndex > 0 ? normalizedName[matchIndex - 1] : "";
-          const isWordStart = matchIndex > 0 && !/[a-z0-9]/.test(charBefore);
-          const matchScore = matchIndex === 0 ? 3 : (isWordStart ? 2 : 1);
           const ranking = typeof data.ranking === "number" ? data.ranking : 0;
-
+          const matchCount = spotIdToMatchCount.get(doc.id) || 0;
           matches.push({
             id: doc.id,
             name,
@@ -4894,12 +5038,13 @@ exports.searchSpotsByTitle = onCall(
             latitude: typeof data.latitude === "number" ? data.latitude : 0,
             longitude: typeof data.longitude === "number" ? data.longitude : 0,
             ranking,
-            matchScore,
+            matchCount,
           });
         });
 
+        // Sort by match count (most tokens first), then ranking, then name
         matches.sort((a, b) => {
-          if (a.matchScore !== b.matchScore) return b.matchScore - a.matchScore;
+          if (a.matchCount !== b.matchCount) return b.matchCount - a.matchCount;
           if (a.ranking !== b.ranking) return b.ranking - a.ranking;
           return String(a.name).localeCompare(String(b.name));
         });
