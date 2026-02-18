@@ -569,6 +569,141 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     }
   }
 
+  String _formatSpotSuggestionLocation(Spot spot) {
+    final city = spot.city?.trim();
+    final trimmedCountryCode = spot.countryCode?.trim();
+    final countryCode = trimmedCountryCode != null && trimmedCountryCode.isNotEmpty
+        ? trimmedCountryCode.toUpperCase()
+        : null;
+    final address = spot.address?.trim();
+
+    if (city != null && city.isNotEmpty && countryCode != null && countryCode.isNotEmpty) {
+      return '$city, $countryCode';
+    }
+    if (city != null && city.isNotEmpty) {
+      return city;
+    }
+    if (address != null && address.isNotEmpty) {
+      return address;
+    }
+    return '${spot.latitude.toStringAsFixed(4)}, ${spot.longitude.toStringAsFixed(4)}';
+  }
+
+  Future<void> _selectSpotSuggestion(Map<String, dynamic> suggestion) async {
+    final spot = suggestion['spot'];
+    if (spot is! Spot) return;
+
+    final controllerToUpdate = _autocompleteController ?? _searchController;
+    final newText = spot.name;
+    setState(() {
+      controllerToUpdate.text = newText;
+      controllerToUpdate.selection = TextSelection.fromPosition(
+        TextPosition(offset: controllerToUpdate.text.length),
+      );
+      _searchQuery = newText;
+      _selectedAutocompleteIndex = null;
+      _isSearchingLocation = false;
+    });
+
+    if (_autocompleteFocusNode != null && _autocompleteFocusNode!.hasFocus) {
+      _autocompleteFocusNode!.unfocus();
+    }
+
+    await _locateSpot(spot);
+    if (spot.id != null) {
+      _loadFullSpotInBackground(spot.id!);
+    }
+  }
+
+  /// Load full spot details in background and update the card when available.
+  void _loadFullSpotInBackground(String spotId) {
+    _spotServiceRef ??= Provider.of<SpotService>(context, listen: false);
+    _spotServiceRef!.getSpotById(spotId).then((fullSpot) {
+      if (fullSpot != null && mounted && _selectedSpot?.id == spotId) {
+        setState(() {
+          _selectedSpot = fullSpot;
+          _markers = _buildMarkers(_visibleSpots);
+        });
+      }
+    });
+  }
+
+  Future<void> _selectAutocompleteOption(Map<String, dynamic> option) async {
+    final optionType = option['optionType'] as String? ?? 'place';
+    if (optionType == 'spot') {
+      await _selectSpotSuggestion(option);
+      return;
+    }
+    await _selectPlaceSuggestion(option);
+  }
+
+  Future<List<Map<String, dynamic>>> _buildAutocompleteOptions(String query) async {
+    final trimmedQuery = query.trim();
+    if (trimmedQuery.isEmpty) return [];
+
+    // Ensure session token for Google Places requests
+    _placesSessionToken ??= const Uuid().v4();
+
+    // Compute map center bias if possible
+    LatLng? center;
+    if (_mapController != null) {
+      try {
+        final bounds = await _mapController!.getVisibleRegion();
+        center = LatLng(
+          (bounds.northeast.latitude + bounds.southwest.latitude) / 2,
+          (bounds.northeast.longitude + bounds.southwest.longitude) / 2,
+        );
+      } catch (_) {}
+    }
+
+    if (!mounted) return [];
+
+    try {
+      final geocoding = Provider.of<GeocodingService>(context, listen: false);
+      final spotService = Provider.of<SpotService>(context, listen: false);
+      final shouldSearchSpotTitles = trimmedQuery.length >= 2;
+
+      final results = await Future.wait([
+        geocoding.placesAutocomplete(
+          input: trimmedQuery,
+          sessionToken: _placesSessionToken,
+          biasLat: center?.latitude,
+          biasLng: center?.longitude,
+          radiusMeters: 50000,
+        ),
+        shouldSearchSpotTitles
+            ? spotService.searchSpotsByTitle(query: trimmedQuery, limit: 6)
+            : Future.value(<Spot>[]),
+      ]);
+
+      if (!mounted) return [];
+
+      final locationSuggestions = results[0] as List<Map<String, dynamic>>;
+      final matchingSpots = results[1] as List<Spot>;
+
+      final combinedOptions = <Map<String, dynamic>>[
+        ...locationSuggestions.map((suggestion) => {
+              ...suggestion,
+              'optionType': 'place',
+            }),
+      ];
+
+      for (final spot in matchingSpots) {
+        if (spot.id == null) continue;
+        combinedOptions.add({
+          'optionType': 'spot',
+          'description': spot.name,
+          'secondary': _formatSpotSuggestionLocation(spot),
+          'spot': spot,
+        });
+      }
+
+      return combinedOptions;
+    } catch (e) {
+      return [];
+    }
+  }
+
   /// Search for location using current search text and navigate to the first result
   Future<void> _searchAndNavigateToLocation() async {
     final query = _searchQuery.trim();
@@ -2464,50 +2599,11 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                             });
                           }
 
-                          // Ensure session token
-                          _placesSessionToken ??= const Uuid().v4();
-
-                          // Compute map center bias if possible
-                          LatLng? center;
-                          if (_mapController != null) {
-                            try {
-                              final bounds = await _mapController!.getVisibleRegion();
-                              center = LatLng(
-                                (bounds.northeast.latitude + bounds.southwest.latitude) / 2,
-                                (bounds.northeast.longitude + bounds.southwest.longitude) / 2,
-                              );
-                            } catch (_) {}
-                          }
-
-                          
-                          if (!mounted) {
-                            return const Iterable<Map<String, dynamic>>.empty();
-                          }
-                          try {
-                            if (!mounted) {
-                              return const Iterable<Map<String, dynamic>>.empty();
-                            }
-                            final geocoding = Provider.of<GeocodingService>(context, listen: false);
-                            final results = await geocoding.placesAutocomplete(
-                              input: query,
-                              sessionToken: _placesSessionToken,
-                              biasLat: center?.latitude,
-                              biasLng: center?.longitude,
-                              radiusMeters: 50000,
-                            );
-                            
-                            if (!mounted) {
-                              return const Iterable<Map<String, dynamic>>.empty();
-                            }
-                            
-                            return results;
-                          } catch (e) {
-                            
-                            return const Iterable<Map<String, dynamic>>.empty();
-                          }
+                          final options = await _buildAutocompleteOptions(query);
+                          return options;
                         },
                         onSelected: (Map<String, dynamic> suggestion) async {
-                          await _selectPlaceSuggestion(suggestion);
+                          await _selectAutocompleteOption(suggestion);
                         },
                         displayStringForOption: (Map<String, dynamic> option) {
                           return option['description'] as String? ?? '';
@@ -2549,7 +2645,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                       final selectedOption = _currentAutocompleteOptions[_selectedAutocompleteIndex!];
                                       // Call the onSelected callback
                                       WidgetsBinding.instance.addPostFrameCallback((_) {
-                                        _selectPlaceSuggestion(selectedOption);
+                                        _selectAutocompleteOption(selectedOption);
                                         setState(() {
                                           _selectedAutocompleteIndex = null;
                                         });
@@ -2565,7 +2661,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                               controller: textEditingController,
                               focusNode: focusNode,
                               decoration: InputDecoration(
-                              hintText: 'Search location…',
+                              hintText: 'Search location or spot…',
                               prefixIcon: Padding(
                                 padding: const EdgeInsets.only(left: 6),
                                 child: Icon(Icons.search),
@@ -2726,9 +2822,14 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                     itemCount: optionsList.length,
                                     itemBuilder: (context, index) {
                                       final option = optionsList[index];
+                                      final optionType = option['optionType'] as String? ?? 'place';
+                                      final isSpotSuggestion = optionType == 'spot';
                                       final description = option['description'] as String? ?? '';
                                       final secondary = option['secondary'] as String?;
                                       final isSelected = currentSelection == index;
+                                      final leadingIcon = isSpotSuggestion
+                                          ? (isSelected ? Icons.place : Icons.place_outlined)
+                                          : (isSelected ? Icons.public : Icons.public_outlined);
                                       
                                       return Container(
                                         decoration: isSelected
@@ -2744,7 +2845,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                             : null,
                                         child: ListTile(
                                           leading: Icon(
-                                            isSelected ? Icons.location_on : Icons.location_on_outlined,
+                                            leadingIcon,
                                             color: Theme.of(context).colorScheme.primary,
                                           ),
                                           dense: true,

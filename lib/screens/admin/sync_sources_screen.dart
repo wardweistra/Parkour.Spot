@@ -212,6 +212,11 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
             onPressed: () => _showUpdateSourceNamesDialog(context),
           ),
           IconButton(
+            icon: const Icon(Icons.search),
+            tooltip: 'Backfill Spot Name Search (spotSearchTerms)',
+            onPressed: () => _backfillSpotNameLower(context),
+          ),
+          IconButton(
             icon: const Icon(Icons.auto_fix_high),
             tooltip: 'Backfill Source Attributes',
             onPressed: () => _showBackfillSpotAttributesDialog(context),
@@ -1569,6 +1574,69 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
             backgroundColor: Colors.red,
           ),
         );
+      }
+    }
+  }
+
+  Future<void> _backfillSpotNameLower(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Backfill Spot Name Search'),
+        content: const Text(
+          'Populates spotSearchTerms for all spots (Explore autocomplete). '
+          'Run once after deploying. This may take a few minutes for large databases.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(c, true),
+            child: const Text('Run'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+    final syncService = context.read<SyncSourceService>();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    late NavigatorState navigator;
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (c) {
+        navigator = Navigator.of(c);
+        return const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Backfilling spotSearchTerms...'),
+            ],
+          ),
+        );
+      },
+    );
+    try {
+      final result = await syncService.backfillSpotNameLower();
+      navigator.pop();
+      if (mounted) {
+        if (result != null && result['success'] == true) {
+          final stats = result['stats'] as Map<String, dynamic>?;
+          final msg = stats != null
+              ? 'Backfill completed. Spots: ${stats['totalProcessed']}, Terms: ${stats['searchTermsWritten']}'
+              : 'Backfill completed';
+          scaffoldMessenger.showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.green));
+        } else {
+          scaffoldMessenger.showSnackBar(SnackBar(content: Text(syncService.error ?? 'Backfill failed'), backgroundColor: Colors.red));
+        }
+      }
+    } catch (e) {
+      navigator.pop();
+      if (mounted) {
+        scaffoldMessenger.showSnackBar(SnackBar(content: Text('Backfill failed: $e'), backgroundColor: Colors.red));
       }
     }
   }
