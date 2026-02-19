@@ -13,7 +13,6 @@ import '../../services/spot_report_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/url_service.dart';
 import '../../services/mobile_detection_service.dart';
-import '../../services/sync_source_service.dart';
 import '../../services/search_state_service.dart';
 import '../../widgets/source_details_dialog.dart';
 import '../../widgets/spot_selection_dialog.dart';

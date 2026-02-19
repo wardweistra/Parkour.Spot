@@ -12,7 +12,7 @@ class SourceDetailsDialog extends StatefulWidget {
   final SyncSource? source;
   final String? sourceId;
 
-  SourceDetailsDialog({
+  const SourceDetailsDialog({
     super.key,
     this.source,
     this.sourceId,
