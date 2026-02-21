@@ -93,8 +93,15 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isAdmin = context.select<AuthService, bool>((s) => s.isAdmin);
-    if (!isAdmin) {
+    final authService = context.watch<AuthService>();
+    // Wait for auth state to be restored before deciding (avoids false "access required" on refresh)
+    if (authService.isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Duplicate Images')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (!authService.isAdmin) {
       return Scaffold(
         appBar: AppBar(title: const Text('Duplicate Images')),
         body: const Center(

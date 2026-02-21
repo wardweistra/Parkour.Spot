@@ -45,6 +45,7 @@ class AuthService extends ChangeNotifier {
 
   void _onAuthStateChanged(User? user) {
     if (user != null) {
+      _isLoading = true; // Stay loading until profile is fetched (fixes refresh on admin routes)
       _loadUserProfile(user.uid);
     } else {
       _userProfile = null;
@@ -78,6 +79,11 @@ class AuthService extends ChangeNotifier {
     _isLoadingProfile = true;
     _loadingProfileUid = uid;
     try {
+      // Ensure auth token is ready before Firestore read (fixes "permission denied" on page refresh)
+      final user = _auth.currentUser;
+      if (user != null) {
+        await user.getIdToken(true);
+      }
       final doc = await _firestore.collection('users').doc(uid).get();
       if (doc.exists) {
         _userProfile = app_user.User.fromMap({
