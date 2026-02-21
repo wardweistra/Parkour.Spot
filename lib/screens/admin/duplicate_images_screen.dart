@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../services/auth_service.dart';
+import '../../services/mobile_detection_service.dart';
 import '../../services/spot_service.dart';
+import '../../services/url_service.dart';
 import '../../models/spot.dart';
 
 class DuplicateImagesScreen extends StatefulWidget {
@@ -73,6 +76,19 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
   // Count occurrences of a URL in the list
   int _countOccurrences(List<String> list, String url) {
     return list.where((u) => u == url).length;
+  }
+
+  /// Opens the spot: new tab when in browser, in-app nav when PWA/native.
+  Future<void> _openSpot(String spotId, {String? countryCode, String? city}) async {
+    if (MobileDetectionService.isRunningInBrowser) {
+      final url = UrlService.generateSpotUrl(spotId, countryCode: countryCode, city: city);
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } else {
+      context.push('/spot/$spotId');
+    }
   }
 
   @override
@@ -233,7 +249,7 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
                 child: InkWell(
                   onTap: () {
                     if (spot.id != null) {
-                      context.push('/spot/${spot.id}');
+                      _openSpot(spot.id!, countryCode: spot.countryCode, city: spot.city);
                     }
                   },
                   child: Padding(
@@ -283,7 +299,7 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
                         if (spot.id != null)
                           InkWell(
                             onTap: () {
-                              context.push('/spot/${spot.id}');
+                              _openSpot(spot.id!, countryCode: spot.countryCode, city: spot.city);
                             },
                             child: Padding(
                               padding: const EdgeInsets.symmetric(vertical: 4),
@@ -299,6 +315,10 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
                                       decoration: TextDecoration.underline,
                                     ),
                                   ),
+                                  if (MobileDetectionService.isRunningInBrowser) ...[
+                                    const SizedBox(width: 6),
+                                    Icon(Icons.open_in_new, size: 14, color: Theme.of(context).primaryColor),
+                                  ],
                                 ],
                               ),
                             ),
