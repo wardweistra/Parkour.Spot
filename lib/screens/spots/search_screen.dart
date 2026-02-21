@@ -28,6 +28,135 @@ import '../../utils/location_permission_utils.dart';
 import '../../constants/spot_attributes.dart';
 import 'add_spot_screen.dart';
 
+/// Stateful overlay for autocomplete suggestions; manages ScrollController lifecycle.
+class _AutocompleteOverlayContent extends StatefulWidget {
+  final List<Map<String, dynamic>> optionsList;
+  final int? currentSelection;
+  final void Function(Map<String, dynamic>) onSelected;
+
+  const _AutocompleteOverlayContent({
+    required this.optionsList,
+    required this.currentSelection,
+    required this.onSelected,
+  });
+
+  @override
+  State<_AutocompleteOverlayContent> createState() => _AutocompleteOverlayContentState();
+}
+
+class _AutocompleteOverlayContentState extends State<_AutocompleteOverlayContent> {
+  late ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final optionsList = widget.optionsList;
+    final currentSelection = widget.currentSelection;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (currentSelection != null &&
+          currentSelection < optionsList.length &&
+          _scrollController.hasClients) {
+        const itemHeight = 48.0;
+        final targetOffset = currentSelection * itemHeight;
+        _scrollController.animateTo(
+          targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
+          duration: const Duration(milliseconds: 100),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+
+    return Align(
+      alignment: Alignment.topLeft,
+      child: PointerInterceptor(
+        child: Material(
+          elevation: 4.0,
+          borderRadius: BorderRadius.circular(8),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 200),
+            child: ListView.builder(
+              controller: _scrollController,
+              padding: EdgeInsets.zero,
+              shrinkWrap: true,
+              itemCount: optionsList.length,
+              itemBuilder: (context, index) {
+                final option = optionsList[index];
+                final optionType = option['optionType'] as String? ?? 'place';
+                final isSpotSuggestion = optionType == 'spot';
+                final description = option['description'] as String? ?? '';
+                final secondary = option['secondary'] as String?;
+                final isSelected = currentSelection == index;
+                final leadingIcon = isSpotSuggestion
+                    ? (isSelected ? Icons.place : Icons.place_outlined)
+                    : (isSelected ? Icons.public : Icons.public_outlined);
+
+                return Container(
+                  decoration: isSelected
+                      ? BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+                          border: Border(
+                            left: BorderSide(
+                              color: Theme.of(context).colorScheme.primary,
+                              width: 3,
+                            ),
+                          ),
+                        )
+                      : null,
+                  child: ListTile(
+                    leading: Icon(
+                      leadingIcon,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    dense: true,
+                    title: Text(
+                      description,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: isSelected
+                          ? TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(context).colorScheme.primary,
+                            )
+                          : null,
+                    ),
+                    subtitle: secondary != null
+                        ? Text(
+                            secondary,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: isSelected
+                                ? TextStyle(
+                                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
+                                  )
+                                : null,
+                          )
+                        : null,
+                    selected: isSelected,
+                    selectedTileColor: Colors.transparent,
+                    onTap: () => widget.onSelected(option),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // Helper widget to ensure icons render properly on mobile web
 class ReliableIcon extends StatelessWidget {
   final IconData icon;
@@ -91,10 +220,12 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   String _searchQuery = '';
   String? _placesSessionToken;
   TextEditingController? _autocompleteController; // Keep reference to autocomplete's controller
-  FocusNode? _autocompleteFocusNode; // Keep reference to autocomplete's focus node
+  FocusNode? _autocompleteFocusNode; // Focus node for search field
   int? _selectedAutocompleteIndex; // Track selected option index for keyboard navigation
   List<Map<String, dynamic>> _currentAutocompleteOptions = []; // Track current options for keyboard navigation
-  // Autocomplete is fetched live in optionsBuilder; no debounce field needed
+  int _autocompleteRequestId = 0; // Incremented per query; stale responses are ignored
+  List<Map<String, dynamic>>? _cachedLocationSuggestions; // Merged incrementally with spots
+  List<Spot>? _cachedSpotSuggestions; // Merged incrementally with locations
   List<Spot> _visibleSpots = [];
   List<Spot> _loadedSpots = []; // Spots loaded for the current map view
   Set<Marker> _markers = {};
@@ -242,6 +373,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   @override
   void initState() {
     super.initState();
+    _autocompleteFocusNode = FocusNode();
     // Removed automatic location fetching - now user-controlled
     _searchController.addListener(_onSearchChanged);
     
@@ -252,6 +384,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     if (widget.initialLocationQuery != null && widget.initialLocationQuery!.isNotEmpty) {
       _searchController.text = widget.initialLocationQuery!;
       _searchQuery = widget.initialLocationQuery!;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _fetchAutocompleteIncremental(widget.initialLocationQuery!);
+      });
     }
     
     // Set initial list ID - prioritize URL parameter, then fall back to stored value
@@ -397,6 +532,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     _locationPollingTimer?.cancel();
     _searchController.dispose();
     _searchFocusNode.dispose();
+    _autocompleteFocusNode?.dispose();
     _bottomSheetAnimationController.dispose();
     _imagePageController.dispose();
     // Remove listeners
@@ -410,7 +546,6 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     setState(() {
       _searchQuery = _searchController.text;
     });
-    // Suggestions are fetched directly by Autocomplete.optionsBuilder
   }
 
   void _toggleFiltersDialog() {
@@ -639,71 +774,120 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     await _selectPlaceSuggestion(option);
   }
 
-  Future<List<Map<String, dynamic>>> _buildAutocompleteOptions(String query) async {
-    final trimmedQuery = query.trim();
-    if (trimmedQuery.isEmpty) return [];
+  Widget _buildAutocompleteOverlay({
+    required void Function(Map<String, dynamic>) onSelected,
+  }) {
+    return _AutocompleteOverlayContent(
+      optionsList: List<Map<String, dynamic>>.from(_currentAutocompleteOptions),
+      currentSelection: _selectedAutocompleteIndex,
+      onSelected: onSelected,
+    );
+  }
 
-    // Ensure session token for Google Places requests
+  /// Fetches autocomplete options incrementally: shows locations or spots as soon as
+  /// each source returns, instead of waiting for both.
+  void _fetchAutocompleteIncremental(String query) {
+    final trimmedQuery = query.trim();
+    if (trimmedQuery.isEmpty) {
+      setState(() {
+        _currentAutocompleteOptions = [];
+        _cachedLocationSuggestions = null;
+        _cachedSpotSuggestions = null;
+      });
+      return;
+    }
+
+    final requestId = ++_autocompleteRequestId;
+
+    setState(() {
+      _currentAutocompleteOptions = [];
+      _cachedLocationSuggestions = null;
+      _cachedSpotSuggestions = null;
+    });
+
     _placesSessionToken ??= const Uuid().v4();
 
-    // Compute map center bias if possible
-    LatLng? center;
-    if (_mapController != null) {
+    Future<LatLng?> getCenter() async {
+      if (_mapController == null) return null;
       try {
         final bounds = await _mapController!.getVisibleRegion();
-        center = LatLng(
+        return LatLng(
           (bounds.northeast.latitude + bounds.southwest.latitude) / 2,
           (bounds.northeast.longitude + bounds.southwest.longitude) / 2,
         );
-      } catch (_) {}
+      } catch (_) {
+        return null;
+      }
     }
 
-    if (!mounted) return [];
-
-    try {
-      final geocoding = Provider.of<GeocodingService>(context, listen: false);
-      final spotService = Provider.of<SpotService>(context, listen: false);
-      final shouldSearchSpotTitles = trimmedQuery.length >= 2;
-
-      final results = await Future.wait([
-        geocoding.placesAutocomplete(
-          input: trimmedQuery,
-          sessionToken: _placesSessionToken,
-          biasLat: center?.latitude,
-          biasLng: center?.longitude,
-          radiusMeters: 50000,
-        ),
-        shouldSearchSpotTitles
-            ? spotService.searchSpotsByTitle(query: trimmedQuery, limit: 6)
-            : Future.value(<Spot>[]),
-      ]);
-
-      if (!mounted) return [];
-
-      final locationSuggestions = results[0] as List<Map<String, dynamic>>;
-      final matchingSpots = results[1] as List<Spot>;
-
-      final combinedOptions = <Map<String, dynamic>>[
-        ...locationSuggestions.map((suggestion) => {
+    void mergeAndUpdate() {
+      if (!mounted || requestId != _autocompleteRequestId) return;
+      final locations = _cachedLocationSuggestions ?? [];
+      final spots = _cachedSpotSuggestions ?? [];
+      final combined = <Map<String, dynamic>>[
+        ...locations.map((suggestion) => {
               ...suggestion,
               'optionType': 'place',
             }),
       ];
-
-      for (final spot in matchingSpots) {
+      for (final spot in spots) {
         if (spot.id == null) continue;
-        combinedOptions.add({
+        combined.add({
           'optionType': 'spot',
           'description': spot.name,
           'secondary': _formatSpotSuggestionLocation(spot),
           'spot': spot,
         });
       }
-
-      return combinedOptions;
-    } catch (e) {
-      return [];
+      setState(() {
+        _currentAutocompleteOptions = combined;
+        if (combined.isNotEmpty && (_selectedAutocompleteIndex == null || _selectedAutocompleteIndex! >= combined.length)) {
+          _selectedAutocompleteIndex = 0;
+        }
+      });
     }
+
+    getCenter().then((center) {
+      if (!mounted || requestId != _autocompleteRequestId) return;
+
+      final geocoding = Provider.of<GeocodingService>(context, listen: false);
+      final spotService = Provider.of<SpotService>(context, listen: false);
+      final shouldSearchSpotTitles = trimmedQuery.length >= 2;
+
+      geocoding
+          .placesAutocomplete(
+            input: trimmedQuery,
+            sessionToken: _placesSessionToken,
+            biasLat: center?.latitude,
+            biasLng: center?.longitude,
+            radiusMeters: 50000,
+          )
+          .then((locationSuggestions) {
+        if (!mounted || requestId != _autocompleteRequestId) return;
+        _cachedLocationSuggestions = locationSuggestions;
+        mergeAndUpdate();
+      }).catchError((e) {
+        debugPrint('Autocomplete geocoding error: $e');
+        if (!mounted || requestId != _autocompleteRequestId) return;
+        _cachedLocationSuggestions = [];
+        mergeAndUpdate();
+      });
+
+      if (shouldSearchSpotTitles) {
+        spotService.searchSpotsByTitle(query: trimmedQuery, limit: 6).then((matchingSpots) {
+          if (!mounted || requestId != _autocompleteRequestId) return;
+          _cachedSpotSuggestions = matchingSpots;
+          mergeAndUpdate();
+        }).catchError((e) {
+          debugPrint('Autocomplete spots error: $e');
+          if (!mounted || requestId != _autocompleteRequestId) return;
+          _cachedSpotSuggestions = [];
+          mergeAndUpdate();
+        });
+      } else {
+        _cachedSpotSuggestions = [];
+      }
+    });
   }
 
   /// Search for location using current search text and navigate to the first result
@@ -2597,43 +2781,17 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                           ),
                           child: Column(
                     mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Autocomplete<Map<String, dynamic>>(
-                        optionsBuilder: (TextEditingValue textEditingValue) async {
-                          final query = textEditingValue.text.trim();
-                          if (query.isEmpty) {
-                            return const Iterable<Map<String, dynamic>>.empty();
-                          }
-
-                          // Keep _searchQuery in sync (without triggering external fetches)
-                          if (_searchQuery != query) {
-                            setState(() {
-                              _searchQuery = query;
-                            });
-                          }
-
-                          final options = await _buildAutocompleteOptions(query);
-                          return options;
-                        },
-                        onSelected: (Map<String, dynamic> suggestion) async {
-                          await _selectAutocompleteOption(suggestion);
-                        },
-                        displayStringForOption: (Map<String, dynamic> option) {
-                          return option['description'] as String? ?? '';
-                        },
-                        fieldViewBuilder: (BuildContext context, TextEditingController textEditingController, FocusNode focusNode, VoidCallback onFieldSubmitted) {
-                          // Store reference to the autocomplete controller and focus node
-                          _autocompleteController = textEditingController;
-                          _autocompleteFocusNode = focusNode;
-                          
+                      Builder(
+                        builder: (context) {
+                          _autocompleteController = _searchController;
                           return Focus(
                             onKeyEvent: (node, event) {
-                              // Handle arrow keys for navigation
                               if (event is KeyDownEvent) {
                                 final optionsCount = _currentAutocompleteOptions.length;
                                 if (optionsCount > 0) {
                                   if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-                                    // Move selection down
                                     setState(() {
                                       if (_selectedAutocompleteIndex == null) {
                                         _selectedAutocompleteIndex = 0;
@@ -2643,7 +2801,6 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                     });
                                     return KeyEventResult.handled;
                                   } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-                                    // Move selection up
                                     setState(() {
                                       if (_selectedAutocompleteIndex != null && _selectedAutocompleteIndex! > 0) {
                                         _selectedAutocompleteIndex = _selectedAutocompleteIndex! - 1;
@@ -2653,10 +2810,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                     });
                                     return KeyEventResult.handled;
                                   } else if (event.logicalKey == LogicalKeyboardKey.enter && _selectedAutocompleteIndex != null) {
-                                    // Select the highlighted option
                                     if (_selectedAutocompleteIndex! < _currentAutocompleteOptions.length) {
                                       final selectedOption = _currentAutocompleteOptions[_selectedAutocompleteIndex!];
-                                      // Call the onSelected callback
                                       WidgetsBinding.instance.addPostFrameCallback((_) {
                                         _selectAutocompleteOption(selectedOption);
                                         setState(() {
@@ -2671,236 +2826,114 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                               return KeyEventResult.ignored;
                             },
                             child: TextField(
-                              controller: textEditingController,
-                              focusNode: focusNode,
+                              controller: _searchController,
+                              focusNode: _autocompleteFocusNode!,
                               decoration: InputDecoration(
-                              hintText: 'Search location or spot…',
-                              prefixIcon: Padding(
-                                padding: const EdgeInsets.only(left: 6),
-                                child: Icon(Icons.search),
-                              ),
-                              suffixIcon: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  // Show loading spinner when searching for location
-                                  if (_isSearchingLocation)
-                                    Padding(
-                                      padding: const EdgeInsets.all(12),
-                                      child: SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          valueColor: AlwaysStoppedAnimation<Color>(
-                                            Theme.of(context).colorScheme.primary,
+                                hintText: 'Search location or spot…',
+                                prefixIcon: const Padding(
+                                  padding: EdgeInsets.only(left: 6),
+                                  child: Icon(Icons.search),
+                                ),
+                                suffixIcon: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (_isSearchingLocation)
+                                      Padding(
+                                        padding: const EdgeInsets.all(12),
+                                        child: SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor: AlwaysStoppedAnimation<Color>(
+                                              Theme.of(context).colorScheme.primary,
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                  // Clear button (only show when not loading and text is not empty)
-                                  if (!_isSearchingLocation && textEditingController.text.isNotEmpty)
-                                    IconButton(
-                                      icon: const Icon(Icons.clear),
-                                      tooltip: 'Clear',
-                                      onPressed: () {
-                                        textEditingController.clear();
-                                        // optionsBuilder will return empty for empty query
-                                        setState(() {});
-                                      },
-                                    ),
-                                  Padding(
-                                    padding: const EdgeInsets.only(right: 6),
-                                    child: Stack(
-                                      children: [
-                                        IconButton(
-                                          icon: ReliableIcon(
-                                            icon: Icons.filter_list,
-                                            color: _showFiltersDialog ? Theme.of(context).colorScheme.primary : null,
+                                    if (!_isSearchingLocation && _searchController.text.isNotEmpty)
+                                      IconButton(
+                                        icon: const Icon(Icons.clear),
+                                        tooltip: 'Clear',
+                                        onPressed: () {
+                                          _searchController.clear();
+                                          setState(() {
+                                            _searchQuery = '';
+                                            _currentAutocompleteOptions = [];
+                                            _cachedLocationSuggestions = null;
+                                            _cachedSpotSuggestions = null;
+                                          });
+                                        },
+                                      ),
+                                    Padding(
+                                      padding: const EdgeInsets.only(right: 6),
+                                      child: Stack(
+                                        children: [
+                                          IconButton(
+                                            icon: ReliableIcon(
+                                              icon: Icons.filter_list,
+                                              color: _showFiltersDialog ? Theme.of(context).colorScheme.primary : null,
+                                            ),
+                                            tooltip: 'Filters',
+                                            onPressed: () {
+                                              _toggleFiltersDialog();
+                                            },
                                           ),
-                                          tooltip: 'Filters',
-                                          onPressed: () {
-                                            _toggleFiltersDialog();
-                                          },
-                                        ),
-                                        if (_hasActiveFilters())
-                                          Positioned(
-                                            right: 8,
-                                            top: 8,
-                                            child: Container(
-                                              width: 8,
-                                              height: 8,
-                                              decoration: BoxDecoration(
-                                                color: Theme.of(context).colorScheme.primary,
-                                                shape: BoxShape.circle,
+                                          if (_hasActiveFilters())
+                                            Positioned(
+                                              right: 8,
+                                              top: 8,
+                                              child: Container(
+                                                width: 8,
+                                                height: 8,
+                                                decoration: BoxDecoration(
+                                                  color: Theme.of(context).colorScheme.primary,
+                                                  shape: BoxShape.circle,
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                            ),
-                            onChanged: (value) {
-                              setState(() {
-                                _searchQuery = value;
-                                // Don't reset selection here - let optionsViewBuilder handle it
-                                // This prevents flickering when typing
-                              });
-                            },
-                            onSubmitted: (value) {
-                              // When Enter is pressed, if there's a selected option, select it
-                              // Otherwise, search for the location and navigate to it
-                              if (_selectedAutocompleteIndex != null) {
-                                // This will be handled by the Focus widget's onKeyEvent handler
-                                // The Enter key is already handled there
-                              } else {
-                                _searchAndNavigateToLocation();
-                              }
-                            },
-                          ),
-                        );
-                      },
-                      optionsViewBuilder: (BuildContext context, AutocompleteOnSelected<Map<String, dynamic>> onSelected, Iterable<Map<String, dynamic>> options) {
-                          // Store current options and initialize selection if needed
-                          final optionsList = options.toList();
-                          
-                          // Compute what the selection should be for this build
-                          final int? effectiveSelection;
-                          if (optionsList.isNotEmpty) {
-                            // If current selection is null or out of bounds, select first option
-                            if (_selectedAutocompleteIndex == null || _selectedAutocompleteIndex! >= optionsList.length) {
-                              effectiveSelection = 0;
-                              // Update state asynchronously (but immediately via microtask)
-                              scheduleMicrotask(() {
-                                if (mounted && _selectedAutocompleteIndex != effectiveSelection) {
-                                  setState(() {
-                                    _selectedAutocompleteIndex = effectiveSelection;
-                                    _currentAutocompleteOptions = optionsList;
-                                  });
-                                }
-                              });
-                            } else {
-                              // Keep current selection if it's still valid
-                              effectiveSelection = _selectedAutocompleteIndex;
-                            }
-                          } else {
-                            effectiveSelection = null;
-                          }
-                          
-                          // Update current options for keyboard navigation
-                          _currentAutocompleteOptions = optionsList;
-                          
-                          // Use effective selection for this build
-                          final currentSelection = effectiveSelection;
-                          
-                          final scrollController = ScrollController();
-                          
-                          // Scroll to selected option when it changes
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (currentSelection != null && 
-                                currentSelection < optionsList.length &&
-                                scrollController.hasClients) {
-                              // Estimate item height (ListTile with dense is about 48 pixels)
-                              const itemHeight = 48.0;
-                              final targetOffset = currentSelection * itemHeight;
-                              scrollController.animateTo(
-                                targetOffset.clamp(0.0, scrollController.position.maxScrollExtent),
-                                duration: const Duration(milliseconds: 100),
-                                curve: Curves.easeOut,
-                              );
-                            }
-                          });
-                          
-                          return Align(
-                            alignment: Alignment.topLeft,
-                            child: PointerInterceptor(
-                              child: Material(
-                                elevation: 4.0,
-                                borderRadius: BorderRadius.circular(8),
-                                child: ConstrainedBox(
-                                  constraints: const BoxConstraints(maxHeight: 200),
-                                  child: ListView.builder(
-                                    controller: scrollController,
-                                    padding: EdgeInsets.zero,
-                                    shrinkWrap: true,
-                                    itemCount: optionsList.length,
-                                    itemBuilder: (context, index) {
-                                      final option = optionsList[index];
-                                      final optionType = option['optionType'] as String? ?? 'place';
-                                      final isSpotSuggestion = optionType == 'spot';
-                                      final description = option['description'] as String? ?? '';
-                                      final secondary = option['secondary'] as String?;
-                                      final isSelected = currentSelection == index;
-                                      final leadingIcon = isSpotSuggestion
-                                          ? (isSelected ? Icons.place : Icons.place_outlined)
-                                          : (isSelected ? Icons.public : Icons.public_outlined);
-                                      
-                                      return Container(
-                                        decoration: isSelected
-                                            ? BoxDecoration(
-                                                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
-                                                border: Border(
-                                                  left: BorderSide(
-                                                    color: Theme.of(context).colorScheme.primary,
-                                                    width: 3,
-                                                  ),
-                                                ),
-                                              )
-                                            : null,
-                                        child: ListTile(
-                                          leading: Icon(
-                                            leadingIcon,
-                                            color: Theme.of(context).colorScheme.primary,
-                                          ),
-                                          dense: true,
-                                          title: Text(
-                                            description,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: isSelected
-                                                ? TextStyle(
-                                                    fontWeight: FontWeight.w600,
-                                                    color: Theme.of(context).colorScheme.primary,
-                                                  )
-                                                : null,
-                                          ),
-                                          subtitle: secondary != null ? Text(
-                                            secondary,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: isSelected
-                                                ? TextStyle(
-                                                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
-                                                  )
-                                                : null,
-                                          ) : null,
-                                          selected: isSelected,
-                                          selectedTileColor: Colors.transparent, // Use Container decoration instead
-                                          onTap: () {
-                                            setState(() {
-                                              _selectedAutocompleteIndex = null;
-                                            });
-                                            onSelected(option);
-                                          },
-                                        ),
-                                      );
-                                    },
-                                  ),
+                                  ],
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
                                 ),
                               ),
+                              onChanged: (value) {
+                                setState(() {
+                                  _searchQuery = value;
+                                });
+                                _fetchAutocompleteIncremental(value);
+                              },
+                              onSubmitted: (value) {
+                                if (_selectedAutocompleteIndex != null) {
+                                  // Handled by Focus onKeyEvent
+                                } else {
+                                  _searchAndNavigateToLocation();
+                                }
+                              },
                             ),
                           );
                         },
                       ),
+                      if (_autocompleteFocusNode?.hasFocus == true &&
+                          _searchQuery.trim().isNotEmpty &&
+                          _currentAutocompleteOptions.isNotEmpty)
+                        _buildAutocompleteOverlay(
+                          onSelected: (Map<String, dynamic> option) {
+                            setState(() {
+                              _selectedAutocompleteIndex = null;
+                            });
+                            _selectAutocompleteOption(option);
+                          },
+                        ),
                     ],
                   ),
                 ),
