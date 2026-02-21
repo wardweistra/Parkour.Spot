@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../services/auth_service.dart';
+import '../../services/mobile_detection_service.dart';
+import '../../services/url_service.dart';
 
 class DuplicateSpotsResultsScreen extends StatefulWidget {
   final String runId;
@@ -405,8 +408,16 @@ class _DuplicateSpotsResultsScreenState extends State<DuplicateSpotsResultsScree
 
     return InkWell(
       onTap: spotId != null
-          ? () {
-              context.go('/explore?locateSpotId=$spotId');
+          ? () async {
+              // Open in new tab when running in browser; use in-app nav when PWA
+              if (MobileDetectionService.isRunningInBrowser) {
+                final uri = Uri.parse(UrlService.generateExploreLocateUrl(spotId));
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                }
+              } else {
+                context.go('/explore?locateSpotId=$spotId');
+              }
             }
           : null,
       borderRadius: BorderRadius.circular(8),
@@ -430,6 +441,10 @@ class _DuplicateSpotsResultsScreenState extends State<DuplicateSpotsResultsScree
                     color: Colors.grey[600],
                   ),
                 ),
+                if (spotId != null && MobileDetectionService.isRunningInBrowser) ...[
+                  const SizedBox(width: 6),
+                  Icon(Icons.open_in_new, size: 14, color: Colors.grey[600]),
+                ],
                 if (hasImages) ...[
                   const SizedBox(width: 8),
                   Icon(Icons.image, size: 16, color: Colors.grey[600]),

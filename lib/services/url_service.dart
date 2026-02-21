@@ -362,6 +362,12 @@ class UrlService {
     }
   }
   
+  /// Generate a full URL for the explore page with a spot to locate on the map.
+  /// Use with launchUrl to open in a new tab.
+  static String generateExploreLocateUrl(String spotId) {
+    return '$_baseUrl/explore?locateSpotId=$spotId';
+  }
+
   /// Generate a navigation URL for a spot (for internal navigation)
   /// Uses the same format as share URLs: /countryCode/city/spotId
   static String generateNavigationUrl(String spotId, {String? countryCode, String? city}) {
