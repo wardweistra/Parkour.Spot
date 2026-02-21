@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:web/web.dart' as web;
 
 import '../services/auth_service.dart';
+import '../services/mobile_detection_service.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/pwa_install_prompt.dart';
 import 'spots/search_screen.dart';
@@ -408,6 +409,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // On Explore tab (mobile): don't resize when keyboard opens - the bottom sheet
+      // and search bar would be pushed around. Let the keyboard overlay instead.
+      // On Add Spot/Account: keep default resize so text fields scroll into view.
+      resizeToAvoidBottomInset: !(_currentIndex == 0 && MobileDetectionService.isMobileDevice),
       body: PageView(
         controller: _pageController,
         physics: _currentIndex == 0 

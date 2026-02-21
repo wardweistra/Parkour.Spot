@@ -2299,6 +2299,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // On mobile, don't resize when keyboard opens - the search bar is at top and would be
+      // pushed out of view when the bottom sheet is expanded. Let the keyboard overlay instead.
+      resizeToAvoidBottomInset: !MobileDetectionService.isMobileDevice,
       body: Stack(
         children: [
           // Determine initial camera position - use persisted state, user location, or default
