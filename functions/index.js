@@ -145,10 +145,7 @@ function extractSpotIdFromPath(pathname) {
   // Match: /spot/<spotId>
   m = pathname.match(/^\/spot\/([^/?#]+)$/);
   if (m && m[1]) return m[1];
-  // Fallback: query param ?id=
-  const urlObj = new URL(`https://dummy${pathname}${pathname.includes("?") ? "" : ""}`);
-  const qpId = (urlObj.searchParams && (urlObj.searchParams.get("id") || urlObj.searchParams.get("spotId"))) || null;
-  return qpId ? String(qpId) : null;
+  return null;
 }
 
 /**
