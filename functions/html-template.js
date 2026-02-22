@@ -299,8 +299,8 @@ function generateOrganizationJsonLd(options = {}) {
     "url": `https://${canonicalHost}`,
     "description": htmlEscape(description),
     "sameAs": [
-      "https://www.instagram.com/parkourdotspot/"
-    ]
+      "https://www.instagram.com/parkourdotspot/",
+    ],
   };
 
   return `

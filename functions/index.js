@@ -621,9 +621,9 @@ async function executeTopSpotsInBoundsQuery(params) {
       query = query.where("duplicateOf", "==", null);
       query = query.where("hidden", "==", false);
 
-      const accessValues = Array.isArray(spotAccess)
-        ? spotAccess.filter((v) => v && typeof v === "string")
-        : (spotAccess && typeof spotAccess === "string" ? [spotAccess] : []);
+      const accessValues = Array.isArray(spotAccess) ?
+        spotAccess.filter((v) => v && typeof v === "string") :
+        (spotAccess && typeof spotAccess === "string" ? [spotAccess] : []);
       if (accessValues.length === 1) {
         query = query.where("spotAccess", "==", accessValues[0]);
       } else if (accessValues.length > 1) {
@@ -2890,6 +2890,11 @@ async function ensureAdmin(request) {
   }
 }
 
+/**
+ * Helper to ensure caller is moderator or admin (via custom claims or Firestore users/{uid}.isModerator/isAdmin)
+ * @param {Object} request - The request object
+ * @return {Promise<void>} Resolves if moderator or admin, throws if not
+ */
 async function ensureModerator(request) {
   const auth = request.auth;
 
@@ -4210,8 +4215,10 @@ exports.geocodeCoordinates = onCall(
 
 /**
  * Shared search-by-title logic. Returns full spot objects for API/callable use.
- * @param {{query?: string, limit?: number}} params
- * @return {Promise<{success: boolean, spots?: Array, error?: string}>}
+ * @param {Object} params - Params object.
+ * @param {string} params.query - Search query.
+ * @param {number=} params.limit - Max results (default 20).
+ * @return {Promise<Object>}
  */
 async function executeSearchSpotsByTitle(params) {
   const {query, limit = 20} = params || {};
@@ -4287,7 +4294,8 @@ async function executeSearchSpotsByTitle(params) {
   const normalize = (s) => {
     const createdAt = formatDateToISO(s.createdAt) || s.createdAt || null;
     const updatedAt = formatDateToISO(s.updatedAt) || s.updatedAt || null;
-    const {matchCount, ...rest} = s;
+    const rest = {...s};
+    delete rest.matchCount;
     return {...rest, createdAt, updatedAt};
   };
 
@@ -5860,7 +5868,7 @@ exports.generateSitemapsScheduled = onSchedule(
  * @param {Function} apiCall - Function that returns a Promise for the API call
  * @param {number} delayMs - Delay in milliseconds before making the call (default: 1000ms)
  * @param {number} maxRetries - Maximum number of retries (default: 5)
- * @returns {Promise} The result of the API call
+ * @return {Promise} The result of the API call
  */
 async function rateLimitedSheetsCall(apiCall, delayMs = 1000, maxRetries = 5) {
   // Add delay before making the call to respect rate limits
@@ -5874,9 +5882,9 @@ async function rateLimitedSheetsCall(apiCall, delayMs = 1000, maxRetries = 5) {
       return await apiCall();
     } catch (error) {
       lastError = error;
-      
+
       // Check if it's a quota error
-      const isQuotaError = error.code === 429 || 
+      const isQuotaError = error.code === 429 ||
                           (error.response && error.response.status === 429) ||
                           (error.message && error.message.includes("Quota exceeded")) ||
                           (error.message && error.message.includes("quota metric"));
@@ -5896,15 +5904,20 @@ async function rateLimitedSheetsCall(apiCall, delayMs = 1000, maxRetries = 5) {
       throw error;
     }
   }
-  
+
   // Should never reach here, but just in case
   throw lastError;
 }
 
+/**
+ * Calculates DAU/WAU/MAU from user lastActiveAt and stores in Firestore.
+ * @param {boolean=} useYesterdayDate - If true, use yesterday as target date (for scheduled runs).
+ * @return {Promise<void>}
+ */
 async function calculateUserActivityMetrics(useYesterdayDate = false) {
   console.log("User activity metrics calculation started");
   const now = new Date();
-  
+
   // Determine which date to use for storing metrics
   let targetDate;
   if (useYesterdayDate) {
@@ -5926,7 +5939,7 @@ async function calculateUserActivityMetrics(useYesterdayDate = false) {
         0, 0, 0, 0,
     ));
   }
-  
+
   const dateString = targetDate.toISOString().split("T")[0]; // YYYY-MM-DD
 
   try {
@@ -6593,7 +6606,7 @@ exports.findDuplicateSpots = onCall(
 
           // Build query function
           const buildQuery = (lngMin, lngMax) => {
-            let query = db
+            const query = db
                 .collection("spots")
                 .where("countryCode", "==", sourceCountryCode)
                 .where("city", "==", sourceCity)
