@@ -4923,105 +4923,112 @@ function getSearchQueryTokens(query) {
   return buildSpotSearchWords(query);
 }
 
+/**
+ * Shared search-by-title logic. Returns full spot objects for API/callable use.
+ * @param {{query?: string, limit?: number}} params
+ * @return {Promise<{success: boolean, spots?: Array, error?: string}>}
+ */
+async function executeSearchSpotsByTitle(params) {
+  const {query, limit = 20} = params || {};
+  if (!query || typeof query !== "string") {
+    return {success: false, error: "query is required"};
+  }
+
+  const tokens = getSearchQueryTokens(query);
+  if (tokens.length === 0) {
+    return {success: true, spots: []};
+  }
+
+  const parsedLimit = Number(limit);
+  const maxResults = Number.isFinite(parsedLimit) ?
+    Math.max(1, Math.min(Math.floor(parsedLimit), 100)) :
+    20;
+
+  const spotIdToMatchCount = new Map();
+  for (const token of tokens) {
+    const queryEnd = token + "\uf8ff";
+    const termsSnapshot = await db.collection("spotSearchTerms")
+        .where("term", ">=", token)
+        .where("term", "<", queryEnd)
+        .limit(200)
+        .get();
+    termsSnapshot.docs.forEach((doc) => {
+      const spotId = doc.data().spotId;
+      if (!spotId) return;
+      const prev = spotIdToMatchCount.get(spotId) || 0;
+      spotIdToMatchCount.set(spotId, prev + 1);
+    });
+  }
+
+  let spotIds;
+  const spotsWithAll = [...spotIdToMatchCount.entries()]
+      .filter(([, count]) => count === tokens.length)
+      .map(([id]) => id);
+  if (spotsWithAll.length > 0) {
+    spotIds = spotsWithAll;
+  } else {
+    spotIds = [...spotIdToMatchCount.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([id]) => id);
+  }
+
+  if (spotIds.length === 0) {
+    return {success: true, spots: []};
+  }
+
+  const spotsToFetch = spotIds.slice(0, 60);
+  const spotRefs = spotsToFetch.map((id) => db.collection("spots").doc(id));
+  const spotDocs = await db.getAll(...spotRefs);
+  const matches = [];
+  spotDocs.forEach((doc) => {
+    if (!doc.exists) return;
+    const data = doc.data();
+    if (data.duplicateOf || data.hidden) return;
+    const name = typeof data.name === "string" ? data.name.trim() : "";
+    if (!name) return;
+    const ranking = typeof data.ranking === "number" ? data.ranking : 0;
+    const matchCount = spotIdToMatchCount.get(doc.id) || 0;
+    const spot = {id: doc.id, ...data, ranking, matchCount};
+    matches.push(spot);
+  });
+
+  // Sort by match count (most tokens first), then ranking, then name
+  matches.sort((a, b) => {
+    if (a.matchCount !== b.matchCount) return b.matchCount - a.matchCount;
+    if (a.ranking !== b.ranking) return b.ranking - a.ranking;
+    return String(a.name).localeCompare(String(b.name));
+  });
+
+  const normalize = (s) => {
+    const createdAt = formatDateToISO(s.createdAt) || s.createdAt || null;
+    const updatedAt = formatDateToISO(s.updatedAt) || s.updatedAt || null;
+    const {matchCount, ...rest} = s;
+    return {...rest, createdAt, updatedAt};
+  };
+
+  const spots = matches.slice(0, maxResults).map(normalize);
+  return {success: true, spots};
+}
+
 // Spot title search for Explore autocomplete.
 // Multi-word: query each token, intersect results. Rank by match count, then spot ranking.
 exports.searchSpotsByTitle = onCall(
     {region: "europe-west1", memory: "256MiB", timeoutSeconds: 10},
     async (request) => {
       try {
-        const {query, limit = 8} = request.data || {};
-        if (!query || typeof query !== "string") {
-          throw new Error("query is required");
-        }
-
-        const tokens = getSearchQueryTokens(query);
-        if (tokens.length === 0) {
-          return {success: true, spots: []};
-        }
-
-        const parsedLimit = Number(limit);
-        const maxResults = Number.isFinite(parsedLimit) ?
-          Math.max(1, Math.min(Math.floor(parsedLimit), 20)) :
-          8;
-
-        const spotIdToMatchCount = new Map();
-        for (const token of tokens) {
-          const queryEnd = token + "\uf8ff";
-          const termsSnapshot = await db.collection("spotSearchTerms")
-              .where("term", ">=", token)
-              .where("term", "<", queryEnd)
-              .limit(200)
-              .get();
-          termsSnapshot.docs.forEach((doc) => {
-            const spotId = doc.data().spotId;
-            if (!spotId) return;
-            const prev = spotIdToMatchCount.get(spotId) || 0;
-            spotIdToMatchCount.set(spotId, prev + 1);
-          });
-        }
-
-        let spotIds;
-        const spotsWithAll = [...spotIdToMatchCount.entries()]
-            .filter(([, count]) => count === tokens.length)
-            .map(([id]) => id);
-        if (spotsWithAll.length > 0) {
-          spotIds = spotsWithAll;
-        } else {
-          spotIds = [...spotIdToMatchCount.entries()]
-              .sort((a, b) => b[1] - a[1])
-              .map(([id]) => id);
-        }
-
-        if (spotIds.length === 0) {
-          return {success: true, spots: []};
-        }
-
-        const spotsToFetch = spotIds.slice(0, 60);
-        const spotRefs = spotsToFetch.map((id) => db.collection("spots").doc(id));
-        const spotDocs = await db.getAll(...spotRefs);
-        const matches = [];
-        spotDocs.forEach((doc) => {
-          if (!doc.exists) return;
-          const data = doc.data();
-          if (data.duplicateOf || data.hidden) return;
-          const name = typeof data.name === "string" ? data.name.trim() : "";
-          if (!name) return;
-          const ranking = typeof data.ranking === "number" ? data.ranking : 0;
-          const matchCount = spotIdToMatchCount.get(doc.id) || 0;
-          matches.push({
-            id: doc.id,
-            name,
-            address: typeof data.address === "string" ? data.address : null,
-            city: typeof data.city === "string" ? data.city : null,
-            countryCode: typeof data.countryCode === "string" ?
-              data.countryCode :
-              null,
-            latitude: typeof data.latitude === "number" ? data.latitude : 0,
-            longitude: typeof data.longitude === "number" ? data.longitude : 0,
-            ranking,
-            matchCount,
-          });
-        });
-
-        // Sort by match count (most tokens first), then ranking, then name
-        matches.sort((a, b) => {
-          if (a.matchCount !== b.matchCount) return b.matchCount - a.matchCount;
-          if (a.ranking !== b.ranking) return b.ranking - a.ranking;
-          return String(a.name).localeCompare(String(b.name));
-        });
-
-        return {
-          success: true,
-          spots: matches.slice(0, maxResults).map((spot) => ({
-            id: spot.id,
-            name: spot.name,
-            address: spot.address,
-            city: spot.city,
-            countryCode: spot.countryCode,
-            latitude: spot.latitude,
-            longitude: spot.longitude,
-          })),
-        };
+        const result = await executeSearchSpotsByTitle(request.data || {});
+        if (!result.success) return {success: false, error: result.error};
+        // Flutter autocomplete needs reduced shape
+        const spots = (result.spots || []).map((s) => ({
+          id: s.id,
+          name: s.name,
+          address: s.address,
+          city: s.city,
+          countryCode: s.countryCode,
+          latitude: s.latitude,
+          longitude: s.longitude,
+        }));
+        return {success: true, spots};
       } catch (error) {
         console.error("Error in searchSpotsByTitle:", error);
         return {success: false, error: error.message};
@@ -7696,21 +7703,70 @@ exports.getSpotByApi = onRequest(
         const dateId = now.toISOString().slice(0, 10);
 
         if (isSearchRequest) {
-          // GET /api/v1/spots?minLat=&maxLat=&minLng=&maxLng=
           const q = req.query || {};
+          const searchQ = typeof q.q === "string" ? q.q.trim() : "";
+          const hasSearchQuery = searchQ.length >= 2;
+          if (typeof q.q === "string" && searchQ.length > 0 && searchQ.length < 2) {
+            res.status(400).json({error: "Query param q must be at least 2 characters"});
+            return;
+          }
           const minLat = typeof q.minLat === "string" ? parseFloat(q.minLat) : NaN;
           const maxLat = typeof q.maxLat === "string" ? parseFloat(q.maxLat) : NaN;
           const minLng = typeof q.minLng === "string" ? parseFloat(q.minLng) : NaN;
           const maxLng = typeof q.maxLng === "string" ? parseFloat(q.maxLng) : NaN;
+          const hasBounds = Number.isFinite(minLat) && Number.isFinite(maxLat) &&
+              Number.isFinite(minLng) && Number.isFinite(maxLng);
 
-          if (!Number.isFinite(minLat) || !Number.isFinite(maxLat) ||
-              !Number.isFinite(minLng) || !Number.isFinite(maxLng)) {
-            res.status(400).json({
-              error: "Query params minLat, maxLat, minLng, maxLng are required and must be numbers",
+          if (hasSearchQuery) {
+            // GET /api/v1/spots?q=... (search by name)
+            const parsedLimit = Number(q.limit);
+            const limit = Number.isFinite(parsedLimit) ?
+              Math.max(1, Math.min(Math.floor(parsedLimit), 100)) : 20;
+            const result = await executeSearchSpotsByTitle({
+              query: searchQ,
+              limit,
+            });
+            if (!result.success) {
+              res.status(500).json({error: result.error || "Search failed"});
+              return;
+            }
+            const spots = result.spots || [];
+            for (const spot of spots) {
+              if (Array.isArray(spot.imageUrls)) {
+                spot.imageUrls = spot.imageUrls.map((url) => getResizedImageUrlForApi(url));
+              }
+            }
+            await db.runTransaction(async (transaction) => {
+              transaction.update(db.collection(API_CLIENTS_COLLECTION).doc(clientId), {
+                lastUsedAt: admin.firestore.FieldValue.serverTimestamp(),
+              });
+              const usageRef = db.collection(API_CLIENTS_COLLECTION)
+                  .doc(clientId)
+                  .collection("usage")
+                  .doc(dateId);
+              transaction.set(usageRef, {
+                date: dateId,
+                count: admin.firestore.FieldValue.increment(1),
+                lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+              }, {merge: true});
+            });
+            res.set("Content-Type", "application/json; charset=utf-8");
+            res.status(200).json({
+              spots,
+              totalCount: spots.length,
+              shownCount: spots.length,
             });
             return;
           }
 
+          if (!hasBounds) {
+            res.status(400).json({
+              error: "Query params q (search by name) or minLat, maxLat, minLng, maxLng (search in bounds) are required",
+            });
+            return;
+          }
+
+          // GET /api/v1/spots?minLat=&maxLat=&minLng=&maxLng= (search in bounds)
           const result = await executeTopSpotsInBoundsQuery({
             minLat,
             maxLat,
