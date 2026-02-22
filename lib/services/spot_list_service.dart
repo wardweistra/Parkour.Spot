@@ -33,7 +33,11 @@ class SpotListService extends ChangeNotifier {
   }
 
   /// Create a new spot list
-  Future<String?> createSpotList(String name, {String? description}) async {
+  Future<String?> createSpotList(
+    String name, {
+    String? description,
+    SpotListVisibility visibility = SpotListVisibility.unlisted,
+  }) async {
     if (!_isAuthenticated()) {
       _error = 'You must be signed in to create a list';
       notifyListeners();
@@ -69,6 +73,7 @@ class SpotListService extends ChangeNotifier {
         name: name.trim(),
         description: description?.trim(),
         spotIds: [],
+        visibility: visibility,
         createdBy: userId,
         createdAt: now,
         updatedAt: now,
@@ -125,15 +130,32 @@ class SpotListService extends ChangeNotifier {
     }
   }
 
-  /// Get all spot lists for a specific user (public access, no feature flag required)
+  /// Get spot lists for a specific user.
+  /// - Owners see all their lists.
+  /// - Other users only see public lists.
   /// Note: This method does not update loading state or notify listeners
   Future<List<SpotList>> getSpotListsByUser(String userId) async {
     try {
-      final querySnapshot = await _firestore
-          .collection('spotLists')
-          .where('createdBy', isEqualTo: userId)
-          .orderBy('updatedAt', descending: true)
-          .get();
+      final currentUserId = _getCurrentUserId();
+      late final QuerySnapshot<Map<String, dynamic>> querySnapshot;
+
+      if (currentUserId == userId) {
+        querySnapshot = await _firestore
+            .collection('spotLists')
+            .where('createdBy', isEqualTo: userId)
+            .orderBy('updatedAt', descending: true)
+            .get();
+      } else {
+        querySnapshot = await _firestore
+            .collection('spotLists')
+            .where('createdBy', isEqualTo: userId)
+            .where(
+              'visibility',
+              isEqualTo: SpotListVisibility.public.firestoreValue,
+            )
+            .orderBy('updatedAt', descending: true)
+            .get();
+      }
 
       final lists = querySnapshot.docs
           .map((doc) => SpotList.fromFirestore(doc))
@@ -146,12 +168,16 @@ class SpotListService extends ChangeNotifier {
     }
   }
 
-  /// Get a specific spot list by ID (public access)
+  /// Get a specific spot list by ID (visibility-aware access)
   Future<SpotList?> getSpotListById(String listId) async {
     try {
       final doc = await _firestore.collection('spotLists').doc(listId).get();
       if (doc.exists) {
-        return SpotList.fromFirestore(doc);
+        final list = SpotList.fromFirestore(doc);
+        final currentUserId = _getCurrentUserId();
+        final canView = list.visibility != SpotListVisibility.private ||
+            list.createdBy == currentUserId;
+        return canView ? list : null;
       }
       return null;
     } catch (e) {
@@ -160,11 +186,12 @@ class SpotListService extends ChangeNotifier {
     }
   }
 
-  /// Update spot list metadata (name and description)
+  /// Update spot list metadata (name, description, visibility)
   Future<bool> updateSpotList(
     String listId, {
     String? name,
     String? description,
+    SpotListVisibility? visibility,
   }) async {
     if (!_isAuthenticated()) {
       _error = 'You must be signed in to update a list';
@@ -210,6 +237,10 @@ class SpotListService extends ChangeNotifier {
         updates['description'] = description.trim().isEmpty
             ? FieldValue.delete()
             : description.trim();
+      }
+
+      if (visibility != null) {
+        updates['visibility'] = visibility.firestoreValue;
       }
 
       await _firestore.collection('spotLists').doc(listId).update(updates);
