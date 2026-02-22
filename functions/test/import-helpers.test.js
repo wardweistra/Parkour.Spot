@@ -1,7 +1,6 @@
 const {
   detectImportFormat,
   generateImageHash,
-  mapTagsToFeatures,
 } = require("../lib/import-helpers");
 
 describe("detectImportFormat", () => {
@@ -37,23 +36,5 @@ describe("generateImageHash", () => {
     const buf = Buffer.from("test");
     expect(generateImageHash(buf)).toBe(generateImageHash(buf));
     expect(generateImageHash(buf)).toMatch(/^[a-f0-9]{64}$/);
-  });
-});
-
-describe("mapTagsToFeatures", () => {
-  it("maps known URBN tags", () => {
-    expect(mapTagsToFeatures(["WALL5+", "PULL_BAR"])).toContain("walls_high");
-    expect(mapTagsToFeatures(["WALL5+", "PULL_BAR"])).toContain("bars_high");
-  });
-  it("deduplicates (ROCK2_5 and ROCK2- both map to rocks)", () => {
-    const features = mapTagsToFeatures(["ROCK2_5", "ROCK2-"]);
-    expect(features.filter((f) => f === "rocks").length).toBe(1);
-  });
-  it("ignores unknown tags", () => {
-    expect(mapTagsToFeatures(["UNKNOWN", "WALL5+"])).toEqual(["walls_high"]);
-  });
-  it("returns empty array for null/empty", () => {
-    expect(mapTagsToFeatures(null)).toEqual([]);
-    expect(mapTagsToFeatures([])).toEqual([]);
   });
 });

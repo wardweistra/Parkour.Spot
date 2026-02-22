@@ -1456,35 +1456,6 @@ class SpotService extends ChangeNotifier {
     }
   }
 
-  // Import URBN spots from JSON (admin only)
-  Future<Map<String, dynamic>> importUrbnSpots(List<Map<String, dynamic>> spots) async {
-    try {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
-      final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
-      final callable = functions.httpsCallable(
-        'importUrbnSpots',
-        options: HttpsCallableOptions(
-          timeout: const Duration(hours: 1),
-        ),
-      );
-      final result = await callable.call({'spots': spots});
-      final data = result.data as Map<String, dynamic>;
-      
-      _isLoading = false;
-      notifyListeners();
-      return data;
-    } catch (e) {
-      _error = 'Failed to import URBN spots: $e';
-      debugPrint('Error importing URBN spots: $e');
-      _isLoading = false;
-      notifyListeners();
-      rethrow;
-    }
-  }
-
   // Hide or unhide a spot (moderator only)
   Future<bool> setSpotHidden(
     String spotId,

@@ -108,16 +108,6 @@ class AdminHomeScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Card(
               child: ListTile(
-                leading: const Icon(Icons.cloud_upload),
-                title: const Text('URBN Migration'),
-                subtitle: const Text('Import spots from URBN Jumpers JSON file'),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                onTap: () => context.push('/admin/urbn-migration'),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Card(
-              child: ListTile(
                 leading: const Icon(Icons.history),
                 title: const Text('Audit Log Viewer'),
                 subtitle: const Text('View spot creations, user creations, and audit log actions'),

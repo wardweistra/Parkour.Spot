@@ -6,28 +6,6 @@
 const crypto = require("crypto");
 
 /**
- * Tag mapping from URBN tags to spot features
- * @type {Object<string, string>}
- */
-const URBN_TAG_MAPPING = {
-  "WALL5+": "walls_high",
-  "WALL2_5": "walls_medium",
-  "WALL2-": "walls_low",
-  "PULL_BAR": "bars_high",
-  "MEDIUM_BAR": "bars_medium",
-  "LOW_BAR": "bars_low",
-  "TREE": "climbing_tree",
-  "ROCK5+": "rocks",
-  "ROCK2_5": "rocks",
-  "ROCK2-": "rocks",
-  "SANDPIT": "soft_landing_pit",
-  "FOAMPIT": "soft_landing_pit",
-  "TRAMPOLINE": "bouncy_equipment",
-  "SPRING_FLOOR": "bouncy_equipment",
-  "ROOFTOP_CIRCUIT": "roof_gap",
-};
-
-/**
  * Detects import format based on URL and file buffer
  * @param {Buffer} buffer - The downloaded file buffer
  * @param {string} url - The original URL
@@ -66,24 +44,7 @@ function generateImageHash(imageBuffer) {
   return crypto.createHash("sha256").update(imageBuffer).digest("hex");
 }
 
-/**
- * Maps URBN tags to spot features
- * @param {Array<string>} tags - Array of URBN tag strings
- * @return {Array<string>} Array of spot feature strings
- */
-function mapTagsToFeatures(tags) {
-  const features = new Set();
-  for (const tag of tags || []) {
-    const feature = URBN_TAG_MAPPING[tag];
-    if (feature) {
-      features.add(feature);
-    }
-  }
-  return Array.from(features);
-}
-
 module.exports = {
   detectImportFormat,
   generateImageHash,
-  mapTagsToFeatures,
 };
