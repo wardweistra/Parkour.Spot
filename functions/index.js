@@ -949,6 +949,256 @@ async function commitPendingBatch(batchState) {
 
 // ========== Ranked Spots within Bounds ==========
 /**
+ * Shared query logic for top spots in bounds. Used by getTopSpotsInBounds callable
+ * and the spots-in-bounds API endpoint.
+ * @param {Object} params - minLat, maxLat, minLng, maxLng, limit, filterArea, spotSource,
+ *   folders, folder, spotAccess, spotFacilities*, goodFor, spotFeatures
+ * @return {Promise<{success: boolean, totalCount: number, averageWilson: number,
+ *   shownCount: number, spots: Array}|{success: boolean, error: string}>}
+ */
+async function executeTopSpotsInBoundsQuery(params) {
+  const {
+    minLat,
+    maxLat,
+    minLng,
+    maxLng,
+    limit = 100,
+    spotSource = null,
+    folder = null,
+    folders = null,
+    filterArea = null,
+    spotAccess = null,
+    spotFacilitiesCovered = null,
+    spotFacilitiesLighting = null,
+    spotFacilitiesWaterTap = null,
+    spotFacilitiesToilet = null,
+    spotFacilitiesParking = null,
+    goodFor = null,
+    spotFeatures = null,
+  } = params || {};
+
+  if (
+    typeof minLat !== "number" ||
+    typeof maxLat !== "number" ||
+    typeof minLng !== "number" ||
+    typeof maxLng !== "number"
+  ) {
+    throw new Error("minLat, maxLat, minLng, maxLng are required numbers");
+  }
+
+  const normalizeLongitude = (lng) => {
+    return ((lng + 180) % 360 + 360) % 360 - 180;
+  };
+
+  const normalizedMinLng = normalizeLongitude(minLng);
+  const normalizedMaxLng = normalizeLongitude(maxLng);
+  const isFullWrap = normalizedMinLng === normalizedMaxLng;
+
+  let spansEntireGlobe = false;
+  let crossesDateline = false;
+  let lngSpan = null;
+
+  if (isFullWrap) {
+    spansEntireGlobe = true;
+  } else {
+    if (normalizedMinLng > normalizedMaxLng) {
+      lngSpan = (180 - normalizedMinLng) + (normalizedMaxLng - (-180));
+    } else {
+      const rawSpan = maxLng - minLng;
+      lngSpan = rawSpan >= 360 ? rawSpan : normalizedMaxLng - normalizedMinLng;
+    }
+    spansEntireGlobe = lngSpan >= 360;
+    crossesDateline = !spansEntireGlobe && normalizedMinLng > normalizedMaxLng;
+  }
+
+  let averageWilson = 0;
+  try {
+    const settingsSnap = await db
+        .collection("settings")
+        .where("name", "==", "wilsonLowerBoundAvg")
+        .limit(1)
+        .get();
+    if (!settingsSnap.empty) {
+      const v = settingsSnap.docs[0].data().value;
+      if (typeof v === "number") averageWilson = v;
+      else if (v && typeof v === "object" && typeof v.toNumber === "function") {
+        averageWilson = v.toNumber();
+      }
+    }
+  } catch (avgErr) {
+    console.warn("Failed to load wilsonLowerBoundAvg, defaulting to 0", avgErr);
+  }
+
+  const projection = [
+    "name",
+    "description",
+    "latitude",
+    "longitude",
+    "address",
+    "city",
+    "countryCode",
+    "imageUrls",
+    "tags",
+    "spotSource",
+    "spotSourceName",
+    "spotSourceRemoved",
+    "spotSourceRemovedAt",
+    "folderName",
+    "averageRating",
+    "ratingCount",
+    "wilsonLowerBound",
+    "createdAt",
+    "updatedAt",
+    "ranking",
+    "spotAccess",
+    "spotFacilities",
+    "goodFor",
+    "spotFeatures",
+  ];
+
+  const maxItems = Math.max(0, Math.min(200, Number(limit) || 100));
+
+  let normalizedFolders = null;
+  if (folders && Array.isArray(folders) && folders.length > 0 &&
+      spotSource !== null && spotSource !== undefined) {
+    normalizedFolders = folders
+        .filter((f) => f && typeof f === "string" && f.trim().length > 0)
+        .map((f) => String(f).trim());
+    if (normalizedFolders.length === 0) normalizedFolders = null;
+  } else if (folder && typeof folder === "string" && folder.trim().length > 0 &&
+      spotSource !== null && spotSource !== undefined) {
+    normalizedFolders = [String(folder).trim()];
+  }
+
+  const useAmenitiesFilter = filterArea === "amenities" && (
+    (spotAccess && (typeof spotAccess === "string" ||
+        (Array.isArray(spotAccess) && spotAccess.length > 0))) ||
+    (spotFacilitiesCovered === "yes") ||
+    (spotFacilitiesLighting === "yes") ||
+    (spotFacilitiesWaterTap === "yes") ||
+    (spotFacilitiesToilet === "yes") ||
+    (spotFacilitiesParking === "yes") ||
+    (goodFor && Array.isArray(goodFor) && goodFor.length > 0) ||
+    (spotFeatures && Array.isArray(spotFeatures) && spotFeatures.length > 0)
+  );
+
+  const goodForArr = Array.isArray(goodFor) ?
+    goodFor.filter((v) => v && typeof v === "string") : [];
+  const spotFeaturesArr = Array.isArray(spotFeatures) ?
+    spotFeatures.filter((v) => v && typeof v === "string") : [];
+
+  const buildQuery = (lngMin, lngMax) => {
+    let query = db
+        .collection("spots")
+        .where("latitude", ">=", minLat)
+        .where("latitude", "<=", maxLat)
+        .where("longitude", ">=", lngMin)
+        .where("longitude", "<=", lngMax);
+
+    if (useAmenitiesFilter) {
+      query = query.where("duplicateOf", "==", null);
+      query = query.where("hidden", "==", false);
+
+      const accessValues = Array.isArray(spotAccess)
+        ? spotAccess.filter((v) => v && typeof v === "string")
+        : (spotAccess && typeof spotAccess === "string" ? [spotAccess] : []);
+      if (accessValues.length === 1) {
+        query = query.where("spotAccess", "==", accessValues[0]);
+      } else if (accessValues.length > 1) {
+        query = query.where("spotAccess", "in", accessValues.slice(0, 10));
+      }
+      if (spotFacilitiesCovered === "yes") {
+        query = query.where("spotFacilities.covered", "==", "yes");
+      }
+      if (spotFacilitiesLighting === "yes") {
+        query = query.where("spotFacilities.lighting", "==", "yes");
+      }
+      if (spotFacilitiesWaterTap === "yes") {
+        query = query.where("spotFacilities.water_tap", "==", "yes");
+      }
+      if (spotFacilitiesToilet === "yes") {
+        query = query.where("spotFacilities.toilet", "==", "yes");
+      }
+      if (spotFacilitiesParking === "yes") {
+        query = query.where("spotFacilities.parking", "==", "yes");
+      }
+      if (goodForArr.length > 0) {
+        query = query.where("goodFor", "array-contains-any", goodForArr.slice(0, 10));
+      } else if (spotFeaturesArr.length > 0) {
+        query = query.where("spotFeatures", "array-contains-any",
+            spotFeaturesArr.slice(0, 10));
+      }
+    } else {
+      if (spotSource !== null && spotSource !== undefined) {
+        if (spotSource === "") {
+          query = query.where("spotSource", "==", null);
+        } else {
+          query = query.where("spotSource", "==", spotSource);
+        }
+        if (normalizedFolders && normalizedFolders.length > 0) {
+          if (normalizedFolders.length === 1) {
+            query = query.where("folderName", "==", normalizedFolders[0]);
+          } else {
+            query = query.where("folderName", "in", normalizedFolders);
+          }
+        }
+      } else {
+        query = query.where("duplicateOf", "==", null);
+      }
+      query = query.where("hidden", "==", false);
+    }
+
+    return query.orderBy("ranking", "desc");
+  };
+
+  let totalCount = 0;
+  let spots = [];
+
+  if (spansEntireGlobe) {
+    const [snap, count] = await Promise.all([
+      buildQuery(-180, 180).select(...projection).limit(maxItems).get(),
+      buildQuery(-180, 180).count().get(),
+    ]);
+    spots = snap.docs.map((d) => ({id: d.id, ...d.data()}));
+    totalCount = count.data().count || 0;
+  } else if (crossesDateline) {
+    const [snap1, snap2, count1, count2] = await Promise.all([
+      buildQuery(normalizedMinLng, 180).select(...projection).limit(maxItems).get(),
+      buildQuery(-180, normalizedMaxLng).select(...projection).limit(maxItems).get(),
+      buildQuery(normalizedMinLng, 180).count().get(),
+      buildQuery(-180, normalizedMaxLng).count().get(),
+    ]);
+    spots = [
+      ...snap1.docs.map((d) => ({id: d.id, ...d.data()})),
+      ...snap2.docs.map((d) => ({id: d.id, ...d.data()})),
+    ];
+    totalCount = (count1.data().count || 0) + (count2.data().count || 0);
+  } else {
+    const [snap, count] = await Promise.all([
+      buildQuery(normalizedMinLng, normalizedMaxLng)
+          .select(...projection).limit(maxItems).get(),
+      buildQuery(normalizedMinLng, normalizedMaxLng).count().get(),
+    ]);
+    spots = snap.docs.map((d) => ({id: d.id, ...d.data()}));
+    totalCount = count.data().count || 0;
+  }
+
+  const normalize = (s) => {
+    const createdAt = formatDateToISO(s.createdAt) || s.createdAt || null;
+    const updatedAt = formatDateToISO(s.updatedAt) || s.updatedAt || null;
+    return {...s, createdAt, updatedAt};
+  };
+
+  return {
+    success: true,
+    totalCount,
+    averageWilson,
+    shownCount: spots.length,
+    spots: spots.map(normalize),
+  };
+}
+
+/**
  * Returns the top N spots within given map bounds ranked by ranking field,
  * along with total count.
  */
@@ -956,296 +1206,7 @@ exports.getTopSpotsInBounds = onCall(
     {region: "europe-west1", timeoutSeconds: 60, memory: "512MiB"},
     async (request) => {
       try {
-        const {
-          minLat,
-          maxLat,
-          minLng,
-          maxLng,
-          limit = 100,
-          spotSource = null, // null = all sources, empty string = native only, string = specific source
-          folder = null, // DEPRECATED: Optional single folder name (for backward compatibility)
-          folders = null, // Optional array of folder names to filter by (only used when spotSource is set, null = all folders)
-          filterArea = null, // "amenities" | "source" | null (default = source)
-          spotAccess = null, // when filterArea=amenities: single string or array of strings for OR query
-          spotFacilitiesCovered = null, // when filterArea=amenities: "yes"
-          spotFacilitiesLighting = null, // when filterArea=amenities: "yes"
-          spotFacilitiesWaterTap = null, // when filterArea=amenities: "yes"
-          spotFacilitiesToilet = null, // when filterArea=amenities: "yes"
-          spotFacilitiesParking = null, // when filterArea=amenities: "yes"
-          goodFor = null, // when filterArea=amenities: array of keys for array-contains-any
-          spotFeatures = null, // when filterArea=amenities: array of keys for array-contains-any
-        } = request.data || {};
-
-        if (
-          typeof minLat !== "number" ||
-        typeof maxLat !== "number" ||
-        typeof minLng !== "number" ||
-        typeof maxLng !== "number"
-        ) {
-          throw new Error(
-              "minLat, maxLat, minLng, maxLng are required numbers");
-        }
-
-        // Normalize longitude values to [-180, 180] range
-        const normalizeLongitude = (lng) => {
-          // Normalize to [-180, 180]
-          const normalized = ((lng + 180) % 360 + 360) % 360 - 180;
-          return normalized;
-        };
-
-        // Normalize longitude values for query building
-        const normalizedMinLng = normalizeLongitude(minLng);
-        const normalizedMaxLng = normalizeLongitude(maxLng);
-
-        // Check if both normalized values are the same (indicates full wrap-around)
-        // This happens when the viewport spans exactly 360 degrees or more
-        const isFullWrap = normalizedMinLng === normalizedMaxLng;
-
-        // If full wrap, treat as spanning entire globe and skip span calculation
-        let spansEntireGlobe = false;
-        let crossesDateline = false;
-        let lngSpan = null; // Only set when not a full wrap
-
-        if (isFullWrap) {
-          // Both bounds normalize to the same value - this means full 360-degree wrap
-          spansEntireGlobe = true;
-        } else {
-          // Calculate longitude span for other cases
-          if (normalizedMinLng > normalizedMaxLng) {
-            // Crosses dateline: span = (180 - minLng) + (maxLng - (-180))
-            lngSpan = (180 - normalizedMinLng) + (normalizedMaxLng - (-180));
-          } else {
-            // Normal case: check if raw span is >= 360 (viewport spans entire globe)
-            const rawSpan = maxLng - minLng;
-            if (rawSpan >= 360) {
-              // Viewport spans entire globe or more
-              lngSpan = rawSpan;
-            } else {
-              // Use normalized span
-              lngSpan = normalizedMaxLng - normalizedMinLng;
-            }
-          }
-
-          // If viewport spans entire globe or more (>= 360 degrees), query all longitudes
-          spansEntireGlobe = lngSpan >= 360;
-
-          // Handle dateline crossing (only if not spanning entire globe)
-          crossesDateline = !spansEntireGlobe && normalizedMinLng > normalizedMaxLng;
-        }
-
-        // Fetch precomputed average wilson from settings
-        let averageWilson = 0;
-        try {
-          const settingsSnap = await db
-              .collection("settings")
-              .where("name", "==", "wilsonLowerBoundAvg")
-              .limit(1)
-              .get();
-          if (!settingsSnap.empty) {
-            const v = settingsSnap.docs[0].data().value;
-            if (typeof v === "number") averageWilson = v;
-            else if (
-              v &&
-                typeof v === "object" &&
-                typeof v.toNumber === "function"
-            ) {
-              averageWilson = v.toNumber();
-            }
-          }
-        } catch (avgErr) {
-          console.warn(
-              "Failed to load wilsonLowerBoundAvg from settings, " +
-              "defaulting to 0",
-              avgErr,
-          );
-        }
-
-        // Fields to return to reduce payload size
-        const projection = [
-          "name",
-          "description",
-          "latitude",
-          "longitude",
-          "address",
-          "city",
-          "countryCode",
-          "imageUrls",
-          "tags",
-          "spotSource",
-          "spotSourceName",
-          "spotSourceRemoved",
-          "spotSourceRemovedAt",
-          "folderName",
-          "averageRating",
-          "ratingCount",
-          "wilsonLowerBound",
-          "createdAt",
-          "updatedAt",
-          "ranking",
-          "spotAccess",
-          "spotFacilities",
-          "goodFor",
-          "spotFeatures",
-        ];
-
-        const maxItems = Math.max(0, Math.min(200, Number(limit) || 100));
-
-        // Normalize folders array (handle backward compatibility with single folder)
-        let normalizedFolders = null;
-        if (folders && Array.isArray(folders) && folders.length > 0 && spotSource !== null && spotSource !== undefined) {
-          // New format: array of folders
-          normalizedFolders = folders
-              .filter(f => f && typeof f === "string" && f.trim().length > 0)
-              .map(f => String(f).trim());
-          if (normalizedFolders.length === 0) {
-            normalizedFolders = null;
-          }
-        } else if (folder && typeof folder === "string" && folder.trim().length > 0 && spotSource !== null && spotSource !== undefined) {
-          // Backward compatibility: single folder string
-          normalizedFolders = [String(folder).trim()];
-        }
-
-        const useAmenitiesFilter = filterArea === "amenities" && (
-          (spotAccess && (typeof spotAccess === "string" || (Array.isArray(spotAccess) && spotAccess.length > 0))) ||
-          (spotFacilitiesCovered === "yes") ||
-          (spotFacilitiesLighting === "yes") ||
-          (spotFacilitiesWaterTap === "yes") ||
-          (spotFacilitiesToilet === "yes") ||
-          (spotFacilitiesParking === "yes") ||
-          (goodFor && Array.isArray(goodFor) && goodFor.length > 0) ||
-          (spotFeatures && Array.isArray(spotFeatures) && spotFeatures.length > 0)
-        );
-
-        const goodForArr = Array.isArray(goodFor) ? goodFor.filter(v => v && typeof v === "string") : [];
-        const spotFeaturesArr = Array.isArray(spotFeatures) ? spotFeatures.filter(v => v && typeof v === "string") : [];
-
-        // Build query function - different logic for amenities vs source area
-        const buildQuery = (lngMin, lngMax) => {
-          let query = db
-              .collection("spots")
-              .where("latitude", ">=", minLat)
-              .where("latitude", "<=", maxLat)
-              .where("longitude", ">=", lngMin)
-              .where("longitude", "<=", lngMax);
-
-          if (useAmenitiesFilter) {
-            // Amenities area: duplicateOf, hidden, then amenity filters in index order
-            query = query.where("duplicateOf", "==", null);
-            query = query.where("hidden", "==", false);
-
-            // Add amenity where-clauses in order matching composite indexes
-            const accessValues = Array.isArray(spotAccess)
-              ? spotAccess.filter(v => v && typeof v === "string")
-              : (spotAccess && typeof spotAccess === "string" ? [spotAccess] : []);
-            if (accessValues.length === 1) {
-              query = query.where("spotAccess", "==", accessValues[0]);
-            } else if (accessValues.length > 1) {
-              query = query.where("spotAccess", "in", accessValues.slice(0, 10)); // Firestore in limit is 10
-            }
-            if (spotFacilitiesCovered === "yes") {
-              query = query.where("spotFacilities.covered", "==", "yes");
-            }
-            if (spotFacilitiesLighting === "yes") {
-              query = query.where("spotFacilities.lighting", "==", "yes");
-            }
-            if (spotFacilitiesWaterTap === "yes") {
-              query = query.where("spotFacilities.water_tap", "==", "yes");
-            }
-            if (spotFacilitiesToilet === "yes") {
-              query = query.where("spotFacilities.toilet", "==", "yes");
-            }
-            if (spotFacilitiesParking === "yes") {
-              query = query.where("spotFacilities.parking", "==", "yes");
-            }
-            // Firestore allows only one array-contains-any per query. Apply one in query, filter the other in-memory if both set.
-            if (goodForArr.length > 0) {
-              query = query.where("goodFor", "array-contains-any", goodForArr.slice(0, 10));
-            } else if (spotFeaturesArr.length > 0) {
-              query = query.where("spotFeatures", "array-contains-any", spotFeaturesArr.slice(0, 10));
-            }
-          } else {
-            // Source area: spotSource, folder, or duplicateOf (all sources)
-            if (spotSource !== null && spotSource !== undefined) {
-              if (spotSource === "") {
-                query = query.where("spotSource", "==", null);
-              } else {
-                query = query.where("spotSource", "==", spotSource);
-              }
-
-              if (normalizedFolders && normalizedFolders.length > 0) {
-                if (normalizedFolders.length === 1) {
-                  query = query.where("folderName", "==", normalizedFolders[0]);
-                } else {
-                  query = query.where("folderName", "in", normalizedFolders);
-                }
-              }
-            } else {
-              query = query.where("duplicateOf", "==", null);
-            }
-
-            query = query.where("hidden", "==", false);
-          }
-
-          return query.orderBy("ranking", "desc");
-        };
-
-        // Execute query(ies)
-        let totalCount = 0;
-        let spots = [];
-
-        if (spansEntireGlobe) {
-          // Viewport spans entire globe or more - use full longitude range (-180 to 180)
-          // This allows Firestore to use indexes that include longitude
-          const [snap, count] = await Promise.all([
-            buildQuery(-180, 180).select(...projection).limit(maxItems).get(),
-            buildQuery(-180, 180).count().get(),
-          ]);
-
-          spots = snap.docs.map((d) => ({id: d.id, ...d.data()}));
-          totalCount = count.data().count || 0;
-        } else if (crossesDateline) {
-          // Query both sides of dateline
-          const [snap1, snap2, count1, count2] = await Promise.all([
-            buildQuery(normalizedMinLng, 180).select(...projection).limit(maxItems).get(),
-            buildQuery(-180, normalizedMaxLng).select(...projection).limit(maxItems).get(),
-            buildQuery(normalizedMinLng, 180).count().get(),
-            buildQuery(-180, normalizedMaxLng).count().get(),
-          ]);
-
-          spots = [
-            ...snap1.docs.map((d) => ({id: d.id, ...d.data()})),
-            ...snap2.docs.map((d) => ({id: d.id, ...d.data()})),
-          ];
-          totalCount = (count1.data().count || 0) + (count2.data().count || 0);
-        } else {
-          // Single query
-          const [snap, count] = await Promise.all([
-            buildQuery(normalizedMinLng, normalizedMaxLng).select(...projection).limit(maxItems).get(),
-            buildQuery(normalizedMinLng, normalizedMaxLng).count().get(),
-          ]);
-
-          spots = snap.docs.map((d) => ({id: d.id, ...d.data()}));
-          totalCount = count.data().count || 0;
-        }
-
-        // Folder filtering is now done at database level via whereIn query
-        // No additional in-memory filtering needed. Good For and Spot Features are mutually
-        // exclusive in the UI, so we never have both; no in-memory filter needed.
-
-        // Normalize Firestore Timestamp fields to ISO strings for client
-        const normalize = (s) => {
-          const createdAt = formatDateToISO(s.createdAt) || s.createdAt || null;
-          const updatedAt = formatDateToISO(s.updatedAt) || s.updatedAt || null;
-          return {...s, createdAt, updatedAt};
-        };
-
-        return {
-          success: true,
-          totalCount,
-          averageWilson,
-          shownCount: spots.length,
-          spots: spots.map(normalize),
-        };
+        return await executeTopSpotsInBoundsQuery(request.data || {});
       } catch (error) {
         console.error("getTopSpotsInBounds error", error);
         return {success: false, error: error.message};
@@ -7682,9 +7643,8 @@ function generateApiKey() {
 }
 
 /**
- * Spot Details API - GET /api/v1/spots/:spotId
- * Returns spot details by ID. Requires X-API-Key or Authorization: Bearer.
- * Includes hidden and duplicateOf so clients can filter/handle them.
+ * Spot API - Handles GET /api/v1/spots (search in bounds) and GET /api/v1/spots/:spotId (single spot).
+ * Requires X-API-Key or Authorization: Bearer.
  */
 exports.getSpotByApi = onRequest(
     {
@@ -7699,12 +7659,13 @@ exports.getSpotByApi = onRequest(
         }
 
         const path = (req.path || req.url || "/").split("?")[0];
-        const match = path.match(/^\/api\/v1\/spots\/([^/]+)$/);
-        if (!match) {
+        const spotIdMatch = path.match(/^\/api\/v1\/spots\/([^/]+)$/);
+        const isSearchRequest = path === "/api/v1/spots" || path === "/api/v1/spots/";
+
+        if (!spotIdMatch && !isSearchRequest) {
           res.status(404).json({error: "Not found"});
           return;
         }
-        const spotId = match[1];
 
         let apiKey = null;
         const authHeader = req.headers["authorization"] || req.headers["Authorization"];
@@ -7731,7 +7692,73 @@ exports.getSpotByApi = onRequest(
         }
         const clientDoc = clientsSnap.docs[0];
         const clientId = clientDoc.id;
+        const now = new Date();
+        const dateId = now.toISOString().slice(0, 10);
 
+        if (isSearchRequest) {
+          // GET /api/v1/spots?minLat=&maxLat=&minLng=&maxLng=
+          const q = req.query || {};
+          const minLat = typeof q.minLat === "string" ? parseFloat(q.minLat) : NaN;
+          const maxLat = typeof q.maxLat === "string" ? parseFloat(q.maxLat) : NaN;
+          const minLng = typeof q.minLng === "string" ? parseFloat(q.minLng) : NaN;
+          const maxLng = typeof q.maxLng === "string" ? parseFloat(q.maxLng) : NaN;
+
+          if (!Number.isFinite(minLat) || !Number.isFinite(maxLat) ||
+              !Number.isFinite(minLng) || !Number.isFinite(maxLng)) {
+            res.status(400).json({
+              error: "Query params minLat, maxLat, minLng, maxLng are required and must be numbers",
+            });
+            return;
+          }
+
+          const result = await executeTopSpotsInBoundsQuery({
+            minLat,
+            maxLat,
+            minLng,
+            maxLng,
+            limit: 100,
+          });
+
+          if (!result.success) {
+            res.status(500).json({error: result.error || "Query failed"});
+            return;
+          }
+
+          const spots = result.spots || [];
+          if (Array.isArray(spots)) {
+            for (const spot of spots) {
+              if (Array.isArray(spot.imageUrls)) {
+                spot.imageUrls = spot.imageUrls.map((url) => getResizedImageUrlForApi(url));
+              }
+            }
+          }
+
+          await db.runTransaction(async (transaction) => {
+            transaction.update(db.collection(API_CLIENTS_COLLECTION).doc(clientId), {
+              lastUsedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+            const usageRef = db.collection(API_CLIENTS_COLLECTION)
+                .doc(clientId)
+                .collection("usage")
+                .doc(dateId);
+            transaction.set(usageRef, {
+              date: dateId,
+              count: admin.firestore.FieldValue.increment(1),
+              lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            }, {merge: true});
+          });
+
+          res.set("Content-Type", "application/json; charset=utf-8");
+          res.status(200).json({
+            spots,
+            totalCount: result.totalCount,
+            shownCount: result.shownCount,
+          });
+          return;
+        }
+
+        // Single spot: GET /api/v1/spots/:spotId
+        const spotId = spotIdMatch[1];
         const spotSnap = await db.collection("spots").doc(spotId).get();
         if (!spotSnap.exists) {
           res.status(404).json({error: "Spot not found"});
@@ -7739,9 +7766,6 @@ exports.getSpotByApi = onRequest(
         }
 
         const spotData = spotSnap.data();
-        const now = new Date();
-        const dateId = now.toISOString().slice(0, 10);
-
         await db.runTransaction(async (transaction) => {
           transaction.update(db.collection(API_CLIENTS_COLLECTION).doc(clientId), {
             lastUsedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -7764,7 +7788,6 @@ exports.getSpotByApi = onRequest(
         out.hidden = spotData.hidden === true;
         out.duplicateOf = spotData.duplicateOf || null;
 
-        // Serve resized image URLs (1200x630 webp) instead of full-size to reduce load
         if (Array.isArray(out.imageUrls)) {
           out.imageUrls = out.imageUrls.map((url) => getResizedImageUrlForApi(url));
         }
