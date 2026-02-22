@@ -18,6 +18,7 @@ import '../screens/admin/duplicate_images_screen.dart';
 import '../screens/admin/duplicate_spots_screen.dart';
 import '../screens/admin/duplicate_spots_results_screen.dart';
 import '../screens/admin/device_detection_screen.dart';
+import '../screens/admin/api_clients_screen.dart';
 import '../screens/moderator/moderator_tools_screen.dart';
 import '../screens/moderator/spot_report_queue_screen.dart';
 import '../screens/spots/spot_detail_screen.dart';
@@ -330,6 +331,10 @@ class AppRouter {
         GoRoute(
           path: '/admin/device-detection',
           builder: (context, state) => const DeviceDetectionScreen(),
+        ),
+        GoRoute(
+          path: '/admin/api-clients',
+          builder: (context, state) => const ApiClientsScreen(),
         ),
       GoRoute(
         path: '/moderator',

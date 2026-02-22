@@ -206,6 +206,21 @@
         { "fieldPath": "latitude", "order": "ASCENDING" },
         { "fieldPath": "longitude", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "apiClients",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "apiKeyHash", "order": "ASCENDING" },
+        { "fieldPath": "active", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "apiClients",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

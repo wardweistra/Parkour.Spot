@@ -58,6 +58,16 @@ class AdminHomeScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Card(
               child: ListTile(
+                leading: const Icon(Icons.api),
+                title: const Text('API Clients'),
+                subtitle: const Text('Register clients and track Spot Details API usage'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () => context.push('/admin/api-clients'),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Card(
+              child: ListTile(
                 leading: const Icon(Icons.people_outline),
                 title: const Text('User Management'),
                 subtitle: const Text('Review users, stats, and moderator access'),

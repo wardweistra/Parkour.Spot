@@ -136,5 +136,14 @@ service cloud.firestore {
       // Only Cloud Functions (with admin privileges) can create/update/delete
       allow create, update, delete: if false;
     }
+
+    // ApiClients collection - only Cloud Functions (admin SDK) read/write
+    // Flutter admin UI uses callables (getApiClients, etc.) which run as admin
+    match /apiClients/{clientId} {
+      allow read, write: if false;
+      match /usage/{dateId} {
+        allow read, write: if false;
+      }
+    }
   }
 }

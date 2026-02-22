@@ -30,6 +30,10 @@
     ],
     "rewrites": [
       {
+        "source": "/api/v1/**",
+        "function": "getSpotByApi"
+      },
+      {
         "source": "/spot/**",
         "function": "spotPage"
       },

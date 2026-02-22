@@ -7611,6 +7611,343 @@ exports.findDuplicateSpots = onCall(
     },
 );
 
+// ========== Spot Details API (external clients) ==========
+const API_CLIENTS_COLLECTION = "apiClients";
+
+/**
+ * Converts a Firebase Storage spot image URL to its resized version.
+ * storage-resize-images extension creates: spots/resized/baseName_1200x630.webp
+ * @param {string} originalUrl - Original Firebase Storage URL
+ * @return {string} Resized URL or original if not convertible
+ */
+function getResizedImageUrlForApi(originalUrl) {
+  if (typeof originalUrl !== "string") return originalUrl;
+  try {
+    if (!originalUrl.includes("storage.googleapis.com") &&
+        !originalUrl.includes("firebasestorage.googleapis.com")) {
+      return originalUrl;
+    }
+    // Handle firebasestorage.googleapis.com/v0/b/bucket/o/spots%2Ffilename.jpg
+    if (originalUrl.includes("firebasestorage.googleapis.com") &&
+        originalUrl.includes("spots%2F") && !originalUrl.includes("spots%2Fresized%2F")) {
+      return originalUrl
+          .replace(/spots%2F([^?&#]+)\.(jpg|jpeg|png|webp)/i, "spots%2Fresized%2F$1_1200x630.webp");
+    }
+    // Handle storage.googleapis.com format: .../spots/filename.jpg
+    const match = originalUrl.match(/\/(spots)\/([^/]+)\.(jpg|jpeg|png|webp)(\?|#|$)/i);
+    if (match && match[1] === "spots" && match[2] !== "resized") {
+      const baseName = match[2];
+      return originalUrl
+          .replace(`/spots/${baseName}.${match[3]}`, `/spots/resized/${baseName}_1200x630.webp`);
+    }
+    return originalUrl;
+  } catch {
+    return originalUrl;
+  }
+}
+
+/**
+ * Serialize a Firestore document for JSON API response.
+ * Converts Firestore Timestamps to ISO 8601 strings.
+ * @param {Object} data - Raw document data
+ * @return {Object} JSON-serializable object
+ */
+function serializeSpotForApi(data) {
+  const result = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (value && typeof value.toDate === "function") {
+      result[key] = value.toDate().toISOString();
+    } else if (value !== undefined && value !== null) {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
+/**
+ * Hash API key with SHA-256 for storage/lookup
+ * @param {string} apiKey - Plain API key
+ * @return {string} Hex-encoded SHA-256 hash
+ */
+function hashApiKey(apiKey) {
+  return crypto.createHash("sha256").update(apiKey).digest("hex");
+}
+
+/**
+ * Generate a new API key (ps_ prefix + 32 random hex chars)
+ * @return {string}
+ */
+function generateApiKey() {
+  return "ps_" + crypto.randomBytes(16).toString("hex");
+}
+
+/**
+ * Spot Details API - GET /api/v1/spots/:spotId
+ * Returns spot details by ID. Requires X-API-Key or Authorization: Bearer.
+ * Includes hidden and duplicateOf so clients can filter/handle them.
+ */
+exports.getSpotByApi = onRequest(
+    {
+      region: "europe-west1",
+      cors: true,
+    },
+    async (req, res) => {
+      try {
+        if (req.method !== "GET") {
+          res.status(405).set("Allow", "GET").json({error: "Method not allowed"});
+          return;
+        }
+
+        const path = (req.path || req.url || "/").split("?")[0];
+        const match = path.match(/^\/api\/v1\/spots\/([^/]+)$/);
+        if (!match) {
+          res.status(404).json({error: "Not found"});
+          return;
+        }
+        const spotId = match[1];
+
+        let apiKey = null;
+        const authHeader = req.headers["authorization"] || req.headers["Authorization"];
+        if (authHeader && authHeader.startsWith("Bearer ")) {
+          apiKey = authHeader.substring(7).trim();
+        } else {
+          apiKey = (req.headers["x-api-key"] || req.headers["X-API-Key"] || "").trim();
+        }
+        if (!apiKey) {
+          res.status(401).json({error: "API key required. Use X-API-Key or Authorization: Bearer"});
+          return;
+        }
+
+        const apiKeyHash = hashApiKey(apiKey);
+        const clientsSnap = await db.collection(API_CLIENTS_COLLECTION)
+            .where("apiKeyHash", "==", apiKeyHash)
+            .where("active", "==", true)
+            .limit(1)
+            .get();
+
+        if (clientsSnap.empty) {
+          res.status(401).json({error: "Invalid or inactive API key"});
+          return;
+        }
+        const clientDoc = clientsSnap.docs[0];
+        const clientId = clientDoc.id;
+
+        const spotSnap = await db.collection("spots").doc(spotId).get();
+        if (!spotSnap.exists) {
+          res.status(404).json({error: "Spot not found"});
+          return;
+        }
+
+        const spotData = spotSnap.data();
+        const now = new Date();
+        const dateId = now.toISOString().slice(0, 10);
+
+        await db.runTransaction(async (transaction) => {
+          transaction.update(db.collection(API_CLIENTS_COLLECTION).doc(clientId), {
+            lastUsedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+          const usageRef = db.collection(API_CLIENTS_COLLECTION)
+              .doc(clientId)
+              .collection("usage")
+              .doc(dateId);
+          transaction.set(usageRef, {
+            date: dateId,
+            count: admin.firestore.FieldValue.increment(1),
+            lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          }, {merge: true});
+        });
+
+        const out = serializeSpotForApi({
+          id: spotSnap.id,
+          ...spotData,
+        });
+        out.hidden = spotData.hidden === true;
+        out.duplicateOf = spotData.duplicateOf || null;
+
+        // Serve resized image URLs (1200x630 webp) instead of full-size to reduce load
+        if (Array.isArray(out.imageUrls)) {
+          out.imageUrls = out.imageUrls.map((url) => getResizedImageUrlForApi(url));
+        }
+
+        res.set("Content-Type", "application/json; charset=utf-8");
+        res.status(200).json(out);
+      } catch (error) {
+        console.error("getSpotByApi error:", error);
+        res.status(500).json({error: "Internal server error"});
+      }
+    },
+);
+
+// Admin callables for API client management
+exports.getApiClients = onCall({region: "europe-west1"}, async (request) => {
+  try {
+    await ensureAdmin(request);
+    const clientsSnap = await db.collection(API_CLIENTS_COLLECTION)
+        .orderBy("createdAt", "desc")
+        .get();
+
+    const clients = [];
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    for (const doc of clientsSnap.docs) {
+      const d = doc.data();
+      const usageSnap = await db.collection(API_CLIENTS_COLLECTION)
+          .doc(doc.id)
+          .collection("usage")
+          .get();
+
+      let totalCalls = 0;
+      let last7Days = 0;
+      let last30Days = 0;
+      for (const u of usageSnap.docs) {
+        const uData = u.data();
+        const count = uData.count || 0;
+        totalCalls += count;
+        const dateStr = u.id;
+        if (dateStr >= thirtyDaysAgo.toISOString().slice(0, 10)) {
+          last30Days += count;
+        }
+        const sevenDaysAgo = new Date(now);
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        if (dateStr >= sevenDaysAgo.toISOString().slice(0, 10)) {
+          last7Days += count;
+        }
+      }
+
+      clients.push({
+        id: doc.id,
+        name: d.name || "",
+        active: d.active !== false,
+        createdAt: d.createdAt?.toDate?.()?.toISOString?.() || null,
+        createdBy: d.createdBy || null,
+        lastUsedAt: d.lastUsedAt?.toDate?.()?.toISOString?.() || null,
+        totalCalls,
+        last7Days,
+        last30Days,
+      });
+    }
+    return {clients};
+  } catch (error) {
+    console.error("getApiClients error:", error);
+    throw new Error(`Failed to list API clients: ${error.message}`);
+  }
+});
+
+exports.createApiClient = onCall({region: "europe-west1"}, async (request) => {
+  try {
+    await ensureAdmin(request);
+    const {name} = request.data || {};
+    if (!name || typeof name !== "string" || name.trim().length === 0) {
+      throw new Error("name is required");
+    }
+    const apiKey = generateApiKey();
+    const apiKeyHash = hashApiKey(apiKey);
+    const clientRef = db.collection(API_CLIENTS_COLLECTION).doc();
+
+    await clientRef.set({
+      name: name.trim(),
+      apiKeyHash,
+      active: true,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdBy: request.auth?.uid || null,
+    });
+
+    return {
+      clientId: clientRef.id,
+      apiKey,
+      name: name.trim(),
+      warning: "Save this API key. It will not be shown again.",
+    };
+  } catch (error) {
+    console.error("createApiClient error:", error);
+    throw new Error(`Failed to create API client: ${error.message}`);
+  }
+});
+
+exports.updateApiClient = onCall({region: "europe-west1"}, async (request) => {
+  try {
+    await ensureAdmin(request);
+    const {clientId, name, active} = request.data || {};
+    if (!clientId || typeof clientId !== "string") {
+      throw new Error("clientId is required");
+    }
+    const updateData = {};
+    if (name !== undefined) {
+      if (typeof name !== "string" || name.trim().length === 0) {
+        throw new Error("name must be a non-empty string");
+      }
+      updateData.name = name.trim();
+    }
+    if (active !== undefined) {
+      if (typeof active !== "boolean") {
+        throw new Error("active must be a boolean");
+      }
+      updateData.active = active;
+    }
+    if (Object.keys(updateData).length === 0) {
+      return {success: true};
+    }
+    await db.collection(API_CLIENTS_COLLECTION).doc(clientId).update(updateData);
+    return {success: true};
+  } catch (error) {
+    console.error("updateApiClient error:", error);
+    throw new Error(`Failed to update API client: ${error.message}`);
+  }
+});
+
+exports.deleteApiClient = onCall({region: "europe-west1"}, async (request) => {
+  try {
+    await ensureAdmin(request);
+    const {clientId} = request.data || {};
+    if (!clientId || typeof clientId !== "string") {
+      throw new Error("clientId is required");
+    }
+    const clientRef = db.collection(API_CLIENTS_COLLECTION).doc(clientId);
+    const clientSnap = await clientRef.get();
+    if (!clientSnap.exists) {
+      throw new Error("API client not found");
+    }
+    const usageSnap = await clientRef.collection("usage").get();
+    const batch = db.batch();
+    for (const d of usageSnap.docs) {
+      batch.delete(d.ref);
+    }
+    batch.delete(clientRef);
+    await batch.commit();
+    return {success: true};
+  } catch (error) {
+    console.error("deleteApiClient error:", error);
+    throw new Error(`Failed to delete API client: ${error.message}`);
+  }
+});
+
+exports.regenerateApiClientKey = onCall({region: "europe-west1"}, async (request) => {
+  try {
+    await ensureAdmin(request);
+    const {clientId} = request.data || {};
+    if (!clientId || typeof clientId !== "string") {
+      throw new Error("clientId is required");
+    }
+    const clientRef = db.collection(API_CLIENTS_COLLECTION).doc(clientId);
+    const clientSnap = await clientRef.get();
+    if (!clientSnap.exists) {
+      throw new Error("API client not found");
+    }
+    const apiKey = generateApiKey();
+    const apiKeyHash = hashApiKey(apiKey);
+    await clientRef.update({apiKeyHash});
+    return {
+      apiKey,
+      warning: "Save this API key. It will not be shown again. Previous key is now invalid.",
+    };
+  } catch (error) {
+    console.error("regenerateApiClientKey error:", error);
+    throw new Error(`Failed to regenerate API key: ${error.message}`);
+  }
+});
+
 /**
  * HTTP function to serve sitemaps on-demand
  * Handles requests for:
