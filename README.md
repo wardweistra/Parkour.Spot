@@ -129,6 +129,13 @@ firebase deploy --only firestore:indexes
 ./scripts/build_development.sh
 ```
 
+### **Testing**
+
+- **Cloud Functions** (unit tests for helper logic in `functions/`):
+  ```bash
+  cd functions && npm test
+  ```
+
 ### **Emulator Data Management**
 
 The project includes seed data for Firebase emulators to help new developers get started quickly.

@@ -25,12 +25,10 @@ const yauzl = require("yauzl");
 const xml2js = require("xml2js");
 const https = require("https");
 const path = require("path");
-const crypto = require("crypto");
 const {S3Client, GetObjectCommand, HeadObjectCommand} = require("@aws-sdk/client-s3");
 const {getSignedUrl} = require("@aws-sdk/s3-request-presigner");
 const {google} = require("googleapis");
 const countries = require("i18n-iso-countries");
-const cronParser = require("cron-parser");
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -40,34 +38,49 @@ const bucket = admin.storage().bucket();
 // Register English locale for country names
 countries.registerLocale(require("i18n-iso-countries/langs/en.json"));
 
-// Countries that need "the" article prefix (e.g., "the Netherlands", not "Netherlands")
-const countriesWithArticle = new Set([
-  "NL", // Netherlands
-  "PH", // Philippines
-  "BS", // Bahamas
-  "GM", // Gambia
-  "MV", // Maldives
-  "AE", // United Arab Emirates
-  "US", // United States
-  "GB", // United Kingdom
-]);
-
-/**
- * Get country name with proper article if needed
- * @param {string} countryCode - ISO 3166-1 alpha-2 country code
- * @param {boolean} withArticle - Whether to include "the" article (default: true)
- * @return {string} Country name with "the" prefix if needed
- */
-function getCountryNameWithArticle(countryCode, withArticle = true) {
-  const countryName = countries.getName(countryCode, "en") || countryCode;
-  if (withArticle && countriesWithArticle.has(countryCode.toUpperCase())) {
-    return `the ${countryName}`;
-  }
-  return countryName;
-}
-
 // Import shared utilities
 const {slugify, formatDateToISO} = require("./utils");
+const {
+  extractSpotIdFromPath,
+  extractFilename,
+  getResizedImageUrlForApi,
+  isEphemeralImageHost,
+} = require("./lib/url-helpers");
+const {
+  hashApiKey,
+  generateApiKey,
+  serializeSpotForApi,
+} = require("./lib/api-helpers");
+const {
+  getCountryNameWithArticle,
+  calculateDistance,
+  calculateBounds,
+} = require("./lib/geo");
+const {
+  cleanUndefinedValues,
+  buildSpotSearchWords,
+  normalizeSpotAttributeDefaults,
+  normalizeFolderSpotAttributeDefaults,
+  buildFolderDefaultsLookup,
+  mergeSpotAttributeDefaults,
+  getEffectiveSpotAttributeDefaults,
+  applySpotAttributeDefaultsToSpotData,
+  buildSpotAttributeUpdateData,
+} = require("./lib/spot-attributes");
+const {
+  buildDescription,
+  getSearchQueryTokens,
+  spotSearchTermDocId,
+  cleanDescription,
+  extractYoutubeVideoIdsFromDescription,
+  extractImageUrls,
+} = require("./lib/text-processing");
+const {
+  detectImportFormat,
+  generateImageHash,
+  mapTagsToFeatures,
+} = require("./lib/import-helpers");
+const {shouldRunSync} = require("./lib/sync-helpers");
 
 // Import shared HTML template
 const {generateHtmlPage} = require("./html-template");
@@ -132,45 +145,6 @@ async function findLargestS3Image(s3Client, bucket, spotId, imageId) {
   return null;
 }
 
-
-/**
- * Extracts spot ID from URL pathname
- * @param {string} pathname - The URL pathname
- * @return {string|null} The extracted spot ID or null
- */
-function extractSpotIdFromPath(pathname) {
-  // Match: /<cc>/<city>/<spotId>
-  let m = pathname.match(/^\/[a-zA-Z]{2}\/[^/]+\/([^/?#]+)$/);
-  if (m && m[1]) return m[1];
-  // Match: /spot/<spotId>
-  m = pathname.match(/^\/spot\/([^/?#]+)$/);
-  if (m && m[1]) return m[1];
-  return null;
-}
-
-/**
- * Builds description for social sharing from spot data
- * @param {Object} s - Spot data object
- * @return {string} Formatted description
- */
-function buildDescription(s) {
-  const defaultDescription = "Discover and share parkour spots around the world";
-  if (!s) return defaultDescription;
-  const parts = [];
-  if (s.address && String(s.address).trim().length > 0) {
-    parts.push(`📍 ${String(s.address).trim()}`);
-  }
-  if (typeof s.averageRating === "number" && !isNaN(s.averageRating) && s.ratingCount > 0 && s.averageRating > 0) {
-    parts.push(`⭐ ${s.averageRating.toFixed(1)}`);
-  }
-  if (s.description && String(s.description).trim().length > 0) {
-    const d = String(s.description).trim().replace(/\s+/g, " ");
-    // Keep description concise
-    const clipped = d.length > 220 ? d.slice(0, 217) + "…" : d;
-    parts.push(`💬 ${clipped}`);
-  }
-  return parts.length ? parts.join("\n") : defaultDescription;
-}
 
 /**
  * Helper: perform geocoding for given lat/lng
@@ -464,455 +438,6 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
     res.status(500).send("Internal Server Error");
   }
 });
-
-/**
- * Removes undefined values from an object to make it Firestore-safe
- * @param {Object} obj - The object to clean
- * @return {Object} The cleaned object
- */
-function cleanUndefinedValues(obj) {
-  const cleaned = {};
-  for (const [key, value] of Object.entries(obj)) {
-    if (value !== undefined) {
-      cleaned[key] = value;
-    }
-  }
-  return cleaned;
-}
-
-// Spot attribute defaults supported for sync source defaults/backfills.
-const VALID_SPOT_ACCESS_VALUES = new Set(["public", "restricted", "paid"]);
-const VALID_SPOT_FEATURE_VALUES = new Set([
-  "walls_low",
-  "walls_medium",
-  "walls_high",
-  "bars_low",
-  "bars_medium",
-  "bars_high",
-  "climbing_tree",
-  "rocks",
-  "soft_landing_pit",
-  "roof_gap",
-  "bouncy_equipment",
-]);
-const VALID_GOOD_FOR_VALUES = new Set([
-  "vaults",
-  "balance",
-  "ascend",
-  "descend",
-  "speed_run",
-  "water_challenges",
-  "pole_slide",
-  "precisions",
-  "wall_runs",
-  "strides",
-  "rolls",
-  "cats",
-  "flow",
-  "flips",
-  "swings",
-]);
-const VALID_SPOT_FACILITY_KEYS = new Set([
-  "covered",
-  "lighting",
-  "water_tap",
-  "toilet",
-  "parking",
-]);
-const VALID_SPOT_FACILITY_VALUES = new Set(["yes", "no"]);
-
-// Stop words to exclude from spot name search index
-const SPOT_NAME_STOP_WORDS = new Set([
-  "the", "a", "an", "of", "in", "on", "at", "to", "for", "and", "or", "but",
-  "is", "it", "as", "with", "by", "from", "de", "la", "le", "und", "der", "die",
-  "et", "en", "van", "het", "een",
-]);
-
-const MIN_WORD_PREFIX_LENGTH = 3;
-
-/**
- * Builds unique search words from spot name: split, lowercase, remove punctuation
- * and stop words. Full words only (no prefixes) - used for spotSearchTerms collection.
- * @param {string} name - Spot name
- * @return {string[]}
- */
-function buildSpotSearchWords(name) {
-  if (!name || typeof name !== "string") return [];
-  const normalized = name
-      .replace(/[\s\p{P}\p{S}]/gu, " ")
-      .split(/\s+/)
-      .map((w) => w.toLowerCase().replace(/[^\p{L}\p{N}]/gu, ""))
-      .filter((w) => w && w.length >= MIN_WORD_PREFIX_LENGTH && !SPOT_NAME_STOP_WORDS.has(w));
-  return [...new Set(normalized)];
-}
-
-/**
- * Normalizes a list of strings.
- * @param {Array<*>} values
- * @param {Set<string>=} allowedValues
- * @return {Array<string>}
- */
-function normalizeStringArray(values, allowedValues = undefined) {
-  if (!Array.isArray(values)) return [];
-  const result = [];
-  const seen = new Set();
-  for (const value of values) {
-    if (typeof value !== "string") continue;
-    const cleaned = value.trim().toLowerCase();
-    if (!cleaned) continue;
-    if (allowedValues && !allowedValues.has(cleaned)) continue;
-    if (seen.has(cleaned)) continue;
-    seen.add(cleaned);
-    result.push(cleaned);
-  }
-  return result;
-}
-
-/**
- * Keeps existing string arrays stable without dropping unknown values.
- * @param {Array<*>} values
- * @return {Array<string>}
- */
-function normalizeExistingStringArray(values) {
-  if (!Array.isArray(values)) return [];
-  const result = [];
-  const seen = new Set();
-  for (const value of values) {
-    if (typeof value !== "string") continue;
-    const cleaned = value.trim();
-    if (!cleaned) continue;
-    if (seen.has(cleaned)) continue;
-    seen.add(cleaned);
-    result.push(cleaned);
-  }
-  return result;
-}
-
-/**
- * Normalizes one default-attributes object.
- * @param {*} rawDefaults
- * @return {Object|null}
- */
-function normalizeSpotAttributeDefaults(rawDefaults) {
-  if (!rawDefaults || typeof rawDefaults !== "object" || Array.isArray(rawDefaults)) {
-    return null;
-  }
-
-  const normalized = {};
-
-  if (typeof rawDefaults.spotAccess === "string") {
-    const access = rawDefaults.spotAccess.trim().toLowerCase();
-    if (VALID_SPOT_ACCESS_VALUES.has(access)) {
-      normalized.spotAccess = access;
-    }
-  }
-
-  const normalizedSpotFeatures = normalizeStringArray(
-      rawDefaults.spotFeatures,
-      VALID_SPOT_FEATURE_VALUES,
-  );
-  if (normalizedSpotFeatures.length > 0) {
-    normalized.spotFeatures = normalizedSpotFeatures;
-  }
-
-  const normalizedGoodFor = normalizeStringArray(
-      rawDefaults.goodFor,
-      VALID_GOOD_FOR_VALUES,
-  );
-  if (normalizedGoodFor.length > 0) {
-    normalized.goodFor = normalizedGoodFor;
-  }
-
-  if (
-    rawDefaults.spotFacilities &&
-    typeof rawDefaults.spotFacilities === "object" &&
-    !Array.isArray(rawDefaults.spotFacilities)
-  ) {
-    const facilities = {};
-    for (const [key, value] of Object.entries(rawDefaults.spotFacilities)) {
-      const facilityKey = String(key).trim().toLowerCase();
-      const facilityValue = typeof value === "string" ?
-        value.trim().toLowerCase() :
-        "";
-      if (!VALID_SPOT_FACILITY_KEYS.has(facilityKey)) continue;
-      if (!VALID_SPOT_FACILITY_VALUES.has(facilityValue)) continue;
-      facilities[facilityKey] = facilityValue;
-    }
-    if (Object.keys(facilities).length > 0) {
-      normalized.spotFacilities = facilities;
-    }
-  }
-
-  return Object.keys(normalized).length > 0 ? normalized : null;
-}
-
-/**
- * Normalizes folder-specific default attributes map.
- * @param {*} rawFolderDefaults
- * @return {Object<string, Object>}
- */
-function normalizeFolderSpotAttributeDefaults(rawFolderDefaults) {
-  if (
-    !rawFolderDefaults ||
-    typeof rawFolderDefaults !== "object" ||
-    Array.isArray(rawFolderDefaults)
-  ) {
-    return {};
-  }
-
-  const normalized = {};
-  for (const [rawFolderName, rawDefaults] of Object.entries(rawFolderDefaults)) {
-    if (typeof rawFolderName !== "string") continue;
-    const folderName = rawFolderName.trim();
-    if (!folderName) continue;
-    const defaults = normalizeSpotAttributeDefaults(rawDefaults);
-    if (defaults) {
-      normalized[folderName] = defaults;
-    }
-  }
-  return normalized;
-}
-
-/**
- * Builds case-insensitive lookup for folder defaults.
- * @param {Object<string, Object>} folderDefaults
- * @return {Object<string, Object>}
- */
-function buildFolderDefaultsLookup(folderDefaults) {
-  const lookup = {};
-  for (const [folderName, defaults] of Object.entries(folderDefaults || {})) {
-    const key = folderName.trim().toLowerCase();
-    if (!key) continue;
-    lookup[key] = defaults;
-  }
-  return lookup;
-}
-
-/**
- * Merges two default-attribute objects into one effective set.
- * Arrays are unioned, facilities/access in overrideDefaults win.
- * @param {Object|null} baseDefaults
- * @param {Object|null} overrideDefaults
- * @return {Object|null}
- */
-function mergeSpotAttributeDefaults(baseDefaults, overrideDefaults) {
-  const hasBase = baseDefaults && typeof baseDefaults === "object";
-  const hasOverride = overrideDefaults && typeof overrideDefaults === "object";
-  if (!hasBase && !hasOverride) return null;
-
-  const merged = {};
-
-  const baseSpotFeatures = hasBase ?
-    normalizeStringArray(baseDefaults.spotFeatures, VALID_SPOT_FEATURE_VALUES) :
-    [];
-  const overrideSpotFeatures = hasOverride ?
-    normalizeStringArray(overrideDefaults.spotFeatures, VALID_SPOT_FEATURE_VALUES) :
-    [];
-  const mergedSpotFeatures = mergeUniqueStringArrays(
-      baseSpotFeatures,
-      overrideSpotFeatures,
-  );
-  if (mergedSpotFeatures.length > 0) {
-    merged.spotFeatures = mergedSpotFeatures;
-  }
-
-  const baseGoodFor = hasBase ?
-    normalizeStringArray(baseDefaults.goodFor, VALID_GOOD_FOR_VALUES) :
-    [];
-  const overrideGoodFor = hasOverride ?
-    normalizeStringArray(overrideDefaults.goodFor, VALID_GOOD_FOR_VALUES) :
-    [];
-  const mergedGoodFor = mergeUniqueStringArrays(baseGoodFor, overrideGoodFor);
-  if (mergedGoodFor.length > 0) {
-    merged.goodFor = mergedGoodFor;
-  }
-
-  const baseFacilities = (
-    hasBase &&
-    baseDefaults.spotFacilities &&
-    typeof baseDefaults.spotFacilities === "object" &&
-    !Array.isArray(baseDefaults.spotFacilities)
-  ) ? baseDefaults.spotFacilities : {};
-  const overrideFacilities = (
-    hasOverride &&
-    overrideDefaults.spotFacilities &&
-    typeof overrideDefaults.spotFacilities === "object" &&
-    !Array.isArray(overrideDefaults.spotFacilities)
-  ) ? overrideDefaults.spotFacilities : {};
-  const mergedFacilities = {};
-  for (const [key, value] of Object.entries(baseFacilities)) {
-    const facilityKey = String(key).trim().toLowerCase();
-    const facilityValue = typeof value === "string" ?
-      value.trim().toLowerCase() :
-      "";
-    if (!VALID_SPOT_FACILITY_KEYS.has(facilityKey)) continue;
-    if (!VALID_SPOT_FACILITY_VALUES.has(facilityValue)) continue;
-    mergedFacilities[facilityKey] = facilityValue;
-  }
-  for (const [key, value] of Object.entries(overrideFacilities)) {
-    const facilityKey = String(key).trim().toLowerCase();
-    const facilityValue = typeof value === "string" ?
-      value.trim().toLowerCase() :
-      "";
-    if (!VALID_SPOT_FACILITY_KEYS.has(facilityKey)) continue;
-    if (!VALID_SPOT_FACILITY_VALUES.has(facilityValue)) continue;
-    mergedFacilities[facilityKey] = facilityValue;
-  }
-  if (Object.keys(mergedFacilities).length > 0) {
-    merged.spotFacilities = mergedFacilities;
-  }
-
-  const baseAccess = hasBase && typeof baseDefaults.spotAccess === "string" ?
-    baseDefaults.spotAccess.trim().toLowerCase() :
-    null;
-  if (baseAccess && VALID_SPOT_ACCESS_VALUES.has(baseAccess)) {
-    merged.spotAccess = baseAccess;
-  }
-  const overrideAccess = hasOverride && typeof overrideDefaults.spotAccess === "string" ?
-    overrideDefaults.spotAccess.trim().toLowerCase() :
-    null;
-  if (overrideAccess && VALID_SPOT_ACCESS_VALUES.has(overrideAccess)) {
-    merged.spotAccess = overrideAccess;
-  }
-
-  return Object.keys(merged).length > 0 ? merged : null;
-}
-
-/**
- * Returns effective defaults for a spot based on source + folder scope.
- * @param {Object|null} sourceDefaults
- * @param {Object<string, Object>} folderDefaultsLookup
- * @param {string|null|undefined} folderName
- * @return {Object|null}
- */
-function getEffectiveSpotAttributeDefaults(
-    sourceDefaults,
-    folderDefaultsLookup,
-    folderName,
-) {
-  const folderKey = typeof folderName === "string" ?
-    folderName.trim().toLowerCase() :
-    "";
-  const folderDefaults = folderKey ? folderDefaultsLookup[folderKey] || null : null;
-  return mergeSpotAttributeDefaults(sourceDefaults, folderDefaults);
-}
-
-/**
- * Merges unique string arrays preserving original order.
- * @param {Array<string>} existingValues
- * @param {Array<string>} valuesToAdd
- * @return {Array<string>}
- */
-function mergeUniqueStringArrays(existingValues, valuesToAdd) {
-  const merged = normalizeExistingStringArray(existingValues);
-  for (const value of normalizeExistingStringArray(valuesToAdd)) {
-    if (!merged.includes(value)) {
-      merged.push(value);
-    }
-  }
-  return merged;
-}
-
-/**
- * Compares two string arrays for exact equality.
- * @param {Array<string>} a
- * @param {Array<string>} b
- * @return {boolean}
- */
-function areStringArraysEqual(a, b) {
-  if (!Array.isArray(a) || !Array.isArray(b)) return false;
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) return false;
-  }
-  return true;
-}
-
-/**
- * Applies defaults into spotData. Returns true if any field changed.
- * @param {Object} spotData
- * @param {Object|null} defaults
- * @return {boolean}
- */
-function applySpotAttributeDefaultsToSpotData(spotData, defaults) {
-  if (!spotData || !defaults) return false;
-  let changed = false;
-
-  if (
-    typeof defaults.spotAccess === "string" &&
-    VALID_SPOT_ACCESS_VALUES.has(defaults.spotAccess)
-  ) {
-    if (spotData.spotAccess !== defaults.spotAccess) {
-      spotData.spotAccess = defaults.spotAccess;
-      changed = true;
-    }
-  }
-
-  if (Array.isArray(defaults.spotFeatures) && defaults.spotFeatures.length > 0) {
-    const existingSpotFeatures = normalizeExistingStringArray(spotData.spotFeatures);
-    const mergedSpotFeatures = mergeUniqueStringArrays(
-        existingSpotFeatures,
-        defaults.spotFeatures,
-    );
-    if (!areStringArraysEqual(existingSpotFeatures, mergedSpotFeatures)) {
-      spotData.spotFeatures = mergedSpotFeatures;
-      changed = true;
-    }
-  }
-
-  if (Array.isArray(defaults.goodFor) && defaults.goodFor.length > 0) {
-    const existingGoodFor = normalizeExistingStringArray(spotData.goodFor);
-    const mergedGoodFor = mergeUniqueStringArrays(
-        existingGoodFor,
-        defaults.goodFor,
-    );
-    if (!areStringArraysEqual(existingGoodFor, mergedGoodFor)) {
-      spotData.goodFor = mergedGoodFor;
-      changed = true;
-    }
-  }
-
-  if (
-    defaults.spotFacilities &&
-    typeof defaults.spotFacilities === "object" &&
-    !Array.isArray(defaults.spotFacilities)
-  ) {
-    const existingFacilities = (
-      spotData.spotFacilities &&
-      typeof spotData.spotFacilities === "object" &&
-      !Array.isArray(spotData.spotFacilities)
-    ) ? {...spotData.spotFacilities} : {};
-    const mergedFacilities = {...existingFacilities};
-    let facilitiesChanged = false;
-    for (const [key, value] of Object.entries(defaults.spotFacilities)) {
-      if (mergedFacilities[key] !== value) {
-        mergedFacilities[key] = value;
-        facilitiesChanged = true;
-      }
-    }
-    if (facilitiesChanged) {
-      spotData.spotFacilities = mergedFacilities;
-      changed = true;
-    }
-  }
-
-  return changed;
-}
-
-/**
- * Builds a Firestore update payload for spot attributes.
- * @param {Object} spotData
- * @return {Object}
- */
-function buildSpotAttributeUpdateData(spotData) {
-  return cleanUndefinedValues({
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    spotAccess: spotData.spotAccess,
-    spotFeatures: spotData.spotFeatures,
-    goodFor: spotData.goodFor,
-    spotFacilities: spotData.spotFacilities,
-  });
-}
 
 /**
  * Queues a batched update and flushes when needed.
@@ -1489,11 +1014,6 @@ exports.onRatingDeleted = onDocumentDeleted(
     },
 );
 
-// Deterministic doc ID to avoid duplicates when backfilling
-function spotSearchTermDocId(spotId, term) {
-  return `${spotId}_${term}`;
-}
-
 // Trigger when a new spot is created - index words in spotSearchTerms
 exports.onSpotCreated = onDocumentCreated(
     {document: "spots/{spotId}", region: "europe-west1"},
@@ -1586,45 +1106,6 @@ function downloadFile(url) {
 }
 
 /**
- * Detects import format based on URL and file buffer
- * @param {Buffer} buffer - The downloaded file buffer
- * @param {string} url - The original URL
- * @return {"kmz"|"kml"|"geojson"} The detected format
- */
-function detectImportFormat(buffer, url) {
-  const lowerUrl = (url || "").toLowerCase();
-  // URL-based hints first
-  if (lowerUrl.endsWith(".kmz")) return "kmz";
-  if (lowerUrl.endsWith(".kml")) return "kml";
-  if (lowerUrl.endsWith(".json") || lowerUrl.includes("/geojson")) {
-    return "geojson";
-  }
-
-  // Content-based detection
-  if (buffer && buffer.length >= 4) {
-    // PK\x03\x04 -> ZIP (KMZ)
-    if (buffer[0] === 0x50 && buffer[1] === 0x4b && buffer[2] === 0x03 && buffer[3] === 0x04) {
-      return "kmz";
-    }
-    const text = buffer.slice(0, 256).toString("utf8").trimStart();
-    if (text.startsWith("<")) return "kml"; // assume XML KML
-    if (text.startsWith("{") || text.startsWith("[")) return "geojson";
-  }
-
-  // Default to GeoJSON since uMap often serves without extension
-  return "geojson";
-}
-
-/**
- * Generates a content-based hash for an image buffer
- * @param {Buffer} imageBuffer - The image buffer
- * @return {string} The SHA-256 hash of the image content
- */
-function generateImageHash(imageBuffer) {
-  return crypto.createHash("sha256").update(imageBuffer).digest("hex");
-}
-
-/**
  * Checks if an image with the given hash already exists in Firebase Storage
  * @param {string} imageHash - The content hash of the image
  * @return {Promise<string|null>} A promise that resolves to the existing
@@ -1663,24 +1144,6 @@ async function checkImageExists(imageHash) {
  */
 function getPublicUrl(fileName) {
   return `https://storage.googleapis.com/${bucket.name}/${fileName}`;
-}
-
-/**
- * Determines whether a given image URL belongs to an ephemeral Google host
- * whose links are unstable and should not be cached by original URL.
- * @param {string} imageUrl
- * @return {boolean}
- */
-function isEphemeralImageHost(imageUrl) {
-  try {
-    const host = new URL(imageUrl).hostname.toLowerCase();
-    return (
-      host === "mymaps.usercontent.google.com" ||
-      host === "lh3.googleusercontent.com"
-    );
-  } catch (_) {
-    return false;
-  }
 }
 
 /**
@@ -1906,171 +1369,6 @@ function parseGeoJsonFeatures(geojsonText) {
     console.error("Failed to parse GeoJSON:", e);
     return [];
   }
-}
-
-/**
- * Cleans HTML from description text
- * @param {string} description - The description text to clean
- * @return {string} The cleaned description text
- */
-function cleanDescription(description) {
-  if (!description) return "";
-
-  // Remove HTML tags but preserve line breaks
-  let cleaned = description
-      .replace(/<br\s*\/?>/gi, "\n") // Convert <br> tags to newlines
-      .replace(/<img[^>]*>/gi, "") // Remove <img> tags
-      .replace(/<[^>]*>/g, "") // Remove all other HTML tags
-      .replace(/&nbsp;/g, " ") // Convert &nbsp; to spaces
-      .replace(/&amp;/g, "&") // Convert &amp; to &
-      .replace(/&lt;/g, "<") // Convert &lt; to <
-      .replace(/&gt;/g, ">") // Convert &gt; to >
-      .replace(/&quot;/g, "\"") // Convert &quot; to "
-      .replace(/&apos;/g, "'") // Convert &apos; to '
-      .replace(/\n\s*\n\s*\n/g, "\n\n") // Replace 3+ newlines with 2
-      .replace(/\n\s*\n/g, "\n\n") // Replace 2+ newlines with 2
-      .trim(); // Remove leading/trailing whitespace
-
-  // Remove YouTube URLs since we extract video IDs separately
-  cleaned = cleaned
-      .replace(/https?:\/\/(www\.)?youtube\.com\/watch\?v=[^\s\n]+/g, "") // Remove watch URLs
-      .replace(/https?:\/\/(www\.)?youtube\.com\/embed\/[^\s\n]+/g, "") // Remove embed URLs
-      .replace(/https?:\/\/(www\.)?youtube\.com\/shorts\/[^\s\n]+/g, "") // Remove shorts URLs
-      .replace(/https?:\/\/youtu\.be\/[^\s\n]+/g, "") // Remove youtu.be URLs
-      .replace(/\]\]>/g, "") // Remove CDATA closing tags
-      .replace(/\n\s*\n\s*\n/g, "\n\n") // Clean up extra newlines again
-      .replace(/\n\s*\n/g, "\n\n") // Replace 2+ newlines with 2
-      .trim(); // Remove leading/trailing whitespace
-
-  return cleaned;
-}
-
-/**
- * Extract YouTube video IDs from an HTML/text description
- * Supports urls like:
- *  - youtu.be/<id>
- *  - youtube.com/watch?v=<id>
- *  - youtube.com/embed/<id>
- *  - youtube.com/shorts/<id>
- * @param {string} description
- * @return {string[]} unique list of video IDs
- */
-function extractYoutubeVideoIdsFromDescription(description) {
-  if (!description) return [];
-  const ids = new Set();
-
-  // Generic URL matcher to scan the description - more precise
-  const urlRegex = /(https?:\/\/[^\s"'<>)]+)/g;
-  let match;
-  while ((match = urlRegex.exec(description)) !== null) {
-    // eslint-disable-line no-cond-assign
-    const url = match[1];
-    try {
-      const uri = new URL(url);
-      const host = uri.hostname.toLowerCase();
-      const segments = uri.pathname.split("/").filter(Boolean);
-
-      if (host.includes("youtu.be")) {
-        const last = segments[segments.length - 1];
-        if (last) ids.add(last);
-        continue;
-      }
-
-      if (host.includes("youtube.com") || host.includes("www.youtube.com")) {
-        const v = uri.searchParams.get("v");
-        if (v) {
-          ids.add(v);
-          continue;
-        }
-        const embedIdx = segments.indexOf("embed");
-        if (embedIdx !== -1 && embedIdx + 1 < segments.length) {
-          ids.add(segments[embedIdx + 1]);
-          continue;
-        }
-        const shortsIdx = segments.indexOf("shorts");
-        if (shortsIdx !== -1 && shortsIdx + 1 < segments.length) {
-          ids.add(segments[shortsIdx + 1]);
-          continue;
-        }
-      }
-    } catch (_) {
-      // Ignore parse errors
-    }
-  }
-
-  return Array.from(ids);
-}
-
-/**
- * Extracts image URLs from placemark data
- * @param {Object} placemark - The placemark data
- * @return {string[]} The image URLs
- */
-function extractImageUrls(placemark) {
-  const imageUrls = [];
-
-  // Extract from description CDATA
-  const description = placemark.description || "";
-  const imgRegex = /<img[^>]+src="([^"]+)"/g;
-  let match;
-  while ((match = imgRegex.exec(description)) !== null) {
-    imageUrls.push(match[1]);
-  }
-
-  // Also add YouTube thumbnails for any YouTube links present in the description
-  const youtubeIds = extractYoutubeVideoIdsFromDescription(description);
-  for (const vid of youtubeIds) {
-    // Check if we already have a YouTube thumbnail for this video ID
-    const existingThumbnail = imageUrls.find(
-        (url) =>
-          url.includes(`img.youtube.com/vi/${vid}/`) &&
-        (url.includes("hqdefault.jpg") ||
-          url.includes("mqdefault.jpg") ||
-          url.includes("default.jpg")),
-    );
-
-    if (existingThumbnail) {
-      // Replace the existing lower quality thumbnail with maxresdefault
-      const index = imageUrls.indexOf(existingThumbnail);
-      imageUrls[index] = `https://img.youtube.com/vi/${vid}/maxresdefault.jpg`;
-    } else {
-      // Add maxresdefault thumbnail if no existing YouTube thumbnail found
-      imageUrls.push(`https://img.youtube.com/vi/${vid}/maxresdefault.jpg`);
-    }
-  }
-
-  // Extract from ExtendedData gx_media_links
-  const extendedData = placemark.extendedData || {};
-  if (extendedData.Data) {
-    const mediaData = extendedData.Data.find(
-        (data) => data.$ && data.$.name === "gx_media_links",
-    );
-    if (mediaData && mediaData.value && mediaData.value[0]) {
-      const mediaUrls = mediaData.value[0]
-          .split(" ")
-          .filter((url) => url.trim());
-      imageUrls.push(...mediaUrls);
-    }
-  }
-
-  // Remove duplicates and filter out invalid URLs
-  const filteredUrls = [...new Set(imageUrls)].filter((url) => {
-    if (!url || !url.startsWith("http")) {
-      return false;
-    }
-    try {
-      const host = new URL(url).hostname.toLowerCase();
-      const isValid =
-        host.includes("google.com") ||
-        host.includes("googleusercontent.com") ||
-        host.includes("img.youtube.com") ||
-        host.includes("ytimg.com");
-      return isValid;
-    } catch (_) {
-      return false;
-    }
-  });
-  return filteredUrls;
 }
 
 /**
@@ -4377,7 +3675,10 @@ exports.backfillSourceSpotAttributes = onCall(
                 await queueBatchUpdate(
                     batchState,
                     spotDoc.ref,
-                    buildSpotAttributeUpdateData(mutableSpotData),
+                    buildSpotAttributeUpdateData(
+                        mutableSpotData,
+                        admin.firestore.FieldValue.serverTimestamp(),
+                    ),
                 );
                 sourceResult.spotsUpdated += 1;
                 totalSpotsUpdated += 1;
@@ -4419,7 +3720,10 @@ exports.backfillSourceSpotAttributes = onCall(
                   await queueBatchUpdate(
                       batchState,
                       originalDoc.ref,
-                      buildSpotAttributeUpdateData(mutableOriginalData),
+                      buildSpotAttributeUpdateData(
+                          mutableOriginalData,
+                          admin.firestore.FieldValue.serverTimestamp(),
+                      ),
                   );
                   sourceResult.originalSpotsUpdated += 1;
                   totalOriginalSpotsUpdated += 1;
@@ -4903,22 +4207,6 @@ exports.geocodeCoordinates = onCall(
       }
     },
 );
-
-// Normalizes search query: lowercase, remove punctuation. Returns string for matching.
-function normalizeSearchQuery(str) {
-  if (!str || typeof str !== "string") return "";
-  return str
-      .toLowerCase()
-      .replace(/[\s\p{P}\p{S}]/gu, " ")
-      .replace(/[^\p{L}\p{N}\s]/gu, "")
-      .replace(/\s+/g, " ")
-      .trim();
-}
-
-// Extracts search tokens from query (same logic as buildSpotSearchWords).
-function getSearchQueryTokens(query) {
-  return buildSpotSearchWords(query);
-}
 
 /**
  * Shared search-by-title logic. Returns full spot objects for API/callable use.
@@ -5535,33 +4823,6 @@ exports.cleanupUnusedImages = onCall(
 );
 
 
-// Helper function to extract filename from URL
-function extractFilename(url) {
-  try {
-    const urlObj = new URL(url);
-    const pathname = urlObj.pathname;
-
-    // Handle Firebase Storage URLs with encoded paths
-    if (
-      url.includes("firebasestorage.googleapis.com") &&
-      pathname.includes("/o/")
-    ) {
-      // Format: /v0/b/bucket-name/o/spots%2Ffilename.jpg
-      const encodedPath = pathname.split("/o/")[1];
-      const decodedPath = decodeURIComponent(encodedPath);
-      return decodedPath.split("/").pop();
-    } else {
-      // Format: /bucket-name/spots/filename.jpg
-      return pathname.split("/").pop();
-    }
-  } catch (urlError) {
-    // Fallback to simple extraction
-    const urlParts = url.split("/");
-    const lastPart = urlParts[urlParts.length - 1];
-    return lastPart.split("?")[0]; // Remove query parameters
-  }
-}
-
 // Function to find missing images and provide upload URLs (admin only)
 exports.findMissingImages = onCall(
     {region: "europe-west1", memory: "2GiB", timeoutSeconds: 540},
@@ -6121,44 +5382,6 @@ exports.geocodeMissingSpotAddresses = onCall(
     },
 );
 
-/**
- * Tag mapping from URBN tags to spot features
- * @type {Object<string, string>}
- */
-const URBN_TAG_MAPPING = {
-  "WALL5+": "walls_high",
-  "WALL2_5": "walls_medium",
-  "WALL2-": "walls_low",
-  "PULL_BAR": "bars_high",
-  "MEDIUM_BAR": "bars_medium",
-  "LOW_BAR": "bars_low",
-  "TREE": "climbing_tree",
-  "ROCK5+": "rocks",
-  "ROCK2_5": "rocks",
-  "ROCK2-": "rocks",
-  "SANDPIT": "soft_landing_pit",
-  "FOAMPIT": "soft_landing_pit",
-  "TRAMPOLINE": "bouncy_equipment",
-  "SPRING_FLOOR": "bouncy_equipment",
-  "ROOFTOP_CIRCUIT": "roof_gap",
-};
-
-/**
- * Maps URBN tags to spot features
- * @param {Array<string>} tags - Array of URBN tag strings
- * @return {Array<string>} Array of spot feature strings
- */
-function mapTagsToFeatures(tags) {
-  const features = new Set();
-  for (const tag of tags || []) {
-    const feature = URBN_TAG_MAPPING[tag];
-    if (feature) {
-      features.add(feature);
-    }
-  }
-  return Array.from(features);
-}
-
 // Function to import URBN spots from JSON (admin only)
 exports.importUrbnSpots = onCall(
     {
@@ -6390,29 +5613,6 @@ exports.importUrbnSpots = onCall(
       }
     },
 );
-
-/**
- * Helper function to determine if a sync should run based on cron schedule
- * @param {string} cronExpression - Cron expression (e.g., "0 2 *\/3 * *")
- * @param {Date} lastRun - Last time this sync ran
- * @param {Date} now - Current time
- * @return {boolean} - Whether sync should run
- */
-function shouldRunSync(cronExpression, lastRun, now) {
-  try {
-    const interval = cronParser.parseExpression(cronExpression, {tz: "UTC"});
-
-    // Get the next scheduled time after lastRun
-    interval.reset(lastRun);
-    const nextScheduled = interval.next().toDate();
-
-    // If next scheduled time has passed, we should run
-    return nextScheduled <= now;
-  } catch (error) {
-    console.error(`Invalid cron expression: ${cronExpression}`, error);
-    return false;
-  }
-}
 
 /**
  * Scheduled function to check and run automated syncs for spot sources
@@ -7310,47 +6510,6 @@ exports.testCalculateUserActivityMetrics = onCall(
 );
 
 /**
- * Calculate distance between two coordinates using Haversine formula
- * @param {number} lat1 - Latitude of first point
- * @param {number} lon1 - Longitude of first point
- * @param {number} lat2 - Latitude of second point
- * @param {number} lon2 - Longitude of second point
- * @return {number} Distance in meters
- */
-function calculateDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371000; // Earth's radius in meters
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
-
-/**
- * Calculate bounding box for approximate 50m radius
- * @param {number} lat - Latitude
- * @param {number} lon - Longitude
- * @param {number} distanceMeters - Distance in meters (default 50)
- * @return {Object} Bounding box with minLat, maxLat, minLng, maxLng
- */
-function calculateBounds(lat, lon, distanceMeters = 50) {
-  // 1 degree latitude ≈ 111 km = 111,000 m
-  // 50 m ≈ 0.00045 degrees latitude
-  const latOffset = distanceMeters / 111000; // ~0.00045 degrees for 50m
-  // For longitude, account for latitude (longitude lines get closer near poles)
-  const lngOffset = latOffset / Math.abs(Math.cos(lat * Math.PI / 180.0));
-
-  return {
-    minLat: lat - latOffset,
-    maxLat: lat + latOffset,
-    minLng: lon - lngOffset,
-    maxLng: lon + lngOffset,
-  };
-}
-
 /**
  * Moderator function to find potential duplicate spots within ~50m of each other
  * Compares spots from one source against spots from other sources
@@ -7578,73 +6737,6 @@ exports.findDuplicateSpots = onCall(
 
 // ========== Spot Details API (external clients) ==========
 const API_CLIENTS_COLLECTION = "apiClients";
-
-/**
- * Converts a Firebase Storage spot image URL to its resized version.
- * storage-resize-images extension creates: spots/resized/baseName_1200x630.webp
- * @param {string} originalUrl - Original Firebase Storage URL
- * @return {string} Resized URL or original if not convertible
- */
-function getResizedImageUrlForApi(originalUrl) {
-  if (typeof originalUrl !== "string") return originalUrl;
-  try {
-    if (!originalUrl.includes("storage.googleapis.com") &&
-        !originalUrl.includes("firebasestorage.googleapis.com")) {
-      return originalUrl;
-    }
-    // Handle firebasestorage.googleapis.com/v0/b/bucket/o/spots%2Ffilename.jpg
-    if (originalUrl.includes("firebasestorage.googleapis.com") &&
-        originalUrl.includes("spots%2F") && !originalUrl.includes("spots%2Fresized%2F")) {
-      return originalUrl
-          .replace(/spots%2F([^?&#]+)\.(jpg|jpeg|png|webp)/i, "spots%2Fresized%2F$1_1200x630.webp");
-    }
-    // Handle storage.googleapis.com format: .../spots/filename.jpg
-    const match = originalUrl.match(/\/(spots)\/([^/]+)\.(jpg|jpeg|png|webp)(\?|#|$)/i);
-    if (match && match[1] === "spots" && match[2] !== "resized") {
-      const baseName = match[2];
-      return originalUrl
-          .replace(`/spots/${baseName}.${match[3]}`, `/spots/resized/${baseName}_1200x630.webp`);
-    }
-    return originalUrl;
-  } catch {
-    return originalUrl;
-  }
-}
-
-/**
- * Serialize a Firestore document for JSON API response.
- * Converts Firestore Timestamps to ISO 8601 strings.
- * @param {Object} data - Raw document data
- * @return {Object} JSON-serializable object
- */
-function serializeSpotForApi(data) {
-  const result = {};
-  for (const [key, value] of Object.entries(data)) {
-    if (value && typeof value.toDate === "function") {
-      result[key] = value.toDate().toISOString();
-    } else if (value !== undefined && value !== null) {
-      result[key] = value;
-    }
-  }
-  return result;
-}
-
-/**
- * Hash API key with SHA-256 for storage/lookup
- * @param {string} apiKey - Plain API key
- * @return {string} Hex-encoded SHA-256 hash
- */
-function hashApiKey(apiKey) {
-  return crypto.createHash("sha256").update(apiKey).digest("hex");
-}
-
-/**
- * Generate a new API key (ps_ prefix + 32 random hex chars)
- * @return {string}
- */
-function generateApiKey() {
-  return "ps_" + crypto.randomBytes(16).toString("hex");
-}
 
 /**
  * Spot API - Handles GET /api/v1/spots (search in bounds) and GET /api/v1/spots/:spotId (single spot).

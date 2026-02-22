@@ -23,6 +23,17 @@ module.exports = {
       },
       rules: {},
     },
+    {
+      files: ["test/**/*.test.js"],
+      env: {
+        jest: true,
+      },
+      rules: {
+        "max-len": "off",
+        "require-jsdoc": "off",
+        "valid-jsdoc": "off",
+      },
+    },
   ],
   globals: {},
 };
