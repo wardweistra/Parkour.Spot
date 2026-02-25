@@ -1925,16 +1925,31 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     try {
       final spotListService = Provider.of<SpotListService>(context, listen: false);
       final list = await spotListService.getSpotListById(listId);
-      
-      if (mounted && list != null) {
+
+      if (!mounted) return;
+
+      if (list == null) {
         setState(() {
-          _selectedList = list;
-          _selectedListName = list.name;
-          _highlightedSpotIds = list.spotIds.toSet();
-          // Rebuild markers to reflect highlighting
+          _selectedList = null;
+          _selectedListName = null;
+          _showListPreview = false;
+          _highlightedSpotIds.clear();
           _markers = _buildMarkers(_visibleSpots);
         });
+
+        if (_selectedListId == listId) {
+          _searchStateServiceRef?.setSelectedListId(null);
+        }
+        return;
       }
+
+      setState(() {
+        _selectedList = list;
+        _selectedListName = list.name;
+        _highlightedSpotIds = list.spotIds.toSet();
+        // Rebuild markers to reflect highlighting
+        _markers = _buildMarkers(_visibleSpots);
+      });
     } catch (e) {
       debugPrint('Error loading spot list: $e');
     }
@@ -1946,6 +1961,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     if (_selectedListId != listId || _selectedList == null) {
       await _loadSpotList(listId);
     }
+
+    if (!mounted || _selectedList == null) return;
     
     // Collapse bottom sheet if open
     if (_isBottomSheetOpen) {

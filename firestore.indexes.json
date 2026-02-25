@@ -179,6 +179,15 @@
       ]
     },
     {
+      "collectionGroup": "spotLists",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "createdBy", "order": "ASCENDING" },
+        { "fieldPath": "visibility", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "spots",
       "queryScope": "COLLECTION",
       "fields": [

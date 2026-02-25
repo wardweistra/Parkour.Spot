@@ -5817,6 +5817,7 @@ class _AddToListDialogState extends State<_AddToListDialog> {
   final Set<String> _selectedListIds = {};
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
+  SpotListVisibility _newListVisibility = SpotListVisibility.unlisted;
   bool _showCreateForm = false;
   bool _isCreating = false;
   bool _isAdding = false;
@@ -5845,6 +5846,7 @@ class _AddToListDialogState extends State<_AddToListDialog> {
       description: _descriptionController.text.trim().isEmpty
           ? null
           : _descriptionController.text.trim(),
+      visibility: _newListVisibility,
     );
 
     if (!mounted) return;
@@ -6047,6 +6049,39 @@ class _AddToListDialogState extends State<_AddToListDialog> {
                   enabled: !_isCreating && !_isAdding,
                 ),
                 const SizedBox(height: 16),
+                DropdownButtonFormField<SpotListVisibility>(
+                  value: _newListVisibility,
+                  decoration: const InputDecoration(
+                    labelText: 'Visibility',
+                  ),
+                  items: SpotListVisibility.values
+                      .map(
+                        (visibility) => DropdownMenuItem<SpotListVisibility>(
+                          value: visibility,
+                          child: Text(visibility.label),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (_isCreating || _isAdding)
+                      ? null
+                      : (value) {
+                          if (value == null) return;
+                          setState(() {
+                            _newListVisibility = value;
+                          });
+                        },
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    _newListVisibility.description,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 TextButton(
                   onPressed: (_isCreating || _isAdding)
                       ? null
@@ -6055,6 +6090,7 @@ class _AddToListDialogState extends State<_AddToListDialog> {
                             _showCreateForm = false;
                             _nameController.clear();
                             _descriptionController.clear();
+                            _newListVisibility = SpotListVisibility.unlisted;
                           });
                         },
                   child: const Text('Cancel'),

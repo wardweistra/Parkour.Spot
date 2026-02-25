@@ -94,16 +94,32 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
-    // SpotLists collection - all lists are publicly readable, users can only manage their own lists
+    // SpotLists collection - users manage their own lists, visibility controls read access
     match /spotLists/{listId} {
-      // All lists are publicly readable
-      allow read: if true;
+      function hasValidSpotListVisibility(data) {
+        return !('visibility' in data) ||
+          data.visibility in ['public', 'unlisted', 'private'];
+      }
+      function canReadSpotList(data) {
+        // Legacy lists without visibility default to unlisted behavior.
+        return !('visibility' in data) ||
+          data.visibility == 'public' ||
+          data.visibility == 'unlisted';
+      }
+
+      // Owners can always read; others can only read public/unlisted lists.
+      allow read: if (request.auth != null &&
+        resource.data.createdBy == request.auth.uid) ||
+        canReadSpotList(resource.data);
       // Users can create lists (service validates feature access)
       allow create: if request.auth != null &&
-        request.resource.data.createdBy == request.auth.uid;
+        request.resource.data.createdBy == request.auth.uid &&
+        hasValidSpotListVisibility(request.resource.data);
       // Users can update their own lists
       allow update: if request.auth != null &&
-        resource.data.createdBy == request.auth.uid;
+        resource.data.createdBy == request.auth.uid &&
+        request.resource.data.createdBy == resource.data.createdBy &&
+        hasValidSpotListVisibility(request.resource.data);
       // Users can delete their own lists
       allow delete: if request.auth != null &&
         resource.data.createdBy == request.auth.uid;

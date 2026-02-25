@@ -89,7 +89,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     if (list == null) {
       setState(() {
         _isLoading = false;
-        _error = 'List not found';
+        _error = 'List not found or not accessible';
       });
       return;
     }
@@ -297,49 +297,88 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
 
     final nameController = TextEditingController(text: _list!.name);
     final descriptionController = TextEditingController(text: _list!.description ?? '');
+    SpotListVisibility selectedVisibility = _list!.visibility;
 
     final result = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Edit List'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'List Name',
-              ),
-              autofocus: true,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: const Text('Edit List'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'List Name',
+                  ),
+                  autofocus: true,
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: descriptionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Description (optional)',
+                  ),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<SpotListVisibility>(
+                  value: selectedVisibility,
+                  decoration: const InputDecoration(
+                    labelText: 'Visibility',
+                  ),
+                  items: SpotListVisibility.values
+                      .map(
+                        (visibility) => DropdownMenuItem<SpotListVisibility>(
+                          value: visibility,
+                          child: Text(visibility.label),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    if (value == null) return;
+                    setDialogState(() {
+                      selectedVisibility = value;
+                    });
+                  },
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    selectedVisibility.description,
+                    style: Theme.of(dialogContext).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(dialogContext)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.7),
+                        ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Description (optional)',
-              ),
-              maxLines: 3,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                if (nameController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                    const SnackBar(content: Text('List name cannot be empty')),
+                  );
+                  return;
+                }
+                Navigator.pop(dialogContext, true);
+              },
+              child: const Text('Save'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              if (nameController.text.trim().isEmpty) {
-                ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  const SnackBar(content: Text('List name cannot be empty')),
-                );
-                return;
-              }
-              Navigator.pop(dialogContext, true);
-            },
-            child: const Text('Save'),
-          ),
-        ],
       ),
     );
 
@@ -352,6 +391,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
         description: descriptionController.text.trim().isEmpty
             ? null
             : descriptionController.text.trim(),
+        visibility: selectedVisibility,
       );
 
       if (success) {
@@ -373,6 +413,28 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     
     final featureAccessService = FeatureAccessService(authService);
     return featureAccessService.hasFeatureAccess('spotLists');
+  }
+
+  IconData _visibilityIcon(SpotListVisibility visibility) {
+    switch (visibility) {
+      case SpotListVisibility.public:
+        return Icons.public;
+      case SpotListVisibility.unlisted:
+        return Icons.link;
+      case SpotListVisibility.private:
+        return Icons.lock;
+    }
+  }
+
+  String _visibilitySummary(SpotListVisibility visibility) {
+    switch (visibility) {
+      case SpotListVisibility.public:
+        return 'Public list';
+      case SpotListVisibility.unlisted:
+        return 'Unlisted list';
+      case SpotListVisibility.private:
+        return 'Private list';
+    }
   }
 
   // Copy list URL to clipboard (same style as spot detail page)
@@ -739,6 +801,27 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
           children: [
             // Map showing all spots
             if (_spots.isNotEmpty) _buildMap(),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Row(
+                children: [
+                  Icon(
+                    _visibilityIcon(_list!.visibility),
+                    size: 18,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    _visibilitySummary(_list!.visibility),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ],
+              ),
+            ),
             // List info header
             if (_list!.description != null && _list!.description!.isNotEmpty)
               Container(
