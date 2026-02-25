@@ -5,7 +5,6 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
-import 'package:flutter/foundation.dart' show kIsWeb;
 
 import '../../models/spot.dart';
 import '../../services/spot_service.dart';
@@ -21,6 +20,7 @@ import '../../widgets/spot_form/attributes_section.dart';
 import '../../screens/spots/location_picker_screen.dart';
 import '../../utils/map_recentering_mixin.dart';
 import '../../utils/location_permission_utils.dart';
+import '../../utils/image_preparation.dart';
 
 class EditSpotScreen extends StatefulWidget {
   final Spot spot;
@@ -284,35 +284,34 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
       final List<XFile> images = await picker.pickMultiImage();
 
       if (images.isNotEmpty) {
-        if (kIsWeb) {
-          final List<Uint8List> bytesList = [];
-          for (final image in images) {
+        for (final image in images) {
+          try {
             final bytes = await image.readAsBytes();
-            bytesList.add(bytes);
-          }
-          if (mounted) {
-            setState(() {
-              _selectedImageBytes.addAll(bytesList);
-            });
-          }
-        } else {
-          setState(() {
-            for (final image in images) {
-              // For web, read the bytes directly
-              image.readAsBytes().then((bytes) {
-                setState(() {
-                  _selectedImageBytes.add(bytes);
-                });
-              });
+            final prepared = await prepareImageForUpload(bytes);
+            if (mounted) {
+              setState(() => _selectedImageBytes.add(prepared.bytes));
             }
-          });
+          } on ImagePreparationException catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+              );
+            }
+          }
         }
       }
     } catch (e) {
       debugPrint('Error picking images: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error picking images: $e')),
+          SnackBar(
+            content: Text(
+              e is ImagePreparationException
+                  ? e.message
+                  : 'Failed to pick images. Please try again.',
+            ),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -324,29 +323,26 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
       final XFile? image = await picker.pickImage(source: ImageSource.camera);
 
       if (image != null) {
-        if (kIsWeb) {
-          final bytes = await image.readAsBytes();
-          if (mounted) {
-            setState(() {
-              _selectedImageBytes.add(bytes);
-            });
-          }
-        } else {
-          setState(() {
-            // For web, read the bytes directly
-            image.readAsBytes().then((bytes) {
-              setState(() {
-                _selectedImageBytes.add(bytes);
-              });
-            });
-          });
+        final bytes = await image.readAsBytes();
+        final prepared = await prepareImageForUpload(bytes);
+        if (mounted) {
+          setState(() => _selectedImageBytes.add(prepared.bytes));
         }
+      }
+    } on ImagePreparationException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+        );
       }
     } catch (e) {
       debugPrint('Error taking photo: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error taking photo: $e')),
+          SnackBar(
+            content: const Text('Failed to take photo. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }

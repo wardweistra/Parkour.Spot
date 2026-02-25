@@ -4,54 +4,17 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image/image.dart' as img;
 import 'package:http/http.dart' as http;
+import '../utils/image_preparation.dart';
 
 class ProfilePictureService {
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  /// Validate image bytes and detect format
-  bool _isValidImageFormat(Uint8List bytes) {
-    if (bytes.length < 4) return false;
-    
-    // Check for JPEG
-    if (bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF) {
-      return true;
-    }
-    
-    // Check for PNG
-    if (bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47) {
-      return true;
-    }
-    
-    // Check for GIF
-    if (bytes.length >= 3 && bytes[0] == 0x47 && bytes[1] == 0x49 && bytes[2] == 0x46) {
-      return true;
-    }
-    
-    // Check for WebP
-    if (bytes.length >= 12 &&
-        bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x46 &&
-        bytes[8] == 0x57 && bytes[9] == 0x45 && bytes[10] == 0x42 && bytes[11] == 0x50) {
-      return true;
-    }
-    
-    // Check for BMP
-    if (bytes.length >= 2 && bytes[0] == 0x42 && bytes[1] == 0x4D) {
-      return true;
-    }
-    
-    return false;
-  }
-
   /// Crop image to square (center crop) and resize to max 800x800
-  /// Returns the processed image bytes
+  /// Expects bytes from [prepareImageForUpload] (JPEG, PNG, GIF, or WebP).
+  /// Returns the processed image bytes as JPEG.
   Future<Uint8List> _cropAndResizeImage(Uint8List imageBytes) async {
     try {
-      // Validate image format first
-      if (!_isValidImageFormat(imageBytes)) {
-        throw Exception('Unsupported image format. Please use JPEG, PNG, GIF, or WebP.');
-      }
-
       // Decode the image
       final originalImage = img.decodeImage(imageBytes);
       if (originalImage == null) {
@@ -132,17 +95,19 @@ class ProfilePictureService {
       }
       
       final imageBytes = await imageFile.readAsBytes();
-      
+
       // Validate we got bytes
       if (imageBytes.isEmpty) {
         throw Exception('Image file is empty');
       }
-      
+
       debugPrint('Read ${imageBytes.length} bytes from image file');
-      
-      // Step 2: Crop and resize (30% of progress)
+
+      // Step 2: Prepare (validate, convert HEIC) then crop and resize
+      onProgress?.call(0.2);
+      final prepared = await prepareImageForUpload(imageBytes);
       onProgress?.call(0.3);
-      final processedBytes = await _cropAndResizeImage(imageBytes);
+      final processedBytes = await _cropAndResizeImage(prepared.bytes);
 
       // Step 3: Upload to Firebase Storage (30-100% of progress)
       onProgress?.call(0.3);
@@ -194,12 +159,14 @@ class ProfilePictureService {
       if (imageBytes.isEmpty) {
         throw Exception('Image data is empty');
       }
-      
+
       debugPrint('Processing ${imageBytes.length} bytes of image data');
-      
-      // Step 1: Crop and resize (30% of progress)
+
+      // Step 1: Prepare (validate, convert HEIC) then crop and resize
+      onProgress?.call(0.2);
+      final prepared = await prepareImageForUpload(imageBytes);
       onProgress?.call(0.3);
-      final processedBytes = await _cropAndResizeImage(imageBytes);
+      final processedBytes = await _cropAndResizeImage(prepared.bytes);
 
       // Step 2: Upload to Firebase Storage (30-90% of progress)
       onProgress?.call(0.3);
@@ -277,8 +244,9 @@ class ProfilePictureService {
 
       debugPrint('Downloaded ${imageBytes.length} bytes');
 
-      // Process image (crop and resize)
-      final processedBytes = await _cropAndResizeImage(imageBytes);
+      // Prepare (validate, convert HEIC) then crop and resize
+      final prepared = await prepareImageForUpload(imageBytes);
+      final processedBytes = await _cropAndResizeImage(prepared.bytes);
 
       // Upload to Firebase Storage
       final fileName = 'users/${user.uid}/profile.jpg';

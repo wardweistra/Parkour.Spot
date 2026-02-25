@@ -25,6 +25,7 @@ import '../../services/spot_list_service.dart';
 import '../../services/feature_access_service.dart';
 import '../../models/spot_list.dart';
 import '../../utils/image_url_utils.dart';
+import '../../utils/image_preparation.dart';
 import '../../services/user_profile_service.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode, debugPrint;
 import 'package:url_launcher/url_launcher.dart';
@@ -5496,7 +5497,7 @@ class _SuggestPhotoDialog extends StatefulWidget {
 
 class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
   late final TextEditingController detailsController;
-  final List<XFile> _selectedImages = [];
+  final List<Uint8List> _selectedImageBytes = [];
   bool _isUploading = false;
   bool _isSubmitting = false;
   String? _submissionError;
@@ -5517,18 +5518,37 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
     try {
       final ImagePicker picker = ImagePicker();
       final List<XFile> pickedFiles = await picker.pickMultiImage();
-      
-      if (pickedFiles.isNotEmpty && mounted) {
-        setState(() {
-          _selectedImages.addAll(pickedFiles);
-        });
+
+      if (pickedFiles.isNotEmpty) {
+        for (final pickedFile in pickedFiles) {
+          try {
+            final bytes = await pickedFile.readAsBytes();
+            final prepared = await prepareImageForUpload(bytes);
+            if (mounted) {
+              setState(() => _selectedImageBytes.add(prepared.bytes));
+            }
+          } on ImagePreparationException catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(e.message),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
+        }
       }
     } catch (e) {
       debugPrint('Error picking images: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error picking images: $e'),
+            content: Text(
+              e is ImagePreparationException
+                  ? e.message
+                  : 'Failed to pick images. Please try again.',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -5538,12 +5558,12 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
 
   Future<void> _removeImage(int index) async {
     setState(() {
-      _selectedImages.removeAt(index);
+      _selectedImageBytes.removeAt(index);
     });
   }
 
   Future<void> _submitPhotos() async {
-    if (_selectedImages.isEmpty) {
+    if (_selectedImageBytes.isEmpty) {
       setState(() {
         _submissionError = 'Please select at least one photo';
       });
@@ -5567,28 +5587,13 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
       final spotService = Provider.of<SpotService>(context, listen: false);
       final reportService = Provider.of<SpotReportService>(context, listen: false);
 
-      // Convert XFile to Uint8List for web or File for mobile
-      List<Uint8List>? photoBytesList;
-      List<File>? photoFiles;
-
-      if (kIsWeb) {
-        photoBytesList = [];
-        for (final image in _selectedImages) {
-          final bytes = await image.readAsBytes();
-          photoBytesList.add(bytes);
-        }
-      } else {
-        photoFiles = _selectedImages.map((xfile) => File(xfile.path)).toList();
-      }
-
-      // Upload photos to /suggestions/ path
+      // Upload photos to /suggestions/ path (bytes already prepared at pick time)
       setState(() {
         _isUploading = true;
       });
 
       final photoUrls = await spotService.uploadSuggestedPhotos(
-        photoFiles: photoFiles,
-        photoBytesList: photoBytesList,
+        photoBytesList: _selectedImageBytes,
       );
 
       setState(() {
@@ -5685,11 +5690,11 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
                 ),
                 const SizedBox(height: 16),
                 // Display selected images
-                if (_selectedImages.isNotEmpty) ...[
+                if (_selectedImageBytes.isNotEmpty) ...[
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: List.generate(_selectedImages.length, (index) {
+                    children: List.generate(_selectedImageBytes.length, (index) {
                       return Stack(
                         children: [
                           Container(
@@ -5703,23 +5708,17 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(8),
-                              child: kIsWeb
-                                  ? FutureBuilder<Uint8List>(
-                                      future: _selectedImages[index].readAsBytes(),
-                                      builder: (context, snapshot) {
-                                        if (snapshot.hasData) {
-                                          return Image.memory(
-                                            snapshot.data!,
-                                            fit: BoxFit.cover,
-                                          );
-                                        }
-                                        return const Center(child: CircularProgressIndicator());
-                                      },
-                                    )
-                                  : Image.file(
-                                      File(_selectedImages[index].path),
-                                      fit: BoxFit.cover,
-                                    ),
+                              child: Image.memory(
+                                _selectedImageBytes[index],
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => Center(
+                                  child: Icon(
+                                    Icons.broken_image_outlined,
+                                    color: theme.colorScheme.error,
+                                    size: 32,
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                           Positioned(

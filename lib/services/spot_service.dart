@@ -6,6 +6,7 @@ import 'dart:io';
 import 'dart:math';
 import '../models/spot.dart';
 import '../models/rating.dart';
+import '../utils/image_preparation.dart';
 import 'audit_log_service.dart';
 
 class SpotService extends ChangeNotifier {
@@ -401,18 +402,18 @@ class SpotService extends ChangeNotifier {
   // Upload single image to Firebase Storage
   Future<String> _uploadImage(File imageFile) async {
     try {
-      final fileName = 'spots/${DateTime.now().millisecondsSinceEpoch}_${imageFile.path.split('/').last}';
+      final bytes = await imageFile.readAsBytes();
+      final prepared = await prepareImageForUpload(bytes);
+      final ext = _extensionForContentType(prepared.contentType);
+      final fileName = 'spots/${DateTime.now().millisecondsSinceEpoch}_web_image$ext';
       final ref = _storage.ref().child(fileName);
-      
-      // Detect MIME type from file extension
-      final contentType = _getMimeTypeFromExtension(imageFile.path);
-      
-      final uploadTask = ref.putFile(
-        imageFile,
-        SettableMetadata(contentType: contentType),
+
+      final uploadTask = ref.putData(
+        prepared.bytes,
+        SettableMetadata(contentType: prepared.contentType),
       );
       final snapshot = await uploadTask;
-      
+
       return await snapshot.ref.getDownloadURL();
     } catch (e) {
       debugPrint('Error uploading image: $e');
@@ -423,22 +424,36 @@ class SpotService extends ChangeNotifier {
   // Upload image bytes to Firebase Storage (for web)
   Future<String> _uploadImageBytes(Uint8List imageBytes) async {
     try {
-      final fileName = 'spots/${DateTime.now().millisecondsSinceEpoch}_web_image.jpg';
+      final prepared = await prepareImageForUpload(imageBytes);
+      final ext = _extensionForContentType(prepared.contentType);
+      final fileName = 'spots/${DateTime.now().millisecondsSinceEpoch}_web_image$ext';
       final ref = _storage.ref().child(fileName);
-      
-      // Detect MIME type from image bytes
-      final contentType = _detectImageMimeType(imageBytes);
-      
+
       final uploadTask = ref.putData(
-        imageBytes,
-        SettableMetadata(contentType: contentType),
+        prepared.bytes,
+        SettableMetadata(contentType: prepared.contentType),
       );
       final snapshot = await uploadTask;
-      
+
       return await snapshot.ref.getDownloadURL();
     } catch (e) {
       debugPrint('Error uploading image bytes: $e');
       rethrow;
+    }
+  }
+
+  String _extensionForContentType(String contentType) {
+    switch (contentType) {
+      case 'image/jpeg':
+        return '.jpg';
+      case 'image/png':
+        return '.png';
+      case 'image/gif':
+        return '.gif';
+      case 'image/webp':
+        return '.webp';
+      default:
+        return '.jpg';
     }
   }
 
@@ -462,59 +477,6 @@ class SpotService extends ChangeNotifier {
     return imageUrls;
   }
 
-  // Detect MIME type from image bytes by checking magic numbers
-  String _detectImageMimeType(Uint8List bytes) {
-    if (bytes.length < 4) return 'image/jpeg'; // Default fallback
-    
-    // Check for JPEG
-    if (bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF) {
-      return 'image/jpeg';
-    }
-    
-    // Check for PNG
-    if (bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47) {
-      return 'image/png';
-    }
-    
-    // Check for GIF
-    if (bytes[0] == 0x47 && bytes[1] == 0x49 && bytes[2] == 0x46) {
-      return 'image/gif';
-    }
-    
-    // Check for WebP
-    if (bytes.length >= 12 && 
-        bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x46 &&
-        bytes[8] == 0x57 && bytes[9] == 0x45 && bytes[10] == 0x42 && bytes[11] == 0x50) {
-      return 'image/webp';
-    }
-    
-    // Default to JPEG if we can't detect the type
-    return 'image/jpeg';
-  }
-
-  // Get MIME type from file extension
-  String _getMimeTypeFromExtension(String filePath) {
-    final extension = filePath.toLowerCase().split('.').last;
-    switch (extension) {
-      case 'jpg':
-      case 'jpeg':
-        return 'image/jpeg';
-      case 'png':
-        return 'image/png';
-      case 'gif':
-        return 'image/gif';
-      case 'webp':
-        return 'image/webp';
-      case 'bmp':
-        return 'image/bmp';
-      case 'tiff':
-      case 'tif':
-        return 'image/tiff';
-      default:
-        return 'image/jpeg'; // Default fallback
-    }
-  }
-
   // Upload photos to /suggestions/ path (temporary storage, does NOT trigger resize extension)
   Future<List<String>> uploadSuggestedPhotos({
     List<File>? photoFiles,
@@ -522,17 +484,20 @@ class SpotService extends ChangeNotifier {
   }) async {
     try {
       final List<String> photoUrls = [];
-      
+
       if (photoFiles != null && photoFiles.isNotEmpty) {
-        for (final photoFile in photoFiles) {
-          final fileName = 'suggestions/${DateTime.now().millisecondsSinceEpoch}_${photoFile.path.split('/').last}';
+        for (int i = 0; i < photoFiles.length; i++) {
+          final photoFile = photoFiles[i];
+          final bytes = await photoFile.readAsBytes();
+          final prepared = await prepareImageForUpload(bytes);
+          final ext = _extensionForContentType(prepared.contentType);
+          final fileName =
+              'suggestions/${DateTime.now().millisecondsSinceEpoch}_image_$i$ext';
           final ref = _storage.ref().child(fileName);
-          
-          final contentType = _getMimeTypeFromExtension(photoFile.path);
-          
-          final uploadTask = ref.putFile(
-            photoFile,
-            SettableMetadata(contentType: contentType),
+
+          final uploadTask = ref.putData(
+            prepared.bytes,
+            SettableMetadata(contentType: prepared.contentType),
           );
           final snapshot = await uploadTask;
           final url = await snapshot.ref.getDownloadURL();
@@ -541,21 +506,22 @@ class SpotService extends ChangeNotifier {
       } else if (photoBytesList != null && photoBytesList.isNotEmpty) {
         for (int i = 0; i < photoBytesList.length; i++) {
           final photoBytes = photoBytesList[i];
-          final fileName = 'suggestions/${DateTime.now().millisecondsSinceEpoch}_web_image_$i.jpg';
+          final prepared = await prepareImageForUpload(photoBytes);
+          final ext = _extensionForContentType(prepared.contentType);
+          final fileName =
+              'suggestions/${DateTime.now().millisecondsSinceEpoch}_web_image_$i$ext';
           final ref = _storage.ref().child(fileName);
-          
-          final contentType = _detectImageMimeType(photoBytes);
-          
+
           final uploadTask = ref.putData(
-            photoBytes,
-            SettableMetadata(contentType: contentType),
+            prepared.bytes,
+            SettableMetadata(contentType: prepared.contentType),
           );
           final snapshot = await uploadTask;
           final url = await snapshot.ref.getDownloadURL();
           photoUrls.add(url);
         }
       }
-      
+
       return photoUrls;
     } catch (e) {
       debugPrint('Error uploading suggested photos: $e');

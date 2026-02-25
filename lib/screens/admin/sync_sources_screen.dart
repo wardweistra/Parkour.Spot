@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../constants/spot_attributes.dart';
 import '../../services/auth_service.dart';
 import '../../services/sync_source_service.dart';
+import '../../utils/image_preparation.dart';
 import '../../widgets/spot_form/attributes_section.dart';
 
 class SyncSourcesScreen extends StatefulWidget {
@@ -2412,14 +2413,16 @@ class _MissingImagesScreenState extends State<MissingImagesScreen> {
     final syncService = context.read<SyncSourceService>();
     for (final entry in _selectedImages.entries) {
       if (entry.value == null) continue;
-      
+
       try {
-        final base64Image = base64Encode(entry.value!);
+        final prepared = await prepareImageForUpload(entry.value!);
+        final base64Image = base64Encode(prepared.bytes);
         final result = await syncService.uploadReplacementImage(
           filename: entry.key,
           imageData: base64Image,
+          contentType: prepared.contentType,
         );
-        
+
         if (result != null && result['success'] == true) {
           successCount++;
         } else {
@@ -2428,6 +2431,14 @@ class _MissingImagesScreenState extends State<MissingImagesScreen> {
       } catch (e) {
         failCount++;
         debugPrint('Failed to upload ${entry.key}: $e');
+        if (mounted && e is ImagePreparationException) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.message),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
 

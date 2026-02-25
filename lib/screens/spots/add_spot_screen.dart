@@ -20,6 +20,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'location_picker_screen.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/map_recentering_mixin.dart';
+import '../../utils/image_preparation.dart';
 import '../../config/app_config.dart';
 
 class AddSpotScreen extends StatefulWidget {
@@ -202,18 +203,35 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
       );
 
       if (pickedFiles.isNotEmpty) {
+        int added = 0;
         for (final pickedFile in pickedFiles) {
-          // For web, read the bytes directly
-          final bytes = await pickedFile.readAsBytes();
-          _selectedImageBytes.add(bytes);
+          try {
+            final bytes = await pickedFile.readAsBytes();
+            final prepared = await prepareImageForUpload(bytes);
+            _selectedImageBytes.add(prepared.bytes);
+            added++;
+          } on ImagePreparationException catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(e.message),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
         }
-        setState(() {}); // Force rebuild to show new images
+        if (added > 0) setState(() {});
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error picking images: $e'),
+            content: Text(
+              e is ImagePreparationException
+                  ? e.message
+                  : 'Failed to pick images. Please try again.',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -232,16 +250,25 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
       );
 
       if (pickedFile != null) {
-        // For web, read the bytes directly
         final bytes = await pickedFile.readAsBytes();
-        _selectedImageBytes.add(bytes);
-        setState(() {}); // Force rebuild to show new images
+        final prepared = await prepareImageForUpload(bytes);
+        _selectedImageBytes.add(prepared.bytes);
+        setState(() {});
+      }
+    } on ImagePreparationException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error taking photo: $e'),
+            content: const Text('Failed to take photo. Please try again.'),
             backgroundColor: Colors.red,
           ),
         );

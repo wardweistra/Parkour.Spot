@@ -192,6 +192,16 @@ class SpotImageSection extends StatelessWidget {
             width: 120,
             height: 120,
             fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(
+              width: 120,
+              height: 120,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              child: Icon(
+                Icons.broken_image_outlined,
+                color: Theme.of(context).colorScheme.error,
+                size: 48,
+              ),
+            ),
           ),
         ),
         Positioned(
@@ -318,6 +328,16 @@ class SpotImageSection extends StatelessWidget {
                         width: 120,
                         height: 120,
                         fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          width: 120,
+                          height: 120,
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          child: Icon(
+                            Icons.broken_image_outlined,
+                            color: Theme.of(context).colorScheme.error,
+                            size: 48,
+                          ),
+                        ),
                       )
                     : const SizedBox.shrink(),
           ),
