@@ -302,7 +302,7 @@ class _ReportCardState extends State<_ReportCard> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Photos approved and added to spot.'),
+          content: Text('Selected photos approved and added to spot.'),
           backgroundColor: Colors.green,
         ),
       );

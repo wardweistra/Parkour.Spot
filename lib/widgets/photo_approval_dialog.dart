@@ -28,11 +28,15 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
   bool _isLoadingOriginalSpot = false;
   bool _isSpotFromSource = false;
   final TextEditingController _notesController = TextEditingController();
+  Set<int> _selectedPhotoIndices = <int>{};
 
   @override
   void initState() {
     super.initState();
     _targetSpotId = widget.report.spotId;
+    _selectedPhotoIndices = Set<int>.from(
+      List<int>.generate(_suggestedPhotoUrls.length, (index) => index),
+    );
     _loadSpotAndCheckSource();
   }
 
@@ -121,10 +125,76 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
     return _currentSpot;
   }
 
+  List<String> get _suggestedPhotoUrls => widget.report.suggestedPhotoUrls ?? const <String>[];
+
+  bool get _hasSelectedPhotos => _selectedPhotoIndices.isNotEmpty;
+
+  void _togglePhotoSelection(int index) {
+    if (_isApproving) return;
+
+    setState(() {
+      if (_selectedPhotoIndices.contains(index)) {
+        _selectedPhotoIndices.remove(index);
+      } else {
+        _selectedPhotoIndices.add(index);
+      }
+    });
+  }
+
+  void _selectAllPhotos() {
+    if (_isApproving) return;
+    setState(() {
+      _selectedPhotoIndices = Set<int>.from(
+        List<int>.generate(_suggestedPhotoUrls.length, (index) => index),
+      );
+    });
+  }
+
+  void _clearSelectedPhotos() {
+    if (_isApproving) return;
+    setState(() {
+      _selectedPhotoIndices.clear();
+    });
+  }
+
+  void _showPhotoPreview(String photoUrl) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: Stack(
+          children: [
+            InteractiveViewer(
+              child: CachedNetworkImage(
+                imageUrl: photoUrl,
+                fit: BoxFit.contain,
+              ),
+            ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _approvePhotos() async {
-    if (widget.report.suggestedPhotoUrls == null || widget.report.suggestedPhotoUrls!.isEmpty) {
+    final suggestedPhotoUrls = _suggestedPhotoUrls;
+    if (suggestedPhotoUrls.isEmpty) {
       setState(() {
         _error = 'No photos to approve';
+      });
+      return;
+    }
+
+    if (!_hasSelectedPhotos) {
+      setState(() {
+        _error = 'Select at least one photo to approve';
       });
       return;
     }
@@ -167,8 +237,11 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
           authService.currentUser?.displayName ??
           authService.currentUser?.email;
 
-      // Store original URLs before moving
-      final originalPhotoUrls = List<String>.from(widget.report.suggestedPhotoUrls!);
+      final sortedSelectedIndices = _selectedPhotoIndices.toList()..sort();
+      final originalPhotoUrls = sortedSelectedIndices
+          .map((index) => suggestedPhotoUrls[index])
+          .toList(growable: false);
+      final approvedAllSuggestedPhotos = originalPhotoUrls.length == suggestedPhotoUrls.length;
 
       // Add photos to the target spot (returns new URLs from /spots/)
       final approvedPhotoUrls = await spotService.addPhotosToSpot(
@@ -186,8 +259,8 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
       if (!mounted) return;
 
       if (approvedPhotoUrls != null && approvedPhotoUrls.isNotEmpty) {
-        // Update report with approved photo URLs (replace suggestedPhotoUrls with new /spots/ URLs)
-        await reportService.updateReportWithApprovedPhotos(
+        // Update report by moving only selected photos from suggested -> accepted
+        final updatedReport = await reportService.updateReportWithApprovedPhotos(
           reportId: widget.report.id,
           originalPhotoUrls: originalPhotoUrls,
           approvedPhotoUrls: approvedPhotoUrls,
@@ -195,13 +268,23 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
           userName: userName,
         );
 
-        // Mark report as Done
-        await reportService.updateReportStatus(
-          reportId: widget.report.id,
-          status: 'Done',
-          userId: userId,
-          userName: userName,
-        );
+        if (!updatedReport) {
+          setState(() {
+            _error = 'Failed to update report after approving photos';
+            _isApproving = false;
+          });
+          return;
+        }
+
+        // Only mark as Done if all currently suggested photos were approved.
+        if (approvedAllSuggestedPhotos) {
+          await reportService.updateReportStatus(
+            reportId: widget.report.id,
+            status: 'Done',
+            userId: userId,
+            userName: userName,
+          );
+        }
 
         if (mounted) {
           Navigator.of(context).pop(true);
@@ -246,71 +329,120 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Photo previews
-                if (widget.report.suggestedPhotoUrls != null && widget.report.suggestedPhotoUrls!.isNotEmpty) ...[
+                if (_suggestedPhotoUrls.isNotEmpty) ...[
+                  Row(
+                    children: [
+                      Text(
+                        'Photos to Add',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '${_selectedPhotoIndices.length}/${_suggestedPhotoUrls.length} selected',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
                   Text(
-                    'Photos to Add',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
+                    'Tap a photo to include or exclude it from approval.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: widget.report.suggestedPhotoUrls!.map((photoUrl) {
+                    children: [
+                      TextButton.icon(
+                        onPressed: _isApproving ? null : _selectAllPhotos,
+                        icon: const Icon(Icons.select_all),
+                        label: const Text('Select all'),
+                      ),
+                      TextButton.icon(
+                        onPressed: _isApproving ? null : _clearSelectedPhotos,
+                        icon: const Icon(Icons.remove_done),
+                        label: const Text('Clear'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _suggestedPhotoUrls.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final photoUrl = entry.value;
+                      final isSelected = _selectedPhotoIndices.contains(index);
+
                       return GestureDetector(
-                        onTap: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) => Dialog(
-                              child: Stack(
-                                children: [
-                                  InteractiveViewer(
-                                    child: CachedNetworkImage(
-                                      imageUrl: photoUrl,
-                                      fit: BoxFit.contain,
-                                    ),
-                                  ),
-                                  Positioned(
-                                    top: 8,
-                                    right: 8,
-                                    child: IconButton(
-                                      icon: const Icon(Icons.close),
-                                      onPressed: () => Navigator.of(context).pop(),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
+                        onTap: () => _togglePhotoSelection(index),
                         child: Container(
                           width: 100,
                           height: 100,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: colorScheme.outline,
+                              color: isSelected ? colorScheme.primary : colorScheme.outline,
+                              width: isSelected ? 2 : 1,
                             ),
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
-                            child: CachedNetworkImage(
-                              imageUrl: photoUrl,
-                              fit: BoxFit.cover,
-                              placeholder: (context, url) => Container(
-                                color: colorScheme.surfaceContainerHighest,
-                                child: const Center(
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                            child: Stack(
+                              children: [
+                                CachedNetworkImage(
+                                  imageUrl: photoUrl,
+                                  fit: BoxFit.cover,
+                                  width: 100,
+                                  height: 100,
+                                  placeholder: (context, url) => Container(
+                                    color: colorScheme.surfaceContainerHighest,
+                                    child: const Center(
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    ),
+                                  ),
+                                  errorWidget: (context, url, error) => Container(
+                                    color: colorScheme.surfaceContainerHighest,
+                                    child: Icon(
+                                      Icons.image_not_supported,
+                                      color: colorScheme.onSurface.withValues(alpha: 0.5),
+                                    ),
+                                  ),
                                 ),
-                              ),
-                              errorWidget: (context, url, error) => Container(
-                                color: colorScheme.surfaceContainerHighest,
-                                child: Icon(
-                                  Icons.image_not_supported,
-                                  color: colorScheme.onSurface.withValues(alpha: 0.5),
+                                if (!isSelected)
+                                  Container(
+                                    color: colorScheme.surface.withValues(alpha: 0.45),
+                                  ),
+                                Positioned(
+                                  top: 4,
+                                  right: 4,
+                                  child: Icon(
+                                    isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
+                                    color: isSelected ? colorScheme.primary : colorScheme.onSurface,
+                                    size: 22,
+                                  ),
                                 ),
-                              ),
+                                Positioned(
+                                  bottom: 2,
+                                  right: 2,
+                                  child: IconButton(
+                                    onPressed: () => _showPhotoPreview(photoUrl),
+                                    icon: const Icon(Icons.zoom_out_map, size: 16),
+                                    tooltip: 'Preview full size',
+                                    style: IconButton.styleFrom(
+                                      backgroundColor: colorScheme.surface.withValues(alpha: 0.8),
+                                      padding: const EdgeInsets.all(4),
+                                      minimumSize: const Size(28, 28),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -514,14 +646,16 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: (_isApproving || !_canApprovePhotos) ? null : _approvePhotos,
+            onPressed: (_isApproving || !_canApprovePhotos || !_hasSelectedPhotos)
+                ? null
+                : _approvePhotos,
             child: _isApproving
                 ? const SizedBox(
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text('Approve'),
+                : Text('Approve Selected (${_selectedPhotoIndices.length})'),
           ),
         ],
       ),
