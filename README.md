@@ -61,6 +61,13 @@ This is the recommended approach for most developers. No Firebase production acc
 
 **🌱 Emulator Seed Data**: When you start emulators for the first time, seed data from `scripts/seed-data/` is automatically copied to `.firebase/emulator-data/`. This gives you a working dataset with test users, spots, and other sample data to develop with. Your changes are automatically saved when you stop the emulators.
 
+**🖥️ Emulator UI** (http://localhost:4000): The Firebase Emulator Suite provides a web UI for managing your local emulators. Use it to:
+- **Create users**: Go to Authentication → Users → Add user (email/password)
+- **Verify email**: Open a user → Edit → toggle "Email verified" on
+- **View Firestore data**: Browse collections and documents
+- **Inspect Storage**: See uploaded files
+- **Debug Functions**: View logs and trace invocations
+
 #### **Option 2: Using Firebase Production Instance**
 
 **Only for developers with access to the production Firebase project.**
