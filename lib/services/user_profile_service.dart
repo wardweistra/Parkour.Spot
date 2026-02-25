@@ -214,15 +214,12 @@ class UserProfileService extends ChangeNotifier {
     }
   }
 
-  /// Get user statistics (spots created, reports made, ratings given)
-  /// Returns a map with 'spotsCreated', 'spotReports', and 'ratings' counts
+  /// Get user statistics (spots created, ratings given)
+  /// Returns a map with 'spotsCreated' and 'ratings' counts
   Future<Map<String, int>?> getUserStats(String userId) async {
     try {
       final int spotsCreatedCount = await _countDocuments(
         _firestore.collection('spots').where('createdBy', isEqualTo: userId),
-      );
-      final int reportedCount = await _countDocuments(
-        _firestore.collection('spotReports').where('reporterUserId', isEqualTo: userId),
       );
       final int ratingsCount = await _countDocuments(
         _firestore.collection('ratings').where('userId', isEqualTo: userId),
@@ -230,7 +227,6 @@ class UserProfileService extends ChangeNotifier {
 
       return {
         'spotsCreated': spotsCreatedCount,
-        'spotReports': reportedCount,
         'ratings': ratingsCount,
       };
     } catch (e) {

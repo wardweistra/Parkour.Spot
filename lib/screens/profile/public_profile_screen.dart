@@ -1337,43 +1337,14 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 
         final stats = snapshot.data!;
         final spotsCount = stats['spotsCreated'] ?? 0;
-        final reportsCount = stats['spotReports'] ?? 0;
         final ratingsCount = stats['ratings'] ?? 0;
 
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final isWideScreen = constraints.maxWidth > 400;
-            
-            if (isWideScreen) {
-              return Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildStatItem(context, Icons.add_location, spotsCount, 'Spots'),
-                  _buildStatItem(context, Icons.flag, reportsCount, 'Reports'),
-                  _buildStatItem(context, Icons.star, ratingsCount, 'Ratings'),
-                ],
-              );
-            } else {
-              return Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildStatItem(context, Icons.add_location, spotsCount, 'Spots'),
-                      _buildStatItem(context, Icons.flag, reportsCount, 'Reports'),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildStatItem(context, Icons.star, ratingsCount, 'Ratings'),
-                    ],
-                  ),
-                ],
-              );
-            }
-          },
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildStatItem(context, Icons.add_location, spotsCount, 'Spots'),
+            _buildStatItem(context, Icons.star, ratingsCount, 'Ratings'),
+          ],
         );
       },
     );
