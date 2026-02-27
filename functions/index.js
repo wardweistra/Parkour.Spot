@@ -3912,6 +3912,278 @@ exports.syncUserCreatedAtFromAuth = onCall(
     },
 );
 
+/**
+ * Check if URL is a Google profile picture URL.
+ * Only googleusercontent.com; googleapis.com is excluded because Firebase
+ * Storage URLs contain it and would be falsely matched.
+ * @param {string} url - The URL to check
+ * @return {boolean} True if URL is a Google profile picture
+ */
+function isGoogleProfilePictureUrl(url) {
+  if (!url || typeof url !== "string") return false;
+  return url.includes("googleusercontent.com");
+}
+
+/**
+ * Optimize profile image: center crop to square, resize to max 800x800, JPEG 85%.
+ * Matches Flutter ProfilePictureService processing for consistency.
+ * @param {Buffer} imageBuffer - Original image bytes
+ * @return {Promise<Buffer>} Processed JPEG buffer
+ */
+async function optimizeProfileImage(imageBuffer) {
+  const metadata = await sharp(imageBuffer).metadata();
+  const {width, height} = metadata;
+  const cropSize = Math.min(width, height);
+  const left = Math.floor((width - cropSize) / 2);
+  const top = Math.floor((height - cropSize) / 2);
+  const size = Math.min(cropSize, 800);
+
+  return sharp(imageBuffer)
+      .extract({left, top, width: cropSize, height: cropSize})
+      .resize(size, size)
+      .jpeg({quality: 85})
+      .toBuffer();
+}
+
+/**
+ * Delay helper for rate limiting.
+ * @param {number} ms - Milliseconds to wait
+ * @return {Promise<void>}
+ */
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Delay between Google image downloads to avoid rate limits (ms) */
+const GOOGLE_AVATAR_DELAY_MS = 2500;
+
+// Admin function to copy Google profile pictures to Firebase Storage for users
+// who still have Google URLs. Includes rate limiting to avoid hitting Google limits.
+exports.copyGoogleAvatarsToStorage = onCall(
+    {region: "europe-west1"},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const {dryRun = false, limit = null} = request.data || {};
+
+        console.log(
+            `Starting copy of Google avatars to Storage${
+              dryRun ? " (DRY RUN)" : ""
+            }`,
+        );
+
+        let totalProcessed = 0;
+        let totalCopied = 0;
+        let totalUpdated = 0;
+        let totalSkipped = 0;
+        let totalErrors = 0;
+        const errors = [];
+        const changes = [];
+
+        const usersSnapshot = await db
+            .collection("users")
+            .orderBy("createdAt", "desc")
+            .limit(limit ?? 5000)
+            .get();
+
+        for (const doc of usersSnapshot.docs) {
+          totalProcessed++;
+          const uid = doc.id;
+          const data = doc.data();
+          const photoURL = data?.photoURL;
+          const email = data?.email || "N/A";
+          const displayName = data?.displayName;
+
+          try {
+            // Skip if no photoURL or empty
+            if (!photoURL || typeof photoURL !== "string" || !photoURL.trim()) {
+              totalSkipped++;
+              continue;
+            }
+
+            // Skip if not a Google profile picture URL
+            if (!isGoogleProfilePictureUrl(photoURL)) {
+              totalSkipped++;
+              continue;
+            }
+
+            // Check if user already has a file in Storage
+            const storagePath = `users/${uid}/profile.jpg`;
+            const file = bucket.file(storagePath);
+
+            if (!dryRun) {
+              const [exists] = await file.exists();
+              if (exists) {
+                const storageUrl =
+                  `https://storage.googleapis.com/${bucket.name}/${storagePath}`;
+                // Ensure file is publicly accessible (may not have been before)
+                await file.makePublic();
+                if (photoURL !== storageUrl) {
+                  await db.collection("users").doc(uid).update({
+                    photoURL: storageUrl,
+                  });
+                  console.log(
+                      `Updated ${uid}: profile now points at existing Storage file`,
+                  );
+                  totalUpdated++;
+                } else {
+                  console.log(`Skipping ${uid}: profile.jpg already in Storage`);
+                  totalSkipped++;
+                }
+                continue;
+              }
+            }
+
+            if (dryRun) {
+              changes.push({
+                uid,
+                email,
+                displayName: displayName || null,
+                photoURL: photoURL.substring(0, 80) + "...",
+              });
+              totalCopied++;
+              continue;
+            }
+
+            // Rate limit: wait before downloading from Google
+            await delay(GOOGLE_AVATAR_DELAY_MS);
+
+            // Download image from Google
+            const imageBuffer = await downloadFile(photoURL);
+            if (!imageBuffer || imageBuffer.length === 0) {
+              throw new Error("Downloaded image is empty");
+            }
+
+            // Process (crop, resize)
+            const processedBuffer = await optimizeProfileImage(imageBuffer);
+
+            // Upload to Storage (public GCS URL format - simpler, both formats work)
+            await file.save(processedBuffer, {
+              metadata: {
+                contentType: "image/jpeg",
+                cacheControl: "public, max-age=31536000",
+              },
+            });
+
+            await file.makePublic();
+            const storageUrl = `https://storage.googleapis.com/${bucket.name}/${storagePath}`;
+
+            // Update Firestore user document
+            await db.collection("users").doc(uid).update({
+              photoURL: storageUrl,
+            });
+
+            console.log(`Copied avatar for ${uid} (${email}) to Storage`);
+            totalCopied++;
+          } catch (error) {
+            console.error(`Error processing user ${uid}:`, error);
+            totalErrors++;
+            errors.push({
+              uid,
+              email,
+              displayName: displayName || null,
+              error: error.message,
+            });
+          }
+        }
+
+        const result = {
+          success: true,
+          dryRun: dryRun,
+          totalProcessed,
+          totalCopied,
+          totalUpdated,
+          totalSkipped,
+          totalErrors,
+        };
+        if (errors.length > 0) result.errors = errors;
+        if (dryRun && changes.length > 0) result.changes = changes;
+
+        console.log("Copy Google avatars completed:", result);
+        return result;
+      } catch (error) {
+        console.error("Error copying Google avatars:", error);
+        throw new Error(
+            `Failed to copy Google avatars: ${error.message}`,
+        );
+      }
+    },
+);
+
+/**
+ * Admin function to make existing user profile pictures in Storage publicly
+ * accessible. For each user, if users/{uid}/profile.jpg exists, calls makePublic().
+ * Useful when profile images were uploaded but not made public.
+ * @return {Promise<Object>} { success, totalProcessed, totalMadePublic, totalSkipped, totalErrors, errors? }
+ */
+exports.makeProfilePicturesPublic = onCall(
+    {region: "europe-west1"},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+
+        console.log("Starting make profile pictures public");
+
+        let totalProcessed = 0;
+        let totalMadePublic = 0;
+        let totalSkipped = 0;
+        let totalErrors = 0;
+        const errors = [];
+
+        const usersSnapshot = await db
+            .collection("users")
+            .orderBy("createdAt", "desc")
+            .limit(5000)
+            .get();
+
+        for (const doc of usersSnapshot.docs) {
+          totalProcessed++;
+          const uid = doc.id;
+
+          try {
+            const storagePath = `users/${uid}/profile.jpg`;
+            const file = bucket.file(storagePath);
+            const [exists] = await file.exists();
+
+            if (!exists) {
+              totalSkipped++;
+              continue;
+            }
+
+            await file.makePublic();
+            console.log(`Made public: ${uid}`);
+            totalMadePublic++;
+          } catch (error) {
+            console.error(`Error processing user ${uid}:`, error);
+            totalErrors++;
+            errors.push({
+              uid,
+              email: doc.data()?.email ?? "N/A",
+              error: error.message,
+            });
+          }
+        }
+
+        const result = {
+          success: true,
+          totalProcessed,
+          totalMadePublic,
+          totalSkipped,
+          totalErrors,
+        };
+        if (errors.length > 0) result.errors = errors;
+
+        console.log("Make profile pictures public completed:", result);
+        return result;
+      } catch (error) {
+        console.error("Error making profile pictures public:", error);
+        throw new Error(
+            `Failed to make profile pictures public: ${error.message}`,
+        );
+      }
+    },
+);
+
 // Admin function to update spot source names for existing spots
 exports.updateSpotSourceNames = onCall(
     {region: "europe-west1"},

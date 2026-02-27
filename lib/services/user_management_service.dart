@@ -44,6 +44,12 @@ class UserManagementService extends ChangeNotifier {
   bool _syncingCreatedAt = false;
   String? _syncCreatedAtError;
   Map<String, dynamic>? _lastSyncCreatedAtResult;
+  bool _copyingGoogleAvatars = false;
+  String? _copyGoogleAvatarsError;
+  Map<String, dynamic>? _lastCopyGoogleAvatarsResult;
+  bool _makingProfilePicturesPublic = false;
+  String? _makeProfilePicturesPublicError;
+  Map<String, dynamic>? _lastMakeProfilePicturesPublicResult;
 
   /// Unmodifiable list of all loaded users.
   List<app_user.User> get users => List<app_user.User>.unmodifiable(_users);
@@ -83,6 +89,26 @@ class UserManagementService extends ChangeNotifier {
 
   /// Returns the last createdAt sync result, if available.
   Map<String, dynamic>? get lastSyncCreatedAtResult => _lastSyncCreatedAtResult;
+
+  /// Whether the service is currently copying Google avatars to Storage.
+  bool get isCopyingGoogleAvatars => _copyingGoogleAvatars;
+
+  /// Returns the latest error from copy Google avatars, if present.
+  String? get copyGoogleAvatarsError => _copyGoogleAvatarsError;
+
+  /// Returns the last copy Google avatars result, if available.
+  Map<String, dynamic>? get lastCopyGoogleAvatarsResult =>
+      _lastCopyGoogleAvatarsResult;
+
+  /// Whether the service is currently making profile pictures public.
+  bool get isMakingProfilePicturesPublic => _makingProfilePicturesPublic;
+
+  /// Returns the latest error from make profile pictures public, if present.
+  String? get makeProfilePicturesPublicError => _makeProfilePicturesPublicError;
+
+  /// Returns the last make profile pictures public result, if available.
+  Map<String, dynamic>? get lastMakeProfilePicturesPublicResult =>
+      _lastMakeProfilePicturesPublicResult;
 
   /// Returns cached statistics for the given user if available.
   UserStats? getStats(String userId) => _statsCache[userId];
@@ -334,6 +360,100 @@ class UserManagementService extends ChangeNotifier {
       return null;
     } finally {
       _syncingCreatedAt = false;
+      notifyListeners();
+    }
+  }
+
+  /// Copies Google profile pictures to Firebase Storage for users who still
+  /// have Google photoURL. Includes rate limiting (~2.5s between each) to
+  /// avoid hitting Google's limits.
+  ///
+  /// [dryRun] if true, previews which users would be processed without changes.
+  /// [limit] optional limit on number of users to process.
+  Future<Map<String, dynamic>?> copyGoogleAvatarsToStorage({
+    bool dryRun = false,
+    int? limit,
+  }) async {
+    if (_copyingGoogleAvatars) {
+      return _lastCopyGoogleAvatarsResult;
+    }
+
+    _copyingGoogleAvatars = true;
+    _copyGoogleAvatarsError = null;
+    notifyListeners();
+
+    try {
+      final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
+      final callable = functions.httpsCallable(
+        'copyGoogleAvatarsToStorage',
+        options: HttpsCallableOptions(
+          timeout: const Duration(minutes: 15),
+        ),
+      );
+
+      final result = await callable.call({
+        'dryRun': dryRun,
+        if (limit != null) 'limit': limit,
+      });
+      final data = result.data as Map<String, dynamic>?;
+
+      _lastCopyGoogleAvatarsResult = data;
+
+      if (data?['success'] == true && !dryRun) {
+        await fetchUsers(forceRefresh: true);
+      }
+
+      return data;
+    } catch (e, stackTrace) {
+      _copyGoogleAvatarsError = 'Failed to copy Google avatars: $e';
+      debugPrint('UserManagementService.copyGoogleAvatarsToStorage error: $e');
+      debugPrint('$stackTrace');
+      return null;
+    } finally {
+      _copyingGoogleAvatars = false;
+      notifyListeners();
+    }
+  }
+
+  /// Makes existing user profile pictures in Storage publicly accessible.
+  /// For each user, if users/{uid}/profile.jpg exists, calls makePublic().
+  Future<Map<String, dynamic>?> makeProfilePicturesPublic() async {
+    if (_makingProfilePicturesPublic) {
+      return _lastMakeProfilePicturesPublicResult;
+    }
+
+    _makingProfilePicturesPublic = true;
+    _makeProfilePicturesPublicError = null;
+    notifyListeners();
+
+    try {
+      final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
+      final callable = functions.httpsCallable(
+        'makeProfilePicturesPublic',
+        options: HttpsCallableOptions(
+          timeout: const Duration(minutes: 5),
+        ),
+      );
+
+      final result = await callable.call();
+      final data = result.data as Map<String, dynamic>?;
+
+      _lastMakeProfilePicturesPublicResult = data;
+
+      if (data?['success'] == true) {
+        await fetchUsers(forceRefresh: true);
+      }
+
+      return data;
+    } catch (e, stackTrace) {
+      _makeProfilePicturesPublicError =
+          'Failed to make profile pictures public: $e';
+      debugPrint(
+          'UserManagementService.makeProfilePicturesPublic error: $e');
+      debugPrint('$stackTrace');
+      return null;
+    } finally {
+      _makingProfilePicturesPublic = false;
       notifyListeners();
     }
   }

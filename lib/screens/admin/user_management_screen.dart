@@ -69,8 +69,12 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         actions: [
           Consumer<UserManagementService>(
             builder: (context, service, _) {
+              final isBusy =
+                  service.isSyncingCreatedAt ||
+                  service.isCopyingGoogleAvatars ||
+                  service.isMakingProfilePicturesPublic;
               return PopupMenuButton<String>(
-                icon: service.isSyncingCreatedAt
+                icon: isBusy
                     ? const SizedBox(
                         width: 20,
                         height: 20,
@@ -82,6 +86,12 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     await _syncUserCreatedAt(context, service, dryRun: false);
                   } else if (value == 'sync_created_at_dry_run') {
                     await _syncUserCreatedAt(context, service, dryRun: true);
+                  } else if (value == 'copy_google_avatars_dry_run') {
+                    await _copyGoogleAvatars(context, service, dryRun: true);
+                  } else if (value == 'copy_google_avatars') {
+                    await _copyGoogleAvatars(context, service, dryRun: false);
+                  } else if (value == 'make_profile_pictures_public') {
+                    await _makeProfilePicturesPublic(context, service);
                   }
                 },
                 itemBuilder: (context) => [
@@ -102,6 +112,38 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                         Icon(Icons.sync, size: 20),
                         SizedBox(width: 8),
                         Text('Sync CreatedAt from Auth'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuDivider(),
+                  const PopupMenuItem(
+                    value: 'copy_google_avatars_dry_run',
+                    child: Row(
+                      children: [
+                        Icon(Icons.preview, size: 20),
+                        SizedBox(width: 8),
+                        Text('Preview Copy Google Avatars'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'copy_google_avatars',
+                    child: Row(
+                      children: [
+                        Icon(Icons.person, size: 20),
+                        SizedBox(width: 8),
+                        Text('Copy Google Avatars to Storage'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuDivider(),
+                  const PopupMenuItem(
+                    value: 'make_profile_pictures_public',
+                    child: Row(
+                      children: [
+                        Icon(Icons.public, size: 20),
+                        SizedBox(width: 8),
+                        Text('Make profile pictures public'),
                       ],
                     ),
                   ),
@@ -701,6 +743,270 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Sync failed: $errorMsg'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _copyGoogleAvatars(
+    BuildContext context,
+    UserManagementService service, {
+    required bool dryRun,
+  }) async {
+    if (!mounted) return;
+
+    if (!dryRun) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Copy Google Avatars to Storage'),
+          content: const Text(
+            'This will copy profile pictures from Google to Firebase Storage for '
+            'users who still have Google avatar URLs. Each copy is rate-limited '
+            '(~2.5s apart) to avoid hitting Google\'s limits. Continue?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Copy'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true) return;
+    }
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(dryRun
+            ? 'Previewing Google avatars to copy...'
+            : 'Copying Google avatars to Storage (this may take a while)...'),
+      ),
+    );
+
+    try {
+      final result = await service.copyGoogleAvatarsToStorage(dryRun: dryRun);
+      if (!mounted) return;
+
+      if (result != null && result['success'] == true) {
+        final totalProcessed = result['totalProcessed'] ?? 0;
+        final totalCopied = result['totalCopied'] ?? 0;
+        final totalUpdated = result['totalUpdated'] ?? 0;
+        final totalSkipped = result['totalSkipped'] ?? 0;
+        final totalErrors = result['totalErrors'] ?? 0;
+
+        if (dryRun && result['changes'] != null) {
+          final changes = result['changes'] as List<dynamic>;
+          if (!mounted) return;
+          await showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Preview: Users to Copy'),
+              content: ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 400),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Would copy $totalCopied of $totalProcessed users '
+                        '($totalSkipped skipped, $totalErrors errors)',
+                        style: Theme.of(ctx).textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 16),
+                      ...changes.take(20).map((c) {
+                        final change = c as Map<String, dynamic>;
+                        final email = change['email'] as String? ?? 'N/A';
+                        final displayName =
+                            change['displayName'] as String?;
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Text(
+                            displayName != null && displayName.isNotEmpty
+                                ? '$displayName ($email)'
+                                : email,
+                            style: Theme.of(ctx).textTheme.bodyMedium,
+                          ),
+                        );
+                      }),
+                      if (changes.length > 20)
+                        Text(
+                          '... and ${changes.length - 20} more',
+                          style: Theme.of(ctx).textTheme.bodySmall,
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Close'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              dryRun
+                  ? 'Preview: Would copy $totalCopied of $totalProcessed users '
+                      '($totalSkipped skipped, $totalErrors errors)'
+                  : 'Copy complete: Copied $totalCopied, updated $totalUpdated of $totalProcessed '
+                      '($totalSkipped skipped, $totalErrors errors)',
+            ),
+            backgroundColor: totalErrors > 0 ? Colors.orange : Colors.green,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+
+        if (totalErrors > 0 && result['errors'] != null) {
+          if (!mounted) return;
+          final errors = result['errors'] as List<dynamic>;
+          await showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Copy Errors'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: errors.length,
+                  itemBuilder: (context, index) {
+                    final error = errors[index] as Map<String, dynamic>;
+                    return ListTile(
+                      title: Text(error['email'] ?? error['uid'] ?? 'Unknown'),
+                      subtitle: Text(error['error'] ?? 'Unknown error'),
+                      dense: true,
+                    );
+                  },
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Close'),
+                ),
+              ],
+            ),
+          );
+        }
+      } else {
+        final errorMsg =
+            service.copyGoogleAvatarsError ?? 'Unknown error';
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Copy failed: $errorMsg'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _makeProfilePicturesPublic(
+    BuildContext context,
+    UserManagementService service,
+  ) async {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Making profile pictures public...'),
+      ),
+    );
+
+    try {
+      final result = await service.makeProfilePicturesPublic();
+      if (!mounted) return;
+
+      if (result != null && result['success'] == true) {
+        final totalProcessed = result['totalProcessed'] ?? 0;
+        final totalMadePublic = result['totalMadePublic'] ?? 0;
+        final totalSkipped = result['totalSkipped'] ?? 0;
+        final totalErrors = result['totalErrors'] ?? 0;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Done: Made $totalMadePublic public of $totalProcessed users '
+              '($totalSkipped skipped, $totalErrors errors)',
+            ),
+            backgroundColor: totalErrors > 0 ? Colors.orange : Colors.green,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+
+        if (totalErrors > 0 && result['errors'] != null) {
+          if (!mounted) return;
+          final errors = result['errors'] as List<dynamic>;
+          await showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Errors'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: errors.length,
+                  itemBuilder: (context, index) {
+                    final error = errors[index] as Map<String, dynamic>;
+                    return ListTile(
+                      title: Text(error['email'] ?? error['uid'] ?? 'Unknown'),
+                      subtitle: Text(error['error'] ?? 'Unknown error'),
+                      dense: true,
+                    );
+                  },
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Close'),
+                ),
+              ],
+            ),
+          );
+        }
+      } else {
+        final errorMsg =
+            service.makeProfilePicturesPublicError ?? 'Unknown error';
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed: $errorMsg'),
             backgroundColor: Colors.red,
           ),
         );

@@ -271,11 +271,13 @@ class ProfilePictureService {
     }
   }
 
-  /// Check if a URL is a Google profile picture URL
+  /// Check if a URL is a Google profile picture URL.
+  /// Only checks googleusercontent.com; googleapis.com is excluded because
+  /// Firebase Storage URLs (storage.googleapis.com, firebasestorage.googleapis.com)
+  /// also contain it and would be falsely matched.
   bool isGoogleProfilePictureUrl(String? url) {
     if (url == null || url.isEmpty) return false;
-    return url.contains('googleusercontent.com') || 
-           url.contains('googleapis.com');
+    return url.contains('googleusercontent.com');
   }
 
   /// Check if a URL is a Firebase Storage profile picture URL
