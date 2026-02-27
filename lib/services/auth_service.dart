@@ -479,12 +479,14 @@ class AuthService extends ChangeNotifier {
   /// Update user profile with optional display name and photo URL
   /// Returns true on success, false on failure
   /// If removePhoto is true, photoURL will be set to null (removing the profile picture)
+  /// If removeDisplayName is true, displayName will be set to null
   Future<bool> updateProfile({
     String? displayName,
     String? photoURL,
     String? instagramUrl,
     bool deleteOldPhoto = false,
     bool removePhoto = false,
+    bool removeDisplayName = false,
     bool removeInstagramUrl = false,
   }) async {
     if (_auth.currentUser == null || _userProfile == null) {
@@ -497,7 +499,9 @@ class AuthService extends ChangeNotifier {
       final oldPhotoURL = _userProfile!.photoURL;
       final updates = <String, dynamic>{};
 
-      if (displayName != null) {
+      if (removeDisplayName) {
+        updates['displayName'] = null;
+      } else if (displayName != null) {
         updates['displayName'] = displayName;
       }
 
@@ -537,9 +541,18 @@ class AuthService extends ChangeNotifier {
         await _firestore.collection('users').doc(userId).update(updates);
       }
 
+      // Sync Firebase Auth displayName so it stays consistent
+      if (removeDisplayName || displayName != null) {
+        await _auth.currentUser!.updateDisplayName(
+          removeDisplayName ? '' : displayName!,
+        );
+      }
+
       // Update local profile
       _userProfile = _userProfile!.copyWith(
-        displayName: displayName ?? _userProfile!.displayName,
+        displayName: removeDisplayName
+            ? null
+            : (displayName ?? _userProfile!.displayName),
         photoURL: removePhoto ? null : (photoURL ?? _userProfile!.photoURL),
         instagramUrl: removeInstagramUrl
             ? null

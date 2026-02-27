@@ -4185,6 +4185,88 @@ exports.makeProfilePicturesPublic = onCall(
 );
 
 /**
+ * Firestore trigger: when a user's displayName changes, propagate to spots
+ * (createdByName and contributors[].userName).
+ */
+exports.onUserDisplayNameUpdated = onDocumentUpdated(
+    {document: "users/{userId}", region: "europe-west1"},
+    async (event) => {
+      const before = event.data.before.data();
+      const after = event.data.after.data();
+      const newName = (typeof after?.displayName === "string" &&
+        after.displayName.trim().length > 0) ?
+        after.displayName.trim() :
+        null;
+      const oldName = (typeof before?.displayName === "string" &&
+        before.displayName.trim().length > 0) ?
+        before.displayName.trim() :
+        null;
+      if (newName === oldName) return;
+
+      const userId = event.params.userId;
+      const BATCH_SIZE = 400;
+      let batch = db.batch();
+      let batchCount = 0;
+
+      // 1. Update spots where createdBy == userId
+      const createdByQuery = db.collection("spots")
+          .where("createdBy", "==", userId);
+      const createdBySnapshot = await createdByQuery.get();
+      for (const spotDoc of createdBySnapshot.docs) {
+        batch.update(spotDoc.ref, {createdByName: newName});
+        batchCount++;
+        if (batchCount >= BATCH_SIZE) {
+          await batch.commit();
+          batch = db.batch();
+          batchCount = 0;
+        }
+      }
+
+      // 2. Paginate through all spots to find contributors
+      let lastDoc = null;
+      const pageSize = 500;
+      let hasMore = true;
+      while (hasMore) {
+        let spotsQuery = db.collection("spots").limit(pageSize);
+        if (lastDoc) spotsQuery = spotsQuery.startAfter(lastDoc);
+        const spotsSnapshot = await spotsQuery.get();
+        if (spotsSnapshot.empty) break;
+
+        for (const spotDoc of spotsSnapshot.docs) {
+          lastDoc = spotDoc;
+          const spotData = spotDoc.data();
+          const contributors = spotData.contributors;
+          if (!Array.isArray(contributors) || contributors.length === 0) {
+            continue;
+          }
+
+          const needsContributorUpdate = contributors.some(
+              (c) => c.userId === userId && (c.userName ?? null) !== newName);
+          if (!needsContributorUpdate) continue;
+
+          const updatedContributors = contributors.map((c) => {
+            if (c.userId !== userId) return c;
+            return {...c, userName: newName};
+          });
+          batch.update(spotDoc.ref, {contributors: updatedContributors});
+          batchCount++;
+          if (batchCount >= BATCH_SIZE) {
+            await batch.commit();
+            batch = db.batch();
+            batchCount = 0;
+          }
+        }
+        hasMore = spotsSnapshot.docs.length >= pageSize;
+      }
+
+      if (batchCount > 0) {
+        await batch.commit();
+      }
+      console.log(`Propagated display name for user ${userId} to spots`);
+    },
+);
+
+/**
  * Admin function to sync display names from users table into the spots table.
  * Updates createdByName and contributors[].userName for all spots where the
  * stored name does not match the user's current displayName.

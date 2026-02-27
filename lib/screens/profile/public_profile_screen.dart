@@ -1430,8 +1430,12 @@ class _ProfileSettingsSheetContent extends StatefulWidget {
 
 class _ProfileSettingsSheetContentState
     extends State<_ProfileSettingsSheetContent> {
+  late TextEditingController _displayNameController;
   late TextEditingController _usernameController;
   late TextEditingController _instagramUrlController;
+  bool _isEditingDisplayName = false;
+  bool _isUpdatingDisplayName = false;
+  String? _displayNameError;
   bool _isEditingUsername = false;
   bool _isCheckingUsername = false;
   String? _usernameError;
@@ -1439,9 +1443,13 @@ class _ProfileSettingsSheetContentState
   bool _isUpdatingInstagramUrl = false;
   String? _instagramUrlError;
 
+  static const int _displayNameMaxLength = 50;
+
   @override
   void initState() {
     super.initState();
+    _displayNameController = TextEditingController(
+        text: widget.user.displayName?.trim() ?? '');
     _usernameController = TextEditingController(text: widget.user.username ?? '');
     _instagramUrlController =
         TextEditingController(text: widget.user.instagramUrl?.trim() ?? '');
@@ -1449,6 +1457,7 @@ class _ProfileSettingsSheetContentState
 
   @override
   void dispose() {
+    _displayNameController.dispose();
     _usernameController.dispose();
     _instagramUrlController.dispose();
     super.dispose();
@@ -1489,6 +1498,8 @@ class _ProfileSettingsSheetContentState
                   _buildEmailSection(context),
                   const SizedBox(height: 16),
                 ],
+                _buildDisplayNameSection(context),
+                const SizedBox(height: 16),
                 _buildUsernameSection(context),
                 const SizedBox(height: 16),
                 _buildInstagramSection(context),
@@ -1526,6 +1537,147 @@ class _ProfileSettingsSheetContentState
             color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildDisplayNameSection(BuildContext context) {
+    final user = widget.user;
+    final currentDisplayName = user.displayName?.trim() ?? '';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Display Name',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (!_isEditingDisplayName) ...[
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  currentDisplayName.isNotEmpty
+                      ? currentDisplayName
+                      : 'No display name set',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _isEditingDisplayName = true;
+                    _displayNameController.text = currentDisplayName;
+                    _displayNameError = null;
+                  });
+                },
+                child: const Text('Edit'),
+              ),
+            ],
+          ),
+        ] else ...[
+          TextField(
+            controller: _displayNameController,
+            decoration: InputDecoration(
+              labelText: 'Display Name',
+              hintText: 'Enter your display name',
+              errorText: _displayNameError,
+              helperText: 'Shown on your profile and spots you create '
+                  '(max $_displayNameMaxLength characters)',
+            ),
+            enabled: !_isUpdatingDisplayName,
+            maxLength: _displayNameMaxLength,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: _isUpdatingDisplayName
+                    ? null
+                    : () {
+                        setState(() {
+                          _isEditingDisplayName = false;
+                          _displayNameController.text = currentDisplayName;
+                          _displayNameError = null;
+                        });
+                      },
+                child: const Text('Cancel'),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: _isUpdatingDisplayName
+                    ? null
+                    : () async {
+                        final rawInput =
+                            _displayNameController.text.trim();
+                        final newDisplayName =
+                            rawInput.isEmpty ? null : rawInput;
+
+                        if (rawInput.length > _displayNameMaxLength) {
+                          setState(() {
+                            _displayNameError =
+                                'Display name must be at most '
+                                '$_displayNameMaxLength characters';
+                          });
+                          return;
+                        }
+
+                        setState(() {
+                          _isUpdatingDisplayName = true;
+                          _displayNameError = null;
+                        });
+
+                        final authService =
+                            Provider.of<AuthService>(context, listen: false);
+                        final success = await authService.updateProfile(
+                          displayName: newDisplayName,
+                          removeDisplayName: newDisplayName == null,
+                        );
+
+                        if (!mounted) return;
+
+                        setState(() {
+                          _isUpdatingDisplayName = false;
+                        });
+
+                        if (success) {
+                          setState(() {
+                            _isEditingDisplayName = false;
+                            _displayNameError = null;
+                          });
+                          widget.onSaved();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                newDisplayName != null
+                                    ? 'Display name updated successfully'
+                                    : 'Display name removed',
+                              ),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        } else {
+                          setState(() {
+                            _displayNameError =
+                                'Failed to update display name';
+                          });
+                        }
+                      },
+                child: _isUpdatingDisplayName
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Save'),
+              ),
+            ],
+          ),
+        ],
       ],
     );
   }
