@@ -2286,6 +2286,29 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                               const SizedBox(height: 24),
                             ],
                           );
+                        } else if (authService.isAuthenticated) {
+                          // Authenticated but profile not loaded (load failed)
+                          return SizedBox(
+                            height: 80,
+                            child: Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    "Couldn't load your profile.",
+                                    style: Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Please refresh the page to rate.',
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
                         } else {
                           // Show login prompt for unauthenticated users
                           // Get current location for redirect, or construct spot URL

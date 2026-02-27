@@ -29,6 +29,11 @@ class AuthService extends ChangeNotifier {
     return true;
   }
   bool get isLoading => _isLoading;
+
+  /// True when authenticated and user profile has loaded from Firestore.
+  /// Use this to gate authenticated actions (add spot, rate, report) so we
+  /// have displayName, isAdmin, etc. available instead of falling back to email.
+  bool get isProfileReady => isAuthenticated && _userProfile != null;
   
   bool _isLoading = true; // Start as loading while auth state is being restored
   app_user.User? _userProfile;
@@ -84,11 +89,18 @@ class AuthService extends ChangeNotifier {
       if (user != null) {
         await user.getIdToken(true);
       }
-      final doc = await _firestore.collection('users').doc(uid).get();
+      // Use Source.server to avoid cache fallback race: when server is unreachable,
+      // Firestore falls back to cache; empty cache yields doc.exists=false and we'd
+      // incorrectly overwrite existing users with new createdAt/isAdmin=false.
+      final doc = await _firestore
+          .collection('users')
+          .doc(uid)
+          .get(const GetOptions(source: Source.server));
       if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
         _userProfile = app_user.User.fromMap({
           'id': uid,
-          ...doc.data() as Map<String, dynamic>,
+          ...data,
         });
       } else {
         // Create user profile if it doesn't exist

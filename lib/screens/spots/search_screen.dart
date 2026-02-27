@@ -3054,10 +3054,13 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                               _markers = _buildMarkers(_visibleSpots);
                                             });
                                             
-                                            // Check authentication before navigating
+                                            // Require profile loaded before add spot (prevents email-as-createdByName)
                                             if (!authService.isAuthenticated) {
-                                              // Navigate to login with redirect
                                               context.go('/login?redirectTo=${Uri.encodeComponent('/explore?tab=add')}');
+                                            } else if (!authService.isProfileReady) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(content: Text('Loading your profile…')),
+                                              );
                                             } else {
                                               // Navigate to add spot screen with the location
                                               Navigator.push(

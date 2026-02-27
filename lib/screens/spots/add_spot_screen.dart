@@ -379,7 +379,12 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
         throw Exception('User not authenticated');
       }
 
-      // Create spot
+      // Create spot - resolve createdByName (prefer profile displayName, then Auth displayName, then email)
+      final displayName = authService.userProfile?.displayName ??
+          authService.currentUser?.displayName;
+      final email = authService.currentUser?.email;
+      final uid = authService.currentUser?.uid;
+      final createdByName = displayName ?? email ?? uid ?? '';
       final spot = Spot(
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
@@ -389,7 +394,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
         city: _currentCity,
         countryCode: _currentCountryCode,
         createdBy: authService.currentUser?.uid,
-        createdByName: authService.userProfile?.displayName ?? authService.currentUser?.email ?? authService.currentUser?.uid,
+        createdByName: createdByName,
       averageRating: 0.0,
       ratingCount: 0,
       wilsonLowerBound: 0.0,

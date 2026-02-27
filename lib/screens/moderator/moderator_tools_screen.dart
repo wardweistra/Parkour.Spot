@@ -46,6 +46,25 @@ class ModeratorToolsScreen extends StatelessWidget {
       );
     }
 
+    if (authService.isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Moderator Tools')),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text(
+                'Loading your profile…',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final hasModeratorAccess = authService.isModerator || authService.isAdmin;
     if (!hasModeratorAccess) {
       return Scaffold(

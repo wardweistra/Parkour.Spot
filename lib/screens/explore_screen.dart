@@ -277,25 +277,60 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 
   List<Widget> _buildScreens() {
-    final authService = Provider.of<AuthService>(context, listen: false);
-    
+    final authService = context.watch<AuthService>();
+
     return [
       SearchScreen(
         key: _searchKey,
         initialLocationQuery: widget.initialLocationQuery,
         initialListId: widget.initialListId,
       ),
-      // Show login prompt for unauthenticated users trying to add spots
-      authService.isAuthenticated 
-          ? const AddSpotScreen() 
-          : _buildLoginPromptScreen(
-              'Add New Spot',
-              'Share your favorite parkour spots with the community',
-              Icons.add_location,
-            ),
+      // Require profile loaded before Add spot (prevents email-as-createdByName race)
+      authService.isProfileReady
+          ? const AddSpotScreen()
+          : authService.isAuthenticated
+              ? _buildProfileLoadingScreen()
+              : _buildLoginPromptScreen(
+                  'Add New Spot',
+                  'Share your favorite parkour spots with the community',
+                  Icons.add_location,
+                ),
       // Profile tab is always accessible
       const ProfileScreen(),
     ];
+  }
+
+  Widget _buildProfileLoadingScreen() {
+    return Scaffold(
+      appBar: AppBar(
+        title: const SizedBox.shrink(),
+        toolbarHeight: 0,
+        elevation: 0,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 32,
+              height: 32,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Loading your profile…',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildLoginPromptScreen(String title, String description, IconData icon) {
