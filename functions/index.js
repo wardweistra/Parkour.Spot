@@ -4184,6 +4184,194 @@ exports.makeProfilePicturesPublic = onCall(
     },
 );
 
+/**
+ * Admin function to sync display names from users table into the spots table.
+ * Updates createdByName and contributors[].userName for all spots where the
+ * stored name does not match the user's current displayName.
+ * @param {Object} request.data - { dryRun?: boolean }
+ * @return {Promise<Object>} { success, totalUsersProcessed, spotsUpdated, spotsSkipped, totalErrors, errors?, changes? }
+ */
+exports.syncSpotDisplayNames = onCall(
+    {region: "europe-west1"},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const {dryRun = false} = request.data || {};
+
+        console.log(
+            `Starting sync of spot display names${dryRun ? " (DRY RUN)" : ""}`,
+        );
+
+        // Build userId -> displayName map from users collection
+        const usersSnapshot = await db
+            .collection("users")
+            .limit(10000)
+            .get();
+
+        const userDisplayNames = new Map();
+        for (const doc of usersSnapshot.docs) {
+          const d = doc.data();
+          const dn = d.displayName;
+          const str =
+              (typeof dn === "string" && dn.trim().length > 0) ?
+                dn.trim() :
+                null;
+          userDisplayNames.set(doc.id, str);
+        }
+
+        const totalUsersProcessed = userDisplayNames.size;
+        let spotsUpdated = 0;
+        let spotsSkipped = 0;
+        const totalErrors = 0;
+        const errors = [];
+        const changes = dryRun ? [] : null;
+
+        const BATCH_SIZE = 400;
+        let batch = db.batch();
+        let batchCount = 0;
+
+        // Process all spots in batches
+        let lastDoc = null;
+        const pageSize = 500;
+        let hasMore = true;
+
+        while (hasMore) {
+          let spotsQuery = db.collection("spots").limit(pageSize);
+          if (lastDoc) spotsQuery = spotsQuery.startAfter(lastDoc);
+
+          const spotsSnapshot = await spotsQuery.get();
+          if (spotsSnapshot.empty) break;
+
+          for (const spotDoc of spotsSnapshot.docs) {
+            lastDoc = spotDoc;
+            const spotData = spotDoc.data();
+            const updates = {};
+            let hasChanges = false;
+
+            // 1. createdBy / createdByName
+            const createdBy = spotData.createdBy ?? null;
+            if (createdBy) {
+              const expectedName = userDisplayNames.get(createdBy);
+              const currentName = spotData.createdByName ?? null;
+              const needsUpdate =
+                expectedName !== undefined &&
+                ((expectedName !== null && currentName !== expectedName) ||
+                 (expectedName === null &&
+                  currentName != null &&
+                  currentName !== ""));
+
+              if (needsUpdate) {
+                hasChanges = true;
+                if (dryRun) {
+                  changes.push({
+                    spotId: spotDoc.id,
+                    spotName: spotData.name,
+                    field: "createdByName",
+                    userId: createdBy,
+                    from: currentName ?? "(empty)",
+                    to: expectedName ?? "(empty)",
+                  });
+                } else {
+                  updates.createdByName = expectedName;
+                }
+              }
+            }
+
+            // 2. contributors
+            const contributors = spotData.contributors;
+            if (Array.isArray(contributors) && contributors.length > 0) {
+              const updatedContributors = contributors.map((c) => {
+                const cUserId = c.userId;
+                if (!cUserId) return c;
+                const expectedName = userDisplayNames.get(cUserId);
+                if (expectedName === undefined) return c;
+
+                const currentName = c.userName ?? null;
+                const needsUpdate =
+                  (expectedName !== null && currentName !== expectedName) ||
+                  (expectedName === null &&
+                   currentName != null &&
+                   currentName !== "");
+
+                if (needsUpdate) {
+                  return {...c, userName: expectedName};
+                }
+                return c;
+              });
+
+              const contributorsModified = contributors.some(
+                  (c, i) => c.userName !== updatedContributors[i]?.userName);
+              if (contributorsModified) {
+                hasChanges = true;
+                if (dryRun) {
+                  const firstChanged = contributors.find((c) => {
+                    const exp = userDisplayNames.get(c.userId);
+                    if (exp === undefined) return false;
+                    const cur = c.userName ?? null;
+                    return (exp !== null && cur !== exp) ||
+                           (exp === null && cur != null && cur !== "");
+                  });
+                  changes.push({
+                    spotId: spotDoc.id,
+                    spotName: spotData.name,
+                    field: "contributors",
+                    userId: firstChanged?.userId ?? "?",
+                    from: firstChanged?.userName ?? "(empty)",
+                    to: userDisplayNames.get(firstChanged?.userId) ?? "(empty)",
+                  });
+                } else {
+                  updates.contributors = updatedContributors;
+                }
+              }
+            }
+
+            if (hasChanges) {
+              if (!dryRun && Object.keys(updates).length > 0) {
+                batch.update(spotDoc.ref, updates);
+                batchCount++;
+                if (batchCount >= BATCH_SIZE) {
+                  await batch.commit();
+                  spotsUpdated += batchCount;
+                  batch = db.batch();
+                  batchCount = 0;
+                }
+              } else if (dryRun) {
+                spotsUpdated++;
+              }
+            } else {
+              spotsSkipped++;
+            }
+          }
+
+          hasMore = spotsSnapshot.docs.length >= pageSize;
+        }
+
+        if (batchCount > 0 && !dryRun) {
+          await batch.commit();
+          spotsUpdated += batchCount;
+        }
+
+        const result = {
+          success: true,
+          totalUsersProcessed,
+          spotsUpdated,
+          spotsSkipped,
+          totalErrors,
+        };
+        if (errors.length > 0) result.errors = errors;
+        if (dryRun && changes && changes.length > 0) result.changes = changes;
+
+        console.log("Sync spot display names completed:", result);
+        return result;
+      } catch (error) {
+        console.error("Error syncing spot display names:", error);
+        throw new Error(
+            `Failed to sync spot display names: ${error.message}`,
+        );
+      }
+    },
+);
+
 // Admin function to update spot source names for existing spots
 exports.updateSpotSourceNames = onCall(
     {region: "europe-west1"},

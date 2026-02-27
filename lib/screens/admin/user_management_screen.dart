@@ -72,7 +72,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               final isBusy =
                   service.isSyncingCreatedAt ||
                   service.isCopyingGoogleAvatars ||
-                  service.isMakingProfilePicturesPublic;
+                  service.isMakingProfilePicturesPublic ||
+                  service.isSyncingSpotDisplayNames;
               return PopupMenuButton<String>(
                 icon: isBusy
                     ? const SizedBox(
@@ -92,6 +93,10 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     await _copyGoogleAvatars(context, service, dryRun: false);
                   } else if (value == 'make_profile_pictures_public') {
                     await _makeProfilePicturesPublic(context, service);
+                  } else if (value == 'sync_spot_display_names_dry_run') {
+                    await _syncSpotDisplayNames(context, service, dryRun: true);
+                  } else if (value == 'sync_spot_display_names') {
+                    await _syncSpotDisplayNames(context, service, dryRun: false);
                   }
                 },
                 itemBuilder: (context) => [
@@ -144,6 +149,27 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                         Icon(Icons.public, size: 20),
                         SizedBox(width: 8),
                         Text('Make profile pictures public'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuDivider(),
+                  const PopupMenuItem(
+                    value: 'sync_spot_display_names_dry_run',
+                    child: Row(
+                      children: [
+                        Icon(Icons.preview, size: 20),
+                        SizedBox(width: 8),
+                        Text('Preview Sync Spot Display Names'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'sync_spot_display_names',
+                    child: Row(
+                      children: [
+                        Icon(Icons.badge, size: 20),
+                        SizedBox(width: 8),
+                        Text('Sync Spot Display Names'),
                       ],
                     ),
                   ),
@@ -1007,6 +1033,178 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed: $errorMsg'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _syncSpotDisplayNames(
+    BuildContext context,
+    UserManagementService service, {
+    required bool dryRun,
+  }) async {
+    if (!mounted) return;
+
+    if (!dryRun) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Sync Spot Display Names'),
+          content: const Text(
+            'This will update createdByName and contributors in the spots table '
+            'to match each user\'s current display name from the users table. '
+            'Only spots where the stored name does not match will be updated.\n\n'
+            'Continue?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Sync'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+    }
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(dryRun
+            ? 'Previewing spot display name sync...'
+            : 'Syncing spot display names (this may take a while)...'),
+      ),
+    );
+
+    try {
+      final result = await service.syncSpotDisplayNames(dryRun: dryRun);
+      if (!mounted) return;
+
+      if (result != null && result['success'] == true) {
+        final totalUsersProcessed = result['totalUsersProcessed'] ?? 0;
+        final spotsUpdated = result['spotsUpdated'] ?? 0;
+        final spotsSkipped = result['spotsSkipped'] ?? 0;
+        final totalErrors = result['totalErrors'] ?? 0;
+
+        if (dryRun && result['changes'] != null) {
+          final changes = result['changes'] as List<dynamic>;
+          if (!mounted) return;
+          await showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Preview: Spot Display Name Changes'),
+              content: ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 500),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Would update $spotsUpdated spots across $totalUsersProcessed users '
+                        '($spotsSkipped spots already match)',
+                        style: Theme.of(ctx).textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 16),
+                      ...changes.take(30).map((c) {
+                        final change = c as Map<String, dynamic>;
+                        final spotName = change['spotName'] as String? ?? '?';
+                        final field = change['field'] as String? ?? '?';
+                        final from = change['from'] as String? ?? '(empty)';
+                        final to = change['to'] as String? ?? '(empty)';
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Text(
+                            '$spotName ($field): $from → $to',
+                            style: Theme.of(ctx).textTheme.bodyMedium,
+                          ),
+                        );
+                      }),
+                      if (changes.length > 30)
+                        Text(
+                          '... and ${changes.length - 30} more',
+                          style: Theme.of(ctx).textTheme.bodySmall,
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Close'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              dryRun
+                  ? 'Preview: Would update $spotsUpdated spots '
+                      '($spotsSkipped already match)'
+                  : 'Sync complete: Updated $spotsUpdated spots '
+                      '($spotsSkipped already matched)',
+            ),
+            backgroundColor: totalErrors > 0 ? Colors.orange : Colors.green,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+
+        if (totalErrors > 0 && result['errors'] != null) {
+          if (!mounted) return;
+          final errors = result['errors'] as List<dynamic>;
+          await showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Sync Errors'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: errors.length,
+                  itemBuilder: (context, index) {
+                    final error = errors[index] as Map<String, dynamic>;
+                    return ListTile(
+                      title: Text(error['email'] ?? error['uid'] ?? 'Unknown'),
+                      subtitle: Text(error['error'] ?? 'Unknown error'),
+                      dense: true,
+                    );
+                  },
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Close'),
+                ),
+              ],
+            ),
+          );
+        }
+      } else {
+        final errorMsg =
+            service.syncSpotDisplayNamesError ?? 'Unknown error';
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Sync failed: $errorMsg'),
             backgroundColor: Colors.red,
           ),
         );

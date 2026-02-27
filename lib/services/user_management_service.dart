@@ -50,6 +50,9 @@ class UserManagementService extends ChangeNotifier {
   bool _makingProfilePicturesPublic = false;
   String? _makeProfilePicturesPublicError;
   Map<String, dynamic>? _lastMakeProfilePicturesPublicResult;
+  bool _syncingSpotDisplayNames = false;
+  String? _syncSpotDisplayNamesError;
+  Map<String, dynamic>? _lastSyncSpotDisplayNamesResult;
 
   /// Unmodifiable list of all loaded users.
   List<app_user.User> get users => List<app_user.User>.unmodifiable(_users);
@@ -109,6 +112,16 @@ class UserManagementService extends ChangeNotifier {
   /// Returns the last make profile pictures public result, if available.
   Map<String, dynamic>? get lastMakeProfilePicturesPublicResult =>
       _lastMakeProfilePicturesPublicResult;
+
+  /// Whether the service is currently syncing spot display names.
+  bool get isSyncingSpotDisplayNames => _syncingSpotDisplayNames;
+
+  /// Returns the latest error from sync spot display names, if present.
+  String? get syncSpotDisplayNamesError => _syncSpotDisplayNamesError;
+
+  /// Returns the last sync spot display names result, if available.
+  Map<String, dynamic>? get lastSyncSpotDisplayNamesResult =>
+      _lastSyncSpotDisplayNamesResult;
 
   /// Returns cached statistics for the given user if available.
   UserStats? getStats(String userId) => _statsCache[userId];
@@ -454,6 +467,47 @@ class UserManagementService extends ChangeNotifier {
       return null;
     } finally {
       _makingProfilePicturesPublic = false;
+      notifyListeners();
+    }
+  }
+
+  /// Syncs display names from the users table into the spots table.
+  /// Updates createdByName and contributors[].userName where they don't match
+  /// the user's current displayName.
+  ///
+  /// [dryRun] if true, previews changes without updating.
+  Future<Map<String, dynamic>?> syncSpotDisplayNames({
+    bool dryRun = false,
+  }) async {
+    if (_syncingSpotDisplayNames) {
+      return _lastSyncSpotDisplayNamesResult;
+    }
+
+    _syncingSpotDisplayNames = true;
+    _syncSpotDisplayNamesError = null;
+    notifyListeners();
+
+    try {
+      final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
+      final callable = functions.httpsCallable(
+        'syncSpotDisplayNames',
+        options: HttpsCallableOptions(
+          timeout: const Duration(minutes: 9),
+        ),
+      );
+
+      final result = await callable.call({'dryRun': dryRun});
+      final data = result.data as Map<String, dynamic>?;
+
+      _lastSyncSpotDisplayNamesResult = data;
+      return data;
+    } catch (e, stackTrace) {
+      _syncSpotDisplayNamesError = 'Failed to sync spot display names: $e';
+      debugPrint('UserManagementService.syncSpotDisplayNames error: $e');
+      debugPrint('$stackTrace');
+      return null;
+    } finally {
+      _syncingSpotDisplayNames = false;
       notifyListeners();
     }
   }
