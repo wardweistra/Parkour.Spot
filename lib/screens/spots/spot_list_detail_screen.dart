@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/gestures.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -18,6 +19,7 @@ import '../../utils/marker_icon_utils.dart';
 import '../../utils/web_meta_utils.dart';
 import '../../utils/map_bounds_utils.dart';
 import '../../services/url_service.dart';
+import '../../services/user_profile_service.dart';
 import '../../widgets/page_scaffold.dart';
 import 'package:flutter/services.dart';
 
@@ -41,6 +43,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
   BitmapDescriptor? _spotSelectedHighlightedIcon; // Grey icon for selected spot
   Spot? _selectedSpot; // Currently selected/highlighted spot
   final ScrollController _scrollController = ScrollController();
+  String? _creatorName;
 
   @override
   void initState() {
@@ -101,6 +104,17 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     setState(() {
       _list = list;
     });
+
+    // Load creator display name
+    if (list.createdBy.isNotEmpty) {
+      final userProfileService = Provider.of<UserProfileService>(context, listen: false);
+      final user = await userProfileService.getUserProfile(list.createdBy);
+      if (mounted) {
+        setState(() {
+          _creatorName = user?.displayName ?? user?.username ?? 'Unknown';
+        });
+      }
+    }
 
     // Load spots
     if (list.spotIds.isNotEmpty) {
@@ -419,17 +433,6 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     return featureAccessService.hasFeatureAccess('spotLists');
   }
 
-  IconData _visibilityIcon(SpotListVisibility visibility) {
-    switch (visibility) {
-      case SpotListVisibility.public:
-        return Icons.public;
-      case SpotListVisibility.unlisted:
-        return Icons.link;
-      case SpotListVisibility.private:
-        return Icons.lock;
-    }
-  }
-
   String _visibilitySummary(SpotListVisibility visibility) {
     switch (visibility) {
       case SpotListVisibility.public:
@@ -439,6 +442,105 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       case SpotListVisibility.private:
         return 'Private list';
     }
+  }
+
+  String _formatRelativeDate(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final dateOnly = DateTime(date.year, date.month, date.day);
+    final difference = today.difference(dateOnly).inDays;
+
+    if (difference == 0) {
+      return 'today';
+    } else if (difference == 1) {
+      return 'yesterday';
+    } else if (difference < 7) {
+      return '$difference days ago';
+    } else if (difference < 30) {
+      final weeks = (difference / 7).floor();
+      return weeks == 1 ? '1 week ago' : '$weeks weeks ago';
+    } else if (difference < 365) {
+      final months = (difference / 30).floor();
+      return months == 1 ? '1 month ago' : '$months months ago';
+    } else {
+      final years = (difference / 365).floor();
+      return years == 1 ? '1 year ago' : '$years years ago';
+    }
+  }
+
+  Future<void> _navigateToUserProfile(String userId) async {
+    try {
+      final userProfileService = Provider.of<UserProfileService>(context, listen: false);
+      final user = await userProfileService.getUserProfile(userId);
+      final identifier = user?.username?.isNotEmpty == true
+          ? user!.username!
+          : userId;
+      if (mounted) {
+        context.push('/user/$identifier');
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackbarService.showError('Could not open profile');
+      }
+    }
+  }
+
+  Widget _buildProvenanceSentence() {
+    if (_list == null) return const SizedBox.shrink();
+
+    final list = _list!;
+    final theme = Theme.of(context);
+    final textStyle = theme.textTheme.bodyMedium;
+    final visibilityLabel = _visibilitySummary(list.visibility);
+    final createdDateText = _formatRelativeDate(list.createdAt);
+    final creatorName = _creatorName;
+    final hasCreator = list.createdBy.isNotEmpty;
+    final hasUpdated = list.updatedAt != list.createdAt;
+    final updatedDateText = hasUpdated ? _formatRelativeDate(list.updatedAt) : null;
+
+    final List<InlineSpan> children = [];
+
+    // "{Visibility} list created {X} ago"
+    String createdPart = '$visibilityLabel created $createdDateText';
+    if (hasCreator) {
+      createdPart += ' by ';
+    } else {
+      createdPart += '.';
+    }
+    children.add(TextSpan(text: createdPart, style: textStyle));
+
+    // Creator name (clickable if we have userId)
+    if (hasCreator) {
+      final name = creatorName ?? 'Unknown';
+      children.add(TextSpan(
+        text: name,
+        style: textStyle?.copyWith(color: theme.colorScheme.primary),
+        recognizer: TapGestureRecognizer()
+          ..onTap = () => _navigateToUserProfile(list.createdBy),
+      ));
+    }
+
+    // ", and last updated {X}."
+    if (hasCreator) {
+      if (hasUpdated && updatedDateText != null) {
+        children.add(TextSpan(
+          text: ', and last updated $updatedDateText.',
+          style: textStyle,
+        ));
+      } else {
+        children.add(TextSpan(text: '.', style: textStyle));
+      }
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: RichText(
+          text: TextSpan(style: textStyle, children: children),
+        ),
+      ),
+    );
   }
 
   // Copy list URL to clipboard (same style as spot detail page)
@@ -832,27 +934,6 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
           children: [
             // Map showing all spots
             if (_spots.isNotEmpty) _buildMap(),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: Row(
-                children: [
-                  Icon(
-                    _visibilityIcon(_list!.visibility),
-                    size: 18,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    _visibilitySummary(_list!.visibility),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w600,
-                        ),
-                  ),
-                ],
-              ),
-            ),
             // List info header
             if (_list!.description != null && _list!.description!.isNotEmpty)
               Container(
@@ -863,6 +944,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ),
+            _buildProvenanceSentence(),
             // Spots list
             _buildSpotsList(),
           ],
