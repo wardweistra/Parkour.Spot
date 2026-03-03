@@ -244,7 +244,7 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
       stream: FirebaseFirestore.instance
           .collection('duplicateDetectionResults')
           .orderBy('createdAt', descending: true)
-          .limit(10)
+          .limit(100)
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
