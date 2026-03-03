@@ -381,6 +381,139 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
   }
 });
 
+// ========== Social sharing: Dynamic User and Spot List Open Graph/Twitter meta ==========
+/**
+ * HTTP function that serves HTML with dynamic Open Graph/Twitter meta tags for
+ * /user/:id and /list/:id URLs. Boots the Flutter web app for normal users;
+ * crawlers read the meta tags for share previews.
+ */
+exports.userAndListPage = onRequest({region: "europe-west1"}, async (req, res) => {
+  try {
+    const originalUrl = req.originalUrl || req.url || "/";
+    const host = req.headers.host || "parkour.spot";
+    const canonicalHost = host.includes("parkour.spot") ? host : "parkour.spot";
+    const fullUrl = `https://${canonicalHost}${originalUrl}`;
+
+    const pathname = (() => {
+      try {
+        const u = new URL(fullUrl);
+        return u.pathname;
+      } catch (_) {
+        return req.path || "/";
+      }
+    })();
+
+    const pathSegments = pathname.split("/").filter((s) => s.length > 0);
+
+    const siteName = "Parkour·Spot";
+    const defaultTitle = siteName;
+    const defaultDescription = "Discover and share parkour spots around the world";
+    const defaultImage = `https://${canonicalHost}/ParkourSpot-Featured.png`;
+
+    let title = defaultTitle;
+    let description = defaultDescription;
+    let imageUrl = defaultImage;
+    const breadcrumbs = [{name: "Home", url: "/"}];
+
+    // /user/:userIdOrUsername
+    if (pathSegments[0] === "user" && pathSegments.length >= 2) {
+      const userIdOrUsername = pathSegments[1];
+      let userDoc = null;
+
+      if (userIdOrUsername.length === 28) {
+        const snap = await db.collection("users").doc(userIdOrUsername).get();
+        if (snap.exists) userDoc = {id: snap.id, ...snap.data()};
+      }
+      if (!userDoc) {
+        const q = await db.collection("users")
+            .where("username", "==", userIdOrUsername.toLowerCase())
+            .limit(1)
+            .get();
+        if (!q.empty) {
+          const d = q.docs[0];
+          userDoc = {id: d.id, ...d.data()};
+        }
+      }
+
+      if (userDoc && (userDoc.isPublicProfile !== false)) {
+        const displayName = userDoc.displayName || userDoc.username || "User";
+        title = `${displayName} - ${siteName}`;
+        description = `View ${displayName}'s parkour spots and lists on ${siteName}`;
+        if (userDoc.photoURL && typeof userDoc.photoURL === "string" &&
+            userDoc.photoURL.trim().length > 0) {
+          imageUrl = userDoc.photoURL.trim();
+        }
+        breadcrumbs.push({name: displayName, url: `/user/${userIdOrUsername}`});
+      }
+    }
+
+    // /list/:listId
+    if (pathSegments[0] === "list" && pathSegments.length >= 2) {
+      const listId = pathSegments[1];
+      const listSnap = await db.collection("spotLists").doc(listId).get();
+
+      if (listSnap.exists) {
+        const list = {id: listSnap.id, ...listSnap.data()};
+        const visibility = list.visibility || "unlisted";
+
+        if (visibility !== "private") {
+          const listName = list.name || "Spot list";
+          const spotIds = Array.isArray(list.spotIds) ? list.spotIds : [];
+          const spotCount = spotIds.length;
+
+          title = `${listName} - ${siteName}`;
+          description = list.description && list.description.trim().length > 0 ?
+            list.description.trim() :
+            `A curated list of ${spotCount} parkour spot${spotCount === 1 ? "" : "s"} on ${siteName}`;
+
+          // Use first spot's image if available
+          if (spotIds.length > 0) {
+            const firstSpotSnap = await db.collection("spots").doc(spotIds[0]).get();
+            if (firstSpotSnap.exists) {
+              const spotData = firstSpotSnap.data();
+              const urls = spotData?.imageUrls;
+              if (Array.isArray(urls) && urls.length > 0) {
+                imageUrl = urls[0];
+                if (imageUrl.includes("firebasestorage.googleapis.com") &&
+                    imageUrl.includes("spots%2F")) {
+                  imageUrl = imageUrl.replace("spots%2F", "spots%2Fresized%2F");
+                  imageUrl = imageUrl.replace(/\.(jpg|jpeg|png|webp)(\?|$)/, "_1200x630.webp$2");
+                }
+              }
+            }
+          }
+
+          breadcrumbs.push({name: listName, url: `/list/${listId}`});
+        }
+      }
+    }
+
+    res.set("Cache-Control", "public, max-age=300, s-maxage=600");
+    res.set("Content-Type", "text/html; charset=utf-8");
+
+    const html = generateHtmlPage({
+      title,
+      description,
+      image: imageUrl,
+      url: fullUrl,
+      siteName,
+      isDynamic: true,
+      serviceWorkerVersion: null,
+      canonicalHost,
+      breadcrumbs,
+      pageType: null,
+      pageName: null,
+      pageDescription: null,
+      pageAddress: null,
+    });
+
+    res.status(200).send(html);
+  } catch (err) {
+    console.error("userAndListPage error", err);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
 /**
  * Queues a batched update and flushes when needed.
  * @param {Object} batchState

@@ -15,6 +15,7 @@ import '../../services/mobile_detection_service.dart';
 import '../../widgets/spot_card.dart';
 import '../../services/snackbar_service.dart';
 import '../../utils/marker_icon_utils.dart';
+import '../../utils/web_meta_utils.dart';
 import '../../utils/map_bounds_utils.dart';
 import '../../services/url_service.dart';
 import '../../widgets/page_scaffold.dart';
@@ -50,6 +51,9 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
 
   @override
   void dispose() {
+    if (kIsWeb) {
+      WebMetaUtils.resetPageMeta();
+    }
     _scrollController.dispose();
     super.dispose();
   }
@@ -750,6 +754,11 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     }
 
     if (_error != null) {
+      if (kIsWeb) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) WebMetaUtils.resetPageMeta();
+        });
+      }
       return PageScaffold(
         title: _list?.name ?? 'Spot List',
         actions: _buildAppBarActions(),
@@ -781,6 +790,11 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     }
 
     if (_list == null) {
+      if (kIsWeb) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) WebMetaUtils.resetPageMeta();
+        });
+      }
       return PageScaffold(
         title: 'Spot List',
         actions: _buildAppBarActions(),
@@ -788,6 +802,23 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
         scrollable: false,
         body: const Center(child: Text('List not found')),
       );
+    }
+
+    if (kIsWeb) {
+      final listName = _list!.name;
+      final spotCount = _list!.spotIds.length;
+      final description = _list!.description != null &&
+              _list!.description!.trim().isNotEmpty
+          ? _list!.description!.trim()
+          : 'A curated list of $spotCount parkour spot${spotCount == 1 ? '' : 's'} on Parkour·Spot';
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          WebMetaUtils.updatePageMeta(
+            '$listName - Parkour·Spot',
+            description,
+          );
+        }
+      });
     }
 
     return PageScaffold(

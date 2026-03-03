@@ -46,6 +46,14 @@
         "function": "serveSitemap"
       },
       {
+        "source": "/user/**",
+        "function": "userAndListPage"
+      },
+      {
+        "source": "/list/**",
+        "function": "userAndListPage"
+      },
+      {
         "source": "/:countryCode/:city/:spotId",
         "function": "spotPage"
       },

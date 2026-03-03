@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
@@ -14,6 +14,7 @@ import '../../models/spot_list.dart';
 import '../../services/spot_list_service.dart';
 import '../../services/feature_access_service.dart';
 import '../../widgets/instagram_button.dart';
+import '../../utils/web_meta_utils.dart';
 import '../../widgets/page_scaffold.dart';
 import 'package:flutter/services.dart';
 
@@ -51,6 +52,14 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     if (oldWidget.userIdOrUsername != widget.userIdOrUsername) {
       _loadProfile();
     }
+  }
+
+  @override
+  void dispose() {
+    if (kIsWeb) {
+      WebMetaUtils.resetPageMeta();
+    }
+    super.dispose();
   }
 
   void _loadProfile() {
@@ -150,6 +159,24 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
               }
 
               final user = snapshot.data;
+
+              if (user != null && kIsWeb) {
+                final name = user.displayName ?? user.username ?? 'User';
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    WebMetaUtils.updatePageMeta(
+                      '$name - Parkour·Spot',
+                      "View $name's parkour spots and lists on Parkour·Spot",
+                    );
+                  }
+                });
+              } else if (user == null &&
+                  snapshot.connectionState == ConnectionState.done &&
+                  kIsWeb) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) WebMetaUtils.resetPageMeta();
+                });
+              }
 
               if (user == null) {
                 // Profile not found or is private
