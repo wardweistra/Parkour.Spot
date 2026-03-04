@@ -5,6 +5,8 @@
  * Generates XML sitemaps for search engine indexing:
  * - One sitemap per country (e.g., sitemap-nl.xml)
  * - A sitemap for spots without country/city (sitemap-unlocated.xml)
+ * - A sitemap for public spot lists (sitemap-lists.xml)
+ * - A sitemap for public user profiles (sitemap-users.xml)
  * - A sitemap index file (sitemap.xml) that references all sitemaps
  * - Includes URLs for country pages, city pages, and individual spot pages
  */
@@ -142,9 +144,10 @@ async function uploadSitemapToStorage(filename, xmlContent) {
  * @return {boolean} True if filename is valid
  */
 function isValidSitemapFilename(filename) {
-  // Must match: sitemap.xml, sitemap-{country}.xml, sitemap-{country}-{number}.xml,
-  // sitemap-unlocated.xml, or sitemap-unlocated-{number}.xml
-  if (!/^sitemap(-(unlocated(-\d+)?|[a-z]{2}(-\d+)?))?\.xml$/.test(filename)) {
+  // sitemap.xml, sitemap-{country}.xml, sitemap-{country}-{n}.xml,
+  // sitemap-unlocated.xml, sitemap-unlocated-{n}.xml,
+  // sitemap-lists.xml, sitemap-lists-{n}.xml, sitemap-users.xml, sitemap-users-{n}.xml
+  if (!/^sitemap(-(unlocated(-\d+)?|lists(-\d+)?|users(-\d+)?|[a-z]{2}(-\d+)?))?\.xml$/.test(filename)) {
     return false;
   }
 
@@ -332,6 +335,98 @@ async function generateAllSitemaps() {
     } catch (error) {
       console.error("Error generating sitemap for unlocated spots:", error);
     }
+  }
+
+  // Generate sitemap for public spot lists
+  try {
+    const publicListsSnapshot = await db.collection("spotLists")
+        .where("visibility", "==", "public")
+        .get();
+
+    const publicLists = publicListsSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    if (publicLists.length > 0) {
+      const listUrls = publicLists.map((list) => ({
+        loc: `${BASE_URL}/list/${list.id}`,
+        lastmod: formatDateToISO(list.updatedAt),
+      }));
+
+      if (listUrls.length <= MAX_URLS_PER_SITEMAP) {
+        const sitemapName = "sitemap-lists.xml";
+        const xml = generateSitemapXml(listUrls);
+        await uploadSitemapToStorage(sitemapName, xml);
+        sitemapIndexEntries.push({
+          loc: `${BASE_URL}/sitemaps/${sitemapName}`,
+          lastmod: now,
+        });
+      } else {
+        let partNumber = 1;
+        for (let i = 0; i < listUrls.length; i += MAX_URLS_PER_SITEMAP) {
+          const chunk = listUrls.slice(i, i + MAX_URLS_PER_SITEMAP);
+          const sitemapName = `sitemap-lists-${partNumber}.xml`;
+          const xml = generateSitemapXml(chunk);
+          await uploadSitemapToStorage(sitemapName, xml);
+          sitemapIndexEntries.push({
+            loc: `${BASE_URL}/sitemaps/${sitemapName}`,
+            lastmod: now,
+          });
+          partNumber++;
+        }
+      }
+      console.log(`Generated sitemap(s) for public spot lists with ${listUrls.length} URLs`);
+    }
+  } catch (error) {
+    console.error("Error generating sitemap for spot lists:", error);
+  }
+
+  // Generate sitemap for public user profiles
+  try {
+    const usersSnapshot = await db.collection("users").get();
+    const publicUsers = usersSnapshot.docs
+        .map((doc) => ({id: doc.id, ...doc.data()}))
+        .filter((user) => user.isPublicProfile !== false);
+
+    if (publicUsers.length > 0) {
+      const userUrls = publicUsers.map((user) => {
+        const segment = (user.username && String(user.username).trim().length > 0)
+          ? String(user.username).toLowerCase()
+          : user.id;
+        const lastmodDate = user.lastLoginAt ?? user.createdAt;
+        return {
+          loc: `${BASE_URL}/user/${segment}`,
+          lastmod: formatDateToISO(lastmodDate),
+        };
+      });
+
+      if (userUrls.length <= MAX_URLS_PER_SITEMAP) {
+        const sitemapName = "sitemap-users.xml";
+        const xml = generateSitemapXml(userUrls);
+        await uploadSitemapToStorage(sitemapName, xml);
+        sitemapIndexEntries.push({
+          loc: `${BASE_URL}/sitemaps/${sitemapName}`,
+          lastmod: now,
+        });
+      } else {
+        let partNumber = 1;
+        for (let i = 0; i < userUrls.length; i += MAX_URLS_PER_SITEMAP) {
+          const chunk = userUrls.slice(i, i + MAX_URLS_PER_SITEMAP);
+          const sitemapName = `sitemap-users-${partNumber}.xml`;
+          const xml = generateSitemapXml(chunk);
+          await uploadSitemapToStorage(sitemapName, xml);
+          sitemapIndexEntries.push({
+            loc: `${BASE_URL}/sitemaps/${sitemapName}`,
+            lastmod: now,
+          });
+          partNumber++;
+        }
+      }
+      console.log(`Generated sitemap(s) for public user profiles with ${userUrls.length} URLs`);
+    }
+  } catch (error) {
+    console.error("Error generating sitemap for user profiles:", error);
   }
 
   // Generate and upload sitemap index
