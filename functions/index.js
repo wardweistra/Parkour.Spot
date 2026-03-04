@@ -6306,6 +6306,30 @@ exports.generateSitemapsScheduled = onSchedule(
 );
 
 /**
+ * Admin callable: Manually trigger sitemap generation
+ * Useful for testing or refreshing sitemaps after bulk data changes
+ */
+exports.generateSitemaps = onCall(
+    {
+      region: "europe-west1",
+      memory: "1GiB",
+      timeoutSeconds: 540,
+    },
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        console.log("Manual sitemap generation started");
+        await generateAllSitemaps();
+        console.log("Manual sitemap generation completed successfully");
+        return {success: true};
+      } catch (error) {
+        console.error("Error in manual sitemap generation:", error);
+        throw new Error(`Sitemap generation failed: ${error.message}`);
+      }
+    },
+);
+
+/**
  * Helper function to calculate and store user activity metrics (DAU/WAU/MAU)
  * Can be called by both scheduled and manual test functions
  * @param {boolean} useYesterdayDate - If true, store metrics with yesterday's date (for scheduled runs)

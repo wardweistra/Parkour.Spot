@@ -956,6 +956,22 @@ class SpotService extends ChangeNotifier {
     }
   }
 
+  /// Admin: Trigger sitemap generation (countries, unlocated spots, lists, users).
+  Future<void> generateSitemaps() async {
+    final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
+    final callable = functions.httpsCallable(
+      'generateSitemaps',
+      options: HttpsCallableOptions(
+        timeout: const Duration(minutes: 9),
+      ),
+    );
+    final result = await callable.call();
+    final data = result.data as Map<String, dynamic>?;
+    if (data == null || data['success'] != true) {
+      throw Exception(data?['error'] ?? 'Sitemap generation failed');
+    }
+  }
+
   // Get top ranked spots within bounds using backend Wilson logic
   Future<Map<String, dynamic>> getTopRankedSpotsInBounds(
     double minLat,

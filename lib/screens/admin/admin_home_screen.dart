@@ -186,6 +186,58 @@ class AdminHomeScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Card(
               child: ListTile(
+                leading: const Icon(Icons.map),
+                title: const Text('Generate Sitemaps'),
+                subtitle: const Text('Regenerate XML sitemaps for search engines (spots, lists, users)'),
+                onTap: () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Generate Sitemaps'),
+                      content: const Text(
+                        'This will regenerate all sitemaps (country pages, unlocated spots, '
+                        'public lists, user profiles) and upload them to Storage. '
+                        'This may take a few minutes. Continue?',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(false),
+                          child: const Text('Cancel'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Navigator.of(ctx).pop(true),
+                          child: const Text('Generate'),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (confirmed != true) return;
+
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Generating sitemaps...')),
+                  );
+
+                  try {
+                    final spotService = Provider.of<SpotService>(context, listen: false);
+                    await spotService.generateSitemaps();
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Sitemaps generated successfully')),
+                    );
+                  } catch (e) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: $e')),
+                    );
+                  }
+                },
+              ),
+            ),
+            const SizedBox(height: 8),
+            Card(
+              child: ListTile(
                 leading: const Icon(Icons.signal_cellular_alt),
                 title: const Text('Recompute Spot Rankings'),
                 subtitle: const Text('Recalculate ranking field for all spots based on ratings'),
