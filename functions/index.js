@@ -839,6 +839,8 @@ async function getWilsonLowerBoundAvg() {
 
 /**
  * Recomputes rating aggregates for a spot and updates the spot document.
+ * Includes ratings from the spot itself and from any spots marked as duplicates
+ * of it (duplicateOf == spotId).
  * averageRating: mean of ratings (0..5)
  * ratingCount: number of ratings
  * wilsonLowerBound: Wilson score lower bound over normalized stars (0..5)
@@ -852,12 +854,27 @@ async function recomputeSpotRatingAggregates(spotId) {
     // Fetch wilsonLowerBoundAvg from settings
     const wilsonLowerBoundAvg = await getWilsonLowerBoundAvg();
 
-    const ratingsSnap = await db
-        .collection("ratings")
-        .where("spotId", "==", spotId)
+    // Include ratings from this spot and from any spots that are duplicates of it
+    const duplicatesSnap = await db
+        .collection("spots")
+        .where("duplicateOf", "==", spotId)
         .get();
+    const duplicateIds = duplicatesSnap.docs.map((d) => d.id);
+    const spotIdsToInclude = [spotId, ...duplicateIds];
 
-    const count = ratingsSnap.size;
+    // Firestore "in" supports max 30 values; batch if needed
+    const IN_QUERY_LIMIT = 30;
+    const allRatings = [];
+    for (let i = 0; i < spotIdsToInclude.length; i += IN_QUERY_LIMIT) {
+      const chunk = spotIdsToInclude.slice(i, i + IN_QUERY_LIMIT);
+      const ratingsSnap = await db
+          .collection("ratings")
+          .where("spotId", "in", chunk)
+          .get();
+      ratingsSnap.forEach((doc) => allRatings.push(doc.data()));
+    }
+
+    const count = allRatings.length;
 
     if (count === 0) {
       // No ratings: set ranking to random value
@@ -875,8 +892,7 @@ async function recomputeSpotRatingAggregates(spotId) {
     }
 
     let sum = 0;
-    ratingsSnap.forEach((doc) => {
-      const data = doc.data();
+    allRatings.forEach((data) => {
       const r = typeof data.rating === "number" ? data.rating : 0;
       // Clamp ratings to [0,5]
       const clamped = Math.max(0, Math.min(5, r));
@@ -946,6 +962,18 @@ exports.recomputeAllRatedSpots = onCall(
           const spotId = data && data.spotId;
           if (typeof spotId === "string" && spotId.length > 0) {
             uniqueSpotIds.add(spotId);
+          }
+        });
+
+        // Include originals of duplicate spots (they aggregate duplicate ratings)
+        const duplicatesSnap = await db
+            .collection("spots")
+            .where("duplicateOf", "!=", null)
+            .get();
+        duplicatesSnap.forEach((doc) => {
+          const dupOf = doc.data()?.duplicateOf;
+          if (typeof dupOf === "string" && dupOf.length > 0) {
+            uniqueSpotIds.add(dupOf);
           }
         });
 
@@ -1046,6 +1074,11 @@ exports.onRatingCreated = onDocumentCreated(
         const data = event.data.data();
         const spotId = data && data.spotId;
         await recomputeSpotRatingAggregates(spotId);
+        const spotDoc = await db.collection("spots").doc(spotId).get();
+        const duplicateOf = spotDoc.data()?.duplicateOf;
+        if (duplicateOf) {
+          await recomputeSpotRatingAggregates(duplicateOf);
+        }
       } catch (e) {
         console.error("onRatingCreated error", e);
       }
@@ -1061,14 +1094,26 @@ exports.onRatingUpdated = onDocumentUpdated(
         const beforeSpotId = before && before.spotId;
         const afterSpotId = after && after.spotId;
 
-        // If spotId changed (unlikely), recompute both
+        const spotsToRecompute = new Set();
         if (beforeSpotId && beforeSpotId !== afterSpotId) {
-          await Promise.all([
-            recomputeSpotRatingAggregates(beforeSpotId),
-            recomputeSpotRatingAggregates(afterSpotId),
-          ]);
-        } else {
-          await recomputeSpotRatingAggregates(afterSpotId);
+          spotsToRecompute.add(beforeSpotId);
+        }
+        spotsToRecompute.add(afterSpotId);
+
+        for (const spotId of spotsToRecompute) {
+          await recomputeSpotRatingAggregates(spotId);
+        }
+
+        const originalsToRecompute = new Set();
+        for (const spotId of spotsToRecompute) {
+          const spotDoc = await db.collection("spots").doc(spotId).get();
+          const duplicateOf = spotDoc.data()?.duplicateOf;
+          if (duplicateOf) {
+            originalsToRecompute.add(duplicateOf);
+          }
+        }
+        for (const originalId of originalsToRecompute) {
+          await recomputeSpotRatingAggregates(originalId);
         }
       } catch (e) {
         console.error("onRatingUpdated error", e);
@@ -1083,6 +1128,11 @@ exports.onRatingDeleted = onDocumentDeleted(
         const before = event.data && event.data.data();
         const spotId = before && before.spotId;
         await recomputeSpotRatingAggregates(spotId);
+        const spotDoc = await db.collection("spots").doc(spotId).get();
+        const duplicateOf = spotDoc.data()?.duplicateOf;
+        if (duplicateOf) {
+          await recomputeSpotRatingAggregates(duplicateOf);
+        }
       } catch (e) {
         console.error("onRatingDeleted error", e);
       }
@@ -1108,13 +1158,27 @@ exports.onSpotCreated = onDocumentCreated(
     },
 );
 
-// Trigger when a spot is updated - reindex spotSearchTerms if name changed
+// Trigger when a spot is updated - reindex spotSearchTerms if name changed,
+// recompute rating aggregates if duplicateOf changed
 exports.onSpotUpdated = onDocumentUpdated(
     {document: "spots/{spotId}", region: "europe-west1"},
     async (event) => {
       const spotId = event.params.spotId;
       const beforeData = event.data.before.data();
       const afterData = event.data.after.data();
+
+      const beforeDup = beforeData?.duplicateOf;
+      const afterDup = afterData?.duplicateOf;
+      if (beforeDup !== afterDup) {
+        const toRecompute = new Set();
+        toRecompute.add(spotId);
+        if (beforeDup) toRecompute.add(beforeDup);
+        if (afterDup) toRecompute.add(afterDup);
+        await Promise.all(
+            [...toRecompute].map((id) => recomputeSpotRatingAggregates(id)),
+        );
+      }
+
       const nameBefore = typeof beforeData?.name === "string" ? beforeData.name : "";
       const nameAfter = typeof afterData?.name === "string" ? afterData.name : "";
       if (nameBefore === nameAfter) return;
