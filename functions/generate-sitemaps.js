@@ -4,7 +4,8 @@
  *
  * Generates XML sitemaps for search engine indexing:
  * - One sitemap per country (e.g., sitemap-nl.xml)
- * - A sitemap index file (sitemap.xml) that references all country sitemaps
+ * - A sitemap for spots without country/city (sitemap-unlocated.xml)
+ * - A sitemap index file (sitemap.xml) that references all sitemaps
  * - Includes URLs for country pages, city pages, and individual spot pages
  */
 
@@ -141,9 +142,9 @@ async function uploadSitemapToStorage(filename, xmlContent) {
  * @return {boolean} True if filename is valid
  */
 function isValidSitemapFilename(filename) {
-  // Must match pattern: sitemap.xml or sitemap-{country}.xml or sitemap-{country}-{number}.xml
-  // Country code is 2 lowercase letters, part number is digits
-  if (!/^sitemap(-[a-z]{2}(-\d+)?)?\.xml$/.test(filename)) {
+  // Must match: sitemap.xml, sitemap-{country}.xml, sitemap-{country}-{number}.xml,
+  // sitemap-unlocated.xml, or sitemap-unlocated-{number}.xml
+  if (!/^sitemap(-(unlocated(-\d+)?|[a-z]{2}(-\d+)?))?\.xml$/.test(filename)) {
     return false;
   }
 
@@ -195,6 +196,7 @@ async function generateAllSitemaps() {
   // Process spots in batches to reduce memory usage
   const BATCH_SIZE = 1000;
   const grouped = new Map();
+  const unlocatedSpots = [];
   let totalSpots = 0;
 
   // Fetch spots in batches using cursor-based pagination
@@ -223,6 +225,7 @@ async function generateAllSitemaps() {
       const city = spot.city;
 
       if (!countryCode || !city) {
+        unlocatedSpots.push(spot);
         continue;
       }
 
@@ -292,6 +295,42 @@ async function generateAllSitemaps() {
     } catch (error) {
       console.error(`Error generating sitemap for ${countryCode}:`, error);
       // Continue with other countries
+    }
+  }
+
+  // Generate sitemap for unlocated spots (missing countryCode and/or city)
+  if (unlocatedSpots.length > 0) {
+    try {
+      const unlocatedUrls = unlocatedSpots.map((spot) => ({
+        loc: `${BASE_URL}/spot/${spot.id}`,
+        lastmod: formatDateToISO(spot.updatedAt),
+      }));
+
+      if (unlocatedUrls.length <= MAX_URLS_PER_SITEMAP) {
+        const sitemapName = "sitemap-unlocated.xml";
+        const xml = generateSitemapXml(unlocatedUrls);
+        await uploadSitemapToStorage(sitemapName, xml);
+        sitemapIndexEntries.push({
+          loc: `${BASE_URL}/sitemaps/${sitemapName}`,
+          lastmod: now,
+        });
+      } else {
+        let partNumber = 1;
+        for (let i = 0; i < unlocatedUrls.length; i += MAX_URLS_PER_SITEMAP) {
+          const chunk = unlocatedUrls.slice(i, i + MAX_URLS_PER_SITEMAP);
+          const sitemapName = `sitemap-unlocated-${partNumber}.xml`;
+          const xml = generateSitemapXml(chunk);
+          await uploadSitemapToStorage(sitemapName, xml);
+          sitemapIndexEntries.push({
+            loc: `${BASE_URL}/sitemaps/${sitemapName}`,
+            lastmod: now,
+          });
+          partNumber++;
+        }
+      }
+      console.log(`Generated sitemap(s) for unlocated spots with ${unlocatedUrls.length} URLs`);
+    } catch (error) {
+      console.error("Error generating sitemap for unlocated spots:", error);
     }
   }
 

@@ -7604,8 +7604,9 @@ exports.serveSitemap = onRequest(
           sitemapName = decodeURIComponent(rawFilename);
 
           // Validate filename to prevent path traversal attacks
-          // Must match pattern: sitemap.xml or sitemap-{country}.xml or sitemap-{country}-{number}.xml
-          if (!/^sitemap(-[a-z]{2}(-\d+)?)?\.xml$/.test(sitemapName)) {
+          // sitemap.xml, sitemap-{country}.xml, sitemap-{country}-{n}.xml,
+          // sitemap-unlocated.xml, sitemap-unlocated-{n}.xml
+          if (!/^sitemap(-(unlocated(-\d+)?|[a-z]{2}(-\d+)?))?\.xml$/.test(sitemapName)) {
             res.status(400).send("Invalid sitemap filename");
             return;
           }
