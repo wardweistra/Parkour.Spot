@@ -391,9 +391,9 @@ async function generateAllSitemaps() {
 
     if (publicUsers.length > 0) {
       const userUrls = publicUsers.map((user) => {
-        const segment = (user.username && String(user.username).trim().length > 0)
-          ? String(user.username).toLowerCase()
-          : user.id;
+        const segment = (user.username && String(user.username).trim().length > 0) ?
+          String(user.username).toLowerCase() :
+          user.id;
         const lastmodDate = user.lastLoginAt ?? user.createdAt;
         return {
           loc: `${BASE_URL}/user/${segment}`,
