@@ -37,7 +37,7 @@ const bucket = admin.storage().bucket();
 countries.registerLocale(require("i18n-iso-countries/langs/en.json"));
 
 // Import shared utilities
-const {slugify, formatDateToISO} = require("./utils");
+const {slugify, formatDateToISO, clipForMeta} = require("./utils");
 const {
   extractSpotIdFromPath,
   extractFilename,
@@ -87,6 +87,9 @@ const {
   generateAllSitemaps,
   getSitemapFromStorage,
 } = require("./generate-sitemaps");
+
+/** App description appended to spot, list, and user page meta descriptions */
+const APP_DESCRIPTION = "Discover, map, and share the best parkour spots worldwide with community photos, ratings, and local tips for your next training session.";
 
 /**
  * Helper: perform geocoding for given lat/lng
@@ -298,12 +301,12 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
 
     // Generate title and description based on URL type
     let title = defaultTitle;
-    let description = "Discover and share parkour spots around the world";
+    let description = "Discover, map, and share the best parkour spots worldwide with community photos, ratings, and local tips for your next training session.";
 
     if (spot && spot.name) {
       // Spot detail page
       title = `${spot.name} - Parkour·Spot`;
-      description = buildDescription(spot);
+      description = buildDescription(spot) + " — " + APP_DESCRIPTION;
     } else if (locationInfo) {
       // Location page
       if (locationInfo.city) {
@@ -407,7 +410,7 @@ exports.userAndListPage = onRequest({region: "europe-west1"}, async (req, res) =
 
     const siteName = "Parkour·Spot";
     const defaultTitle = siteName;
-    const defaultDescription = "Discover and share parkour spots around the world";
+    const defaultDescription = APP_DESCRIPTION;
     const defaultImage = `https://${canonicalHost}/ParkourSpot-Featured.png`;
 
     let title = defaultTitle;
@@ -438,7 +441,7 @@ exports.userAndListPage = onRequest({region: "europe-west1"}, async (req, res) =
       if (userDoc && (userDoc.isPublicProfile !== false)) {
         const displayName = userDoc.displayName || userDoc.username || "User";
         title = `${displayName} - ${siteName}`;
-        description = `View ${displayName}'s parkour spots and lists on ${siteName}`;
+        description = `View ${displayName}'s parkour spots and lists on ${siteName} — ${APP_DESCRIPTION}`;
         if (userDoc.photoURL && typeof userDoc.photoURL === "string" &&
             userDoc.photoURL.trim().length > 0) {
           imageUrl = userDoc.photoURL.trim();
@@ -462,9 +465,10 @@ exports.userAndListPage = onRequest({region: "europe-west1"}, async (req, res) =
           const spotCount = spotIds.length;
 
           title = `${listName} - ${siteName}`;
-          description = list.description && list.description.trim().length > 0 ?
+          const rawListDesc = list.description && list.description.trim().length > 0 ?
             list.description.trim() :
             `A curated list of ${spotCount} parkour spot${spotCount === 1 ? "" : "s"} on ${siteName}`;
+          description = clipForMeta(rawListDesc) + " — " + APP_DESCRIPTION;
 
           // Use first spot's image if available
           if (spotIds.length > 0) {

@@ -162,11 +162,13 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 
               if (user != null && kIsWeb) {
                 final name = user.displayName ?? user.username ?? 'User';
+                final description =
+                    "View $name's parkour spots and lists on Parkour·Spot — ${WebMetaUtils.defaultDescription}";
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted) {
                     WebMetaUtils.updatePageMeta(
                       '$name - Parkour·Spot',
-                      "View $name's parkour spots and lists on Parkour·Spot",
+                      description,
                     );
                   }
                 });

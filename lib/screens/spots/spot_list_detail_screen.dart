@@ -909,10 +909,11 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     if (kIsWeb) {
       final listName = _list!.name;
       final spotCount = _list!.spotIds.length;
-      final description = _list!.description != null &&
+      final baseDescription = _list!.description != null &&
               _list!.description!.trim().isNotEmpty
-          ? _list!.description!.trim()
+          ? WebMetaUtils.clipForMeta(_list!.description!.trim())
           : 'A curated list of $spotCount parkour spot${spotCount == 1 ? '' : 's'} on Parkour·Spot';
+      final description = '$baseDescription — ${WebMetaUtils.defaultDescription}';
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           WebMetaUtils.updatePageMeta(

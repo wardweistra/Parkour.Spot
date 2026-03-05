@@ -95,7 +95,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
     // Reset document title and meta description when leaving the page
     if (kIsWeb && widget.initialLocationQuery != null) {
       const defaultTitle = 'Parkour·Spot';
-      const defaultDescription = 'Discover and share parkour spots around the world';
+      const defaultDescription = 'Discover, map, and share the best parkour spots worldwide with community photos, ratings, and local tips for your next training session.';
       web.document.title = defaultTitle;
       _updateMetaDescription(defaultDescription);
       _updateMetaTitle(defaultTitle);

@@ -4,6 +4,7 @@
  */
 
 const {buildSpotSearchWords} = require("./spot-attributes");
+const {clipForMeta} = require("../utils");
 
 /**
  * Builds description for social sharing from spot data
@@ -11,7 +12,7 @@ const {buildSpotSearchWords} = require("./spot-attributes");
  * @return {string} Formatted description
  */
 function buildDescription(s) {
-  const defaultDescription = "Discover and share parkour spots around the world";
+  const defaultDescription = "Discover, map, and share the best parkour spots worldwide with community photos, ratings, and local tips for your next training session.";
   if (!s) return defaultDescription;
   const parts = [];
   if (s.address && String(s.address).trim().length > 0) {
@@ -26,7 +27,9 @@ function buildDescription(s) {
     const clipped = d.length > 220 ? d.slice(0, 217) + "…" : d;
     parts.push(`💬 ${clipped}`);
   }
-  return parts.length ? parts.join("\n") : defaultDescription;
+  if (parts.length === 0) return defaultDescription;
+  const combined = parts.join("\n");
+  return combined.length > 300 ? clipForMeta(combined, 300) : combined;
 }
 
 /**

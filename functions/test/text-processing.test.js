@@ -10,7 +10,7 @@ const {
 
 describe("buildDescription", () => {
   it("returns default when spot is null", () => {
-    expect(buildDescription(null)).toContain("Discover and share parkour spots");
+    expect(buildDescription(null)).toContain("Discover, map, and share the best parkour spots");
   });
   it("includes address when present", () => {
     expect(buildDescription({address: "123 Main St"})).toContain("📍 123 Main St");

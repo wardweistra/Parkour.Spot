@@ -14,7 +14,7 @@ const { generateHtmlPage } = require('../functions/html-template');
 // Generate the default index.html
 const html = generateHtmlPage({
   title: "Parkour·Spot",
-  description: "Discover and share parkour spots around the world",
+  description: "Discover, map, and share the best parkour spots worldwide with community photos, ratings, and local tips for your next training session.",
   image: "https://parkour.spot/ParkourSpot-Featured.png",
   url: null,
   siteName: "Parkour·Spot",

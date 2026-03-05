@@ -68,6 +68,22 @@ function escapeXml(text) {
 }
 
 /**
+ * Clips text for meta description at word boundary
+ * @param {string} text - Text to clip
+ * @param {number} maxLength - Max length before clipping (default 280)
+ * @return {string} Clipped text with "…" if truncated
+ */
+function clipForMeta(text, maxLength = 280) {
+  if (!text || text.length <= maxLength) return text || "";
+  const str = String(text).trim();
+  if (str.length <= maxLength) return str;
+  const clipped = str.slice(0, maxLength - 1);
+  const lastSpace = clipped.lastIndexOf(" ");
+  const cut = lastSpace > maxLength * 0.7 ? lastSpace : maxLength - 1;
+  return clipped.slice(0, cut).trim() + "…";
+}
+
+/**
  * Format a Firestore Timestamp or Date to ISO 8601 string
  * @param {Date|Object|null|undefined} date - Date to format (Firestore Timestamp has toDate method)
  * @return {string|null} ISO 8601 formatted date string, or null if invalid
@@ -85,5 +101,6 @@ module.exports = {
   slugify,
   escapeXml,
   formatDateToISO,
+  clipForMeta,
 };
 

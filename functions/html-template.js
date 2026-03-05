@@ -14,7 +14,7 @@ const GOOGLE_ANALYTICS_MEASUREMENT_ID = "G-861J61HFR8";
  * Generate the HTML head section with optional dynamic meta tags
  * @param {Object} options - Configuration options
  * @param {string} options.title - Page title (default: "Parkour·Spot")
- * @param {string} options.description - Meta description (default: "Discover and share parkour spots around the world")
+ * @param {string} options.description - Meta description (default: "Discover, map, and share the best parkour spots worldwide with community photos, ratings, and local tips for your next training session.")
  * @param {string} options.image - Meta image URL (default: "https://parkour.spot/ParkourSpot-Featured.png")
  * @param {string} options.url - Canonical URL (optional)
  * @param {string} options.siteName - Site name (default: "Parkour·Spot")
@@ -26,7 +26,7 @@ const GOOGLE_ANALYTICS_MEASUREMENT_ID = "G-861J61HFR8";
 function generateHtmlHead(options = {}) {
   const {
     title = "Parkour·Spot",
-    description = "Discover and share parkour spots around the world",
+    description = "Discover, map, and share the best parkour spots worldwide with community photos, ratings, and local tips for your next training session.",
     image = "https://parkour.spot/ParkourSpot-Featured.png",
     url = null,
     siteName = "Parkour·Spot",
@@ -289,7 +289,7 @@ function generateOrganizationJsonLd(options = {}) {
   const {
     canonicalHost = "parkour.spot",
     siteName = "Parkour·Spot",
-    description = "Discover and share parkour spots around the world",
+    description = "Discover, map, and share the best parkour spots worldwide with community photos, ratings, and local tips for your next training session.",
   } = options;
 
   const organizationData = {
