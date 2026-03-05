@@ -284,6 +284,13 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
     });
   }
 
+  void _reorderSelectedImage(int oldIndex, int newIndex) {
+    setState(() {
+      final item = _selectedImageBytes.removeAt(oldIndex);
+      _selectedImageBytes.insert(newIndex, item);
+    });
+  }
+
 
   Future<void> _pickLocationOnMap() async {
     final result = await Navigator.push<LatLng>(
@@ -510,6 +517,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
                 onTakePhoto: _takePhoto,
                 onRemoveSelectedAt: _removeImageAt,
                 onRemoveExistingAt: (index) {}, // Not used in add mode
+                onReorderSelected: _reorderSelectedImage,
               ),
               
               const SizedBox(height: 16),

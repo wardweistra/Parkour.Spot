@@ -371,9 +371,6 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
 
   void _reorderExistingImage(int oldIndex, int newIndex) {
     setState(() {
-      if (newIndex > oldIndex) {
-        newIndex -= 1;
-      }
       final imageUrl = _existingImageUrls.removeAt(oldIndex);
       _existingImageUrls.insert(newIndex, imageUrl);
     });
@@ -381,9 +378,6 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
 
   void _reorderSelectedImage(int oldIndex, int newIndex) {
     setState(() {
-      if (newIndex > oldIndex) {
-        newIndex -= 1;
-      }
       final imageBytes = _selectedImageBytes.removeAt(oldIndex);
       _selectedImageBytes.insert(newIndex, imageBytes);
     });
