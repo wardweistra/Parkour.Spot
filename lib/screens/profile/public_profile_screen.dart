@@ -660,7 +660,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<SpotListVisibility>(
-                  value: selectedVisibility,
+                  initialValue: selectedVisibility,
                   decoration: const InputDecoration(
                     labelText: 'Visibility',
                   ),
@@ -773,7 +773,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<SpotListVisibility>(
-                  value: selectedVisibility,
+                  initialValue: selectedVisibility,
                   decoration: const InputDecoration(
                     labelText: 'Visibility',
                   ),

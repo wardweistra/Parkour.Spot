@@ -6072,7 +6072,7 @@ class _AddToListDialogState extends State<_AddToListDialog> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<SpotListVisibility>(
-                  value: _newListVisibility,
+                  initialValue: _newListVisibility,
                   decoration: const InputDecoration(
                     labelText: 'Visibility',
                   ),
