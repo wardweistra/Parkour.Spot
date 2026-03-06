@@ -581,8 +581,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           IconButton(
-                                            icon: const Icon(Icons.edit),
-                                            tooltip: 'Edit',
+                                            icon: const Icon(Icons.settings),
+                                            tooltip: 'List Settings',
                                             onPressed: list.id == null
                                                 ? null
                                                 : () => _showEditListDialog(
@@ -753,7 +753,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setDialogState) => AlertDialog(
-          title: const Text('Edit List'),
+          title: const Text('List Settings'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,

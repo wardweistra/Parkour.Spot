@@ -25,6 +25,7 @@ class SpotCard extends StatefulWidget {
   final VoidCallback? onViewDetails; // For overlay variant
   final double? maxWidth; // For overlay variant
   final VoidCallback? onRemove; // For list variant - shows remove button
+  final Widget? reorderHandle; // For list variant - drag handle (e.g. wrapped in ReorderableDelayedDragStartListener)
   final String? spotListId; // ID of the spot list this spot belongs to (for highlighting)
   final String? spotListName; // Name of the spot list this spot belongs to (for highlighting)
   final VoidCallback? onSpotListTap; // Callback when "Part of" chip is tapped
@@ -41,6 +42,7 @@ class SpotCard extends StatefulWidget {
     this.onViewDetails,
     this.maxWidth,
     this.onRemove,
+    this.reorderHandle,
     this.spotListId,
     this.spotListName,
     this.onSpotListTap,
@@ -491,27 +493,36 @@ class _SpotCardState extends State<SpotCard> {
                 ),
               ),
 
-            // Removed badge - position on left if remove button exists, otherwise right
+            // Removed badge - position on left if action buttons exist, otherwise right
             if (widget.spot.spotSourceRemoved)
               Positioned(
                 top: 8,
-                left: widget.onRemove != null ? 8 : null,
-                right: widget.onRemove != null ? null : 8,
+                left: (widget.onRemove != null || widget.reorderHandle != null) ? 8 : null,
+                right: (widget.onRemove != null || widget.reorderHandle != null) ? null : 8,
                 child: _buildRemovedBadge(context),
               ),
 
-            // Remove button (for list variant)
-            if (widget.onRemove != null)
+            // Reorder handle and remove button (for list variant)
+            if (widget.onRemove != null || widget.reorderHandle != null)
               Positioned(
                 top: 8,
                 right: 8,
-                child: IconButton(
-                  icon: const Icon(Icons.close),
-                  tooltip: 'Remove from list',
-                  onPressed: widget.onRemove,
-                  style: IconButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.surface,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (widget.reorderHandle != null) widget.reorderHandle!,
+                    if (widget.reorderHandle != null && widget.onRemove != null)
+                      const SizedBox(width: 8),
+                    if (widget.onRemove != null)
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        tooltip: 'Remove from list',
+                        onPressed: widget.onRemove,
+                        style: IconButton.styleFrom(
+                          backgroundColor: Theme.of(context).colorScheme.surface,
+                        ),
+                      ),
+                  ],
                 ),
               ),
           ],

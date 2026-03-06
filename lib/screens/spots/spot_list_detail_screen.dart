@@ -22,6 +22,7 @@ import '../../services/url_service.dart';
 import '../../services/user_profile_service.dart';
 import '../../widgets/page_scaffold.dart';
 import 'package:flutter/services.dart';
+import 'spot_list_manage_spots_screen.dart';
 
 class SpotListDetailScreen extends StatefulWidget {
   final String listId;
@@ -151,16 +152,19 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     }
   }
 
-  Future<void> _removeSpot(String spotId) async {
-    final spotListService = Provider.of<SpotListService>(context, listen: false);
-    final success = await spotListService.removeSpotFromList(widget.listId, spotId);
-
-    if (success) {
-      SnackbarService.showSuccess('Spot removed from list');
-      // Reload the list
+  Future<void> _openManageSpotsScreen() async {
+    if (_list == null || _spots.isEmpty) return;
+    await Navigator.of(context).push<List<Spot>>(
+      MaterialPageRoute<List<Spot>>(
+        builder: (context) => SpotListManageSpotsScreen(
+          listName: _list!.name,
+          listId: widget.listId,
+          spots: List.from(_spots),
+        ),
+      ),
+    );
+    if (mounted) {
       await _loadList();
-    } else {
-      SnackbarService.showError(spotListService.error ?? 'Failed to remove spot');
     }
   }
 
@@ -233,7 +237,6 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
 
     final screenWidth = MediaQuery.of(context).size.width;
     final useGrid = screenWidth >= 600; // Use grid layout on wider screens
-    final canManage = _canManageList();
 
     if (useGrid) {
       // Calculate optimal grid dimensions based on screen size
@@ -268,9 +271,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
               }
             },
             onLocate: () => _locateSpot(spot),
-            onRemove: canManage && spot.id != null
-                ? () => _removeSpot(spot.id!)
-                : null,
+            onRemove: null,
           );
         },
       );
@@ -300,9 +301,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                 }
               },
               onLocate: () => _locateSpot(spot),
-              onRemove: canManage && spot.id != null
-                  ? () => _removeSpot(spot.id!)
-                  : null,
+onRemove: null,
             ),
           );
         },
@@ -816,17 +815,46 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     
     if (_list != null && canManage) {
       actions.add(
-        IconButton(
-          icon: const Icon(Icons.edit),
-          tooltip: 'Edit List',
-          onPressed: _editList,
-        ),
-      );
-      actions.add(
-        IconButton(
-          icon: const Icon(Icons.delete),
-          tooltip: 'Delete List',
-          onPressed: _deleteList,
+        PopupMenuButton<String>(
+          icon: const Icon(Icons.more_vert),
+          tooltip: 'More',
+          onSelected: (value) {
+            switch (value) {
+              case 'manage':
+                _openManageSpotsScreen();
+                break;
+              case 'edit':
+                _editList();
+                break;
+              case 'delete':
+                _deleteList();
+                break;
+            }
+          },
+          itemBuilder: (context) => [
+            if (_spots.isNotEmpty)
+              const PopupMenuItem<String>(
+                value: 'manage',
+                child: ListTile(
+                  leading: Icon(Icons.edit_note),
+                  title: Text('Manage Spots'),
+                ),
+              ),
+            const PopupMenuItem<String>(
+              value: 'edit',
+              child: ListTile(
+                leading: Icon(Icons.settings),
+                title: Text('List Settings'),
+              ),
+            ),
+            const PopupMenuItem<String>(
+              value: 'delete',
+              child: ListTile(
+                leading: Icon(Icons.delete),
+                title: Text('Delete List'),
+              ),
+            ),
+          ],
         ),
       );
     }

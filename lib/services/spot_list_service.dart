@@ -354,6 +354,51 @@ class SpotListService extends ChangeNotifier {
     }
   }
 
+  /// Reorder spots in a list
+  Future<bool> reorderSpotsInList(String listId, List<String> newSpotIds) async {
+    if (!_isAuthenticated()) {
+      _error = 'You must be signed in to reorder spots in a list';
+      notifyListeners();
+      return false;
+    }
+
+    final userId = _getCurrentUserId();
+    if (userId == null) {
+      _error = 'User ID not found';
+      notifyListeners();
+      return false;
+    }
+
+    // Verify ownership
+    final list = await getSpotListById(listId);
+    if (list == null || list.createdBy != userId) {
+      _error = 'You do not have permission to modify this list';
+      notifyListeners();
+      return false;
+    }
+
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      await _firestore.collection('spotLists').doc(listId).update({
+        'spotIds': newSpotIds,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = 'Failed to reorder spots: $e';
+      debugPrint('Error reordering spots in list: $e');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   /// Delete a spot list
   Future<bool> deleteSpotList(String listId) async {
     if (!_isAuthenticated()) {
