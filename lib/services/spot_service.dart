@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:http/http.dart' as http;
 import 'dart:io';
 import 'dart:math';
 import '../models/spot.dart';
@@ -541,6 +542,7 @@ class SpotService extends ChangeNotifier {
     String? targetSpotId, // Optional: if spot is duplicate, add to original spot instead
     String? approvedByUserId, // Optional: userId of the approver (for audit log)
     String? approvedByUserName, // Optional: userName of the approver (for audit log)
+    void Function(int current, int total)? onProgress,
   }) async {
     try {
       _isLoading = true;
@@ -560,8 +562,15 @@ class SpotService extends ChangeNotifier {
 
       // Move photos from /suggestions/ to /spots/
       final List<String> finalPhotoUrls = [];
+      final total = photoUrls.length;
+      int current = 0;
       for (final photoUrl in photoUrls) {
         try {
+          current++;
+          onProgress?.call(current, total);
+          // Yield to event loop so UI stays responsive (resize is CPU-heavy on web)
+          await Future<void>.delayed(Duration.zero);
+
           // Extract the file path from the URL
           final uri = Uri.parse(photoUrl);
           String? filePath;
@@ -584,33 +593,36 @@ class SpotService extends ChangeNotifier {
             continue;
           }
           
-          // Create new path in /spots/
-          final newPath = filePath.replaceFirst('suggestions/', 'spots/');
+          // Create new path in /spots/ (use .jpg since we resize to JPEG)
+          final suggestedPath = filePath.replaceFirst('suggestions/', 'spots/');
+          final baseName = suggestedPath.split('.').first;
+          final newPath = '$baseName.jpg';
           
-          // Get references
           final sourceRef = _storage.ref().child(filePath);
           final destRef = _storage.ref().child(newPath);
           
-          // Copy the file (copy preserves original, then we delete it)
-          final data = await sourceRef.getData();
-          if (data != null) {
-            // Get content type from metadata
-            final metadata = await sourceRef.getMetadata();
-            final contentType = metadata.contentType ?? 'image/jpeg';
-            
-            // Upload to new location
-            await destRef.putData(
-              data,
-              SettableMetadata(contentType: contentType),
-            );
-            
-            // Get the new URL
-            final newUrl = await destRef.getDownloadURL();
-            finalPhotoUrls.add(newUrl);
-            
-            // Delete the original from /suggestions/
-            await sourceRef.delete();
+          // Fetch via HTTP (bypasses getData's 10MB limit), then resize to avoid
+          // timeout/memory issues with very large images (e.g. 13MB phone photos).
+          final response = await http.get(Uri.parse(photoUrl));
+          if (response.statusCode != 200 || response.bodyBytes.isEmpty) {
+            debugPrint('Failed to fetch photo: ${response.statusCode}');
+            continue;
           }
+          final rawBytes = Uint8List.fromList(response.bodyBytes);
+          await Future<void>.delayed(Duration.zero); // Let UI update before CPU-heavy resize
+          final resizedBytes = resizeImageForSpotUpload(rawBytes);
+          if (resizedBytes == null || resizedBytes.isEmpty) {
+            debugPrint('Failed to resize photo: $photoUrl');
+            continue;
+          }
+          
+          await destRef.putData(
+            resizedBytes,
+            SettableMetadata(contentType: 'image/jpeg'),
+          );
+          final newUrl = await destRef.getDownloadURL();
+          finalPhotoUrls.add(newUrl);
+          await sourceRef.delete();
         } catch (e) {
           debugPrint('Error moving photo $photoUrl: $e');
           // Continue with other photos even if one fails

@@ -23,6 +23,7 @@ class PhotoApprovalDialog extends StatefulWidget {
 class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
   String? _targetSpotId;
   bool _isApproving = false;
+  String? _approvalProgress; // e.g. "Processing 2 of 5..."
   String? _error;
   Spot? _originalSpot;
   Spot? _currentSpot;
@@ -221,6 +222,7 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
 
     setState(() {
       _isApproving = true;
+      _approvalProgress = null;
       _error = null;
     });
 
@@ -256,6 +258,12 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
         targetSpotId: _targetSpotId,
         approvedByUserId: approvedByUserId,
         approvedByUserName: approvedByUserName,
+        onProgress: (current, total) {
+          if (!mounted) return;
+          setState(() {
+            _approvalProgress = 'Processing $current of $total...';
+          });
+        },
       );
 
       if (!mounted) return;
@@ -274,6 +282,7 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
           setState(() {
             _error = 'Failed to update report after approving photos';
             _isApproving = false;
+            _approvalProgress = null;
           });
           return;
         }
@@ -295,6 +304,7 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
         setState(() {
           _error = spotService.error ?? 'Failed to add photos to spot';
           _isApproving = false;
+          _approvalProgress = null;
         });
       }
     } catch (e) {
@@ -303,6 +313,7 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
         setState(() {
           _error = 'Error approving photos: $e';
           _isApproving = false;
+          _approvalProgress = null;
         });
       }
     }
@@ -653,10 +664,19 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
                 ? null
                 : _approvePhotos,
             child: _isApproving
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      if (_approvalProgress != null) ...[
+                        const SizedBox(width: 12),
+                        Text(_approvalProgress!),
+                      ],
+                    ],
                   )
                 : Text('Approve Selected (${_selectedPhotoIndices.length})'),
           ),

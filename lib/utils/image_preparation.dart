@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:heic_to_png_jpg/heic_to_png_jpg.dart';
+import 'package:image/image.dart' as img;
 
 /// Result of preparing an image for upload.
 /// Contains validated/converted bytes and the correct MIME type.
@@ -133,4 +134,42 @@ Future<PreparedImage> prepareImageForUpload(Uint8List bytes) async {
   }
 
   return PreparedImage(bytes: bytes, contentType: contentType);
+}
+
+/// Resizes image bytes for spot upload (e.g. when approving suggested photos).
+/// Keeps aspect ratio, caps longest edge at [maxDimension], encodes as JPEG.
+/// Use this to avoid memory/timeout issues with very large source images.
+Uint8List? resizeImageForSpotUpload(
+  Uint8List bytes, {
+  int maxDimension = 2048,
+  int jpegQuality = 85,
+}) {
+  if (bytes.isEmpty) return null;
+  try {
+    final decoded = img.decodeImage(bytes);
+    if (decoded == null) return null;
+    final w = decoded.width;
+    final h = decoded.height;
+    if (w <= 0 || h <= 0) return null;
+    img.Image resized = decoded;
+    if (w > maxDimension || h > maxDimension) {
+      if (w > h) {
+        resized = img.copyResize(
+          decoded,
+          width: maxDimension,
+          interpolation: img.Interpolation.linear,
+        );
+      } else {
+        resized = img.copyResize(
+          decoded,
+          height: maxDimension,
+          interpolation: img.Interpolation.linear,
+        );
+      }
+    }
+    final jpegBytes = img.encodeJpg(resized, quality: jpegQuality);
+    return Uint8List.fromList(jpegBytes);
+  } catch (_) {
+    return null;
+  }
 }
