@@ -4514,7 +4514,7 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
                 borderRadius: BorderRadius.circular(8),
                 child: spot.imageUrls != null && spot.imageUrls!.isNotEmpty
                     ? CachedNetworkImage(
-                        imageUrl: spot.imageUrls!.first,
+                        imageUrl: getResizedImageUrl(spot.imageUrls!.first),
                         width: 80,
                         height: 80,
                         fit: BoxFit.cover,

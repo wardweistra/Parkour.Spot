@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../models/spot.dart';
 import '../services/spot_service.dart';
 import '../services/url_service.dart';
+import '../utils/image_url_utils.dart';
 
 class SpotSelectionDialog extends StatefulWidget {
   final String? currentSpotId; // ID of the spot being marked as duplicate (to exclude it)
@@ -624,7 +625,7 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
                     borderRadius: BorderRadius.circular(8),
                     child: spot.imageUrls != null && spot.imageUrls!.isNotEmpty
                         ? CachedNetworkImage(
-                            imageUrl: spot.imageUrls!.first,
+                            imageUrl: getResizedImageUrl(spot.imageUrls!.first),
                             width: 100,
                             height: 100,
                             fit: BoxFit.cover,
