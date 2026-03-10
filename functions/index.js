@@ -349,13 +349,9 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
       spot.imageUrls[0] :
       defaultImage;
 
-    // For social media previews, use the resized version if it's a Firebase Storage image
-    if (imageUrl && imageUrl.includes("firebasestorage.googleapis.com") && imageUrl.includes("spots%2F")) {
-      // Use the 1200x630 resized version for social media previews (created by Resize Images extension)
-      // Replace the path to use the resized subfolder
-      imageUrl = imageUrl.replace("spots%2F", "spots%2Fresized%2F");
-      imageUrl = imageUrl.replace(/\.(jpg|jpeg|png|webp)(\?|$)/, "_1200x630.webp$2");
-    }
+    // For social media previews (og:image), use the resized version for better load performance
+    // getResizedImageUrlForApi handles firebasestorage + storage.googleapis.com formats
+    imageUrl = getResizedImageUrlForApi(imageUrl);
 
     // Basic caching for crawlers and share scrapers
     res.set("Cache-Control", "public, max-age=300, s-maxage=600");
