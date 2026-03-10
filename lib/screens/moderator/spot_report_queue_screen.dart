@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cached_network_image_platform_interface/cached_network_image_platform_interface.dart';
 
 import '../../models/spot_report.dart';
 import '../../services/spot_report_service.dart';
@@ -662,6 +663,7 @@ class _ReportCardState extends State<_ReportCard> {
                                 child: CachedNetworkImage(
                                   imageUrl: photoUrl,
                                   fit: BoxFit.contain,
+                                  imageRenderMethodForWeb: ImageRenderMethodForWeb.HttpGet,
                                 ),
                               ),
                               Positioned(
@@ -694,6 +696,7 @@ class _ReportCardState extends State<_ReportCard> {
                             CachedNetworkImage(
                               imageUrl: photoUrl,
                               fit: BoxFit.cover,
+                              imageRenderMethodForWeb: ImageRenderMethodForWeb.HttpGet,
                               placeholder: (context, url) => Container(
                                 color: colorScheme.surfaceContainerHighest,
                                 child: const Center(
@@ -752,6 +755,7 @@ class _ReportCardState extends State<_ReportCard> {
                                 child: CachedNetworkImage(
                                   imageUrl: photoUrl,
                                   fit: BoxFit.contain,
+                                  imageRenderMethodForWeb: ImageRenderMethodForWeb.HttpGet,
                                 ),
                               ),
                               Positioned(
@@ -781,6 +785,7 @@ class _ReportCardState extends State<_ReportCard> {
                         child: CachedNetworkImage(
                           imageUrl: photoUrl,
                           fit: BoxFit.cover,
+                          imageRenderMethodForWeb: ImageRenderMethodForWeb.HttpGet,
                           placeholder: (context, url) => Container(
                             color: colorScheme.surfaceContainerHighest,
                             child: const Center(
@@ -838,6 +843,7 @@ class _ReportCardState extends State<_ReportCard> {
                                 child: CachedNetworkImage(
                                   imageUrl: photoUrl,
                                   fit: BoxFit.contain,
+                                  imageRenderMethodForWeb: ImageRenderMethodForWeb.HttpGet,
                                 ),
                               ),
                               Positioned(
@@ -870,6 +876,7 @@ class _ReportCardState extends State<_ReportCard> {
                             CachedNetworkImage(
                               imageUrl: photoUrl,
                               fit: BoxFit.cover,
+                              imageRenderMethodForWeb: ImageRenderMethodForWeb.HttpGet,
                               placeholder: (context, url) => Container(
                                 color: colorScheme.surfaceContainerHighest,
                                 child: const Center(

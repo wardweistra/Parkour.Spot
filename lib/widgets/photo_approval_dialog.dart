@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cached_network_image_platform_interface/cached_network_image_platform_interface.dart';
 import '../models/spot_report.dart';
 import '../models/spot.dart';
 import '../services/spot_service.dart';
@@ -167,6 +168,7 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
               child: CachedNetworkImage(
                 imageUrl: photoUrl,
                 fit: BoxFit.contain,
+                imageRenderMethodForWeb: ImageRenderMethodForWeb.HttpGet,
               ),
             ),
             Positioned(
@@ -401,6 +403,7 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
                                   fit: BoxFit.cover,
                                   width: 100,
                                   height: 100,
+                                  imageRenderMethodForWeb: ImageRenderMethodForWeb.HttpGet,
                                   placeholder: (context, url) => Container(
                                     color: colorScheme.surfaceContainerHighest,
                                     child: const Center(
