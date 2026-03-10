@@ -14,8 +14,10 @@ describe("shouldRunSync", () => {
     expect(shouldRunSync("0 * * * *", lastRun, now)).toBe(false);
   });
   it("returns false for invalid cron expression", () => {
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
     const lastRun = new Date();
     const now = new Date();
     expect(shouldRunSync("invalid", lastRun, now)).toBe(false);
+    consoleSpy.mockRestore();
   });
 });
