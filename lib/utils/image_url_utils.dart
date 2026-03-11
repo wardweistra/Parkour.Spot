@@ -90,9 +90,9 @@ String getResizedImageUrl(String originalUrl) {
       final oIndex = uri.pathSegments.indexOf('o');
       
       if (oIndex != -1 && oIndex + 1 < uri.pathSegments.length) {
-        // Get the encoded path (e.g., "spots%2Ffilename.jpg")
-        final encodedPath = uri.pathSegments[oIndex + 1];
-        final decodedPath = Uri.decodeComponent(encodedPath);
+        // pathSegments returns DECODED segments (e.g. "spots/filename.jpg")
+        // The original URL contains the encoded form (e.g. "spots%2Ffilename.jpg")
+        final decodedPath = uri.pathSegments[oIndex + 1];
         
         // Check if it's in the spots folder and not already resized
         if (decodedPath.startsWith('spots/') && !decodedPath.startsWith('spots/resized/')) {
@@ -102,13 +102,14 @@ String getResizedImageUrl(String originalUrl) {
           final resizedPath = 'spots/resized/${baseName}_1200x630.webp';
           final encodedResizedPath = Uri.encodeComponent(resizedPath);
           
-          // Replace the encoded path in the original URL string to avoid double encoding
-          // Find the position of the encoded path in the original URL
-          final pathStart = originalUrl.indexOf(encodedPath);
+          // Search for the path as it appears in the URL (encoded form).
+          // pathSegments is decoded, but the URL string uses encoded slashes.
+          final encodedPathInUrl = Uri.encodeComponent(decodedPath);
+          final pathStart = originalUrl.indexOf(encodedPathInUrl);
           if (pathStart != -1) {
             // Replace the encoded path with the new encoded resized path
             final beforePath = originalUrl.substring(0, pathStart);
-            final afterPath = originalUrl.substring(pathStart + encodedPath.length);
+            final afterPath = originalUrl.substring(pathStart + encodedPathInUrl.length);
             return '$beforePath$encodedResizedPath$afterPath';
           }
         }
