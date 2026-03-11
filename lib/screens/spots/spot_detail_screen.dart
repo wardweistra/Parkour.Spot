@@ -6261,8 +6261,14 @@ class _FullScreenPhotoViewerState extends State<_FullScreenPhotoViewer> {
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
-    // Start at a middle position in the virtual pages to allow scrolling in both directions
-    _virtualInitialPage = _virtualPageMultiplier + widget.initialIndex;
+    // Start at a middle position in the virtual pages to allow scrolling in both directions.
+    // The virtual page must satisfy: virtualPage % length == initialIndex, otherwise we'd show
+    // the wrong image (e.g. page 1000 with 7 images shows 1000%7=6, not 0).
+    final length = widget.imageUrls.length;
+    final basePage = (length > 0)
+        ? (_virtualPageMultiplier ~/ length) * length
+        : _virtualPageMultiplier;
+    _virtualInitialPage = basePage + widget.initialIndex;
     _pageController = PageController(initialPage: _virtualInitialPage);
   }
 
@@ -6285,10 +6291,13 @@ class _FullScreenPhotoViewerState extends State<_FullScreenPhotoViewer> {
     final lowerBound = _virtualPageMultiplier ~/ 2;
     final upperBound = _virtualPageMultiplier * 2 - 100;
     if (virtualIndex < lowerBound || virtualIndex > upperBound) {
-      // Jump to a safe middle position without animation
+      // Jump to a safe middle position without animation.
+      // Must use basePage + actualIndex so the modulo maps correctly.
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _pageController.hasClients) {
-          final newVirtualPage = _virtualPageMultiplier + actualIndex;
+        if (mounted && _pageController.hasClients && widget.imageUrls.isNotEmpty) {
+          final length = widget.imageUrls.length;
+          final basePage = (_virtualPageMultiplier ~/ length) * length;
+          final newVirtualPage = basePage + actualIndex;
           _pageController.jumpToPage(newVirtualPage);
         }
       });
