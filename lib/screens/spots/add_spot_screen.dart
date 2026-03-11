@@ -197,8 +197,8 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
     try {
       final picker = ImagePicker();
       final pickedFiles = await picker.pickMultiImage(
-        maxWidth: 1920,
-        maxHeight: 1080,
+        maxWidth: 2048,
+        maxHeight: 2048,
         imageQuality: 85,
       );
 
@@ -244,8 +244,8 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
       final picker = ImagePicker();
       final pickedFile = await picker.pickImage(
         source: ImageSource.camera,
-        maxWidth: 1920,
-        maxHeight: 1080,
+        maxWidth: 2048,
+        maxHeight: 2048,
         imageQuality: 85,
       );
 

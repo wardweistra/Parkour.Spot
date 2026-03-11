@@ -2380,7 +2380,12 @@ class _MissingImagesScreenState extends State<MissingImagesScreen> {
   Future<void> _selectImage(String filename) async {
     try {
       final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 2048,
+        maxHeight: 2048,
+        imageQuality: 85,
+      );
       
       if (image != null) {
         final bytes = await image.readAsBytes();

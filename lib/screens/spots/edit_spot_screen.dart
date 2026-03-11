@@ -281,7 +281,11 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
   Future<void> _pickFromGallery() async {
     try {
       final ImagePicker picker = ImagePicker();
-      final List<XFile> images = await picker.pickMultiImage();
+      final List<XFile> images = await picker.pickMultiImage(
+        maxWidth: 2048,
+        maxHeight: 2048,
+        imageQuality: 85,
+      );
 
       if (images.isNotEmpty) {
         for (final image in images) {
@@ -320,7 +324,12 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
   Future<void> _takePhoto() async {
     try {
       final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(source: ImageSource.camera);
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 2048,
+        maxHeight: 2048,
+        imageQuality: 85,
+      );
 
       if (image != null) {
         final bytes = await image.readAsBytes();

@@ -5618,7 +5618,11 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
   Future<void> _pickImages() async {
     try {
       final ImagePicker picker = ImagePicker();
-      final List<XFile> pickedFiles = await picker.pickMultiImage();
+      final List<XFile> pickedFiles = await picker.pickMultiImage(
+        maxWidth: 2048,
+        maxHeight: 2048,
+        imageQuality: 85,
+      );
 
       if (pickedFiles.isNotEmpty) {
         for (final pickedFile in pickedFiles) {
