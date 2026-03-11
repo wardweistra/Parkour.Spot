@@ -138,6 +138,11 @@ firebase deploy --only firestore:indexes
 
 ### **Testing**
 
+- **Flutter/Dart** (unit tests for `lib/` utilities and widgets):
+  ```bash
+  flutter test
+  ```
+
 - **Cloud Functions** (unit tests for helper logic in `functions/`):
   ```bash
   cd functions && npm test
