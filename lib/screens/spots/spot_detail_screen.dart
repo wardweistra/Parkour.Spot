@@ -6308,52 +6308,129 @@ class _FullScreenPhotoViewerState extends State<_FullScreenPhotoViewer> {
     return virtualIndex % widget.imageUrls.length;
   }
 
+  void _goToPrevious() {
+    _pageController.previousPage(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _goToNext() {
+    _pageController.nextPage(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(_currentIndex),
-        ),
-        title: Text(
-          '${_currentIndex + 1} / ${widget.imageUrls.length}',
-          style: const TextStyle(color: Colors.white),
-        ),
-      ),
-      body: PhotoViewGallery.builder(
-        scrollPhysics: const BouncingScrollPhysics(),
-        builder: (BuildContext context, int virtualIndex) {
-          // Map virtual index to actual image index
-          final actualIndex = _getActualIndex(virtualIndex);
-          return PhotoViewGalleryPageOptions(
-            imageProvider: ResizedSpotImageProvider.fromUrl(
-              widget.imageUrls[actualIndex],
-            ),
-            initialScale: PhotoViewComputedScale.contained,
-            minScale: PhotoViewComputedScale.contained,
-            maxScale: PhotoViewComputedScale.covered * 2,
-            heroAttributes: PhotoViewHeroAttributes(
-              tag: widget.imageUrls[actualIndex],
-            ),
-          );
-        },
-        // Use a large item count to enable infinite scrolling
-        itemCount: _virtualPageMultiplier * 2,
-        loadingBuilder: (context, event) => Center(
-          child: CircularProgressIndicator(
-            value: event == null
-                ? 0
-                : event.cumulativeBytesLoaded / event.expectedTotalBytes!,
+    return Focus(
+      autofocus: true,
+      onKeyEvent: (node, event) {
+        if (event is! KeyDownEvent) return KeyEventResult.ignored;
+        if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+          _goToPrevious();
+          return KeyEventResult.handled;
+        }
+        if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+          _goToNext();
+          return KeyEventResult.handled;
+        }
+        if (event.logicalKey == LogicalKeyboardKey.escape) {
+          Navigator.of(context).pop(_currentIndex);
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.close, color: Colors.white),
+            onPressed: () => Navigator.of(context).pop(_currentIndex),
+          ),
+          title: Text(
+            '${_currentIndex + 1} / ${widget.imageUrls.length}',
+            style: const TextStyle(color: Colors.white),
           ),
         ),
-        pageController: _pageController,
-        onPageChanged: _onPageChanged,
-        backgroundDecoration: const BoxDecoration(
-          color: Colors.black,
+        body: Stack(
+          children: [
+          PhotoViewGallery.builder(
+            scrollPhysics: const BouncingScrollPhysics(),
+            builder: (BuildContext context, int virtualIndex) {
+              // Map virtual index to actual image index
+              final actualIndex = _getActualIndex(virtualIndex);
+              return PhotoViewGalleryPageOptions(
+                imageProvider: ResizedSpotImageProvider.fromUrl(
+                  widget.imageUrls[actualIndex],
+                ),
+                initialScale: PhotoViewComputedScale.contained,
+                minScale: PhotoViewComputedScale.contained,
+                maxScale: PhotoViewComputedScale.covered * 2,
+                heroAttributes: PhotoViewHeroAttributes(
+                  tag: widget.imageUrls[actualIndex],
+                ),
+              );
+            },
+            // Use a large item count to enable infinite scrolling
+            itemCount: _virtualPageMultiplier * 2,
+            loadingBuilder: (context, event) => Center(
+              child: CircularProgressIndicator(
+                value: event == null
+                    ? 0
+                    : event.cumulativeBytesLoaded / event.expectedTotalBytes!,
+              ),
+            ),
+            pageController: _pageController,
+            onPageChanged: _onPageChanged,
+            backgroundDecoration: const BoxDecoration(
+              color: Colors.black,
+            ),
+          ),
+          // Left navigation arrow
+          Positioned(
+            left: 8,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: Material(
+                color: Colors.black26,
+                shape: const CircleBorder(),
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.chevron_left,
+                    size: 40,
+                    color: Colors.white,
+                  ),
+                  onPressed: _goToPrevious,
+                ),
+              ),
+            ),
+          ),
+          // Right navigation arrow
+          Positioned(
+            right: 8,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: Material(
+                color: Colors.black26,
+                shape: const CircleBorder(),
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.chevron_right,
+                    size: 40,
+                    color: Colors.white,
+                  ),
+                  onPressed: _goToNext,
+                ),
+              ),
+            ),
+            ),
+          ],
         ),
       ),
     );
