@@ -128,6 +128,16 @@ class AdminHomeScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Card(
               child: ListTile(
+                leading: const Icon(Icons.image_not_supported),
+                title: const Text('Missing Resized Images'),
+                subtitle: const Text('Find spot images that do not have a resized version available'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () => context.push('/admin/missing-resized-images'),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Card(
+              child: ListTile(
                 leading: const Icon(Icons.phone_android),
                 title: const Text('Device Detection Info'),
                 subtitle: const Text('View device detection and PWA install service status'),

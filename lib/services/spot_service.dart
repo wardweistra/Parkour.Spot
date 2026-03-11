@@ -8,6 +8,7 @@ import 'dart:math';
 import '../models/spot.dart';
 import '../models/rating.dart';
 import '../utils/image_preparation.dart';
+import '../utils/image_url_utils.dart';
 import 'audit_log_service.dart';
 
 class SpotService extends ChangeNotifier {
@@ -1539,6 +1540,79 @@ class SpotService extends ChangeNotifier {
     }
   }
 
+  /// Result for spots whose images lack resized versions.
+  static const String missingResizedImagesErrorCode = 'object-not-found';
+
+  /// Find all spots that have at least one image without a resized version.
+  /// Returns a list of (spot, list of image URLs missing resized versions).
+  Future<List<SpotWithMissingResizedImages>> findSpotsWithMissingResizedImages({
+    void Function(int current, int total)? onProgress,
+  }) async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      final querySnapshot = await _firestore
+          .collection('spots')
+          .where('imageUrls', isNull: false)
+          .get();
+
+      final results = <SpotWithMissingResizedImages>[];
+      var imagesChecked = 0;
+      var totalToCheck = 0;
+      for (final doc in querySnapshot.docs) {
+        final spot = Spot.fromFirestore(doc);
+        if (spot.imageUrls != null) {
+          for (final url in spot.imageUrls!) {
+            if (getResizedPathInfo(url) != null) totalToCheck++;
+          }
+        }
+      }
+
+      for (final doc in querySnapshot.docs) {
+        final spot = Spot.fromFirestore(doc);
+        if (spot.imageUrls == null || spot.imageUrls!.isEmpty) continue;
+
+        final missingUrls = <String>[];
+        for (final url in spot.imageUrls!) {
+          final info = getResizedPathInfo(url);
+          if (info == null) continue;
+
+          try {
+            final ref = _storage.ref().child(info.resizedPath);
+            await ref.getMetadata();
+            // Metadata exists = resized file present, skip
+          } on FirebaseException catch (e) {
+            if (e.code == missingResizedImagesErrorCode) {
+              missingUrls.add(url);
+            } else {
+              debugPrint('Storage error checking ${info.resizedPath}: ${e.code}');
+            }
+          }
+
+          imagesChecked++;
+          onProgress?.call(imagesChecked, totalToCheck);
+          await Future<void>.delayed(Duration.zero);
+        }
+
+        if (missingUrls.isNotEmpty) {
+          results.add(SpotWithMissingResizedImages(spot: spot, missingImageUrls: missingUrls));
+        }
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return results;
+    } catch (e) {
+      _error = 'Failed to find spots with missing resized images: $e';
+      debugPrint('Error finding spots with missing resized images: $e');
+      _isLoading = false;
+      notifyListeners();
+      return [];
+    }
+  }
+
   // Find potential duplicate spots (admin only)
   Future<Map<String, dynamic>> findDuplicateSpots({
     required String sourceId,
@@ -1592,4 +1666,15 @@ class SpotService extends ChangeNotifier {
     _error = null;
     notifyListeners();
   }
+}
+
+/// A spot with image URLs that lack resized versions in Firebase Storage.
+class SpotWithMissingResizedImages {
+  const SpotWithMissingResizedImages({
+    required this.spot,
+    required this.missingImageUrls,
+  });
+
+  final Spot spot;
+  final List<String> missingImageUrls;
 }

@@ -2,6 +2,67 @@
 /// full-size images to resized versions for better performance.
 library;
 
+/// Result of parsing a spot image URL for resized path checking.
+class ResizedPathInfo {
+  const ResizedPathInfo({
+    required this.originalPath,
+    required this.resizedPath,
+  });
+
+  /// Original storage path (e.g. spots/filename.jpg)
+  final String originalPath;
+
+  /// Expected resized storage path (e.g. spots/resized/filename_1200x630.webp)
+  final String resizedPath;
+}
+
+/// Parses a Firebase Storage spot image URL and returns the expected resized path.
+/// Returns null if the URL is not a spots/ image (external URL, already resized, etc).
+ResizedPathInfo? getResizedPathInfo(String originalUrl) {
+  try {
+    if (!originalUrl.contains('storage.googleapis.com') &&
+        !originalUrl.contains('firebasestorage.googleapis.com')) {
+      return null;
+    }
+
+    final uri = Uri.parse(originalUrl);
+
+    // Handle the encoded format: firebasestorage.googleapis.com/v0/b/bucket/o/spots%2Ffilename.jpg
+    if (uri.pathSegments.contains('o')) {
+      final oIndex = uri.pathSegments.indexOf('o');
+      if (oIndex != -1 && oIndex + 1 < uri.pathSegments.length) {
+        final encodedPath = uri.pathSegments[oIndex + 1];
+        final decodedPath = Uri.decodeComponent(encodedPath);
+        if (decodedPath.startsWith('spots/') &&
+            !decodedPath.startsWith('spots/resized/')) {
+          final filename = decodedPath.split('/').last;
+          final baseName = filename.split('.').first;
+          final resizedPath = 'spots/resized/${baseName}_1200x630.webp';
+          return ResizedPathInfo(originalPath: decodedPath, resizedPath: resizedPath);
+        }
+      }
+      return null;
+    }
+
+    // Handle storage.googleapis.com format: .../bucket/spots/filename.jpg
+    final pathSegments = uri.pathSegments;
+    final spotsIndex = pathSegments.indexOf('spots');
+    if (spotsIndex != -1 &&
+        spotsIndex + 1 < pathSegments.length &&
+        pathSegments[spotsIndex + 1] != 'resized') {
+      final filename = pathSegments[spotsIndex + 1];
+      final baseName = filename.split('.').first;
+      final originalPath = 'spots/$filename';
+      final resizedPath = 'spots/resized/${baseName}_1200x630.webp';
+      return ResizedPathInfo(originalPath: originalPath, resizedPath: resizedPath);
+    }
+
+    return null;
+  } catch (_) {
+    return null;
+  }
+}
+
 /// Converts a full-size Firebase Storage image URL to its resized version.
 /// 
 /// The storage-resize-images extension creates resized images in the format:

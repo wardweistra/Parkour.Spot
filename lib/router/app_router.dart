@@ -14,6 +14,7 @@ import '../screens/admin/user_management_screen.dart';
 import '../screens/admin/user_activity_metrics_screen.dart';
 import '../screens/admin/audit_log_viewer_screen.dart';
 import '../screens/admin/duplicate_images_screen.dart';
+import '../screens/admin/missing_resized_images_screen.dart';
 import '../screens/admin/duplicate_spots_screen.dart';
 import '../screens/admin/duplicate_spots_results_screen.dart';
 import '../screens/admin/device_detection_screen.dart';
@@ -322,6 +323,10 @@ class AppRouter {
         GoRoute(
           path: '/admin/duplicate-images',
           builder: (context, state) => const DuplicateImagesScreen(),
+        ),
+        GoRoute(
+          path: '/admin/missing-resized-images',
+          builder: (context, state) => const MissingResizedImagesScreen(),
         ),
         GoRoute(
           path: '/admin/device-detection',
