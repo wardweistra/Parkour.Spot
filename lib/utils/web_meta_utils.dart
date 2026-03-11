@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:web/web.dart' as web;
 
+import 'meta_clip.dart';
+
 /// Shared utilities for updating document title and Open Graph/Twitter meta tags on web.
 /// Keeps browser tab title and meta tags consistent with share previews.
 class WebMetaUtils {
@@ -9,13 +11,8 @@ class WebMetaUtils {
   static const String defaultTitle = 'Parkour·Spot';
 
   /// Clips text for meta description at word boundary. Returns original if within limit.
-  static String clipForMeta(String text, {int maxLength = 280}) {
-    if (text.length <= maxLength) return text;
-    final clipped = text.substring(0, maxLength - 1);
-    final lastSpace = clipped.lastIndexOf(' ');
-    final cut = lastSpace > maxLength * 0.7 ? lastSpace : maxLength - 1;
-    return '${clipped.substring(0, cut).trim()}…';
-  }
+  static String clipForMeta(String text, {int maxLength = 280}) =>
+      clipForMetaImpl(text, maxLength: maxLength);
   static const String defaultDescription =
       'Discover, map, and share the best parkour spots worldwide with community photos, ratings, and local tips for your next training session.';
 
