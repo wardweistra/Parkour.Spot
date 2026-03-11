@@ -42,6 +42,8 @@ const {
   extractSpotIdFromPath,
   extractFilename,
   getResizedImageUrlForApi,
+  getResizedPathInfo,
+  getImageContentTypeForPath,
   isEphemeralImageHost,
 } = require("./lib/url-helpers");
 const {
@@ -5640,6 +5642,257 @@ exports.uploadReplacementImage = onCall(
         };
       } catch (error) {
         console.error("Error uploading replacement image:", error);
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+    },
+);
+
+// Trigger storage-resize-images extension for one spot's images missing resized versions (admin only)
+exports.triggerResizeForSpot = onCall(
+    {region: "europe-west1", memory: "512MiB", timeoutSeconds: 120},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+
+        const {spotId} = request.data || {};
+        if (!spotId || typeof spotId !== "string") {
+          throw new Error("spotId is required");
+        }
+
+        const doc = await db.collection("spots").doc(spotId).get();
+        if (!doc.exists) {
+          throw new Error("Spot not found");
+        }
+
+        const data = doc.data();
+        const imageUrls = data.imageUrls || [];
+        const spotName = data.name || "Unnamed";
+
+        const toProcess = [];
+        for (const url of imageUrls) {
+          const info = getResizedPathInfo(url);
+          if (!info) continue;
+
+          const resizedFile = bucket.file(info.resizedPath);
+          const [exists] = await resizedFile.exists();
+          if (exists) continue;
+
+          toProcess.push({originalPath: info.originalPath, resizedPath: info.resizedPath});
+        }
+
+        console.log(`Spot ${spotId}: ${toProcess.length} images missing resized versions`);
+
+        const results = [];
+        const VERIFY_DELAY_MS = 3000;
+
+        for (let i = 0; i < toProcess.length; i++) {
+          const item = toProcess[i];
+          const file = bucket.file(item.originalPath);
+          const result = {
+            originalPath: item.originalPath,
+            resizedPath: item.resizedPath,
+            triggered: false,
+            verified: false,
+            error: null,
+          };
+
+          try {
+            const [exists] = await file.exists();
+            if (!exists) {
+              result.error = "Original file not found";
+              results.push(result);
+              continue;
+            }
+
+            const [metadata] = await file.getMetadata();
+            const contentType = getImageContentTypeForPath(
+                item.originalPath,
+                metadata?.contentType,
+            );
+            if (metadata?.contentType === "application/octet-stream") {
+              console.log(`Fixing contentType for ${item.originalPath}: octet-stream -> ${contentType}`);
+            }
+
+            const [buffer] = await file.download();
+            await file.save(buffer, {
+              metadata: {contentType, cacheControl: "public, max-age=31536000"},
+            });
+            result.triggered = true;
+
+            if (i < toProcess.length - 1) {
+              await new Promise((r) => setTimeout(r, 500));
+            }
+          } catch (err) {
+            result.error = err.message;
+            console.error(`Trigger failed for ${item.originalPath}:`, err);
+          }
+          results.push(result);
+        }
+
+        if (toProcess.length > 0) {
+          await new Promise((r) => setTimeout(r, VERIFY_DELAY_MS));
+        }
+
+        for (const r of results) {
+          if (!r.triggered || r.error) continue;
+          const item = toProcess.find((p) => p.originalPath === r.originalPath);
+          if (item) {
+            const [exists] = await bucket.file(item.resizedPath).exists();
+            r.verified = exists;
+          }
+        }
+
+        const triggered = results.filter((r) => r.triggered).length;
+        const verified = results.filter((r) => r.verified).length;
+        const failed = results.filter((r) => r.error).length;
+
+        return {
+          success: true,
+          spotId,
+          spotName,
+          total: toProcess.length,
+          triggered,
+          verified,
+          failed,
+          results,
+          message: `Triggered resize for ${triggered} images. Verified: ${verified} succeeded, ${failed} had errors.`,
+        };
+      } catch (error) {
+        console.error("Error triggering resize for spot:", error);
+        return {success: false, error: error.message};
+      }
+    },
+);
+
+// Trigger storage-resize-images extension for images missing resized versions (admin only)
+// Re-uploads each image to the same path, which fires object.finalize and triggers the extension
+exports.triggerResizeForMissingImages = onCall(
+    {region: "europe-west1", memory: "512MiB", timeoutSeconds: 540},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+
+        // 1. Find all spots with imageUrls and collect image URLs that need resized versions
+        const spotsSnapshot = await db.collection("spots")
+            .where("imageUrls", "!=", null)
+            .get();
+
+        const toProcess = []; // {originalPath, resizedPath, spotId, spotName}
+        const seenPaths = new Set();
+
+        for (const doc of spotsSnapshot.docs) {
+          const data = doc.data();
+          const imageUrls = data.imageUrls || [];
+          const spotName = data.name || "Unnamed";
+
+          for (const url of imageUrls) {
+            const info = getResizedPathInfo(url);
+            if (!info) continue;
+
+            if (seenPaths.has(info.originalPath)) continue;
+            seenPaths.add(info.originalPath);
+
+            // Check if resized already exists
+            const resizedFile = bucket.file(info.resizedPath);
+            const [exists] = await resizedFile.exists();
+            if (exists) continue;
+
+            toProcess.push({
+              originalPath: info.originalPath,
+              resizedPath: info.resizedPath,
+              spotId: doc.id,
+              spotName,
+            });
+          }
+        }
+
+        console.log(`Found ${toProcess.length} images missing resized versions`);
+
+        const results = [];
+        const VERIFY_DELAY_MS = 3000; // Wait for extension to process
+
+        for (let i = 0; i < toProcess.length; i++) {
+          const item = toProcess[i];
+          const file = bucket.file(item.originalPath);
+          const result = {
+            originalPath: item.originalPath,
+            resizedPath: item.resizedPath,
+            spotId: item.spotId,
+            spotName: item.spotName,
+            triggered: false,
+            verified: false,
+            error: null,
+          };
+
+          try {
+            const [exists] = await file.exists();
+            if (!exists) {
+              result.error = "Original file not found";
+              results.push(result);
+              continue;
+            }
+
+            const [metadata] = await file.getMetadata();
+            const contentType = getImageContentTypeForPath(
+                item.originalPath,
+                metadata?.contentType,
+            );
+            if (metadata?.contentType === "application/octet-stream") {
+              console.log(`Fixing contentType for ${item.originalPath}: octet-stream -> ${contentType}`);
+            }
+
+            const [buffer] = await file.download();
+            await file.save(buffer, {
+              metadata: {
+                contentType,
+                cacheControl: "public, max-age=31536000",
+              },
+            });
+            result.triggered = true;
+
+            // Small delay between triggers to avoid overwhelming the extension
+            if (i < toProcess.length - 1) {
+              await new Promise((r) => setTimeout(r, 500));
+            }
+          } catch (err) {
+            result.error = err.message;
+            console.error(`Trigger failed for ${item.originalPath}:`, err);
+          }
+          results.push(result);
+        }
+
+        // Wait for extension to process, then verify
+        if (toProcess.length > 0) {
+          await new Promise((r) => setTimeout(r, VERIFY_DELAY_MS));
+        }
+
+        for (const r of results) {
+          if (!r.triggered || r.error) continue;
+          const item = toProcess.find((p) => p.originalPath === r.originalPath);
+          if (item) {
+            const [exists] = await bucket.file(item.resizedPath).exists();
+            r.verified = exists;
+          }
+        }
+
+        const triggered = results.filter((r) => r.triggered).length;
+        const verified = results.filter((r) => r.verified).length;
+        const failed = results.filter((r) => r.error).length;
+
+        return {
+          success: true,
+          total: toProcess.length,
+          triggered,
+          verified,
+          failed,
+          results,
+          message: `Triggered resize for ${triggered} images. Verified: ${verified} succeeded, ${failed} had errors.`,
+        };
+      } catch (error) {
+        console.error("Error triggering resize for missing images:", error);
         return {
           success: false,
           error: error.message,

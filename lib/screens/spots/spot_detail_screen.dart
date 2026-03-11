@@ -50,7 +50,7 @@ class SpotDetailScreen extends StatefulWidget {
   State<SpotDetailScreen> createState() => _SpotDetailScreenState();
 }
 
-enum _SpotMenuAction { login, reportAsDuplicate, suggestPhoto, report, addToList, edit, delete, markAsDuplicate, createNativeSpot, toggleHide, removeDuplicateStatus }
+enum _SpotMenuAction { login, reportAsDuplicate, suggestPhoto, report, addToList, edit, delete, markAsDuplicate, createNativeSpot, toggleHide, removeDuplicateStatus, triggerResize }
 
 class _SpotDetailScreenState extends State<SpotDetailScreen> {
   double _userRating = 0;
@@ -683,6 +683,36 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           );
         }
         break;
+      case _SpotMenuAction.triggerResize:
+        _triggerResizeForSpot();
+        break;
+    }
+  }
+
+  Future<void> _triggerResizeForSpot() async {
+    final spotId = _spot.id;
+    if (spotId == null) return;
+
+    try {
+      final spotService = Provider.of<SpotService>(context, listen: false);
+      final data = await spotService.triggerResizeForSpot(spotId);
+
+      if (!mounted) return;
+      final total = (data['total'] as num?)?.toInt() ?? 0;
+      final triggered = (data['triggered'] as num?)?.toInt() ?? 0;
+      final verified = (data['verified'] as num?)?.toInt() ?? 0;
+      final failed = (data['failed'] as num?)?.toInt() ?? 0;
+
+      if (total == 0) {
+        _showSuccessSnack('All images already have resized versions');
+      } else {
+        _showSuccessSnack(
+          'Resize: $triggered triggered, $verified verified'
+          '${failed > 0 ? ", $failed failed" : ""}',
+        );
+      }
+    } catch (e) {
+      if (mounted) _showErrorSnack('Failed to trigger resize: $e');
     }
   }
 
@@ -1410,6 +1440,48 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                           ),
                                           Text(
                                             'Admin only',
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                                  color: theme.colorScheme.onSurface
+                                                      .withValues(alpha: 0.6),
+                                                  fontSize: 11,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }
+                            if (authService.isAdmin &&
+                                _spot.imageUrls != null &&
+                                _spot.imageUrls!.isNotEmpty) {
+                              items.add(
+                                PopupMenuItem<_SpotMenuAction>(
+                                  value: _SpotMenuAction.triggerResize,
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.auto_fix_high,
+                                        color: theme.colorScheme.primary,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            'Trigger image resize',
+                                            style: theme.textTheme.bodyMedium
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                          ),
+                                          Text(
+                                            'Re-create resized versions',
                                             style: theme.textTheme.bodySmall
                                                 ?.copyWith(
                                                   color: theme.colorScheme.onSurface
@@ -2808,7 +2880,13 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                   child: Center(child: CircularProgressIndicator()),
                 ),
                 errorWidget: (context, url, error) {
+                  final originalUrl = widget.spot.imageUrls != null &&
+                          _currentImageIndex < widget.spot.imageUrls!.length
+                      ? widget.spot.imageUrls![_currentImageIndex]
+                      : null;
                   debugPrint('Image error: $error');
+                  debugPrint('Resized URL (failed to load): $url');
+                  debugPrint('Original URL (stored in spot): $originalUrl');
                   return Container(
                     color: Theme.of(context).colorScheme.surfaceContainerHighest,
                     child: Column(

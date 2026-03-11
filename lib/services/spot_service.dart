@@ -1613,6 +1613,74 @@ class SpotService extends ChangeNotifier {
     }
   }
 
+  /// Trigger the storage-resize-images extension for one spot's images (admin only).
+  Future<Map<String, dynamic>> triggerResizeForSpot(String spotId) async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
+      final callable = functions.httpsCallable(
+        'triggerResizeForSpot',
+        options: HttpsCallableOptions(timeout: const Duration(minutes: 2)),
+      );
+
+      final result = await callable.call({'spotId': spotId});
+      final data = result.data as Map<String, dynamic>?;
+
+      _isLoading = false;
+      notifyListeners();
+
+      if (data == null || data['success'] != true) {
+        throw Exception(data?['error'] as String? ?? 'Unknown error');
+      }
+      return data;
+    } catch (e) {
+      _error = 'Failed to trigger resize: $e';
+      debugPrint('Error triggering resize for spot: $e');
+      _isLoading = false;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Trigger the storage-resize-images extension for images missing resized versions.
+  /// Re-uploads each image to the same path to fire object.finalize (admin only).
+  /// Returns result with triggered/verified counts and per-image success/failure.
+  Future<Map<String, dynamic>> triggerResizeForMissingImages() async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
+      final callable = functions.httpsCallable(
+        'triggerResizeForMissingImages',
+        options: HttpsCallableOptions(
+          timeout: const Duration(minutes: 9),
+        ),
+      );
+
+      final result = await callable.call();
+      final data = result.data as Map<String, dynamic>?;
+
+      _isLoading = false;
+      notifyListeners();
+
+      if (data == null || data['success'] != true) {
+        throw Exception(data?['error'] as String? ?? 'Unknown error');
+      }
+      return data;
+    } catch (e) {
+      _error = 'Failed to trigger resize: $e';
+      debugPrint('Error triggering resize for missing images: $e');
+      _isLoading = false;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
   // Find potential duplicate spots (admin only)
   Future<Map<String, dynamic>> findDuplicateSpots({
     required String sourceId,

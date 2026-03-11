@@ -2,6 +2,8 @@ const {
   extractSpotIdFromPath,
   extractFilename,
   getResizedImageUrlForApi,
+  getResizedPathInfo,
+  getImageContentTypeForPath,
   isEphemeralImageHost,
 } = require("../lib/url-helpers");
 
@@ -58,6 +60,59 @@ describe("getResizedImageUrlForApi", () => {
   });
   it("returns original for non-string input", () => {
     expect(getResizedImageUrlForApi(null)).toBeNull();
+  });
+});
+
+describe("getResizedPathInfo", () => {
+  it("returns null for non-Firebase URLs", () => {
+    expect(getResizedPathInfo("https://example.com/image.jpg")).toBeNull();
+  });
+  it("returns originalPath and resizedPath for firebasestorage spots URL", () => {
+    const url = "https://firebasestorage.googleapis.com/v0/b/bucket/o/spots%2Fphoto.jpg";
+    const info = getResizedPathInfo(url);
+    expect(info).toEqual({
+      originalPath: "spots/photo.jpg",
+      resizedPath: "spots/resized/photo_1200x630.webp",
+    });
+  });
+  it("returns originalPath and resizedPath for storage.googleapis spots URL", () => {
+    const url = "https://storage.googleapis.com/bucket/spots/photo.png";
+    const info = getResizedPathInfo(url);
+    expect(info).toEqual({
+      originalPath: "spots/photo.png",
+      resizedPath: "spots/resized/photo_1200x630.webp",
+    });
+  });
+  it("returns null for already resized URL", () => {
+    const url = "https://storage.googleapis.com/bucket/spots/resized/photo_1200x630.webp";
+    expect(getResizedPathInfo(url)).toBeNull();
+  });
+  it("returns null for non-string input", () => {
+    expect(getResizedPathInfo(null)).toBeNull();
+  });
+});
+
+describe("getImageContentTypeForPath", () => {
+  it("uses stored type when it is a recognized image type", () => {
+    expect(getImageContentTypeForPath("spots/foo.jpg", "image/jpeg"))
+        .toBe("image/jpeg");
+    expect(getImageContentTypeForPath("spots/foo.png", "image/png"))
+        .toBe("image/png");
+  });
+  it("derives from extension when stored type is application/octet-stream", () => {
+    expect(getImageContentTypeForPath("spots/foo.jpg", "application/octet-stream"))
+        .toBe("image/jpeg");
+    expect(getImageContentTypeForPath("spots/photo.png", "application/octet-stream"))
+        .toBe("image/png");
+  });
+  it("derives from extension when stored type is null or unknown", () => {
+    expect(getImageContentTypeForPath("spots/foo.jpeg", null)).toBe("image/jpeg");
+    expect(getImageContentTypeForPath("spots/foo.webp", undefined)).toBe("image/webp");
+    expect(getImageContentTypeForPath("spots/x.gif", "text/plain")).toBe("image/gif");
+  });
+  it("defaults to image/jpeg for unknown extension", () => {
+    expect(getImageContentTypeForPath("spots/foo.bmp", "application/octet-stream"))
+        .toBe("image/jpeg");
   });
 });
 

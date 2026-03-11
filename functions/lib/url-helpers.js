@@ -82,6 +82,70 @@ function getResizedImageUrlForApi(originalUrl) {
 }
 
 /**
+ * Parses a Firebase Storage spot image URL and returns original + expected resized paths.
+ * Returns null if URL is not a spots/ image (external, already resized, etc).
+ * @param {string} url - Firebase Storage image URL
+ * @return {{originalPath: string, resizedPath: string}|null}
+ */
+function getResizedPathInfo(url) {
+  if (typeof url !== "string") return null;
+  try {
+    if (!url.includes("storage.googleapis.com") &&
+        !url.includes("firebasestorage.googleapis.com")) {
+      return null;
+    }
+    let originalPath = null;
+    if (url.includes("firebasestorage.googleapis.com") && url.includes("/o/")) {
+      const encodedPath = url.split("/o/")[1]?.split("?")[0] || "";
+      originalPath = decodeURIComponent(encodedPath);
+    } else {
+      const match = url.match(/\/(spots)\/([^/]+)\.(jpg|jpeg|png|webp)(\?|#|$)/i);
+      if (match && match[1] === "spots" && match[2] !== "resized") {
+        originalPath = `spots/${match[2]}.${match[3].toLowerCase()}`;
+      }
+    }
+    if (!originalPath || !originalPath.startsWith("spots/") ||
+        originalPath.startsWith("spots/resized/")) {
+      return null;
+    }
+    const filename = originalPath.split("/").pop();
+    const baseName = filename.replace(/\.[^.]+$/, "");
+    const resizedPath = `spots/resized/${baseName}_1200x630.webp`;
+    return {originalPath, resizedPath};
+  } catch (_) {
+    return null;
+  }
+}
+
+/** Recognized image content types (for excluding application/octet-stream etc.) */
+const IMAGE_CONTENT_TYPES = new Set([
+  "image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif",
+]);
+
+/**
+ * Returns the correct image content type for a storage path.
+ * If storedContentType is application/octet-stream or not a recognized image type,
+ * derives the type from the file extension.
+ * @param {string} storagePath - e.g. "spots/filename.jpg"
+ * @param {string|null|undefined} storedContentType - current metadata contentType
+ * @return {string} Valid image content type
+ */
+function getImageContentTypeForPath(storagePath, storedContentType) {
+  if (storedContentType && IMAGE_CONTENT_TYPES.has(storedContentType)) {
+    return storedContentType;
+  }
+  const ext = (storagePath.split(".").pop() || "").toLowerCase();
+  const byExt = {
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    webp: "image/webp",
+    gif: "image/gif",
+  };
+  return byExt[ext] || "image/jpeg";
+}
+
+/**
  * Determines whether a given image URL belongs to an ephemeral Google host
  * whose links are unstable and should not be cached by original URL.
  * @param {string} imageUrl
@@ -103,5 +167,7 @@ module.exports = {
   extractSpotIdFromPath,
   extractFilename,
   getResizedImageUrlForApi,
+  getResizedPathInfo,
+  getImageContentTypeForPath,
   isEphemeralImageHost,
 };
