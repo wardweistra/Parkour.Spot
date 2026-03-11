@@ -4,7 +4,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import '../../models/spot.dart';
@@ -25,6 +24,8 @@ import '../../services/spot_list_service.dart';
 import '../../services/feature_access_service.dart';
 import '../../models/spot_list.dart';
 import '../../utils/image_url_utils.dart';
+import '../../utils/resized_spot_image_provider.dart';
+import '../../widgets/resized_spot_image.dart';
 import '../../utils/image_preparation.dart';
 import '../../services/user_profile_service.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode, debugPrint;
@@ -2869,45 +2870,45 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
               color: Colors.transparent,
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
-                child: CachedNetworkImage(
+                child: ResizedSpotImage(
                   key: ValueKey(_currentImageIndex),
-                  imageUrl: getResizedImageUrl(widget.spot.imageUrls![_currentImageIndex]),
+                  imageUrl: widget.spot.imageUrls![_currentImageIndex],
                   fit: BoxFit.cover,
                   width: double.infinity,
                   height: 400,
-                placeholder: (context, url) => Container(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-                errorWidget: (context, url, error) {
-                  final originalUrl = widget.spot.imageUrls != null &&
-                          _currentImageIndex < widget.spot.imageUrls!.length
-                      ? widget.spot.imageUrls![_currentImageIndex]
-                      : null;
-                  debugPrint('Image error: $error');
-                  debugPrint('Resized URL (failed to load): $url');
-                  debugPrint('Original URL (stored in spot): $originalUrl');
-                  return Container(
+                  placeholder: (context, url) => Container(
                     color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.broken_image,
-                          size: 64,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Image failed to load',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                  errorWidget: (context, url, error) {
+                    final originalUrl = widget.spot.imageUrls != null &&
+                            _currentImageIndex < widget.spot.imageUrls!.length
+                        ? widget.spot.imageUrls![_currentImageIndex]
+                        : null;
+                    debugPrint('Image error: $error');
+                    debugPrint('Resized URL (failed to load): $url');
+                    debugPrint('Original URL (stored in spot): $originalUrl');
+                    return Container(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.broken_image,
+                            size: 64,
                             color: Theme.of(context).colorScheme.onSurface,
                           ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
+                          const SizedBox(height: 8),
+                          Text(
+                            'Image failed to load',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
@@ -4591,8 +4592,8 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: spot.imageUrls != null && spot.imageUrls!.isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: getResizedImageUrl(spot.imageUrls!.first),
+                    ? ResizedSpotImage(
+                        imageUrl: spot.imageUrls!.first,
                         width: 80,
                         height: 80,
                         fit: BoxFit.cover,
@@ -6316,8 +6317,8 @@ class _FullScreenPhotoViewerState extends State<_FullScreenPhotoViewer> {
           // Map virtual index to actual image index
           final actualIndex = _getActualIndex(virtualIndex);
           return PhotoViewGalleryPageOptions(
-            imageProvider: CachedNetworkImageProvider(
-              getResizedImageUrl(widget.imageUrls[actualIndex]),
+            imageProvider: ResizedSpotImageProvider.fromUrl(
+              widget.imageUrls[actualIndex],
             ),
             initialScale: PhotoViewComputedScale.contained,
             minScale: PhotoViewComputedScale.contained,

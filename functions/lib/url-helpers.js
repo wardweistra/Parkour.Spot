@@ -50,8 +50,8 @@ function extractFilename(url) {
 }
 
 /**
- * Converts a Firebase Storage spot image URL to its resized version.
- * storage-resize-images extension creates: spots/resized/baseName_1200x630.webp
+ * Converts a Firebase Storage spot image URL to its resized version (1200x1200).
+ * storage-resize-images extension creates: spots/resized/baseName_1200x1200.webp
  * @param {string} originalUrl - Original Firebase Storage URL
  * @return {string} Resized URL or original if not convertible
  */
@@ -66,14 +66,14 @@ function getResizedImageUrlForApi(originalUrl) {
     if (originalUrl.includes("firebasestorage.googleapis.com") &&
         originalUrl.includes("spots%2F") && !originalUrl.includes("spots%2Fresized%2F")) {
       return originalUrl
-          .replace(/spots%2F([^?&#]+)\.(jpg|jpeg|png|webp)/i, "spots%2Fresized%2F$1_1200x630.webp");
+          .replace(/spots%2F([^?&#]+)\.(jpg|jpeg|png|webp)/i, "spots%2Fresized%2F$1_1200x1200.webp");
     }
     // Handle storage.googleapis.com format: .../spots/filename.jpg
     const match = originalUrl.match(/\/(spots)\/([^/]+)\.(jpg|jpeg|png|webp)(\?|#|$)/i);
     if (match && match[1] === "spots" && match[2] !== "resized") {
       const baseName = match[2];
       return originalUrl
-          .replace(`/spots/${baseName}.${match[3]}`, `/spots/resized/${baseName}_1200x630.webp`);
+          .replace(`/spots/${baseName}.${match[3]}`, `/spots/resized/${baseName}_1200x1200.webp`);
     }
     return originalUrl;
   } catch {
@@ -84,8 +84,9 @@ function getResizedImageUrlForApi(originalUrl) {
 /**
  * Parses a Firebase Storage spot image URL and returns original + expected resized paths.
  * Returns null if URL is not a spots/ image (external, already resized, etc).
+ * resizedPathCandidates: paths to check for existence (1200x1200, 1200x630). Image "has resized" if any exists.
  * @param {string} url - Firebase Storage image URL
- * @return {{originalPath: string, resizedPath: string}|null}
+ * @return {{originalPath: string, resizedPath: string, resizedPathCandidates: string[]}|null}
  */
 function getResizedPathInfo(url) {
   if (typeof url !== "string") return null;
@@ -110,8 +111,12 @@ function getResizedPathInfo(url) {
     }
     const filename = originalPath.split("/").pop();
     const baseName = filename.replace(/\.[^.]+$/, "");
-    const resizedPath = `spots/resized/${baseName}_1200x630.webp`;
-    return {originalPath, resizedPath};
+    const resizedPath = `spots/resized/${baseName}_1200x1200.webp`;
+    const resizedPathCandidates = [
+      resizedPath,
+      `spots/resized/${baseName}_1200x630.webp`,
+    ];
+    return {originalPath, resizedPath, resizedPathCandidates};
   } catch (_) {
     return null;
   }

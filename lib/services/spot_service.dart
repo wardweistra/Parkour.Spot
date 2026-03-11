@@ -1579,16 +1579,22 @@ class SpotService extends ChangeNotifier {
           final info = getResizedPathInfo(url);
           if (info == null) continue;
 
-          try {
-            final ref = _storage.ref().child(info.resizedPath);
-            await ref.getMetadata();
-            // Metadata exists = resized file present, skip
-          } on FirebaseException catch (e) {
-            if (e.code == missingResizedImagesErrorCode) {
-              missingUrls.add(url);
-            } else {
-              debugPrint('Storage error checking ${info.resizedPath}: ${e.code}');
+          // Consider "has resized" if any candidate exists (1200x1200 or 1200x630)
+          bool hasResized = false;
+          for (final candidatePath in info.resizedPathCandidates) {
+            try {
+              final ref = _storage.ref().child(candidatePath);
+              await ref.getMetadata();
+              hasResized = true;
+              break;
+            } on FirebaseException catch (e) {
+              if (e.code != missingResizedImagesErrorCode) {
+                debugPrint('Storage error checking $candidatePath: ${e.code}');
+              }
             }
+          }
+          if (!hasResized) {
+            missingUrls.add(url);
           }
 
           imagesChecked++;

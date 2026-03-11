@@ -12,7 +12,7 @@ void main() {
       const url =
           'https://firebasestorage.googleapis.com/v0/b/bucket/o/spots%2Fphoto.jpg';
       final result = getResizedImageUrl(url);
-      expect(result, contains('spots%2Fresized%2Fphoto_1200x630.webp'));
+      expect(result, contains('spots%2Fresized%2Fphoto_1200x1200.webp'));
     });
 
     test('converts firebasestorage URL with query params (regression: decoded pathSegments)', () {
@@ -23,20 +23,43 @@ void main() {
       const url =
           'https://firebasestorage.googleapis.com/v0/b/parkourspot-93c90.firebasestorage.app/o/spots%2F1755763336408_web_image.jpg?alt=media&token=7ca703bc-2807-43c5-9a2d-3ea1d94c5f95';
       final result = getResizedImageUrl(url);
-      expect(result, contains('spots%2Fresized%2F1755763336408_web_image_1200x630.webp'));
+      expect(result, contains('spots%2Fresized%2F1755763336408_web_image_1200x1200.webp'));
       expect(result, contains('?alt=media&token='));
     });
 
     test('converts storage.googleapis spots URL to resized', () {
       const url = 'https://storage.googleapis.com/bucket/spots/photo.png';
       final result = getResizedImageUrl(url);
-      expect(result, contains('/spots/resized/photo_1200x630.webp'));
+      expect(result, contains('/spots/resized/photo_1200x1200.webp'));
     });
 
     test('returns original if already resized', () {
       const url =
-          'https://storage.googleapis.com/bucket/spots/resized/photo_1200x630.webp';
+          'https://storage.googleapis.com/bucket/spots/resized/photo_1200x1200.webp';
       expect(getResizedImageUrl(url), url);
+    });
+  });
+
+  group('getResizedImageUrlCandidates', () {
+    test('returns [original] for non-Firebase URLs', () {
+      const url = 'https://example.com/image.jpg';
+      expect(getResizedImageUrlCandidates(url), [url]);
+    });
+
+    test('returns [1200x1200, 1200x630, original] for firebasestorage spots URL', () {
+      const url =
+          'https://firebasestorage.googleapis.com/v0/b/bucket/o/spots%2Fphoto.jpg';
+      final candidates = getResizedImageUrlCandidates(url);
+      expect(candidates.length, 3);
+      expect(candidates[0], contains('photo_1200x1200.webp'));
+      expect(candidates[1], contains('photo_1200x630.webp'));
+      expect(candidates[2], url);
+    });
+
+    test('returns [original] for already resized URL', () {
+      const url =
+          'https://storage.googleapis.com/bucket/spots/resized/photo_1200x1200.webp';
+      expect(getResizedImageUrlCandidates(url), [url]);
     });
   });
 
@@ -47,7 +70,11 @@ void main() {
       final info = getResizedPathInfo(url);
       expect(info, isNotNull);
       expect(info!.originalPath, 'spots/photo.jpg');
-      expect(info.resizedPath, 'spots/resized/photo_1200x630.webp');
+      expect(info.resizedPath, 'spots/resized/photo_1200x1200.webp');
+      expect(info.resizedPathCandidates, [
+        'spots/resized/photo_1200x1200.webp',
+        'spots/resized/photo_1200x630.webp',
+      ]);
     });
 
     test('returns null for non-Firebase URLs', () {
@@ -56,7 +83,7 @@ void main() {
 
     test('returns null for already resized paths', () {
       const url =
-          'https://storage.googleapis.com/bucket/spots/resized/photo_1200x630.webp';
+          'https://storage.googleapis.com/bucket/spots/resized/photo_1200x1200.webp';
       expect(getResizedPathInfo(url), isNull);
     });
   });

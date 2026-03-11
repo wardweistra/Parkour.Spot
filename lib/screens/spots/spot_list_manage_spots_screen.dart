@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/spot.dart';
 import '../../services/spot_list_service.dart';
 import '../../services/snackbar_service.dart';
-import '../../utils/image_url_utils.dart';
+import '../../widgets/resized_spot_image.dart';
 
 /// Full-screen manage spots UI: reorder and remove spots from a list.
 /// Used for both narrow and wide screens when the owner wants to manage their list.
@@ -155,7 +154,6 @@ class _SpotListManageSpotsScreenState extends State<SpotListManageSpotsScreen> {
 
   Widget _buildManageableItem(Spot spot, int index, ThemeData theme) {
     final hasImage = spot.imageUrls != null && spot.imageUrls!.isNotEmpty;
-    final imageUrl = hasImage ? getResizedImageUrl(spot.imageUrls!.first) : null;
     final locationText = [spot.city, spot.countryCode]
         .whereType<String>()
         .where((s) => s.isNotEmpty)
@@ -197,11 +195,11 @@ class _SpotListManageSpotsScreenState extends State<SpotListManageSpotsScreen> {
                   ),
                 ),
               ),
-              if (imageUrl != null)
+              if (hasImage)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: CachedNetworkImage(
-                    imageUrl: imageUrl,
+                  child: ResizedSpotImage(
+                    imageUrl: spot.imageUrls!.first,
                     width: 72,
                     height: 72,
                     fit: BoxFit.cover,
@@ -229,7 +227,7 @@ class _SpotListManageSpotsScreenState extends State<SpotListManageSpotsScreen> {
                     ),
                   ),
                 ),
-              if (imageUrl != null) const SizedBox(width: 12),
+              if (hasImage) const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

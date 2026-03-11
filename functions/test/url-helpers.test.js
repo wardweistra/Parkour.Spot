@@ -48,14 +48,14 @@ describe("getResizedImageUrlForApi", () => {
   });
   it("converts firebasestorage spots URL to resized", () => {
     const url = "https://firebasestorage.googleapis.com/v0/b/bucket/o/spots%2Fphoto.jpg";
-    expect(getResizedImageUrlForApi(url)).toContain("spots%2Fresized%2Fphoto_1200x630.webp");
+    expect(getResizedImageUrlForApi(url)).toContain("spots%2Fresized%2Fphoto_1200x1200.webp");
   });
   it("converts storage.googleapis spots URL to resized", () => {
     const url = "https://storage.googleapis.com/bucket/spots/photo.png";
-    expect(getResizedImageUrlForApi(url)).toContain("/spots/resized/photo_1200x630.webp");
+    expect(getResizedImageUrlForApi(url)).toContain("/spots/resized/photo_1200x1200.webp");
   });
   it("returns original if already resized", () => {
-    const url = "https://storage.googleapis.com/bucket/spots/resized/photo_1200x630.webp";
+    const url = "https://storage.googleapis.com/bucket/spots/resized/photo_1200x1200.webp";
     expect(getResizedImageUrlForApi(url)).toBe(url);
   });
   it("returns original for non-string input", () => {
@@ -67,24 +67,32 @@ describe("getResizedPathInfo", () => {
   it("returns null for non-Firebase URLs", () => {
     expect(getResizedPathInfo("https://example.com/image.jpg")).toBeNull();
   });
-  it("returns originalPath and resizedPath for firebasestorage spots URL", () => {
+  it("returns originalPath, resizedPath and resizedPathCandidates for firebasestorage spots URL", () => {
     const url = "https://firebasestorage.googleapis.com/v0/b/bucket/o/spots%2Fphoto.jpg";
     const info = getResizedPathInfo(url);
     expect(info).toEqual({
       originalPath: "spots/photo.jpg",
-      resizedPath: "spots/resized/photo_1200x630.webp",
+      resizedPath: "spots/resized/photo_1200x1200.webp",
+      resizedPathCandidates: [
+        "spots/resized/photo_1200x1200.webp",
+        "spots/resized/photo_1200x630.webp",
+      ],
     });
   });
-  it("returns originalPath and resizedPath for storage.googleapis spots URL", () => {
+  it("returns originalPath, resizedPath and resizedPathCandidates for storage.googleapis spots URL", () => {
     const url = "https://storage.googleapis.com/bucket/spots/photo.png";
     const info = getResizedPathInfo(url);
     expect(info).toEqual({
       originalPath: "spots/photo.png",
-      resizedPath: "spots/resized/photo_1200x630.webp",
+      resizedPath: "spots/resized/photo_1200x1200.webp",
+      resizedPathCandidates: [
+        "spots/resized/photo_1200x1200.webp",
+        "spots/resized/photo_1200x630.webp",
+      ],
     });
   });
   it("returns null for already resized URL", () => {
-    const url = "https://storage.googleapis.com/bucket/spots/resized/photo_1200x630.webp";
+    const url = "https://storage.googleapis.com/bucket/spots/resized/photo_1200x1200.webp";
     expect(getResizedPathInfo(url)).toBeNull();
   });
   it("returns null for non-string input", () => {

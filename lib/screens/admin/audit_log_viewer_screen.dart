@@ -7,10 +7,9 @@ import '../../models/user.dart' as app_user;
 import '../../models/rating.dart';
 import '../../services/auth_service.dart';
 import '../../services/url_service.dart';
-import '../../utils/image_url_utils.dart';
+import '../../widgets/resized_spot_image.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 enum AuditLogEntryType {
   spotCreation,
@@ -1324,8 +1323,8 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
               ),
               borderRadius: BorderRadius.circular(6),
             ),
-            child: CachedNetworkImage(
-              imageUrl: getResizedImageUrl(imageUrl),
+            child: ResizedSpotImage(
+              imageUrl: imageUrl,
               width: 60,
               height: 60,
               fit: BoxFit.cover,

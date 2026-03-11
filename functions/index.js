@@ -479,7 +479,7 @@ exports.userAndListPage = onRequest({region: "europe-west1"}, async (req, res) =
                 if (imageUrl.includes("firebasestorage.googleapis.com") &&
                     imageUrl.includes("spots%2F")) {
                   imageUrl = imageUrl.replace("spots%2F", "spots%2Fresized%2F");
-                  imageUrl = imageUrl.replace(/\.(jpg|jpeg|png|webp)(\?|$)/, "_1200x630.webp$2");
+                  imageUrl = imageUrl.replace(/\.(jpg|jpeg|png|webp)(\?|$)/, "_1200x1200.webp$2");
                 }
               }
             }
@@ -5676,9 +5676,16 @@ exports.triggerResizeForSpot = onCall(
           const info = getResizedPathInfo(url);
           if (!info) continue;
 
-          const resizedFile = bucket.file(info.resizedPath);
-          const [exists] = await resizedFile.exists();
-          if (exists) continue;
+          // Skip if any resized version exists (1200x1200 or 1200x630)
+          let hasResized = false;
+          for (const candidatePath of info.resizedPathCandidates) {
+            const [exists] = await bucket.file(candidatePath).exists();
+            if (exists) {
+              hasResized = true;
+              break;
+            }
+          }
+          if (hasResized) continue;
 
           toProcess.push({originalPath: info.originalPath, resizedPath: info.resizedPath});
         }
@@ -5795,10 +5802,16 @@ exports.triggerResizeForMissingImages = onCall(
             if (seenPaths.has(info.originalPath)) continue;
             seenPaths.add(info.originalPath);
 
-            // Check if resized already exists
-            const resizedFile = bucket.file(info.resizedPath);
-            const [exists] = await resizedFile.exists();
-            if (exists) continue;
+            // Skip if any resized version exists (1200x1200 or 1200x630)
+            let hasResized = false;
+            for (const candidatePath of info.resizedPathCandidates) {
+              const [exists] = await bucket.file(candidatePath).exists();
+              if (exists) {
+                hasResized = true;
+                break;
+              }
+            }
+            if (hasResized) continue;
 
             toProcess.push({
               originalPath: info.originalPath,

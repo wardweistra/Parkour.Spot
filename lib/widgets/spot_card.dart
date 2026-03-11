@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:country_flags/country_flags.dart';
 import 'package:go_router/go_router.dart';
 import '../models/spot.dart';
 import '../services/mobile_detection_service.dart';
 import '../services/url_service.dart';
-import '../utils/image_url_utils.dart';
+import 'resized_spot_image.dart';
 
 enum SpotCardVariant {
   list,      // For list view (original SpotCard behavior)
@@ -114,8 +113,8 @@ class _SpotCardState extends State<SpotCard> {
                               });
                             },
                             itemBuilder: (context, index) {
-                              return CachedNetworkImage(
-                                imageUrl: getResizedImageUrl(widget.spot.imageUrls![index]),
+                              return ResizedSpotImage(
+                                imageUrl: widget.spot.imageUrls![index],
                                 fit: BoxFit.cover,
                                 placeholder: (context, url) => Container(
                                   color: Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -575,8 +574,8 @@ class _SpotCardState extends State<SpotCard> {
                               });
                             },
                             itemBuilder: (context, index) {
-                              return CachedNetworkImage(
-                                imageUrl: getResizedImageUrl(widget.spot.imageUrls![index]),
+                              return ResizedSpotImage(
+                                imageUrl: widget.spot.imageUrls![index],
                                 fit: BoxFit.cover,
                                 placeholder: (context, url) => Container(
                                   color: Theme.of(context).colorScheme.surfaceContainerHighest,
