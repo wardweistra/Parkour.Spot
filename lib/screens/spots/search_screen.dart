@@ -265,6 +265,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   Set<String> _highlightedSpotIds = {}; // Spot IDs from selected list
   DateTime? _lastAutocompleteSpotSelection; // Guard against mobile tap-through
   bool _hasSetInitialAutocompleteQuery = false;
+  bool _hasAutocompleteOptions = false; // True when options overlay has suggestions (for Enter-key behavior)
 
   void _onSpotsChanged() {
     if (mounted) {
@@ -2839,16 +2840,28 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                 onChanged: (value) {
                                   setState(() => _searchQuery = value);
                                 },
-                                onSubmitted: (value) {
-                                  _searchAndNavigateToLocation();
+                                onSubmitted: (_) {
+                                  if (_hasAutocompleteOptions) {
+                                    onFieldSubmitted();
+                                  } else {
+                                    _searchAndNavigateToLocation();
+                                  }
                                 },
                               );
                             },
                             optionsViewBuilder: (BuildContext context, AutocompleteOnSelected<Map<String, dynamic>> onSelected, Iterable<Map<String, dynamic>> options) {
                               final optionsList = options.toList();
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                if (mounted) {
+                                  setState(() => _hasAutocompleteOptions = optionsList.isNotEmpty);
+                                }
+                              });
+                              final highlightedIndex = AutocompleteHighlightedOption.of(context);
                               return _AutocompleteOverlayContent(
                                 optionsList: optionsList,
-                                currentSelection: null,
+                                currentSelection: highlightedIndex >= 0 && highlightedIndex < optionsList.length
+                                    ? highlightedIndex
+                                    : null,
                                 onSelected: onSelected,
                               );
                             },
