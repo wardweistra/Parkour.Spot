@@ -28,6 +28,7 @@ import '../../utils/resized_spot_image_provider.dart';
 import '../../widgets/resized_spot_image.dart';
 import '../../utils/image_preparation.dart';
 import '../../services/user_profile_service.dart';
+import '../../services/jumpflix_service.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode, debugPrint;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -36,6 +37,16 @@ import 'package:web/web.dart' as web;
 import 'package:image_picker/image_picker.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
+
+/// Unified carousel item for YouTube and Jumpflix videos.
+class _CarouselVideoItem {
+  const _CarouselVideoItem({
+    this.thumbnailUrl,
+    required this.launchUrl,
+  });
+  final String? thumbnailUrl;
+  final String launchUrl;
+}
 
 class SpotDetailScreen extends StatefulWidget {
   final Spot spot;
@@ -81,6 +92,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
   // Current spot (can be updated after operations like hide/unhide)
   Spot? _currentSpot;
+
+  /// Cached future for Jumpflix videos (avoids refetch on rebuild).
+  Future<List<JumpflixVideo>>? _jumpflixVideosFuture;
 
   // Getter for the current spot (falls back to widget.spot if not updated)
   Spot get _spot => _currentSpot ?? widget.spot;
@@ -152,12 +166,34 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
     // We no longer initialize embedded YouTube players; thumbnails/links only
 
+    if (widget.spot.id != null) {
+      _jumpflixVideosFuture = Provider.of<JumpflixService>(context,
+              listen: false)
+          .getJumpflixVideosForSpot(widget.spot.id!);
+    } else {
+      _jumpflixVideosFuture = Future<List<JumpflixVideo>>.value([]);
+    }
+
     // Initialize satellite view from SearchStateService
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _searchStateServiceRef = Provider.of<SearchStateService>(context, listen: false);
       _searchStateServiceRef!.addListener(_onSearchStateChanged);
       _isSatelliteViewNotifier.value = _searchStateServiceRef!.isSatellite;
     });
+  }
+
+  @override
+  void didUpdateWidget(SpotDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.spot.id != widget.spot.id) {
+      if (widget.spot.id != null) {
+        _jumpflixVideosFuture = Provider.of<JumpflixService>(context,
+                listen: false)
+            .getJumpflixVideosForSpot(widget.spot.id!);
+      } else {
+        _jumpflixVideosFuture = Future<List<JumpflixVideo>>.value([]);
+      }
+    }
   }
 
   void _updateDocumentTitle() {
@@ -1942,28 +1978,101 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     ] else
                       const SizedBox(height: 24),
 
-                    // YouTube Videos Section - show clickable thumbnails, with carousel when multiple
-                    if (widget.spot.youtubeVideoIds != null &&
-                        widget.spot.youtubeVideoIds!.isNotEmpty) ...[
+                    // Videos Section - YouTube + Jumpflix thumbnails, carousel when multiple
+                    if ((_spot.youtubeVideoIds != null &&
+                            _spot.youtubeVideoIds!.isNotEmpty) ||
+                        _spot.id != null) ...[
                       Center(
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 900),
-                          child: Builder(
-                            builder: (context) {
-                              final videoIds = widget.spot.youtubeVideoIds!;
-                              if (videoIds.length == 1) {
-                                final id = videoIds.first;
+                          child: FutureBuilder<List<JumpflixVideo>>(
+                            future: _jumpflixVideosFuture ??
+                                Future<List<JumpflixVideo>>.value([]),
+                            builder: (context, jumpflixSnapshot) {
+                              if (jumpflixSnapshot.hasError) {
+                                debugPrint(
+                                    'Jumpflix fetch failed: ${jumpflixSnapshot.error}');
+                              }
+                              final youtubeIds =
+                                  _spot.youtubeVideoIds ?? [];
+                              final jumpflixVideos =
+                                  jumpflixSnapshot.data ?? [];
+                              final youtubeItems = youtubeIds
+                                  .map((id) => _CarouselVideoItem(
+                                        thumbnailUrl:
+                                            'https://img.youtube.com/vi/$id/hqdefault.jpg',
+                                        launchUrl:
+                                            'https://www.youtube.com/watch?v=$id',
+                                      ))
+                                  .toList();
+                              final jumpflixItems = jumpflixVideos
+                                  .map((v) => _CarouselVideoItem(
+                                        thumbnailUrl: v.thumbnailUrl,
+                                        launchUrl: v.url,
+                                      ))
+                                  .toList();
+                              final items = [...youtubeItems, ...jumpflixItems];
+
+                              if (items.isEmpty) {
+                                if (jumpflixSnapshot.connectionState ==
+                                        ConnectionState.waiting &&
+                                    (_spot.youtubeVideoIds == null ||
+                                        _spot.youtubeVideoIds!.isEmpty)) {
+                                  return AspectRatio(
+                                    aspectRatio: 16 / 9,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .surfaceContainerHighest,
+                                        borderRadius:
+                                            BorderRadius.circular(12),
+                                      ),
+                                      child: const Center(
+                                        child: CircularProgressIndicator(),
+                                      ),
+                                    ),
+                                  );
+                                }
+                                return const SizedBox.shrink();
+                              }
+
+                              Widget buildThumbnail(_CarouselVideoItem item) {
+                                final thumb = item.thumbnailUrl;
+                                return thumb != null && thumb.isNotEmpty
+                                    ? Image.network(
+                                        thumb,
+                                        fit: BoxFit.cover,
+                                        width: double.infinity,
+                                        height: double.infinity,
+                                      )
+                                    : Container(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .surfaceContainerHighest,
+                                        child: Icon(
+                                          Icons.movie,
+                                          size: 64,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                        ),
+                                      );
+                              }
+
+                              if (items.length == 1) {
+                                final item = items.first;
                                 return ClipRRect(
                                   borderRadius: BorderRadius.circular(12),
                                   child: InkWell(
                                     onTap: () async {
-                                      final uri = Uri.parse(
-                                        'https://www.youtube.com/watch?v=$id',
-                                      );
+                                      final uri =
+                                          Uri.parse(item.launchUrl);
                                       if (await canLaunchUrl(uri)) {
                                         await launchUrl(
                                           uri,
-                                          mode: LaunchMode.externalApplication,
+                                          mode: LaunchMode
+                                              .externalApplication,
                                         );
                                       }
                                     },
@@ -1972,19 +2081,13 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                       child: Stack(
                                         alignment: Alignment.center,
                                         children: [
-                                          Image.network(
-                                            'https://img.youtube.com/vi/$id/hqdefault.jpg',
-                                            fit: BoxFit.cover,
-                                            width: double.infinity,
-                                            height: double.infinity,
-                                          ),
+                                          buildThumbnail(item),
                                           Container(
                                             width: 64,
                                             height: 64,
                                             decoration: BoxDecoration(
-                                              color: Colors.black.withValues(
-                                                alpha: 0.6,
-                                              ),
+                                              color: Colors.black
+                                                  .withValues(alpha: 0.6),
                                               shape: BoxShape.circle,
                                             ),
                                             child: const Icon(
@@ -2000,7 +2103,20 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                 );
                               }
 
-                              // Multiple videos -> carousel
+                              final itemCount = items.length;
+                              final safeIndex = _currentVideoIndex
+                                  .clamp(0, itemCount - 1);
+                              if (safeIndex != _currentVideoIndex) {
+                                WidgetsBinding.instance
+                                    .addPostFrameCallback((_) {
+                                  if (mounted) {
+                                    setState(() {
+                                      _currentVideoIndex = safeIndex;
+                                    });
+                                  }
+                                });
+                              }
+
                               return Stack(
                                 children: [
                                   ClipRRect(
@@ -2009,19 +2125,18 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                       aspectRatio: 16 / 9,
                                       child: PageView.builder(
                                         controller: _videoPageController,
-                                        itemCount: videoIds.length,
+                                        itemCount: itemCount,
                                         onPageChanged: (i) {
                                           setState(() {
                                             _currentVideoIndex = i;
                                           });
                                         },
                                         itemBuilder: (context, index) {
-                                          final id = videoIds[index];
+                                          final item = items[index];
                                           return InkWell(
                                             onTap: () async {
                                               final uri = Uri.parse(
-                                                'https://www.youtube.com/watch?v=$id',
-                                              );
+                                                  item.launchUrl);
                                               if (await canLaunchUrl(uri)) {
                                                 await launchUrl(
                                                   uri,
@@ -2033,19 +2148,17 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                             child: Stack(
                                               alignment: Alignment.center,
                                               children: [
-                                                Image.network(
-                                                  'https://img.youtube.com/vi/$id/hqdefault.jpg',
-                                                  fit: BoxFit.cover,
-                                                  width: double.infinity,
-                                                  height: double.infinity,
-                                                ),
+                                                buildThumbnail(item),
                                                 Container(
                                                   width: 64,
                                                   height: 64,
-                                                  decoration: BoxDecoration(
+                                                  decoration:
+                                                      BoxDecoration(
                                                     color: Colors.black
-                                                        .withValues(alpha: 0.6),
-                                                    shape: BoxShape.circle,
+                                                        .withValues(
+                                                            alpha: 0.6),
+                                                    shape:
+                                                        BoxShape.circle,
                                                   ),
                                                   child: const Icon(
                                                     Icons.play_arrow,
@@ -2061,40 +2174,44 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                     ),
                                   ),
 
-                                  // Left arrow
-                                  if (!MobileDetectionService.isMobileDevice)
+                                  if (!MobileDetectionService
+                                      .isMobileDevice)
                                     Positioned(
                                       left: 8,
                                       top: 0,
                                       bottom: 0,
                                       child: Center(
                                         child: Material(
-                                          color: Colors.black.withValues(alpha: 0.6),
+                                          color: Colors.black
+                                              .withValues(alpha: 0.6),
                                           shape: const CircleBorder(),
                                           child: InkWell(
                                             onTap: () {
-                                              final prev = _currentVideoIndex - 1;
+                                              final prev =
+                                                  _currentVideoIndex - 1;
                                               final target = prev < 0
-                                                  ? videoIds.length - 1
+                                                  ? itemCount - 1
                                                   : prev;
-                                              _videoPageController.animateToPage(
+                                              _videoPageController
+                                                  .animateToPage(
                                                 target,
                                                 duration: const Duration(
-                                                  milliseconds: 250,
-                                                ),
+                                                    milliseconds: 250),
                                                 curve: Curves.easeOut,
                                               );
                                             },
-                                            customBorder: const CircleBorder(),
+                                            customBorder:
+                                                const CircleBorder(),
                                             child: Container(
                                               width: 40,
                                               height: 40,
-                                              decoration: BoxDecoration(
+                                              decoration:
+                                                  BoxDecoration(
                                                 shape: BoxShape.circle,
                                                 border: Border.all(
-                                                  color: Colors.white.withValues(
-                                                    alpha: 0.3,
-                                                  ),
+                                                  color: Colors.white
+                                                      .withValues(
+                                                          alpha: 0.3),
                                                 ),
                                               ),
                                               child: const Icon(
@@ -2107,39 +2224,42 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                       ),
                                     ),
 
-                                  // Right arrow
-                                  if (!MobileDetectionService.isMobileDevice)
+                                  if (!MobileDetectionService
+                                      .isMobileDevice)
                                     Positioned(
                                       right: 8,
                                       top: 0,
                                       bottom: 0,
                                       child: Center(
                                         child: Material(
-                                          color: Colors.black.withValues(alpha: 0.6),
+                                          color: Colors.black
+                                              .withValues(alpha: 0.6),
                                           shape: const CircleBorder(),
                                           child: InkWell(
                                             onTap: () {
                                               final next =
                                                   (_currentVideoIndex + 1) %
-                                                  videoIds.length;
-                                              _videoPageController.animateToPage(
+                                                      itemCount;
+                                              _videoPageController
+                                                  .animateToPage(
                                                 next,
                                                 duration: const Duration(
-                                                  milliseconds: 250,
-                                                ),
+                                                    milliseconds: 250),
                                                 curve: Curves.easeOut,
                                               );
                                             },
-                                            customBorder: const CircleBorder(),
+                                            customBorder:
+                                                const CircleBorder(),
                                             child: Container(
                                               width: 40,
                                               height: 40,
-                                              decoration: BoxDecoration(
+                                              decoration:
+                                                  BoxDecoration(
                                                 shape: BoxShape.circle,
                                                 border: Border.all(
-                                                  color: Colors.white.withValues(
-                                                    alpha: 0.3,
-                                                  ),
+                                                  color: Colors.white
+                                                      .withValues(
+                                                          alpha: 0.3),
                                                 ),
                                               ),
                                               child: const Icon(
@@ -2152,7 +2272,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                       ),
                                     ),
 
-                                  // Dots indicator
                                   Positioned(
                                     bottom: 8,
                                     left: 0,
@@ -2160,18 +2279,16 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                     child: Row(
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
-                                      children: List.generate(videoIds.length, (
-                                        index,
-                                      ) {
+                                      children: List.generate(
+                                          itemCount, (index) {
                                         final isActive =
                                             index == _currentVideoIndex;
                                         return AnimatedContainer(
                                           duration: const Duration(
-                                            milliseconds: 200,
-                                          ),
-                                          margin: const EdgeInsets.symmetric(
-                                            horizontal: 3,
-                                          ),
+                                              milliseconds: 200),
+                                          margin: const EdgeInsets
+                                              .symmetric(
+                                                  horizontal: 3),
                                           width: isActive ? 8 : 6,
                                           height: isActive ? 8 : 6,
                                           decoration: BoxDecoration(
@@ -2180,9 +2297,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                                 : Colors.white54,
                                             shape: BoxShape.circle,
                                             border: Border.all(
-                                              color: Colors.white.withValues(
-                                                alpha: 0.3,
-                                              ),
+                                              color: Colors.white
+                                                  .withValues(
+                                                      alpha: 0.3),
                                             ),
                                           ),
                                         );
