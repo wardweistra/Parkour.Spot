@@ -253,26 +253,28 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 
   void _updateUrlForTab(int index) {
-    // Update URL without navigating away from the explore screen
-    // Use pushState to update URL without triggering GoRouter navigation
-    // This prevents the screen from being rebuilt and avoids double-loading
-    if (kIsWeb) {
-      String newPath;
-      switch (index) {
-        case 0:
-          newPath = '/explore';
-          break;
-        case 1:
-          newPath = '/explore?tab=add';
-          break;
-        case 2:
-          newPath = '/explore?tab=profile';
-          break;
-        default:
-          newPath = '/explore';
-      }
-      // Use pushState to update URL without triggering router rebuild
-      web.window.history.pushState(null, '', newPath);
+    // Use context.go to keep GoRouter in sync when switching tabs. This is
+    // critical for the back stack: when the user navigates from Account tab to
+    // Moderator/Admin tools and presses back, we need GoRouter to know we were
+    // at /explore?tab=profile so it returns to Account tab, not Explore tab.
+    // (Previously we used pushState which updated the URL but never notified
+    // GoRouter, causing back to jump to Explore tab.)
+    String newPath;
+    switch (index) {
+      case 0:
+        newPath = '/explore';
+        break;
+      case 1:
+        newPath = '/explore?tab=add';
+        break;
+      case 2:
+        newPath = '/explore?tab=profile';
+        break;
+      default:
+        newPath = '/explore';
+    }
+    if (context.mounted) {
+      context.go(newPath);
     }
   }
 
