@@ -13,6 +13,7 @@ import 'package:parkour_spot/services/sync_source_service.dart';
 import 'package:parkour_spot/services/api_client_service.dart';
 import 'package:parkour_spot/services/search_state_service.dart';
 import 'package:parkour_spot/services/geocoding_service.dart';
+import 'package:parkour_spot/services/jumpflix_service.dart';
 import 'package:parkour_spot/services/user_management_service.dart';
 import 'package:parkour_spot/services/snackbar_service.dart';
 import 'package:parkour_spot/services/spot_list_service.dart';
@@ -117,6 +118,7 @@ class ParkourSpotApp extends StatelessWidget {
           create: (_) => SearchStateService()..loadFromStorage(),
         ),
         ChangeNotifierProvider(create: (_) => GeocodingService()),
+        ChangeNotifierProvider(create: (_) => JumpflixService()),
         Provider(create: (_) => SpotReportService()),
         ChangeNotifierProxyProvider<AuthService, SpotListService>(
           create: (context) {

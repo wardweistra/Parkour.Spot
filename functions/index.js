@@ -6595,6 +6595,176 @@ exports.generateSitemaps = onCall(
     },
 );
 
+// ========== Jumpflix integration: video-spot link import ==========
+const SPOT_JUMPFLIX_VIDEOS_COLLECTION = "spotJumpflixVideos";
+const JUMPFLIX_API_URL = "https://www.jumpflix.tv/api/v1/videos?type=movie";
+
+/**
+ * Fetch Jumpflix videos from API and return parsed JSON
+ * @param {string} token - Bearer token for Jumpflix API
+ * @return {Promise<Object>} Parsed API response
+ */
+function fetchJumpflixVideos(token) {
+  return new Promise((resolve, reject) => {
+    const url = new URL(JUMPFLIX_API_URL);
+    const options = {
+      hostname: url.hostname,
+      path: url.pathname + url.search,
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+      },
+    };
+    const req = https.request(options, (res) => {
+      let data = "";
+      res.on("data", (chunk) => (data += chunk));
+      res.on("end", () => {
+        try {
+          resolve(JSON.parse(data));
+        } catch (e) {
+          reject(new Error(`Jumpflix API response parse error: ${e.message}`));
+        }
+      });
+    });
+    req.on("error", reject);
+    req.end();
+  });
+}
+
+/**
+ * Perform Jumpflix spot-video link import: fetch from API, invert to spot-centric,
+ * and write to Firestore collection spotJumpflixVideos
+ * @param {string} token - Bearer token for Jumpflix API
+ * @return {Promise<Object>} Stats: spotsUpdated, spotsRemoved, jumpflixVideoCount
+ */
+async function performJumpflixImport(token) {
+  if (!token || typeof token !== "string") {
+    throw new Error("Jumpflix API token is required");
+  }
+
+  const apiResponse = await fetchJumpflixVideos(token);
+  const videos = apiResponse?.videos;
+  if (!Array.isArray(videos)) {
+    throw new Error("Jumpflix API did not return a videos array");
+  }
+
+  // Invert: build Map<spotId, number[]> from API format { jumpflixId, spotIds[] }
+  const spotToJumpflixIds = new Map();
+  for (const v of videos) {
+    const jumpflixId = v.jumpflixId;
+    const spotIds = v.spotIds;
+    if (typeof jumpflixId !== "number" || !Array.isArray(spotIds)) continue;
+    for (const spotId of spotIds) {
+      if (typeof spotId === "string" && spotId.trim()) {
+        if (!spotToJumpflixIds.has(spotId)) {
+          spotToJumpflixIds.set(spotId, []);
+        }
+        spotToJumpflixIds.get(spotId).push(jumpflixId);
+      }
+    }
+  }
+
+  // Deduplicate and sort jumpflixIds per spot
+  for (const [spotId, ids] of spotToJumpflixIds) {
+    spotToJumpflixIds.set(spotId, [...new Set(ids)].sort((a, b) => a - b));
+  }
+
+  const newSpotIds = new Set(spotToJumpflixIds.keys());
+  const existingSnapshot = await db.collection(SPOT_JUMPFLIX_VIDEOS_COLLECTION)
+      .get();
+  const existingSpotIds = new Set(existingSnapshot.docs.map((d) => d.id));
+
+  const toDelete = [...existingSpotIds].filter((id) => !newSpotIds.has(id));
+  const toWrite = [...newSpotIds];
+  const batchSize = 500;
+  let spotsUpdated = 0;
+  let spotsRemoved = 0;
+
+  // Batch deletes
+  for (let i = 0; i < toDelete.length; i += batchSize) {
+    const batch = db.batch();
+    const chunk = toDelete.slice(i, i + batchSize);
+    for (const spotId of chunk) {
+      batch.delete(db.collection(SPOT_JUMPFLIX_VIDEOS_COLLECTION).doc(spotId));
+      spotsRemoved++;
+    }
+    await batch.commit();
+  }
+
+  // Batch writes
+  const now = admin.firestore.FieldValue.serverTimestamp();
+  for (let i = 0; i < toWrite.length; i += batchSize) {
+    const batch = db.batch();
+    const chunk = toWrite.slice(i, i + batchSize);
+    for (const spotId of chunk) {
+      const jumpflixIds = spotToJumpflixIds.get(spotId);
+      batch.set(db.collection(SPOT_JUMPFLIX_VIDEOS_COLLECTION).doc(spotId), {
+        jumpflixIds,
+        updatedAt: now,
+      });
+      spotsUpdated++;
+    }
+    await batch.commit();
+  }
+
+  const jumpflixVideoCount = videos.length;
+  console.log(
+      `Jumpflix import: spotsUpdated=${spotsUpdated}, spotsRemoved=${spotsRemoved}, jumpflixVideoCount=${jumpflixVideoCount}`,
+  );
+  return {spotsUpdated, spotsRemoved, jumpflixVideoCount};
+}
+
+/**
+ * Scheduled function to import Jumpflix video-spot links nightly
+ * Runs at 02:00 UTC every day
+ */
+exports.importJumpflixSpotLinks = onSchedule(
+    {
+      schedule: "every day 02:00",
+      timeZone: "UTC",
+      region: "europe-west1",
+      memory: "256MiB",
+      timeoutSeconds: 300,
+      secrets: ["JUMPFLIX_API_TOKEN"],
+    },
+    async () => {
+      console.log("Jumpflix spot links import started");
+      const token = process.env.JUMPFLIX_API_TOKEN;
+      if (!token) {
+        throw new Error("JUMPFLIX_API_TOKEN secret not configured");
+      }
+      try {
+        const result = await performJumpflixImport(token);
+        console.log("Jumpflix spot links import completed:", result);
+      } catch (error) {
+        console.error("Error in Jumpflix import:", error);
+        throw error;
+      }
+    },
+);
+
+/**
+ * Admin callable: Manually trigger Jumpflix spot links import
+ */
+exports.runJumpflixImport = onCall(
+    {
+      region: "europe-west1",
+      memory: "256MiB",
+      timeoutSeconds: 300,
+      secrets: ["JUMPFLIX_API_TOKEN"],
+    },
+    async (request) => {
+      await ensureAdmin(request);
+      const token = process.env.JUMPFLIX_API_TOKEN;
+      if (!token) {
+        throw new Error("Jumpflix API token not configured. Set JUMPFLIX_API_TOKEN secret.");
+      }
+      const result = await performJumpflixImport(token);
+      return {success: true, ...result};
+    },
+);
+
+// ========== User activity metrics ==========
 /**
  * Helper function to calculate and store user activity metrics (DAU/WAU/MAU)
  * Can be called by both scheduled and manual test functions

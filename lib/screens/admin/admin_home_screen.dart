@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
+import '../../services/jumpflix_service.dart';
 import '../../services/spot_service.dart';
 import '../../widgets/page_scaffold.dart';
 
@@ -235,6 +236,66 @@ class AdminHomeScreen extends StatelessWidget {
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Sitemaps generated successfully')),
+                    );
+                  } catch (e) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: $e')),
+                    );
+                  }
+                },
+              ),
+            ),
+            const SizedBox(height: 8),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.video_library),
+                title: const Text('Import Jumpflix Spot Links'),
+                subtitle: const Text(
+                  'Fetch Jumpflix video-spot mappings and update the database (also runs nightly at 02:00 UTC)',
+                ),
+                onTap: () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Import Jumpflix Spot Links'),
+                      content: const Text(
+                        'This will fetch video-spot mappings from Jumpflix and update the '
+                        'spotJumpflixVideos collection. Continue?',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(false),
+                          child: const Text('Cancel'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Navigator.of(ctx).pop(true),
+                          child: const Text('Import'),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (confirmed != true) return;
+
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Importing Jumpflix spot links...')),
+                  );
+
+                  try {
+                    final jumpflixService =
+                        Provider.of<JumpflixService>(context, listen: false);
+                    final result = await jumpflixService.runJumpflixImport();
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Done. Spots updated: ${result['spotsUpdated']}, '
+                          'removed: ${result['spotsRemoved']}, '
+                          'Jumpflix videos: ${result['jumpflixVideoCount']}',
+                        ),
+                      ),
                     );
                   } catch (e) {
                     if (!context.mounted) return;
