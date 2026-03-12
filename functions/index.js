@@ -6597,7 +6597,11 @@ exports.generateSitemaps = onCall(
 
 // ========== Jumpflix integration: video-spot link import ==========
 const SPOT_JUMPFLIX_VIDEOS_COLLECTION = "spotJumpflixVideos";
-const JUMPFLIX_API_URL = "https://www.jumpflix.tv/api/v1/videos?type=movie";
+const JUMPFLIX_VIDEOS_COLLECTION = "jumpflixVideos";
+const JUMPFLIX_THUMBNAILS_PREFIX = "jumpflix/thumbnails/";
+const JUMPFLIX_API_BASE = "https://www.jumpflix.tv/api/v1";
+const JUMPFLIX_API_URL = `${JUMPFLIX_API_BASE}/videos?type=movie`;
+const JUMPFLIX_API_DELAY_MS = 150;
 
 /**
  * Fetch Jumpflix videos from API and return parsed JSON
@@ -6632,10 +6636,66 @@ function fetchJumpflixVideos(token) {
 }
 
 /**
- * Perform Jumpflix spot-video link import: fetch from API, invert to spot-centric,
- * and write to Firestore collection spotJumpflixVideos
+ * Fetch single Jumpflix video details from API
  * @param {string} token - Bearer token for Jumpflix API
- * @return {Promise<Object>} Stats: spotsUpdated, spotsRemoved, jumpflixVideoCount
+ * @param {number} jumpflixId - Jumpflix video ID
+ * @return {Promise<Object>} Parsed API response (id, title, description, url, thumbnail, ...)
+ */
+function fetchJumpflixVideoDetails(token, jumpflixId) {
+  return new Promise((resolve, reject) => {
+    const pathSeg = `/videos/${jumpflixId}`;
+    const options = {
+      hostname: "www.jumpflix.tv",
+      path: `/api/v1${pathSeg}`,
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+      },
+    };
+    const req = https.request(options, (res) => {
+      let data = "";
+      res.on("data", (chunk) => (data += chunk));
+      res.on("end", () => {
+        try {
+          resolve(JSON.parse(data));
+        } catch (e) {
+          reject(new Error(`Jumpflix video ${jumpflixId} parse error: ${e.message}`));
+        }
+      });
+    });
+    req.on("error", reject);
+    req.end();
+  });
+}
+
+/**
+ * Download thumbnail from URL and upload to Firebase Storage (overwrites if exists)
+ * @param {string} thumbnailUrl - URL of thumbnail (e.g. from Jumpflix API)
+ * @param {number} jumpflixId - Jumpflix video ID for filename
+ * @return {Promise<string>} Public URL of stored thumbnail
+ */
+async function downloadAndStoreJumpflixThumbnail(thumbnailUrl, jumpflixId) {
+  const ext = path.extname(new URL(thumbnailUrl).pathname) || ".webp";
+  const storagePath = `${JUMPFLIX_THUMBNAILS_PREFIX}${jumpflixId}${ext}`;
+  const imageBuffer = await downloadFile(thumbnailUrl);
+  const contentType = ext === ".webp" ? "image/webp" :
+    ext === ".jpg" || ext === ".jpeg" ? "image/jpeg" : "image/png";
+  const file = bucket.file(storagePath);
+  await file.save(imageBuffer, {
+    metadata: {
+      contentType,
+      cacheControl: "public, max-age=31536000",
+    },
+  });
+  await file.makePublic();
+  return getPublicUrl(storagePath);
+}
+
+/**
+ * Perform Jumpflix spot-video link import: fetch from API, store video details + thumbnails,
+ * invert to spot-centric, and write to Firestore
+ * @param {string} token - Bearer token for Jumpflix API
+ * @return {Promise<Object>} Stats: spotsUpdated, spotsRemoved, jumpflixVideoCount, videosStored
  */
 async function performJumpflixImport(token) {
   if (!token || typeof token !== "string") {
@@ -6646,6 +6706,65 @@ async function performJumpflixImport(token) {
   const videos = apiResponse?.videos;
   if (!Array.isArray(videos)) {
     throw new Error("Jumpflix API did not return a videos array");
+  }
+
+  const newJumpflixIds = new Set();
+  const now = admin.firestore.FieldValue.serverTimestamp();
+
+  // Fetch details for each video, download thumbnails, store in jumpflixVideos
+  for (const v of videos) {
+    const jumpflixId = v.jumpflixId;
+    if (typeof jumpflixId !== "number") continue;
+    newJumpflixIds.add(jumpflixId);
+
+    try {
+      const details = await fetchJumpflixVideoDetails(token, jumpflixId);
+      await delay(JUMPFLIX_API_DELAY_MS);
+
+      const title = details?.title ?? "";
+      const description = details?.description ?? "";
+      const url = details?.url ?? `https://www.jumpflix.tv/movie/${details?.slug || jumpflixId}`;
+      const thumbnailSource = details?.thumbnail;
+
+      let thumbnailUrl = null;
+      if (thumbnailSource && typeof thumbnailSource === "string") {
+        try {
+          thumbnailUrl = await downloadAndStoreJumpflixThumbnail(
+              thumbnailSource,
+              jumpflixId,
+          );
+        } catch (thumbErr) {
+          console.warn(`Failed to store thumbnail for Jumpflix ${jumpflixId}:`, thumbErr.message);
+        }
+      }
+
+      await db.collection(JUMPFLIX_VIDEOS_COLLECTION).doc(String(jumpflixId)).set({
+        title,
+        description,
+        url,
+        thumbnailUrl,
+        updatedAt: now,
+      });
+    } catch (err) {
+      console.error(`Failed to fetch/store Jumpflix video ${jumpflixId}:`, err.message);
+      throw err;
+    }
+  }
+
+  // Remove jumpflixVideos docs and thumbnails for videos no longer in the list
+  const existingVideosSnapshot = await db.collection(JUMPFLIX_VIDEOS_COLLECTION).get();
+  const thumbExts = [".webp", ".jpg", ".jpeg", ".png"];
+  for (const doc of existingVideosSnapshot.docs) {
+    const id = parseInt(doc.id, 10);
+    if (!isNaN(id) && !newJumpflixIds.has(id)) {
+      await doc.ref.delete();
+      const basePath = `${JUMPFLIX_THUMBNAILS_PREFIX}${doc.id}`;
+      for (const ext of thumbExts) {
+        try {
+          await bucket.file(basePath + ext).delete();
+        } catch (_) {}
+      }
+    }
   }
 
   // Invert: build Map<spotId, number[]> from API format { jumpflixId, spotIds[] }
@@ -6692,7 +6811,6 @@ async function performJumpflixImport(token) {
   }
 
   // Batch writes
-  const now = admin.firestore.FieldValue.serverTimestamp();
   for (let i = 0; i < toWrite.length; i += batchSize) {
     const batch = db.batch();
     const chunk = toWrite.slice(i, i + batchSize);
@@ -6711,7 +6829,12 @@ async function performJumpflixImport(token) {
   console.log(
       `Jumpflix import: spotsUpdated=${spotsUpdated}, spotsRemoved=${spotsRemoved}, jumpflixVideoCount=${jumpflixVideoCount}`,
   );
-  return {spotsUpdated, spotsRemoved, jumpflixVideoCount};
+  return {
+    spotsUpdated,
+    spotsRemoved,
+    jumpflixVideoCount,
+    videosStored: jumpflixVideoCount,
+  };
 }
 
 /**
@@ -6723,8 +6846,8 @@ exports.importJumpflixSpotLinks = onSchedule(
       schedule: "every day 02:00",
       timeZone: "UTC",
       region: "europe-west1",
-      memory: "256MiB",
-      timeoutSeconds: 300,
+      memory: "512MiB",
+      timeoutSeconds: 540,
       secrets: ["JUMPFLIX_API_TOKEN"],
     },
     async () => {
@@ -6749,8 +6872,8 @@ exports.importJumpflixSpotLinks = onSchedule(
 exports.runJumpflixImport = onCall(
     {
       region: "europe-west1",
-      memory: "256MiB",
-      timeoutSeconds: 300,
+      memory: "512MiB",
+      timeoutSeconds: 540,
       secrets: ["JUMPFLIX_API_TOKEN"],
     },
     async (request) => {

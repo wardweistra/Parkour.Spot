@@ -168,5 +168,12 @@ service cloud.firestore {
       allow read: if true;
       allow write: if false;
     }
+
+    // JumpflixVideos collection - video details (title, description, url, thumbnailUrl)
+    // Public read; only Cloud Functions write
+    match /jumpflixVideos/{videoId} {
+      allow read: if true;
+      allow write: if false;
+    }
   }
 }
