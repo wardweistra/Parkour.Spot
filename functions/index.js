@@ -6762,7 +6762,9 @@ async function performJumpflixImport(token) {
       for (const ext of thumbExts) {
         try {
           await bucket.file(basePath + ext).delete();
-        } catch (_) {}
+        } catch (_) {
+          // Ignore - thumbnail may not exist for this extension
+        }
       }
     }
   }
