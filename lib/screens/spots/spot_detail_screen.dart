@@ -23,7 +23,6 @@ import '../../services/snackbar_service.dart';
 import '../../services/spot_list_service.dart';
 import '../../services/feature_access_service.dart';
 import '../../models/spot_list.dart';
-import '../../utils/image_url_utils.dart';
 import '../../utils/resized_spot_image_provider.dart';
 import '../../widgets/resized_spot_image.dart';
 import '../../utils/image_preparation.dart';

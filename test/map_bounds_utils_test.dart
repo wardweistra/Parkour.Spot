@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:parkour_spot/models/spot.dart';
 import 'package:parkour_spot/utils/map_bounds_utils.dart';
 
