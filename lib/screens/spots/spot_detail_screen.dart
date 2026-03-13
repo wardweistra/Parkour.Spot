@@ -36,6 +36,10 @@ import 'package:web/web.dart' as web;
 import 'package:image_picker/image_picker.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+
+/// Max characters of description to show in the video overlay.
+const int _videoDescriptionPreviewLength = 80;
 
 /// Unified carousel item for YouTube and Jumpflix videos.
 class _CarouselVideoItem {
@@ -43,11 +47,21 @@ class _CarouselVideoItem {
     this.thumbnailUrl,
     required this.launchUrl,
     this.preferContain = false,
+    this.brandLogoAsset,
+    this.brandLabel,
+    this.brandDescription,
+    this.useYoutubeIcon = false,
   });
   final String? thumbnailUrl;
   final String launchUrl;
   /// When true, use BoxFit.contain (e.g. portrait posters); else BoxFit.cover.
   final bool preferContain;
+  /// Asset path for brand logo (e.g. Jumpflix). When null and useYoutubeIcon, use FontAwesome YouTube icon.
+  final String? brandLogoAsset;
+  final String? brandLabel;
+  /// Optional description preview (e.g. first N chars of Jumpflix video description).
+  final String? brandDescription;
+  final bool useYoutubeIcon;
 }
 
 class SpotDetailScreen extends StatefulWidget {
@@ -2005,6 +2019,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                             'https://img.youtube.com/vi/$id/hqdefault.jpg',
                                         launchUrl:
                                             'https://www.youtube.com/watch?v=$id',
+                                        useYoutubeIcon: true,
+                                        brandLabel: 'YouTube',
                                       ))
                                   .toList();
                               final jumpflixItems = jumpflixVideos
@@ -2026,10 +2042,23 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                             )
                                             .toString()
                                         : v.url;
+                                    final descPreview =
+                                        v.description.isNotEmpty
+                                            ? (v.description.length <=
+                                                    _videoDescriptionPreviewLength
+                                                ? v.description
+                                                : '${v.description.substring(0, _videoDescriptionPreviewLength)}…')
+                                            : null;
                                     return _CarouselVideoItem(
                                       thumbnailUrl: v.thumbnailUrl,
                                       launchUrl: launchUrl,
                                       preferContain: true,
+                                      brandLogoAsset:
+                                          'assets/images/jumpflix-logo.webp',
+                                      brandLabel: v.title.isNotEmpty
+                                          ? v.title
+                                          : 'Jumpflix',
+                                      brandDescription: descPreview,
                                     );
                                   })
                                   .toList();
@@ -2084,6 +2113,105 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                       );
                               }
 
+                              Widget buildBrandOverlay(_CarouselVideoItem item) {
+                                final hasLogo = item.brandLogoAsset != null &&
+                                    item.brandLogoAsset!.isNotEmpty;
+                                final hasLabel =
+                                    item.brandLabel != null &&
+                                        item.brandLabel!.isNotEmpty;
+                                final hasDescription =
+                                    item.brandDescription != null &&
+                                        item.brandDescription!.isNotEmpty;
+                                if (!hasLogo &&
+                                    !item.useYoutubeIcon &&
+                                    !hasLabel &&
+                                    !hasDescription) {
+                                  return const SizedBox.shrink();
+                                }
+                                return Positioned(
+                                  left: 8,
+                                  bottom: 8,
+                                  child: ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                        maxWidth: 280),
+                                    child: Material(
+                                      color: Colors.black.withValues(
+                                          alpha: 0.65),
+                                      borderRadius:
+                                          BorderRadius.circular(8),
+                                      child: Padding(
+                                        padding:
+                                            const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 6,
+                                        ),
+                                        child: Column(
+                                          mainAxisSize:
+                                              MainAxisSize.min,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              mainAxisSize:
+                                                  MainAxisSize.max,
+                                              children: [
+                                                if (item.useYoutubeIcon)
+                                                  FaIcon(
+                                                    FontAwesomeIcons.youtube,
+                                                    color: Colors.white,
+                                                    size: 20,
+                                                  )
+                                                else if (hasLogo)
+                                                  Image.asset(
+                                                    item.brandLogoAsset!,
+                                                    height: 20,
+                                                    fit: BoxFit.contain,
+                                                    errorBuilder: (_, error,
+                                                            stackTrace) =>
+                                                        const SizedBox.shrink(),
+                                                  ),
+                                                if ((item.useYoutubeIcon ||
+                                                        hasLogo) &&
+                                                    hasLabel)
+                                                  const SizedBox(width: 8),
+                                                if (hasLabel)
+                                                  Expanded(
+                                                    child: Text(
+                                                      item.brandLabel!,
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 12,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                      ),
+                                                      maxLines: 2,
+                                                      overflow: TextOverflow
+                                                          .ellipsis,
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
+                                            if (hasDescription) ...[
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                item.brandDescription!,
+                                                style: TextStyle(
+                                                  color: Colors.white
+                                                      .withValues(alpha: 0.9),
+                                                  fontSize: 11,
+                                                ),
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }
+
                               if (items.length == 1) {
                                 final item = items.first;
                                 return ClipRRect(
@@ -2120,6 +2248,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                               size: 40,
                                             ),
                                           ),
+                                          buildBrandOverlay(item),
                                         ],
                                       ),
                                     ),
@@ -2190,6 +2319,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                                     size: 40,
                                                   ),
                                                 ),
+                                                buildBrandOverlay(item),
                                               ],
                                             ),
                                           );
