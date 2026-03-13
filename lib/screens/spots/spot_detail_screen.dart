@@ -49,6 +49,7 @@ class _CarouselVideoItem {
     this.preferContain = false,
     this.brandLogoAsset,
     this.brandLabel,
+    this.brandSubtitle,
     this.brandDescription,
     this.useYoutubeIcon = false,
   });
@@ -59,6 +60,8 @@ class _CarouselVideoItem {
   /// Asset path for brand logo (e.g. Jumpflix). When null and useYoutubeIcon, use FontAwesome YouTube icon.
   final String? brandLogoAsset;
   final String? brandLabel;
+  /// Optional label above the title (e.g. "As seen in" for Jumpflix).
+  final String? brandSubtitle;
   /// Optional description preview (e.g. first N chars of Jumpflix video description).
   final String? brandDescription;
   final bool useYoutubeIcon;
@@ -2058,6 +2061,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                       brandLabel: v.title.isNotEmpty
                                           ? v.title
                                           : 'Jumpflix',
+                                      brandSubtitle: 'As seen in',
                                       brandDescription: descPreview,
                                     );
                                   })
@@ -2119,12 +2123,16 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                 final hasLabel =
                                     item.brandLabel != null &&
                                         item.brandLabel!.isNotEmpty;
+                                final hasSubtitle =
+                                    item.brandSubtitle != null &&
+                                        item.brandSubtitle!.isNotEmpty;
                                 final hasDescription =
                                     item.brandDescription != null &&
                                         item.brandDescription!.isNotEmpty;
                                 if (!hasLogo &&
                                     !item.useYoutubeIcon &&
                                     !hasLabel &&
+                                    !hasSubtitle &&
                                     !hasDescription) {
                                   return const SizedBox.shrink();
                                 }
@@ -2151,6 +2159,20 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
+                                            if (hasSubtitle) ...[
+                                              Text(
+                                                item.brandSubtitle!,
+                                                style: TextStyle(
+                                                  color: Colors.white
+                                                      .withValues(alpha: 0.8),
+                                                  fontSize: 10,
+                                                  fontWeight:
+                                                      FontWeight.w500,
+                                                  letterSpacing: 0.5,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 2),
+                                            ],
                                             Row(
                                               mainAxisSize:
                                                   MainAxisSize.max,
