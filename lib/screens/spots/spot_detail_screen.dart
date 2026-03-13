@@ -42,9 +42,12 @@ class _CarouselVideoItem {
   const _CarouselVideoItem({
     this.thumbnailUrl,
     required this.launchUrl,
+    this.preferContain = false,
   });
   final String? thumbnailUrl;
   final String launchUrl;
+  /// When true, use BoxFit.contain (e.g. portrait posters); else BoxFit.cover.
+  final bool preferContain;
 }
 
 class SpotDetailScreen extends StatefulWidget {
@@ -2005,12 +2008,32 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                       ))
                                   .toList();
                               final jumpflixItems = jumpflixVideos
-                                  .map((v) => _CarouselVideoItem(
-                                        thumbnailUrl: v.thumbnailUrl,
-                                        launchUrl: v.url,
-                                      ))
+                                  .map((v) {
+                                    final baseUri = Uri.tryParse(v.url);
+                                    final launchUrl = baseUri != null
+                                        ? baseUri
+                                            .replace(
+                                              queryParameters: {
+                                                ...baseUri.queryParameters,
+                                                'utm_source': 'parkourspot',
+                                                'utm_medium': 'referral',
+                                                'utm_campaign':
+                                                    'spot-video-carousel',
+                                                if (_spot.id != null)
+                                                  'utm_content':
+                                                      'spot-${_spot.id}',
+                                              },
+                                            )
+                                            .toString()
+                                        : v.url;
+                                    return _CarouselVideoItem(
+                                      thumbnailUrl: v.thumbnailUrl,
+                                      launchUrl: launchUrl,
+                                      preferContain: true,
+                                    );
+                                  })
                                   .toList();
-                              final items = [...youtubeItems, ...jumpflixItems];
+                              final items = [...jumpflixItems, ...youtubeItems];
 
                               if (items.isEmpty) {
                                 if (jumpflixSnapshot.connectionState ==
@@ -2041,7 +2064,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                 return thumb != null && thumb.isNotEmpty
                                     ? Image.network(
                                         thumb,
-                                        fit: BoxFit.cover,
+                                        fit: item.preferContain
+                                            ? BoxFit.contain
+                                            : BoxFit.cover,
                                         width: double.infinity,
                                         height: double.infinity,
                                       )
