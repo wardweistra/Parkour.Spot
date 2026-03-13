@@ -74,11 +74,20 @@ class _ExploreScreenState extends State<ExploreScreen> {
       if (_pageController.hasClients) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted || !_pageController.hasClients) return;
-          _pageController.animateToPage(
-            widget.initialTab,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-          );
+          // When switching TO the map tab (e.g. "locate spot", "show list on map"),
+          // jump straight there - no animation. Otherwise we'd briefly show the
+          // previous tab (e.g. Account) before animating, which breaks the intent.
+          final isMapTab = widget.initialTab == 0;
+          if (isMapTab) {
+            _pageController.jumpToPage(widget.initialTab);
+            // onMapTabActivated is called by onPageChanged when we land on the map tab
+          } else {
+            _pageController.animateToPage(
+              widget.initialTab,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
+          }
         });
       }
     } else if (widget.initialTab == 0) {
@@ -262,7 +271,20 @@ class _ExploreScreenState extends State<ExploreScreen> {
     String newPath;
     switch (index) {
       case 0:
-        newPath = '/explore';
+        // Preserve listId and locateSpotId when switching to map tab - wiping
+        // them would cause SearchScreen to lose the intent before onMapTabActivated runs.
+        final uri = GoRouterState.of(context).uri;
+        final listId = uri.queryParameters['listId'];
+        final locateSpotId = uri.queryParameters['locateSpotId'];
+        final hasMapParams = (listId?.isNotEmpty ?? false) || (locateSpotId?.isNotEmpty ?? false);
+        if (hasMapParams) {
+          final params = <String, String>{};
+          if (listId != null) params['listId'] = listId;
+          if (locateSpotId != null) params['locateSpotId'] = locateSpotId;
+          newPath = '/explore?${params.entries.map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}').join('&')}';
+        } else {
+          newPath = '/explore';
+        }
         break;
       case 1:
         newPath = '/explore?tab=add';

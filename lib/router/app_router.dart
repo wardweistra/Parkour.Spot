@@ -238,7 +238,12 @@ class AppRouter {
           final tabParam = state.uri.queryParameters['tab'];
           int initialTab = 0;
           
-          if (tabParam != null) {
+          // listId and locateSpotId are map-focused: always go straight to map tab
+          final hasListId = state.uri.queryParameters['listId']?.isNotEmpty ?? false;
+          final hasLocateSpotId = state.uri.queryParameters['locateSpotId']?.isNotEmpty ?? false;
+          final forceMapTab = hasListId || hasLocateSpotId;
+          
+          if (!forceMapTab && tabParam != null) {
             switch (tabParam) {
               case 'add':
                 initialTab = 1;
