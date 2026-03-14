@@ -493,6 +493,44 @@ class SpotListService extends ChangeNotifier {
     return updateSpotListOrganization(listId, sections);
   }
 
+  /// Add a spot to a new section in the list.
+  Future<bool> addSpotToNewSection(
+    String listId,
+    String spotId, {
+    String? sectionTitle,
+    String? note,
+  }) async {
+    if (!_isAuthenticated()) {
+      _error = 'You must be signed in to add spots to a list';
+      notifyListeners();
+      return false;
+    }
+
+    final userId = _getCurrentUserId();
+    if (userId == null) {
+      _error = 'User ID not found';
+      notifyListeners();
+      return false;
+    }
+
+    final list = await getSpotListById(listId);
+    if (list == null || list.createdBy != userId) {
+      _error = 'You do not have permission to modify this list';
+      notifyListeners();
+      return false;
+    }
+
+    final sections = List<SpotListSection>.from(list.sections ?? []);
+    final newSection = SpotListSection(
+      id: const Uuid().v4(),
+      title: sectionTitle?.trim().isEmpty == true ? null : sectionTitle?.trim(),
+      entries: [SpotListEntry(spotId: spotId, note: note?.trim().isEmpty == true ? null : note)],
+    );
+    sections.add(newSection);
+
+    return updateSpotListOrganization(listId, sections);
+  }
+
   /// Remove an entry at a specific index from a section.
   Future<bool> removeEntryAt(
     String listId,

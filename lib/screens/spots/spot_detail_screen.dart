@@ -6301,12 +6301,15 @@ class _AddToListDialogState extends State<_AddToListDialog> {
     final selectedLists = widget.lists.where((l) => l.id != null && _selectedListIds.contains(l.id!)).toList();
 
     for (final list in selectedLists) {
-      if (list.hasAdvancedOrganization && list.sections != null && list.sections!.isNotEmpty) {
+      if (list.hasAdvancedOrganization) {
         final sectionResult = await _showSectionPickerForList(list);
         if (sectionResult == null) continue; // User cancelled
         if (sectionResult['cancelled'] == true) continue;
-        final sectionIds = sectionResult['sectionIds'] as List<String>;
+        final sectionIds = sectionResult['sectionIds'] as List<String>? ?? [];
         final note = sectionResult['note'] as String?;
+        final addToNewSection = sectionResult['newSection'] == true;
+        final newSectionTitle = sectionResult['newSectionTitle'] as String?;
+
         for (final sectionId in sectionIds) {
           final success = await widget.spotListService.addSpotToSection(
             list.id!,
@@ -6318,6 +6321,18 @@ class _AddToListDialogState extends State<_AddToListDialog> {
             allSuccess = false;
             errorMessage = widget.spotListService.error ?? 'Failed to add spot to some lists';
             break;
+          }
+        }
+        if (allSuccess && addToNewSection) {
+          final success = await widget.spotListService.addSpotToNewSection(
+            list.id!,
+            widget.spotId,
+            sectionTitle: newSectionTitle?.isEmpty == true ? null : newSectionTitle,
+            note: note,
+          );
+          if (!success) {
+            allSuccess = false;
+            errorMessage = widget.spotListService.error ?? 'Failed to add spot to some lists';
           }
         }
       } else {
@@ -6349,74 +6364,104 @@ class _AddToListDialogState extends State<_AddToListDialog> {
 
   Future<Map<String, dynamic>?> _showSectionPickerForList(SpotList list) async {
     final selectedSectionIds = <String>{};
+    bool addToNewSection = false;
     final noteController = TextEditingController();
+    final newSectionTitleController = TextEditingController();
 
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Text('Add to ${list.name}'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Select sections:',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
+        builder: (context, setDialogState) {
+          final hasSelection = selectedSectionIds.isNotEmpty || addToNewSection;
+          return AlertDialog(
+            title: Text('Add to ${list.name}'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Select sections:',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                ...(list.sections ?? []).map((section) => CheckboxListTile(
-                  title: Text(
-                    section.title?.trim().isEmpty != false
-                        ? 'Section (${section.entries.length} spots)'
-                        : section.title!,
+                  const SizedBox(height: 8),
+                  ...(list.sections ?? []).map((section) => CheckboxListTile(
+                    title: Text(
+                      section.title?.trim().isEmpty != false
+                          ? 'Section (${section.entries.length} spots)'
+                          : section.title!,
+                    ),
+                    value: selectedSectionIds.contains(section.id),
+                    onChanged: (value) {
+                      setDialogState(() {
+                        if (value == true) {
+                          selectedSectionIds.add(section.id);
+                        } else {
+                          selectedSectionIds.remove(section.id);
+                        }
+                      });
+                    },
+                    contentPadding: EdgeInsets.zero,
+                  )),
+                  const SizedBox(height: 8),
+                  CheckboxListTile(
+                    title: const Text('Add to new section'),
+                    value: addToNewSection,
+                    onChanged: (value) {
+                      setDialogState(() => addToNewSection = value ?? false);
+                    },
+                    contentPadding: EdgeInsets.zero,
                   ),
-                  value: selectedSectionIds.contains(section.id),
-                  onChanged: (value) {
-                    setDialogState(() {
-                      if (value == true) {
-                        selectedSectionIds.add(section.id);
-                      } else {
-                        selectedSectionIds.remove(section.id);
-                      }
-                    });
-                  },
-                  contentPadding: EdgeInsets.zero,
-                )),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: noteController,
-                  decoration: const InputDecoration(
-                    labelText: 'Note (optional)',
+                  if (addToNewSection) ...[
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: newSectionTitleController,
+                      decoration: const InputDecoration(
+                        labelText: 'Section name (optional)',
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: noteController,
+                    decoration: const InputDecoration(
+                      labelText: 'Note (optional)',
+                    ),
+                    maxLines: 2,
                   ),
-                  maxLines: 2,
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, {'cancelled': true}),
-              child: const Text('Skip'),
-            ),
-            TextButton(
-              onPressed: selectedSectionIds.isEmpty
-                  ? null
-                  : () => Navigator.pop(context, {
-                        'sectionIds': selectedSectionIds.toList(),
-                        'note': noteController.text.trim().isEmpty ? null : noteController.text.trim(),
-                      }),
-              child: const Text('Add'),
-            ),
-          ],
-        ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, {'cancelled': true}),
+                child: const Text('Skip'),
+              ),
+              TextButton(
+                onPressed: hasSelection
+                    ? () => Navigator.pop(context, {
+                          'sectionIds': selectedSectionIds.toList(),
+                          'newSection': addToNewSection,
+                          'newSectionTitle': addToNewSection
+                              ? newSectionTitleController.text.trim()
+                              : null,
+                          'note': noteController.text.trim().isEmpty
+                              ? null
+                              : noteController.text.trim(),
+                        })
+                    : null,
+                child: const Text('Add'),
+              ),
+            ],
+          );
+        },
       ),
     );
 
     noteController.dispose();
+    newSectionTitleController.dispose();
     return result;
   }
 
