@@ -313,7 +313,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
       authService.isProfileReady
           ? const AddSpotScreen()
           : authService.isAuthenticated
-              ? _buildProfileLoadingScreen()
+              ? _buildProfileLoadingScreen(authService)
               : _buildLoginPromptScreen(
                   'Add New Spot',
                   'Share your favorite parkour spots with the community',
@@ -324,7 +324,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
     ];
   }
 
-  Widget _buildProfileLoadingScreen() {
+  Widget _buildProfileLoadingScreen(AuthService authService) {
+    final error = authService.profileLoadError;
     return Scaffold(
       appBar: AppBar(
         title: const SizedBox.shrink(),
@@ -336,21 +337,58 @@ class _ExploreScreenState extends State<ExploreScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            SizedBox(
-              width: 32,
-              height: 32,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Theme.of(context).colorScheme.primary,
+            if (error != null) ...[
+              Icon(
+                Icons.error_outline,
+                size: 48,
+                color: Theme.of(context).colorScheme.error,
               ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Loading your profile…',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  error,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.9),
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: () async {
+                  if (kIsWeb) {
+                    web.window.location.reload();
+                  } else {
+                    await authService.retryProfileLoad();
+                  }
+                },
+                icon: const Icon(Icons.refresh),
+                label: Text(kIsWeb ? 'Refresh page' : 'Retry'),
+              ),
+            ] else ...[
+              SizedBox(
+                width: 32,
+                height: 32,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Loading your profile…',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.7),
+                ),
+              ),
+            ],
           ],
         ),
       ),

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/gestures.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:web/web.dart' as web;
 import 'package:lottie/lottie.dart';
 import '../../services/auth_service.dart';
 import '../../services/pwa_install_service.dart';
@@ -68,9 +70,48 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           if (!authService.isAuthenticated) {
             return _buildAppInfo(context);
           }
-
+          if (authService.profileLoadError != null) {
+            return _buildProfileLoadError(context, authService);
+          }
           return _buildProfileContent(context, authService);
         },
+      ),
+    );
+  }
+
+  Widget _buildProfileLoadError(BuildContext context, AuthService authService) {
+    final error = authService.profileLoadError ?? 'Failed to load profile.';
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 48,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              error,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: () async {
+                if (kIsWeb) {
+                  web.window.location.reload();
+                } else {
+                  await authService.retryProfileLoad();
+                }
+              },
+              icon: const Icon(Icons.refresh),
+              label: Text(kIsWeb ? 'Refresh page' : 'Retry'),
+            ),
+          ],
+        ),
       ),
     );
   }

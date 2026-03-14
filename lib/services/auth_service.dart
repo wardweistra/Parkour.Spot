@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../models/user.dart' as app_user;
 import 'profile_picture_service.dart';
+import 'snackbar_service.dart';
 import 'user_profile_service.dart';
 
 class AuthService extends ChangeNotifier {
@@ -34,7 +35,23 @@ class AuthService extends ChangeNotifier {
   /// Use this to gate authenticated actions (add spot, rate, report) so we
   /// have displayName, isAdmin, etc. available instead of falling back to email.
   bool get isProfileReady => isAuthenticated && _userProfile != null;
-  
+
+  /// Error message when profile load failed (e.g. guard against overwrite).
+  /// Cleared on sign out or successful load.
+  String? get profileLoadError => _profileLoadError;
+  String? _profileLoadError;
+
+  /// Retry loading the profile after a guard failure. Clears the error and
+  /// triggers a fresh load. Use when user taps "Retry" or "Refresh".
+  Future<void> retryProfileLoad() async {
+    _profileLoadError = null;
+    final uid = _auth.currentUser?.uid;
+    if (uid != null) {
+      notifyListeners();
+      await _loadUserProfile(uid);
+    }
+  }
+
   bool _isLoading = true; // Start as loading while auth state is being restored
   app_user.User? _userProfile;
   bool _isCopyingGooglePicture = false; // Track if Google picture copy is in progress
@@ -54,6 +71,7 @@ class AuthService extends ChangeNotifier {
       _loadUserProfile(user.uid);
     } else {
       _userProfile = null;
+      _profileLoadError = null;
       _isLoadingProfile = false; // Reset flag on logout
       _loadingProfileUid = null; // Reset UID tracking on logout
       _isLoading = false; // Auth state restored, no user
@@ -97,13 +115,51 @@ class AuthService extends ChangeNotifier {
           .doc(uid)
           .get(const GetOptions(source: Source.server));
       if (doc.exists) {
+        _profileLoadError = null;
         final data = doc.data() as Map<String, dynamic>;
         _userProfile = app_user.User.fromMap({
           'id': uid,
           ...data,
         });
       } else {
-        // Create user profile if it doesn't exist
+        // Guard against overwrite: if Auth user was created long ago, Firestore
+        // get() may have returned stale "no doc" (e.g. cache bug). Retry before
+        // creating, and refuse to overwrite if we still get no doc.
+        final authUser = _auth.currentUser;
+        final authCreatedAt = authUser?.metadata.creationTime;
+        const guardThreshold = Duration(minutes: 5);
+
+        if (authCreatedAt != null &&
+            DateTime.now().difference(authCreatedAt) > guardThreshold) {
+          // Auth user is old — doc likely exists; retry get to avoid cache bug
+          for (var i = 0; i < 2; i++) {
+            await Future.delayed(const Duration(milliseconds: 500));
+            final retryDoc = await _firestore
+                .collection('users')
+                .doc(uid)
+                .get(const GetOptions(source: Source.server));
+            if (retryDoc.exists) {
+              _profileLoadError = null;
+              final data = retryDoc.data() as Map<String, dynamic>;
+              _userProfile = app_user.User.fromMap({
+                'id': uid,
+                ...data,
+              });
+              completer.complete();
+              return;
+            }
+          }
+          // Still no doc after retries — refuse to overwrite; user should refresh
+          const message =
+              'Profile not found for existing account. Please refresh the page.';
+          _profileLoadError = message;
+          SnackbarService.showError(message);
+          completer.completeError(StateError(message));
+          return;
+        }
+
+        // Create user profile if it doesn't exist (Auth user is new)
+        _profileLoadError = null;
         _userProfile = app_user.User(
           id: uid,
           email: _auth.currentUser?.email ?? '',
