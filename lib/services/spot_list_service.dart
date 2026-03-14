@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:uuid/uuid.dart';
 import '../models/spot_list.dart';
 import '../services/auth_service.dart';
 import '../services/feature_access_service.dart';
@@ -69,10 +70,12 @@ class SpotListService extends ChangeNotifier {
       notifyListeners();
 
       final now = DateTime.now();
+      final sectionId = const Uuid().v4();
       final spotList = SpotList(
         name: name.trim(),
         description: description?.trim(),
         spotIds: [],
+        sections: [SpotListSection(id: sectionId, entries: [])],
         visibility: visibility,
         createdBy: userId,
         createdAt: now,
@@ -257,7 +260,7 @@ class SpotListService extends ChangeNotifier {
     }
   }
 
-  /// Add a spot to a list
+  /// Add a spot to a list. For lists with sections, adds to the first section.
   Future<bool> addSpotToList(String listId, String spotId) async {
     if (!_isAuthenticated()) {
       _error = 'You must be signed in to add spots to a list';
@@ -272,7 +275,6 @@ class SpotListService extends ChangeNotifier {
       return false;
     }
 
-    // Verify ownership
     final list = await getSpotListById(listId);
     if (list == null || list.createdBy != userId) {
       _error = 'You do not have permission to modify this list';
@@ -280,7 +282,10 @@ class SpotListService extends ChangeNotifier {
       return false;
     }
 
-    // Check if spot is already in the list
+    if (list.hasAdvancedOrganization && list.sections != null && list.sections!.isNotEmpty) {
+      return addSpotToSection(listId, list.sections!.first.id, spotId);
+    }
+
     if (list.spotIds.contains(spotId)) {
       _error = 'Spot is already in this list';
       notifyListeners();
@@ -309,7 +314,7 @@ class SpotListService extends ChangeNotifier {
     }
   }
 
-  /// Remove a spot from a list
+  /// Remove a spot from a list. For advanced lists, removes all occurrences across sections.
   Future<bool> removeSpotFromList(String listId, String spotId) async {
     if (!_isAuthenticated()) {
       _error = 'You must be signed in to remove spots from a list';
@@ -324,12 +329,23 @@ class SpotListService extends ChangeNotifier {
       return false;
     }
 
-    // Verify ownership
     final list = await getSpotListById(listId);
     if (list == null || list.createdBy != userId) {
       _error = 'You do not have permission to modify this list';
       notifyListeners();
       return false;
+    }
+
+    if (list.hasAdvancedOrganization && list.sections != null) {
+      final sections = <SpotListSection>[];
+      for (final section in list.sections!) {
+        final remainingEntries =
+            section.entries.where((e) => e.spotId != spotId).toList();
+        if (remainingEntries.isNotEmpty) {
+          sections.add(section.copyWith(entries: remainingEntries));
+        }
+      }
+      return updateSpotListOrganization(listId, sections);
     }
 
     try {
@@ -354,7 +370,188 @@ class SpotListService extends ChangeNotifier {
     }
   }
 
-  /// Reorder spots in a list
+  /// Update section organization. Persists sections and
+  /// derived spotIds for backward compatibility.
+  Future<bool> updateSpotListOrganization(
+    String listId,
+    List<SpotListSection> sections,
+  ) async {
+    if (!_isAuthenticated()) {
+      _error = 'You must be signed in to update list organization';
+      notifyListeners();
+      return false;
+    }
+
+    final userId = _getCurrentUserId();
+    if (userId == null) {
+      _error = 'User ID not found';
+      notifyListeners();
+      return false;
+    }
+
+    final list = await getSpotListById(listId);
+    if (list == null || list.createdBy != userId) {
+      _error = 'You do not have permission to modify this list';
+      notifyListeners();
+      return false;
+    }
+
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      final effectiveSpotIds = _deriveSpotIdsFromSections(sections);
+
+      if (sections.isEmpty) {
+        // Convert back to simple mode with no spots
+        await _firestore.collection('spotLists').doc(listId).update({
+          'sections': FieldValue.delete(),
+          'spotIds': <String>[],
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      } else {
+        await _firestore.collection('spotLists').doc(listId).update({
+          'sections': sections.map((s) => s.toMap()).toList(),
+          'spotIds': effectiveSpotIds,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = 'Failed to update list organization: $e';
+      debugPrint('Error updating list organization: $e');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  List<String> _deriveSpotIdsFromSections(List<SpotListSection> sections) {
+    final seen = <String>{};
+    final result = <String>[];
+    for (final section in sections) {
+      for (final entry in section.entries) {
+        if (entry.spotId.isNotEmpty && !seen.contains(entry.spotId)) {
+          seen.add(entry.spotId);
+          result.add(entry.spotId);
+        }
+      }
+    }
+    return result;
+  }
+
+  /// Add a spot to a specific section (advanced lists only).
+  Future<bool> addSpotToSection(
+    String listId,
+    String sectionId,
+    String spotId, {
+    String? note,
+  }) async {
+    if (!_isAuthenticated()) {
+      _error = 'You must be signed in to add spots to a list';
+      notifyListeners();
+      return false;
+    }
+
+    final userId = _getCurrentUserId();
+    if (userId == null) {
+      _error = 'User ID not found';
+      notifyListeners();
+      return false;
+    }
+
+    final list = await getSpotListById(listId);
+    if (list == null || list.createdBy != userId) {
+      _error = 'You do not have permission to modify this list';
+      notifyListeners();
+      return false;
+    }
+
+    if (!list.hasAdvancedOrganization || list.sections == null) {
+      _error = 'This list does not use advanced organization';
+      notifyListeners();
+      return false;
+    }
+
+    final sections = List<SpotListSection>.from(list.sections!);
+    final sectionIndex = sections.indexWhere((s) => s.id == sectionId);
+    if (sectionIndex < 0) {
+      _error = 'Section not found';
+      notifyListeners();
+      return false;
+    }
+
+    final section = sections[sectionIndex];
+    final newEntries = List<SpotListEntry>.from(section.entries)
+      ..add(SpotListEntry(spotId: spotId, note: note?.trim().isEmpty == true ? null : note));
+    sections[sectionIndex] = section.copyWith(entries: newEntries);
+
+    return updateSpotListOrganization(listId, sections);
+  }
+
+  /// Remove an entry at a specific index from a section.
+  Future<bool> removeEntryAt(
+    String listId,
+    String sectionId,
+    int entryIndex,
+  ) async {
+    if (!_isAuthenticated()) {
+      _error = 'You must be signed in to modify this list';
+      notifyListeners();
+      return false;
+    }
+
+    final userId = _getCurrentUserId();
+    if (userId == null) {
+      _error = 'User ID not found';
+      notifyListeners();
+      return false;
+    }
+
+    final list = await getSpotListById(listId);
+    if (list == null || list.createdBy != userId) {
+      _error = 'You do not have permission to modify this list';
+      notifyListeners();
+      return false;
+    }
+
+    if (!list.hasAdvancedOrganization || list.sections == null) {
+      _error = 'This list does not use advanced organization';
+      notifyListeners();
+      return false;
+    }
+
+    final sections = List<SpotListSection>.from(list.sections!);
+    final sectionIndex = sections.indexWhere((s) => s.id == sectionId);
+    if (sectionIndex < 0) {
+      _error = 'Section not found';
+      notifyListeners();
+      return false;
+    }
+
+    final section = sections[sectionIndex];
+    if (entryIndex < 0 || entryIndex >= section.entries.length) {
+      _error = 'Invalid entry index';
+      notifyListeners();
+      return false;
+    }
+
+    final newEntries = List<SpotListEntry>.from(section.entries)..removeAt(entryIndex);
+    sections[sectionIndex] = section.copyWith(entries: newEntries);
+
+    // Remove section if empty (allows list to become empty, converting to simple mode)
+    if (newEntries.isEmpty) {
+      sections.removeAt(sectionIndex);
+    }
+
+    return updateSpotListOrganization(listId, sections);
+  }
+
+  /// Reorder spots in a list (legacy flat lists only; section-based lists use Organize screen)
   Future<bool> reorderSpotsInList(String listId, List<String> newSpotIds) async {
     if (!_isAuthenticated()) {
       _error = 'You must be signed in to reorder spots in a list';
@@ -369,10 +566,15 @@ class SpotListService extends ChangeNotifier {
       return false;
     }
 
-    // Verify ownership
     final list = await getSpotListById(listId);
     if (list == null || list.createdBy != userId) {
       _error = 'You do not have permission to modify this list';
+      notifyListeners();
+      return false;
+    }
+
+    if (list.hasAdvancedOrganization) {
+      _error = 'Use Organize List to reorder spots';
       notifyListeners();
       return false;
     }

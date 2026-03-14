@@ -28,6 +28,7 @@ class SpotCard extends StatefulWidget {
   final String? spotListId; // ID of the spot list this spot belongs to (for highlighting)
   final String? spotListName; // Name of the spot list this spot belongs to (for highlighting)
   final VoidCallback? onSpotListTap; // Callback when "Part of" chip is tapped
+  final String? customNote; // Optional per-spot note (e.g. from list section entry)
 
   const SpotCard({
     super.key,
@@ -45,6 +46,7 @@ class SpotCard extends StatefulWidget {
     this.spotListId,
     this.spotListName,
     this.onSpotListTap,
+    this.customNote,
   });
 
   @override
@@ -327,6 +329,28 @@ class _SpotCardState extends State<SpotCard> {
                           textAlign: TextAlign.left,
                           softWrap: true, // Ensure text wraps properly
                         ),
+                        
+                        // Custom note (e.g. from list section entry)
+                        if (widget.customNote != null && widget.customNote!.trim().isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              widget.customNote!,
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                fontStyle: FontStyle.italic,
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+                              ),
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                         
                         // "Part of" indicator for highlighted spots (chip/badge style)
                         if (widget.spotListId != null && widget.spotListName != null) ...[

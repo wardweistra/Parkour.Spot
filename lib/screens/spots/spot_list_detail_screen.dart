@@ -22,7 +22,7 @@ import '../../services/url_service.dart';
 import '../../services/user_profile_service.dart';
 import '../../widgets/page_scaffold.dart';
 import 'package:flutter/services.dart';
-import 'spot_list_manage_spots_screen.dart';
+import 'spot_list_advanced_organization_screen.dart';
 
 class SpotListDetailScreen extends StatefulWidget {
   final String listId;
@@ -117,9 +117,10 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       }
     }
 
-    // Load spots
-    if (list.spotIds.isNotEmpty) {
-      await _loadSpots(list.spotIds);
+    // Load spots (use effectiveSpotIds for advanced lists)
+    final spotIdsToLoad = list.effectiveSpotIds;
+    if (spotIdsToLoad.isNotEmpty) {
+      await _loadSpots(spotIdsToLoad);
     } else {
       setState(() {
         _isLoading = false;
@@ -152,18 +153,18 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     }
   }
 
-  Future<void> _openManageSpotsScreen() async {
-    if (_list == null || _spots.isEmpty) return;
-    await Navigator.of(context).push<List<Spot>>(
-      MaterialPageRoute<List<Spot>>(
-        builder: (context) => SpotListManageSpotsScreen(
+  Future<void> _openAdvancedOrganizationScreen() async {
+    if (_list == null) return;
+    final result = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (context) => SpotListAdvancedOrganizationScreen(
           listName: _list!.name,
           listId: widget.listId,
-          spots: List.from(_spots),
+          list: _list!,
         ),
       ),
     );
-    if (mounted) {
+    if (mounted && result == true) {
       await _loadList();
     }
   }
@@ -206,7 +207,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
   }
 
   Widget _buildSpotsList() {
-    if (_spots.isEmpty) {
+    if (_spots.isEmpty && (_list?.hasAdvancedOrganization != true || _list!.sections!.every((s) => s.entries.isEmpty))) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -235,21 +236,151 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       );
     }
 
+    if (_list?.hasAdvancedOrganization == true && _list!.sections != null) {
+      return _buildSectionsList();
+    }
+
+    return _buildFlatSpotsList();
+  }
+
+  Map<String, Spot> get _spotById =>
+      {for (final s in _spots) if (s.id != null) s.id!: s};
+
+  Widget _buildSectionsList() {
+    final theme = Theme.of(context);
+    final spotById = _spotById;
     final screenWidth = MediaQuery.of(context).size.width;
-    final useGrid = screenWidth >= 600; // Use grid layout on wider screens
+    final useGrid = screenWidth >= 600;
+
+    final sectionWidgets = <Widget>[];
+    for (final section in _list!.sections!) {
+      if (section.entries.isEmpty) continue;
+      sectionWidgets.add(
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (section.title != null && section.title!.trim().isNotEmpty)
+                Text(
+                  section.title!,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              if (section.title != null && section.title!.trim().isNotEmpty)
+                const SizedBox(height: 4),
+              if (section.text != null && section.text!.trim().isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(
+                    section.text!,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+                    ),
+                  ),
+                ),
+              if (useGrid)
+                _buildSectionGrid(section, spotById)
+              else
+                _buildSectionList(section, spotById),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: sectionWidgets,
+    );
+  }
+
+  Widget _buildSectionGrid(SpotListSection section, Map<String, Spot> spotById) {
+    final entries = section.entries;
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 480,
+        mainAxisExtent: 440,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+      ),
+      itemCount: entries.length,
+      itemBuilder: (context, i) {
+        final entry = entries[i];
+        final spot = spotById[entry.spotId];
+        if (spot == null) return const SizedBox.shrink();
+        return SpotCard(
+          spot: spot,
+          customNote: entry.note,
+          onTapWithImageIndex: (imageIndex) {
+            if (spot.id != null) {
+              final baseUrl = UrlService.generateNavigationUrl(
+                spot.id!,
+                countryCode: spot.countryCode,
+                city: spot.city,
+              );
+              final url = imageIndex > 0 ? '$baseUrl?imageIndex=$imageIndex' : baseUrl;
+              context.push(url);
+            }
+          },
+          onLocate: () => _locateSpot(spot),
+          onRemove: null,
+        );
+      },
+    );
+  }
+
+  Widget _buildSectionList(SpotListSection section, Map<String, Spot> spotById) {
+    final entries = section.entries;
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: entries.length,
+      itemBuilder: (context, i) {
+        final entry = entries[i];
+        final spot = spotById[entry.spotId];
+        if (spot == null) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: SpotCard(
+            spot: spot,
+            customNote: entry.note,
+            onTapWithImageIndex: (imageIndex) {
+              if (spot.id != null) {
+                final baseUrl = UrlService.generateNavigationUrl(
+                  spot.id!,
+                  countryCode: spot.countryCode,
+                  city: spot.city,
+                );
+                final url = imageIndex > 0 ? '$baseUrl?imageIndex=$imageIndex' : baseUrl;
+                context.push(url);
+              }
+            },
+            onLocate: () => _locateSpot(spot),
+            onRemove: null,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFlatSpotsList() {
+    if (_spots.isEmpty) return const SizedBox.shrink();
+
+    final screenWidth = MediaQuery.of(context).size.width;
+    final useGrid = screenWidth >= 600;
 
     if (useGrid) {
-      // Calculate optimal grid dimensions based on screen size
-      final maxCrossAxisExtent = 480.0;
-      final mainAxisExtent = 440.0; // Height to accommodate bottom content
-
       return GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
-        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: maxCrossAxisExtent,
-          mainAxisExtent: mainAxisExtent,
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 480,
+          mainAxisExtent: 440,
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
         ),
@@ -259,15 +390,14 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
           return SpotCard(
             spot: spot,
             onTapWithImageIndex: (imageIndex) {
-              // Navigate to spot detail with image index
               if (spot.id != null) {
                 final baseUrl = UrlService.generateNavigationUrl(
                   spot.id!,
                   countryCode: spot.countryCode,
                   city: spot.city,
                 );
-                final navigationUrl = imageIndex > 0 ? '$baseUrl?imageIndex=$imageIndex' : baseUrl;
-                context.push(navigationUrl);
+                final url = imageIndex > 0 ? '$baseUrl?imageIndex=$imageIndex' : baseUrl;
+                context.push(url);
               }
             },
             onLocate: () => _locateSpot(spot),
@@ -275,38 +405,36 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
           );
         },
       );
-    } else {
-      // Use list layout on narrower screens
-      return ListView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: _spots.length,
-        itemBuilder: (context, index) {
-          final spot = _spots[index];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: SpotCard(
-              spot: spot,
-              onTapWithImageIndex: (imageIndex) {
-                // Navigate to spot detail with image index
-                if (spot.id != null) {
-                  final baseUrl = UrlService.generateNavigationUrl(
-                    spot.id!,
-                    countryCode: spot.countryCode,
-                    city: spot.city,
-                  );
-                  final navigationUrl = imageIndex > 0 ? '$baseUrl?imageIndex=$imageIndex' : baseUrl;
-                  context.push(navigationUrl);
-                }
-              },
-              onLocate: () => _locateSpot(spot),
-onRemove: null,
-            ),
-          );
-        },
-      );
     }
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: _spots.length,
+      itemBuilder: (context, index) {
+        final spot = _spots[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: SpotCard(
+            spot: spot,
+            onTapWithImageIndex: (imageIndex) {
+              if (spot.id != null) {
+                final baseUrl = UrlService.generateNavigationUrl(
+                  spot.id!,
+                  countryCode: spot.countryCode,
+                  city: spot.city,
+                );
+                final url = imageIndex > 0 ? '$baseUrl?imageIndex=$imageIndex' : baseUrl;
+                context.push(url);
+              }
+            },
+            onLocate: () => _locateSpot(spot),
+            onRemove: null,
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _editList() async {
@@ -402,7 +530,7 @@ onRemove: null,
     if (result == true && _list?.id != null) {
       if (!mounted) return;
       final spotListService = Provider.of<SpotListService>(context, listen: false);
-      final success = await spotListService.updateSpotList(
+      var success = await spotListService.updateSpotList(
         _list!.id!,
         name: nameController.text.trim(),
         description: descriptionController.text.trim().isEmpty
@@ -411,6 +539,7 @@ onRemove: null,
         visibility: selectedVisibility,
       );
 
+      if (!mounted) return;
       if (success) {
         SnackbarService.showSuccess('List updated');
         await _loadList();
@@ -820,8 +949,8 @@ onRemove: null,
           tooltip: 'More',
           onSelected: (value) {
             switch (value) {
-              case 'manage':
-                _openManageSpotsScreen();
+              case 'organize':
+                _openAdvancedOrganizationScreen();
                 break;
               case 'edit':
                 _editList();
@@ -832,14 +961,13 @@ onRemove: null,
             }
           },
           itemBuilder: (context) => [
-            if (_spots.isNotEmpty)
-              const PopupMenuItem<String>(
-                value: 'manage',
-                child: ListTile(
-                  leading: Icon(Icons.edit_note),
-                  title: Text('Manage Spots'),
-                ),
+            PopupMenuItem<String>(
+              value: 'organize',
+              child: const ListTile(
+                leading: Icon(Icons.folder),
+                title: Text('Organize List'),
               ),
+            ),
             const PopupMenuItem<String>(
               value: 'edit',
               child: ListTile(

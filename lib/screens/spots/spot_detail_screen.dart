@@ -901,8 +901,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     final spotId = widget.spot.id!;
 
     // Check which lists already contain this spot
-    final listsWithSpot = lists.where((list) => list.spotIds.contains(spotId)).toList();
-    final availableLists = lists.where((list) => !list.spotIds.contains(spotId)).toList();
+    final listsWithSpot = lists.where((list) => list.effectiveSpotIds.contains(spotId)).toList();
+    final availableLists = lists.where((list) => !list.effectiveSpotIds.contains(spotId)).toList();
 
     if (!mounted) return;
 
@@ -6298,13 +6298,35 @@ class _AddToListDialogState extends State<_AddToListDialog> {
 
     bool allSuccess = true;
     String? errorMessage;
+    final selectedLists = widget.lists.where((l) => l.id != null && _selectedListIds.contains(l.id!)).toList();
 
-    for (final listId in _selectedListIds) {
-      final success = await widget.spotListService.addSpotToList(listId, widget.spotId);
-      if (!success) {
-        allSuccess = false;
-        errorMessage = widget.spotListService.error ?? 'Failed to add spot to some lists';
-        break;
+    for (final list in selectedLists) {
+      if (list.hasAdvancedOrganization && list.sections != null && list.sections!.isNotEmpty) {
+        final sectionResult = await _showSectionPickerForList(list);
+        if (sectionResult == null) continue; // User cancelled
+        if (sectionResult['cancelled'] == true) continue;
+        final sectionIds = sectionResult['sectionIds'] as List<String>;
+        final note = sectionResult['note'] as String?;
+        for (final sectionId in sectionIds) {
+          final success = await widget.spotListService.addSpotToSection(
+            list.id!,
+            sectionId,
+            widget.spotId,
+            note: note,
+          );
+          if (!success) {
+            allSuccess = false;
+            errorMessage = widget.spotListService.error ?? 'Failed to add spot to some lists';
+            break;
+          }
+        }
+      } else {
+        final success = await widget.spotListService.addSpotToList(list.id!, widget.spotId);
+        if (!success) {
+          allSuccess = false;
+          errorMessage = widget.spotListService.error ?? 'Failed to add spot to some lists';
+          break;
+        }
       }
     }
 
@@ -6323,6 +6345,79 @@ class _AddToListDialogState extends State<_AddToListDialog> {
         'error': errorMessage ?? 'Failed to add spot to lists',
       });
     }
+  }
+
+  Future<Map<String, dynamic>?> _showSectionPickerForList(SpotList list) async {
+    final selectedSectionIds = <String>{};
+    final noteController = TextEditingController();
+
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text('Add to ${list.name}'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Select sections:',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ...(list.sections ?? []).map((section) => CheckboxListTile(
+                  title: Text(
+                    section.title?.trim().isEmpty != false
+                        ? 'Section (${section.entries.length} spots)'
+                        : section.title!,
+                  ),
+                  value: selectedSectionIds.contains(section.id),
+                  onChanged: (value) {
+                    setDialogState(() {
+                      if (value == true) {
+                        selectedSectionIds.add(section.id);
+                      } else {
+                        selectedSectionIds.remove(section.id);
+                      }
+                    });
+                  },
+                  contentPadding: EdgeInsets.zero,
+                )),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: noteController,
+                  decoration: const InputDecoration(
+                    labelText: 'Note (optional)',
+                  ),
+                  maxLines: 2,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, {'cancelled': true}),
+              child: const Text('Skip'),
+            ),
+            TextButton(
+              onPressed: selectedSectionIds.isEmpty
+                  ? null
+                  : () => Navigator.pop(context, {
+                        'sectionIds': selectedSectionIds.toList(),
+                        'note': noteController.text.trim().isEmpty ? null : noteController.text.trim(),
+                      }),
+              child: const Text('Add'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    noteController.dispose();
+    return result;
   }
 
   @override

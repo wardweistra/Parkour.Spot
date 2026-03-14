@@ -1946,7 +1946,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       setState(() {
         _selectedList = list;
         _selectedListName = list.name;
-        _highlightedSpotIds = list.spotIds.toSet();
+        _highlightedSpotIds = list.effectiveSpotIds.toSet();
         // Rebuild markers to reflect highlighting
         _markers = _buildMarkers(_visibleSpots);
       });
@@ -1976,8 +1976,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     });
     
     // Fit map to show all spots in the list
-    if (_selectedList != null && _selectedList!.spotIds.isNotEmpty) {
-      await _fitMapToSpotList(_selectedList!.spotIds);
+    if (_selectedList != null && _selectedList!.effectiveSpotIds.isNotEmpty) {
+      await _fitMapToSpotList(_selectedList!.effectiveSpotIds);
     }
   }
   
@@ -2337,7 +2337,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   Widget _buildSpotListPreviewCard({required double maxWidth}) {
     if (_selectedList == null) return const SizedBox.shrink();
 
-    final spotCount = _selectedList!.spotIds.length;
+    final spotCount = _selectedList!.effectiveSpotIds.length;
     final spotCountText = spotCount == 1 ? '1 spot' : '$spotCount spots';
 
     return ConstrainedBox(
@@ -3255,8 +3255,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                     _selectedSpot = null;
                                   });
                                   // Fit map to show all spots in the list
-                                  if (_selectedList != null && _selectedList!.spotIds.isNotEmpty) {
-                                    await _fitMapToSpotList(_selectedList!.spotIds);
+                                  if (_selectedList != null && _selectedList!.effectiveSpotIds.isNotEmpty) {
+                                    await _fitMapToSpotList(_selectedList!.effectiveSpotIds);
                                   }
                                 }
                               : null,
