@@ -579,8 +579,12 @@ class _ReportCardState extends State<_ReportCard> {
                 TextSpan(
                   style: theme.textTheme.bodyMedium,
                   children: [
-                    const TextSpan(
+                    TextSpan(
                       text: 'Additional Details: ',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.secondary,
+                      ),
                     ),
                     TextSpan(
                       text: widget.report.details!,
@@ -716,9 +720,10 @@ class _ReportCardState extends State<_ReportCard> {
             if (widget.report.hasEditSuggestions) ...[
               const SizedBox(height: 12),
               Text(
-                'Suggested Edits',
+                'Fields with suggested changes',
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w600,
+                  color: colorScheme.secondary,
                 ),
               ),
               const SizedBox(height: 8),
@@ -776,6 +781,7 @@ class _ReportCardState extends State<_ReportCard> {
                 'Suggested Photos',
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w600,
+                  color: colorScheme.secondary,
                 ),
               ),
               const SizedBox(height: 8),
