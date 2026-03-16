@@ -618,7 +618,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
 
     final list = _list!;
     final theme = Theme.of(context);
-    final textStyle = theme.textTheme.bodyLarge?.copyWith(
+    final textStyle = theme.textTheme.bodyMedium?.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
     );
     final visibilityLabel = _visibilitySummary(list.visibility);
