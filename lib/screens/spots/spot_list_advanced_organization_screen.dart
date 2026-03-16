@@ -150,9 +150,11 @@ class _SpotListAdvancedOrganizationScreenState
     setState(() {
       final section = _sections[sectionIndex];
       final entries = List<SpotListEntry>.from(section.entries);
-      entries[entryIndex] = entries[entryIndex].copyWith(
-        note: note?.trim().isEmpty == true ? null : note,
-      );
+      final current = entries[entryIndex];
+      final newNote = note?.trim().isEmpty == true ? null : note;
+      entries[entryIndex] = newNote == null
+          ? SpotListEntry(spotId: current.spotId)
+          : current.copyWith(note: newNote);
       _sections[sectionIndex] = section.copyWith(entries: entries);
     });
   }
@@ -270,7 +272,8 @@ class _SpotListAdvancedOrganizationScreenState
   Future<void> _showEditNoteDialog(int sectionIndex, int entryIndex) async {
     final entry = _sections[sectionIndex].entries[entryIndex];
     final controller = TextEditingController(text: entry.note ?? '');
-    final result = await showDialog<bool>(
+    final hasNote = entry.note != null && entry.note!.trim().isNotEmpty;
+    final result = await showDialog<Object>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Edit note'),
@@ -282,6 +285,14 @@ class _SpotListAdvancedOrganizationScreenState
           maxLines: 3,
         ),
         actions: [
+          if (hasNote)
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'remove'),
+              child: Text(
+                'Remove note',
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ),
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
@@ -293,7 +304,9 @@ class _SpotListAdvancedOrganizationScreenState
         ],
       ),
     );
-    if (result == true && mounted) {
+    if (result == 'remove' && mounted) {
+      _updateEntryNote(sectionIndex, entryIndex, null);
+    } else if (result == true && mounted) {
       _updateEntryNote(sectionIndex, entryIndex,
           controller.text.trim().isEmpty ? null : controller.text.trim());
     }
