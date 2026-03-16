@@ -308,7 +308,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   Widget _buildMergedSourceInfo() {
     final List<TextSpan> textSpans = [];
     final theme = Theme.of(context);
-    final textStyle = theme.textTheme.bodyLarge;
+    final textStyle = theme.textTheme.bodyLarge?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
     bool hasPreviousContent = false;
 
     // Check if there will be an updated date part (to determine if we should use commas)
@@ -509,10 +511,28 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       ));
     }
 
-    return RichText(
-      text: TextSpan(
-        style: textStyle,
-        children: textSpans,
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.only(top: 12),
+      margin: const EdgeInsets.only(top: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.info_outline,
+            size: 16,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                style: textStyle,
+                children: textSpans,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

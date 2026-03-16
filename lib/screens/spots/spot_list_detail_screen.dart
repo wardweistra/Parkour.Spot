@@ -275,7 +275,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Text(
                     section.text!,
-                    style: theme.textTheme.bodyMedium?.copyWith(
+                    style: theme.textTheme.bodyLarge?.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                     ),
                   ),
@@ -618,7 +618,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
 
     final list = _list!;
     final theme = Theme.of(context);
-    final textStyle = theme.textTheme.bodySmall?.copyWith(
+    final textStyle = theme.textTheme.bodyLarge?.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
     );
     final visibilityLabel = _visibilitySummary(list.visibility);
@@ -662,25 +662,12 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       }
     }
 
-    final hasDescription = list.description != null &&
-        list.description!.trim().isNotEmpty;
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       margin: const EdgeInsets.only(top: 8),
-      decoration: hasDescription
-          ? BoxDecoration(
-              border: Border(
-                top: BorderSide(
-                  color: theme.colorScheme.outline.withValues(alpha: 0.2),
-                  width: 1,
-                ),
-              ),
-            )
-          : null,
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Icon(
             Icons.info_outline,
@@ -1125,7 +1112,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                 padding: const EdgeInsets.all(16),
                 child: SelectableText(
                   _list!.description!,
-                  style: Theme.of(context).textTheme.bodyMedium,
+                  style: Theme.of(context).textTheme.bodyLarge,
                 ),
               ),
             _buildProvenanceSentence(),

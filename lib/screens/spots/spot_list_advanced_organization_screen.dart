@@ -424,7 +424,12 @@ class _SpotListAdvancedOrganizationScreenState
               style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
             subtitle: section.text != null && section.text!.trim().isNotEmpty
-                ? Text(section.text!, maxLines: 2, overflow: TextOverflow.ellipsis)
+                ? Text(
+                    section.text!,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyLarge,
+                  )
                 : null,
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
