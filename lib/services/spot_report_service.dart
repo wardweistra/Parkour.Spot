@@ -102,6 +102,7 @@ class SpotReportService {
     required String reportId,
     required List<String> originalPhotoUrls, // Original URLs from /suggestions/
     required List<String> approvedPhotoUrls, // New URLs from /spots/
+    String? moderatorNotes,
     String? userId,
     String? userName,
   }) async {
@@ -133,6 +134,8 @@ class SpotReportService {
       await _firestore.collection('spotReports').doc(reportId).update({
         'suggestedPhotoUrls': updatedSuggestedUrls.isEmpty ? FieldValue.delete() : updatedSuggestedUrls,
         'acceptedPhotoUrls': updatedAcceptedUrls,
+        if (moderatorNotes != null && moderatorNotes.isNotEmpty)
+          'moderatorNotes': moderatorNotes,
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
@@ -192,8 +195,10 @@ class SpotReportService {
   /// Updates a spot report with rejected photo URLs (moves photos from suggestedPhotoUrls to rejectedPhotoUrls)
   Future<bool> updateReportWithRejectedPhotos({
     required String reportId,
+    required String spotId,
     required List<String> originalPhotoUrls, // Original URLs from /suggestions/
     required List<String> rejectedPhotoUrls, // New URLs from /rejected/
+    String? moderatorNotes,
     String? userId,
     String? userName,
   }) async {
@@ -225,9 +230,24 @@ class SpotReportService {
       await _firestore.collection('spotReports').doc(reportId).update({
         'suggestedPhotoUrls': updatedSuggestedUrls.isEmpty ? FieldValue.delete() : updatedSuggestedUrls,
         'rejectedPhotoUrls': updatedRejectedUrls,
+        if (moderatorNotes != null && moderatorNotes.isNotEmpty)
+          'moderatorNotes': moderatorNotes,
         'status': 'Done',
         'updatedAt': FieldValue.serverTimestamp(),
       });
+
+      // Log to audit trail
+      if (userId != null && userName != null) {
+        await _auditLogService.logPhotoRejected(
+          spotId: spotId,
+          reportId: reportId,
+          originalPhotoUrls: originalPhotoUrls,
+          rejectedPhotoUrls: rejectedPhotoUrls,
+          userId: userId,
+          userName: userName,
+          notes: moderatorNotes,
+        );
+      }
 
       return true;
     } catch (e) {

@@ -704,6 +704,30 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
               details = 'Photos added to spot';
             }
             break;
+          case AuditLogAction.photoRejected:
+            title = 'Photos Rejected';
+            subtitle = auditLog.userName != null
+                ? 'Rejected by ${auditLog.userName}'
+                : auditLog.userId != null
+                    ? 'Rejected by ${auditLog.userId}'
+                    : 'Rejected by unknown';
+            if (auditLog.metadata != null) {
+              final originalUrls = auditLog.metadata!['originalPhotoUrls'] as List?;
+              final photoCount = originalUrls?.length ?? 0;
+              details = 'Photo suggestions rejected: $photoCount';
+              if (auditLog.reportId != null) {
+                details += '\nReport: ${auditLog.reportId}';
+              }
+              if (auditLog.metadata!['notes'] != null) {
+                final notes = auditLog.metadata!['notes'] as String;
+                if (notes.isNotEmpty) {
+                  details += '\n\nNotes: $notes';
+                }
+              }
+            } else {
+              details = 'Photo suggestions rejected';
+            }
+            break;
         }
 
         newEntries.add(AuditLogEntry(

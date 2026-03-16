@@ -30,15 +30,15 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
   bool _isLoadingOriginalSpot = false;
   bool _isSpotFromSource = false;
   final TextEditingController _notesController = TextEditingController();
-  Set<int> _selectedPhotoIndices = <int>{};
+  final Map<int, bool> _accepted = {}; // index -> true=accept, false=reject
 
   @override
   void initState() {
     super.initState();
     _targetSpotId = widget.report.spotId;
-    _selectedPhotoIndices = Set<int>.from(
-      List<int>.generate(_suggestedPhotoUrls.length, (index) => index),
-    );
+    for (var i = 0; i < (_suggestedPhotoUrls.length); i++) {
+      _accepted[i] = true;
+    }
     _loadSpotAndCheckSource();
   }
 
@@ -115,11 +115,6 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
     return false;
   }
 
-  bool get _canApprovePhotos {
-    // Cannot approve if target spot is from a source or is a duplicate
-    return !_isTargetSpotFromSource && !_isTargetSpotDuplicate;
-  }
-
   Spot? get _targetSpot {
     if (_targetSpotId != null && _targetSpotId != widget.report.spotId && _originalSpot != null) {
       return _originalSpot;
@@ -129,35 +124,20 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
 
   List<String> get _suggestedPhotoUrls => widget.report.suggestedPhotoUrls ?? const <String>[];
 
-  bool get _hasSelectedPhotos => _selectedPhotoIndices.isNotEmpty;
+  List<int> get _acceptedIndices =>
+      _accepted.entries.where((e) => e.value).map((e) => e.key).toList();
+  List<int> get _rejectedIndices =>
+      _accepted.entries.where((e) => !e.value).map((e) => e.key).toList();
 
-  void _togglePhotoSelection(int index) {
-    if (_isApproving) return;
-
-    setState(() {
-      if (_selectedPhotoIndices.contains(index)) {
-        _selectedPhotoIndices.remove(index);
-      } else {
-        _selectedPhotoIndices.add(index);
-      }
-    });
+  bool _canSubmit() {
+    if (_isApproving) return false;
+    return _accepted.isNotEmpty;
   }
 
-  void _selectAllPhotos() {
-    if (_isApproving) return;
-    setState(() {
-      _selectedPhotoIndices = Set<int>.from(
-        List<int>.generate(_suggestedPhotoUrls.length, (index) => index),
-      );
-    });
-  }
+  bool _isRejectAll() =>
+      !_accepted.values.any((v) => v) && _accepted.isNotEmpty;
 
-  void _clearSelectedPhotos() {
-    if (_isApproving) return;
-    setState(() {
-      _selectedPhotoIndices.clear();
-    });
-  }
+  bool _hasApprovedPhotos() => _accepted.values.any((v) => v);
 
   void _showPhotoPreview(String photoUrl) {
     showDialog(
@@ -186,38 +166,36 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
     );
   }
 
-  Future<void> _approvePhotos() async {
+  Future<void> _submitReview() async {
+    if (!_canSubmit()) return;
+
     final suggestedPhotoUrls = _suggestedPhotoUrls;
-    if (suggestedPhotoUrls.isEmpty) {
-      setState(() {
-        _error = 'No photos to approve';
-      });
-      return;
-    }
+    if (suggestedPhotoUrls.isEmpty) return;
 
-    if (!_hasSelectedPhotos) {
-      setState(() {
-        _error = 'Select at least one photo to approve';
-      });
-      return;
-    }
+    final moderatorNotes = _notesController.text.trim().isEmpty
+        ? null
+        : _notesController.text.trim();
 
-    // Prevent approval if target spot is from a spot source
-    if (_isTargetSpotFromSource) {
-      final targetSpot = _targetSpot;
-      final sourceName = targetSpot?.spotSourceName ?? 'external source';
-      setState(() {
-        _error = 'Photos cannot be approved for spots from external sources ($sourceName). Please create a native spot first.';
-      });
-      return;
-    }
-
-    // Prevent approval if target spot is a duplicate
-    if (_isTargetSpotDuplicate) {
-      setState(() {
-        _error = 'Photos cannot be approved for duplicate spots. Please approve photos to the original spot instead.';
-      });
-      return;
+    // If any approved: need valid target
+    if (_hasApprovedPhotos()) {
+      if (_isTargetSpotFromSource) {
+        final targetSpot = _targetSpot;
+        final sourceName = targetSpot?.spotSourceName ?? 'external source';
+        setState(() {
+          _error =
+              'Photos cannot be approved for spots from external sources ($sourceName). '
+              'Please create a native spot first.';
+        });
+        return;
+      }
+      if (_isTargetSpotDuplicate) {
+        setState(() {
+          _error =
+              'Photos cannot be approved for duplicate spots. '
+              'Please select the original spot below.';
+        });
+        return;
+      }
     }
 
     setState(() {
@@ -230,88 +208,98 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
       final spotService = Provider.of<SpotService>(context, listen: false);
       final reportService = Provider.of<SpotReportService>(context, listen: false);
       final authService = Provider.of<AuthService>(context, listen: false);
-
-      // Use reporter's information for contributors list
-      final userId = widget.report.reporterUserId;
-      final userName = widget.report.reporterName;
-
-      // Use moderator's information for audit log
-      final approvedByUserId = authService.currentUser?.uid;
-      final approvedByUserName = authService.userProfile?.displayName ??
+      final userId = authService.currentUser?.uid;
+      final userName = authService.userProfile?.displayName ??
           authService.currentUser?.displayName ??
           authService.currentUser?.email;
 
-      final sortedSelectedIndices = _selectedPhotoIndices.toList()..sort();
-      final originalPhotoUrls = sortedSelectedIndices
-          .map((index) => suggestedPhotoUrls[index])
-          .toList(growable: false);
-      final approvedAllSuggestedPhotos = originalPhotoUrls.length == suggestedPhotoUrls.length;
+      final approvedIndices = _acceptedIndices;
+      final rejectedIndices = _rejectedIndices;
 
-      // Add photos to the target spot (returns new URLs from /spots/)
-      final approvedPhotoUrls = await spotService.addPhotosToSpot(
-        spotId: widget.report.spotId,
-        photoUrls: originalPhotoUrls,
-        userId: userId,
-        userName: userName,
-        reportId: widget.report.id,
-        notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
-        targetSpotId: _targetSpotId,
-        approvedByUserId: approvedByUserId,
-        approvedByUserName: approvedByUserName,
-        onProgress: (current, total) {
-          if (!mounted) return;
-          setState(() {
-            _approvalProgress = 'Processing $current of $total...';
-          });
-        },
-      );
+      // 1. Approved: add to spot
+      if (approvedIndices.isNotEmpty && !_isTargetSpotFromSource && !_isTargetSpotDuplicate) {
+        final sortedApproved = approvedIndices.toList()..sort();
+        final approvedOriginalUrls = sortedApproved
+            .map((i) => suggestedPhotoUrls[i])
+            .toList(growable: false);
 
-      if (!mounted) return;
-
-      if (approvedPhotoUrls != null && approvedPhotoUrls.isNotEmpty) {
-        // Update report by moving only selected photos from suggested -> accepted
-        final updatedReport = await reportService.updateReportWithApprovedPhotos(
+        final approvedPhotoUrls = await spotService.addPhotosToSpot(
+          spotId: widget.report.spotId,
+          photoUrls: approvedOriginalUrls,
+          userId: widget.report.reporterUserId,
+          userName: widget.report.reporterName,
           reportId: widget.report.id,
-          originalPhotoUrls: originalPhotoUrls,
-          approvedPhotoUrls: approvedPhotoUrls,
-          userId: userId,
-          userName: userName,
+          notes: moderatorNotes,
+          targetSpotId: _targetSpotId,
+          approvedByUserId: userId,
+          approvedByUserName: userName,
+          onProgress: (current, total) {
+            if (!mounted) return;
+            setState(() {
+              _approvalProgress = 'Processing $current of $total...';
+            });
+          },
         );
 
-        if (!updatedReport) {
+        if (!mounted) return;
+
+        if (approvedPhotoUrls == null || approvedPhotoUrls.isEmpty) {
           setState(() {
-            _error = 'Failed to update report after approving photos';
+            _error = spotService.error ?? 'Failed to add photos to spot';
             _isApproving = false;
             _approvalProgress = null;
           });
           return;
         }
 
-        // Only mark as Done if all currently suggested photos were approved.
-        if (approvedAllSuggestedPhotos) {
-          await reportService.updateReportStatus(
+        await reportService.updateReportWithApprovedPhotos(
+          reportId: widget.report.id,
+          originalPhotoUrls: approvedOriginalUrls,
+          approvedPhotoUrls: approvedPhotoUrls,
+          moderatorNotes: moderatorNotes,
+          userId: userId,
+          userName: userName,
+        );
+      }
+
+      if (!mounted) return;
+
+      // 2. Rejected: move to rejected folder
+      if (rejectedIndices.isNotEmpty) {
+        final rejectedOriginalUrls =
+            rejectedIndices.map((i) => suggestedPhotoUrls[i]).toList();
+        final rejectedUrls = await spotService.movePhotosToRejected(rejectedOriginalUrls);
+        if (rejectedUrls.isNotEmpty) {
+          await reportService.updateReportWithRejectedPhotos(
             reportId: widget.report.id,
-            status: 'Done',
+            spotId: widget.report.spotId,
+            originalPhotoUrls: rejectedOriginalUrls,
+            rejectedPhotoUrls: rejectedUrls,
+            moderatorNotes: moderatorNotes,
             userId: userId,
             userName: userName,
           );
         }
+      }
 
-        if (mounted) {
-          Navigator.of(context).pop(true);
-        }
-      } else {
-        setState(() {
-          _error = spotService.error ?? 'Failed to add photos to spot';
-          _isApproving = false;
-          _approvalProgress = null;
-        });
+      if (!mounted) return;
+
+      // 3. Mark Done when all suggested photos are processed
+      await reportService.updateReportStatus(
+        reportId: widget.report.id,
+        status: 'Done',
+        userId: userId,
+        userName: authService.userProfile?.displayName,
+      );
+
+      if (mounted) {
+        Navigator.of(context).pop(true);
       }
     } catch (e) {
-      debugPrint('Error approving photos: $e');
+      debugPrint('Error in photo review: $e');
       if (mounted) {
         setState(() {
-          _error = 'Error approving photos: $e';
+          _error = 'Error: $e';
           _isApproving = false;
           _approvalProgress = null;
         });
@@ -331,7 +319,7 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
           children: [
             Icon(Icons.add_photo_alternate, color: colorScheme.primary),
             const SizedBox(width: 8),
-            const Expanded(child: Text('Approve Photo Suggestions')),
+            const Expanded(child: Text('Review Photo Suggestions')),
           ],
         ),
         content: ConstrainedBox(
@@ -341,28 +329,17 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Photo previews
+                // Photo previews with Accept/Reject per photo
                 if (_suggestedPhotoUrls.isNotEmpty) ...[
-                  Row(
-                    children: [
-                      Text(
-                        'Photos to Add',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        '${_selectedPhotoIndices.length}/${_suggestedPhotoUrls.length} selected',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    'Select Accept or Reject for each photo',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Tap a photo to include or exclude it from approval.',
+                    '${_acceptedIndices.length} accepted, ${_rejectedIndices.length} rejected',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
@@ -371,94 +348,113 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: [
-                      TextButton.icon(
-                        onPressed: _isApproving ? null : _selectAllPhotos,
-                        icon: const Icon(Icons.select_all),
-                        label: const Text('Select all'),
-                      ),
-                      TextButton.icon(
-                        onPressed: _isApproving ? null : _clearSelectedPhotos,
-                        icon: const Icon(Icons.remove_done),
-                        label: const Text('Clear'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
                     children: _suggestedPhotoUrls.asMap().entries.map((entry) {
                       final index = entry.key;
                       final photoUrl = entry.value;
-                      final isSelected = _selectedPhotoIndices.contains(index);
+                      final isAccepted = _accepted[index] ?? true;
 
-                      return GestureDetector(
-                        onTap: () => _togglePhotoSelection(index),
-                        child: Container(
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: isSelected ? colorScheme.primary : colorScheme.outline,
-                              width: isSelected ? 2 : 1,
-                            ),
+                      return Container(
+                        width: 100,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: isAccepted
+                                ? colorScheme.primary
+                                : colorScheme.error,
+                            width: 2,
                           ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Stack(
-                              children: [
-                                CachedNetworkImage(
-                                  imageUrl: photoUrl,
-                                  fit: BoxFit.cover,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            GestureDetector(
+                              onTap: () => _showPhotoPreview(photoUrl),
+                              child: ClipRRect(
+                                borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(6)),
+                                child: SizedBox(
                                   width: 100,
                                   height: 100,
-                                  imageRenderMethodForWeb: ImageRenderMethodForWeb.HttpGet,
-                                  placeholder: (context, url) => Container(
-                                    color: colorScheme.surfaceContainerHighest,
-                                    child: const Center(
-                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                  child: CachedNetworkImage(
+                                    imageUrl: photoUrl,
+                                    fit: BoxFit.cover,
+                                    imageRenderMethodForWeb:
+                                        ImageRenderMethodForWeb.HttpGet,
+                                    placeholder: (context, url) => Container(
+                                      color: colorScheme.surfaceContainerHighest,
+                                      child: const Center(
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2),
+                                      ),
                                     ),
-                                  ),
-                                  errorWidget: (context, url, error) => Container(
-                                    color: colorScheme.surfaceContainerHighest,
-                                    child: Icon(
-                                      Icons.image_not_supported,
-                                      color: colorScheme.onSurface.withValues(alpha: 0.5),
-                                    ),
-                                  ),
-                                ),
-                                if (!isSelected)
-                                  Container(
-                                    color: colorScheme.surface.withValues(alpha: 0.45),
-                                  ),
-                                Positioned(
-                                  top: 4,
-                                  right: 4,
-                                  child: Icon(
-                                    isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-                                    color: isSelected ? colorScheme.primary : colorScheme.onSurface,
-                                    size: 22,
-                                  ),
-                                ),
-                                Positioned(
-                                  bottom: 2,
-                                  right: 2,
-                                  child: IconButton(
-                                    onPressed: () => _showPhotoPreview(photoUrl),
-                                    icon: const Icon(Icons.zoom_out_map, size: 16),
-                                    tooltip: 'Preview full size',
-                                    style: IconButton.styleFrom(
-                                      backgroundColor: colorScheme.surface.withValues(alpha: 0.8),
-                                      padding: const EdgeInsets.all(4),
-                                      minimumSize: const Size(28, 28),
+                                    errorWidget: (context, url, error) =>
+                                        Container(
+                                      color:
+                                          colorScheme.surfaceContainerHighest,
+                                      child: Icon(
+                                        Icons.image_not_supported,
+                                        color: colorScheme.onSurface
+                                            .withValues(alpha: 0.5),
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ],
+                              ),
                             ),
-                          ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 4, vertical: 4),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  IconButton.filled(
+                                    onPressed: _isApproving
+                                        ? null
+                                        : () {
+                                            if (!isAccepted) {
+                                              setState(() =>
+                                                  _accepted[index] = true);
+                                            }
+                                          },
+                                    icon: const Icon(Icons.check, size: 18),
+                                    style: IconButton.styleFrom(
+                                      backgroundColor: isAccepted
+                                          ? colorScheme.primaryContainer
+                                          : colorScheme.surfaceContainerHighest,
+                                      foregroundColor: isAccepted
+                                          ? colorScheme.onPrimaryContainer
+                                          : colorScheme.onSurface,
+                                      minimumSize: const Size(36, 32),
+                                    ),
+                                    tooltip: 'Accept',
+                                  ),
+                                  const SizedBox(width: 4),
+                                  IconButton.filled(
+                                    onPressed: _isApproving
+                                        ? null
+                                        : () {
+                                            if (isAccepted) {
+                                              setState(() =>
+                                                  _accepted[index] = false);
+                                            }
+                                          },
+                                    icon: const Icon(Icons.close, size: 18),
+                                    style: IconButton.styleFrom(
+                                      backgroundColor: !isAccepted
+                                          ? colorScheme.errorContainer
+                                          : colorScheme.surfaceContainerHighest,
+                                      foregroundColor: !isAccepted
+                                          ? colorScheme.onErrorContainer
+                                          : colorScheme.onSurface,
+                                      minimumSize: const Size(36, 32),
+                                    ),
+                                    tooltip: 'Reject',
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       );
                     }).toList(),
@@ -622,7 +618,7 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
                 ],
                 // Notes field
                 Text(
-                  'Notes (Optional)',
+                  'Comment (Optional)',
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -632,7 +628,7 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
                   controller: _notesController,
                   maxLines: 3,
                   decoration: InputDecoration(
-                    hintText: 'Add notes about this approval...',
+                    hintText: 'Document why you accepted or rejected these suggestions...',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -660,9 +656,7 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: (_isApproving || !_canApprovePhotos || !_hasSelectedPhotos)
-                ? null
-                : _approvePhotos,
+            onPressed: (_isApproving || !_canSubmit()) ? null : _submitReview,
             child: _isApproving
                 ? Row(
                     mainAxisSize: MainAxisSize.min,
@@ -678,7 +672,9 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
                       ],
                     ],
                   )
-                : Text('Approve Selected (${_selectedPhotoIndices.length})'),
+                : Text(_isRejectAll()
+                    ? 'Submit Review'
+                    : 'Submit Review (${_acceptedIndices.length} accepted)'),
           ),
         ],
       ),

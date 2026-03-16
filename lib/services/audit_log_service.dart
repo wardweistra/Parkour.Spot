@@ -229,5 +229,35 @@ class AuditLogService {
       // Don't throw - audit logging should not break the main operation
     }
   }
+
+  /// Log when photo suggestions are rejected
+  Future<void> logPhotoRejected({
+    required String spotId,
+    required String reportId,
+    required List<String> originalPhotoUrls,
+    required List<String> rejectedPhotoUrls,
+    required String? userId,
+    required String? userName,
+    String? notes,
+  }) async {
+    try {
+      await _firestore.collection('auditLog').add({
+        'action': AuditLogAction.photoRejected.toString().split('.').last,
+        'spotId': spotId,
+        'reportId': reportId,
+        'userId': userId,
+        'userName': userName,
+        'timestamp': FieldValue.serverTimestamp(),
+        'metadata': {
+          'originalPhotoUrls': originalPhotoUrls,
+          'rejectedPhotoUrls': rejectedPhotoUrls,
+          if (notes != null && notes.isNotEmpty) 'notes': notes,
+        },
+      });
+    } catch (e) {
+      debugPrint('Error logging photo rejection: $e');
+      // Don't throw - audit logging should not break the main operation
+    }
+  }
 }
 

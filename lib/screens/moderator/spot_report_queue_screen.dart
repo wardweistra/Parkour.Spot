@@ -292,7 +292,7 @@ class _ReportCardState extends State<_ReportCard> {
     }
   }
 
-  Future<void> _handleApprovePhotos(BuildContext context, SpotReport report) async {
+  Future<void> _handleReviewPhotos(BuildContext context, SpotReport report) async {
     final result = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => PhotoApprovalDialog(
@@ -304,7 +304,7 @@ class _ReportCardState extends State<_ReportCard> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Selected photos approved and added to spot.'),
+          content: Text('Photo review completed.'),
           backgroundColor: Colors.green,
         ),
       );
@@ -325,63 +325,6 @@ class _ReportCardState extends State<_ReportCard> {
         const SnackBar(
           content: Text('Edit suggestions applied successfully.'),
           backgroundColor: Colors.green,
-        ),
-      );
-    }
-  }
-
-  Future<void> _handleRejectPhotos(BuildContext context, SpotReport report) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Reject Photo Suggestions'),
-        content: const Text('Are you sure you want to reject these photo suggestions? The photos will be moved to the rejected folder and can be restored later.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(dialogContext).colorScheme.error,
-            ),
-            child: const Text('Reject'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      if (!mounted) return;
-      final spotService = Provider.of<SpotService>(context, listen: false);
-      final reportService = Provider.of<SpotReportService>(context, listen: false);
-      final authService = Provider.of<AuthService>(context, listen: false);
-
-      // Move photos from /suggestions/ to /rejected/
-      if (report.suggestedPhotoUrls != null && report.suggestedPhotoUrls!.isNotEmpty) {
-        // Store original URLs before moving
-        final originalUrls = List<String>.from(report.suggestedPhotoUrls!);
-        final rejectedUrls = await spotService.movePhotosToRejected(originalUrls);
-        
-        if (rejectedUrls.isNotEmpty) {
-          // Update report with rejected photo URLs
-          // Pass both original URLs (to remove from suggestedPhotoUrls) and new rejected URLs (to add to rejectedPhotoUrls)
-          await reportService.updateReportWithRejectedPhotos(
-            reportId: report.id,
-            originalPhotoUrls: originalUrls,
-            rejectedPhotoUrls: rejectedUrls,
-            userId: authService.currentUser?.uid,
-            userName: authService.userProfile?.displayName ?? authService.currentUser?.email,
-          );
-        }
-      }
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Photo suggestions rejected. You can undo this action later.'),
-          backgroundColor: Colors.orange,
         ),
       );
     }
@@ -1109,31 +1052,14 @@ class _ReportCardState extends State<_ReportCard> {
                   ],
                   // Photo suggestion actions
                   if (widget.report.suggestedPhotoUrls != null && widget.report.suggestedPhotoUrls!.isNotEmpty) ...[
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () => _handleApprovePhotos(context, widget.report),
-                            icon: const Icon(Icons.check),
-                            label: const Text('Approve Photos'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: theme.colorScheme.primary,
-                              foregroundColor: theme.colorScheme.onPrimary,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () => _handleRejectPhotos(context, widget.report),
-                            icon: const Icon(Icons.close),
-                            label: const Text('Reject'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: theme.colorScheme.error,
-                            ),
-                          ),
-                        ),
-                      ],
+                    ElevatedButton.icon(
+                      onPressed: () => _handleReviewPhotos(context, widget.report),
+                      icon: const Icon(Icons.photo_library),
+                      label: const Text('Review Suggested Photos'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.colorScheme.primary,
+                        foregroundColor: theme.colorScheme.onPrimary,
+                      ),
                     ),
                     const SizedBox(height: 8),
                   ],
