@@ -536,7 +536,7 @@ class _SpotListAdvancedOrganizationScreenState
         overflow: TextOverflow.ellipsis,
       ),
       subtitle: entry.note != null && entry.note!.isNotEmpty
-          ? Text(entry.note!, maxLines: 2, overflow: TextOverflow.ellipsis)
+          ? Text('💬 ${entry.note!}', maxLines: 2, overflow: TextOverflow.ellipsis)
           : null,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,

@@ -341,7 +341,7 @@ class _SpotCardState extends State<SpotCard> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              widget.customNote!,
+                              '💬 ${widget.customNote!}',
                               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                 fontStyle: FontStyle.italic,
                                 color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
