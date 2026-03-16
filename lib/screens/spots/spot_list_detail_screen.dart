@@ -618,7 +618,9 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
 
     final list = _list!;
     final theme = Theme.of(context);
-    final textStyle = theme.textTheme.bodyMedium;
+    final textStyle = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
     final visibilityLabel = _visibilitySummary(list.visibility);
     final createdDateText = _formatRelativeDate(list.createdAt);
     final creatorName = _creatorName;
@@ -660,13 +662,38 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       }
     }
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: RichText(
-          text: TextSpan(style: textStyle, children: children),
-        ),
+    final hasDescription = list.description != null &&
+        list.description!.trim().isNotEmpty;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      margin: const EdgeInsets.only(top: 8),
+      decoration: hasDescription
+          ? BoxDecoration(
+              border: Border(
+                top: BorderSide(
+                  color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                  width: 1,
+                ),
+              ),
+            )
+          : null,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.info_outline,
+            size: 16,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: RichText(
+              text: TextSpan(style: textStyle, children: children),
+            ),
+          ),
+        ],
       ),
     );
   }
