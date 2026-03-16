@@ -240,6 +240,120 @@ class SpotService extends ChangeNotifier {
     }
   }
 
+  /// Applies accepted edit suggestions from a spot report.
+  /// [updates] contains the field values to apply (only accepted fields).
+  /// Adds reporter to contributors when any edit is applied.
+  Future<bool> applyEditSuggestions({
+    required Spot spot,
+    required Map<String, dynamic> updates,
+    required String? reporterUserId,
+    required String? reporterUserName,
+    required String reportId,
+    String? moderatorUserId,
+    String? moderatorUserName,
+    String? notes,
+  }) async {
+    if (spot.id == null || updates.isEmpty) return false;
+
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      final oldSpot = await getSpotById(spot.id!);
+      if (oldSpot == null) {
+        _error = 'Spot not found';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      Spot updatedSpot = oldSpot;
+
+      if (updates.containsKey('name')) {
+        updatedSpot = updatedSpot.copyWith(name: updates['name'] as String?);
+      }
+      if (updates.containsKey('description')) {
+        updatedSpot = updatedSpot.copyWith(description: updates['description'] as String?);
+      }
+      if (updates.containsKey('latitude') && updates.containsKey('longitude')) {
+        updatedSpot = updatedSpot.copyWith(
+          latitude: (updates['latitude'] as num).toDouble(),
+          longitude: (updates['longitude'] as num).toDouble(),
+          address: updates['address'] as String?,
+          city: updates['city'] as String?,
+          countryCode: updates['countryCode'] as String?,
+        );
+      }
+      if (updates.containsKey('goodFor')) {
+        updatedSpot = updatedSpot.copyWith(
+          goodFor: updates['goodFor'] is List
+              ? List<String>.from(updates['goodFor'] as List)
+              : null,
+        );
+      }
+      if (updates.containsKey('spotFeatures')) {
+        updatedSpot = updatedSpot.copyWith(
+          spotFeatures: updates['spotFeatures'] is List
+              ? List<String>.from(updates['spotFeatures'] as List)
+              : null,
+        );
+      }
+      if (updates.containsKey('spotAccess')) {
+        updatedSpot = updatedSpot.copyWith(spotAccess: updates['spotAccess'] as String?);
+      }
+      if (updates.containsKey('spotFacilities')) {
+        updatedSpot = updatedSpot.copyWith(
+          spotFacilities: updates['spotFacilities'] is Map
+              ? Map<String, String>.from(updates['spotFacilities'] as Map)
+              : null,
+        );
+      }
+
+      List<Map<String, String>> contributors = List.from(updatedSpot.contributors ?? []);
+      if (reporterUserId != null && reporterUserName != null) {
+        final exists = contributors.any((c) => c['userId'] == reporterUserId);
+        if (!exists) {
+          contributors.add({'userId': reporterUserId, 'userName': reporterUserName});
+        }
+      }
+
+      updatedSpot = updatedSpot.copyWith(
+        contributors: contributors,
+        updatedAt: DateTime.now(),
+      );
+
+      await _firestore.collection('spots').doc(spot.id).update(updatedSpot.toFirestore(isUpdate: true));
+
+      final changes = _computeSpotChanges(oldSpot, updatedSpot);
+      if (changes.isNotEmpty) {
+        await _auditLogService.logSpotEdit(
+          spotId: spot.id!,
+          userId: moderatorUserId ?? reporterUserId,
+          userName: moderatorUserName ?? reporterUserName,
+          changes: changes,
+          reportId: reportId,
+          notes: notes,
+          metadata: {
+            'suggestedBy': {
+              'userId': reporterUserId,
+              'userName': reporterUserName,
+            },
+          },
+        );
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Error applying edit suggestions: $e');
+      _error = 'Failed to apply edit suggestions: $e';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   // Compute changes between old and new spot for audit logging
   Map<String, dynamic> _computeSpotChanges(Spot oldSpot, Spot newSpot) {
     final changes = <String, dynamic>{};

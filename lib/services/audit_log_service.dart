@@ -13,8 +13,13 @@ class AuditLogService {
     required Map<String, dynamic> changes,
     String? reportId,
     String? notes,
+    Map<String, dynamic>? metadata,
   }) async {
     try {
+      final meta = Map<String, dynamic>.from(metadata ?? {});
+      if (notes != null && notes.isNotEmpty) {
+        meta['notes'] = notes;
+      }
       await _firestore.collection('auditLog').add({
         'action': AuditLogAction.spotEdit.toString().split('.').last,
         'spotId': spotId,
@@ -23,7 +28,7 @@ class AuditLogService {
         'userName': userName,
         'timestamp': FieldValue.serverTimestamp(),
         'changes': changes,
-        if (notes != null && notes.isNotEmpty) 'metadata': {'notes': notes},
+        if (meta.isNotEmpty) 'metadata': meta,
       });
     } catch (e) {
       debugPrint('Error logging spot edit: $e');

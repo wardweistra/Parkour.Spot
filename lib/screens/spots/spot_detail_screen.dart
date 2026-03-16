@@ -19,6 +19,9 @@ import '../../widgets/moderator_action_fields.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/location_info_box.dart';
 import '../../constants/spot_attributes.dart';
+import '../../services/geocoding_service.dart';
+import '../../widgets/spot_form/attributes_section.dart';
+import 'location_picker_screen.dart';
 import '../../services/snackbar_service.dart';
 import '../../services/spot_list_service.dart';
 import '../../services/feature_access_service.dart';
@@ -81,7 +84,7 @@ class SpotDetailScreen extends StatefulWidget {
   State<SpotDetailScreen> createState() => _SpotDetailScreenState();
 }
 
-enum _SpotMenuAction { login, reportAsDuplicate, suggestPhoto, report, addToList, edit, delete, markAsDuplicate, createNativeSpot, toggleHide, removeDuplicateStatus, triggerResize }
+enum _SpotMenuAction { login, reportAsDuplicate, suggestPhoto, suggestEdit, report, addToList, edit, delete, markAsDuplicate, createNativeSpot, toggleHide, removeDuplicateStatus, triggerResize }
 
 class _SpotDetailScreenState extends State<SpotDetailScreen> {
   double _userRating = 0;
@@ -661,6 +664,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       case _SpotMenuAction.suggestPhoto:
         _showSuggestPhotoDialog();
         break;
+      case _SpotMenuAction.suggestEdit:
+        _showSuggestEditDialog();
+        break;
       case _SpotMenuAction.report:
         _showReportSpotDialog();
         break;
@@ -855,6 +861,46 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Thanks! Your photo suggestion has been submitted for review.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
+  Future<void> _showSuggestEditDialog() async {
+    if (widget.spot.id == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to suggest edits for this spot right now.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (widget.spot.duplicateOf != null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot suggest edits for duplicate spots.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final bool? result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => _SuggestEditDialog(spot: _spot),
+    );
+
+    if (!mounted) return;
+    if (result == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Thanks! Your edit suggestion has been submitted for review.'),
           backgroundColor: Colors.green,
         ),
       );
@@ -1187,6 +1233,49 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                       _spot.duplicateOf == null
                                           ? 'Submit photos for this spot'
                                           : 'Cannot suggest photos for duplicates',
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: theme.colorScheme.onSurface
+                                                .withValues(alpha: 0.6),
+                                            fontSize: 11,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem<_SpotMenuAction>(
+                            value: _SpotMenuAction.suggestEdit,
+                            enabled: _spot.duplicateOf == null,
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.edit_note,
+                                  color: _spot.duplicateOf == null
+                                      ? theme.colorScheme.primary
+                                      : theme.colorScheme.onSurface.withValues(alpha: 0.38),
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'Suggest an edit',
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w500,
+                                            color: _spot.duplicateOf == null
+                                                ? null
+                                                : theme.colorScheme.onSurface.withValues(alpha: 0.38),
+                                          ),
+                                    ),
+                                    Text(
+                                      _spot.duplicateOf == null
+                                          ? 'Propose changes to this spot'
+                                          : 'Cannot suggest edits for duplicates',
                                       style: theme.textTheme.bodySmall
                                           ?.copyWith(
                                             color: theme.colorScheme.onSurface
@@ -6200,6 +6289,410 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
           ElevatedButton(
             onPressed: (_isSubmitting || _isUploading) ? null : _submitPhotos,
             child: _isSubmitting || _isUploading
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Submit'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SuggestEditDialog extends StatefulWidget {
+  final Spot spot;
+
+  const _SuggestEditDialog({required this.spot});
+
+  @override
+  State<_SuggestEditDialog> createState() => _SuggestEditDialogState();
+}
+
+class _SuggestEditDialogState extends State<_SuggestEditDialog> {
+  late final TextEditingController _nameController;
+  late final TextEditingController _descriptionController;
+
+  LatLng? _suggestedLatLng;
+  String? _geocodedAddress;
+  bool _isGeocoding = false;
+
+  String? _selectedAccess;
+  final Set<String> _selectedFeatures = {};
+  final Map<String, String> _selectedFacilities = {};
+  final Set<String> _selectedGoodFor = {};
+
+  bool _isSubmitting = false;
+  String? _submissionError;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.spot.name);
+    _descriptionController = TextEditingController(text: widget.spot.description);
+    _selectedAccess = widget.spot.spotAccess;
+    _selectedFeatures.addAll(widget.spot.spotFeatures ?? []);
+    _selectedFacilities.addAll(widget.spot.spotFacilities ?? {});
+    _selectedGoodFor.addAll(widget.spot.goodFor ?? []);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickLocation() async {
+    final initial = LatLng(widget.spot.latitude, widget.spot.longitude);
+    final result = await Navigator.of(context).push<LatLng>(
+      MaterialPageRoute(
+        builder: (context) => LocationPickerScreen(initialLocation: initial),
+      ),
+    );
+    if (result != null && mounted) {
+      setState(() {
+        _suggestedLatLng = result;
+        _isGeocoding = true;
+      });
+      _geocodeLocation(result.latitude, result.longitude);
+    }
+  }
+
+  Future<void> _geocodeLocation(double lat, double lng) async {
+    try {
+      final geocoding = Provider.of<GeocodingService>(context, listen: false);
+      final details = await geocoding.geocodeCoordinatesDetails(lat, lng);
+      if (mounted) {
+        setState(() {
+          _geocodedAddress = details['address'] ?? details['city'] ?? details['countryCode'];
+          _isGeocoding = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error geocoding: $e');
+      if (mounted) {
+        setState(() => _isGeocoding = false);
+      }
+    }
+  }
+
+  void _toggleFeature(String key, bool selected) {
+    setState(() {
+      if (selected) {
+        _selectedFeatures.add(key);
+      } else {
+        _selectedFeatures.remove(key);
+      }
+    });
+  }
+
+  void _onFacilityChanged(String key, String value) {
+    setState(() {
+      _selectedFacilities[key] = value;
+    });
+  }
+
+  void _toggleGoodFor(String key, bool selected) {
+    setState(() {
+      if (selected) {
+        _selectedGoodFor.add(key);
+      } else {
+        _selectedGoodFor.remove(key);
+      }
+    });
+  }
+
+  bool _hasSuggestions() {
+    if (_suggestedLatLng != null) return true;
+    if (_nameController.text.trim() != widget.spot.name) return true;
+    if (_descriptionController.text.trim() != widget.spot.description) return true;
+    final currentGoodFor = Set<String>.from(widget.spot.goodFor ?? []);
+    if (!_setEquals(_selectedGoodFor, currentGoodFor)) return true;
+    final currentFeatures = Set<String>.from(widget.spot.spotFeatures ?? []);
+    if (!_setEquals(_selectedFeatures, currentFeatures)) return true;
+    if (_selectedAccess != widget.spot.spotAccess) return true;
+    final currentFacilities = widget.spot.spotFacilities ?? {};
+    if (!_mapEquals(_selectedFacilities, currentFacilities)) return true;
+    return false;
+  }
+
+  bool _setEquals(Set<String> a, Set<String> b) {
+    if (a.length != b.length) return false;
+    return a.every((x) => b.contains(x));
+  }
+
+  bool _mapEquals(Map<String, String> a, Map<String, String> b) {
+    if (a.length != b.length) return false;
+    for (final e in a.entries) {
+      if (b[e.key] != e.value) return false;
+    }
+    return true;
+  }
+
+  Future<void> _submit() async {
+    if (!_hasSuggestions()) {
+      setState(() {
+        _submissionError = 'Please suggest at least one change.';
+      });
+      return;
+    }
+
+    final authService = Provider.of<AuthService>(context, listen: false);
+    if (!authService.isAuthenticated) {
+      setState(() {
+        _submissionError = 'You must be logged in to suggest edits. Please log in and try again.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+      _submissionError = null;
+    });
+
+    try {
+      final reportService = Provider.of<SpotReportService>(context, listen: false);
+
+      final reporterName = (() {
+        final profileName = authService.userProfile?.displayName;
+        if (profileName != null && profileName.trim().isNotEmpty) {
+          return profileName.trim();
+        }
+        final authName = authService.currentUser?.displayName;
+        if (authName != null && authName.trim().isNotEmpty) {
+          return authName.trim();
+        }
+        return null;
+      })();
+
+      String? suggestedName;
+      if (_nameController.text.trim() != widget.spot.name) {
+        suggestedName = _nameController.text.trim();
+        if (suggestedName.isEmpty) suggestedName = null;
+      }
+      String? suggestedDescription;
+      if (_descriptionController.text.trim() != widget.spot.description) {
+        suggestedDescription = _descriptionController.text.trim();
+      }
+      double? suggestedLat;
+      double? suggestedLng;
+      if (_suggestedLatLng != null) {
+        final loc = _suggestedLatLng!;
+        suggestedLat = loc.latitude;
+        suggestedLng = loc.longitude;
+      }
+      List<String>? suggestedGoodFor;
+      final currentGoodFor = Set<String>.from(widget.spot.goodFor ?? []);
+      if (!_setEquals(_selectedGoodFor, currentGoodFor) && _selectedGoodFor.isNotEmpty) {
+        suggestedGoodFor = _selectedGoodFor.toList();
+      }
+      List<String>? suggestedSpotFeatures;
+      final currentFeatures = Set<String>.from(widget.spot.spotFeatures ?? []);
+      if (!_setEquals(_selectedFeatures, currentFeatures) && _selectedFeatures.isNotEmpty) {
+        suggestedSpotFeatures = _selectedFeatures.toList();
+      }
+      String? suggestedSpotAccess;
+      if (_selectedAccess != widget.spot.spotAccess && _selectedAccess != null) {
+        suggestedSpotAccess = _selectedAccess;
+      }
+      Map<String, String>? suggestedSpotFacilities;
+      final currentFacilities = widget.spot.spotFacilities ?? {};
+      if (!_mapEquals(_selectedFacilities, currentFacilities) && _selectedFacilities.isNotEmpty) {
+        suggestedSpotFacilities = Map.from(_selectedFacilities);
+      }
+
+      final hasAny = suggestedName != null ||
+          suggestedDescription != null ||
+          (suggestedLat != null && suggestedLng != null) ||
+          (suggestedGoodFor != null && suggestedGoodFor.isNotEmpty) ||
+          (suggestedSpotFeatures != null && suggestedSpotFeatures.isNotEmpty) ||
+          suggestedSpotAccess != null ||
+          (suggestedSpotFacilities != null && suggestedSpotFacilities.isNotEmpty);
+
+      if (!hasAny) {
+        setState(() {
+          _submissionError = 'Please suggest at least one change.';
+          _isSubmitting = false;
+        });
+        return;
+      }
+
+      final success = await reportService.submitSpotReport(
+        spotId: widget.spot.id!,
+        spotName: widget.spot.name,
+        categories: ['Edit suggestion'],
+        details: null,
+        reporterUserId: authService.userProfile?.id,
+        reporterName: reporterName,
+        reporterEmail: authService.userProfile?.email ?? authService.currentUser?.email,
+        spotCountryCode: widget.spot.countryCode,
+        spotCity: widget.spot.city,
+        suggestedName: suggestedName,
+        suggestedDescription: suggestedDescription,
+        suggestedLatitude: suggestedLat,
+        suggestedLongitude: suggestedLng,
+        suggestedGoodFor: suggestedGoodFor,
+        suggestedSpotFeatures: suggestedSpotFeatures,
+        suggestedSpotAccess: suggestedSpotAccess,
+        suggestedSpotFacilities: suggestedSpotFacilities,
+      );
+
+      if (!mounted) return;
+
+      if (success) {
+        Navigator.of(context).pop(true);
+      } else {
+        setState(() {
+          _submissionError = 'Failed to submit edit suggestion. Please try again.';
+          _isSubmitting = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error submitting edit suggestion: $e');
+      if (mounted) {
+        setState(() {
+          _submissionError = 'Error submitting edit suggestion: $e';
+          _isSubmitting = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return PopScope(
+      canPop: !_isSubmitting,
+      child: AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.edit_note, color: theme.colorScheme.primary),
+            const SizedBox(width: 8),
+            const Expanded(child: Text('Suggest an Edit')),
+          ],
+        ),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600, maxHeight: 500),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Propose changes to this spot. Moderators will review your suggestions.',
+                  style: theme.textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Location',
+                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: _isSubmitting ? null : _pickLocation,
+                  icon: Icon(
+                    _suggestedLatLng != null ? Icons.check_circle : Icons.map,
+                    size: 18,
+                    color: _suggestedLatLng != null
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurface,
+                  ),
+                  label: Text(
+                    _suggestedLatLng != null
+                        ? 'Change location (picked)'
+                        : 'Pick different location on map',
+                  ),
+                ),
+                if (_suggestedLatLng != null && (_isGeocoding || _geocodedAddress != null)) ...[
+                  const SizedBox(height: 4),
+                  Builder(
+                    builder: (context) {
+                      final loc = _suggestedLatLng!;
+                      return Text(
+                        _isGeocoding
+                            ? 'Geocoding...'
+                            : (_geocodedAddress ?? '${loc.latitude.toStringAsFixed(4)}, ${loc.longitude.toStringAsFixed(4)}'),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+                const SizedBox(height: 16),
+                Text(
+                  'Title',
+                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 4),
+                TextField(
+                  controller: _nameController,
+                  decoration: InputDecoration(
+                    hintText: 'Spot title',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    filled: true,
+                    fillColor: theme.colorScheme.surfaceContainerHighest,
+                  ),
+                  enabled: !_isSubmitting,
+                  onChanged: (_) => setState(() {}),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Description',
+                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 4),
+                TextField(
+                  controller: _descriptionController,
+                  maxLines: 4,
+                  decoration: InputDecoration(
+                    hintText: 'Spot description',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    filled: true,
+                    fillColor: theme.colorScheme.surfaceContainerHighest,
+                  ),
+                  enabled: !_isSubmitting,
+                  onChanged: (_) => setState(() {}),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Spot attributes',
+                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                SpotAttributesSection(
+                  selectedAccess: _selectedAccess,
+                  selectedFeatures: _selectedFeatures,
+                  selectedFacilities: _selectedFacilities,
+                  selectedGoodFor: _selectedGoodFor,
+                  onAccessChanged: (v) => setState(() => _selectedAccess = v),
+                  onToggleFeature: _toggleFeature,
+                  onFacilityChanged: _onFacilityChanged,
+                  onToggleGoodFor: _toggleGoodFor,
+                ),
+                if (_submissionError != null) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    _submissionError!,
+                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: _isSubmitting ? null : _submit,
+            child: _isSubmitting
                 ? const SizedBox(
                     width: 16,
                     height: 16,

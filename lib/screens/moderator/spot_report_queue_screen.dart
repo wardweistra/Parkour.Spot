@@ -13,6 +13,7 @@ import '../../services/auth_service.dart';
 import '../../services/url_service.dart';
 import '../../services/spot_service.dart';
 import '../../widgets/photo_approval_dialog.dart';
+import '../../widgets/edit_suggestion_approval_dialog.dart';
 
 class SpotReportQueueScreen extends StatefulWidget {
   const SpotReportQueueScreen({super.key});
@@ -304,6 +305,25 @@ class _ReportCardState extends State<_ReportCard> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Selected photos approved and added to spot.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleApplyEditSuggestions(
+      BuildContext context, SpotReport report) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => EditSuggestionApprovalDialog(
+        report: report,
+      ),
+    );
+
+    if (result == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Edit suggestions applied successfully.'),
           backgroundColor: Colors.green,
         ),
       );
@@ -626,6 +646,26 @@ class _ReportCardState extends State<_ReportCard> {
                 ),
               ),
             ],
+            if (widget.report.moderatorNotes?.isNotEmpty ?? false) ...[
+              const SizedBox(height: 12),
+              SelectableText.rich(
+                TextSpan(
+                  style: theme.textTheme.bodyMedium,
+                  children: [
+                    TextSpan(
+                      text: 'Moderator Comment: ',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.secondary,
+                      ),
+                    ),
+                    TextSpan(
+                      text: widget.report.moderatorNotes!,
+                    ),
+                  ],
+                ),
+              ),
+            ],
             // Accepted photos (if any)
             if (widget.report.acceptedPhotoUrls != null && widget.report.acceptedPhotoUrls!.isNotEmpty) ...[
               const SizedBox(height: 12),
@@ -728,6 +768,63 @@ class _ReportCardState extends State<_ReportCard> {
                   );
                 }).toList(),
               ),
+            ],
+            // Edit suggestions summary
+            if (widget.report.hasEditSuggestions) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Suggested Edits',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  if (widget.report.suggestedName != null)
+                    Chip(
+                      label: const Text('Title'),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  if (widget.report.suggestedDescription != null)
+                    Chip(
+                      label: const Text('Description'),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  if (widget.report.suggestedLatitude != null &&
+                      widget.report.suggestedLongitude != null)
+                    Chip(
+                      label: const Text('Location'),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  if (widget.report.suggestedGoodFor != null &&
+                      widget.report.suggestedGoodFor!.isNotEmpty)
+                    Chip(
+                      label: const Text('Good for'),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  if (widget.report.suggestedSpotFeatures != null &&
+                      widget.report.suggestedSpotFeatures!.isNotEmpty)
+                    Chip(
+                      label: const Text('Features'),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  if (widget.report.suggestedSpotAccess != null)
+                    Chip(
+                      label: const Text('Access'),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  if (widget.report.suggestedSpotFacilities != null &&
+                      widget.report.suggestedSpotFacilities!.isNotEmpty)
+                    Chip(
+                      label: const Text('Facilities'),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
             ],
             // Photo suggestions
             if (widget.report.suggestedPhotoUrls != null && widget.report.suggestedPhotoUrls!.isNotEmpty) ...[
@@ -942,6 +1039,11 @@ class _ReportCardState extends State<_ReportCard> {
                           bodyParts.add('Additional Details:');
                           bodyParts.add(widget.report.details!);
                         }
+                        if (widget.report.moderatorNotes?.isNotEmpty ?? false) {
+                          bodyParts.add('');
+                          bodyParts.add('Moderator Comment:');
+                          bodyParts.add(widget.report.moderatorNotes!);
+                        }
                         bodyParts.add('');
                         bodyParts.add('Best regards,');
                         
@@ -989,6 +1091,22 @@ class _ReportCardState extends State<_ReportCard> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // Edit suggestion actions
+                  if (widget.report.hasEditSuggestions) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () => _handleApplyEditSuggestions(context, widget.report),
+                        icon: const Icon(Icons.edit_note),
+                        label: const Text('Review Edit Suggestions'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: theme.colorScheme.primary,
+                          foregroundColor: theme.colorScheme.onPrimary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                   // Photo suggestion actions
                   if (widget.report.suggestedPhotoUrls != null && widget.report.suggestedPhotoUrls!.isNotEmpty) ...[
                     Row(

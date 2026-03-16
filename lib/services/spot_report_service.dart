@@ -40,6 +40,14 @@ class SpotReportService {
     String? spotCity,
     String? duplicateOfSpotId,
     List<String>? suggestedPhotoUrls,
+    String? suggestedName,
+    String? suggestedDescription,
+    double? suggestedLatitude,
+    double? suggestedLongitude,
+    List<String>? suggestedGoodFor,
+    List<String>? suggestedSpotFeatures,
+    String? suggestedSpotAccess,
+    Map<String, String>? suggestedSpotFacilities,
   }) async {
     try {
       await _firestore.collection('spotReports').add({
@@ -64,6 +72,20 @@ class SpotReportService {
           'duplicateOfSpotId': duplicateOfSpotId,
         if (suggestedPhotoUrls != null && suggestedPhotoUrls.isNotEmpty)
           'suggestedPhotoUrls': suggestedPhotoUrls,
+        if (suggestedName != null && suggestedName.isNotEmpty)
+          'suggestedName': suggestedName,
+        if (suggestedDescription != null && suggestedDescription.isNotEmpty)
+          'suggestedDescription': suggestedDescription,
+        if (suggestedLatitude != null) 'suggestedLatitude': suggestedLatitude,
+        if (suggestedLongitude != null) 'suggestedLongitude': suggestedLongitude,
+        if (suggestedGoodFor != null && suggestedGoodFor.isNotEmpty)
+          'suggestedGoodFor': suggestedGoodFor,
+        if (suggestedSpotFeatures != null && suggestedSpotFeatures.isNotEmpty)
+          'suggestedSpotFeatures': suggestedSpotFeatures,
+        if (suggestedSpotAccess != null && suggestedSpotAccess.isNotEmpty)
+          'suggestedSpotAccess': suggestedSpotAccess,
+        if (suggestedSpotFacilities != null && suggestedSpotFacilities.isNotEmpty)
+          'suggestedSpotFacilities': suggestedSpotFacilities,
         'status': statuses.first, // default "New"
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
@@ -210,6 +232,37 @@ class SpotReportService {
       return true;
     } catch (e) {
       debugPrint('Error updating report with rejected photos: $e');
+      return false;
+    }
+  }
+
+  /// Updates a spot report with edit approval results (accepted and rejected fields).
+  Future<bool> updateReportWithEditApprovals({
+    required String reportId,
+    required List<String> acceptedFields,
+    required List<String> rejectedFields,
+    String? moderatorNotes,
+    String? userId,
+    String? userName,
+  }) async {
+    try {
+      final reportDoc = await _firestore.collection('spotReports').doc(reportId).get();
+      if (!reportDoc.exists) {
+        debugPrint('Report $reportId does not exist');
+        return false;
+      }
+
+      await _firestore.collection('spotReports').doc(reportId).update({
+        'acceptedEditFields': acceptedFields,
+        'rejectedEditFields': rejectedFields,
+        if (moderatorNotes != null && moderatorNotes.isNotEmpty)
+          'moderatorNotes': moderatorNotes,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      return true;
+    } catch (e) {
+      debugPrint('Error updating report with edit approvals: $e');
       return false;
     }
   }
