@@ -26,6 +26,7 @@ class _SpotTrackingListScreenState extends State<SpotTrackingListScreen> {
   List<Spot> _spots = [];
   bool _isLoading = true;
   String? _error;
+  List<String>? _lastLoadedSpotIds;
 
   @override
   void initState() {
@@ -33,11 +34,22 @@ class _SpotTrackingListScreenState extends State<SpotTrackingListScreen> {
     _loadSpots();
   }
 
+  bool _listEquals(List<String> a, List<String>? b) {
+    if (b == null) return false;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
   Future<void> _loadSpots() async {
     final authService = Provider.of<AuthService>(context, listen: false);
     final spotIds = widget.type == SpotTrackingListType.wantToVisit
         ? authService.userProfile?.wantToVisit ?? []
         : authService.userProfile?.visited ?? [];
+
+    _lastLoadedSpotIds = List<String>.from(spotIds);
 
     if (spotIds.isEmpty) {
       setState(() {
@@ -80,10 +92,28 @@ class _SpotTrackingListScreenState extends State<SpotTrackingListScreen> {
     }
   }
 
+  void _checkProfileAndReload(AuthService authService) {
+    // When navigating directly or refreshing, AuthService may load the profile
+    // after initState. Re-load spots when the profile becomes available with
+    // spot IDs we haven't loaded yet.
+    final spotIds = widget.type == SpotTrackingListType.wantToVisit
+        ? authService.userProfile?.wantToVisit ?? []
+        : authService.userProfile?.visited ?? [];
+    if (spotIds.isNotEmpty &&
+        !_listEquals(spotIds, _lastLoadedSpotIds) &&
+        !_isLoading) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _loadSpots();
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<AuthService>(
       builder: (context, authService, _) {
+        _checkProfileAndReload(authService);
+
         if (!authService.isAuthenticated) {
           return PageScaffold(
             title: _title,
