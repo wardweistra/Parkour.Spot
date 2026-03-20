@@ -24,6 +24,7 @@ import '../screens/moderator/spot_report_queue_screen.dart';
 import '../screens/spots/spot_detail_screen.dart';
 import '../screens/spots/edit_spot_screen.dart';
 import '../screens/spots/spot_list_detail_screen.dart';
+import '../screens/spots/spot_tracking_list_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/profile/public_profile_screen.dart';
 import '../models/spot.dart';
@@ -276,7 +277,26 @@ class AppRouter {
       ),
       GoRoute(
         path: '/profile',
-        redirect: (context, state) => '/explore?tab=profile',
+        redirect: (context, state) {
+          // Don't redirect child routes
+          final path = state.uri.path;
+          if (path == '/profile/want-to-visit' || path == '/profile/visited') {
+            return null;
+          }
+          return '/explore?tab=profile';
+        },
+        routes: [
+          GoRoute(
+            path: 'want-to-visit',
+            builder: (context, state) =>
+                const SpotTrackingListScreen(type: SpotTrackingListType.wantToVisit),
+          ),
+          GoRoute(
+            path: 'visited',
+            builder: (context, state) =>
+                const SpotTrackingListScreen(type: SpotTrackingListType.visited),
+          ),
+        ],
       ),
       GoRoute(
         path: '/login',

@@ -24,6 +24,7 @@ import '../../widgets/spot_form/attributes_section.dart';
 import 'location_picker_screen.dart';
 import '../../services/snackbar_service.dart';
 import '../../services/spot_list_service.dart';
+import '../../services/spot_tracking_service.dart';
 import '../../services/feature_access_service.dart';
 import '../../models/spot_list.dart';
 import '../../utils/resized_spot_image_provider.dart';
@@ -1743,6 +1744,11 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     ),
 
                     const SizedBox(height: 8),
+
+                    // Want to visit / Been here tracking chips
+                    if (Provider.of<AuthService>(context, listen: false).isAuthenticated &&
+                        _spot.id != null)
+                      _SpotTrackingChips(spotId: _spot.id!),
 
                     // Hidden spot banner
                     if (_spot.hidden || widget.spot.spotSourceRemoved)
@@ -6702,6 +6708,150 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _SpotTrackingChips extends StatelessWidget {
+  final String spotId;
+
+  const _SpotTrackingChips({required this.spotId});
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<AuthService>(
+      builder: (context, authService, _) {
+        final wantToVisit = authService.userProfile?.wantToVisit ?? [];
+        final visited = authService.userProfile?.visited ?? [];
+        final inWantToVisit = wantToVisit.contains(spotId);
+        final inVisited = visited.contains(spotId);
+
+        return Consumer<SpotTrackingService>(
+          builder: (context, trackingService, _) {
+            final isUpdating = trackingService.isLoading;
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _buildTrackingChip(
+                    context: context,
+                    label: 'Want to visit',
+                    icon: Icons.bookmark_border,
+                    selectedIcon: Icons.bookmark,
+                    isSelected: inWantToVisit,
+                    isUpdating: isUpdating,
+                    onAdd: () => trackingService.addToWantToVisit(spotId),
+                    onRemove: () => trackingService.removeFromWantToVisit(spotId),
+                    onMoveToOther: () => trackingService.addToVisited(spotId),
+                    otherLabel: 'Been here',
+                  ),
+                  _buildTrackingChip(
+                    context: context,
+                    label: 'Been here',
+                    icon: Icons.check_circle_outline,
+                    selectedIcon: Icons.check_circle,
+                    isSelected: inVisited,
+                    isUpdating: isUpdating,
+                    onAdd: () => trackingService.addToVisited(spotId),
+                    onRemove: () => trackingService.removeFromVisited(spotId),
+                    onMoveToOther: () => trackingService.addToWantToVisit(spotId),
+                    otherLabel: 'Want to visit',
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildTrackingChip({
+    required BuildContext context,
+    required String label,
+    required IconData icon,
+    required IconData selectedIcon,
+    required bool isSelected,
+    required bool isUpdating,
+    required Future<bool> Function() onAdd,
+    required Future<bool> Function() onRemove,
+    required Future<bool> Function() onMoveToOther,
+    required String otherLabel,
+  }) {
+    final theme = Theme.of(context);
+
+    if (isUpdating) {
+      return InputChip(
+        avatar: const SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+        label: Text(label),
+        onPressed: null,
+      );
+    }
+
+    if (isSelected) {
+      return PopupMenuButton<String>(
+        tooltip: label,
+        onSelected: (value) async {
+          if (value == 'remove') {
+            final success = await onRemove();
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(success ? 'Removed from $label' : 'Failed to remove'),
+                  backgroundColor: success ? null : theme.colorScheme.error,
+                ),
+              );
+            }
+          } else if (value == 'move') {
+            final success = await onMoveToOther();
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(success ? 'Moved to $otherLabel' : 'Failed to move'),
+                  backgroundColor: success ? null : theme.colorScheme.error,
+                ),
+              );
+            }
+          }
+        },
+        itemBuilder: (context) => [
+          PopupMenuItem(value: 'remove', child: Text('Remove from $label')),
+          PopupMenuItem(value: 'move', child: Text('Move to $otherLabel')),
+        ],
+        child: InputChip(
+          avatar: Icon(
+            selectedIcon,
+            size: 18,
+            color: theme.colorScheme.primary,
+          ),
+          label: Text(label),
+          selected: true,
+          onPressed: () {},
+        ),
+      );
+    }
+
+    return InputChip(
+      avatar: Icon(icon, size: 18, color: theme.colorScheme.outline),
+      label: Text(label),
+      onPressed: () async {
+        final success = await onAdd();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(success ? 'Added to $label' : 'Failed to add'),
+              backgroundColor: success ? null : theme.colorScheme.error,
+            ),
+          );
+        }
+      },
     );
   }
 }

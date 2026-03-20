@@ -10,6 +10,8 @@ class User {
   final DateTime? lastLoginAt;
   final DateTime? lastActiveAt;
   final List<String>? favoriteSpots;
+  final List<String>? wantToVisit;
+  final List<String>? visited;
   final bool isEmailVerified;
   final bool isAdmin;
   final bool isModerator;
@@ -27,6 +29,8 @@ class User {
     this.lastLoginAt,
     this.lastActiveAt,
     this.favoriteSpots,
+    this.wantToVisit,
+    this.visited,
     this.isEmailVerified = false,
     this.isAdmin = false,
     this.isModerator = false,
@@ -47,6 +51,12 @@ class User {
       lastActiveAt: map['lastActiveAt']?.toDate(),
       favoriteSpots: map['favoriteSpots'] != null 
           ? List<String>.from(map['favoriteSpots']) 
+          : null,
+      wantToVisit: map['wantToVisit'] != null 
+          ? List<String>.from(map['wantToVisit']) 
+          : null,
+      visited: map['visited'] != null 
+          ? List<String>.from(map['visited']) 
           : null,
       isEmailVerified: map['isEmailVerified'] ?? false,
       isAdmin: map['isAdmin'] ?? false,
@@ -70,6 +80,8 @@ class User {
       'lastLoginAt': lastLoginAt,
       'lastActiveAt': lastActiveAt,
       'favoriteSpots': favoriteSpots,
+      'wantToVisit': wantToVisit,
+      'visited': visited,
       'isEmailVerified': isEmailVerified,
       'isAdmin': isAdmin,
       'isModerator': isModerator,
@@ -91,6 +103,8 @@ class User {
     DateTime? lastLoginAt,
     DateTime? lastActiveAt,
     List<String>? favoriteSpots,
+    List<String>? wantToVisit,
+    List<String>? visited,
     bool? isEmailVerified,
     bool? isAdmin,
     bool? isModerator,
@@ -108,6 +122,8 @@ class User {
       lastLoginAt: lastLoginAt ?? this.lastLoginAt,
       lastActiveAt: lastActiveAt ?? this.lastActiveAt,
       favoriteSpots: favoriteSpots ?? this.favoriteSpots,
+      wantToVisit: wantToVisit ?? this.wantToVisit,
+      visited: visited ?? this.visited,
       isEmailVerified: isEmailVerified ?? this.isEmailVerified,
       isAdmin: isAdmin ?? this.isAdmin,
       isModerator: isModerator ?? this.isModerator,

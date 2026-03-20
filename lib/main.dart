@@ -17,6 +17,7 @@ import 'package:parkour_spot/services/jumpflix_service.dart';
 import 'package:parkour_spot/services/user_management_service.dart';
 import 'package:parkour_spot/services/snackbar_service.dart';
 import 'package:parkour_spot/services/spot_list_service.dart';
+import 'package:parkour_spot/services/spot_tracking_service.dart';
 import 'package:parkour_spot/services/feature_access_service.dart';
 import 'package:parkour_spot/services/pwa_install_service.dart';
 import 'package:parkour_spot/services/user_profile_service.dart';
@@ -129,6 +130,15 @@ class ParkourSpotApp extends StatelessWidget {
           update: (context, authService, previous) {
             final featureAccessService = FeatureAccessService(authService);
             return previous ?? SpotListService(authService, featureAccessService);
+          },
+        ),
+        ChangeNotifierProxyProvider<AuthService, SpotTrackingService>(
+          create: (context) {
+            final authService = Provider.of<AuthService>(context, listen: false);
+            return SpotTrackingService(authService);
+          },
+          update: (context, authService, previous) {
+            return previous ?? SpotTrackingService(authService);
           },
         ),
         ChangeNotifierProvider(create: (_) => PwaInstallService()..initialize()),
