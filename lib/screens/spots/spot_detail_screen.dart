@@ -87,7 +87,13 @@ class SpotDetailScreen extends StatefulWidget {
 
 enum _SpotMenuAction { login, reportAsDuplicate, suggestPhoto, suggestEdit, report, addToList, edit, delete, markAsDuplicate, createNativeSpot, toggleHide, removeDuplicateStatus, triggerResize }
 
-enum _SpotSaveMenuAction { toggleWantToVisit, toggleVisited, addToCustomList }
+enum _SpotSaveMenuAction {
+  toggleWantToVisit,
+  toggleVisited,
+  openWantToVisitList,
+  openVisitedList,
+  addToCustomList,
+}
 
 class _SpotDetailScreenState extends State<SpotDetailScreen> {
   double _userRating = 0;
@@ -6788,6 +6794,16 @@ class _SpotSaveMenu extends StatelessWidget {
                     message = success ? 'Added to Been here' : 'Failed to add';
                   }
                   break;
+                case _SpotSaveMenuAction.openWantToVisitList:
+                  if (context.mounted) {
+                    context.push('/profile/want-to-visit');
+                  }
+                  return;
+                case _SpotSaveMenuAction.openVisitedList:
+                  if (context.mounted) {
+                    context.push('/profile/visited');
+                  }
+                  return;
                 case _SpotSaveMenuAction.addToCustomList:
                   onAddToCustomList();
                   return;
@@ -6814,16 +6830,77 @@ class _SpotSaveMenu extends StatelessWidget {
                   onSelected: (action) => handleAction(action),
                   itemBuilder: (menuContext) {
                     final menuTheme = Theme.of(menuContext);
+                    final primary = menuTheme.colorScheme.primary;
                     return <PopupMenuEntry<_SpotSaveMenuAction>>[
-                      CheckedPopupMenuItem<_SpotSaveMenuAction>(
+                      PopupMenuItem<_SpotSaveMenuAction>(
                         value: _SpotSaveMenuAction.toggleWantToVisit,
-                        checked: inWantToVisit,
-                        child: const Text('Want to visit'),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 24,
+                              child: inWantToVisit
+                                  ? Icon(Icons.check, size: 20, color: primary)
+                                  : null,
+                            ),
+                            Expanded(
+                              child: Text(
+                                'Want to visit',
+                                style: menuTheme.textTheme.bodyMedium,
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: 'View full list',
+                              icon: Icon(Icons.list_alt_outlined, size: 20, color: primary),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(
+                                minWidth: 40,
+                                minHeight: 40,
+                              ),
+                              onPressed: () {
+                                Navigator.pop(
+                                  menuContext,
+                                  _SpotSaveMenuAction.openWantToVisitList,
+                                );
+                              },
+                            ),
+                          ],
+                        ),
                       ),
-                      CheckedPopupMenuItem<_SpotSaveMenuAction>(
+                      PopupMenuItem<_SpotSaveMenuAction>(
                         value: _SpotSaveMenuAction.toggleVisited,
-                        checked: inVisited,
-                        child: const Text('Been here'),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 24,
+                              child: inVisited
+                                  ? Icon(Icons.check, size: 20, color: primary)
+                                  : null,
+                            ),
+                            Expanded(
+                              child: Text(
+                                'Been here',
+                                style: menuTheme.textTheme.bodyMedium,
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: 'View full list',
+                              icon: Icon(Icons.list_alt_outlined, size: 20, color: primary),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(
+                                minWidth: 40,
+                                minHeight: 40,
+                              ),
+                              onPressed: () {
+                                Navigator.pop(
+                                  menuContext,
+                                  _SpotSaveMenuAction.openVisitedList,
+                                );
+                              },
+                            ),
+                          ],
+                        ),
                       ),
                       if (hasSpotListAccess) ...[
                         const PopupMenuDivider(),
@@ -7211,6 +7288,25 @@ class _AddToListDialogState extends State<_AddToListDialog> {
                                 style: theme.textTheme.bodyMedium,
                               ),
                             ),
+                            if (list.id != null)
+                              IconButton(
+                                tooltip: 'View full list',
+                                icon: Icon(
+                                  Icons.list_alt_outlined,
+                                  size: 20,
+                                  color: theme.colorScheme.primary,
+                                ),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(
+                                  minWidth: 40,
+                                  minHeight: 40,
+                                ),
+                                onPressed: _isAdding
+                                    ? null
+                                    : () {
+                                        context.push('/list/${list.id}');
+                                      },
+                              ),
                           ],
                         ),
                       )),
@@ -7251,6 +7347,26 @@ class _AddToListDialogState extends State<_AddToListDialog> {
                                   }
                                 });
                               },
+                        secondary: list.id == null
+                            ? null
+                            : IconButton(
+                                tooltip: 'View full list',
+                                icon: Icon(
+                                  Icons.list_alt_outlined,
+                                  size: 20,
+                                  color: theme.colorScheme.primary,
+                                ),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(
+                                  minWidth: 40,
+                                  minHeight: 40,
+                                ),
+                                onPressed: _isAdding
+                                    ? null
+                                    : () {
+                                        context.push('/list/${list.id}');
+                                      },
+                              ),
                         contentPadding: EdgeInsets.zero,
                       )),
                 ],
