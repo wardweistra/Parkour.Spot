@@ -87,6 +87,8 @@ class SpotDetailScreen extends StatefulWidget {
 
 enum _SpotMenuAction { login, reportAsDuplicate, suggestPhoto, suggestEdit, report, addToList, edit, delete, markAsDuplicate, createNativeSpot, toggleHide, removeDuplicateStatus, triggerResize }
 
+enum _SpotSaveMenuAction { toggleWantToVisit, toggleVisited, addToCustomList }
+
 class _SpotDetailScreenState extends State<SpotDetailScreen> {
   double _userRating = 0;
   double _previousRating = 0; // Track the user's previous rating
@@ -1745,10 +1747,13 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
                     const SizedBox(height: 8),
 
-                    // Want to visit / Been here tracking chips
+                    // Save: want to visit / been here + optional custom list
                     if (Provider.of<AuthService>(context, listen: false).isAuthenticated &&
                         _spot.id != null)
-                      _SpotTrackingChips(spotId: _spot.id!),
+                      _SpotSaveMenu(
+                        spotId: _spot.id!,
+                        onAddToCustomList: _showAddToListDialog,
+                      ),
 
                     // Hidden spot banner
                     if (_spot.hidden || widget.spot.spotSourceRemoved)
@@ -6712,10 +6717,14 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
   }
 }
 
-class _SpotTrackingChips extends StatelessWidget {
+class _SpotSaveMenu extends StatelessWidget {
   final String spotId;
+  final VoidCallback onAddToCustomList;
 
-  const _SpotTrackingChips({required this.spotId});
+  const _SpotSaveMenu({
+    required this.spotId,
+    required this.onAddToCustomList,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -6725,132 +6734,168 @@ class _SpotTrackingChips extends StatelessWidget {
         final visited = authService.userProfile?.visited ?? [];
         final inWantToVisit = wantToVisit.contains(spotId);
         final inVisited = visited.contains(spotId);
+        final featureAccessService = FeatureAccessService(authService);
+        final hasSpotListAccess =
+            authService.isAuthenticated && featureAccessService.hasFeatureAccess('spotLists');
 
         return Consumer<SpotTrackingService>(
           builder: (context, trackingService, _) {
             final isUpdating = trackingService.isLoading;
+            final theme = Theme.of(context);
+            final colorScheme = theme.colorScheme;
+
+            IconData icon;
+            Color? iconColor;
+            String tooltip;
+            if (isUpdating) {
+              icon = Icons.bookmark_border;
+              iconColor = colorScheme.onSurface.withValues(alpha: 0.38);
+              tooltip = 'Updating…';
+            } else if (inWantToVisit) {
+              icon = Icons.bookmark;
+              iconColor = colorScheme.primary;
+              tooltip = 'Saved: Want to visit';
+            } else if (inVisited) {
+              icon = Icons.check_circle;
+              iconColor = colorScheme.primary;
+              tooltip = 'Saved: Been here';
+            } else {
+              icon = Icons.bookmark_border;
+              iconColor = colorScheme.onSurface.withValues(alpha: 0.6);
+              tooltip = 'Save spot';
+            }
+
+            Future<void> handleAction(_SpotSaveMenuAction action) async {
+              bool success = false;
+              String message = '';
+
+              switch (action) {
+                case _SpotSaveMenuAction.toggleWantToVisit:
+                  if (inWantToVisit) {
+                    success = await trackingService.removeFromWantToVisit(spotId);
+                    message = success ? 'Removed from Want to visit' : 'Failed to remove';
+                  } else {
+                    success = await trackingService.addToWantToVisit(spotId);
+                    message = success ? 'Added to Want to visit' : 'Failed to add';
+                  }
+                  break;
+                case _SpotSaveMenuAction.toggleVisited:
+                  if (inVisited) {
+                    success = await trackingService.removeFromVisited(spotId);
+                    message = success ? 'Removed from Been here' : 'Failed to remove';
+                  } else {
+                    success = await trackingService.addToVisited(spotId);
+                    message = success ? 'Added to Been here' : 'Failed to add';
+                  }
+                  break;
+                case _SpotSaveMenuAction.addToCustomList:
+                  onAddToCustomList();
+                  return;
+              }
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(message),
+                    backgroundColor: success ? null : colorScheme.error,
+                  ),
+                );
+              }
+            }
 
             return Padding(
               padding: const EdgeInsets.only(bottom: 16),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _buildTrackingChip(
-                    context: context,
-                    label: 'Want to visit',
-                    icon: Icons.bookmark_border,
-                    selectedIcon: Icons.bookmark,
-                    isSelected: inWantToVisit,
-                    isUpdating: isUpdating,
-                    onAdd: () => trackingService.addToWantToVisit(spotId),
-                    onRemove: () => trackingService.removeFromWantToVisit(spotId),
-                    onMoveToOther: () => trackingService.addToVisited(spotId),
-                    otherLabel: 'Been here',
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: PopupMenuButton<_SpotSaveMenuAction>(
+                  enabled: !isUpdating,
+                  tooltip: tooltip,
+                  position: PopupMenuPosition.under,
+                  onSelected: (action) => handleAction(action),
+                  itemBuilder: (menuContext) {
+                    final menuTheme = Theme.of(menuContext);
+                    return <PopupMenuEntry<_SpotSaveMenuAction>>[
+                      CheckedPopupMenuItem<_SpotSaveMenuAction>(
+                        value: _SpotSaveMenuAction.toggleWantToVisit,
+                        checked: inWantToVisit,
+                        child: const Text('Want to visit'),
+                      ),
+                      CheckedPopupMenuItem<_SpotSaveMenuAction>(
+                        value: _SpotSaveMenuAction.toggleVisited,
+                        checked: inVisited,
+                        child: const Text('Been here'),
+                      ),
+                      if (hasSpotListAccess) ...[
+                        const PopupMenuDivider(),
+                        PopupMenuItem<_SpotSaveMenuAction>(
+                          value: _SpotSaveMenuAction.addToCustomList,
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.playlist_add,
+                                size: 20,
+                                color: menuTheme.colorScheme.primary,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'Add to custom list',
+                                      style: menuTheme.textTheme.bodyMedium?.copyWith(
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Choose or create a list',
+                                      style: menuTheme.textTheme.bodySmall?.copyWith(
+                                        color: menuTheme.colorScheme.onSurface
+                                            .withValues(alpha: 0.6),
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ];
+                  },
+                  child: SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+                        shape: BoxShape.circle,
+                      ),
+                      child: isUpdating
+                          ? Center(
+                              child: SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: colorScheme.primary,
+                                ),
+                              ),
+                            )
+                          : Icon(
+                              icon,
+                              color: iconColor,
+                              size: 24,
+                            ),
+                    ),
                   ),
-                  _buildTrackingChip(
-                    context: context,
-                    label: 'Been here',
-                    icon: Icons.check_circle_outline,
-                    selectedIcon: Icons.check_circle,
-                    isSelected: inVisited,
-                    isUpdating: isUpdating,
-                    onAdd: () => trackingService.addToVisited(spotId),
-                    onRemove: () => trackingService.removeFromVisited(spotId),
-                    onMoveToOther: () => trackingService.addToWantToVisit(spotId),
-                    otherLabel: 'Want to visit',
-                  ),
-                ],
+                ),
               ),
             );
           },
         );
-      },
-    );
-  }
-
-  Widget _buildTrackingChip({
-    required BuildContext context,
-    required String label,
-    required IconData icon,
-    required IconData selectedIcon,
-    required bool isSelected,
-    required bool isUpdating,
-    required Future<bool> Function() onAdd,
-    required Future<bool> Function() onRemove,
-    required Future<bool> Function() onMoveToOther,
-    required String otherLabel,
-  }) {
-    final theme = Theme.of(context);
-
-    if (isUpdating) {
-      return InputChip(
-        avatar: const SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-        label: Text(label),
-        onPressed: null,
-      );
-    }
-
-    if (isSelected) {
-      return PopupMenuButton<String>(
-        tooltip: label,
-        onSelected: (value) async {
-          if (value == 'remove') {
-            final success = await onRemove();
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(success ? 'Removed from $label' : 'Failed to remove'),
-                  backgroundColor: success ? null : theme.colorScheme.error,
-                ),
-              );
-            }
-          } else if (value == 'move') {
-            final success = await onMoveToOther();
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(success ? 'Moved to $otherLabel' : 'Failed to move'),
-                  backgroundColor: success ? null : theme.colorScheme.error,
-                ),
-              );
-            }
-          }
-        },
-        itemBuilder: (context) => [
-          PopupMenuItem(value: 'remove', child: Text('Remove from $label')),
-          PopupMenuItem(value: 'move', child: Text('Move to $otherLabel')),
-        ],
-        child: InputChip(
-          avatar: Icon(
-            selectedIcon,
-            size: 18,
-            color: theme.colorScheme.primary,
-          ),
-          label: Text(label),
-          selected: true,
-          onPressed: () {},
-        ),
-      );
-    }
-
-    return InputChip(
-      avatar: Icon(icon, size: 18, color: theme.colorScheme.outline),
-      label: Text(label),
-      onPressed: () async {
-        final success = await onAdd();
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(success ? 'Added to $label' : 'Failed to add'),
-              backgroundColor: success ? null : theme.colorScheme.error,
-            ),
-          );
-        }
       },
     );
   }
