@@ -673,6 +673,19 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  /// Update spot tracking lists in local profile (called by SpotTrackingService after Firestore update)
+  void updateUserSpotTracking({
+    required List<String> wantToVisit,
+    required List<String> visited,
+  }) {
+    if (_userProfile == null) return;
+    _userProfile = _userProfile!.copyWith(
+      wantToVisit: wantToVisit,
+      visited: visited,
+    );
+    notifyListeners();
+  }
+
   /// Check if a username is available
   /// Returns true if username is available, false if already taken
   Future<bool> checkUsernameAvailability(String username) async {

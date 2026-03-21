@@ -397,6 +397,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                 ),
               ),
               
+              // Spot tracking (Want to visit / Been to) - own profile only
+              if (isOwnProfile) _buildSpotTrackingSection(context),
+
               // Spot Lists
               _buildSpotListsSection(
                 context,
@@ -407,6 +410,114 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSpotTrackingSection(BuildContext context) {
+    return Consumer<AuthService>(
+      builder: (context, authService, child) {
+        final wantToVisit = authService.userProfile?.wantToVisit ?? [];
+        final visited = authService.userProfile?.visited ?? [];
+        final wantCount = wantToVisit.length;
+        final visitedCount = visited.length;
+
+        return Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Spot tracking',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  if (wantCount == 0 && visitedCount == 0)
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.bookmark_border,
+                            size: 40,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.3),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'No spots yet',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withValues(alpha: 0.6),
+                                ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Add spots from spot detail pages',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withValues(alpha: 0.5),
+                                ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else ...[
+                  if (wantCount > 0)
+                    Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        leading: const Icon(Icons.bookmark_outlined),
+                        title: const Text('Want to visit'),
+                        subtitle: Text(
+                          '$wantCount ${wantCount == 1 ? 'spot' : 'spots'}',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withValues(alpha: 0.6),
+                              ),
+                        ),
+                        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                        onTap: () => context.push('/profile/want-to-visit'),
+                      ),
+                    ),
+                  if (visitedCount > 0)
+                    Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        leading: const Icon(Icons.check_circle_outline),
+                        title: const Text('Been to'),
+                        subtitle: Text(
+                          '$visitedCount ${visitedCount == 1 ? 'spot' : 'spots'}',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withValues(alpha: 0.6),
+                              ),
+                        ),
+                        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                        onTap: () => context.push('/profile/visited'),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
