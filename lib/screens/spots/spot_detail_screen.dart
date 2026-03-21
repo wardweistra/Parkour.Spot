@@ -93,6 +93,7 @@ enum _SpotSaveMenuAction {
   openWantToVisitList,
   openVisitedList,
   addToCustomList,
+  login,
 }
 
 class _SpotDetailScreenState extends State<SpotDetailScreen> {
@@ -1067,28 +1068,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                 ),
               ),
               actions: [
-                // Share button for all users
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: Material(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    shape: const CircleBorder(),
-                    child: InkWell(
-                      onTap: _copySpotToClipboard,
-                      customBorder: const CircleBorder(),
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        alignment: Alignment.center,
-                        child: const Icon(
-                          Icons.share,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                
                 Consumer<AuthService>(
                   builder: (context, authService, child) {
                     if (authService.isLoading) {
@@ -1753,12 +1732,47 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
                     const SizedBox(height: 8),
 
-                    // Save: want to visit / been here + optional custom list
-                    if (Provider.of<AuthService>(context, listen: false).isAuthenticated &&
-                        _spot.id != null)
-                      _SpotSaveMenu(
-                        spotId: _spot.id!,
-                        onAddToCustomList: _showAddToListDialog,
+                    // Save: want to visit / been here + optional custom list (guests see login CTA)
+                    if (_spot.id != null)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _SpotSaveMenu(
+                            spotId: _spot.id!,
+                            onAddToCustomList: _showAddToListDialog,
+                          ),
+                          const SizedBox(width: 8),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: Tooltip(
+                              message: 'Share',
+                              child: Material(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHighest
+                                    .withValues(alpha: 0.6),
+                                shape: const CircleBorder(),
+                                clipBehavior: Clip.antiAlias,
+                                child: InkWell(
+                                  onTap: _copySpotToClipboard,
+                                  customBorder: const CircleBorder(),
+                                  child: SizedBox(
+                                    width: 44,
+                                    height: 44,
+                                    child: Icon(
+                                      Icons.share,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.6),
+                                      size: 24,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
 
                     // Hidden spot banner
@@ -6736,6 +6750,119 @@ class _SpotSaveMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<AuthService>(
       builder: (context, authService, _) {
+        final theme = Theme.of(context);
+        final colorScheme = theme.colorScheme;
+
+        if (authService.isLoading) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: SizedBox(
+                width: 44,
+                height: 44,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+
+        if (!authService.isAuthenticated) {
+          final loginRedirect = '/login?redirectTo=${Uri.encodeComponent('/spot/$spotId')}';
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: PopupMenuButton<_SpotSaveMenuAction>(
+                tooltip: 'Save spot',
+                position: PopupMenuPosition.under,
+                onSelected: (action) {
+                  if (action == _SpotSaveMenuAction.login && context.mounted) {
+                    context.go(loginRedirect);
+                  }
+                },
+                itemBuilder: (menuContext) {
+                  final menuTheme = Theme.of(menuContext);
+                  return <PopupMenuEntry<_SpotSaveMenuAction>>[
+                    PopupMenuItem<_SpotSaveMenuAction>(
+                      value: _SpotSaveMenuAction.login,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Sign in to save spots',
+                            style: menuTheme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Add this spot to Want to visit, Been here, or your own lists. '
+                            'Log in or create a free account to get started.',
+                            style: menuTheme.textTheme.bodySmall?.copyWith(
+                              color: menuTheme.colorScheme.onSurface.withValues(alpha: 0.85),
+                              height: 1.35,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.login,
+                                size: 20,
+                                color: menuTheme.colorScheme.primary,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Log in or create account',
+                                style: menuTheme.textTheme.labelLarge?.copyWith(
+                                  color: menuTheme.colorScheme.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ];
+                },
+                child: SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.bookmark_border,
+                      color: colorScheme.onSurface.withValues(alpha: 0.6),
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+
         final wantToVisit = authService.userProfile?.wantToVisit ?? [];
         final visited = authService.userProfile?.visited ?? [];
         final inWantToVisit = wantToVisit.contains(spotId);
@@ -6747,8 +6874,6 @@ class _SpotSaveMenu extends StatelessWidget {
         return Consumer<SpotTrackingService>(
           builder: (context, trackingService, _) {
             final isUpdating = trackingService.isLoading;
-            final theme = Theme.of(context);
-            final colorScheme = theme.colorScheme;
 
             IconData icon;
             Color? iconColor;
@@ -6776,6 +6901,8 @@ class _SpotSaveMenu extends StatelessWidget {
               String message = '';
 
               switch (action) {
+                case _SpotSaveMenuAction.login:
+                  return;
                 case _SpotSaveMenuAction.toggleWantToVisit:
                   if (inWantToVisit) {
                     success = await trackingService.removeFromWantToVisit(spotId);
