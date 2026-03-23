@@ -25,6 +25,8 @@ import '../../widgets/spot_list_save_button.dart';
 import 'package:flutter/services.dart';
 import 'spot_list_advanced_organization_screen.dart';
 
+enum _ListManageMenuAction { listSettings, organize, delete }
+
 class SpotListDetailScreen extends StatefulWidget {
   final String listId;
 
@@ -778,6 +780,20 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     }
   }
 
+  void _onListManageMenuSelected(_ListManageMenuAction action) {
+    switch (action) {
+      case _ListManageMenuAction.listSettings:
+        _editList();
+        break;
+      case _ListManageMenuAction.organize:
+        _openAdvancedOrganizationScreen();
+        break;
+      case _ListManageMenuAction.delete:
+        _deleteList();
+        break;
+    }
+  }
+
   // Calculate bounds to fit all spots with 5% margin
   LatLngBounds? _calculateBounds() {
     return calculateBoundsForSpots(_spots);
@@ -1005,67 +1021,159 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     );
   }
 
-  List<Widget> _buildAppBarActions() {
-    final canManage = _canManageList();
-    final actions = <Widget>[];
+  /// Save (when applicable), List settings, Share — matches spot detail action row.
+  Widget _buildListActionsRow() {
+    if (_list?.id == null) return const SizedBox.shrink();
 
-    // Share button for all users
-    if (_list != null && _list!.id != null) {
-      actions.add(
-        IconButton(
-          icon: const Icon(Icons.share),
-          tooltip: 'Share List',
-          onPressed: _copyListToClipboard,
-        ),
-      );
-    }
+    return Consumer<AuthService>(
+      builder: (context, _, _) {
+        final items = <Widget>[];
 
-    if (_list != null && canManage) {
-      actions.add(
-        PopupMenuButton<String>(
-          icon: const Icon(Icons.more_vert),
-          tooltip: 'More',
-          onSelected: (value) {
-            switch (value) {
-              case 'organize':
-                _openAdvancedOrganizationScreen();
-                break;
-              case 'edit':
-                _editList();
-                break;
-              case 'delete':
-                _deleteList();
-                break;
-            }
-          },
-          itemBuilder: (context) => [
-            PopupMenuItem<String>(
-              value: 'organize',
-              child: const ListTile(
-                leading: Icon(Icons.folder),
-                title: Text('Organize List'),
+        if (_shouldShowListSaveButton()) {
+          items.add(SpotListSaveButton(listId: widget.listId));
+        }
+        if (_canManageList()) {
+          items.add(
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: PopupMenuButton<_ListManageMenuAction>(
+                position: PopupMenuPosition.under,
+                tooltip: 'Edit list',
+                borderRadius: BorderRadius.circular(22),
+                splashRadius: 22,
+                onSelected: _onListManageMenuSelected,
+                itemBuilder: (menuContext) {
+                  final theme = Theme.of(menuContext);
+                  final primary = theme.colorScheme.primary;
+                  return <PopupMenuEntry<_ListManageMenuAction>>[
+                    PopupMenuItem<_ListManageMenuAction>(
+                      value: _ListManageMenuAction.listSettings,
+                      child: Row(
+                        children: [
+                          Icon(Icons.settings_outlined, color: primary, size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'List Settings',
+                              style: theme.textTheme.bodyMedium,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem<_ListManageMenuAction>(
+                      value: _ListManageMenuAction.organize,
+                      child: Row(
+                        children: [
+                          Icon(Icons.folder, color: primary, size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Organize List',
+                              style: theme.textTheme.bodyMedium,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem<_ListManageMenuAction>(
+                      value: _ListManageMenuAction.delete,
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.delete_outline,
+                            color: theme.colorScheme.error,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Delete List',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.error,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ];
+                },
+                child: SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .surfaceContainerHighest
+                          .withValues(alpha: 0.6),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.edit_outlined,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.6),
+                      size: 24,
+                    ),
+                  ),
+                ),
               ),
             ),
-            const PopupMenuItem<String>(
-              value: 'edit',
-              child: ListTile(
-                leading: Icon(Icons.settings),
-                title: Text('List Settings'),
+          );
+        }
+        items.add(
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Tooltip(
+              message: 'Share',
+              child: Material(
+                color: Theme.of(context)
+                    .colorScheme
+                    .surfaceContainerHighest
+                    .withValues(alpha: 0.6),
+                shape: const CircleBorder(),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: _copyListToClipboard,
+                  customBorder: const CircleBorder(),
+                  child: SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: Icon(
+                      Icons.share,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.6),
+                      size: 24,
+                    ),
+                  ),
+                ),
               ),
             ),
-            const PopupMenuItem<String>(
-              value: 'delete',
-              child: ListTile(
-                leading: Icon(Icons.delete),
-                title: Text('Delete List'),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
+          ),
+        );
 
-    return actions;
+        if (items.isEmpty) return const SizedBox.shrink();
+
+        final children = <Widget>[];
+        for (var i = 0; i < items.length; i++) {
+          if (i > 0) children.add(const SizedBox(width: 8));
+          children.add(items[i]);
+        }
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: children,
+          ),
+        );
+      },
+    );
   }
 
   void _handleBack() {
@@ -1082,7 +1190,6 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     if (_isLoading) {
       return PageScaffold(
         title: _list?.name ?? 'Spot List',
-        actions: _buildAppBarActions(),
         onBack: _handleBack,
         scrollable: false,
         body: const Center(child: CircularProgressIndicator()),
@@ -1097,7 +1204,6 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       }
       return PageScaffold(
         title: _list?.name ?? 'Spot List',
-        actions: _buildAppBarActions(),
         onBack: _handleBack,
         scrollable: false,
         body: Center(
@@ -1130,7 +1236,6 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       }
       return PageScaffold(
         title: 'Spot List',
-        actions: _buildAppBarActions(),
         onBack: _handleBack,
         scrollable: false,
         body: const Center(child: Text('List not found')),
@@ -1155,7 +1260,6 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
 
     return PageScaffold(
       title: _list!.name,
-      actions: _buildAppBarActions(),
       onBack: _handleBack,
       scrollable: false,
       body: SingleChildScrollView(
@@ -1164,11 +1268,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
           children: [
             // Map showing all spots
             if (_spots.isNotEmpty) _buildMap(),
-            if (_shouldShowListSaveButton())
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: SpotListSaveButton(listId: widget.listId),
-              ),
+            _buildListActionsRow(),
             // List info header
             if (_list!.description != null && _list!.description!.isNotEmpty)
               Container(
