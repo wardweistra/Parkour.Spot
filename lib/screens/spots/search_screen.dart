@@ -46,6 +46,10 @@ class _AutocompleteOverlayContent extends StatefulWidget {
 class _AutocompleteOverlayContentState extends State<_AutocompleteOverlayContent> {
   late ScrollController _scrollController;
 
+  /// Last highlight index we scrolled to match. RawAutocomplete defaults highlight to 0; we must
+  /// not re-sync scroll on every rebuild or [animateTo(0)] fights manual scrolling (web/desktop).
+  int? _lastSyncedHighlightIndex;
+
   @override
   void initState() {
     super.initState();
@@ -58,23 +62,51 @@ class _AutocompleteOverlayContentState extends State<_AutocompleteOverlayContent
     super.dispose();
   }
 
+  bool _optionsListMeaningfullyChanged(
+    List<Map<String, dynamic>> oldList,
+    List<Map<String, dynamic>> newList,
+  ) {
+    if (oldList.length != newList.length) return true;
+    if (newList.isEmpty) return false;
+    String descAt(List<Map<String, dynamic>> list, int i) =>
+        list[i]['description'] as String? ?? '';
+    return descAt(oldList, 0) != descAt(newList, 0) ||
+        descAt(oldList, oldList.length - 1) != descAt(newList, newList.length - 1);
+  }
+
+  @override
+  void didUpdateWidget(_AutocompleteOverlayContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_optionsListMeaningfullyChanged(oldWidget.optionsList, widget.optionsList)) {
+      _lastSyncedHighlightIndex = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !_scrollController.hasClients) return;
+        _scrollController.jumpTo(0);
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final optionsList = widget.optionsList;
     final currentSelection = widget.currentSelection;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (currentSelection != null &&
-          currentSelection < optionsList.length &&
-          _scrollController.hasClients) {
-        const itemHeight = 48.0;
-        final targetOffset = currentSelection * itemHeight;
-        _scrollController.animateTo(
-          targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
-          duration: const Duration(milliseconds: 100),
-          curve: Curves.easeOut,
-        );
+      if (!mounted || !_scrollController.hasClients) return;
+      if (currentSelection == null || currentSelection >= optionsList.length) {
+        return;
       }
+      if (currentSelection == _lastSyncedHighlightIndex) {
+        return;
+      }
+      _lastSyncedHighlightIndex = currentSelection;
+      const itemHeight = 48.0;
+      final targetOffset = currentSelection * itemHeight;
+      _scrollController.animateTo(
+        targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeOut,
+      );
     });
 
     return Align(
