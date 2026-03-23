@@ -535,7 +535,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
                     'Spot tracking',
@@ -548,6 +548,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Icon(
                             Icons.bookmark_border,
