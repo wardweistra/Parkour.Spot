@@ -24,23 +24,16 @@ class WebShareService {
   WebShareService._();
 
   /// Invokes Web Share when `kIsWeb` and [MobileDetectionService.isMobileDevice].
-  /// [title] is used as `ShareData.title` and as the label before `👉` in `text`.
+  /// [text] is the same string copied to the clipboard elsewhere (`ShareData.text` only).
   static Future<WebShareOutcome> tryShareLink({
-    required String title,
-    required String url,
+    required String text,
   }) async {
     if (!kIsWeb || !MobileDetectionService.isMobileDevice) {
       return WebShareOutcome.fallback;
     }
 
-    final text = '$title 👉 $url';
-
     try {
-      final data = web.ShareData(
-        title: title,
-        text: text,
-        url: url,
-      );
+      final data = web.ShareData(text: text);
       final nav = web.window.navigator;
       if (!nav.canShare(data)) {
         return WebShareOutcome.fallback;
