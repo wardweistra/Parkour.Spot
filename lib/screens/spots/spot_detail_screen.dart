@@ -11,6 +11,7 @@ import '../../services/spot_service.dart';
 import '../../services/spot_report_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/url_service.dart';
+import '../../services/web_share_service.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../services/search_state_service.dart';
 import '../../widgets/source_details_dialog.dart';
@@ -588,7 +589,17 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         countryCode: widget.spot.countryCode,
         city: widget.spot.city,
       );
-      final text = '${widget.spot.name.trim()} 👉 $url';
+      final label = widget.spot.name.trim();
+      final text = '$label 👉 $url';
+
+      final outcome = await WebShareService.tryShareLink(
+        title: label,
+        url: url,
+      );
+      if (outcome == WebShareOutcome.shared ||
+          outcome == WebShareOutcome.cancelled) {
+        return;
+      }
 
       await Clipboard.setData(ClipboardData(text: text));
 

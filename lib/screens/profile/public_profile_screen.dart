@@ -9,6 +9,7 @@ import '../../services/user_profile_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/profile_picture_service.dart';
 import '../../services/url_service.dart';
+import '../../services/web_share_service.dart';
 import '../../models/user.dart' as app_user;
 import '../../models/spot_list.dart';
 import '../../services/spot_list_service.dart';
@@ -1724,6 +1725,15 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     try {
       final url = UrlService.generateUserProfileUrl(userIdOrUsername);
       final text = '$displayName 👉 $url';
+
+      final outcome = await WebShareService.tryShareLink(
+        title: displayName,
+        url: url,
+      );
+      if (outcome == WebShareOutcome.shared ||
+          outcome == WebShareOutcome.cancelled) {
+        return;
+      }
 
       await Clipboard.setData(ClipboardData(text: text));
 

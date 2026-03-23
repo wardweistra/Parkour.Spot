@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../models/spot.dart';
 import '../services/mobile_detection_service.dart';
 import '../services/url_service.dart';
+import '../services/web_share_service.dart';
 import 'resized_spot_image.dart';
 
 enum SpotCardVariant {
@@ -990,8 +991,18 @@ class _SpotCardState extends State<SpotCard> {
         countryCode: widget.spot.countryCode,
         city: widget.spot.city,
       );
-      final text = '${widget.spot.name.trim()} 👉 $url';
-      
+      final label = widget.spot.name.trim();
+      final text = '$label 👉 $url';
+
+      final outcome = await WebShareService.tryShareLink(
+        title: label,
+        url: url,
+      );
+      if (outcome == WebShareOutcome.shared ||
+          outcome == WebShareOutcome.cancelled) {
+        return;
+      }
+
       await Clipboard.setData(ClipboardData(text: text));
       
       if (context.mounted) {
