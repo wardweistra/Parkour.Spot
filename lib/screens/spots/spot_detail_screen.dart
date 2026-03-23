@@ -6784,8 +6784,9 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
   bool _hasSuggestions() {
     if (_suggestedLatLng != null) return true;
     if (_nameController.text.trim() != widget.spot.name) return true;
-    if (_descriptionController.text.trim() != widget.spot.description)
+    if (_descriptionController.text.trim() != widget.spot.description) {
       return true;
+    }
     final currentGoodFor = Set<String>.from(widget.spot.goodFor ?? []);
     if (!_setEquals(_selectedGoodFor, currentGoodFor)) return true;
     final currentFeatures = Set<String>.from(widget.spot.spotFeatures ?? []);
