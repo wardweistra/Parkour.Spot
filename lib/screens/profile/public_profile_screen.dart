@@ -12,6 +12,7 @@ import '../../services/url_service.dart';
 import '../../models/user.dart' as app_user;
 import '../../models/spot_list.dart';
 import '../../services/spot_list_service.dart';
+import '../../services/saved_spot_list_service.dart';
 import '../../services/feature_access_service.dart';
 import '../../widgets/instagram_button.dart';
 import '../../utils/web_meta_utils.dart';
@@ -21,10 +22,7 @@ import 'package:flutter/services.dart';
 class PublicProfileScreen extends StatefulWidget {
   final String userIdOrUsername;
 
-  const PublicProfileScreen({
-    super.key,
-    required this.userIdOrUsername,
-  });
+  const PublicProfileScreen({super.key, required this.userIdOrUsername});
 
   @override
   State<PublicProfileScreen> createState() => _PublicProfileScreenState();
@@ -32,17 +30,22 @@ class PublicProfileScreen extends StatefulWidget {
 
 class _PublicProfileScreenState extends State<PublicProfileScreen> {
   Future<app_user.User?>? _profileFuture;
-  String? _lastUserIdOrUsername; // Track the last userIdOrUsername used to create the future
+  String?
+  _lastUserIdOrUsername; // Track the last userIdOrUsername used to create the future
   bool _isUploadingProfilePicture = false;
   final ProfilePictureService _profilePictureService = ProfilePictureService();
+  final GlobalKey _savedSpotListsSectionKey = GlobalKey();
+  bool _didScrollToSavedSpotListsSection = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     // Reset future if userIdOrUsername has changed
-    if (_profileFuture == null || _lastUserIdOrUsername != widget.userIdOrUsername) {
+    if (_profileFuture == null ||
+        _lastUserIdOrUsername != widget.userIdOrUsername) {
       _loadProfile();
     }
+    _scheduleScrollToSavedSpotListsSection();
   }
 
   @override
@@ -51,7 +54,32 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     // If userIdOrUsername changed, reload the profile
     if (oldWidget.userIdOrUsername != widget.userIdOrUsername) {
       _loadProfile();
+      _didScrollToSavedSpotListsSection = false;
     }
+  }
+
+  void _scheduleScrollToSavedSpotListsSection() {
+    final section = GoRouterState.of(context).uri.queryParameters['section'];
+    if (section != 'saved-lists') {
+      _didScrollToSavedSpotListsSection = false;
+      return;
+    }
+    if (_didScrollToSavedSpotListsSection) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final ctx = _savedSpotListsSectionKey.currentContext;
+      if (ctx != null) {
+        Scrollable.ensureVisible(
+          ctx,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          alignment: 0.12,
+        );
+        setState(() {
+          _didScrollToSavedSpotListsSection = true;
+        });
+      }
+    });
   }
 
   @override
@@ -63,7 +91,10 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   }
 
   void _loadProfile() {
-    final userProfileService = Provider.of<UserProfileService>(context, listen: false);
+    final userProfileService = Provider.of<UserProfileService>(
+      context,
+      listen: false,
+    );
     final authService = Provider.of<AuthService>(context, listen: false);
     final currentUserId = authService.currentUser?.uid;
     _lastUserIdOrUsername = widget.userIdOrUsername;
@@ -81,20 +112,20 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     final authService = Provider.of<AuthService>(context, listen: false);
     final currentUser = authService.currentUser;
     if (currentUser == null) return false;
-    
+
     // Check if userIdOrUsername matches current user's ID or username
     if (widget.userIdOrUsername == currentUser.uid) return true;
     // Check if the profile's ID matches current user's ID (definitive check)
     if (user.id == currentUser.uid) return true;
     // Check if userIdOrUsername matches current user's username
     final currentUserProfile = authService.userProfile;
-    if (currentUserProfile != null && 
-        currentUserProfile.username != null && 
+    if (currentUserProfile != null &&
+        currentUserProfile.username != null &&
         currentUserProfile.username!.isNotEmpty &&
         widget.userIdOrUsername == currentUserProfile.username) {
       return true;
     }
-    
+
     return false;
   }
 
@@ -104,57 +135,65 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     if (_lastUserIdOrUsername != widget.userIdOrUsername) {
       _loadProfile();
     }
-    
+
     return FutureBuilder<app_user.User?>(
-      key: ValueKey(widget.userIdOrUsername), // Force rebuild when userIdOrUsername changes
+      key: ValueKey(
+        widget.userIdOrUsername,
+      ), // Force rebuild when userIdOrUsername changes
       future: _profileFuture,
       builder: (context, snapshot) {
         final user = snapshot.data;
         final displayName = user?.displayName ?? 'User';
-        final userIdOrUsername = user?.username != null && user!.username!.isNotEmpty
+        final userIdOrUsername =
+            user?.username != null && user!.username!.isNotEmpty
             ? user.username!
             : user?.id ?? '';
-        
+
         return PageScaffold(
           title: 'Profile',
-          actions: userIdOrUsername.isNotEmpty ? [
-            IconButton(
-              icon: const Icon(Icons.share),
-              tooltip: 'Share Profile',
-              onPressed: () => _copyProfileToClipboard(userIdOrUsername, displayName),
-            ),
-          ] : null,
+          actions: userIdOrUsername.isNotEmpty
+              ? [
+                  IconButton(
+                    icon: const Icon(Icons.share),
+                    tooltip: 'Share Profile',
+                    onPressed: () =>
+                        _copyProfileToClipboard(userIdOrUsername, displayName),
+                  ),
+                ]
+              : null,
           body: Builder(
             builder: (context) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(
-                  child: CircularProgressIndicator(),
-                );
+                return const Center(child: CircularProgressIndicator());
               }
 
               if (snapshot.hasError) {
                 return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Error loading profile',
-                    style: Theme.of(context).textTheme.headlineSmall,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: Colors.red,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Error loading profile',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Please try again later',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: () => context.go('/explore'),
+                        child: const Text('Go to Explore'),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Please try again later',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: () => context.go('/explore'),
-                    child: const Text('Go to Explore'),
-                  ),
-                ],
-              ),
                 );
               }
 
@@ -186,7 +225,11 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.lock_outline, size: 64, color: Colors.grey),
+                      const Icon(
+                        Icons.lock_outline,
+                        size: 64,
+                        color: Colors.grey,
+                      ),
                       const SizedBox(height: 16),
                       Text(
                         'Profile not found',
@@ -217,7 +260,11 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     );
   }
 
-  Widget _buildProfileContent(BuildContext context, app_user.User user, bool isOwnProfile) {
+  Widget _buildProfileContent(
+    BuildContext context,
+    app_user.User user,
+    bool isOwnProfile,
+  ) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Center(
@@ -233,153 +280,213 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                     children: [
                       Column(
                         children: [
-                      // Private profile badge (only for own profile)
-                      if (isOwnProfile && !user.isPublicProfile) ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.visibility_off,
-                                size: 16,
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          // Private profile badge (only for own profile)
+                          if (isOwnProfile && !user.isPublicProfile) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
                               ),
-                              const SizedBox(width: 6),
-                              Text(
-                                'Only visible to you',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                  fontWeight: FontWeight.w500,
+                              decoration: BoxDecoration(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.outline.withValues(alpha: 0.3),
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      
-                      // Profile Picture
-                      Stack(
-                        children: [
-                          GestureDetector(
-                            onTap: isOwnProfile && !_isUploadingProfilePicture
-                                ? _showProfilePictureOptions
-                                : null,
-                            child: CircleAvatar(
-                              key: ValueKey(user.photoURL ?? 'no-photo'),
-                              radius: 50,
-                              backgroundColor: Theme.of(context).colorScheme.primary,
-                              backgroundImage: user.photoURL != null && user.photoURL!.isNotEmpty
-                                  ? NetworkImage(_getCacheBustedImageUrl(user.photoURL!))
-                                  : null,
-                              child: _isUploadingProfilePicture
-                                  ? const CircularProgressIndicator(
-                                      color: Colors.white,
-                                    )
-                                  : (user.photoURL == null || user.photoURL!.isEmpty)
-                                      ? Text(
-                                          user.displayName?.substring(0, 1).toUpperCase() ?? 'U',
-                                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.visibility_off,
+                                    size: 16,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Only visible to you',
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+
+                          // Profile Picture
+                          Stack(
+                            children: [
+                              GestureDetector(
+                                onTap:
+                                    isOwnProfile && !_isUploadingProfilePicture
+                                    ? _showProfilePictureOptions
+                                    : null,
+                                child: CircleAvatar(
+                                  key: ValueKey(user.photoURL ?? 'no-photo'),
+                                  radius: 50,
+                                  backgroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.primary,
+                                  backgroundImage:
+                                      user.photoURL != null &&
+                                          user.photoURL!.isNotEmpty
+                                      ? NetworkImage(
+                                          _getCacheBustedImageUrl(
+                                            user.photoURL!,
                                           ),
                                         )
                                       : null,
-                            ),
-                          ),
-                          if (isOwnProfile && !_isUploadingProfilePicture)
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Theme.of(context).colorScheme.surface,
-                                    width: 2,
-                                  ),
-                                ),
-                                padding: const EdgeInsets.all(6),
-                                child: Icon(
-                                  Icons.camera_alt,
-                                  size: 20,
-                                  color: Theme.of(context).colorScheme.onPrimary,
+                                  child: _isUploadingProfilePicture
+                                      ? const CircularProgressIndicator(
+                                          color: Colors.white,
+                                        )
+                                      : (user.photoURL == null ||
+                                            user.photoURL!.isEmpty)
+                                      ? Text(
+                                          user.displayName
+                                                  ?.substring(0, 1)
+                                                  .toUpperCase() ??
+                                              'U',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .headlineMedium
+                                              ?.copyWith(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                        )
+                                      : null,
                                 ),
                               ),
-                            ),
-                        ],
-                      ),
-                      
-                      const SizedBox(height: 16),
-                      
-                      // User Name
-                      Text(
-                        user.displayName ?? 'User',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      
-                      // Username (if set)
-                      if (user.username != null && user.username!.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          '@${user.username}',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.primary,
+                              if (isOwnProfile && !_isUploadingProfilePicture)
+                                Positioned(
+                                  bottom: 0,
+                                  right: 0,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.surface,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    padding: const EdgeInsets.all(6),
+                                    child: Icon(
+                                      Icons.camera_alt,
+                                      size: 20,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onPrimary,
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
-                        ),
-                      ],
 
-                      if (user.instagramUrl != null && user.instagramUrl!.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        Builder(
-                          builder: (context) {
-                            final handle = UrlService.extractInstagramHandle(user.instagramUrl!);
-                            return handle != null
-                                ? ConstrainedBox(
-                                    constraints: const BoxConstraints(maxWidth: 350),
-                                    child: InstagramButton(
-                                      handle: handle,
-                                      label: '@$handle',
-                                    ),
-                                  )
-                                : TextButton.icon(
-                                    onPressed: () => UrlService.openInstagramProfile(user.instagramUrl!, context),
-                                    icon: const Icon(Icons.camera_alt_outlined, size: 18),
-                                    label: Text(UrlService.getInstagramDisplayText(user.instagramUrl!)),
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: Theme.of(context).colorScheme.primary,
-                                      visualDensity: VisualDensity.compact,
-                                    ),
-                                  );
-                          },
-                        ),
-                      ],
-                      
-                      // Member since
-                      if (user.createdAt != null) ...[
-                        const SizedBox(height: 16),
-                        Text(
-                          'Member since ${_formatDate(user.createdAt!)}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                          const SizedBox(height: 16),
+
+                          // User Name
+                          Text(
+                            user.displayName ?? 'User',
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(fontWeight: FontWeight.bold),
                           ),
-                        ),
-                      ],
-                      
-                      // User Stats
-                      const SizedBox(height: 16),
-                      _buildUserStats(context, user.id),
+
+                          // Username (if set)
+                          if (user.username != null &&
+                              user.username!.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              '@${user.username}',
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                  ),
+                            ),
+                          ],
+
+                          if (user.instagramUrl != null &&
+                              user.instagramUrl!.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Builder(
+                              builder: (context) {
+                                final handle =
+                                    UrlService.extractInstagramHandle(
+                                      user.instagramUrl!,
+                                    );
+                                return handle != null
+                                    ? ConstrainedBox(
+                                        constraints: const BoxConstraints(
+                                          maxWidth: 350,
+                                        ),
+                                        child: InstagramButton(
+                                          handle: handle,
+                                          label: '@$handle',
+                                        ),
+                                      )
+                                    : TextButton.icon(
+                                        onPressed: () =>
+                                            UrlService.openInstagramProfile(
+                                              user.instagramUrl!,
+                                              context,
+                                            ),
+                                        icon: const Icon(
+                                          Icons.camera_alt_outlined,
+                                          size: 18,
+                                        ),
+                                        label: Text(
+                                          UrlService.getInstagramDisplayText(
+                                            user.instagramUrl!,
+                                          ),
+                                        ),
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
+                                          visualDensity: VisualDensity.compact,
+                                        ),
+                                      );
+                              },
+                            ),
+                          ],
+
+                          // Member since
+                          if (user.createdAt != null) ...[
+                            const SizedBox(height: 16),
+                            Text(
+                              'Member since ${_formatDate(user.createdAt!)}',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.6),
+                                  ),
+                            ),
+                          ],
+
+                          // User Stats
+                          const SizedBox(height: 16),
+                          _buildUserStats(context, user.id),
                         ],
                       ),
                       if (isOwnProfile)
@@ -389,18 +496,19 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                           child: IconButton(
                             icon: const Icon(Icons.edit),
                             tooltip: 'Edit Profile',
-                            onPressed: () => _showProfileSettingsSheet(context, user),
+                            onPressed: () =>
+                                _showProfileSettingsSheet(context, user),
                           ),
                         ),
                     ],
                   ),
                 ),
               ),
-              
+
               // Spot tracking (Want to visit / Been to) - own profile only
               if (isOwnProfile) _buildSpotTrackingSection(context),
 
-              // Spot Lists
+              // Spot lists (owned + saved from others when applicable)
               _buildSpotListsSection(
                 context,
                 profileUserId: user.id,
@@ -432,8 +540,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                   Text(
                     'Spot tracking',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   if (wantCount == 0 && visitedCount == 0)
@@ -444,28 +552,25 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                           Icon(
                             Icons.bookmark_border,
                             size: 40,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.3),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.3),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             'No spots yet',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurface
                                       .withValues(alpha: 0.6),
                                 ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             'Add spots from spot detail pages',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurface
                                       .withValues(alpha: 0.5),
                                 ),
                           ),
@@ -473,44 +578,48 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                       ),
                     )
                   else ...[
-                  if (wantCount > 0)
-                    Card(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      child: ListTile(
-                        leading: const Icon(Icons.bookmark_outlined),
-                        title: const Text('Want to visit'),
-                        subtitle: Text(
-                          '$wantCount ${wantCount == 1 ? 'spot' : 'spots'}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withValues(alpha: 0.6),
-                              ),
+                    if (wantCount > 0)
+                      Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: ListTile(
+                          leading: const Icon(Icons.bookmark_outlined),
+                          title: const Text('Want to visit'),
+                          subtitle: Text(
+                            '$wantCount ${wantCount == 1 ? 'spot' : 'spots'}',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurface
+                                      .withValues(alpha: 0.6),
+                                ),
+                          ),
+                          trailing: const Icon(
+                            Icons.arrow_forward_ios,
+                            size: 16,
+                          ),
+                          onTap: () => context.push('/profile/want-to-visit'),
                         ),
-                        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                        onTap: () => context.push('/profile/want-to-visit'),
                       ),
-                    ),
-                  if (visitedCount > 0)
-                    Card(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      child: ListTile(
-                        leading: const Icon(Icons.check_circle_outline),
-                        title: const Text('Been to'),
-                        subtitle: Text(
-                          '$visitedCount ${visitedCount == 1 ? 'spot' : 'spots'}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withValues(alpha: 0.6),
-                              ),
+                    if (visitedCount > 0)
+                      Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: ListTile(
+                          leading: const Icon(Icons.check_circle_outline),
+                          title: const Text('Been to'),
+                          subtitle: Text(
+                            '$visitedCount ${visitedCount == 1 ? 'spot' : 'spots'}',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurface
+                                      .withValues(alpha: 0.6),
+                                ),
+                          ),
+                          trailing: const Icon(
+                            Icons.arrow_forward_ios,
+                            size: 16,
+                          ),
+                          onTap: () => context.push('/profile/visited'),
                         ),
-                        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                        onTap: () => context.push('/profile/visited'),
                       ),
-                    ),
                   ],
                 ],
               ),
@@ -526,157 +635,123 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     required String profileUserId,
     required bool isOwnProfile,
   }) {
-    final authService = Provider.of<AuthService>(context, listen: false);
-    final featureAccessService = FeatureAccessService(authService);
-    final canManageLists =
-        isOwnProfile && featureAccessService.hasFeatureAccess('spotLists');
+    // Listen to AuthService so when userProfile / featureAccess loads after the first
+    // frame we rebuild. Otherwise unifiedOwnAndSaved stays false and the Saved subsection
+    // never appears (Consumer2 alone does not subscribe to AuthService).
+    return Consumer<AuthService>(
+      builder: (context, authService, _) {
+        final featureAccessService = FeatureAccessService(authService);
+        final canManageLists =
+            isOwnProfile && featureAccessService.hasFeatureAccess('spotLists');
+        // Unified card: owned + saved for any signed-in user on own profile (saved lists
+        // are not gated on spotLists; Yours / + only when canManageLists).
+        final unifiedSpotListsCard =
+            isOwnProfile && authService.isAuthenticated;
 
-    return Consumer<SpotListService>(
-      builder: (context, spotListService, child) {
-        return FutureBuilder<List<SpotList>>(
-          future: spotListService.getSpotListsByUser(profileUserId),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Padding(
-                padding: const EdgeInsets.only(top: 16),
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }
-
-            if (snapshot.hasError) {
-              return Padding(
-                padding: const EdgeInsets.only(top: 16),
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Text(
-                      'Error loading lists: ${snapshot.error}',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.error,
-                          ),
-                    ),
-                  ),
-                ),
-              );
-            }
-
-            final lists = snapshot.data ?? [];
-
-            if (lists.isEmpty && !isOwnProfile) {
-              return const SizedBox.shrink();
-            }
-
-            return Padding(
-              padding: const EdgeInsets.only(top: 16),
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            isOwnProfile ? 'Spot Lists' : 'Public Spot Lists',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleLarge
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                          if (canManageLists)
-                            IconButton(
-                              icon: const Icon(Icons.add),
-                              tooltip: 'Create New List',
-                              onPressed: () => _showCreateListDialog(
-                                context,
-                                spotListService,
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      if (lists.isEmpty) ...[
-                        Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.list_outlined,
-                                size: 48,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withValues(alpha: 0.3),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'No lists yet',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface
-                                          .withValues(alpha: 0.6),
-                                    ),
-                              ),
-                              const SizedBox(height: 8),
-                              if (canManageLists)
-                                TextButton(
-                                  onPressed: () => _showCreateListDialog(
-                                    context,
-                                    spotListService,
-                                  ),
-                                  child: const Text('Create your first list'),
-                                ),
-                            ],
+        return Consumer2<SpotListService, SavedSpotListService>(
+          builder: (context, spotListService, savedSpotListService, _) {
+            return FutureBuilder<List<SpotList>>(
+              future: spotListService.getSpotListsByUser(profileUserId),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: Card(
+                      key: unifiedSpotListsCard
+                          ? _savedSpotListsSectionKey
+                          : null,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
-                      ] else ...[
-                        Column(
-                          children: lists.map((list) {
-                            final visibilityAndCount =
-                                '${list.visibility.label} • ${list.spotCount} ${list.spotCount == 1 ? 'spot' : 'spots'}';
-                            return Card(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              child: ListTile(
-                                title: Text(list.name),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    if (list.description != null &&
-                                        list.description!.isNotEmpty)
-                                      Padding(
-                                        padding: const EdgeInsets.only(top: 4),
-                                        child: Text(
-                                          list.description!,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodySmall,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
+                      ),
+                    ),
+                  );
+                }
+
+                if (snapshot.hasError) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text(
+                          'Error loading lists: ${snapshot.error}',
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.error,
+                              ),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+
+                final lists = snapshot.data ?? [];
+
+                if (lists.isEmpty && !isOwnProfile) {
+                  return const SizedBox.shrink();
+                }
+
+                if (unifiedSpotListsCard) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: Card(
+                      key: _savedSpotListsSectionKey,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Spot lists',
+                                  style: Theme.of(context).textTheme.titleLarge
+                                      ?.copyWith(fontWeight: FontWeight.bold),
+                                ),
+                                if (canManageLists)
+                                  IconButton(
+                                    icon: const Icon(Icons.add),
+                                    tooltip: 'Create New List',
+                                    onPressed: () => _showCreateListDialog(
+                                      context,
+                                      spotListService,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            if (canManageLists || lists.isNotEmpty) ...[
+                              const SizedBox(height: 12),
+                              Text(
+                                'Yours',
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.w600),
+                              ),
+                              const SizedBox(height: 8),
+                              if (lists.isEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Column(
+                                    children: [
+                                      Icon(
+                                        Icons.list_outlined,
+                                        size: 48,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withValues(alpha: 0.3),
                                       ),
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 4),
-                                      child: Text(
-                                        visibilityAndCount,
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'No lists yet',
                                         style: Theme.of(context)
                                             .textTheme
-                                            .bodySmall
+                                            .bodyMedium
                                             ?.copyWith(
                                               color: Theme.of(context)
                                                   .colorScheme
@@ -684,52 +759,438 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                                   .withValues(alpha: 0.6),
                                             ),
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(height: 8),
+                                      if (canManageLists)
+                                        TextButton(
+                                          onPressed: () =>
+                                              _showCreateListDialog(
+                                                context,
+                                                spotListService,
+                                              ),
+                                          child: const Text(
+                                            'Create your first list',
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                )
+                              else
+                                Column(
+                                  children: lists.map((list) {
+                                    final visibilityAndCount =
+                                        '${list.visibility.label} • ${list.spotCount} ${list.spotCount == 1 ? 'spot' : 'spots'}';
+                                    return Card(
+                                      margin: const EdgeInsets.only(bottom: 8),
+                                      child: ListTile(
+                                        title: Text(list.name),
+                                        subtitle: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            if (list.description != null &&
+                                                list.description!.isNotEmpty)
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                  top: 4,
+                                                ),
+                                                child: Text(
+                                                  list.description!,
+                                                  style: Theme.of(
+                                                    context,
+                                                  ).textTheme.bodySmall,
+                                                  maxLines: 2,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            Padding(
+                                              padding: const EdgeInsets.only(
+                                                top: 4,
+                                              ),
+                                              child: Text(
+                                                visibilityAndCount,
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .bodySmall
+                                                    ?.copyWith(
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .onSurface
+                                                          .withValues(
+                                                            alpha: 0.6,
+                                                          ),
+                                                    ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        trailing: canManageLists
+                                            ? Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  IconButton(
+                                                    icon: const Icon(
+                                                      Icons.settings,
+                                                    ),
+                                                    tooltip: 'List Settings',
+                                                    onPressed: list.id == null
+                                                        ? null
+                                                        : () =>
+                                                              _showEditListDialog(
+                                                                context,
+                                                                spotListService,
+                                                                list,
+                                                              ),
+                                                  ),
+                                                  IconButton(
+                                                    icon: const Icon(
+                                                      Icons.delete,
+                                                    ),
+                                                    tooltip: 'Delete',
+                                                    onPressed: list.id == null
+                                                        ? null
+                                                        : () =>
+                                                              _showDeleteListDialog(
+                                                                context,
+                                                                spotListService,
+                                                                list,
+                                                              ),
+                                                  ),
+                                                ],
+                                              )
+                                            : null,
+                                        onTap: () {
+                                          if (list.id != null) {
+                                            context.push('/list/${list.id}');
+                                          }
+                                        },
+                                      ),
+                                    );
+                                  }).toList(),
                                 ),
-                                trailing: canManageLists
-                                    ? Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          IconButton(
-                                            icon: const Icon(Icons.settings),
-                                            tooltip: 'List Settings',
-                                            onPressed: list.id == null
-                                                ? null
-                                                : () => _showEditListDialog(
-                                                      context,
-                                                      spotListService,
-                                                      list,
-                                                    ),
-                                          ),
-                                          IconButton(
-                                            icon: const Icon(Icons.delete),
-                                            tooltip: 'Delete',
-                                            onPressed: list.id == null
-                                                ? null
-                                                : () => _showDeleteListDialog(
-                                                      context,
-                                                      spotListService,
-                                                      list,
-                                                    ),
-                                          ),
-                                        ],
-                                      )
-                                    : null,
-                                onTap: () {
-                                  if (list.id != null) {
-                                    context.push('/list/${list.id}');
-                                  }
-                                },
-                              ),
-                            );
-                          }).toList(),
+                              const SizedBox(height: 20),
+                            ] else ...[
+                              const SizedBox(height: 12),
+                            ],
+                            Text(
+                              'Saved',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(height: 8),
+                            _buildSavedSpotListsSubsection(
+                              context,
+                              savedSpotListService,
+                              spotListService,
+                            ),
+                          ],
                         ),
-                      ],
-                    ],
+                      ),
+                    ),
+                  );
+                }
+
+                return Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                isOwnProfile
+                                    ? 'Spot lists'
+                                    : 'Public Spot Lists',
+                                style: Theme.of(context).textTheme.titleLarge
+                                    ?.copyWith(fontWeight: FontWeight.bold),
+                              ),
+                              if (canManageLists)
+                                IconButton(
+                                  icon: const Icon(Icons.add),
+                                  tooltip: 'Create New List',
+                                  onPressed: () => _showCreateListDialog(
+                                    context,
+                                    spotListService,
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          if (lists.isEmpty) ...[
+                            Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.list_outlined,
+                                    size: 48,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.3),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'No lists yet',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface
+                                              .withValues(alpha: 0.6),
+                                        ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  if (canManageLists)
+                                    TextButton(
+                                      onPressed: () => _showCreateListDialog(
+                                        context,
+                                        spotListService,
+                                      ),
+                                      child: const Text(
+                                        'Create your first list',
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ] else ...[
+                            Column(
+                              children: lists.map((list) {
+                                final visibilityAndCount =
+                                    '${list.visibility.label} • ${list.spotCount} ${list.spotCount == 1 ? 'spot' : 'spots'}';
+                                return Card(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  child: ListTile(
+                                    title: Text(list.name),
+                                    subtitle: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        if (list.description != null &&
+                                            list.description!.isNotEmpty)
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              top: 4,
+                                            ),
+                                            child: Text(
+                                              list.description!,
+                                              style: Theme.of(
+                                                context,
+                                              ).textTheme.bodySmall,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                            top: 4,
+                                          ),
+                                          child: Text(
+                                            visibilityAndCount,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodySmall
+                                                ?.copyWith(
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurface
+                                                      .withValues(alpha: 0.6),
+                                                ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    trailing: canManageLists
+                                        ? Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              IconButton(
+                                                icon: const Icon(
+                                                  Icons.settings,
+                                                ),
+                                                tooltip: 'List Settings',
+                                                onPressed: list.id == null
+                                                    ? null
+                                                    : () => _showEditListDialog(
+                                                        context,
+                                                        spotListService,
+                                                        list,
+                                                      ),
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(Icons.delete),
+                                                tooltip: 'Delete',
+                                                onPressed: list.id == null
+                                                    ? null
+                                                    : () =>
+                                                          _showDeleteListDialog(
+                                                            context,
+                                                            spotListService,
+                                                            list,
+                                                          ),
+                                              ),
+                                            ],
+                                          )
+                                        : null,
+                                    onTap: () {
+                                      if (list.id != null) {
+                                        context.push('/list/${list.id}');
+                                      }
+                                    },
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// Saved lists subsection (stream + resolve). Used inside unified Spot lists card.
+  Widget _buildSavedSpotListsSubsection(
+    BuildContext context,
+    SavedSpotListService savedSpotListService,
+    SpotListService spotListService,
+  ) {
+    return StreamBuilder<List<String>>(
+      stream: savedSpotListService.watchSavedListIdsOrdered(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
+          return const Padding(
+            padding: EdgeInsets.all(24.0),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        final ids = snapshot.data ?? [];
+        if (ids.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.collections_bookmark_outlined,
+                  size: 48,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.3),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'No saved lists yet',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
-              ),
+                const SizedBox(height: 4),
+                Text(
+                  'Save lists you find on other users’ list pages',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.5),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return FutureBuilder<List<SpotList>>(
+          key: ValueKey(ids.join(',')),
+          future: savedSpotListService.resolveSavedListIds(
+            spotListService,
+            ids,
+          ),
+          builder: (context, listSnap) {
+            if (listSnap.connectionState == ConnectionState.waiting) {
+              return const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+            final savedLists = listSnap.data ?? [];
+            if (savedLists.isEmpty) {
+              return Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  'Your saved lists are no longer available or were removed.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                ),
+              );
+            }
+
+            return Column(
+              children: savedLists.map((list) {
+                final visibilityAndCount =
+                    '${list.visibility.label} • ${list.spotCount} ${list.spotCount == 1 ? 'spot' : 'spots'}';
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListTile(
+                    leading: Icon(
+                      Icons.bookmark,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    title: Text(list.name),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (list.description != null &&
+                            list.description!.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              list.description!,
+                              style: Theme.of(context).textTheme.bodySmall,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            visibilityAndCount,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurface
+                                      .withValues(alpha: 0.6),
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () {
+                      if (list.id != null) {
+                        context.push('/list/${list.id}');
+                      }
+                    },
+                  ),
+                );
+              }).toList(),
             );
           },
         );
@@ -774,9 +1235,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                 const SizedBox(height: 16),
                 DropdownButtonFormField<SpotListVisibility>(
                   initialValue: selectedVisibility,
-                  decoration: const InputDecoration(
-                    labelText: 'Visibility',
-                  ),
+                  decoration: const InputDecoration(labelText: 'Visibility'),
                   items: SpotListVisibility.values
                       .map(
                         (visibility) => DropdownMenuItem<SpotListVisibility>(
@@ -797,11 +1256,11 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     selectedVisibility.description,
-                    style: Theme.of(dialogContext).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(dialogContext)
-                              .colorScheme
-                              .onSurface
-                              .withValues(alpha: 0.7),
+                    style: Theme.of(dialogContext).textTheme.bodySmall
+                        ?.copyWith(
+                          color: Theme.of(
+                            dialogContext,
+                          ).colorScheme.onSurface.withValues(alpha: 0.7),
                         ),
                   ),
                 ),
@@ -834,7 +1293,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                   Navigator.pop(dialogContext);
                   if (listId != null) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('List created successfully')),
+                      const SnackBar(
+                        content: Text('List created successfully'),
+                      ),
                     );
                   } else if (spotListService.error != null) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -857,7 +1318,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     SpotList list,
   ) {
     final nameController = TextEditingController(text: list.name);
-    final descriptionController = TextEditingController(text: list.description ?? '');
+    final descriptionController = TextEditingController(
+      text: list.description ?? '',
+    );
     SpotListVisibility selectedVisibility = list.visibility;
 
     showDialog(
@@ -871,9 +1334,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
               children: [
                 TextField(
                   controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'List Name',
-                  ),
+                  decoration: const InputDecoration(labelText: 'List Name'),
                   autofocus: true,
                 ),
                 const SizedBox(height: 16),
@@ -887,9 +1348,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                 const SizedBox(height: 16),
                 DropdownButtonFormField<SpotListVisibility>(
                   initialValue: selectedVisibility,
-                  decoration: const InputDecoration(
-                    labelText: 'Visibility',
-                  ),
+                  decoration: const InputDecoration(labelText: 'Visibility'),
                   items: SpotListVisibility.values
                       .map(
                         (visibility) => DropdownMenuItem<SpotListVisibility>(
@@ -910,11 +1369,11 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     selectedVisibility.description,
-                    style: Theme.of(dialogContext).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(dialogContext)
-                              .colorScheme
-                              .onSurface
-                              .withValues(alpha: 0.7),
+                    style: Theme.of(dialogContext).textTheme.bodySmall
+                        ?.copyWith(
+                          color: Theme.of(
+                            dialogContext,
+                          ).colorScheme.onSurface.withValues(alpha: 0.7),
                         ),
                   ),
                 ),
@@ -948,7 +1407,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                   Navigator.pop(dialogContext);
                   if (success) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('List updated successfully')),
+                      const SnackBar(
+                        content: Text('List updated successfully'),
+                      ),
                     );
                   } else if (spotListService.error != null) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -965,12 +1426,18 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     );
   }
 
-  void _showDeleteListDialog(BuildContext context, SpotListService spotListService, SpotList list) {
+  void _showDeleteListDialog(
+    BuildContext context,
+    SpotListService spotListService,
+    SpotList list,
+  ) {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Delete List'),
-        content: Text('Are you sure you want to delete "${list.name}"? This action cannot be undone.'),
+        content: Text(
+          'Are you sure you want to delete "${list.name}"? This action cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
@@ -1017,19 +1484,20 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             minChildSize: 0.5,
             maxChildSize: 0.95,
             expand: false,
-            builder: (context, scrollController) => _ProfileSettingsSheetContent(
-              user: user,
-              userIdOrUsername: widget.userIdOrUsername,
-              scrollController: scrollController,
-              onSaved: () {
-                Navigator.pop(sheetContext);
-                _loadProfile();
-              },
-              onUsernameRedirect: (String newUsername) {
-                Navigator.pop(sheetContext);
-                context.go('/user/$newUsername');
-              },
-            ),
+            builder: (context, scrollController) =>
+                _ProfileSettingsSheetContent(
+                  user: user,
+                  userIdOrUsername: widget.userIdOrUsername,
+                  scrollController: scrollController,
+                  onSaved: () {
+                    Navigator.pop(sheetContext);
+                    _loadProfile();
+                  },
+                  onUsernameRedirect: (String newUsername) {
+                    Navigator.pop(sheetContext);
+                    context.go('/user/$newUsername');
+                  },
+                ),
           ),
         ),
       ),
@@ -1067,7 +1535,10 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             ),
             if (hasPhoto)
               ListTile(
-                leading: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
+                leading: Icon(
+                  Icons.delete,
+                  color: Theme.of(context).colorScheme.error,
+                ),
                 title: Text(
                   'Remove Picture',
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
@@ -1154,7 +1625,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     // Show progress dialog with state management
     double uploadProgress = 0.0;
     String statusMessage = 'Processing image...';
-    
+
     BuildContext? dialogContext;
     StateSetter? dialogSetState;
     final dialogReady = Completer<void>();
@@ -1204,7 +1675,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                     Text(
                       '${(uploadProgress * 100).toInt()}%',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.7),
                       ),
                     ),
                   ],
@@ -1226,7 +1699,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         // Web: read as bytes
         updateProgress(0.1, 'Reading image...');
         final bytes = await pickedFile.readAsBytes();
-        
+
         // Upload with progress updates
         photoURL = await _profilePictureService.uploadProfilePictureBytes(
           bytes,
@@ -1246,7 +1719,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         // Mobile: use File
         updateProgress(0.1, 'Reading image...');
         final file = File(pickedFile.path);
-        
+
         // Upload with progress updates
         photoURL = await _profilePictureService.uploadProfilePicture(
           file,
@@ -1279,7 +1752,10 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       if (mounted) {
         if (success) {
           // Refresh profile
-          final userProfileService = Provider.of<UserProfileService>(context, listen: false);
+          final userProfileService = Provider.of<UserProfileService>(
+            context,
+            listen: false,
+          );
           final currentUserId = authService.currentUser?.uid;
           _lastUserIdOrUsername = widget.userIdOrUsername;
           _profileFuture = userProfileService.getUserProfile(
@@ -1338,7 +1814,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Remove Profile Picture'),
-        content: const Text('Are you sure you want to remove your profile picture?'),
+        content: const Text(
+          'Are you sure you want to remove your profile picture?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
@@ -1379,7 +1857,10 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       if (mounted) {
         if (success) {
           // Refresh profile
-          final userProfileService = Provider.of<UserProfileService>(context, listen: false);
+          final userProfileService = Provider.of<UserProfileService>(
+            context,
+            listen: false,
+          );
           final authService = Provider.of<AuthService>(context, listen: false);
           final currentUserId = authService.currentUser?.uid;
           _lastUserIdOrUsername = widget.userIdOrUsername;
@@ -1387,7 +1868,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             widget.userIdOrUsername,
             currentUserId: currentUserId,
           );
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Profile picture removed successfully'),
@@ -1423,13 +1904,26 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 
   String _formatDate(DateTime date) {
     final months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     return '${months[date.month - 1]} ${date.year}';
   }
 
-  void _copyProfileToClipboard(String userIdOrUsername, String displayName) async {
+  void _copyProfileToClipboard(
+    String userIdOrUsername,
+    String displayName,
+  ) async {
     try {
       final url = UrlService.generateUserProfileUrl(userIdOrUsername);
       final text = '$displayName 👉 $url';
@@ -1460,7 +1954,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 
   Widget _buildUserStats(BuildContext context, String userId) {
     final userProfileService = UserProfileService();
-    
+
     return FutureBuilder<Map<String, int>?>(
       future: userProfileService.getUserStats(userId),
       builder: (context, snapshot) {
@@ -1490,27 +1984,30 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     );
   }
 
-  Widget _buildStatItem(BuildContext context, IconData icon, int count, String label) {
+  Widget _buildStatItem(
+    BuildContext context,
+    IconData icon,
+    int count,
+    String label,
+  ) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          icon,
-          size: 24,
-          color: Theme.of(context).colorScheme.primary,
-        ),
+        Icon(icon, size: 24, color: Theme.of(context).colorScheme.primary),
         const SizedBox(height: 4),
         Text(
           count.toString(),
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 2),
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.7),
           ),
         ),
       ],
@@ -1521,24 +2018,23 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   String _getCacheBustedImageUrl(String url) {
     try {
       final uri = Uri.parse(url);
-      
-      final isFirebaseStorage = url.contains('firebasestorage.googleapis.com') ||
+
+      final isFirebaseStorage =
+          url.contains('firebasestorage.googleapis.com') ||
           url.contains('storage.googleapis.com');
-      
+
       final version = isFirebaseStorage
           ? DateTime.now().millisecondsSinceEpoch.toString()
           : url.hashCode.toString();
-      
+
       final cacheBustedUri = uri.replace(
-        queryParameters: {
-          ...uri.queryParameters,
-          'v': version,
-        },
+        queryParameters: {...uri.queryParameters, 'v': version},
       );
       return cacheBustedUri.toString();
     } catch (e) {
       final separator = url.contains('?') ? '&' : '?';
-      final isFirebaseStorage = url.contains('firebasestorage.googleapis.com') ||
+      final isFirebaseStorage =
+          url.contains('firebasestorage.googleapis.com') ||
           url.contains('storage.googleapis.com');
       final version = isFirebaseStorage
           ? DateTime.now().millisecondsSinceEpoch.toString()
@@ -1589,10 +2085,14 @@ class _ProfileSettingsSheetContentState
   void initState() {
     super.initState();
     _displayNameController = TextEditingController(
-        text: widget.user.displayName?.trim() ?? '');
-    _usernameController = TextEditingController(text: widget.user.username ?? '');
-    _instagramUrlController =
-        TextEditingController(text: widget.user.instagramUrl?.trim() ?? '');
+      text: widget.user.displayName?.trim() ?? '',
+    );
+    _usernameController = TextEditingController(
+      text: widget.user.username ?? '',
+    );
+    _instagramUrlController = TextEditingController(
+      text: widget.user.instagramUrl?.trim() ?? '',
+    );
   }
 
   @override
@@ -1614,9 +2114,9 @@ class _ProfileSettingsSheetContentState
             children: [
               Text(
                 'Profile Settings',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const Spacer(),
               IconButton(
@@ -1659,22 +2159,26 @@ class _ProfileSettingsSheetContentState
       children: [
         Text(
           'Email',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         Text(
           widget.user.email,
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.8),
           ),
         ),
         const SizedBox(height: 4),
         Text(
           'Your email is not shown on your public profile.',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.6),
           ),
         ),
       ],
@@ -1690,9 +2194,9 @@ class _ProfileSettingsSheetContentState
       children: [
         Text(
           'Display Name',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         if (!_isEditingDisplayName) ...[
@@ -1725,7 +2229,8 @@ class _ProfileSettingsSheetContentState
               labelText: 'Display Name',
               hintText: 'Enter your display name',
               errorText: _displayNameError,
-              helperText: 'Shown on your profile and spots you create '
+              helperText:
+                  'Shown on your profile and spots you create '
                   '(max $_displayNameMaxLength characters)',
             ),
             enabled: !_isUpdatingDisplayName,
@@ -1752,10 +2257,10 @@ class _ProfileSettingsSheetContentState
                 onPressed: _isUpdatingDisplayName
                     ? null
                     : () async {
-                        final rawInput =
-                            _displayNameController.text.trim();
-                        final newDisplayName =
-                            rawInput.isEmpty ? null : rawInput;
+                        final rawInput = _displayNameController.text.trim();
+                        final newDisplayName = rawInput.isEmpty
+                            ? null
+                            : rawInput;
 
                         if (rawInput.length > _displayNameMaxLength) {
                           setState(() {
@@ -1771,8 +2276,10 @@ class _ProfileSettingsSheetContentState
                           _displayNameError = null;
                         });
 
-                        final authService =
-                            Provider.of<AuthService>(context, listen: false);
+                        final authService = Provider.of<AuthService>(
+                          context,
+                          listen: false,
+                        );
                         final success = await authService.updateProfile(
                           displayName: newDisplayName,
                           removeDisplayName: newDisplayName == null,
@@ -1802,8 +2309,7 @@ class _ProfileSettingsSheetContentState
                           );
                         } else {
                           setState(() {
-                            _displayNameError =
-                                'Failed to update display name';
+                            _displayNameError = 'Failed to update display name';
                           });
                         }
                       },
@@ -1829,9 +2335,9 @@ class _ProfileSettingsSheetContentState
       children: [
         Text(
           'Username',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         if (!_isEditingUsername) ...[
@@ -1891,8 +2397,7 @@ class _ProfileSettingsSheetContentState
                 onPressed: _isCheckingUsername
                     ? null
                     : () async {
-                        final newUsername =
-                            _usernameController.text.trim();
+                        final newUsername = _usernameController.text.trim();
 
                         if (newUsername.isEmpty) {
                           setState(() {
@@ -1906,15 +2411,18 @@ class _ProfileSettingsSheetContentState
                           _usernameError = null;
                         });
 
-                        final authService =
-                            Provider.of<AuthService>(context, listen: false);
+                        final authService = Provider.of<AuthService>(
+                          context,
+                          listen: false,
+                        );
                         final userProfileService =
-                            Provider.of<UserProfileService>(context,
-                                listen: false);
+                            Provider.of<UserProfileService>(
+                              context,
+                              listen: false,
+                            );
 
-                        final isAvailable =
-                            await authService.checkUsernameAvailability(
-                                newUsername);
+                        final isAvailable = await authService
+                            .checkUsernameAvailability(newUsername);
 
                         if (!isAvailable &&
                             newUsername.toLowerCase() !=
@@ -1928,8 +2436,9 @@ class _ProfileSettingsSheetContentState
                           return;
                         }
 
-                        final success =
-                            await authService.updateUsername(newUsername);
+                        final success = await authService.updateUsername(
+                          newUsername,
+                        );
 
                         if (!mounted) return;
 
@@ -1940,7 +2449,8 @@ class _ProfileSettingsSheetContentState
                         if (success) {
                           final isViewingByUsername =
                               widget.userIdOrUsername.length != 28;
-                          final usernameChanged = newUsername.toLowerCase() !=
+                          final usernameChanged =
+                              newUsername.toLowerCase() !=
                               user.username?.toLowerCase();
 
                           if (isViewingByUsername && usernameChanged) {
@@ -1957,7 +2467,8 @@ class _ProfileSettingsSheetContentState
                           );
                         } else {
                           setState(() {
-                            _usernameError = userProfileService.error ??
+                            _usernameError =
+                                userProfileService.error ??
                                 'Failed to update username';
                           });
                         }
@@ -1987,9 +2498,9 @@ class _ProfileSettingsSheetContentState
       children: [
         Text(
           'Instagram',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         if (!_isEditingInstagramUrl) ...[
@@ -1999,20 +2510,19 @@ class _ProfileSettingsSheetContentState
                 child: hasInstagramUrl
                     ? InkWell(
                         onTap: () => UrlService.openInstagramProfile(
-                            currentInstagramUrl, context),
+                          currentInstagramUrl,
+                          context,
+                        ),
                         borderRadius: BorderRadius.circular(8),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 4.0),
                           child: Text(
                             UrlService.getInstagramDisplayText(
-                                currentInstagramUrl),
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyLarge
+                              currentInstagramUrl,
+                            ),
+                            style: Theme.of(context).textTheme.bodyLarge
                                 ?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .primary,
+                                  color: Theme.of(context).colorScheme.primary,
                                   decoration: TextDecoration.underline,
                                 ),
                           ),
@@ -2041,8 +2551,7 @@ class _ProfileSettingsSheetContentState
             decoration: InputDecoration(
               labelText: 'Instagram Link',
               hintText: 'https://www.instagram.com/your_handle/',
-              helperText:
-                  'You can also paste @handle or just the handle',
+              helperText: 'You can also paste @handle or just the handle',
               errorText: _instagramUrlError,
             ),
             enabled: !_isUpdatingInstagramUrl,
@@ -2068,12 +2577,10 @@ class _ProfileSettingsSheetContentState
                 onPressed: _isUpdatingInstagramUrl
                     ? null
                     : () async {
-                        final rawInput =
-                            _instagramUrlController.text.trim();
+                        final rawInput = _instagramUrlController.text.trim();
                         final normalizedInstagramUrl = rawInput.isEmpty
                             ? null
-                            : UrlService.normalizeInstagramProfileUrl(
-                                rawInput);
+                            : UrlService.normalizeInstagramProfileUrl(rawInput);
 
                         if (rawInput.isNotEmpty &&
                             normalizedInstagramUrl == null) {
@@ -2089,8 +2596,10 @@ class _ProfileSettingsSheetContentState
                           _instagramUrlError = null;
                         });
 
-                        final authService =
-                            Provider.of<AuthService>(context, listen: false);
+                        final authService = Provider.of<AuthService>(
+                          context,
+                          listen: false,
+                        );
                         final success = await authService.updateProfile(
                           instagramUrl: normalizedInstagramUrl,
                           removeInstagramUrl: rawInput.isEmpty,
@@ -2149,9 +2658,9 @@ class _ProfileSettingsSheetContentState
       children: [
         Text(
           'Profile Privacy',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         Row(
@@ -2170,10 +2679,9 @@ class _ProfileSettingsSheetContentState
                         ? 'Your profile is visible to everyone'
                         : 'Your profile is private and not visible to others',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.7),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
                   ),
                 ],
@@ -2182,10 +2690,11 @@ class _ProfileSettingsSheetContentState
             Switch(
               value: isPublic,
               onChanged: (value) async {
-                final authService =
-                    Provider.of<AuthService>(context, listen: false);
-                final success =
-                    await authService.updateProfilePrivacy(value);
+                final authService = Provider.of<AuthService>(
+                  context,
+                  listen: false,
+                );
+                final success = await authService.updateProfilePrivacy(value);
                 if (mounted) {
                   if (success) {
                     widget.onSaved();
@@ -2202,8 +2711,7 @@ class _ProfileSettingsSheetContentState
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text(
-                            'Failed to update profile privacy'),
+                        content: Text('Failed to update profile privacy'),
                         backgroundColor: Colors.red,
                       ),
                     );

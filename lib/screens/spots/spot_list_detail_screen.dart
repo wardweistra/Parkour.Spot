@@ -21,6 +21,7 @@ import '../../utils/map_bounds_utils.dart';
 import '../../services/url_service.dart';
 import '../../services/user_profile_service.dart';
 import '../../widgets/page_scaffold.dart';
+import '../../widgets/spot_list_save_button.dart';
 import 'package:flutter/services.dart';
 import 'spot_list_advanced_organization_screen.dart';
 
@@ -65,15 +66,17 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
   Future<void> _loadSpotIcons() async {
     try {
       // Black icon for spots in list (matching highlighted style from Explore)
-      final BitmapDescriptor highlightedIcon = await MarkerIconUtils.createMarkerIcon(
-        size: 22,
-        fillColor: Colors.black,
-      );
+      final BitmapDescriptor highlightedIcon =
+          await MarkerIconUtils.createMarkerIcon(
+            size: 22,
+            fillColor: Colors.black,
+          );
       // Grey icon for selected spot (matching selectedHighlighted style from Explore)
-      final BitmapDescriptor selectedHighlightedIcon = await MarkerIconUtils.createMarkerIcon(
-        size: 22,
-        fillColor: Colors.grey.shade400,
-      );
+      final BitmapDescriptor selectedHighlightedIcon =
+          await MarkerIconUtils.createMarkerIcon(
+            size: 22,
+            fillColor: Colors.grey.shade400,
+          );
       if (mounted) {
         setState(() {
           _spotHighlightedIcon = highlightedIcon;
@@ -91,7 +94,10 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       _error = null;
     });
 
-    final spotListService = Provider.of<SpotListService>(context, listen: false);
+    final spotListService = Provider.of<SpotListService>(
+      context,
+      listen: false,
+    );
     final list = await spotListService.getSpotListById(widget.listId);
 
     if (list == null) {
@@ -108,7 +114,10 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
 
     // Load creator display name
     if (list.createdBy.isNotEmpty) {
-      final userProfileService = Provider.of<UserProfileService>(context, listen: false);
+      final userProfileService = Provider.of<UserProfileService>(
+        context,
+        listen: false,
+      );
       final user = await userProfileService.getUserProfile(list.createdBy);
       if (mounted) {
         setState(() {
@@ -144,7 +153,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       _spots = loadedSpots;
       _isLoading = false;
     });
-    
+
     // Fit bounds after spots are loaded
     if (loadedSpots.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -174,7 +183,9 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete List'),
-        content: Text('Are you sure you want to delete "${_list?.name}"? This action cannot be undone.'),
+        content: Text(
+          'Are you sure you want to delete "${_list?.name}"? This action cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -193,7 +204,10 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
 
     if (shouldDelete == true && _list?.id != null) {
       if (!mounted) return;
-      final spotListService = Provider.of<SpotListService>(context, listen: false);
+      final spotListService = Provider.of<SpotListService>(
+        context,
+        listen: false,
+      );
       final success = await spotListService.deleteSpotList(_list!.id!);
 
       if (success) {
@@ -201,13 +215,17 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
         if (!mounted) return;
         context.pop();
       } else {
-        SnackbarService.showError(spotListService.error ?? 'Failed to delete list');
+        SnackbarService.showError(
+          spotListService.error ?? 'Failed to delete list',
+        );
       }
     }
   }
 
   Widget _buildSpotsList() {
-    if (_spots.isEmpty && (_list?.hasAdvancedOrganization != true || _list!.sections!.every((s) => s.entries.isEmpty))) {
+    if (_spots.isEmpty &&
+        (_list?.hasAdvancedOrganization != true ||
+            _list!.sections!.every((s) => s.entries.isEmpty))) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -215,20 +233,26 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
             Icon(
               Icons.location_off,
               size: 64,
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.3),
             ),
             const SizedBox(height: 16),
             Text(
               'No spots in this list',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'Add spots from spot detail pages',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.5),
               ),
             ),
           ],
@@ -243,8 +267,10 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     return _buildFlatSpotsList();
   }
 
-  Map<String, Spot> get _spotById =>
-      {for (final s in _spots) if (s.id != null) s.id!: s};
+  Map<String, Spot> get _spotById => {
+    for (final s in _spots)
+      if (s.id != null) s.id!: s,
+  };
 
   Widget _buildSectionsList() {
     final theme = Theme.of(context);
@@ -296,7 +322,10 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     );
   }
 
-  Widget _buildSectionGrid(SpotListSection section, Map<String, Spot> spotById) {
+  Widget _buildSectionGrid(
+    SpotListSection section,
+    Map<String, Spot> spotById,
+  ) {
     final entries = section.entries;
     return GridView.builder(
       shrinkWrap: true,
@@ -322,7 +351,9 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                 countryCode: spot.countryCode,
                 city: spot.city,
               );
-              final url = imageIndex > 0 ? '$baseUrl?imageIndex=$imageIndex' : baseUrl;
+              final url = imageIndex > 0
+                  ? '$baseUrl?imageIndex=$imageIndex'
+                  : baseUrl;
               context.push(url);
             }
           },
@@ -333,7 +364,10 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     );
   }
 
-  Widget _buildSectionList(SpotListSection section, Map<String, Spot> spotById) {
+  Widget _buildSectionList(
+    SpotListSection section,
+    Map<String, Spot> spotById,
+  ) {
     final entries = section.entries;
     return ListView.builder(
       shrinkWrap: true,
@@ -355,7 +389,9 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                   countryCode: spot.countryCode,
                   city: spot.city,
                 );
-                final url = imageIndex > 0 ? '$baseUrl?imageIndex=$imageIndex' : baseUrl;
+                final url = imageIndex > 0
+                    ? '$baseUrl?imageIndex=$imageIndex'
+                    : baseUrl;
                 context.push(url);
               }
             },
@@ -396,7 +432,9 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                   countryCode: spot.countryCode,
                   city: spot.city,
                 );
-                final url = imageIndex > 0 ? '$baseUrl?imageIndex=$imageIndex' : baseUrl;
+                final url = imageIndex > 0
+                    ? '$baseUrl?imageIndex=$imageIndex'
+                    : baseUrl;
                 context.push(url);
               }
             },
@@ -425,7 +463,9 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                   countryCode: spot.countryCode,
                   city: spot.city,
                 );
-                final url = imageIndex > 0 ? '$baseUrl?imageIndex=$imageIndex' : baseUrl;
+                final url = imageIndex > 0
+                    ? '$baseUrl?imageIndex=$imageIndex'
+                    : baseUrl;
                 context.push(url);
               }
             },
@@ -441,7 +481,9 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     if (_list == null) return;
 
     final nameController = TextEditingController(text: _list!.name);
-    final descriptionController = TextEditingController(text: _list!.description ?? '');
+    final descriptionController = TextEditingController(
+      text: _list!.description ?? '',
+    );
     SpotListVisibility selectedVisibility = _list!.visibility;
 
     final result = await showDialog<bool>(
@@ -455,9 +497,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
               children: [
                 TextField(
                   controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'List Name',
-                  ),
+                  decoration: const InputDecoration(labelText: 'List Name'),
                   autofocus: true,
                 ),
                 const SizedBox(height: 16),
@@ -471,9 +511,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                 const SizedBox(height: 16),
                 DropdownButtonFormField<SpotListVisibility>(
                   initialValue: selectedVisibility,
-                  decoration: const InputDecoration(
-                    labelText: 'Visibility',
-                  ),
+                  decoration: const InputDecoration(labelText: 'Visibility'),
                   items: SpotListVisibility.values
                       .map(
                         (visibility) => DropdownMenuItem<SpotListVisibility>(
@@ -494,11 +532,11 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     selectedVisibility.description,
-                    style: Theme.of(dialogContext).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(dialogContext)
-                              .colorScheme
-                              .onSurface
-                              .withValues(alpha: 0.7),
+                    style: Theme.of(dialogContext).textTheme.bodySmall
+                        ?.copyWith(
+                          color: Theme.of(
+                            dialogContext,
+                          ).colorScheme.onSurface.withValues(alpha: 0.7),
                         ),
                   ),
                 ),
@@ -529,7 +567,10 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
 
     if (result == true && _list?.id != null) {
       if (!mounted) return;
-      final spotListService = Provider.of<SpotListService>(context, listen: false);
+      final spotListService = Provider.of<SpotListService>(
+        context,
+        listen: false,
+      );
       var success = await spotListService.updateSpotList(
         _list!.id!,
         name: nameController.text.trim(),
@@ -544,7 +585,9 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
         SnackbarService.showSuccess('List updated');
         await _loadList();
       } else {
-        SnackbarService.showError(spotListService.error ?? 'Failed to update list');
+        SnackbarService.showError(
+          spotListService.error ?? 'Failed to update list',
+        );
       }
     }
   }
@@ -553,12 +596,20 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     if (_list == null) return false;
     final authService = Provider.of<AuthService>(context, listen: false);
     if (!authService.isAuthenticated) return false;
-    
+
     final userId = authService.currentUser?.uid;
     if (userId == null || _list!.createdBy != userId) return false;
-    
+
     final featureAccessService = FeatureAccessService(authService);
     return featureAccessService.hasFeatureAccess('spotLists');
+  }
+
+  /// Show save affordance for guests and non-owners (not for the list creator).
+  bool _shouldShowListSaveButton() {
+    if (_list == null) return false;
+    final authService = Provider.of<AuthService>(context, listen: false);
+    if (!authService.isAuthenticated) return true;
+    return authService.currentUser?.uid != _list!.createdBy;
   }
 
   String _visibilitySummary(SpotListVisibility visibility) {
@@ -598,7 +649,10 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
 
   Future<void> _navigateToUserProfile(String userId) async {
     try {
-      final userProfileService = Provider.of<UserProfileService>(context, listen: false);
+      final userProfileService = Provider.of<UserProfileService>(
+        context,
+        listen: false,
+      );
       final user = await userProfileService.getUserProfile(userId);
       final identifier = user?.username?.isNotEmpty == true
           ? user!.username!
@@ -626,7 +680,9 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     final creatorName = _creatorName;
     final hasCreator = list.createdBy.isNotEmpty;
     final hasUpdated = list.updatedAt != list.createdAt;
-    final updatedDateText = hasUpdated ? _formatRelativeDate(list.updatedAt) : null;
+    final updatedDateText = hasUpdated
+        ? _formatRelativeDate(list.updatedAt)
+        : null;
 
     final List<InlineSpan> children = [];
 
@@ -642,21 +698,25 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     // Creator name (clickable if we have userId)
     if (hasCreator) {
       final name = creatorName ?? 'Unknown';
-      children.add(TextSpan(
-        text: name,
-        style: textStyle?.copyWith(color: theme.colorScheme.primary),
-        recognizer: TapGestureRecognizer()
-          ..onTap = () => _navigateToUserProfile(list.createdBy),
-      ));
+      children.add(
+        TextSpan(
+          text: name,
+          style: textStyle?.copyWith(color: theme.colorScheme.primary),
+          recognizer: TapGestureRecognizer()
+            ..onTap = () => _navigateToUserProfile(list.createdBy),
+        ),
+      );
     }
 
     // ", and last updated {X}."
     if (hasCreator) {
       if (hasUpdated && updatedDateText != null) {
-        children.add(TextSpan(
-          text: ', and last updated $updatedDateText.',
-          style: textStyle,
-        ));
+        children.add(
+          TextSpan(
+            text: ', and last updated $updatedDateText.',
+            style: textStyle,
+          ),
+        );
       } else {
         children.add(TextSpan(text: '.', style: textStyle));
       }
@@ -688,7 +748,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
   // Copy list URL to clipboard (same style as spot detail page)
   void _copyListToClipboard() async {
     if (_list?.id == null || _list?.name == null) return;
-    
+
     try {
       const baseUrl = 'https://parkour.spot';
       final url = '$baseUrl/list/${_list!.id}';
@@ -729,16 +789,18 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       final bool isSelected = _selectedSpot?.id != null
           ? _selectedSpot!.id == spot.id
           : _selectedSpot?.name == spot.name;
-      
+
       // Use grey icon for selected spot, black for others (matching Explore page style)
       final BitmapDescriptor icon = kIsWeb
           ? (isSelected
-              ? (_spotSelectedHighlightedIcon ?? BitmapDescriptor.defaultMarker)
-              : (_spotHighlightedIcon ?? BitmapDescriptor.defaultMarker))
+                ? (_spotSelectedHighlightedIcon ??
+                      BitmapDescriptor.defaultMarker)
+                : (_spotHighlightedIcon ?? BitmapDescriptor.defaultMarker))
           : (isSelected
-              ? (_spotSelectedHighlightedIcon ?? BitmapDescriptor.defaultMarker)
-              : (_spotHighlightedIcon ?? BitmapDescriptor.defaultMarker));
-      
+                ? (_spotSelectedHighlightedIcon ??
+                      BitmapDescriptor.defaultMarker)
+                : (_spotHighlightedIcon ?? BitmapDescriptor.defaultMarker));
+
       return Marker(
         markerId: MarkerId(spot.id ?? spot.name),
         position: LatLng(spot.latitude, spot.longitude),
@@ -782,8 +844,10 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     if (bounds == null) return null;
 
     // Calculate center
-    final centerLat = (bounds.southwest.latitude + bounds.northeast.latitude) / 2;
-    final centerLng = (bounds.southwest.longitude + bounds.northeast.longitude) / 2;
+    final centerLat =
+        (bounds.southwest.latitude + bounds.northeast.latitude) / 2;
+    final centerLng =
+        (bounds.southwest.longitude + bounds.northeast.longitude) / 2;
 
     // Calculate approximate zoom level based on bounds
     final latDiff = bounds.northeast.latitude - bounds.southwest.latitude;
@@ -804,16 +868,13 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       zoom = 13.0;
     }
 
-    return CameraPosition(
-      target: LatLng(centerLat, centerLng),
-      zoom: zoom,
-    );
+    return CameraPosition(target: LatLng(centerLat, centerLng), zoom: zoom);
   }
 
   // Fit map to show all markers with bounds
   Future<void> _fitBounds() async {
     if (_mapController == null) return;
-    
+
     final bounds = _calculateBounds();
     if (bounds == null) return;
 
@@ -886,15 +947,18 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                   setState(() {
                     _isSatelliteView = !_isSatelliteView;
                   });
-                  final searchState = Provider.of<SearchStateService>(context, listen: false);
+                  final searchState = Provider.of<SearchStateService>(
+                    context,
+                    listen: false,
+                  );
                   searchState.setSatellite(_isSatelliteView);
                 },
                 heroTag: 'mapTypeToggleFab',
                 mini: true,
-                tooltip: _isSatelliteView ? 'Switch to Map' : 'Switch to Satellite',
-                child: Icon(
-                  _isSatelliteView ? Icons.map : Icons.terrain,
-                ),
+                tooltip: _isSatelliteView
+                    ? 'Switch to Map'
+                    : 'Switch to Satellite',
+                child: Icon(_isSatelliteView ? Icons.map : Icons.terrain),
               ),
             ),
           ),
@@ -944,7 +1008,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
   List<Widget> _buildAppBarActions() {
     final canManage = _canManageList();
     final actions = <Widget>[];
-    
+
     // Share button for all users
     if (_list != null && _list!.id != null) {
       actions.add(
@@ -955,7 +1019,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
         ),
       );
     }
-    
+
     if (_list != null && canManage) {
       actions.add(
         PopupMenuButton<String>(
@@ -1000,7 +1064,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
         ),
       );
     }
-    
+
     return actions;
   }
 
@@ -1046,10 +1110,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                 color: Theme.of(context).colorScheme.error,
               ),
               const SizedBox(height: 16),
-              Text(
-                _error!,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
+              Text(_error!, style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _handleBack,
@@ -1079,17 +1140,15 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     if (kIsWeb) {
       final listName = _list!.name;
       final spotCount = _list!.spotIds.length;
-      final baseDescription = _list!.description != null &&
-              _list!.description!.trim().isNotEmpty
+      final baseDescription =
+          _list!.description != null && _list!.description!.trim().isNotEmpty
           ? WebMetaUtils.clipForMeta(_list!.description!.trim())
           : 'A curated list of $spotCount parkour spot${spotCount == 1 ? '' : 's'} on Parkour·Spot';
-      final description = '$baseDescription — ${WebMetaUtils.defaultDescription}';
+      final description =
+          '$baseDescription — ${WebMetaUtils.defaultDescription}';
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          WebMetaUtils.updatePageMeta(
-            '$listName - Parkour·Spot',
-            description,
-          );
+          WebMetaUtils.updatePageMeta('$listName - Parkour·Spot', description);
         }
       });
     }
@@ -1105,6 +1164,11 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
           children: [
             // Map showing all spots
             if (_spots.isNotEmpty) _buildMap(),
+            if (_shouldShowListSaveButton())
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: SpotListSaveButton(listId: widget.listId),
+              ),
             // List info header
             if (_list!.description != null && _list!.description!.isNotEmpty)
               Container(
@@ -1124,4 +1188,3 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     );
   }
 }
-

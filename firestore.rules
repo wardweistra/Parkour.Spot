@@ -45,6 +45,12 @@ service cloud.firestore {
           // If isAdmin not in request.resource, it's unchanged, so use resource value (or false if missing)
           ('isAdmin' in request.resource.data ? request.resource.data.isAdmin : ('isAdmin' in resource.data ? resource.data.isAdmin : false)) == 
           ('isAdmin' in resource.data ? resource.data.isAdmin : false)));
+
+      // Private bookmarks of others' spot lists (only the owner can read/write)
+      match /savedSpotLists/{listId} {
+        allow read, create, update, delete: if request.auth != null
+          && request.auth.uid == userId;
+      }
     }
     
     // Ratings collection - users can read all ratings, authenticated users can create their own

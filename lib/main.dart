@@ -17,6 +17,7 @@ import 'package:parkour_spot/services/jumpflix_service.dart';
 import 'package:parkour_spot/services/user_management_service.dart';
 import 'package:parkour_spot/services/snackbar_service.dart';
 import 'package:parkour_spot/services/spot_list_service.dart';
+import 'package:parkour_spot/services/saved_spot_list_service.dart';
 import 'package:parkour_spot/services/spot_tracking_service.dart';
 import 'package:parkour_spot/services/feature_access_service.dart';
 import 'package:parkour_spot/services/pwa_install_service.dart';
@@ -47,7 +48,7 @@ void main() async {
   }
 
   runApp(const ParkourSpotApp());
-  
+
   // Initialize Google Analytics
   WebAnalytics.init();
   WebAnalytics.trackEvent('app_start', {'platform': 'web'});
@@ -57,27 +58,28 @@ void main() async {
 Future<void> _connectToEmulators() async {
   // Note: For web, we use 127.0.0.1 to match emulator URLs. For other platforms, use 10.0.2.2 for Android emulator
   const host = '127.0.0.1';
-  
+
   // Emulator port configuration
   const firestorePort = 8082;
   const authPort = 9099;
   const storagePort = 9199;
   const functionsPort = 5001;
-  
+
   try {
     // Connect Firestore emulator
     FirebaseFirestore.instance.useFirestoreEmulator(host, firestorePort);
-    
+
     // Connect Auth emulator
     await FirebaseAuth.instance.useAuthEmulator(host, authPort);
-    
+
     // Connect Storage emulator
     FirebaseStorage.instance.useStorageEmulator(host, storagePort);
-    
+
     // Connect Functions emulator
-    FirebaseFunctions.instanceFor(region: 'europe-west1')
-        .useFunctionsEmulator(host, functionsPort);
-    
+    FirebaseFunctions.instanceFor(
+      region: 'europe-west1',
+    ).useFunctionsEmulator(host, functionsPort);
+
     debugPrint('✅ Connected to Firebase Emulators');
     debugPrint('   - Firestore: $host:$firestorePort');
     debugPrint('   - Auth: $host:$authPort');
@@ -123,25 +125,46 @@ class ParkourSpotApp extends StatelessWidget {
         Provider(create: (_) => SpotReportService()),
         ChangeNotifierProxyProvider<AuthService, SpotListService>(
           create: (context) {
-            final authService = Provider.of<AuthService>(context, listen: false);
+            final authService = Provider.of<AuthService>(
+              context,
+              listen: false,
+            );
             final featureAccessService = FeatureAccessService(authService);
             return SpotListService(authService, featureAccessService);
           },
           update: (context, authService, previous) {
             final featureAccessService = FeatureAccessService(authService);
-            return previous ?? SpotListService(authService, featureAccessService);
+            return previous ??
+                SpotListService(authService, featureAccessService);
+          },
+        ),
+        ChangeNotifierProxyProvider<AuthService, SavedSpotListService>(
+          create: (context) {
+            final authService = Provider.of<AuthService>(
+              context,
+              listen: false,
+            );
+            return SavedSpotListService(authService);
+          },
+          update: (context, authService, previous) {
+            return previous ?? SavedSpotListService(authService);
           },
         ),
         ChangeNotifierProxyProvider<AuthService, SpotTrackingService>(
           create: (context) {
-            final authService = Provider.of<AuthService>(context, listen: false);
+            final authService = Provider.of<AuthService>(
+              context,
+              listen: false,
+            );
             return SpotTrackingService(authService);
           },
           update: (context, authService, previous) {
             return previous ?? SpotTrackingService(authService);
           },
         ),
-        ChangeNotifierProvider(create: (_) => PwaInstallService()..initialize()),
+        ChangeNotifierProvider(
+          create: (_) => PwaInstallService()..initialize(),
+        ),
         ChangeNotifierProvider(create: (_) => UserProfileService()),
       ],
       child: MaterialApp.router(
