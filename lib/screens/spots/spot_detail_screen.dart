@@ -95,7 +95,6 @@ enum _SpotMenuAction {
   suggestPhoto,
   suggestEdit,
   report,
-  addToList,
   edit,
   delete,
   markAsDuplicate,
@@ -680,10 +679,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       onSelected: _onMenuActionSelected,
       itemBuilder: (menuContext) {
         final theme = Theme.of(menuContext);
-        final featureAccessService = FeatureAccessService(authService);
-        final hasSpotListAccess =
-            authService.isAuthenticated &&
-            featureAccessService.hasFeatureAccess('spotLists');
         final bool hasStaffAccess =
             authService.isAuthenticated &&
             authService.userProfile != null &&
@@ -892,42 +887,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
               ],
             ),
           ),
-          if (hasSpotListAccess) ...[
-            PopupMenuItem<_SpotMenuAction>(
-              value: _SpotMenuAction.addToList,
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.playlist_add,
-                    color: theme.colorScheme.primary,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Add to list',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      Text(
-                        'Save to a spot list',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.6,
-                          ),
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
         ];
 
         if (hasStaffAccess && _spot.id != null) {
@@ -1242,9 +1201,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         break;
       case _SpotMenuAction.report:
         _showReportSpotDialog();
-        break;
-      case _SpotMenuAction.addToList:
-        _showAddToListDialog();
         break;
       case _SpotMenuAction.edit:
         final authService = Provider.of<AuthService>(context, listen: false);
