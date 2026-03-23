@@ -832,41 +832,10 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                             ),
                                           ],
                                         ),
-                                        trailing: canManageLists
-                                            ? Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  IconButton(
-                                                    icon: const Icon(
-                                                      Icons.settings,
-                                                    ),
-                                                    tooltip: 'List Settings',
-                                                    onPressed: list.id == null
-                                                        ? null
-                                                        : () =>
-                                                              _showEditListDialog(
-                                                                context,
-                                                                spotListService,
-                                                                list,
-                                                              ),
-                                                  ),
-                                                  IconButton(
-                                                    icon: const Icon(
-                                                      Icons.delete,
-                                                    ),
-                                                    tooltip: 'Delete',
-                                                    onPressed: list.id == null
-                                                        ? null
-                                                        : () =>
-                                                              _showDeleteListDialog(
-                                                                context,
-                                                                spotListService,
-                                                                list,
-                                                              ),
-                                                  ),
-                                                ],
-                                              )
-                                            : null,
+                                        trailing: const Icon(
+                                          Icons.arrow_forward_ios,
+                                          size: 16,
+                                        ),
                                         onTap: () {
                                           if (list.id != null) {
                                             context.push('/list/${list.id}');
@@ -1018,38 +987,10 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                         ),
                                       ],
                                     ),
-                                    trailing: canManageLists
-                                        ? Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              IconButton(
-                                                icon: const Icon(
-                                                  Icons.settings,
-                                                ),
-                                                tooltip: 'List Settings',
-                                                onPressed: list.id == null
-                                                    ? null
-                                                    : () => _showEditListDialog(
-                                                        context,
-                                                        spotListService,
-                                                        list,
-                                                      ),
-                                              ),
-                                              IconButton(
-                                                icon: const Icon(Icons.delete),
-                                                tooltip: 'Delete',
-                                                onPressed: list.id == null
-                                                    ? null
-                                                    : () =>
-                                                          _showDeleteListDialog(
-                                                            context,
-                                                            spotListService,
-                                                            list,
-                                                          ),
-                                              ),
-                                            ],
-                                          )
-                                        : null,
+                                    trailing: const Icon(
+                                      Icons.arrow_forward_ios,
+                                      size: 16,
+                                    ),
                                     onTap: () {
                                       if (list.id != null) {
                                         context.push('/list/${list.id}');
@@ -1322,164 +1263,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showEditListDialog(
-    BuildContext context,
-    SpotListService spotListService,
-    SpotList list,
-  ) {
-    final nameController = TextEditingController(text: list.name);
-    final descriptionController = TextEditingController(
-      text: list.description ?? '',
-    );
-    SpotListVisibility selectedVisibility = list.visibility;
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) => AlertDialog(
-          title: const Text('List Settings'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(labelText: 'List Name'),
-                  autofocus: true,
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: descriptionController,
-                  decoration: const InputDecoration(
-                    labelText: 'Description (optional)',
-                  ),
-                  maxLines: 3,
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<SpotListVisibility>(
-                  initialValue: selectedVisibility,
-                  decoration: const InputDecoration(labelText: 'Visibility'),
-                  items: SpotListVisibility.values
-                      .map(
-                        (visibility) => DropdownMenuItem<SpotListVisibility>(
-                          value: visibility,
-                          child: Text(visibility.label),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) {
-                    if (value == null) return;
-                    setDialogState(() {
-                      selectedVisibility = value;
-                    });
-                  },
-                ),
-                const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    selectedVisibility.description,
-                    style: Theme.of(dialogContext).textTheme.bodySmall
-                        ?.copyWith(
-                          color: Theme.of(
-                            dialogContext,
-                          ).colorScheme.onSurface.withValues(alpha: 0.7),
-                        ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () async {
-                if (nameController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    const SnackBar(content: Text('List name cannot be empty')),
-                  );
-                  return;
-                }
-
-                final success = await spotListService.updateSpotList(
-                  list.id!,
-                  name: nameController.text.trim(),
-                  description: descriptionController.text.trim().isEmpty
-                      ? null
-                      : descriptionController.text.trim(),
-                  visibility: selectedVisibility,
-                );
-
-                if (dialogContext.mounted) {
-                  Navigator.pop(dialogContext);
-                  if (success) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('List updated successfully'),
-                      ),
-                    );
-                  } else if (spotListService.error != null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(spotListService.error!)),
-                    );
-                  }
-                }
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showDeleteListDialog(
-    BuildContext context,
-    SpotListService spotListService,
-    SpotList list,
-  ) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete List'),
-        content: Text(
-          'Are you sure you want to delete "${list.name}"? This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              final success = await spotListService.deleteSpotList(list.id!);
-
-              if (dialogContext.mounted) {
-                Navigator.pop(dialogContext);
-                if (success) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('List deleted successfully')),
-                  );
-                } else if (spotListService.error != null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(spotListService.error!)),
-                  );
-                }
-              }
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(context).colorScheme.error,
-            ),
-            child: const Text('Delete'),
-          ),
-        ],
       ),
     );
   }
