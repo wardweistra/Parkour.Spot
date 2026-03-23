@@ -706,7 +706,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         ),
                       ),
                       Text(
-                        'Sign in to rate and favorite',
+                        'Sign in first to link edits to your account',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurface.withValues(
                             alpha: 0.6,
