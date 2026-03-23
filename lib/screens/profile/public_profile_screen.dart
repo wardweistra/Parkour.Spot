@@ -561,6 +561,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                           const SizedBox(height: 8),
                           Text(
                             'No spots yet',
+                            textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
                                   color: Theme.of(context).colorScheme.onSurface
@@ -570,6 +571,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                           const SizedBox(height: 4),
                           Text(
                             'Add spots from spot detail pages',
+                            textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
                                   color: Theme.of(context).colorScheme.onSurface
@@ -706,7 +708,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -739,6 +741,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                 Padding(
                                   padding: const EdgeInsets.all(16.0),
                                   child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
                                     children: [
                                       Icon(
                                         Icons.list_outlined,
@@ -751,6 +756,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                       const SizedBox(height: 8),
                                       Text(
                                         'No lists yet',
+                                        textAlign: TextAlign.center,
                                         style: Theme.of(context)
                                             .textTheme
                                             .bodyMedium
@@ -898,7 +904,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -926,6 +932,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                             Padding(
                               padding: const EdgeInsets.all(16.0),
                               child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
                                   Icon(
                                     Icons.list_outlined,
@@ -938,6 +946,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                   const SizedBox(height: 8),
                                   Text(
                                     'No lists yet',
+                                    textAlign: TextAlign.center,
                                     style: Theme.of(context)
                                         .textTheme
                                         .bodyMedium
@@ -1085,6 +1094,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           return Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Icon(
                   Icons.collections_bookmark_outlined,
@@ -1096,6 +1107,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                 const SizedBox(height: 8),
                 Text(
                   'No saved lists yet',
+                  textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(
                       context,
