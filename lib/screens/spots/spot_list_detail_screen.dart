@@ -758,7 +758,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       final label = _list!.name.trim();
       final text = '$label 👉 $url';
 
-      final outcome = await WebShareService.tryShareLink(text: text);
+      final outcome = await WebShareService.tryShareLink(text: label, url: url);
       if (outcome == WebShareOutcome.shared ||
           outcome == WebShareOutcome.cancelled) {
         return;

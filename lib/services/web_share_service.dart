@@ -24,16 +24,18 @@ class WebShareService {
   WebShareService._();
 
   /// Invokes Web Share when `kIsWeb` and [MobileDetectionService.isMobileDevice].
-  /// [text] is the same string copied to the clipboard elsewhere (`ShareData.text` only).
+  /// [text] must not include [url]—callers use the same label as in the clipboard
+  /// line, while the clipboard string itself remains `text 👉 url`.
   static Future<WebShareOutcome> tryShareLink({
     required String text,
+    required String url,
   }) async {
     if (!kIsWeb || !MobileDetectionService.isMobileDevice) {
       return WebShareOutcome.fallback;
     }
 
     try {
-      final data = web.ShareData(text: text);
+      final data = web.ShareData(text: text, url: url);
       final nav = web.window.navigator;
       if (!nav.canShare(data)) {
         return WebShareOutcome.fallback;

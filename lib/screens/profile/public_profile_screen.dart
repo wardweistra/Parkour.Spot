@@ -1726,7 +1726,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       final url = UrlService.generateUserProfileUrl(userIdOrUsername);
       final text = '$displayName 👉 $url';
 
-      final outcome = await WebShareService.tryShareLink(text: text);
+      final outcome =
+          await WebShareService.tryShareLink(text: displayName, url: url);
       if (outcome == WebShareOutcome.shared ||
           outcome == WebShareOutcome.cancelled) {
         return;

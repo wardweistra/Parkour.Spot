@@ -994,7 +994,7 @@ class _SpotCardState extends State<SpotCard> {
       final label = widget.spot.name.trim();
       final text = '$label 👉 $url';
 
-      final outcome = await WebShareService.tryShareLink(text: text);
+      final outcome = await WebShareService.tryShareLink(text: label, url: url);
       if (outcome == WebShareOutcome.shared ||
           outcome == WebShareOutcome.cancelled) {
         return;
