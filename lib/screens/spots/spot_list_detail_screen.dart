@@ -284,31 +284,35 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     final sectionWidgets = <Widget>[];
     for (final section in _list!.sections!) {
       if (section.entries.isEmpty) continue;
+      final hasTitle =
+          section.title != null && section.title!.trim().isNotEmpty;
+      final hasBody =
+          section.text != null && section.text!.trim().isNotEmpty;
       sectionWidgets.add(
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+          padding: const EdgeInsets.fromLTRB(16, 32, 16, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (section.title != null && section.title!.trim().isNotEmpty)
+              if (hasTitle)
                 Text(
                   section.title!,
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-              if (section.title != null && section.title!.trim().isNotEmpty)
-                const SizedBox(height: 4),
-              if (section.text != null && section.text!.trim().isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Text(
-                    section.text!,
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
-                    ),
+              if (hasTitle && hasBody) const SizedBox(height: 10),
+              if (hasBody)
+                Text(
+                  section.text!,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                   ),
                 ),
+              if (hasTitle || hasBody)
+                SizedBox(height: hasBody ? 16 : 12)
+              else
+                const SizedBox(height: 8),
               if (useGrid)
                 _buildSectionGrid(section, spotById)
               else
@@ -487,6 +491,9 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     final descriptionController = TextEditingController(
       text: _list!.description ?? '',
     );
+    final moreInfoUrlController = TextEditingController(
+      text: _list!.moreInfoUrl ?? '',
+    );
     SpotListVisibility selectedVisibility = _list!.visibility;
 
     final result = await showDialog<bool>(
@@ -510,6 +517,18 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                     labelText: 'Description (optional)',
                   ),
                   maxLines: 3,
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: moreInfoUrlController,
+                  decoration: const InputDecoration(
+                    labelText: 'More info link (optional)',
+                    hintText: 'https://…',
+                    helperText:
+                        'A page elsewhere on the web with more about this list',
+                  ),
+                  keyboardType: TextInputType.url,
+                  autocorrect: false,
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<SpotListVisibility>(
@@ -559,6 +578,19 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                   );
                   return;
                 }
+                final link = moreInfoUrlController.text.trim();
+                if (link.isNotEmpty &&
+                    !UrlService.isValidHttpOrHttpsUrl(link)) {
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'More info link must be a valid URL (http or https), '
+                        'e.g. example.com or https://example.com/page',
+                      ),
+                    ),
+                  );
+                  return;
+                }
                 Navigator.pop(dialogContext, true);
               },
               child: const Text('Save'),
@@ -581,6 +613,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
             ? null
             : descriptionController.text.trim(),
         visibility: selectedVisibility,
+        moreInfoUrl: moreInfoUrlController.text,
       );
 
       if (!mounted) return;
@@ -670,7 +703,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     }
   }
 
-  Widget _buildProvenanceSentence() {
+  Widget _buildProvenanceSentence({bool compactTop = false}) {
     if (_list == null) return const SizedBox.shrink();
 
     final list = _list!;
@@ -727,8 +760,8 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      margin: const EdgeInsets.only(top: 8),
+      padding: EdgeInsets.fromLTRB(16, compactTop ? 6 : 12, 16, 0),
+      margin: EdgeInsets.only(top: compactTop ? 2 : 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -741,6 +774,54 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
           Expanded(
             child: RichText(
               text: TextSpan(style: textStyle, children: children),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMoreInfoLinkRow() {
+    final url = _list?.moreInfoUrl;
+    if (url == null || url.isEmpty) return const SizedBox.shrink();
+
+    final theme = Theme.of(context);
+    final textStyle = theme.textTheme.bodyMedium?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+    final hostLabel = UrlService.displayHttpUrlHost(url);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      margin: const EdgeInsets.only(top: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.link,
+            size: 16,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                style: textStyle,
+                children: [
+                  const TextSpan(text: 'More information on '),
+                  TextSpan(
+                    text: hostLabel,
+                    style: textStyle?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () => UrlService.openHttpOrHttpsUrl(url, context),
+                  ),
+                  TextSpan(text: '.', style: textStyle),
+                ],
+              ),
             ),
           ),
         ],
@@ -1287,7 +1368,11 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),
               ),
-            _buildProvenanceSentence(),
+            _buildMoreInfoLinkRow(),
+            _buildProvenanceSentence(
+              compactTop: _list!.moreInfoUrl != null &&
+                  _list!.moreInfoUrl!.isNotEmpty,
+            ),
             // Spots list
             _buildSpotsList(),
           ],

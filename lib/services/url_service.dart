@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
+import '../utils/http_url_utils.dart' as http_url;
 import 'mobile_detection_service.dart';
 
 class UrlService {
   static const String _baseUrl = 'https://parkour.spot';
   static final RegExp _instagramHandleRegex = RegExp(r'^[a-zA-Z0-9._]{1,30}$');
+
   static const Set<String> _instagramReservedPaths = {
     'about',
     'accounts',
@@ -190,6 +192,45 @@ class UrlService {
     await Clipboard.setData(ClipboardData(text: url));
   }
   
+  /// True if [input] is a non-empty string that normalizes to an http(s) URL.
+  static bool isValidHttpOrHttpsUrl(String input) =>
+      http_url.isValidHttpOrHttpsUrl(input);
+
+  /// Normalizes user input to an `http` or `https` URL using [validators]
+  /// and Dart [Uri]. See [normalizeHttpOrHttpsUrl] in `http_url_utils.dart`.
+  static String? normalizeHttpOrHttpsUrl(String input) =>
+      http_url.normalizeHttpOrHttpsUrl(input);
+
+  /// Host (and non-default port) for UI labels. See `displayHttpUrlHost` in `http_url_utils.dart`.
+  static String displayHttpUrlHost(String url) => http_url.displayHttpUrlHost(url);
+
+  /// Opens an external web URL in the browser or another app.
+  static Future<void> openHttpOrHttpsUrl(String input, BuildContext context) async {
+    final normalized = http_url.normalizeHttpOrHttpsUrl(input);
+    if (normalized == null) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invalid link'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    final uri = Uri.parse(normalized);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      return;
+    }
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Could not open link'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
   /// Open spot URL in browser
   static Future<void> openSpotInBrowser(String spotId, {String? countryCode, String? city}) async {
     final url = generateSpotUrl(spotId, countryCode: countryCode, city: city);

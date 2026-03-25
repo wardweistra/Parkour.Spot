@@ -135,6 +135,8 @@ class SpotList {
   final String? id;
   final String name;
   final String? description;
+  /// Optional link (http/https) to a page with more about this list.
+  final String? moreInfoUrl;
   final List<String> spotIds;
   final List<SpotListSection>? sections;
   final SpotListVisibility visibility;
@@ -146,6 +148,7 @@ class SpotList {
     this.id,
     required this.name,
     this.description,
+    this.moreInfoUrl,
     required this.spotIds,
     this.sections,
     this.visibility = SpotListVisibility.unlisted,
@@ -184,6 +187,7 @@ class SpotList {
       id: doc.id,
       name: data['name'] ?? '',
       description: data['description'],
+      moreInfoUrl: data['moreInfoUrl'] as String?,
       spotIds: data['spotIds'] != null
           ? List<String>.from(data['spotIds'])
           : [],
@@ -218,6 +222,7 @@ class SpotList {
       id: data['id'] as String?,
       name: (data['name'] ?? '') as String,
       description: data['description'] as String?,
+      moreInfoUrl: data['moreInfoUrl'] as String?,
       spotIds: data['spotIds'] is List
           ? List<String>.from(data['spotIds'])
           : [],
@@ -237,6 +242,7 @@ class SpotList {
     return {
       'name': name,
       if (description != null) 'description': description,
+      if (moreInfoUrl != null && moreInfoUrl!.isNotEmpty) 'moreInfoUrl': moreInfoUrl,
       'spotIds': spotIds,
       if (sections != null) 'sections': sections!.map((s) => s.toMap()).toList(),
       'visibility': visibility.firestoreValue,
@@ -250,6 +256,7 @@ class SpotList {
     String? id,
     String? name,
     String? description,
+    String? moreInfoUrl,
     List<String>? spotIds,
     List<SpotListSection>? sections,
     SpotListVisibility? visibility,
@@ -261,6 +268,7 @@ class SpotList {
       id: id ?? this.id,
       name: name ?? this.name,
       description: description ?? this.description,
+      moreInfoUrl: moreInfoUrl ?? this.moreInfoUrl,
       spotIds: spotIds ?? this.spotIds,
       sections: sections ?? this.sections,
       visibility: visibility ?? this.visibility,

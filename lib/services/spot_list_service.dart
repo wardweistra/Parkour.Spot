@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../models/spot_list.dart';
 import '../services/auth_service.dart';
 import '../services/feature_access_service.dart';
+import '../utils/http_url_utils.dart' as http_url;
 
 class SpotListService extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -189,12 +190,13 @@ class SpotListService extends ChangeNotifier {
     }
   }
 
-  /// Update spot list metadata (name, description, visibility)
+  /// Update spot list metadata (name, description, visibility, optional link)
   Future<bool> updateSpotList(
     String listId, {
     String? name,
     String? description,
     SpotListVisibility? visibility,
+    String? moreInfoUrl,
   }) async {
     if (!_isAuthenticated()) {
       _error = 'You must be signed in to update a list';
@@ -244,6 +246,23 @@ class SpotListService extends ChangeNotifier {
 
       if (visibility != null) {
         updates['visibility'] = visibility.firestoreValue;
+      }
+
+      if (moreInfoUrl != null) {
+        final trimmed = moreInfoUrl.trim();
+        if (trimmed.isEmpty) {
+          updates['moreInfoUrl'] = FieldValue.delete();
+        } else {
+          final normalized = http_url.normalizeHttpOrHttpsUrl(trimmed);
+          if (normalized == null) {
+            _error =
+                'Enter a valid URL (http or https), e.g. example.com or https://example.com/page';
+            _isLoading = false;
+            notifyListeners();
+            return false;
+          }
+          updates['moreInfoUrl'] = normalized;
+        }
       }
 
       await _firestore.collection('spotLists').doc(listId).update(updates);
