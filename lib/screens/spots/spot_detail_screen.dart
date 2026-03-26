@@ -44,6 +44,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:intl/intl.dart';
 
 /// Max characters of description to show in the video overlay.
 const int _videoDescriptionPreviewLength = 80;
@@ -1706,107 +1707,169 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
                         // Save: want to visit / been here + optional custom list (guests see login CTA)
                         if (_spot.id != null)
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  _SpotSaveMenu(
-                                    spotId: _spot.id!,
-                                    onAddToCustomList: _showAddToListDialog,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Consumer<AuthService>(
-                                    builder: (context, authService, _) {
-                                      if (authService.isLoading) {
-                                        return Padding(
-                                          padding: const EdgeInsets.only(
-                                            bottom: 16,
+                              _SpotSaveMenu(
+                                spotId: _spot.id!,
+                                onAddToCustomList: _showAddToListDialog,
+                              ),
+                              const SizedBox(width: 8),
+                              Consumer<AuthService>(
+                                builder: (context, authService, _) {
+                                  if (authService.isLoading) {
+                                    return Padding(
+                                      padding: const EdgeInsets.only(
+                                        bottom: 16,
+                                      ),
+                                      child: SizedBox(
+                                        width: 44,
+                                        height: 44,
+                                        child: DecoratedBox(
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .surfaceContainerHighest
+                                                .withValues(alpha: 0.6),
+                                            shape: BoxShape.circle,
                                           ),
-                                          child: SizedBox(
-                                            width: 44,
-                                            height: 44,
-                                            child: DecoratedBox(
-                                              decoration: BoxDecoration(
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .surfaceContainerHighest
-                                                    .withValues(alpha: 0.6),
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: Center(
-                                                child: SizedBox(
-                                                  width: 22,
-                                                  height: 22,
-                                                  child:
-                                                      CircularProgressIndicator(
-                                                        strokeWidth: 2,
-                                                        color: Theme.of(
-                                                          context,
-                                                        ).colorScheme.primary,
-                                                      ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                      return Padding(
-                                        padding: const EdgeInsets.only(
-                                          bottom: 16,
-                                        ),
-                                        child: _buildSpotActionsPopupMenu(
-                                          authService: authService,
-                                          tooltip: 'Edit & report',
-                                          child: SizedBox(
-                                            width: 44,
-                                            height: 44,
-                                            child: DecoratedBox(
-                                              decoration: BoxDecoration(
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .surfaceContainerHighest
-                                                    .withValues(alpha: 0.6),
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: Icon(
-                                                Icons.edit_outlined,
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .onSurface
-                                                    .withValues(alpha: 0.6),
-                                                size: 24,
+                                          child: Center(
+                                            child: SizedBox(
+                                              width: 22,
+                                              height: 22,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.primary,
                                               ),
                                             ),
                                           ),
                                         ),
-                                      );
-                                    },
+                                      ),
+                                    );
+                                  }
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 16),
+                                    child: _buildSpotActionsPopupMenu(
+                                      authService: authService,
+                                      tooltip: 'Edit & report',
+                                      child: SizedBox(
+                                        width: 44,
+                                        height: 44,
+                                        child: DecoratedBox(
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .surfaceContainerHighest
+                                                .withValues(alpha: 0.6),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            Icons.edit_outlined,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withValues(alpha: 0.6),
+                                            size: 24,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                              const SizedBox(width: 8),
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: Tooltip(
+                                  message: 'Share',
+                                  child: Material(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .surfaceContainerHighest
+                                        .withValues(alpha: 0.6),
+                                    shape: const CircleBorder(),
+                                    clipBehavior: Clip.antiAlias,
+                                    child: InkWell(
+                                      onTap: _copySpotToClipboard,
+                                      customBorder: const CircleBorder(),
+                                      child: SizedBox(
+                                        width: 44,
+                                        height: 44,
+                                        child: Icon(
+                                          Icons.share,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface
+                                              .withValues(alpha: 0.6),
+                                          size: 24,
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  Padding(
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Consumer<AuthService>(
+                                builder: (context, authService, _) {
+                                  final colorScheme = Theme.of(
+                                    context,
+                                  ).colorScheme;
+                                  final loginRedirect =
+                                      '/login?redirectTo=${Uri.encodeComponent('/spot/${_spot.id!}')}';
+                                  if (authService.isLoading) {
+                                    return Padding(
+                                      padding: const EdgeInsets.only(
+                                        bottom: 16,
+                                      ),
+                                      child: SizedBox(
+                                        width: 44,
+                                        height: 44,
+                                        child: DecoratedBox(
+                                          decoration: BoxDecoration(
+                                            color: colorScheme
+                                                .surfaceContainerHighest
+                                                .withValues(alpha: 0.6),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Center(
+                                            child: SizedBox(
+                                              width: 22,
+                                              height: 22,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: colorScheme.primary,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                  return Padding(
                                     padding: const EdgeInsets.only(bottom: 16),
                                     child: Tooltip(
-                                      message: 'Share',
+                                      message: authService.isAuthenticated
+                                          ? 'Check in'
+                                          : 'Sign in to check in',
                                       child: Material(
-                                        color: Theme.of(context)
-                                            .colorScheme
+                                        color: colorScheme
                                             .surfaceContainerHighest
                                             .withValues(alpha: 0.6),
                                         shape: const CircleBorder(),
                                         clipBehavior: Clip.antiAlias,
                                         child: InkWell(
-                                          onTap: _copySpotToClipboard,
+                                          onTap: authService.isAuthenticated
+                                              ? _showCheckInDialog
+                                              : () => context.go(loginRedirect),
                                           customBorder: const CircleBorder(),
                                           child: SizedBox(
                                             width: 44,
                                             height: 44,
                                             child: Icon(
-                                              Icons.share,
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurface
+                                              Icons.place_outlined,
+                                              color: colorScheme.onSurface
                                                   .withValues(alpha: 0.6),
                                               size: 24,
                                             ),
@@ -1814,87 +1877,18 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                         ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Consumer<AuthService>(
-                                    builder: (context, authService, _) {
-                                      final colorScheme = Theme.of(
-                                        context,
-                                      ).colorScheme;
-                                      final loginRedirect =
-                                          '/login?redirectTo=${Uri.encodeComponent('/spot/${_spot.id!}')}';
-                                      if (authService.isLoading) {
-                                        return Padding(
-                                          padding: const EdgeInsets.only(
-                                            bottom: 16,
-                                          ),
-                                          child: SizedBox(
-                                            width: 44,
-                                            height: 44,
-                                            child: DecoratedBox(
-                                              decoration: BoxDecoration(
-                                                color: colorScheme
-                                                    .surfaceContainerHighest
-                                                    .withValues(alpha: 0.6),
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: Center(
-                                                child: SizedBox(
-                                                  width: 22,
-                                                  height: 22,
-                                                  child:
-                                                      CircularProgressIndicator(
-                                                        strokeWidth: 2,
-                                                        color:
-                                                            colorScheme.primary,
-                                                      ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                      return Padding(
-                                        padding: const EdgeInsets.only(
-                                          bottom: 16,
-                                        ),
-                                        child: Tooltip(
-                                          message: authService.isAuthenticated
-                                              ? 'Check in'
-                                              : 'Sign in to check in',
-                                          child: Material(
-                                            color: colorScheme
-                                                .surfaceContainerHighest
-                                                .withValues(alpha: 0.6),
-                                            shape: const CircleBorder(),
-                                            clipBehavior: Clip.antiAlias,
-                                            child: InkWell(
-                                              onTap: authService.isAuthenticated
-                                                  ? _showCheckInDialog
-                                                  : () => context.go(
-                                                      loginRedirect,
-                                                    ),
-                                              customBorder:
-                                                  const CircleBorder(),
-                                              child: SizedBox(
-                                                width: 44,
-                                                height: 44,
-                                                child: Icon(
-                                                  Icons.place_outlined,
-                                                  color: colorScheme.onSurface
-                                                      .withValues(alpha: 0.6),
-                                                  size: 24,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ],
+                                  );
+                                },
                               ),
-                              _SpotCheckInPresenceStrip(spotId: _spot.id!),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: _SpotCheckInPresenceStrip(
+                                    spotId: _spot.id!,
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
 
@@ -7315,7 +7309,269 @@ class _SpotCheckInDialogState extends State<_SpotCheckInDialog> {
   }
 }
 
-/// "Here now" avatar stack (public + your private check-in with a lock badge). Check-in button is in the icon row above.
+Future<void> _navigateToUserProfileForCheckIn(
+  BuildContext context,
+  String userId,
+) async {
+  try {
+    final userProfileService = Provider.of<UserProfileService>(
+      context,
+      listen: false,
+    );
+    final user = await userProfileService.getUserProfile(userId);
+    final identifier = user?.username?.isNotEmpty == true
+        ? user!.username!
+        : userId;
+    if (context.mounted) {
+      context.push('/user/$identifier');
+    }
+  } catch (_) {
+    if (context.mounted) {
+      context.push('/user/$userId');
+    }
+  }
+}
+
+void _showCheckInsListDialog(
+  BuildContext context,
+  ThemeData theme,
+  List<_CheckInAvatarEntry> entries,
+) {
+  final sorted = List<_CheckInAvatarEntry>.from(entries)
+    ..sort((a, b) => b.checkIn.checkedInAt.compareTo(a.checkIn.checkedInAt));
+
+  showDialog<void>(
+    context: context,
+    builder: (ctx) {
+      final maxH = MediaQuery.sizeOf(ctx).height * 0.55;
+      return AlertDialog(
+        titlePadding: const EdgeInsets.fromLTRB(24, 20, 12, 0),
+        contentPadding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Here now',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            IconButton(
+              tooltip: 'Close',
+              onPressed: () => Navigator.of(ctx).pop(),
+              icon: const Icon(Icons.close),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: math.min(420, maxH),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Recent check-ins from the last hour.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: sorted.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 10),
+                  itemBuilder: (dialogContext, i) {
+                    return _CheckInUserCard(
+                      entry: sorted[i],
+                      hostContext: context,
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+/// Single check-in row in the list dialog (spot-style note + avatar, inspired by [SpotCard] custom notes).
+class _CheckInUserCard extends StatelessWidget {
+  const _CheckInUserCard({required this.entry, required this.hostContext});
+
+  final _CheckInAvatarEntry entry;
+  final BuildContext hostContext;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = entry.checkIn;
+    final name = c.displayName?.trim();
+    final title = (name != null && name.isNotEmpty) ? name : 'Someone here';
+    final timeStr = DateFormat(
+      'MMM d, yyyy • h:mm a',
+    ).format(c.checkedInAt.toLocal());
+    final comment = c.comment?.trim();
+
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () async {
+          final uid = c.userId;
+          Navigator.of(context).pop();
+          await _navigateToUserProfileForCheckIn(hostContext, uid);
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _CheckInDialogAvatar(entry: entry),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            title,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        if (entry.showPrivateBadge) ...[
+                          Icon(
+                            Icons.lock_outline,
+                            size: 18,
+                            color: theme.colorScheme.primary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Only you',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      timeStr,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.65,
+                        ),
+                      ),
+                    ),
+                    if (comment != null && comment.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHighest
+                              .withValues(alpha: 0.6),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '💬 $comment',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontStyle: FontStyle.italic,
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.8,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CheckInDialogAvatar extends StatelessWidget {
+  const _CheckInDialogAvatar({required this.entry});
+
+  final _CheckInAvatarEntry entry;
+
+  static const double _radius = 28;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = entry.checkIn;
+    final avatar = CircleAvatar(
+      radius: _radius,
+      backgroundColor: theme.colorScheme.surfaceContainerHighest,
+      backgroundImage: c.photoURL != null ? NetworkImage(c.photoURL!) : null,
+      child: c.photoURL == null
+          ? Text(
+              (c.displayName?.isNotEmpty == true ? c.displayName![0] : '?')
+                  .toUpperCase(),
+              style: theme.textTheme.titleSmall,
+            )
+          : null,
+    );
+
+    if (!entry.showPrivateBadge) {
+      return avatar;
+    }
+
+    return SizedBox(
+      width: _radius * 2,
+      height: _radius * 2,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
+        children: [
+          avatar,
+          Positioned(
+            right: -2,
+            bottom: -2,
+            child: Material(
+              color: theme.colorScheme.surface,
+              elevation: 1,
+              shape: const CircleBorder(),
+              child: Padding(
+                padding: const EdgeInsets.all(3),
+                child: Icon(
+                  Icons.lock_outline,
+                  size: _radius * 0.5,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Avatar stack beside the check-in button (public + private self with lock badge).
 class _SpotCheckInPresenceStrip extends StatefulWidget {
   const _SpotCheckInPresenceStrip({required this.spotId});
 
@@ -7385,7 +7641,20 @@ class _SpotCheckInPresenceStripState extends State<_SpotCheckInPresenceStrip> {
 
             return Padding(
               padding: const EdgeInsets.only(bottom: 16),
-              child: _buildAvatarStack(theme, entries),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _showCheckInsListDialog(context, theme, entries),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 4,
+                      horizontal: 4,
+                    ),
+                    child: _buildAvatarStack(context, theme, entries),
+                  ),
+                ),
+              ),
             );
           },
         );
@@ -7410,7 +7679,11 @@ class _SpotCheckInPresenceStripState extends State<_SpotCheckInPresenceStrip> {
     return entries;
   }
 
-  Widget _buildAvatarStack(ThemeData theme, List<_CheckInAvatarEntry> entries) {
+  Widget _buildAvatarStack(
+    BuildContext context,
+    ThemeData theme,
+    List<_CheckInAvatarEntry> entries,
+  ) {
     const maxShown = 6;
     const overlap = 16.0;
     const radius = 14.0;
@@ -7419,13 +7692,6 @@ class _SpotCheckInPresenceStripState extends State<_SpotCheckInPresenceStrip> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          'Here now',
-          style: theme.textTheme.labelLarge?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(width: 8),
         SizedBox(
           width: shown.isEmpty ? 0 : (shown.length - 1) * overlap + radius * 2,
           height: radius * 2,
@@ -7435,7 +7701,7 @@ class _SpotCheckInPresenceStripState extends State<_SpotCheckInPresenceStrip> {
               for (var i = 0; i < shown.length; i++)
                 Positioned(
                   left: i * overlap,
-                  child: _stackedAvatar(theme, shown[i], radius),
+                  child: _stackedAvatar(context, theme, shown[i], radius),
                 ),
             ],
           ),
@@ -7454,6 +7720,7 @@ class _SpotCheckInPresenceStripState extends State<_SpotCheckInPresenceStrip> {
   }
 
   Widget _stackedAvatar(
+    BuildContext context,
     ThemeData theme,
     _CheckInAvatarEntry entry,
     double radius,
@@ -7472,9 +7739,9 @@ class _SpotCheckInPresenceStripState extends State<_SpotCheckInPresenceStrip> {
           : null,
     );
 
-    final message = entry.showPrivateBadge
-        ? _privateCheckInTooltip(c)
-        : _publicCheckInTooltip(c);
+    final richMessage = entry.showPrivateBadge
+        ? _privateCheckInTooltipSpan(context, theme, c)
+        : _publicCheckInTooltipSpan(context, theme, c);
 
     final Widget target;
     if (entry.showPrivateBadge) {
@@ -7510,25 +7777,92 @@ class _SpotCheckInPresenceStripState extends State<_SpotCheckInPresenceStrip> {
       target = avatar;
     }
 
-    return Tooltip(message: message, child: target);
+    return Tooltip(
+      richMessage: richMessage,
+      textStyle: _tooltipBaseTextStyle(context, theme),
+      child: target,
+    );
   }
 
-  String _publicCheckInTooltip(SpotCheckIn c) {
+  /// Matches [Tooltip] / [TooltipTheme]: inverse surface uses [ColorScheme.onInverseSurface].
+  TextStyle _tooltipBaseTextStyle(BuildContext context, ThemeData theme) {
+    final fromTheme = TooltipTheme.of(context).textStyle;
+    if (fromTheme != null && fromTheme.color != null) {
+      return fromTheme;
+    }
+    final cs = theme.colorScheme;
+    return theme.textTheme.bodySmall?.copyWith(
+          color: cs.onInverseSurface,
+          height: 1.35,
+        ) ??
+        TextStyle(color: cs.onInverseSurface, fontSize: 13, height: 1.35);
+  }
+
+  TextStyle _tooltipCommentItalicStyle(BuildContext context, ThemeData theme) {
+    final base = _tooltipBaseTextStyle(context, theme);
+    final c = base.color ?? theme.colorScheme.onInverseSurface;
+    return base.copyWith(
+      fontStyle: FontStyle.italic,
+      color: c.withValues(alpha: 0.92),
+    );
+  }
+
+  TextSpan _publicCheckInTooltipSpan(
+    BuildContext context,
+    ThemeData theme,
+    SpotCheckIn c,
+  ) {
     final name = c.displayName?.trim();
+    final who = (name != null && name.isNotEmpty) ? name : 'This person';
     final comment = c.comment?.trim();
-    final headline = (name != null && name.isNotEmpty) ? name : 'Checked in';
-    if (comment != null && comment.isNotEmpty) {
-      return '$headline\n\n$comment';
-    }
-    return headline;
+    final headline = '$who is here now at this spot';
+    final baseStyle = _tooltipBaseTextStyle(context, theme);
+    return _checkInTooltipSpanWithOptionalComment(
+      context,
+      theme,
+      headline,
+      headlineStyle: baseStyle,
+      comment: comment,
+    );
   }
 
-  String _privateCheckInTooltip(SpotCheckIn mine) {
+  TextSpan _privateCheckInTooltipSpan(
+    BuildContext context,
+    ThemeData theme,
+    SpotCheckIn mine,
+  ) {
     final comment = mine.comment?.trim();
-    if (comment != null && comment.isNotEmpty) {
-      return 'Only you can see this check-in\n\n$comment';
+    const headline =
+        "You're here now at this spot — only you can see this check-in";
+    final baseStyle = _tooltipBaseTextStyle(context, theme);
+    return _checkInTooltipSpanWithOptionalComment(
+      context,
+      theme,
+      headline,
+      headlineStyle: baseStyle,
+      comment: comment,
+    );
+  }
+
+  TextSpan _checkInTooltipSpanWithOptionalComment(
+    BuildContext context,
+    ThemeData theme,
+    String headline, {
+    required TextStyle headlineStyle,
+    String? comment,
+  }) {
+    if (comment == null || comment.isEmpty) {
+      return TextSpan(text: headline, style: headlineStyle);
     }
-    return 'Only you can see this check-in';
+    return TextSpan(
+      children: [
+        TextSpan(text: headline, style: headlineStyle),
+        TextSpan(
+          text: '\n\n💬 $comment',
+          style: _tooltipCommentItalicStyle(context, theme),
+        ),
+      ],
+    );
   }
 }
 
