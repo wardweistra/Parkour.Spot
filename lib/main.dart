@@ -19,6 +19,7 @@ import 'package:parkour_spot/services/snackbar_service.dart';
 import 'package:parkour_spot/services/spot_list_service.dart';
 import 'package:parkour_spot/services/saved_spot_list_service.dart';
 import 'package:parkour_spot/services/spot_tracking_service.dart';
+import 'package:parkour_spot/services/spot_check_in_service.dart';
 import 'package:parkour_spot/services/feature_access_service.dart';
 import 'package:parkour_spot/services/pwa_install_service.dart';
 import 'package:parkour_spot/services/user_profile_service.dart';
@@ -160,6 +161,26 @@ class ParkourSpotApp extends StatelessWidget {
           },
           update: (context, authService, previous) {
             return previous ?? SpotTrackingService(authService);
+          },
+        ),
+        ChangeNotifierProxyProvider<AuthService, SpotCheckInService>(
+          create: (context) {
+            final authService = Provider.of<AuthService>(
+              context,
+              listen: false,
+            );
+            final tracking = Provider.of<SpotTrackingService>(
+              context,
+              listen: false,
+            );
+            return SpotCheckInService(authService, tracking);
+          },
+          update: (context, authService, previous) {
+            final tracking = Provider.of<SpotTrackingService>(
+              context,
+              listen: false,
+            );
+            return previous ?? SpotCheckInService(authService, tracking);
           },
         ),
         ChangeNotifierProvider(
