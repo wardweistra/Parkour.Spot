@@ -10,32 +10,30 @@ service cloud.firestore {
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isModerator == true);
       allow delete: if request.auth != null && exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
 
-      // Spot check-ins: public reads for non-private docs; private docs only for owner
-      match /checkIns/{checkInId} {
-        function checkInCommentOk(data) {
-          return !('comment' in data) ||
-            (data.comment is string && data.comment.size() <= 200);
-        }
-        function checkInCreateShape() {
-          return request.resource.data.userId == request.auth.uid
-            && request.resource.data.userId == checkInId
-            && request.resource.data.isPrivate is bool
-            && checkInCommentOk(request.resource.data);
-        }
-        function checkInUpdateShape() {
-          return request.resource.data.userId == resource.data.userId
-            && request.resource.data.isPrivate is bool
-            && checkInCommentOk(request.resource.data);
-        }
-        allow read: if resource.data.isPrivate == false
-          || (request.auth != null && request.auth.uid == resource.data.userId);
-        allow create: if request.auth != null && checkInCreateShape();
-        allow update: if request.auth != null
-          && resource.data.userId == request.auth.uid
-          && checkInUpdateShape();
-        allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    // Spot check-ins (one document per check-in event; query by userId and/or spotId)
+    match /spotCheckIns/{checkInId} {
+      function spotCheckInCommentOk(data) {
+        return !('comment' in data) ||
+          (data.comment is string && data.comment.size() <= 200);
       }
+      function spotCheckInCreateShape() {
+        return request.resource.data.userId == request.auth.uid
+          && request.resource.data.spotId is string
+          && request.resource.data.spotId.size() > 0
+          && request.resource.data.isPrivate is bool
+          && request.resource.data.checkedInAt == request.time
+          && spotCheckInCommentOk(request.resource.data)
+          && (!('spotName' in request.resource.data) ||
+            (request.resource.data.spotName is string &&
+              request.resource.data.spotName.size() <= 500));
+      }
+      allow read: if resource.data.isPrivate == false
+        || (request.auth != null && request.auth.uid == resource.data.userId);
+      allow create: if request.auth != null && spotCheckInCreateShape();
+      allow update: if false;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
     
     // Users collection - users can only manage their own profile, admins can read/update all

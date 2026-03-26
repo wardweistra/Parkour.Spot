@@ -581,51 +581,70 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                           ),
                         ],
                       ),
-                    )
-                  else ...[
-                    if (wantCount > 0)
-                      Card(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        child: ListTile(
-                          leading: const Icon(Icons.bookmark_outlined),
-                          title: const Text('Want to visit'),
-                          subtitle: Text(
-                            '$wantCount ${wantCount == 1 ? 'spot' : 'spots'}',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurface
-                                      .withValues(alpha: 0.6),
-                                ),
-                          ),
-                          trailing: const Icon(
-                            Icons.arrow_forward_ios,
-                            size: 16,
-                          ),
-                          onTap: () => context.push('/profile/want-to-visit'),
+                    ),
+                  if (wantCount > 0)
+                    Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        leading: const Icon(Icons.bookmark_outlined),
+                        title: const Text('Want to visit'),
+                        subtitle: Text(
+                          '$wantCount ${wantCount == 1 ? 'spot' : 'spots'}',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface
+                                    .withValues(alpha: 0.6),
+                              ),
                         ),
-                      ),
-                    if (visitedCount > 0)
-                      Card(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        child: ListTile(
-                          leading: const Icon(Icons.check_circle_outline),
-                          title: const Text('Been to'),
-                          subtitle: Text(
-                            '$visitedCount ${visitedCount == 1 ? 'spot' : 'spots'}',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurface
-                                      .withValues(alpha: 0.6),
-                                ),
-                          ),
-                          trailing: const Icon(
-                            Icons.arrow_forward_ios,
-                            size: 16,
-                          ),
-                          onTap: () => context.push('/profile/visited'),
+                        trailing: const Icon(
+                          Icons.arrow_forward_ios,
+                          size: 16,
                         ),
+                        onTap: () => context.push('/profile/want-to-visit'),
                       ),
-                  ],
+                    ),
+                  if (visitedCount > 0)
+                    Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        leading: const Icon(Icons.check_circle_outline),
+                        title: const Text('Been to'),
+                        subtitle: Text(
+                          '$visitedCount ${visitedCount == 1 ? 'spot' : 'spots'}',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface
+                                    .withValues(alpha: 0.6),
+                              ),
+                        ),
+                        trailing: const Icon(
+                          Icons.arrow_forward_ios,
+                          size: 16,
+                        ),
+                        onTap: () => context.push('/profile/visited'),
+                      ),
+                    ),
+                  Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      leading: const Icon(Icons.how_to_reg_outlined),
+                      title: const Text('My check-ins'),
+                      subtitle: Text(
+                        'Your visit history with timestamps',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.6),
+                            ),
+                      ),
+                      trailing: const Icon(
+                        Icons.arrow_forward_ios,
+                        size: 16,
+                      ),
+                      onTap: () => context.push('/profile/check-ins'),
+                    ),
+                  ),
                 ],
               ),
             ),

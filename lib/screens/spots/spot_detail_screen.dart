@@ -177,6 +177,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       spotId,
       isPrivate: result.isPrivate,
       comment: result.comment,
+      spotName: _spot.name,
     );
     if (!mounted) return;
     if (ok) {

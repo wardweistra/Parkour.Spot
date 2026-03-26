@@ -13,10 +13,7 @@ import '../services/user_profile_service.dart';
 
 /// Where [SpotCheckInPresenceStrip] is shown: detail header (tappable) vs spot card
 /// (tap passes through to the card; tooltips on hover).
-enum SpotCheckInPresenceVariant {
-  detail,
-  spotCard,
-}
+enum SpotCheckInPresenceVariant { detail, spotCard }
 
 /// Public + optional private self with lock badge (for dialogs and tooltips).
 class CheckInAvatarEntry {
@@ -38,7 +35,8 @@ class SpotCheckInPresenceLazy extends StatefulWidget {
   final SpotCheckInPresenceVariant variant;
 
   @override
-  State<SpotCheckInPresenceLazy> createState() => _SpotCheckInPresenceLazyState();
+  State<SpotCheckInPresenceLazy> createState() =>
+      _SpotCheckInPresenceLazyState();
 }
 
 class _SpotCheckInPresenceLazyState extends State<SpotCheckInPresenceLazy> {
@@ -79,7 +77,8 @@ class SpotCheckInPresenceStrip extends StatefulWidget {
   final SpotCheckInPresenceVariant variant;
 
   @override
-  State<SpotCheckInPresenceStrip> createState() => _SpotCheckInPresenceStripState();
+  State<SpotCheckInPresenceStrip> createState() =>
+      _SpotCheckInPresenceStripState();
 }
 
 class _SpotCheckInPresenceStripState extends State<SpotCheckInPresenceStrip> {
@@ -200,13 +199,9 @@ class _SpotCheckInPresenceStripState extends State<SpotCheckInPresenceStrip> {
         ? theme.textTheme.labelMedium?.copyWith(
             fontWeight: FontWeight.w600,
             color: Colors.white,
-            shadows: const [
-              Shadow(blurRadius: 6, color: Colors.black54),
-            ],
+            shadows: const [Shadow(blurRadius: 6, color: Colors.black54)],
           )
-        : theme.textTheme.labelMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          );
+        : theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600);
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -235,10 +230,7 @@ class _SpotCheckInPresenceStripState extends State<SpotCheckInPresenceStrip> {
           const SizedBox(width: 6),
           IgnorePointer(
             ignoring: isCard,
-            child: Text(
-              '+$extra',
-              style: extraStyle,
-            ),
+            child: Text('+$extra', style: extraStyle),
           ),
         ],
       ],
@@ -319,10 +311,7 @@ class _SpotCheckInPresenceStripState extends State<SpotCheckInPresenceStrip> {
     return Tooltip(
       richMessage: richMessage,
       textStyle: _tooltipBaseTextStyle(context, theme),
-      child: IgnorePointer(
-        ignoring: true,
-        child: target,
-      ),
+      child: IgnorePointer(ignoring: true, child: target),
     );
   }
 
@@ -508,6 +497,7 @@ void showCheckInsListDialog(
                       const SizedBox(height: 10),
                   itemBuilder: (dialogContext, i) {
                     return CheckInUserCard(
+                      key: ValueKey(sorted[i].checkIn.id),
                       entry: sorted[i],
                       hostContext: context,
                     );
@@ -530,7 +520,11 @@ void showCheckInsListDialog(
 
 /// Single check-in row in the list dialog (spot-style note + avatar, inspired by [SpotCard] custom notes).
 class CheckInUserCard extends StatelessWidget {
-  const CheckInUserCard({super.key, required this.entry, required this.hostContext});
+  const CheckInUserCard({
+    super.key,
+    required this.entry,
+    required this.hostContext,
+  });
 
   final CheckInAvatarEntry entry;
   final BuildContext hostContext;

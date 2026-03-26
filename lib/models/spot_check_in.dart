@@ -1,19 +1,28 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// A user's check-in at a spot (stored under `spots/{spotId}/checkIns/{userId}`).
+/// A user's check-in at a spot (stored in top-level `spotCheckIns/{checkInId}`).
 class SpotCheckIn {
   const SpotCheckIn({
+    required this.id,
     required this.userId,
+    required this.spotId,
     required this.checkedInAt,
     required this.isPrivate,
+    this.spotName,
     this.comment,
     this.displayName,
     this.photoURL,
   });
 
+  /// Firestore document id.
+  final String id;
   final String userId;
+  final String spotId;
   final DateTime checkedInAt;
   final bool isPrivate;
+
+  /// Denormalized at write time for lists without extra spot reads.
+  final String? spotName;
   final String? comment;
   final String? displayName;
   final String? photoURL;
@@ -39,9 +48,12 @@ class SpotCheckIn {
       at = DateTime.fromMillisecondsSinceEpoch(0);
     }
     return SpotCheckIn(
-      userId: data['userId'] as String? ?? doc.id,
+      id: doc.id,
+      userId: data['userId'] as String? ?? '',
+      spotId: data['spotId'] as String? ?? '',
       checkedInAt: at,
       isPrivate: data['isPrivate'] == true,
+      spotName: data['spotName'] as String?,
       comment: data['comment'] as String?,
       displayName: data['displayName'] as String?,
       photoURL: data['photoURL'] as String?,

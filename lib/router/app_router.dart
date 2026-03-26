@@ -26,6 +26,7 @@ import '../screens/spots/edit_spot_screen.dart';
 import '../screens/spots/spot_list_detail_screen.dart';
 import '../screens/spots/spot_tracking_list_screen.dart';
 import '../screens/auth/login_screen.dart';
+import '../screens/profile/my_check_ins_screen.dart';
 import '../screens/profile/public_profile_screen.dart';
 import '../models/spot.dart';
 import '../services/spot_service.dart';
@@ -280,7 +281,9 @@ class AppRouter {
         redirect: (context, state) {
           // Don't redirect child routes
           final path = state.uri.path;
-          if (path == '/profile/want-to-visit' || path == '/profile/visited') {
+          if (path == '/profile/want-to-visit' ||
+              path == '/profile/visited' ||
+              path == '/profile/check-ins') {
             return null;
           }
           return '/explore?tab=profile';
@@ -295,6 +298,10 @@ class AppRouter {
             path: 'visited',
             builder: (context, state) =>
                 const SpotTrackingListScreen(type: SpotTrackingListType.visited),
+          ),
+          GoRoute(
+            path: 'check-ins',
+            builder: (context, state) => const MyCheckInsScreen(),
           ),
         ],
       ),
