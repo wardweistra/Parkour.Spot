@@ -15,6 +15,10 @@ import '../services/user_profile_service.dart';
 /// (tap passes through to the card; tooltips on hover).
 enum SpotCheckInPresenceVariant { detail, spotCard }
 
+/// Spot detail action row uses 44×44 circles; avatars use [_kSpotDetailAvatarRadius].
+const double _kSpotDetailActionButtonSize = 44;
+const double _kSpotDetailAvatarRadius = 20;
+
 /// Public + optional private self with lock badge (for dialogs and tooltips).
 class CheckInAvatarEntry {
   const CheckInAvatarEntry(this.checkIn, {this.showPrivateBadge = false});
@@ -152,8 +156,13 @@ class _SpotCheckInPresenceStripState extends State<SpotCheckInPresenceStrip> {
               color: theme.colorScheme.onSurface.withValues(alpha: 0.62),
               fontWeight: FontWeight.w500,
             );
+            final avatarTopInset =
+                _kSpotDetailActionButtonSize / 2 - _kSpotDetailAvatarRadius;
             final detailColumnChildren = <Widget>[
-              stack,
+              Padding(
+                padding: EdgeInsets.only(top: avatarTopInset),
+                child: stack,
+              ),
               if (label != null) ...[
                 const SizedBox(height: 4),
                 Text(
@@ -174,10 +183,7 @@ class _SpotCheckInPresenceStripState extends State<SpotCheckInPresenceStrip> {
                   onTap: () => showCheckInsListDialog(context, theme, entries),
                   borderRadius: BorderRadius.circular(10),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 4,
-                      horizontal: 4,
-                    ),
+                    padding: const EdgeInsets.fromLTRB(4, 0, 4, 4),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.center,
@@ -218,8 +224,9 @@ class _SpotCheckInPresenceStripState extends State<SpotCheckInPresenceStrip> {
     const maxShown = 6;
     final isCard = widget.variant == SpotCheckInPresenceVariant.spotCard;
     // Detail page: slightly under 44×44 action buttons; spot cards: compact on imagery.
-    final double radius = isCard ? 14.0 : 20.0;
-    final double overlap = isCard ? 16.0 : 23.0;
+    final double radius = isCard ? 14.0 : _kSpotDetailAvatarRadius;
+    final double overlap =
+        isCard ? 16.0 : _kSpotDetailAvatarRadius * (23.0 / 20.0);
     final shown = entries.take(maxShown).toList();
     final extra = entries.length - shown.length;
     final extraStyle = isCard

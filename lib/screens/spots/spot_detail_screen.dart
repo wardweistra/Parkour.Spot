@@ -1708,7 +1708,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         // Save: want to visit / been here + optional custom list (guests see login CTA)
                         if (_spot.id != null)
                           Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Expanded(
                                 child: Row(
