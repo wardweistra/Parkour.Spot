@@ -71,10 +71,13 @@ class SpotCheckInPresenceStrip extends StatefulWidget {
     super.key,
     required this.spotId,
     this.variant = SpotCheckInPresenceVariant.detail,
+    /// Shown below the avatar stack on [SpotCheckInPresenceVariant.detail] when non-null.
+    this.detailLeadingLabel,
   });
 
   final String spotId;
   final SpotCheckInPresenceVariant variant;
+  final String? detailLeadingLabel;
 
   @override
   State<SpotCheckInPresenceStrip> createState() =>
@@ -144,6 +147,25 @@ class _SpotCheckInPresenceStripState extends State<SpotCheckInPresenceStrip> {
               return stack;
             }
 
+            final label = widget.detailLeadingLabel;
+            final labelStyle = theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.62),
+              fontWeight: FontWeight.w500,
+            );
+            final detailColumnChildren = <Widget>[
+              stack,
+              if (label != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: labelStyle,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ];
+
             return Padding(
               padding: const EdgeInsets.only(bottom: 16),
               child: Material(
@@ -156,7 +178,11 @@ class _SpotCheckInPresenceStripState extends State<SpotCheckInPresenceStrip> {
                       vertical: 4,
                       horizontal: 4,
                     ),
-                    child: stack,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: detailColumnChildren,
+                    ),
                   ),
                 ),
               ),
@@ -190,11 +216,12 @@ class _SpotCheckInPresenceStripState extends State<SpotCheckInPresenceStrip> {
     List<CheckInAvatarEntry> entries,
   ) {
     const maxShown = 6;
-    const overlap = 16.0;
-    const radius = 14.0;
+    final isCard = widget.variant == SpotCheckInPresenceVariant.spotCard;
+    // Detail page: slightly under 44×44 action buttons; spot cards: compact on imagery.
+    final double radius = isCard ? 14.0 : 20.0;
+    final double overlap = isCard ? 16.0 : 23.0;
     final shown = entries.take(maxShown).toList();
     final extra = entries.length - shown.length;
-    final isCard = widget.variant == SpotCheckInPresenceVariant.spotCard;
     final extraStyle = isCard
         ? theme.textTheme.labelMedium?.copyWith(
             fontWeight: FontWeight.w600,
@@ -253,7 +280,9 @@ class _SpotCheckInPresenceStripState extends State<SpotCheckInPresenceStrip> {
           ? Text(
               (c.displayName?.isNotEmpty == true ? c.displayName![0] : '?')
                   .toUpperCase(),
-              style: theme.textTheme.labelSmall,
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontSize: math.max(11, radius * 0.85),
+              ),
             )
           : null,
     );
