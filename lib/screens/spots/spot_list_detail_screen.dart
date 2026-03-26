@@ -351,6 +351,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
         return SpotCard(
           spot: spot,
           customNote: entry.note,
+          showCheckInPresence: true,
           onTapWithImageIndex: (imageIndex) {
             if (spot.id != null) {
               final baseUrl = UrlService.generateNavigationUrl(
@@ -389,6 +390,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
           child: SpotCard(
             spot: spot,
             customNote: entry.note,
+            showCheckInPresence: true,
             onTapWithImageIndex: (imageIndex) {
               if (spot.id != null) {
                 final baseUrl = UrlService.generateNavigationUrl(
@@ -432,6 +434,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
           final spot = _spots[index];
           return SpotCard(
             spot: spot,
+            showCheckInPresence: true,
             onTapWithImageIndex: (imageIndex) {
               if (spot.id != null) {
                 final baseUrl = UrlService.generateNavigationUrl(
@@ -463,6 +466,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
           padding: const EdgeInsets.only(bottom: 12),
           child: SpotCard(
             spot: spot,
+            showCheckInPresence: true,
             onTapWithImageIndex: (imageIndex) {
               if (spot.id != null) {
                 final baseUrl = UrlService.generateNavigationUrl(
