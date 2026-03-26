@@ -31,7 +31,7 @@ class SpotCard extends StatefulWidget {
   final String? spotListName; // Name of the spot list this spot belongs to (for highlighting)
   final VoidCallback? onSpotListTap; // Callback when "Part of" chip is tapped
   final String? customNote; // Optional per-spot note (e.g. from list section entry)
-  /// When true (e.g. Explore), shows who’s checked in under the spot source; loads lazily when visible.
+  /// When true (e.g. Explore), shows who’s checked in at the top right (left of share/close or list actions); loads lazily when visible.
   final bool showCheckInPresence;
 
   const SpotCard({
@@ -495,63 +495,48 @@ class _SpotCardState extends State<SpotCard> {
               ),
             ),
 
-            // External source + optional check-in presence (top left)
-            if (widget.spot.spotSource != null ||
-                (widget.showCheckInPresence && widget.spot.id != null))
+            // External source (top left)
+            if (widget.spot.spotSource != null)
               Positioned(
                 top: 8,
                 left: 8,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (widget.spot.spotSource != null)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.4),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            width: 1,
-                          ),
-                        ),
-                        child: Text(
-                          widget.spot.spotSourceName ?? widget.spot.spotSource!,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    if (widget.spot.spotSource != null &&
-                        widget.showCheckInPresence &&
-                        widget.spot.id != null)
-                      const SizedBox(height: 4),
-                    if (widget.showCheckInPresence && widget.spot.id != null)
-                      SpotCheckInPresenceLazy(spotId: widget.spot.id!),
-                  ],
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    widget.spot.spotSourceName ?? widget.spot.spotSource!,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
               ),
 
-            // Removed badge - position on left if action buttons exist, otherwise right
-            if (widget.spot.spotSourceRemoved)
-              Positioned(
-                top: 8,
-                left: (widget.onRemove != null || widget.reorderHandle != null) ? 8 : null,
-                right: (widget.onRemove != null || widget.reorderHandle != null) ? null : 8,
-                child: _buildRemovedBadge(context),
-              ),
-
-            // Reorder handle and remove button (for list variant)
-            if (widget.onRemove != null || widget.reorderHandle != null)
+            // Check-in presence + reorder/remove (top right; check-ins left of actions)
+            if ((widget.showCheckInPresence && widget.spot.id != null) ||
+                widget.onRemove != null ||
+                widget.reorderHandle != null)
               Positioned(
                 top: 8,
                 right: 8,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    if (widget.showCheckInPresence && widget.spot.id != null)
+                      SpotCheckInPresenceLazy(spotId: widget.spot.id!),
+                    if (widget.showCheckInPresence &&
+                        widget.spot.id != null &&
+                        (widget.reorderHandle != null || widget.onRemove != null))
+                      const SizedBox(width: 8),
                     if (widget.reorderHandle != null) widget.reorderHandle!,
                     if (widget.reorderHandle != null && widget.onRemove != null)
                       const SizedBox(width: 8),
@@ -567,6 +552,16 @@ class _SpotCardState extends State<SpotCard> {
                   ],
                 ),
               ),
+
+            // Removed badge - position on left if action buttons exist, otherwise right
+            if (widget.spot.spotSourceRemoved)
+              Positioned(
+                top: 8,
+                left: (widget.onRemove != null || widget.reorderHandle != null) ? 8 : null,
+                right: (widget.onRemove != null || widget.reorderHandle != null) ? null : 8,
+                child: _buildRemovedBadge(context),
+              ),
+
           ],
         ),
       ),
@@ -758,48 +753,34 @@ class _SpotCardState extends State<SpotCard> {
                           ),
                         ],
                         
-                        // External source + optional check-in presence (top left on image)
-                        if (widget.spot.spotSource != null ||
-                            (widget.showCheckInPresence && widget.spot.id != null))
+                        // External source (top left on image)
+                        if (widget.spot.spotSource != null)
                           Positioned(
                             top: 8,
                             left: 8,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (widget.spot.spotSource != null)
-                                  SizedBox(
-                                    height: 32, // match close button size for vertical centering
-                                    child: Center(
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                                        decoration: BoxDecoration(
-                                          color: Colors.black.withValues(alpha: 0.4),
-                                          borderRadius: BorderRadius.circular(10),
-                                          border: Border.all(
-                                            color: Colors.white.withValues(alpha: 0.2),
-                                            width: 1,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          widget.spot.spotSourceName ?? widget.spot.spotSource!,
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ),
+                            child: SizedBox(
+                              height: 32, // match top-right row height for vertical centering
+                              child: Center(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.4),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: Colors.white.withValues(alpha: 0.2),
+                                      width: 1,
                                     ),
                                   ),
-                                if (widget.spot.spotSource != null &&
-                                    widget.showCheckInPresence &&
-                                    widget.spot.id != null)
-                                  const SizedBox(height: 4),
-                                if (widget.showCheckInPresence && widget.spot.id != null)
-                                  SpotCheckInPresenceLazy(spotId: widget.spot.id!),
-                              ],
+                                  child: Text(
+                                    widget.spot.spotSourceName ?? widget.spot.spotSource!,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
 
@@ -943,13 +924,17 @@ class _SpotCardState extends State<SpotCard> {
               ],
             ),
             
-            // Share and Close buttons positioned at top right of entire card
+            // Check-in presence + Share + Close at top right of card
             Positioned(
               top: 8,
               right: 8,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (widget.showCheckInPresence && widget.spot.id != null) ...[
+                    SpotCheckInPresenceLazy(spotId: widget.spot.id!),
+                    const SizedBox(width: 8),
+                  ],
                   // Share button (always shown)
                   Material(
                     color: Colors.black.withValues(alpha: 0.6),
