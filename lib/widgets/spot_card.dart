@@ -8,6 +8,7 @@ import '../services/mobile_detection_service.dart';
 import '../services/url_service.dart';
 import '../services/web_share_service.dart';
 import 'resized_spot_image.dart';
+import 'spot_check_in_presence.dart';
 
 enum SpotCardVariant {
   list,      // For list view (original SpotCard behavior)
@@ -30,6 +31,8 @@ class SpotCard extends StatefulWidget {
   final String? spotListName; // Name of the spot list this spot belongs to (for highlighting)
   final VoidCallback? onSpotListTap; // Callback when "Part of" chip is tapped
   final String? customNote; // Optional per-spot note (e.g. from list section entry)
+  /// When true (e.g. Explore), shows who’s checked in under the spot source; loads lazily when visible.
+  final bool showCheckInPresence;
 
   const SpotCard({
     super.key,
@@ -48,6 +51,7 @@ class SpotCard extends StatefulWidget {
     this.spotListName,
     this.onSpotListTap,
     this.customNote,
+    this.showCheckInPresence = false,
   });
 
   @override
@@ -491,29 +495,43 @@ class _SpotCardState extends State<SpotCard> {
               ),
             ),
 
-            // External source indicator - positioned at top right
-            if (widget.spot.spotSource != null)
+            // External source + optional check-in presence (top left)
+            if (widget.spot.spotSource != null ||
+                (widget.showCheckInPresence && widget.spot.id != null))
               Positioned(
                 top: 8,
                 left: 8,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    widget.spot.spotSourceName ?? widget.spot.spotSource!,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (widget.spot.spotSource != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.4),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          widget.spot.spotSourceName ?? widget.spot.spotSource!,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    if (widget.spot.spotSource != null &&
+                        widget.showCheckInPresence &&
+                        widget.spot.id != null)
+                      const SizedBox(height: 4),
+                    if (widget.showCheckInPresence && widget.spot.id != null)
+                      SpotCheckInPresenceLazy(spotId: widget.spot.id!),
+                  ],
                 ),
               ),
 
@@ -740,34 +758,48 @@ class _SpotCardState extends State<SpotCard> {
                           ),
                         ],
                         
-                        // External source indicator - positioned on the image/marker area
-                        if (widget.spot.spotSource != null)
+                        // External source + optional check-in presence (top left on image)
+                        if (widget.spot.spotSource != null ||
+                            (widget.showCheckInPresence && widget.spot.id != null))
                           Positioned(
                             top: 8,
                             left: 8,
-                            child: SizedBox(
-                              height: 32, // match close button size for vertical centering
-                              child: Center(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withValues(alpha: 0.4),
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.2),
-                                      width: 1,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (widget.spot.spotSource != null)
+                                  SizedBox(
+                                    height: 32, // match close button size for vertical centering
+                                    child: Center(
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withValues(alpha: 0.4),
+                                          borderRadius: BorderRadius.circular(10),
+                                          border: Border.all(
+                                            color: Colors.white.withValues(alpha: 0.2),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          widget.spot.spotSourceName ?? widget.spot.spotSource!,
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                  child: Text(
-                                    widget.spot.spotSourceName ?? widget.spot.spotSource!,
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                              ),
+                                if (widget.spot.spotSource != null &&
+                                    widget.showCheckInPresence &&
+                                    widget.spot.id != null)
+                                  const SizedBox(height: 4),
+                                if (widget.showCheckInPresence && widget.spot.id != null)
+                                  SpotCheckInPresenceLazy(spotId: widget.spot.id!),
+                              ],
                             ),
                           ),
 

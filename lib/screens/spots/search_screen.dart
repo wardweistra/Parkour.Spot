@@ -2300,6 +2300,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
           final bool isHighlighted = spot.id != null && _highlightedSpotIds.contains(spot.id);
           return SpotCard(
             spot: spot,
+            showCheckInPresence: true,
             spotListId: isHighlighted ? _selectedListId : null,
             spotListName: isHighlighted ? _selectedListName : null,
             onSpotListTap: isHighlighted && _selectedListId != null
@@ -2337,6 +2338,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
             padding: const EdgeInsets.only(bottom: 12),
             child: SpotCard(
               spot: spot,
+              showCheckInPresence: true,
               spotListId: isHighlighted ? _selectedListId : null,
               spotListName: isHighlighted ? _selectedListName : null,
               onSpotListTap: isHighlighted && _selectedListId != null
@@ -2941,6 +2943,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                     ? SpotCard(
                         spot: _selectedSpot!,
                         variant: SpotCardVariant.overlay,
+                        showCheckInPresence: true,
                         maxWidth: 400,
                         spotListId: (_selectedSpot!.id != null && _highlightedSpotIds.contains(_selectedSpot!.id)) ? _selectedListId : null,
                         spotListName: (_selectedSpot!.id != null && _highlightedSpotIds.contains(_selectedSpot!.id)) ? _selectedListName : null,
@@ -2976,6 +2979,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                         child: SpotCard(
                           spot: _selectedSpot!,
                           variant: SpotCardVariant.overlay,
+                          showCheckInPresence: true,
                           maxWidth: double.infinity,
                           spotListId: (_selectedSpot!.id != null && _highlightedSpotIds.contains(_selectedSpot!.id)) ? _selectedListId : null,
                           spotListName: (_selectedSpot!.id != null && _highlightedSpotIds.contains(_selectedSpot!.id)) ? _selectedListName : null,

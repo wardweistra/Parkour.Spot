@@ -58,6 +58,7 @@ dependencies:
   webview_flutter_web: ^0.2.3+4
   pointer_interceptor: ^0.10.1
   validators: ^3.0.0
+  visibility_detector: ^0.4.0+2
 
 dev_dependencies:
   flutter_test:
