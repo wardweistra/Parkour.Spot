@@ -33,6 +33,9 @@ class SpotCheckIn {
 
   static const int maxCommentLength = 200;
 
+  /// Maximum allowed length for a "here until" session when checking in (client + rules).
+  static const Duration maxSessionDuration = Duration(hours: 12);
+
   /// Whether this check-in counts as "currently here" at [now].
   bool isActiveAt(DateTime now) {
     return !now.isBefore(checkedInAt) && !now.isAfter(expectedEndAt);

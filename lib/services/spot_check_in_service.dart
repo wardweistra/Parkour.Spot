@@ -71,7 +71,7 @@ class SpotCheckInService extends ChangeNotifier {
       notifyListeners();
       return false;
     }
-    final maxEnd = nowUtc.add(const Duration(hours: 48));
+    final maxEnd = nowUtc.add(SpotCheckIn.maxSessionDuration);
     if (endUtc.isAfter(maxEnd)) {
       _error = 'End time is too far in the future';
       notifyListeners();

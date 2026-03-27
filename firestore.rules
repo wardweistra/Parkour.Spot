@@ -27,7 +27,7 @@ service cloud.firestore {
           && request.resource.data.expectedEndAt is timestamp
           && request.resource.data.expectedEndAt >= request.time
           && request.resource.data.expectedEndAt
-            <= request.time + duration.value(48, 'h')
+            <= request.time + duration.value(12, 'h')
           && spotCheckInCommentOk(request.resource.data)
           && (!('spotName' in request.resource.data) ||
             (request.resource.data.spotName is string &&

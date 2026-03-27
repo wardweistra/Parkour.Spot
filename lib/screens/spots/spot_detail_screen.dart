@@ -7261,9 +7261,12 @@ class _SpotCheckInDialog extends StatefulWidget {
 }
 
 class _SpotCheckInDialogState extends State<_SpotCheckInDialog> {
-  bool _isPrivate = false;
+  /// When true, others can see this check-in on the spot (maps to `isPrivate: false`).
+  bool _sharePublicly = true;
   final _commentController = TextEditingController();
   late DateTime _expectedEndAt;
+
+  static const Duration _quarterStep = Duration(minutes: 15);
 
   @override
   void initState() {
@@ -7277,91 +7280,116 @@ class _SpotCheckInDialogState extends State<_SpotCheckInDialog> {
     super.dispose();
   }
 
-  Future<void> _pickExpectedEnd() async {
+  void _nudgeEndByQuarter(int sign) {
+    assert(sign == 1 || sign == -1);
     final now = DateTime.now();
-    final firstDate = DateTime(now.year, now.month, now.day);
-    final lastDate = now.add(const Duration(days: 3));
-    final date = await showDatePicker(
-      context: context,
-      initialDate: _expectedEndAt.isBefore(firstDate) ? firstDate : _expectedEndAt,
-      firstDate: firstDate,
-      lastDate: lastDate,
-    );
-    if (date == null || !mounted) return;
-    final time = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(_expectedEndAt),
-    );
-    if (time == null || !mounted) return;
-    final combined = DateTime(
-      date.year,
-      date.month,
-      date.day,
-      time.hour,
-      time.minute,
-    );
-    final maxEnd = now.add(const Duration(hours: 48));
-    if (combined.isAfter(maxEnd)) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('End time must be within 48 hours from now'),
-        ),
-      );
-      return;
+    final maxEnd = now.add(SpotCheckIn.maxSessionDuration);
+    final next = _expectedEndAt.add(Duration(minutes: 15 * sign));
+    if (sign < 0) {
+      if (!next.isAfter(now)) return;
+    } else {
+      if (next.isAfter(maxEnd)) return;
     }
-    if (!combined.isAfter(now)) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('End time must be after now'),
-        ),
-      );
-      return;
-    }
-    setState(() => _expectedEndAt = combined);
+    setState(() => _expectedEndAt = next);
+  }
+
+  bool _canSubtractQuarter(DateTime now) {
+    return _expectedEndAt.subtract(_quarterStep).isAfter(now);
+  }
+
+  bool _canAddQuarter(DateTime maxEnd) {
+    return !_expectedEndAt.add(_quarterStep).isAfter(maxEnd);
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final now = DateTime.now();
+    final maxEnd = now.add(SpotCheckIn.maxSessionDuration);
+    final canSub = _canSubtractQuarter(now);
+    final canAdd = _canAddQuarter(maxEnd);
     final untilStr = DateFormat(
       'MMM d, y • h:mm a',
     ).format(_expectedEndAt.toLocal());
+    final cs = theme.colorScheme;
     return AlertDialog(
       title: const Text('Check in'),
+      contentPadding: const EdgeInsets.fromLTRB(28, 12, 28, 16),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Your check-in is public by default: others can see you’re “here” on '
-              'this spot until the end time you choose.',
-              style: theme.textTheme.bodyMedium,
+              'Log that you’re training now at this spot.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: cs.onSurfaceVariant,
+                height: 1.35,
+              ),
             ),
             const SizedBox(height: 16),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Expected until'),
-              subtitle: Text(untilStr),
-              trailing: const Icon(Icons.schedule),
-              onTap: _pickExpectedEnd,
-            ),
-            const SizedBox(height: 8),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Keep this check-in private'),
-              subtitle: const Text('Only you will see this on the spot.'),
-              value: _isPrivate,
-              onChanged: (v) => setState(() => _isPrivate = v),
+              dense: true,
+              title: const Text('Share publicly'),
+              subtitle: const Text(
+                'Turn off to only log this for yourself.',
+              ),
+              value: _sharePublicly,
+              onChanged: (v) => setState(() => _sharePublicly = v),
             ),
+            const SizedBox(height: 20),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                IconButton.filledTonal(
+                  tooltip: '15 minutes earlier',
+                  onPressed: canSub ? () => _nudgeEndByQuarter(-1) : null,
+                  icon: const Icon(Icons.remove),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Here until',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: cs.onSurfaceVariant,
+                            height: 1.1,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          untilStr,
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            height: 1.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                IconButton.filledTonal(
+                  tooltip: '15 minutes later',
+                  onPressed: canAdd ? () => _nudgeEndByQuarter(1) : null,
+                  icon: const Icon(Icons.add),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
             TextField(
               controller: _commentController,
               decoration: const InputDecoration(
                 labelText: 'Comment (optional)',
                 hintText: 'e.g. what you plan to work on',
                 border: OutlineInputBorder(),
+                isDense: true,
               ),
               maxLength: SpotCheckIn.maxCommentLength,
               maxLines: 3,
@@ -7369,6 +7397,7 @@ class _SpotCheckInDialogState extends State<_SpotCheckInDialog> {
           ],
         ),
       ),
+      actionsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
@@ -7379,7 +7408,7 @@ class _SpotCheckInDialogState extends State<_SpotCheckInDialog> {
             final trimmed = _commentController.text.trim();
             Navigator.of(context).pop(
               _CheckInDialogResult(
-                isPrivate: _isPrivate,
+                isPrivate: !_sharePublicly,
                 expectedEndAt: _expectedEndAt,
                 comment: trimmed.isEmpty ? null : trimmed,
               ),
