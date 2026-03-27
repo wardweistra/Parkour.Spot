@@ -712,6 +712,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     return PopupMenuButton<_SpotMenuAction>(
       position: PopupMenuPosition.under,
       tooltip: tooltip ?? 'More actions',
+      // Match circular 44×44 tap targets (InkWell defaults to square highlight).
+      borderRadius: BorderRadius.circular(22),
+      splashRadius: 22,
       onSelected: _onMenuActionSelected,
       itemBuilder: (menuContext) {
         final theme = Theme.of(menuContext);
