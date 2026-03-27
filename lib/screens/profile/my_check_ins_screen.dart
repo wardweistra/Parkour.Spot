@@ -227,7 +227,7 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
                             const SizedBox(height: 8),
                             Text(
                               'Open a spot and tap Check in to record a visit. '
-                              'Check-ins from the last hour can appear for others as “here now” unless you keep yours private.',
+                              'Until the end time you set, others can see you as “here now” on that spot unless you keep the check-in private.',
                               style: Theme.of(context).textTheme.bodyMedium
                                   ?.copyWith(
                                     color: Theme.of(context)
@@ -286,8 +286,8 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
   Widget _intro(BuildContext context) {
     final theme = Theme.of(context);
     return Text(
-      'A check-in records that you visited a spot and when. '
-      'Recent public check-ins can show you in “who’s here now” on that spot for about an hour; '
+      'A check-in records that you visited a spot, when you arrived, and until when you expect to be there. '
+      'Public check-ins can show you in “who’s here now” on that spot until that end time; '
       'private check-ins stay visible only to you.',
       style: theme.textTheme.bodyMedium?.copyWith(
         color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
@@ -315,9 +315,12 @@ class _CheckInHistoryTile extends StatelessWidget {
         (checkIn.spotName != null && checkIn.spotName!.trim().isNotEmpty)
         ? checkIn.spotName!.trim()
         : 'Spot';
-    final timeStr = DateFormat(
+    final startStr = DateFormat(
       'MMM d, yyyy • h:mm a',
     ).format(checkIn.checkedInAt.toLocal());
+    final endStr = DateFormat(
+      'MMM d, yyyy • h:mm a',
+    ).format(checkIn.expectedEndAt.toLocal());
     final comment = checkIn.comment?.trim();
 
     return Card(
@@ -343,7 +346,7 @@ class _CheckInHistoryTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      timeStr,
+                      '$startStr — $endStr',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurface.withValues(
                           alpha: 0.65,

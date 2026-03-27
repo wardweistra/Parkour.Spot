@@ -48,6 +48,7 @@ class SpotCheckInService extends ChangeNotifier {
   Future<bool> checkIn(
     String spotId, {
     required bool isPrivate,
+    required DateTime expectedEndAt,
     String? comment,
     String? spotName,
   }) async {
@@ -59,6 +60,20 @@ class SpotCheckInService extends ChangeNotifier {
     }
     if (spotId.isEmpty) {
       _error = 'Invalid spot';
+      notifyListeners();
+      return false;
+    }
+
+    final endUtc = expectedEndAt.toUtc();
+    final nowUtc = DateTime.now().toUtc();
+    if (!endUtc.isAfter(nowUtc)) {
+      _error = 'End time must be after now';
+      notifyListeners();
+      return false;
+    }
+    final maxEnd = nowUtc.add(const Duration(hours: 48));
+    if (endUtc.isAfter(maxEnd)) {
+      _error = 'End time is too far in the future';
       notifyListeners();
       return false;
     }
@@ -94,6 +109,7 @@ class SpotCheckInService extends ChangeNotifier {
         'userId': userId,
         'spotId': spotId,
         'checkedInAt': FieldValue.serverTimestamp(),
+        'expectedEndAt': Timestamp.fromDate(expectedEndAt),
         'isPrivate': isPrivate,
         if (commentOut != null) 'comment': commentOut,
         if (displayName != null) 'displayName': displayName,
@@ -175,9 +191,11 @@ class SpotCheckInService extends ChangeNotifier {
     return list;
   }
 
-  /// Public check-ins in the last hour (visible to everyone), one entry per user.
+  static const int _presenceQueryLimit = 100;
+
+  /// Public check-ins still within their expected end time (visible to everyone), one per user.
   ///
-  /// Re-attaches the query periodically so the rolling one-hour window stays accurate.
+  /// Re-attaches periodically so the rolling [expectedEndAt] threshold stays accurate.
   Stream<List<SpotCheckIn>> watchPublicCheckIns(String spotId) {
     return Stream<List<SpotCheckIn>>.multi((controller) {
       StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? sub;
@@ -185,18 +203,19 @@ class SpotCheckInService extends ChangeNotifier {
 
       void attach() {
         sub?.cancel();
-        final cutoff = DateTime.now().subtract(SpotCheckIn.activeWindow);
-        final threshold = Timestamp.fromDate(cutoff);
+        final now = DateTime.now();
+        final threshold = Timestamp.fromDate(now);
         sub = _spotCheckInsCol
             .where('spotId', isEqualTo: spotId)
             .where('isPrivate', isEqualTo: false)
-            .where('checkedInAt', isGreaterThan: threshold)
-            .orderBy('checkedInAt', descending: true)
+            .where('expectedEndAt', isGreaterThanOrEqualTo: threshold)
+            .orderBy('expectedEndAt', descending: true)
+            .limit(_presenceQueryLimit)
             .snapshots()
             .listen((snap) {
-              final now = DateTime.now();
+              final nowInner = DateTime.now();
               final raw = snap.docs.map(SpotCheckIn.fromFirestore).toList();
-              final list = _dedupePublicByUserNewestFirst(raw, now);
+              final list = _dedupePublicByUserNewestFirst(raw, nowInner);
               controller.add(list);
             }, onError: controller.addError);
       }
@@ -223,23 +242,32 @@ class SpotCheckInService extends ChangeNotifier {
 
       void attach() {
         sub?.cancel();
-        final cutoff = DateTime.now().subtract(SpotCheckIn.activeWindow);
-        final threshold = Timestamp.fromDate(cutoff);
+        final now = DateTime.now();
+        final threshold = Timestamp.fromDate(now);
         sub = _spotCheckInsCol
             .where('spotId', isEqualTo: spotId)
             .where('userId', isEqualTo: userId)
-            .where('checkedInAt', isGreaterThan: threshold)
-            .orderBy('checkedInAt', descending: true)
-            .limit(1)
+            .where('expectedEndAt', isGreaterThanOrEqualTo: threshold)
+            .orderBy('expectedEndAt', descending: true)
+            .limit(_presenceQueryLimit)
             .snapshots()
             .listen((snap) {
-              final now = DateTime.now();
+              final nowInner = DateTime.now();
               if (snap.docs.isEmpty) {
                 controller.add(null);
                 return;
               }
-              final c = SpotCheckIn.fromFirestore(snap.docs.first);
-              controller.add(c.isActiveAt(now) ? c : null);
+              final candidates =
+                  snap.docs.map(SpotCheckIn.fromFirestore).toList();
+              SpotCheckIn? best;
+              for (final c in candidates) {
+                if (!c.isActiveAt(nowInner)) continue;
+                if (best == null ||
+                    c.checkedInAt.isAfter(best.checkedInAt)) {
+                  best = c;
+                }
+              }
+              controller.add(best);
             }, onError: controller.addError);
       }
 

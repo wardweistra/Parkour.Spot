@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import '../../models/spot.dart';
 import '../../models/spot_check_in.dart';
+import '../../utils/check_in_time.dart';
 import '../../services/spot_service.dart';
 import '../../services/spot_report_service.dart';
 import '../../services/auth_service.dart';
@@ -45,6 +46,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:intl/intl.dart';
 /// Max characters of description to show in the video overlay.
 const int _videoDescriptionPreviewLength = 80;
 
@@ -176,6 +178,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     final ok = await service.checkIn(
       spotId,
       isPrivate: result.isPrivate,
+      expectedEndAt: result.expectedEndAt,
       comment: result.comment,
       spotName: _spot.name,
     );
@@ -7240,8 +7243,13 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
 }
 
 class _CheckInDialogResult {
-  const _CheckInDialogResult({required this.isPrivate, this.comment});
+  const _CheckInDialogResult({
+    required this.isPrivate,
+    required this.expectedEndAt,
+    this.comment,
+  });
   final bool isPrivate;
+  final DateTime expectedEndAt;
   final String? comment;
 }
 
@@ -7255,6 +7263,13 @@ class _SpotCheckInDialog extends StatefulWidget {
 class _SpotCheckInDialogState extends State<_SpotCheckInDialog> {
   bool _isPrivate = false;
   final _commentController = TextEditingController();
+  late DateTime _expectedEndAt;
+
+  @override
+  void initState() {
+    super.initState();
+    _expectedEndAt = defaultExpectedEndAt(DateTime.now());
+  }
 
   @override
   void dispose() {
@@ -7262,9 +7277,57 @@ class _SpotCheckInDialogState extends State<_SpotCheckInDialog> {
     super.dispose();
   }
 
+  Future<void> _pickExpectedEnd() async {
+    final now = DateTime.now();
+    final firstDate = DateTime(now.year, now.month, now.day);
+    final lastDate = now.add(const Duration(days: 3));
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _expectedEndAt.isBefore(firstDate) ? firstDate : _expectedEndAt,
+      firstDate: firstDate,
+      lastDate: lastDate,
+    );
+    if (date == null || !mounted) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_expectedEndAt),
+    );
+    if (time == null || !mounted) return;
+    final combined = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+    );
+    final maxEnd = now.add(const Duration(hours: 48));
+    if (combined.isAfter(maxEnd)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('End time must be within 48 hours from now'),
+        ),
+      );
+      return;
+    }
+    if (!combined.isAfter(now)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('End time must be after now'),
+        ),
+      );
+      return;
+    }
+    setState(() => _expectedEndAt = combined);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final untilStr = DateFormat(
+      'MMM d, y • h:mm a',
+    ).format(_expectedEndAt.toLocal());
     return AlertDialog(
       title: const Text('Check in'),
       content: SingleChildScrollView(
@@ -7273,11 +7336,19 @@ class _SpotCheckInDialogState extends State<_SpotCheckInDialog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Your check-in is public by default: other people can see you\'re here '
-              'in the last hour.',
+              'Your check-in is public by default: others can see you’re “here” on '
+              'this spot until the end time you choose.',
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Expected until'),
+              subtitle: Text(untilStr),
+              trailing: const Icon(Icons.schedule),
+              onTap: _pickExpectedEnd,
+            ),
+            const SizedBox(height: 8),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Keep this check-in private'),
@@ -7309,6 +7380,7 @@ class _SpotCheckInDialogState extends State<_SpotCheckInDialog> {
             Navigator.of(context).pop(
               _CheckInDialogResult(
                 isPrivate: _isPrivate,
+                expectedEndAt: _expectedEndAt,
                 comment: trimmed.isEmpty ? null : trimmed,
               ),
             );

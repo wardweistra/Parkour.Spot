@@ -24,6 +24,10 @@ service cloud.firestore {
           && request.resource.data.spotId.size() > 0
           && request.resource.data.isPrivate is bool
           && request.resource.data.checkedInAt == request.time
+          && request.resource.data.expectedEndAt is timestamp
+          && request.resource.data.expectedEndAt >= request.time
+          && request.resource.data.expectedEndAt
+            <= request.time + duration.value(48, 'h')
           && spotCheckInCommentOk(request.resource.data)
           && (!('spotName' in request.resource.data) ||
             (request.resource.data.spotName is string &&

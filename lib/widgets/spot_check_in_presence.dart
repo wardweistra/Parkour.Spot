@@ -69,7 +69,7 @@ class _SpotCheckInPresenceLazyState extends State<SpotCheckInPresenceLazy> {
   }
 }
 
-/// Avatar stack for “who’s here now” (public check-ins in the last hour + private self).
+/// Avatar stack for “who’s here now” (public check-ins within their expected end time + private self).
 class SpotCheckInPresenceStrip extends StatefulWidget {
   const SpotCheckInPresenceStrip({
     super.key,
@@ -406,7 +406,8 @@ class _SpotCheckInPresenceStripState extends State<SpotCheckInPresenceStrip> {
     final name = c.displayName?.trim();
     final who = (name != null && name.isNotEmpty) ? name : 'This person';
     final comment = c.comment?.trim();
-    final headline = '$who is here now at this spot';
+    final until = DateFormat('h:mm a').format(c.expectedEndAt.toLocal());
+    final headline = '$who is here now at this spot (until $until)';
     final baseStyle = _tooltipBaseTextStyle(context, theme);
     return _checkInTooltipSpanWithOptionalComment(
       context,
@@ -423,8 +424,9 @@ class _SpotCheckInPresenceStripState extends State<SpotCheckInPresenceStrip> {
     SpotCheckIn mine,
   ) {
     final comment = mine.comment?.trim();
-    const headline =
-        "You're here now at this spot — only you can see this check-in";
+    final until = DateFormat('h:mm a').format(mine.expectedEndAt.toLocal());
+    final headline =
+        "You're here now at this spot until $until — only you can see this check-in";
     final baseStyle = _tooltipBaseTextStyle(context, theme);
     return _checkInTooltipSpanWithOptionalComment(
       context,
@@ -520,7 +522,7 @@ void showCheckInsListDialog(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Recent check-ins from the last hour.',
+                'People who are still within the “here” window they set when checking in.',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
