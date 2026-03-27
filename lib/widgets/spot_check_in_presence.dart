@@ -737,6 +737,7 @@ class CheckInUserCard extends StatelessWidget {
                               if (result is! SpotCheckInDialogSaved) return;
                               final ok = await svc.updateCheckIn(
                                 c.id,
+                                checkedInAt: result.checkedInAt!,
                                 isPrivate: result.isPrivate,
                                 expectedEndAt: result.expectedEndAt,
                                 comment: result.comment,

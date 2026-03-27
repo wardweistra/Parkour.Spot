@@ -119,6 +119,7 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
 
     final ok = await svc.updateCheckIn(
       c.id,
+      checkedInAt: result.checkedInAt!,
       isPrivate: result.isPrivate,
       expectedEndAt: result.expectedEndAt,
       comment: result.comment,
@@ -132,7 +133,7 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
             id: c.id,
             userId: c.userId,
             spotId: c.spotId,
-            checkedInAt: c.checkedInAt,
+            checkedInAt: result.checkedInAt!,
             expectedEndAt: result.expectedEndAt,
             isPrivate: result.isPrivate,
             spotName: c.spotName,

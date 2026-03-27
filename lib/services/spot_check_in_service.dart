@@ -130,9 +130,12 @@ class SpotCheckInService extends ChangeNotifier {
     }
   }
 
-  /// Updates an existing check-in owned by the current user (end time, privacy, comment).
+  static const Duration _minCheckInSession = Duration(minutes: 15);
+
+  /// Updates an existing check-in owned by the current user (start, end, privacy, comment).
   Future<bool> updateCheckIn(
     String checkInId, {
+    required DateTime checkedInAt,
     required bool isPrivate,
     required DateTime expectedEndAt,
     String? comment,
@@ -145,16 +148,27 @@ class SpotCheckInService extends ChangeNotifier {
     }
     if (checkInId.isEmpty) return false;
 
+    final startUtc = checkedInAt.toUtc();
     final endUtc = expectedEndAt.toUtc();
     final nowUtc = DateTime.now().toUtc();
-    if (!endUtc.isAfter(nowUtc)) {
-      _error = 'End time must be after now';
+    if (!startUtc.isBefore(endUtc)) {
+      _error = 'End time must be after start time';
       notifyListeners();
       return false;
     }
-    final maxEnd = nowUtc.add(SpotCheckIn.maxSessionDuration);
-    if (endUtc.isAfter(maxEnd)) {
-      _error = 'End time is too far in the future';
+    final dur = endUtc.difference(startUtc);
+    if (dur < _minCheckInSession) {
+      _error = 'Session must be at least 15 minutes';
+      notifyListeners();
+      return false;
+    }
+    if (dur > SpotCheckIn.maxSessionDuration) {
+      _error = 'Session cannot be longer than 12 hours';
+      notifyListeners();
+      return false;
+    }
+    if (startUtc.isAfter(nowUtc)) {
+      _error = 'Start time cannot be in the future';
       notifyListeners();
       return false;
     }
@@ -174,6 +188,7 @@ class SpotCheckInService extends ChangeNotifier {
       notifyListeners();
 
       final update = <String, dynamic>{
+        'checkedInAt': Timestamp.fromDate(checkedInAt),
         'expectedEndAt': Timestamp.fromDate(expectedEndAt),
         'isPrivate': isPrivate,
       };

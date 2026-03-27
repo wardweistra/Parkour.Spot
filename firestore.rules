@@ -38,7 +38,15 @@ service cloud.firestore {
           && request.auth.uid == resource.data.userId
           && request.resource.data.userId == resource.data.userId
           && request.resource.data.spotId == resource.data.spotId
-          && request.resource.data.checkedInAt == resource.data.checkedInAt
+          && request.resource.data.checkedInAt is timestamp
+          && request.resource.data.expectedEndAt is timestamp
+          && request.resource.data.checkedInAt <= request.time
+          && request.resource.data.expectedEndAt
+            > request.resource.data.checkedInAt
+          && request.resource.data.expectedEndAt
+            >= request.resource.data.checkedInAt + duration.value(15, 'm')
+          && request.resource.data.expectedEndAt
+            <= request.resource.data.checkedInAt + duration.value(12, 'h')
           && ((!('displayName' in resource.data)
                 && !('displayName' in request.resource.data))
               || request.resource.data.displayName == resource.data.displayName)
@@ -49,10 +57,6 @@ service cloud.firestore {
                 && !('spotName' in request.resource.data))
               || request.resource.data.spotName == resource.data.spotName)
           && request.resource.data.isPrivate is bool
-          && request.resource.data.expectedEndAt is timestamp
-          && request.resource.data.expectedEndAt >= request.time
-          && request.resource.data.expectedEndAt
-            <= request.time + duration.value(12, 'h')
           && spotCheckInCommentOk(request.resource.data);
       }
       allow read: if resource.data.isPrivate == false
