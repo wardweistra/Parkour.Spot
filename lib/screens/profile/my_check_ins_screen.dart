@@ -94,6 +94,7 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
     final result = await showSpotCheckInDialog(
       context,
       existingCheckIn: c,
+      stillHereEligible: c.stillHereEligibleAt(DateTime.now()),
     );
     if (result == null || !mounted) return;
 

@@ -30,18 +30,30 @@ class SpotCheckInDialogDeleted extends SpotCheckInDialogOutcome {
 Future<SpotCheckInDialogOutcome?> showSpotCheckInDialog(
   BuildContext context, {
   SpotCheckIn? existingCheckIn,
+  /// When true, show “Still here” (prefill end = now + 1h). Use [SpotCheckIn.stillHereEligibleAt].
+  bool stillHereEligible = false,
 }) {
   return showDialog<SpotCheckInDialogOutcome>(
     context: context,
-    builder: (context) => SpotCheckInDialog(existingCheckIn: existingCheckIn),
+    builder: (context) => SpotCheckInDialog(
+      existingCheckIn: existingCheckIn,
+      stillHereEligible: stillHereEligible,
+    ),
   );
 }
 
 class SpotCheckInDialog extends StatefulWidget {
-  const SpotCheckInDialog({super.key, this.existingCheckIn});
+  const SpotCheckInDialog({
+    super.key,
+    this.existingCheckIn,
+    this.stillHereEligible = false,
+  });
 
   /// When set, dialog is in edit mode with these values.
   final SpotCheckIn? existingCheckIn;
+
+  /// Show “Still here” when [SpotCheckIn.stillHereEligibleAt] is true (end before now, start within max duration).
+  final bool stillHereEligible;
 
   @override
   State<SpotCheckInDialog> createState() => _SpotCheckInDialogState();
@@ -140,6 +152,14 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
         checkedInAt: _isEdit ? _checkedInAt : null,
       ),
     );
+  }
+
+  /// End time = now + 1h with same default as a fresh check-in; user taps Save when ready.
+  void _stillHere() {
+    setState(() {
+      _expectedEndAt = defaultExpectedEndAt(DateTime.now());
+      _reconcileEditSessionBounds();
+    });
   }
 
   /// Sets end to now (or start + 15 min if still inside minimum session) and saves.
@@ -323,13 +343,22 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
               onSub: () => _nudgeEndByQuarter(-1),
               onAdd: () => _nudgeEndByQuarter(1),
             ),
-            if (_isEdit && _isActiveCheckIn) ...[
+            if (_isEdit && (widget.stillHereEligible || _isActiveCheckIn)) ...[
               const SizedBox(height: 16),
-              OutlinedButton.icon(
-                onPressed: _endNowAndSave,
-                icon: const Icon(Icons.stop_circle_outlined),
-                label: const Text('End now'),
-              ),
+              if (widget.stillHereEligible) ...[
+                OutlinedButton.icon(
+                  onPressed: _stillHere,
+                  icon: const Icon(Icons.schedule_outlined),
+                  label: const Text('Still here'),
+                ),
+                if (_isActiveCheckIn) const SizedBox(height: 8),
+              ],
+              if (_isActiveCheckIn)
+                OutlinedButton.icon(
+                  onPressed: _endNowAndSave,
+                  icon: const Icon(Icons.stop_circle_outlined),
+                  label: const Text('End now'),
+                ),
             ],
             const SizedBox(height: 20),
             TextField(

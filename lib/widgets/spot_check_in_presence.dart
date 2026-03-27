@@ -712,6 +712,8 @@ class CheckInUserCard extends StatelessWidget {
                               final result = await showSpotCheckInDialog(
                                 context,
                                 existingCheckIn: c,
+                                stillHereEligible:
+                                    c.stillHereEligibleAt(DateTime.now()),
                               );
                               if (result == null || !context.mounted) return;
                               if (result is SpotCheckInDialogDeleted) {

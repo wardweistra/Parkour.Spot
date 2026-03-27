@@ -41,6 +41,14 @@ class SpotCheckIn {
     return !now.isBefore(checkedInAt) && !now.isAfter(expectedEndAt);
   }
 
+  /// "Still here" UX: scheduled end has passed, but arrival was within [maxSessionDuration]
+  /// so the session can be extended (new end time) without starting a new check-in.
+  bool stillHereEligibleAt(DateTime now) {
+    if (now.isBefore(checkedInAt)) return false;
+    if (!expectedEndAt.isBefore(now)) return false;
+    return now.difference(checkedInAt) <= maxSessionDuration;
+  }
+
   factory SpotCheckIn.fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> doc,
   ) {
