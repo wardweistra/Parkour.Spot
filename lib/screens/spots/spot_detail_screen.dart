@@ -7,8 +7,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import '../../models/spot.dart';
-import '../../models/spot_check_in.dart';
-import '../../utils/check_in_time.dart';
+import '../../widgets/spot_check_in_dialog.dart';
 import '../../services/spot_service.dart';
 import '../../services/spot_report_service.dart';
 import '../../services/auth_service.dart';
@@ -46,7 +45,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:intl/intl.dart';
 /// Max characters of description to show in the video overlay.
 const int _videoDescriptionPreviewLength = 80;
 
@@ -170,11 +168,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     final spotId = _spot.id;
     if (spotId == null) return;
     final service = Provider.of<SpotCheckInService>(context, listen: false);
-    final result = await showDialog<_CheckInDialogResult>(
-      context: context,
-      builder: (context) => const _SpotCheckInDialog(),
-    );
+    final result = await showSpotCheckInDialog(context);
     if (result == null || !mounted) return;
+    if (result is! SpotCheckInDialogSaved) return;
     final ok = await service.checkIn(
       spotId,
       isPrivate: result.isPrivate,
@@ -7241,202 +7237,6 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _CheckInDialogResult {
-  const _CheckInDialogResult({
-    required this.isPrivate,
-    required this.expectedEndAt,
-    this.comment,
-  });
-  final bool isPrivate;
-  final DateTime expectedEndAt;
-  final String? comment;
-}
-
-class _SpotCheckInDialog extends StatefulWidget {
-  const _SpotCheckInDialog();
-
-  @override
-  State<_SpotCheckInDialog> createState() => _SpotCheckInDialogState();
-}
-
-class _SpotCheckInDialogState extends State<_SpotCheckInDialog> {
-  /// When true, others can see this check-in on the spot (maps to `isPrivate: false`).
-  bool _sharePublicly = true;
-  final _commentController = TextEditingController();
-  late DateTime _expectedEndAt;
-
-  static const Duration _quarterStep = Duration(minutes: 15);
-
-  @override
-  void initState() {
-    super.initState();
-    _expectedEndAt = defaultExpectedEndAt(DateTime.now());
-  }
-
-  @override
-  void dispose() {
-    _commentController.dispose();
-    super.dispose();
-  }
-
-  void _nudgeEndByQuarter(int sign) {
-    assert(sign == 1 || sign == -1);
-    final now = DateTime.now();
-    final maxEnd = now.add(SpotCheckIn.maxSessionDuration);
-    final next = _expectedEndAt.add(Duration(minutes: 15 * sign));
-    if (sign < 0) {
-      if (!next.isAfter(now)) return;
-    } else {
-      if (next.isAfter(maxEnd)) return;
-    }
-    setState(() => _expectedEndAt = next);
-  }
-
-  bool _canSubtractQuarter(DateTime now) {
-    return _expectedEndAt.subtract(_quarterStep).isAfter(now);
-  }
-
-  bool _canAddQuarter(DateTime maxEnd) {
-    return !_expectedEndAt.add(_quarterStep).isAfter(maxEnd);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final now = DateTime.now();
-    final maxEnd = now.add(SpotCheckIn.maxSessionDuration);
-    final canSub = _canSubtractQuarter(now);
-    final canAdd = _canAddQuarter(maxEnd);
-    final untilStr = DateFormat(
-      'MMM d, y • h:mm a',
-    ).format(_expectedEndAt.toLocal());
-    final cs = theme.colorScheme;
-    return AlertDialog(
-      title: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.place_outlined,
-            color: cs.primary,
-            size: 28,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              'Check in',
-              style: theme.textTheme.titleLarge,
-            ),
-          ),
-        ],
-      ),
-      contentPadding: const EdgeInsets.fromLTRB(28, 12, 28, 16),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Log that you’re training now at this spot.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: cs.onSurfaceVariant,
-                height: 1.35,
-              ),
-            ),
-            const SizedBox(height: 16),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              dense: true,
-              title: const Text('Share publicly'),
-              subtitle: const Text(
-                'Turn off to only log this for yourself.',
-              ),
-              value: _sharePublicly,
-              onChanged: (v) => setState(() => _sharePublicly = v),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                IconButton.filledTonal(
-                  tooltip: '15 minutes earlier',
-                  onPressed: canSub ? () => _nudgeEndByQuarter(-1) : null,
-                  icon: const Icon(Icons.remove),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Here until',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            color: cs.onSurfaceVariant,
-                            height: 1.1,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          untilStr,
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            height: 1.2,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                IconButton.filledTonal(
-                  tooltip: '15 minutes later',
-                  onPressed: canAdd ? () => _nudgeEndByQuarter(1) : null,
-                  icon: const Icon(Icons.add),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _commentController,
-              decoration: const InputDecoration(
-                labelText: 'Comment (optional)',
-                hintText: 'e.g. what you plan to work on',
-                border: OutlineInputBorder(),
-                isDense: true,
-              ),
-              maxLength: SpotCheckIn.maxCommentLength,
-              maxLines: 3,
-            ),
-          ],
-        ),
-      ),
-      actionsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        FilledButton.icon(
-          onPressed: () {
-            final trimmed = _commentController.text.trim();
-            Navigator.of(context).pop(
-              _CheckInDialogResult(
-                isPrivate: !_sharePublicly,
-                expectedEndAt: _expectedEndAt,
-                comment: trimmed.isEmpty ? null : trimmed,
-              ),
-            );
-          },
-          icon: const Icon(Icons.place_outlined),
-          label: const Text('Check in'),
-        ),
-      ],
     );
   }
 }

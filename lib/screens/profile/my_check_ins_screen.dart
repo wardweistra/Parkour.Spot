@@ -8,6 +8,7 @@ import '../../models/spot_check_in.dart';
 import '../../services/auth_service.dart';
 import '../../services/spot_check_in_service.dart';
 import '../../widgets/page_scaffold.dart';
+import '../../widgets/spot_check_in_dialog.dart';
 
 /// Full history of the current user's check-ins (newest first), with delete.
 class MyCheckInsScreen extends StatefulWidget {
@@ -88,39 +89,66 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
     }
   }
 
-  Future<void> _confirmDelete(SpotCheckIn c) async {
-    final theme = Theme.of(context);
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete check-in?'),
-        content: Text(
-          'Remove this visit record from your history. This does not remove the spot from your “Been to” list.',
-          style: theme.textTheme.bodyMedium,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    if (ok != true || !mounted) return;
+  Future<void> _manageCheckIn(SpotCheckIn c) async {
     final svc = Provider.of<SpotCheckInService>(context, listen: false);
-    final deleted = await svc.deleteCheckIn(c.id);
+    final result = await showSpotCheckInDialog(
+      context,
+      existingCheckIn: c,
+    );
+    if (result == null || !mounted) return;
+
+    if (result is SpotCheckInDialogDeleted) {
+      final deleted = await svc.deleteCheckIn(c.id);
+      if (!mounted) return;
+      if (deleted) {
+        setState(() {
+          _items.removeWhere((x) => x.id == c.id);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Check-in removed')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(svc.error ?? 'Could not delete')),
+        );
+      }
+      return;
+    }
+
+    if (result is! SpotCheckInDialogSaved) return;
+
+    final ok = await svc.updateCheckIn(
+      c.id,
+      isPrivate: result.isPrivate,
+      expectedEndAt: result.expectedEndAt,
+      comment: result.comment,
+    );
     if (!mounted) return;
-    if (deleted) {
-      setState(() {
-        _items.removeWhere((x) => x.id == c.id);
-      });
+    if (ok) {
+      final idx = _items.indexWhere((x) => x.id == c.id);
+      if (idx >= 0) {
+        setState(() {
+          _items[idx] = SpotCheckIn(
+            id: c.id,
+            userId: c.userId,
+            spotId: c.spotId,
+            checkedInAt: c.checkedInAt,
+            expectedEndAt: result.expectedEndAt,
+            isPrivate: result.isPrivate,
+            spotName: c.spotName,
+            comment: result.comment,
+            displayName: c.displayName,
+            photoURL: c.photoURL,
+          );
+        });
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Check-in updated')),
+      );
     } else {
-      final msg = svc.error ?? 'Could not delete';
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(svc.error ?? 'Could not update check-in')),
+      );
     }
   }
 
@@ -260,7 +288,7 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
                           child: _CheckInHistoryTile(
                             checkIn: c,
                             onOpenSpot: () => context.push('/spot/${c.spotId}'),
-                            onDelete: () => _confirmDelete(c),
+                            onManage: () => _manageCheckIn(c),
                           ),
                         );
                       }
@@ -301,12 +329,12 @@ class _CheckInHistoryTile extends StatelessWidget {
   const _CheckInHistoryTile({
     required this.checkIn,
     required this.onOpenSpot,
-    required this.onDelete,
+    required this.onManage,
   });
 
   final SpotCheckIn checkIn;
   final VoidCallback onOpenSpot;
-  final VoidCallback onDelete;
+  final VoidCallback onManage;
 
   @override
   Widget build(BuildContext context) {
@@ -379,9 +407,18 @@ class _CheckInHistoryTile extends StatelessWidget {
                 ),
               ),
               IconButton(
-                tooltip: 'Delete',
-                icon: const Icon(Icons.delete_outline),
-                onPressed: onDelete,
+                tooltip: 'Edit check-in',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: 36,
+                  minHeight: 36,
+                ),
+                icon: Icon(
+                  Icons.edit_outlined,
+                  size: 20,
+                  color: theme.colorScheme.primary,
+                ),
+                onPressed: onManage,
               ),
             ],
           ),

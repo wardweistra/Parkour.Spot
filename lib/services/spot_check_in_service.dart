@@ -130,6 +130,73 @@ class SpotCheckInService extends ChangeNotifier {
     }
   }
 
+  /// Updates an existing check-in owned by the current user (end time, privacy, comment).
+  Future<bool> updateCheckIn(
+    String checkInId, {
+    required bool isPrivate,
+    required DateTime expectedEndAt,
+    String? comment,
+  }) async {
+    final userId = _getCurrentUserId();
+    if (userId == null) {
+      _error = 'You must be signed in';
+      notifyListeners();
+      return false;
+    }
+    if (checkInId.isEmpty) return false;
+
+    final endUtc = expectedEndAt.toUtc();
+    final nowUtc = DateTime.now().toUtc();
+    if (!endUtc.isAfter(nowUtc)) {
+      _error = 'End time must be after now';
+      notifyListeners();
+      return false;
+    }
+    final maxEnd = nowUtc.add(SpotCheckIn.maxSessionDuration);
+    if (endUtc.isAfter(maxEnd)) {
+      _error = 'End time is too far in the future';
+      notifyListeners();
+      return false;
+    }
+
+    final trimmed = comment?.trim();
+    final commentOut = (trimmed == null || trimmed.isEmpty) ? null : trimmed;
+    if (commentOut != null &&
+        commentOut.length > SpotCheckIn.maxCommentLength) {
+      _error = 'Comment is too long';
+      notifyListeners();
+      return false;
+    }
+
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      final update = <String, dynamic>{
+        'expectedEndAt': Timestamp.fromDate(expectedEndAt),
+        'isPrivate': isPrivate,
+      };
+      if (commentOut != null) {
+        update['comment'] = commentOut;
+      } else {
+        update['comment'] = FieldValue.delete();
+      }
+
+      await _spotCheckInsCol.doc(checkInId).update(update);
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = 'Could not update check-in: $e';
+      debugPrint('updateCheckIn error: $e');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   /// Deletes a check-in document owned by the current user.
   Future<bool> deleteCheckIn(String checkInId) async {
     final userId = _getCurrentUserId();

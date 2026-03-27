@@ -33,10 +33,32 @@ service cloud.firestore {
             (request.resource.data.spotName is string &&
               request.resource.data.spotName.size() <= 500));
       }
+      function spotCheckInUpdateShape() {
+        return request.auth != null
+          && request.auth.uid == resource.data.userId
+          && request.resource.data.userId == resource.data.userId
+          && request.resource.data.spotId == resource.data.spotId
+          && request.resource.data.checkedInAt == resource.data.checkedInAt
+          && ((!('displayName' in resource.data)
+                && !('displayName' in request.resource.data))
+              || request.resource.data.displayName == resource.data.displayName)
+          && ((!('photoURL' in resource.data)
+                && !('photoURL' in request.resource.data))
+              || request.resource.data.photoURL == resource.data.photoURL)
+          && ((!('spotName' in resource.data)
+                && !('spotName' in request.resource.data))
+              || request.resource.data.spotName == resource.data.spotName)
+          && request.resource.data.isPrivate is bool
+          && request.resource.data.expectedEndAt is timestamp
+          && request.resource.data.expectedEndAt >= request.time
+          && request.resource.data.expectedEndAt
+            <= request.time + duration.value(12, 'h')
+          && spotCheckInCommentOk(request.resource.data);
+      }
       allow read: if resource.data.isPrivate == false
         || (request.auth != null && request.auth.uid == resource.data.userId);
       allow create: if request.auth != null && spotCheckInCreateShape();
-      allow update: if false;
+      allow update: if request.auth != null && spotCheckInUpdateShape();
       allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
     

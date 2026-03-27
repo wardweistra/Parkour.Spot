@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -10,6 +11,7 @@ import '../models/spot_check_in.dart';
 import '../services/auth_service.dart';
 import '../services/spot_check_in_service.dart';
 import '../services/user_profile_service.dart';
+import 'spot_check_in_dialog.dart';
 
 /// Where [SpotCheckInPresenceStrip] is shown: detail header (tappable) vs spot card
 /// (tap passes through to the card; tooltips on hover).
@@ -25,6 +27,60 @@ class CheckInAvatarEntry {
 
   final SpotCheckIn checkIn;
   final bool showPrivateBadge;
+}
+
+/// Public check-ins first; if you’re checked in privately and not in the public list, add your avatar with a badge.
+List<CheckInAvatarEntry> buildCheckInAvatarEntries(
+  List<SpotCheckIn> public,
+  SpotCheckIn? mine,
+) {
+  final entries = public
+      .map((c) => CheckInAvatarEntry(c, showPrivateBadge: false))
+      .toList();
+  if (mine != null && mine.isPrivate) {
+    final alreadyInPublic = public.any((p) => p.userId == mine.userId);
+    if (!alreadyInPublic) {
+      entries.add(CheckInAvatarEntry(mine, showPrivateBadge: true));
+    }
+  }
+  return entries;
+}
+
+/// Rebuilds whenever public or “my” check-in streams emit (e.g. after an edit).
+Stream<List<CheckInAvatarEntry>> watchCheckInAvatarEntriesForSpot(
+  SpotCheckInService svc,
+  String spotId,
+) {
+  return Stream<List<CheckInAvatarEntry>>.multi((controller) {
+    List<SpotCheckIn> latestPublic = [];
+    SpotCheckIn? latestMine;
+
+    void emit() {
+      controller.add(buildCheckInAvatarEntries(latestPublic, latestMine));
+    }
+
+    late final StreamSubscription<List<SpotCheckIn>> sub1;
+    late final StreamSubscription<SpotCheckIn?> sub2;
+    sub1 = svc.watchPublicCheckIns(spotId).listen(
+      (p) {
+        latestPublic = p;
+        emit();
+      },
+      onError: controller.addError,
+    );
+    sub2 = svc.watchMyCheckIn(spotId).listen(
+      (m) {
+        latestMine = m;
+        emit();
+      },
+      onError: controller.addError,
+    );
+
+    controller.onCancel = () {
+      sub1.cancel();
+      sub2.cancel();
+    };
+  });
 }
 
 /// Lazy-attaches Firestore streams only when this widget is on-screen (or briefly was).
@@ -139,7 +195,7 @@ class _SpotCheckInPresenceStripState extends State<SpotCheckInPresenceStrip> {
           stream: _myStream,
           builder: (context, mySnap) {
             final mine = mySnap.data;
-            final entries = _buildAvatarEntries(public, mine);
+            final entries = buildCheckInAvatarEntries(public, mine);
 
             if (entries.isEmpty) {
               return const SizedBox.shrink();
@@ -180,7 +236,8 @@ class _SpotCheckInPresenceStripState extends State<SpotCheckInPresenceStrip> {
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: () => showCheckInsListDialog(context, theme, entries),
+                  onTap: () =>
+                      showCheckInsListDialog(context, theme, widget.spotId),
                   borderRadius: BorderRadius.circular(10),
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(4, 0, 4, 4),
@@ -197,23 +254,6 @@ class _SpotCheckInPresenceStripState extends State<SpotCheckInPresenceStrip> {
         );
       },
     );
-  }
-
-  /// Public check-ins first; if you’re checked in privately and not in the public list, add your avatar with a badge.
-  List<CheckInAvatarEntry> _buildAvatarEntries(
-    List<SpotCheckIn> public,
-    SpotCheckIn? mine,
-  ) {
-    final entries = public
-        .map((c) => CheckInAvatarEntry(c, showPrivateBadge: false))
-        .toList();
-    if (mine != null && mine.isPrivate) {
-      final alreadyInPublic = public.any((p) => p.userId == mine.userId);
-      if (!alreadyInPublic) {
-        entries.add(CheckInAvatarEntry(mine, showPrivateBadge: true));
-      }
-    }
-    return entries;
   }
 
   Widget _buildAvatarStack(
@@ -485,10 +525,10 @@ Future<void> navigateToUserProfileForCheckIn(
 void showCheckInsListDialog(
   BuildContext context,
   ThemeData theme,
-  List<CheckInAvatarEntry> entries,
+  String spotId,
 ) {
-  final sorted = List<CheckInAvatarEntry>.from(entries)
-    ..sort((a, b) => b.checkIn.checkedInAt.compareTo(a.checkIn.checkedInAt));
+  final svc = Provider.of<SpotCheckInService>(context, listen: false);
+  final entriesStream = watchCheckInAvatarEntriesForSpot(svc, spotId);
 
   showDialog<void>(
     context: context,
@@ -535,15 +575,51 @@ void showCheckInsListDialog(
               ),
               const SizedBox(height: 12),
               Expanded(
-                child: ListView.separated(
-                  itemCount: sorted.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(height: 10),
-                  itemBuilder: (dialogContext, i) {
-                    return CheckInUserCard(
-                      key: ValueKey(sorted[i].checkIn.id),
-                      entry: sorted[i],
-                      hostContext: context,
+                child: StreamBuilder<List<CheckInAvatarEntry>>(
+                  stream: entriesStream,
+                  builder: (dialogContext, snap) {
+                    if (snap.hasError) {
+                      return Center(
+                        child: Text(
+                          'Could not load check-ins',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.error,
+                          ),
+                        ),
+                      );
+                    }
+                    if (!snap.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final sorted = List<CheckInAvatarEntry>.from(snap.data!)
+                      ..sort(
+                        (a, b) => b.checkIn.checkedInAt.compareTo(
+                          a.checkIn.checkedInAt,
+                        ),
+                      );
+                    if (sorted.isEmpty) {
+                      return Center(
+                        child: Text(
+                          'No one here now',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.7,
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+                    return ListView.separated(
+                      itemCount: sorted.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 10),
+                      itemBuilder: (dialogContext, i) {
+                        return CheckInUserCard(
+                          key: ValueKey(sorted[i].checkIn.id),
+                          entry: sorted[i],
+                          hostContext: context,
+                        );
+                      },
                     );
                   },
                 ),
@@ -577,6 +653,8 @@ class CheckInUserCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final c = entry.checkIn;
+    final uid = Provider.of<AuthService>(context, listen: false).currentUser?.uid;
+    final isMine = uid != null && uid == c.userId;
     final name = c.displayName?.trim();
     final title = (name != null && name.isNotEmpty) ? name : 'Someone here';
     final untilStr = DateFormat('h:mm a').format(c.expectedEndAt.toLocal());
@@ -613,6 +691,74 @@ class CheckInUserCard extends StatelessWidget {
                             ),
                           ),
                         ),
+                        if (isMine)
+                          IconButton(
+                            tooltip: 'Edit check-in',
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 36,
+                              minHeight: 36,
+                            ),
+                            icon: Icon(
+                              Icons.edit_outlined,
+                              size: 20,
+                              color: theme.colorScheme.primary,
+                            ),
+                            onPressed: () async {
+                              final svc = Provider.of<SpotCheckInService>(
+                                context,
+                                listen: false,
+                              );
+                              final result = await showSpotCheckInDialog(
+                                context,
+                                existingCheckIn: c,
+                              );
+                              if (result == null || !context.mounted) return;
+                              if (result is SpotCheckInDialogDeleted) {
+                                final ok = await svc.deleteCheckIn(c.id);
+                                if (!context.mounted) return;
+                                if (ok) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Check-in removed'),
+                                    ),
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        svc.error ?? 'Could not delete check-in',
+                                      ),
+                                    ),
+                                  );
+                                }
+                                return;
+                              }
+                              if (result is! SpotCheckInDialogSaved) return;
+                              final ok = await svc.updateCheckIn(
+                                c.id,
+                                isPrivate: result.isPrivate,
+                                expectedEndAt: result.expectedEndAt,
+                                comment: result.comment,
+                              );
+                              if (!context.mounted) return;
+                              if (ok) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Check-in updated'),
+                                  ),
+                                );
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      svc.error ?? 'Could not update check-in',
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                          ),
                         if (entry.showPrivateBadge) ...[
                           Icon(
                             Icons.lock_outline,
