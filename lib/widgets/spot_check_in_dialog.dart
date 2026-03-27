@@ -26,14 +26,24 @@ class SpotCheckInDialogDeleted extends SpotCheckInDialogOutcome {
   SpotCheckInDialogDeleted();
 }
 
+/// User chose to extend a recently expired check-in at this spot instead of creating new.
+class SpotCheckInDialogExtendInstead extends SpotCheckInDialogOutcome {
+  SpotCheckInDialogExtendInstead(this.checkIn);
+  final SpotCheckIn checkIn;
+}
+
 /// Check in at a spot, or edit / delete an existing check-in.
 Future<SpotCheckInDialogOutcome?> showSpotCheckInDialog(
   BuildContext context, {
   SpotCheckIn? existingCheckIn,
-  /// When true, show “Still here” (prefill end = now + 1h). Use [SpotCheckIn.stillHereEligibleAt].
+  /// When true, show “Still here” (prefill end = now + 1h). Set from
+  /// [SpotCheckInService.stillHereEligibleForUser] so it’s only true for the user’s
+  /// latest check-in within the time window.
   bool stillHereEligible = false,
   /// Active check-ins at other spots (new check-in only); shown as a notice before saving.
   List<SpotCheckIn> activeElsewhere = const [],
+  /// New check-in only: recent session at this spot that can be extended instead of duplicating.
+  SpotCheckIn? extendableAtSameSpot,
 }) {
   return showDialog<SpotCheckInDialogOutcome>(
     context: context,
@@ -41,6 +51,7 @@ Future<SpotCheckInDialogOutcome?> showSpotCheckInDialog(
       existingCheckIn: existingCheckIn,
       stillHereEligible: stillHereEligible,
       activeElsewhere: activeElsewhere,
+      extendableAtSameSpot: extendableAtSameSpot,
     ),
   );
 }
@@ -51,16 +62,20 @@ class SpotCheckInDialog extends StatefulWidget {
     this.existingCheckIn,
     this.stillHereEligible = false,
     this.activeElsewhere = const [],
+    this.extendableAtSameSpot,
   });
 
   /// When set, dialog is in edit mode with these values.
   final SpotCheckIn? existingCheckIn;
 
-  /// Show “Still here” when [SpotCheckIn.stillHereEligibleAt] is true (end before now, start within max duration).
+  /// Show “Still here” when time window + latest-check-in rules pass (see [SpotCheckInService.stillHereEligibleForUser]).
   final bool stillHereEligible;
 
   /// Non-empty when opening a new check-in while already active elsewhere.
   final List<SpotCheckIn> activeElsewhere;
+
+  /// New check-in only: extend this session instead of creating a duplicate document.
+  final SpotCheckIn? extendableAtSameSpot;
 
   @override
   State<SpotCheckInDialog> createState() => _SpotCheckInDialogState();
@@ -320,6 +335,59 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
                 height: 1.35,
               ),
             ),
+            if (!_isEdit && widget.extendableAtSameSpot != null) ...[
+              const SizedBox(height: 16),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.history_outlined,
+                        size: 22,
+                        color: cs.primary,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              'You have a recently expired check-in here.',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: cs.onSurface,
+                                height: 1.35,
+                              ),
+                            ),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: TextButton(
+                                onPressed: () => Navigator.of(context).pop(
+                                  SpotCheckInDialogExtendInstead(
+                                    widget.extendableAtSameSpot!,
+                                  ),
+                                ),
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: const Text('Extend that check-in instead'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
             if (!_isEdit && widget.activeElsewhere.isNotEmpty) ...[
               const SizedBox(height: 16),
               DecoratedBox(

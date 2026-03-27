@@ -91,10 +91,12 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
 
   Future<void> _manageCheckIn(SpotCheckIn c) async {
     final svc = Provider.of<SpotCheckInService>(context, listen: false);
+    final stillHereEligible = await svc.stillHereEligibleForUser(c);
+    if (!mounted) return;
     final result = await showSpotCheckInDialog(
       context,
       existingCheckIn: c,
-      stillHereEligible: c.stillHereEligibleAt(DateTime.now()),
+      stillHereEligible: stillHereEligible,
     );
     if (result == null || !mounted) return;
 

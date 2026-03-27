@@ -265,6 +265,66 @@ class SpotCheckInService extends ChangeNotifier {
     }
   }
 
+  /// Whether [c] is the current user's most recent check-in (by [checkedInAt]).
+  ///
+  /// Used so “extend / still here” only applies when the user has no newer check-in
+  /// at another spot (one active session narrative).
+  Future<bool> isUsersLatestCheckIn(SpotCheckIn c) async {
+    final userId = _getCurrentUserId();
+    if (userId == null || c.userId != userId) return false;
+    try {
+      final snap = await _spotCheckInsCol
+          .where('userId', isEqualTo: userId)
+          .orderBy('checkedInAt', descending: true)
+          .limit(1)
+          .get();
+      if (snap.docs.isEmpty) return false;
+      return snap.docs.single.id == c.id;
+    } catch (e) {
+      debugPrint('isUsersLatestCheckIn error: $e');
+      return false;
+    }
+  }
+
+  /// “Still here” / extend UI: [SpotCheckIn.stillHereEligibleAt] and [c] must be
+  /// the user’s latest check-in globally.
+  Future<bool> stillHereEligibleForUser(SpotCheckIn c) async {
+    final now = DateTime.now();
+    if (!c.stillHereEligibleAt(now)) return false;
+    return isUsersLatestCheckIn(c);
+  }
+
+  /// User’s latest check-in if it is at [spotId], no longer active, and extendable
+  /// ([SpotCheckIn.stillHereEligibleAt]) — for new check-in UX without duplicate docs.
+  ///
+  /// Requires this check-in to be the user’s most recent (same query as
+  /// [isUsersLatestCheckIn]) so we don’t offer extend after a newer check-in elsewhere.
+  ///
+  /// Returns `null` if none, or on query failure (non-blocking; does not set [error]).
+  Future<SpotCheckIn?> fetchExtendableCheckInAtSpot(String spotId) async {
+    final userId = _getCurrentUserId();
+    if (userId == null || spotId.isEmpty) {
+      return null;
+    }
+    final now = DateTime.now();
+    try {
+      final snap = await _spotCheckInsCol
+          .where('userId', isEqualTo: userId)
+          .orderBy('checkedInAt', descending: true)
+          .limit(1)
+          .get();
+      if (snap.docs.isEmpty) return null;
+      final c = SpotCheckIn.fromFirestore(snap.docs.single);
+      if (c.spotId != spotId) return null;
+      if (c.isActiveAt(now)) return null;
+      if (!c.stillHereEligibleAt(now)) return null;
+      return c;
+    } catch (e) {
+      debugPrint('fetchExtendableCheckInAtSpot error: $e');
+      return null;
+    }
+  }
+
   /// Sets [expectedEndAt] to now (or just after [checkedInAt] if needed) for an
   /// existing check-in owned by the current user.
   Future<bool> endCheckInNow(SpotCheckIn c) async {

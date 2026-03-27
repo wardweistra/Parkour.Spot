@@ -709,11 +709,13 @@ class CheckInUserCard extends StatelessWidget {
                                 context,
                                 listen: false,
                               );
+                              final stillHereEligible =
+                                  await svc.stillHereEligibleForUser(c);
+                              if (!context.mounted) return;
                               final result = await showSpotCheckInDialog(
                                 context,
                                 existingCheckIn: c,
-                                stillHereEligible:
-                                    c.stillHereEligibleAt(DateTime.now()),
+                                stillHereEligible: stillHereEligible,
                               );
                               if (result == null || !context.mounted) return;
                               if (result is SpotCheckInDialogDeleted) {

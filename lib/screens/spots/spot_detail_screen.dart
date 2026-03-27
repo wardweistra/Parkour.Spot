@@ -169,8 +169,13 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     final spotId = _spot.id;
     if (spotId == null) return;
     final service = Provider.of<SpotCheckInService>(context, listen: false);
-    final activeElsewhere = await service.fetchActiveCheckInsElsewhere(spotId);
+    final results = await Future.wait<Object?>([
+      service.fetchActiveCheckInsElsewhere(spotId),
+      service.fetchExtendableCheckInAtSpot(spotId),
+    ]);
     if (!mounted) return;
+    final activeElsewhere = results[0] as List<SpotCheckIn>?;
+    final extendableAtSameSpot = results[1] as SpotCheckIn?;
     if (activeElsewhere == null) {
       _showErrorSnack(service.error ?? 'Could not verify your check-ins');
       return;
@@ -178,8 +183,13 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     final result = await showSpotCheckInDialog(
       context,
       activeElsewhere: activeElsewhere,
+      extendableAtSameSpot: extendableAtSameSpot,
     );
     if (result == null || !mounted) return;
+    if (result is SpotCheckInDialogExtendInstead) {
+      await _handleEditCheckIn(result.checkIn);
+      return;
+    }
     if (result is! SpotCheckInDialogSaved) return;
     for (final other in activeElsewhere) {
       final ended = await service.endCheckInNow(other);
@@ -206,10 +216,12 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
   Future<void> _handleEditCheckIn(SpotCheckIn c) async {
     final svc = Provider.of<SpotCheckInService>(context, listen: false);
+    final stillHereEligible = await svc.stillHereEligibleForUser(c);
+    if (!mounted) return;
     final result = await showSpotCheckInDialog(
       context,
       existingCheckIn: c,
-      stillHereEligible: c.stillHereEligibleAt(DateTime.now()),
+      stillHereEligible: stillHereEligible,
     );
     if (result == null || !mounted) return;
 

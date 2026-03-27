@@ -41,8 +41,10 @@ class SpotCheckIn {
     return !now.isBefore(checkedInAt) && !now.isAfter(expectedEndAt);
   }
 
-  /// "Still here" UX: scheduled end has passed, but arrival was within [maxSessionDuration]
-  /// so the session can be extended (new end time) without starting a new check-in.
+  /// Time-window only: scheduled end has passed, but arrival was within [maxSessionDuration].
+  ///
+  /// UI and [SpotCheckInService.stillHereEligibleForUser] also require this to be the
+  /// user’s latest check-in so we keep one session at a time.
   bool stillHereEligibleAt(DateTime now) {
     if (now.isBefore(checkedInAt)) return false;
     if (!expectedEndAt.isBefore(now)) return false;
