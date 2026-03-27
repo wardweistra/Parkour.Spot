@@ -7,6 +7,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import '../../models/spot.dart';
+import '../../models/spot_check_in.dart';
 import '../../widgets/spot_check_in_dialog.dart';
 import '../../services/spot_service.dart';
 import '../../services/spot_report_service.dart';
@@ -183,6 +184,43 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       _showSuccessSnack('You’re checked in');
     } else {
       _showErrorSnack(service.error ?? 'Check-in failed');
+    }
+  }
+
+  Future<void> _handleEditCheckIn(SpotCheckIn c) async {
+    final svc = Provider.of<SpotCheckInService>(context, listen: false);
+    final result = await showSpotCheckInDialog(
+      context,
+      existingCheckIn: c,
+      stillHereEligible: c.stillHereEligibleAt(DateTime.now()),
+    );
+    if (result == null || !mounted) return;
+
+    if (result is SpotCheckInDialogDeleted) {
+      final ok = await svc.deleteCheckIn(c.id);
+      if (!mounted) return;
+      if (ok) {
+        _showSuccessSnack('Check-in removed');
+      } else {
+        _showErrorSnack(svc.error ?? 'Could not delete check-in');
+      }
+      return;
+    }
+
+    if (result is! SpotCheckInDialogSaved) return;
+
+    final ok = await svc.updateCheckIn(
+      c.id,
+      checkedInAt: result.checkedInAt!,
+      isPrivate: result.isPrivate,
+      expectedEndAt: result.expectedEndAt,
+      comment: result.comment,
+    );
+    if (!mounted) return;
+    if (ok) {
+      _showSuccessSnack('Check-in updated');
+    } else {
+      _showErrorSnack(svc.error ?? 'Could not update check-in');
     }
   }
 
@@ -1823,73 +1861,17 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                     const SizedBox(width: 8),
                                     Consumer<AuthService>(
                                       builder: (context, authService, _) {
-                                        final colorScheme = Theme.of(
-                                          context,
-                                        ).colorScheme;
                                         final loginRedirect =
                                             '/login?redirectTo=${Uri.encodeComponent('/spot/${_spot.id!}')}';
-                                        if (authService.isLoading) {
-                                          return Padding(
-                                            padding: const EdgeInsets.only(
-                                              bottom: 16,
-                                            ),
-                                            child: SizedBox(
-                                              width: 44,
-                                              height: 44,
-                                              child: DecoratedBox(
-                                                decoration: BoxDecoration(
-                                                  color: colorScheme
-                                                      .surfaceContainerHighest
-                                                      .withValues(alpha: 0.6),
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: Center(
-                                                  child: SizedBox(
-                                                    width: 22,
-                                                    height: 22,
-                                                    child: CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      color: colorScheme.primary,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          );
-                                        }
-                                        return Padding(
-                                          padding: const EdgeInsets.only(
-                                            bottom: 16,
-                                          ),
-                                          child: Tooltip(
-                                            message: authService.isAuthenticated
-                                                ? 'Check in'
-                                                : 'Sign in to check in',
-                                            child: Material(
-                                              color: colorScheme
-                                                  .surfaceContainerHighest
-                                                  .withValues(alpha: 0.6),
-                                              shape: const CircleBorder(),
-                                              clipBehavior: Clip.antiAlias,
-                                              child: InkWell(
-                                                onTap: authService.isAuthenticated
-                                                    ? _showCheckInDialog
-                                                    : () =>
-                                                        context.go(loginRedirect),
-                                                customBorder: const CircleBorder(),
-                                                child: SizedBox(
-                                                  width: 44,
-                                                  height: 44,
-                                                  child: Icon(
-                                                    Icons.place_outlined,
-                                                    color: colorScheme.onSurface
-                                                        .withValues(alpha: 0.6),
-                                                    size: 24,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
+                                        return _SpotDetailCheckInFab(
+                                          spotId: _spot.id!,
+                                          isAuthenticated:
+                                              authService.isAuthenticated,
+                                          isLoadingAuth: authService.isLoading,
+                                          onNewCheckIn: _showCheckInDialog,
+                                          onEditCheckIn: _handleEditCheckIn,
+                                          onLoginRequired: () =>
+                                              context.go(loginRedirect),
                                         );
                                       },
                                     ),
@@ -5116,6 +5098,162 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
               child: const Text('Close'),
             ),
           ],
+        );
+      },
+    );
+  }
+}
+
+/// Check-in FAB: reflects active check-in via [SpotCheckInService.watchMyCheckIn].
+class _SpotDetailCheckInFab extends StatefulWidget {
+  const _SpotDetailCheckInFab({
+    required this.spotId,
+    required this.isAuthenticated,
+    required this.isLoadingAuth,
+    required this.onNewCheckIn,
+    required this.onEditCheckIn,
+    required this.onLoginRequired,
+  });
+
+  final String spotId;
+  final bool isAuthenticated;
+  final bool isLoadingAuth;
+  final Future<void> Function() onNewCheckIn;
+  final Future<void> Function(SpotCheckIn existing) onEditCheckIn;
+  final VoidCallback onLoginRequired;
+
+  @override
+  State<_SpotDetailCheckInFab> createState() => _SpotDetailCheckInFabState();
+}
+
+class _SpotDetailCheckInFabState extends State<_SpotDetailCheckInFab> {
+  Stream<SpotCheckIn?>? _myStream;
+  String? _cachedSpotId;
+  String? _lastUid;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final svc = Provider.of<SpotCheckInService>(context, listen: false);
+    final auth = Provider.of<AuthService>(context);
+    final uid = auth.currentUser?.uid;
+    if (_cachedSpotId != widget.spotId) {
+      _cachedSpotId = widget.spotId;
+      _lastUid = null;
+    }
+    if (uid != _lastUid) {
+      _lastUid = uid;
+      _myStream =
+          uid == null ? Stream.value(null) : svc.watchMyCheckIn(widget.spotId);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _SpotDetailCheckInFab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.spotId != widget.spotId) {
+      _cachedSpotId = null;
+      _lastUid = null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    if (widget.isLoadingAuth) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: colorScheme.primary,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (!widget.isAuthenticated) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Tooltip(
+          message: 'Sign in to check in',
+          child: Material(
+            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+            shape: const CircleBorder(),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: widget.onLoginRequired,
+              customBorder: const CircleBorder(),
+              child: SizedBox(
+                width: 44,
+                height: 44,
+                child: Icon(
+                  Icons.place_outlined,
+                  color: colorScheme.onSurface.withValues(alpha: 0.6),
+                  size: 24,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (_myStream == null) {
+      return const SizedBox(width: 44, height: 44);
+    }
+
+    return StreamBuilder<SpotCheckIn?>(
+      stream: _myStream,
+      builder: (context, snapshot) {
+        final mine = snapshot.data;
+        final checkedIn = mine != null;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Tooltip(
+            message: checkedIn ? 'Edit check-in' : 'Check in',
+            child: Material(
+              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+              shape: const CircleBorder(),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: () {
+                  final m = mine;
+                  if (m != null) {
+                    widget.onEditCheckIn(m);
+                  } else {
+                    widget.onNewCheckIn();
+                  }
+                },
+                customBorder: const CircleBorder(),
+                child: SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: Icon(
+                    checkedIn ? Icons.place : Icons.place_outlined,
+                    color: checkedIn
+                        ? colorScheme.primary
+                        : colorScheme.onSurface.withValues(alpha: 0.6),
+                    size: 24,
+                  ),
+                ),
+              ),
+            ),
+          ),
         );
       },
     );
