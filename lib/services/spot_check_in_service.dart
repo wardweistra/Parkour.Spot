@@ -227,6 +227,59 @@ class SpotCheckInService extends ChangeNotifier {
     }
   }
 
+  /// Active check-ins for the current user at spots other than [excludeSpotId].
+  ///
+  /// Uses `expectedEndAt >= now` plus [SpotCheckIn.isActiveAt] so we only consider
+  /// sessions that are still “here now” by app rules.
+  ///
+  /// Returns `null` if the query fails ([error] is set).
+  Future<List<SpotCheckIn>?> fetchActiveCheckInsElsewhere(
+    String excludeSpotId,
+  ) async {
+    final userId = _getCurrentUserId();
+    if (userId == null || excludeSpotId.isEmpty) {
+      return [];
+    }
+    final now = DateTime.now();
+    final threshold = Timestamp.fromDate(now);
+    try {
+      final snap = await _spotCheckInsCol
+          .where('userId', isEqualTo: userId)
+          .where('expectedEndAt', isGreaterThanOrEqualTo: threshold)
+          .orderBy('expectedEndAt', descending: true)
+          .limit(_presenceQueryLimit)
+          .get();
+      final out = <SpotCheckIn>[];
+      for (final doc in snap.docs) {
+        final c = SpotCheckIn.fromFirestore(doc);
+        if (c.spotId == excludeSpotId) continue;
+        if (!c.isActiveAt(now)) continue;
+        out.add(c);
+      }
+      return out;
+    } catch (e) {
+      _error = 'Could not verify your other check-ins';
+      debugPrint('fetchActiveCheckInsElsewhere error: $e');
+      notifyListeners();
+      return null;
+    }
+  }
+
+  /// Sets [expectedEndAt] to now (or just after [checkedInAt] if needed) for an
+  /// existing check-in owned by the current user.
+  Future<bool> endCheckInNow(SpotCheckIn c) async {
+    final now = DateTime.now();
+    final end =
+        now.isAfter(c.checkedInAt) ? now : c.checkedInAt.add(const Duration(seconds: 1));
+    return updateCheckIn(
+      c.id,
+      checkedInAt: c.checkedInAt,
+      isPrivate: c.isPrivate,
+      expectedEndAt: end,
+      comment: c.comment,
+    );
+  }
+
   /// Paginated history for the signed-in user (newest first).
   Future<SpotCheckInsPage> fetchMyCheckInsPage({
     DocumentSnapshot<Map<String, dynamic>>? startAfter,

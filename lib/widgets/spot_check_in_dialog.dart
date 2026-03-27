@@ -32,12 +32,15 @@ Future<SpotCheckInDialogOutcome?> showSpotCheckInDialog(
   SpotCheckIn? existingCheckIn,
   /// When true, show “Still here” (prefill end = now + 1h). Use [SpotCheckIn.stillHereEligibleAt].
   bool stillHereEligible = false,
+  /// Active check-ins at other spots (new check-in only); shown as a notice before saving.
+  List<SpotCheckIn> activeElsewhere = const [],
 }) {
   return showDialog<SpotCheckInDialogOutcome>(
     context: context,
     builder: (context) => SpotCheckInDialog(
       existingCheckIn: existingCheckIn,
       stillHereEligible: stillHereEligible,
+      activeElsewhere: activeElsewhere,
     ),
   );
 }
@@ -47,6 +50,7 @@ class SpotCheckInDialog extends StatefulWidget {
     super.key,
     this.existingCheckIn,
     this.stillHereEligible = false,
+    this.activeElsewhere = const [],
   });
 
   /// When set, dialog is in edit mode with these values.
@@ -54,6 +58,9 @@ class SpotCheckInDialog extends StatefulWidget {
 
   /// Show “Still here” when [SpotCheckIn.stillHereEligibleAt] is true (end before now, start within max duration).
   final bool stillHereEligible;
+
+  /// Non-empty when opening a new check-in while already active elsewhere.
+  final List<SpotCheckIn> activeElsewhere;
 
   @override
   State<SpotCheckInDialog> createState() => _SpotCheckInDialogState();
@@ -69,6 +76,19 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
   static const Duration _quarterStep = Duration(minutes: 15);
 
   bool get _isEdit => widget.existingCheckIn != null;
+
+  String _activeElsewhereNotice() {
+    final others = widget.activeElsewhere;
+    if (others.isEmpty) return '';
+    if (others.length == 1) {
+      final name = others.single.spotName?.trim();
+      if (name != null && name.isNotEmpty) {
+        return 'You’re currently checked in at $name. Checking in here will end that check-in.';
+      }
+      return 'You’re checked in at another spot. Checking in here will end that check-in.';
+    }
+    return 'You have active check-ins at other spots. Checking in here will end those check-ins.';
+  }
 
   /// Currently within [checkedInAt, expectedEndAt] (same rule as [SpotCheckIn.isActiveAt]).
   bool get _isActiveCheckIn =>
@@ -300,6 +320,38 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
                 height: 1.35,
               ),
             ),
+            if (!_isEdit && widget.activeElsewhere.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.swap_horiz_outlined,
+                        size: 22,
+                        color: cs.primary,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _activeElsewhereNotice(),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: cs.onSurface,
+                            height: 1.35,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,

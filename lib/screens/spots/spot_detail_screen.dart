@@ -169,9 +169,26 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     final spotId = _spot.id;
     if (spotId == null) return;
     final service = Provider.of<SpotCheckInService>(context, listen: false);
-    final result = await showSpotCheckInDialog(context);
+    final activeElsewhere = await service.fetchActiveCheckInsElsewhere(spotId);
+    if (!mounted) return;
+    if (activeElsewhere == null) {
+      _showErrorSnack(service.error ?? 'Could not verify your check-ins');
+      return;
+    }
+    final result = await showSpotCheckInDialog(
+      context,
+      activeElsewhere: activeElsewhere,
+    );
     if (result == null || !mounted) return;
     if (result is! SpotCheckInDialogSaved) return;
+    for (final other in activeElsewhere) {
+      final ended = await service.endCheckInNow(other);
+      if (!mounted) return;
+      if (!ended) {
+        _showErrorSnack(service.error ?? 'Could not end your previous check-in');
+        return;
+      }
+    }
     final ok = await service.checkIn(
       spotId,
       isPrivate: result.isPrivate,
