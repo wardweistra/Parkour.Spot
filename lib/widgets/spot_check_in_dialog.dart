@@ -59,6 +59,11 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
 
   bool get _isEdit => widget.existingCheckIn != null;
 
+  /// Currently within [checkedInAt, expectedEndAt] (same rule as [SpotCheckIn.isActiveAt]).
+  bool get _isActiveCheckIn =>
+      widget.existingCheckIn != null &&
+      widget.existingCheckIn!.isActiveAt(DateTime.now());
+
   @override
   void initState() {
     super.initState();
@@ -122,6 +127,29 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
     if (ok == true && mounted) {
       Navigator.of(context).pop(SpotCheckInDialogDeleted());
     }
+  }
+
+  void _popSaved({DateTime? expectedEndAt}) {
+    final end = expectedEndAt ?? _expectedEndAt;
+    final trimmed = _commentController.text.trim();
+    Navigator.of(context).pop(
+      SpotCheckInDialogSaved(
+        isPrivate: !_sharePublicly,
+        expectedEndAt: end,
+        comment: trimmed.isEmpty ? null : trimmed,
+        checkedInAt: _isEdit ? _checkedInAt : null,
+      ),
+    );
+  }
+
+  /// Sets end to now (or start + 15 min if still inside minimum session) and saves.
+  void _endNowAndSave() {
+    final now = DateTime.now();
+    var end = now;
+    if (now.difference(_checkedInAt) < _minSession) {
+      end = _checkedInAt.add(_minSession);
+    }
+    _popSaved(expectedEndAt: end);
   }
 
   void _nudgeStartByQuarter(int sign) {
@@ -295,6 +323,14 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
               onSub: () => _nudgeEndByQuarter(-1),
               onAdd: () => _nudgeEndByQuarter(1),
             ),
+            if (_isEdit && _isActiveCheckIn) ...[
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: _endNowAndSave,
+                icon: const Icon(Icons.stop_circle_outlined),
+                label: const Text('End now'),
+              ),
+            ],
             const SizedBox(height: 20),
             TextField(
               controller: _commentController,
@@ -332,17 +368,7 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
                 ),
                 const SizedBox(width: 8),
                 FilledButton.icon(
-                  onPressed: () {
-                    final trimmed = _commentController.text.trim();
-                    Navigator.of(context).pop(
-                      SpotCheckInDialogSaved(
-                        isPrivate: !_sharePublicly,
-                        expectedEndAt: _expectedEndAt,
-                        comment: trimmed.isEmpty ? null : trimmed,
-                        checkedInAt: _isEdit ? _checkedInAt : null,
-                      ),
-                    );
-                  },
+                  onPressed: _popSaved,
                   icon: Icon(
                     _isEdit ? Icons.save_outlined : Icons.place_outlined,
                   ),
