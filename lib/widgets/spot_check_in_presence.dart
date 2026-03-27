@@ -499,6 +499,12 @@ void showCheckInsListDialog(
         contentPadding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
         title: Row(
           children: [
+            Icon(
+              Icons.place_outlined,
+              color: theme.colorScheme.primary,
+              size: 26,
+            ),
+            const SizedBox(width: 10),
             Expanded(
               child: Text(
                 'Here now',
@@ -522,7 +528,7 @@ void showCheckInsListDialog(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'People who are still within the “here” window they set when checking in.',
+                'These are the people training at this spot now.',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
@@ -573,9 +579,7 @@ class CheckInUserCard extends StatelessWidget {
     final c = entry.checkIn;
     final name = c.displayName?.trim();
     final title = (name != null && name.isNotEmpty) ? name : 'Someone here';
-    final timeStr = DateFormat(
-      'MMM d, yyyy • h:mm a',
-    ).format(c.checkedInAt.toLocal());
+    final untilStr = DateFormat('h:mm a').format(c.expectedEndAt.toLocal());
     final comment = c.comment?.trim();
 
     return Card(
@@ -628,7 +632,7 @@ class CheckInUserCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      timeStr,
+                      'Until $untilStr',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurface.withValues(
                           alpha: 0.65,

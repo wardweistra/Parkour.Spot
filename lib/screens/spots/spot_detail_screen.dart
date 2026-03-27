@@ -7313,7 +7313,23 @@ class _SpotCheckInDialogState extends State<_SpotCheckInDialog> {
     ).format(_expectedEndAt.toLocal());
     final cs = theme.colorScheme;
     return AlertDialog(
-      title: const Text('Check in'),
+      title: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.place_outlined,
+            color: cs.primary,
+            size: 28,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Check in',
+              style: theme.textTheme.titleLarge,
+            ),
+          ),
+        ],
+      ),
       contentPadding: const EdgeInsets.fromLTRB(28, 12, 28, 16),
       content: SingleChildScrollView(
         child: Column(
@@ -7403,7 +7419,7 @@ class _SpotCheckInDialogState extends State<_SpotCheckInDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
-        FilledButton(
+        FilledButton.icon(
           onPressed: () {
             final trimmed = _commentController.text.trim();
             Navigator.of(context).pop(
@@ -7414,7 +7430,8 @@ class _SpotCheckInDialogState extends State<_SpotCheckInDialog> {
               ),
             );
           },
-          child: const Text('Check in'),
+          icon: const Icon(Icons.place_outlined),
+          label: const Text('Check in'),
         ),
       ],
     );
