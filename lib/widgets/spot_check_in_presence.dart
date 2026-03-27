@@ -638,6 +638,35 @@ void showCheckInsListDialog(
   );
 }
 
+/// Comment block for check-in lists (matches “Here now” dialog and My check-ins).
+class CheckInCommentBlock extends StatelessWidget {
+  const CheckInCommentBlock({super.key, required this.comment});
+
+  final String comment;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        '💬 $comment',
+        style: theme.textTheme.bodyMedium?.copyWith(
+          fontStyle: FontStyle.italic,
+          color: theme.colorScheme.onSurface.withValues(
+            alpha: 0.8,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Single check-in row in the list dialog (spot-style note + avatar, inspired by [SpotCard] custom notes).
 class CheckInUserCard extends StatelessWidget {
   const CheckInUserCard({
@@ -792,24 +821,7 @@ class CheckInUserCard extends StatelessWidget {
                     ),
                     if (comment != null && comment.isNotEmpty) ...[
                       const SizedBox(height: 8),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surfaceContainerHighest
-                              .withValues(alpha: 0.6),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '💬 $comment',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontStyle: FontStyle.italic,
-                            color: theme.colorScheme.onSurface.withValues(
-                              alpha: 0.8,
-                            ),
-                          ),
-                        ),
-                      ),
+                      CheckInCommentBlock(comment: comment),
                     ],
                   ],
                 ),

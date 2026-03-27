@@ -9,6 +9,59 @@ import '../../services/auth_service.dart';
 import '../../services/spot_check_in_service.dart';
 import '../../widgets/page_scaffold.dart';
 import '../../widgets/spot_check_in_dialog.dart';
+import '../../widgets/spot_check_in_presence.dart';
+
+String _formatSessionDuration(Duration d) {
+  if (d.isNegative) d = Duration.zero;
+  var totalMinutes = d.inMinutes;
+  if (totalMinutes == 0) return '0m';
+  final days = totalMinutes ~/ (24 * 60);
+  totalMinutes %= (24 * 60);
+  final hours = totalMinutes ~/ 60;
+  final minutes = totalMinutes % 60;
+  final parts = <String>[];
+  if (days > 0) parts.add('${days}d');
+  if (hours > 0) parts.add('${hours}h');
+  if (minutes > 0) parts.add('${minutes}m');
+  if (parts.isEmpty) parts.add('0m');
+  return parts.join(' ');
+}
+
+/// Time line for a tile when the [start] date is shown in a section header above.
+String _formatCheckInTimeLineUnderHeader(SpotCheckIn checkIn) {
+  final start = checkIn.checkedInAt.toLocal();
+  final end = checkIn.expectedEndAt.toLocal();
+  final duration = checkIn.expectedEndAt.difference(checkIn.checkedInAt);
+  final durStr = _formatSessionDuration(duration);
+  final sameDay =
+      start.year == end.year &&
+      start.month == end.month &&
+      start.day == end.day;
+  final timeFmt = DateFormat('h:mm a');
+
+  if (sameDay) {
+    return '${timeFmt.format(start)} — ${timeFmt.format(end)} ($durStr)';
+  }
+
+  final endFull = DateFormat('MMM d, yyyy • h:mm a').format(end);
+  return '${timeFmt.format(start)} — $endFull ($durStr)';
+}
+
+sealed class _CheckInListRow {}
+
+final class _CheckInListIntro extends _CheckInListRow {}
+
+final class _CheckInListDateHeader extends _CheckInListRow {
+  _CheckInListDateHeader(this.day);
+  final DateTime day;
+}
+
+final class _CheckInListTile extends _CheckInListRow {
+  _CheckInListTile(this.checkIn);
+  final SpotCheckIn checkIn;
+}
+
+final class _CheckInListLoadMore extends _CheckInListRow {}
 
 /// Full history of the current user's check-ins (newest first), with delete.
 class MyCheckInsScreen extends StatefulWidget {
@@ -156,6 +209,69 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
     }
   }
 
+  List<_CheckInListRow> _buildCheckInListRows() {
+    final rows = <_CheckInListRow>[_CheckInListIntro()];
+    DateTime? prevDay;
+    for (final c in _items) {
+      final local = c.checkedInAt.toLocal();
+      final day = DateTime(local.year, local.month, local.day);
+      if (prevDay != day) {
+        rows.add(_CheckInListDateHeader(day));
+        prevDay = day;
+      }
+      rows.add(_CheckInListTile(c));
+    }
+    if (_hasMore) {
+      rows.add(_CheckInListLoadMore());
+    }
+    return rows;
+  }
+
+  Widget _buildCheckInsListView(BuildContext context) {
+    final rows = _buildCheckInListRows();
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: rows.length,
+      itemBuilder: (context, i) {
+        final row = rows[i];
+        switch (row) {
+          case _CheckInListIntro():
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: _intro(context),
+            );
+          case _CheckInListDateHeader(:final day):
+            final prevIsIntro = i > 0 && rows[i - 1] is _CheckInListIntro;
+            return _CheckInDateHeader(
+              day: day,
+              isFirst: prevIsIntro,
+            );
+          case _CheckInListTile(:final checkIn):
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _CheckInHistoryTile(
+                checkIn: checkIn,
+                onOpenSpot: () => context.push('/spot/${checkIn.spotId}'),
+                onManage: () => _manageCheckIn(checkIn),
+              ),
+            );
+          case _CheckInListLoadMore():
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: _loadingMore
+                    ? const CircularProgressIndicator()
+                    : TextButton(
+                        onPressed: _loadMore,
+                        child: const Text('Load more'),
+                      ),
+              ),
+            );
+        }
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<AuthService>(
@@ -274,41 +390,7 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
                       ),
                     ],
                   )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: 1 + _items.length + (_hasMore ? 1 : 0),
-                    itemBuilder: (context, i) {
-                      if (i == 0) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: _intro(context),
-                        );
-                      }
-                      final idx = i - 1;
-                      if (idx < _items.length) {
-                        final c = _items[idx];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: _CheckInHistoryTile(
-                            checkIn: c,
-                            onOpenSpot: () => context.push('/spot/${c.spotId}'),
-                            onManage: () => _manageCheckIn(c),
-                          ),
-                        );
-                      }
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        child: Center(
-                          child: _loadingMore
-                              ? const CircularProgressIndicator()
-                              : TextButton(
-                                  onPressed: _loadMore,
-                                  child: const Text('Load more'),
-                                ),
-                        ),
-                      );
-                    },
-                  ),
+                : _buildCheckInsListView(context),
           ),
         );
       },
@@ -324,6 +406,34 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
       style: theme.textTheme.bodyMedium?.copyWith(
         color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
         height: 1.4,
+      ),
+    );
+  }
+}
+
+class _CheckInDateHeader extends StatelessWidget {
+  const _CheckInDateHeader({
+    required this.day,
+    required this.isFirst,
+  });
+
+  final DateTime day;
+  final bool isFirst;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: EdgeInsets.only(
+        top: isFirst ? 0 : 20,
+        bottom: 8,
+      ),
+      child: Text(
+        DateFormat('MMM d, yyyy').format(day),
+        style: theme.textTheme.titleSmall?.copyWith(
+          fontWeight: FontWeight.w600,
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
+        ),
       ),
     );
   }
@@ -347,12 +457,7 @@ class _CheckInHistoryTile extends StatelessWidget {
         (checkIn.spotName != null && checkIn.spotName!.trim().isNotEmpty)
         ? checkIn.spotName!.trim()
         : 'Spot';
-    final startStr = DateFormat(
-      'MMM d, yyyy • h:mm a',
-    ).format(checkIn.checkedInAt.toLocal());
-    final endStr = DateFormat(
-      'MMM d, yyyy • h:mm a',
-    ).format(checkIn.expectedEndAt.toLocal());
+    final timeRangeStr = _formatCheckInTimeLineUnderHeader(checkIn);
     final comment = checkIn.comment?.trim();
 
     return Card(
@@ -378,7 +483,7 @@ class _CheckInHistoryTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '$startStr — $endStr',
+                      timeRangeStr,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurface.withValues(
                           alpha: 0.65,
@@ -397,15 +502,7 @@ class _CheckInHistoryTile extends StatelessWidget {
                     ],
                     if (comment != null && comment.isNotEmpty) ...[
                       const SizedBox(height: 8),
-                      Text(
-                        comment,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontStyle: FontStyle.italic,
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.85,
-                          ),
-                        ),
-                      ),
+                      CheckInCommentBlock(comment: comment),
                     ],
                   ],
                 ),

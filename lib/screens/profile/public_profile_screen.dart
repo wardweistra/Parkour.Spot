@@ -630,7 +630,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                       leading: const Icon(Icons.how_to_reg_outlined),
                       title: const Text('My check-ins'),
                       subtitle: Text(
-                        'Your visit history with timestamps',
+                        'Your recorded history of visits to spots',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: Theme.of(context)
                                   .colorScheme
