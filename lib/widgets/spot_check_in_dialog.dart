@@ -67,7 +67,6 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
   late DateTime _checkedInAt;
 
   static const Duration _quarterStep = Duration(minutes: 15);
-  static const Duration _minSession = Duration(minutes: 15);
 
   bool get _isEdit => widget.existingCheckIn != null;
 
@@ -94,14 +93,13 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
     }
   }
 
-  /// Keep start/end within min session and max duration (edit mode).
+  /// Keep end after start and within max duration (edit mode).
   void _reconcileEditSessionBounds() {
     if (!_checkedInAt.isBefore(_expectedEndAt)) {
-      _expectedEndAt = _checkedInAt.add(_minSession);
+      _expectedEndAt = roundToNearest15Minutes(
+        _checkedInAt.add(_quarterStep),
+      );
       return;
-    }
-    if (_expectedEndAt.difference(_checkedInAt) < _minSession) {
-      _expectedEndAt = _checkedInAt.add(_minSession);
     }
     if (_expectedEndAt.difference(_checkedInAt) > SpotCheckIn.maxSessionDuration) {
       _expectedEndAt = _checkedInAt.add(SpotCheckIn.maxSessionDuration);
@@ -162,13 +160,11 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
     });
   }
 
-  /// Sets end to now (or start + 15 min if still inside minimum session) and saves.
+  /// Sets end to now (or just after start if the clock is behind) and saves.
   void _endNowAndSave() {
     final now = DateTime.now();
-    var end = now;
-    if (now.difference(_checkedInAt) < _minSession) {
-      end = _checkedInAt.add(_minSession);
-    }
+    final end =
+        now.isAfter(_checkedInAt) ? now : _checkedInAt.add(const Duration(seconds: 1));
     _popSaved(expectedEndAt: end);
   }
 
@@ -180,15 +176,15 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
     }
     setState(() {
       if (sign > 0) {
-        final maxStart = _expectedEndAt.subtract(_minSession);
+        final maxStart = _expectedEndAt.subtract(_quarterStep);
         _checkedInAt = roundToNearest15Minutes(
           next.isAfter(maxStart) ? maxStart : next,
         );
       } else {
         _checkedInAt = roundToNearest15Minutes(next);
-        if (!_expectedEndAt.isAfter(_checkedInAt.add(_minSession))) {
+        if (!_expectedEndAt.isAfter(_checkedInAt)) {
           _expectedEndAt = roundToNearest15Minutes(
-            _checkedInAt.add(_minSession),
+            _checkedInAt.add(_quarterStep),
           );
         }
       }
@@ -220,7 +216,7 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
           next.isAfter(maxEnd) ? maxEnd : next,
         );
       } else {
-        final minEnd = _checkedInAt.add(_minSession);
+        final minEnd = _checkedInAt.add(_quarterStep);
         _expectedEndAt = roundToNearest15Minutes(
           next.isBefore(minEnd) ? minEnd : next,
         );
@@ -242,14 +238,12 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
   }
 
   bool _canAddStart() {
-    final limit = _expectedEndAt.subtract(_minSession);
+    final limit = _expectedEndAt.subtract(_quarterStep);
     return _checkedInAt.add(_quarterStep).compareTo(limit) <= 0;
   }
 
   bool _canSubtractEnd() {
-    return _expectedEndAt
-        .subtract(_quarterStep)
-        .isAfter(_checkedInAt.add(_minSession));
+    return _expectedEndAt.subtract(_quarterStep).isAfter(_checkedInAt);
   }
 
   bool _canAddEnd() {

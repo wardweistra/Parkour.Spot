@@ -130,8 +130,6 @@ class SpotCheckInService extends ChangeNotifier {
     }
   }
 
-  static const Duration _minCheckInSession = Duration(minutes: 15);
-
   /// Updates an existing check-in owned by the current user (start, end, privacy, comment).
   Future<bool> updateCheckIn(
     String checkInId, {
@@ -157,11 +155,6 @@ class SpotCheckInService extends ChangeNotifier {
       return false;
     }
     final dur = endUtc.difference(startUtc);
-    if (dur < _minCheckInSession) {
-      _error = 'Session must be at least 15 minutes';
-      notifyListeners();
-      return false;
-    }
     if (dur > SpotCheckIn.maxSessionDuration) {
       _error = 'Session cannot be longer than 12 hours';
       notifyListeners();
