@@ -19,7 +19,6 @@ const html = generateHtmlPage({
   url: null,
   siteName: "Parkour·Spot",
   isDynamic: false,
-  serviceWorkerVersion: "{{flutter_service_worker_version}}"
 });
 
 // Write to web/index.html

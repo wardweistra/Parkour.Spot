@@ -144,45 +144,25 @@ function generateHtmlHead(options = {}) {
  * @param {Object} options - Configuration options
  * @param {string} options.siteName - Site name (default: "Parkour·Spot")
  * @param {string} options.url - URL for noscript fallback (optional)
- * @param {string} options.serviceWorkerVersion - Service worker version (default: null)
  * @return {string} HTML body content
  */
 function generateHtmlBody(options = {}) {
   const {
     siteName = "Parkour·Spot",
     url = null,
-    serviceWorkerVersion = null,
   } = options;
 
   const escapedUrl = url ? htmlEscape(url) : null;
 
+  // flutter_bootstrap.js is produced by flutter build web: it sets _flutter.buildConfig and calls
+  // _flutter.loader.load (do not use flutter.js + manual load — load() requires buildConfig).
   return `
   ${url ? `
   <noscript>
     <p>Loading ${siteName}… If you are not redirected, open <a href="${escapedUrl}">${escapedUrl}</a>.</p>
   </noscript>
   ` : ""}
-  <script>
-    // The value below is injected by flutter build, do not touch.
-    const serviceWorkerVersion = ${serviceWorkerVersion !== null ? `'${serviceWorkerVersion}'` : `'{{flutter_service_worker_version}}'`};
-  </script>
-  <!-- This script adds the flutter initialization JS code -->
-  <script src="flutter.js" defer></script>
-  <script>
-    window.addEventListener('load', function(ev) {
-      // Download main.dart.js
-      _flutter.loader.loadEntrypoint({
-        serviceWorker: {
-          serviceWorkerVersion: serviceWorkerVersion,
-        },
-        onEntrypointLoaded: function(engineInitializer) {
-          engineInitializer.initializeEngine().then(function(appRunner) {
-            appRunner.runApp();
-          });
-        }
-      });
-    });
-  </script>`;
+  <script src="flutter_bootstrap.js" async></script>`;
 }
 
 /**
