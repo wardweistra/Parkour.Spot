@@ -297,9 +297,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
               if (hasTitle)
                 Text(
                   section.title!,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: theme.textTheme.titleLarge,
                 ),
               if (hasTitle && hasBody) const SizedBox(height: 10),
               if (hasBody)
@@ -818,7 +816,6 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                     text: hostLabel,
                     style: textStyle?.copyWith(
                       color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.w500,
                     ),
                     recognizer: TapGestureRecognizer()
                       ..onTap = () => UrlService.openHttpOrHttpsUrl(url, context),
@@ -1101,7 +1098,6 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 11,
-                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],

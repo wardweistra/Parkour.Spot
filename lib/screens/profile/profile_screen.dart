@@ -139,9 +139,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       const SizedBox(height: 16),
                       Text(
                         'Sign in to access your account',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium,
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 8),
@@ -265,7 +263,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                                     user?.displayName?.substring(0, 1).toUpperCase() ?? 'U',
                                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                                       color: Colors.white,
-                                      fontWeight: FontWeight.bold,
                                     ),
                                   )
                                 : null,
@@ -277,9 +274,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                               children: [
                                 Text(
                                   user?.displayName ?? 'User',
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  style: Theme.of(context).textTheme.titleMedium,
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
@@ -319,9 +314,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       children: [
                         Text(
                           'Moderator',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: Theme.of(context).textTheme.titleLarge,
                         ),
                         const SizedBox(height: 8),
                         _buildActionTile(
@@ -351,9 +344,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       children: [
                         Text(
                           'Administrator',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: Theme.of(context).textTheme.titleLarge,
                         ),
                         const SizedBox(height: 8),
                         _buildActionTile(
@@ -469,9 +460,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         const SizedBox(height: 16),
         SelectableText(
           'Our principles:',
-          style: textStyle?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: textStyle,
         ),
         const SizedBox(height: 8),
         Padding(
@@ -779,9 +768,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   children: [
                     Text(
                       'Install the Parkour·Spot app',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -899,7 +886,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onPrimary,
                 fontSize: 12,
-                fontWeight: FontWeight.bold,
               ),
             ),
           ),

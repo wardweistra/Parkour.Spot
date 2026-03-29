@@ -649,9 +649,7 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
                                   ),
                                   Text(
                                     widget.spot.spotSourceName!,
-                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                      fontWeight: FontWeight.w500,
-                                    ),
+                                    style: Theme.of(context).textTheme.bodyMedium,
                                   ),
                                 ],
                               ),
@@ -710,7 +708,6 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
                                   Text(
                                     'Warning: Editing Spot from External Source',
                                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                      fontWeight: FontWeight.bold,
                                       color: Colors.orange.shade900,
                                     ),
                                   ),
@@ -842,12 +839,9 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text(
+                              Text(
                                 'YouTube Links',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: Theme.of(context).textTheme.titleMedium,
                               ),
                               IconButton(
                                 icon: const Icon(Icons.add),
@@ -909,9 +903,7 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
                         children: [
                           Text(
                             'Moderator Notes',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: Theme.of(context).textTheme.titleMedium,
                           ),
                           const SizedBox(height: 8),
                           const Text(

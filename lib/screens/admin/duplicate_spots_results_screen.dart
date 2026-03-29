@@ -137,7 +137,6 @@ class _DuplicateSpotsResultsScreenState extends State<DuplicateSpotsResultsScree
                           Text(
                             'Reviewing Duplicate Pairs',
                             style: TextStyle(
-                              fontWeight: FontWeight.bold,
                               color: Colors.blue[900],
                               fontSize: 14,
                             ),
@@ -173,7 +172,6 @@ class _DuplicateSpotsResultsScreenState extends State<DuplicateSpotsResultsScree
                                 sourceName,
                                 style: const TextStyle(
                                   fontSize: 18,
-                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -360,7 +358,6 @@ class _DuplicateSpotsResultsScreenState extends State<DuplicateSpotsResultsScree
                                               Text(
                                                 '${distanceMeters}m apart',
                                                 style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
                                                   color: Colors.orange[900],
                                                 ),
                                               ),
@@ -437,7 +434,6 @@ class _DuplicateSpotsResultsScreenState extends State<DuplicateSpotsResultsScree
                   label,
                   style: TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.bold,
                     color: Colors.grey[600],
                   ),
                 ),
@@ -455,7 +451,6 @@ class _DuplicateSpotsResultsScreenState extends State<DuplicateSpotsResultsScree
             Text(
               name,
               style: const TextStyle(
-                fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
             ),

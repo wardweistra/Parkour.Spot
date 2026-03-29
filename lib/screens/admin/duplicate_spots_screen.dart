@@ -117,7 +117,6 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
                       Text(
                         'How to use Duplicate Spot Detection',
                         style: TextStyle(
-                          fontWeight: FontWeight.bold,
                           color: Colors.blue[900],
                           fontSize: 14,
                         ),

@@ -68,7 +68,6 @@ class LocationInfoBox extends StatelessWidget {
                     child: SelectableText(
                       address!,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            fontWeight: FontWeight.w500,
                             color: Theme.of(context).colorScheme.onSurface,
                             height: 1.4,
                           ),
@@ -174,7 +173,6 @@ class LocationInfoBox extends StatelessWidget {
                   'Getting address...',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.w500,
                       ),
                 ),
               ],

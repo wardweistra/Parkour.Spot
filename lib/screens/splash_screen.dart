@@ -166,7 +166,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                     Text(
                       'Parkour·Spot',
                       style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
                         color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
@@ -177,7 +176,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                     Text(
                       'Parkour·Spot',
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
                     ),

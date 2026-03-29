@@ -80,9 +80,7 @@ class SpotListSaveButton extends StatelessWidget {
                         children: [
                           Text(
                             'Sign in to save lists',
-                            style: menuTheme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: menuTheme.textTheme.titleSmall,
                           ),
                           const SizedBox(height: 8),
                           Text(
@@ -107,7 +105,6 @@ class SpotListSaveButton extends StatelessWidget {
                                 'Log in or create account',
                                 style: menuTheme.textTheme.labelLarge?.copyWith(
                                   color: menuTheme.colorScheme.primary,
-                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],

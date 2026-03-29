@@ -47,7 +47,6 @@ class SpotAttributesSection extends StatelessWidget {
               'Long press any $itemType for more info',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.primary,
-                fontWeight: FontWeight.w500,
               ),
             ),
           ),
@@ -146,7 +145,7 @@ class SpotAttributesSection extends StatelessWidget {
                                 color: selected 
                                     ? Theme.of(context).colorScheme.primary
                                     : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                                fontWeight: FontWeight.w500,
+                                fontWeight: FontWeight.normal,
                                 fontSize: 14,
                               ),
                             ),
@@ -166,9 +165,7 @@ class SpotAttributesSection extends StatelessWidget {
           children: [
             Text(
               'Good For',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
             Text(
@@ -238,7 +235,7 @@ class SpotAttributesSection extends StatelessWidget {
                                 color: selected 
                                     ? Theme.of(context).colorScheme.primary
                                     : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                                fontWeight: FontWeight.w500,
+                                fontWeight: FontWeight.normal,
                                 fontSize: 14,
                               ),
                             ),
@@ -258,9 +255,7 @@ class SpotAttributesSection extends StatelessWidget {
           children: [
             Text(
               'Spot Features',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
             Text(
@@ -296,9 +291,7 @@ class SpotAttributesSection extends StatelessWidget {
           children: [
             Text(
               'Spot Access',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
             Text(
@@ -371,7 +364,7 @@ class SpotAttributesSection extends StatelessWidget {
                             label,
                             style: TextStyle(
                               color: textColor,
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.normal,
                               fontSize: 14,
                             ),
                           ),
@@ -430,7 +423,6 @@ class SpotAttributesSection extends StatelessWidget {
                           child: Text(
                             SpotAttributes.getDescription('access', selectedAccess!),
                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w500,
                               color: textColor,
                             ),
                           ),
@@ -503,7 +495,7 @@ class SpotAttributesSection extends StatelessWidget {
                               label,
                               style: TextStyle(
                                 color: textColor,
-                                fontWeight: FontWeight.w500,
+                                fontWeight: FontWeight.normal,
                                 fontSize: 14,
                               ),
                             ),
@@ -527,9 +519,7 @@ class SpotAttributesSection extends StatelessWidget {
           children: [
             Text(
               'Spot Facilities',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
             Text(

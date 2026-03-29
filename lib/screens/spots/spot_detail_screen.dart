@@ -523,7 +523,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         textSpans.add(
           TextSpan(
             text: _spot.folderName!,
-            style: textStyle?.copyWith(fontWeight: FontWeight.bold),
+            style: textStyle,
           ),
         );
       }
@@ -803,9 +803,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     children: [
                       Text(
                         'Login',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
+                        style: theme.textTheme.bodyMedium,
                       ),
                       Text(
                         'Sign in first to link edits to your account',
@@ -843,7 +841,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     Text(
                       'Flag as duplicate',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
                         color: _spot.duplicateOf == null
                             ? null
                             : theme.colorScheme.onSurface.withValues(
@@ -887,7 +884,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     Text(
                       'Suggest photo',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
                         color: _spot.duplicateOf == null
                             ? null
                             : theme.colorScheme.onSurface.withValues(
@@ -931,7 +927,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     Text(
                       'Suggest an edit',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
                         color: _spot.duplicateOf == null
                             ? null
                             : theme.colorScheme.onSurface.withValues(
@@ -971,9 +966,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                   children: [
                     Text(
                       'Report spot',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style: theme.textTheme.bodyMedium,
                     ),
                     Text(
                       'Help us review this spot',
@@ -1024,7 +1017,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         Text(
                           'Edit spot',
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w500,
                             color: shouldDisableEdit
                                 ? theme.colorScheme.onSurface.withValues(
                                     alpha: 0.38,
@@ -1069,7 +1061,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       Text(
                         'Mark as duplicate',
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
                           color: isAlreadyDuplicate
                               ? theme.colorScheme.onSurface.withValues(
                                   alpha: 0.38,
@@ -1111,9 +1102,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       children: [
                         Text(
                           'Remove duplicate status',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w500,
-                          ),
+                          style: theme.textTheme.bodyMedium,
                         ),
                         Text(
                           'Moderator only',
@@ -1147,9 +1136,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       children: [
                         Text(
                           'Create native spot',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w500,
-                          ),
+                          style: theme.textTheme.bodyMedium,
                         ),
                         Text(
                           'Moderator only',
@@ -1181,9 +1168,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     children: [
                       Text(
                         _spot.hidden ? 'Unhide spot' : 'Hide spot',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
+                        style: theme.textTheme.bodyMedium,
                       ),
                       Text(
                         'Moderator only',
@@ -1217,7 +1202,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         Text(
                           'Delete spot',
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w500,
                             color: Colors.red,
                           ),
                         ),
@@ -1257,9 +1241,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       children: [
                         Text(
                           'Trigger image resize',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w500,
-                          ),
+                          style: theme.textTheme.bodyMedium,
                         ),
                         Text(
                           'Re-create resized versions',
@@ -1717,10 +1699,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             Expanded(
                               child: SelectableText(
                                 _spot.name,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineMedium
-                                    ?.copyWith(fontWeight: FontWeight.bold),
+                                style: Theme.of(context).textTheme.headlineMedium,
                               ),
                             ),
                             // Rating display using cached data
@@ -1749,9 +1728,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                         style: Theme.of(context)
                                             .textTheme
                                             .titleLarge
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                                            ,
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
@@ -2086,9 +2063,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                         style: Theme.of(context)
                                             .textTheme
                                             .titleMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w600,
-                                            ),
+                                            ,
                                       ),
                                       const SizedBox(height: 8),
                                       _buildAccessChip(widget.spot.spotAccess!),
@@ -2252,9 +2227,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                       style: Theme.of(context)
                                           .textTheme
                                           .titleMedium
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                          ),
+                                          ,
                                     ),
                                     const SizedBox(height: 8),
                                     _buildAccessChip(widget.spot.spotAccess!),
@@ -2501,8 +2474,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                                             alpha: 0.8,
                                                           ),
                                                       fontSize: 10,
-                                                      fontWeight:
-                                                          FontWeight.w500,
                                                       letterSpacing: 0.5,
                                                     ),
                                                   ),
@@ -2545,9 +2516,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                                                 color: Colors
                                                                     .white,
                                                                 fontSize: 12,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w500,
                                                               ),
                                                           maxLines: 2,
                                                           overflow: TextOverflow
@@ -2953,10 +2921,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                           'Rate this spot',
                                           style: Theme.of(context)
                                               .textTheme
-                                              .titleMedium
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.w600,
-                                              ),
+                                              .titleMedium,
                                         ),
                                         const SizedBox(height: 16),
                                         Row(
@@ -2993,8 +2958,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                     'Rate this spot',
                                     style: Theme.of(context)
                                         .textTheme
-                                        .titleMedium
-                                        ?.copyWith(fontWeight: FontWeight.w600),
+                                        .titleMedium,
                                   ),
                                   const SizedBox(height: 16),
                                   Row(
@@ -3089,9 +3053,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                             style: Theme.of(context)
                                                 .textTheme
                                                 .titleMedium
-                                                ?.copyWith(
-                                                  fontWeight: FontWeight.w600,
-                                                ),
+                                                ,
                                             textAlign: TextAlign.center,
                                           ),
                                           const SizedBox(height: 8),
@@ -3332,7 +3294,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                           style: const TextStyle(
                                             color: Colors.white,
                                             fontSize: 11,
-                                            fontWeight: FontWeight.w500,
                                           ),
                                         ),
                                       ],
@@ -3436,8 +3397,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                 ),
                                 title: Text(
                                   'Also based on (${_duplicateSpots.length})',
-                                  style: Theme.of(context).textTheme.titleSmall
-                                      ?.copyWith(fontWeight: FontWeight.w600),
+                                  style: Theme.of(context).textTheme.titleSmall,
                                 ),
                                 contentPadding: EdgeInsets.zero,
                                 dense: true,
@@ -4714,7 +4674,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     const SizedBox(height: 8),
                     const Text(
                       'This spot has linked data:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     if (ratingsCount > 0)
@@ -4737,7 +4696,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       'Please resolve these links before deleting the spot.',
                       style: TextStyle(
                         color: Colors.red,
-                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
@@ -4912,7 +4870,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         avatar: Icon(icon, size: 16, color: textColor),
         label: Text(label),
         backgroundColor: backgroundColor,
-        labelStyle: TextStyle(color: textColor, fontWeight: FontWeight.w500),
+        labelStyle: TextStyle(
+          color: textColor,
+          fontWeight: FontWeight.normal,
+        ),
       ),
     );
   }
@@ -4936,7 +4897,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         ).colorScheme.primaryContainer.withValues(alpha: 0.1),
         labelStyle: TextStyle(
           color: Theme.of(context).colorScheme.onPrimaryContainer,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.normal,
         ),
       ),
     );
@@ -4981,7 +4942,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           ],
         ),
         backgroundColor: backgroundColor,
-        labelStyle: TextStyle(color: textColor, fontWeight: FontWeight.w500),
+        labelStyle: TextStyle(
+          color: textColor,
+          fontWeight: FontWeight.normal,
+        ),
       ),
     );
   }
@@ -4999,7 +4963,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
             title,
             style: Theme.of(
               context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            ).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
           Wrap(spacing: 8, runSpacing: 8, children: chips),
@@ -5022,7 +4986,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
               title,
               style: Theme.of(
                 context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              ).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
             Wrap(
@@ -5067,7 +5031,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             '$remainingCount more',
                             style: TextStyle(
                               fontSize: 14,
-                              fontWeight: FontWeight.w500,
                               color: Theme.of(context).colorScheme.primary,
                             ),
                           ),
@@ -5102,7 +5065,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         ).colorScheme.primaryContainer.withValues(alpha: 0.1),
         labelStyle: TextStyle(
           color: Theme.of(context).colorScheme.onPrimaryContainer,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.normal,
         ),
       ),
     );
@@ -5620,9 +5583,7 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
                   children: [
                     Text(
                       spot.name,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: theme.textTheme.titleSmall,
                     ),
                     if (spot.description.isNotEmpty) ...[
                       const SizedBox(height: 4),
@@ -5716,9 +5677,7 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
                 const SizedBox(height: 16),
                 Text(
                   'Which spot is this a duplicate of?',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: theme.textTheme.titleSmall,
                 ),
                 const SizedBox(height: 8),
                 if (duplicateSpotError != null) ...[
@@ -5780,9 +5739,7 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
                   else if (_nearbySpots.isNotEmpty) ...[
                     Text(
                       'Nearby spots (within ~50m)',
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: theme.textTheme.titleSmall,
                     ),
                     const SizedBox(height: 8),
                     ConstrainedBox(
@@ -5808,9 +5765,7 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
                   if (_foundSpot != null) ...[
                     Text(
                       'Found Spot',
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: theme.textTheme.titleSmall,
                     ),
                     const SizedBox(height: 8),
                     _buildSpotSelectionItem(_foundSpot!, theme, dialogContext),
@@ -5828,9 +5783,7 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
                               children: [
                                 Text(
                                   _selectedDuplicateSpot!.name,
-                                  style: theme.textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  style: theme.textTheme.titleSmall,
                                 ),
                                 if (_selectedDuplicateSpot!
                                     .description
@@ -6146,9 +6099,7 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
               const SizedBox(height: 16),
               Text(
                 'What is happening?',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: theme.textTheme.titleSmall,
               ),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
@@ -6513,7 +6464,7 @@ class _DuplicateTransferDialogState extends State<_DuplicateTransferDialog> {
               if (hasTransferOptions) ...[
                 const Text(
                   'Select which items to add to the original spot:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(),
                 ),
                 const SizedBox(height: 8),
                 if (widget.hasPhotos)
@@ -6545,7 +6496,6 @@ class _DuplicateTransferDialogState extends State<_DuplicateTransferDialog> {
                 if (hasTransferOptions) const SizedBox(height: 16),
                 const Text(
                   'Select which items to overwrite in the original spot (if set):',
-                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 if (_hasName)
@@ -6844,9 +6794,7 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
                 // Photo selection
                 Text(
                   'Select Photos',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: theme.textTheme.titleSmall,
                 ),
                 const SizedBox(height: 8),
                 ElevatedButton.icon(
@@ -6912,9 +6860,7 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
                 // Details field
                 Text(
                   'Additional Details (Optional)',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: theme.textTheme.titleSmall,
                 ),
                 const SizedBox(height: 8),
                 TextField(
@@ -7271,9 +7217,7 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
                 const SizedBox(height: 16),
                 Text(
                   'Location',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: theme.textTheme.titleSmall,
                 ),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
@@ -7314,9 +7258,7 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
                 const SizedBox(height: 16),
                 Text(
                   'Title',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: theme.textTheme.titleSmall,
                 ),
                 const SizedBox(height: 4),
                 TextField(
@@ -7335,9 +7277,7 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
                 const SizedBox(height: 16),
                 Text(
                   'Description',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: theme.textTheme.titleSmall,
                 ),
                 const SizedBox(height: 4),
                 TextField(
@@ -7357,9 +7297,7 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
                 const SizedBox(height: 16),
                 Text(
                   'Spot attributes',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: theme.textTheme.titleSmall,
                 ),
                 const SizedBox(height: 8),
                 SpotAttributesSection(
@@ -7480,9 +7418,7 @@ class _SpotSaveMenu extends StatelessWidget {
                         children: [
                           Text(
                             'Sign in to save spots',
-                            style: menuTheme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: menuTheme.textTheme.titleSmall,
                           ),
                           const SizedBox(height: 8),
                           Text(
@@ -7508,7 +7444,6 @@ class _SpotSaveMenu extends StatelessWidget {
                                 'Log in or create account',
                                 style: menuTheme.textTheme.labelLarge?.copyWith(
                                   color: menuTheme.colorScheme.primary,
-                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
@@ -7745,9 +7680,7 @@ class _SpotSaveMenu extends StatelessWidget {
                                     Text(
                                       'Add to custom list',
                                       style: menuTheme.textTheme.bodyMedium
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w500,
-                                          ),
+                                          ,
                                     ),
                                     Text(
                                       'Choose or create a list',
@@ -8007,9 +7940,7 @@ class _AddToListDialogState extends State<_AddToListDialog> {
                 children: [
                   Text(
                     'Select sections:',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 8),
                   ...(list.sections ?? []).map(
@@ -8164,9 +8095,7 @@ class _AddToListDialogState extends State<_AddToListDialog> {
                 ] else ...[
                   Text(
                     'Select lists to add this spot to:',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: theme.textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 8),
                   ...widget.lists.map(
@@ -8233,9 +8162,7 @@ class _AddToListDialogState extends State<_AddToListDialog> {
               ] else ...[
                 Text(
                   'Create New List',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: theme.textTheme.titleMedium,
                 ),
                 const SizedBox(height: 16),
                 TextField(

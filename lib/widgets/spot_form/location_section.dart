@@ -51,15 +51,12 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
               children: [
                 Text(
                   'Select Spot Location',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   '*',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
                         color: Theme.of(context).colorScheme.error,
                       ),
                 ),
@@ -97,7 +94,6 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
                       'Location not available',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Theme.of(context).colorScheme.error,
-                            fontWeight: FontWeight.w500,
                           ),
                     ),
                   ],
@@ -173,7 +169,6 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 11,
-                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ],

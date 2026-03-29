@@ -434,7 +434,7 @@ class _SpotListAdvancedOrganizationScreenState
             ),
             title: Text(
               section.title?.trim().isEmpty != false ? 'Section ${sectionIndex + 1}' : section.title!,
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              style: theme.textTheme.titleMedium,
             ),
             subtitle: section.text != null && section.text!.trim().isNotEmpty
                 ? Text(

@@ -317,7 +317,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                           color: Theme.of(
                                             context,
                                           ).colorScheme.onSurfaceVariant,
-                                          fontWeight: FontWeight.w500,
                                         ),
                                   ),
                                 ],
@@ -365,7 +364,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                               .headlineMedium
                                               ?.copyWith(
                                                 color: Colors.white,
-                                                fontWeight: FontWeight.bold,
                                               ),
                                         )
                                       : null,
@@ -406,8 +404,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                           // User Name
                           Text(
                             user.displayName ?? 'User',
-                            style: Theme.of(context).textTheme.headlineSmall
-                                ?.copyWith(fontWeight: FontWeight.bold),
+                            style: Theme.of(context).textTheme.headlineSmall,
                           ),
 
                           // Username (if set)
@@ -540,9 +537,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                 children: [
                   Text(
                     'Spot tracking',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 8),
                   if (wantCount == 0 && visitedCount == 0)
@@ -735,8 +730,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                               children: [
                                 Text(
                                   'Spot lists',
-                                  style: Theme.of(context).textTheme.titleLarge
-                                      ?.copyWith(fontWeight: FontWeight.bold),
+                                  style: Theme.of(context).textTheme.titleLarge,
                                 ),
                                 if (canManageLists)
                                   IconButton(
@@ -753,8 +747,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                               const SizedBox(height: 12),
                               Text(
                                 'Yours',
-                                style: Theme.of(context).textTheme.titleMedium
-                                    ?.copyWith(fontWeight: FontWeight.w600),
+                                style: Theme.of(context).textTheme.titleMedium,
                               ),
                               const SizedBox(height: 8),
                               if (lists.isEmpty)
@@ -871,8 +864,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                             ],
                             Text(
                               'Saved',
-                              style: Theme.of(context).textTheme.titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.w600),
+                              style: Theme.of(context).textTheme.titleMedium,
                             ),
                             const SizedBox(height: 8),
                             _buildSavedSpotListsSubsection(
@@ -902,8 +894,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                 isOwnProfile
                                     ? 'Spot lists'
                                     : 'Public Spot Lists',
-                                style: Theme.of(context).textTheme.titleLarge
-                                    ?.copyWith(fontWeight: FontWeight.bold),
+                                style: Theme.of(context).textTheme.titleLarge,
                               ),
                               if (canManageLists)
                                 IconButton(
@@ -1823,7 +1814,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           count.toString(),
           style: Theme.of(
             context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          ).textTheme.titleLarge,
         ),
         const SizedBox(height: 2),
         Text(
@@ -1940,7 +1931,7 @@ class _ProfileSettingsSheetContentState
                 'Profile Settings',
                 style: Theme.of(
                   context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ).textTheme.titleLarge,
               ),
               const Spacer(),
               IconButton(
@@ -1985,7 +1976,7 @@ class _ProfileSettingsSheetContentState
           'Email',
           style: Theme.of(
             context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          ).textTheme.titleMedium,
         ),
         const SizedBox(height: 8),
         Text(
@@ -2020,7 +2011,7 @@ class _ProfileSettingsSheetContentState
           'Display Name',
           style: Theme.of(
             context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          ).textTheme.titleMedium,
         ),
         const SizedBox(height: 8),
         if (!_isEditingDisplayName) ...[
@@ -2161,7 +2152,7 @@ class _ProfileSettingsSheetContentState
           'Username',
           style: Theme.of(
             context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          ).textTheme.titleMedium,
         ),
         const SizedBox(height: 8),
         if (!_isEditingUsername) ...[
@@ -2324,7 +2315,7 @@ class _ProfileSettingsSheetContentState
           'Instagram',
           style: Theme.of(
             context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          ).textTheme.titleMedium,
         ),
         const SizedBox(height: 8),
         if (!_isEditingInstagramUrl) ...[
@@ -2484,7 +2475,7 @@ class _ProfileSettingsSheetContentState
           'Profile Privacy',
           style: Theme.of(
             context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          ).textTheme.titleMedium,
         ),
         const SizedBox(height: 8),
         Row(

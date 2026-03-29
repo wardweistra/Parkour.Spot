@@ -235,9 +235,7 @@ class _SpotListManageSpotsScreenState extends State<SpotListManageSpotsScreen> {
                   children: [
                     Text(
                       spot.name,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: theme.textTheme.titleMedium,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),

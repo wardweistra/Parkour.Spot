@@ -35,15 +35,12 @@ class SpotImageSection extends StatelessWidget {
               children: [
                 Text(
                   'Select Spot Images',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   '*',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
                         color: Theme.of(context).colorScheme.error,
                       ),
                 ),

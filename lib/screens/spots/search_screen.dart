@@ -2411,9 +2411,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                             Expanded(
                               child: Text(
                                 _selectedList!.name,
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: Theme.of(context).textTheme.titleLarge,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -3070,9 +3068,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                   children: [
                                     Text(
                                       'Add spot at this location?',
-                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                      style: Theme.of(context).textTheme.titleMedium,
                                     ),
                                     const SizedBox(height: 12),
                                     Row(
@@ -3198,7 +3194,6 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                                     ? '$_totalSpotsInView spots'
                                                     : '${_visibleSpots.length} ${_visibleSpots.length == 1 ? 'spot' : 'spots'} found',
                                                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                                  fontWeight: FontWeight.bold,
                                                   color: Theme.of(context).colorScheme.onSurface,
                                                 ),
                                               ),

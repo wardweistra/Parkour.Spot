@@ -97,7 +97,6 @@ class _SpotReportQueueScreenState extends State<SpotReportQueueScreen> {
                                   color: isSelected
                                       ? theme.colorScheme.secondaryContainer
                                       : theme.colorScheme.onSecondaryContainer,
-                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
@@ -429,7 +428,6 @@ class _ReportCardState extends State<_ReportCard> {
                         child: Text(
                           widget.report.spotName,
                           style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
                             color: colorScheme.primary,
                           ),
                         ),
@@ -582,7 +580,6 @@ class _ReportCardState extends State<_ReportCard> {
                     TextSpan(
                       text: 'Additional Details: ',
                       style: TextStyle(
-                        fontWeight: FontWeight.w600,
                         color: colorScheme.secondary,
                       ),
                     ),
@@ -602,7 +599,6 @@ class _ReportCardState extends State<_ReportCard> {
                     TextSpan(
                       text: 'Moderator Comment: ',
                       style: TextStyle(
-                        fontWeight: FontWeight.w600,
                         color: colorScheme.secondary,
                       ),
                     ),
@@ -627,7 +623,6 @@ class _ReportCardState extends State<_ReportCard> {
                   Text(
                     'Accepted Photos',
                     style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
                       color: colorScheme.primary,
                     ),
                   ),
@@ -722,7 +717,6 @@ class _ReportCardState extends State<_ReportCard> {
               Text(
                 'Fields with suggested changes',
                 style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
                   color: colorScheme.secondary,
                 ),
               ),
@@ -780,7 +774,6 @@ class _ReportCardState extends State<_ReportCard> {
               Text(
                 'Suggested Photos',
                 style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
                   color: colorScheme.secondary,
                 ),
               ),
@@ -866,7 +859,6 @@ class _ReportCardState extends State<_ReportCard> {
                   Text(
                     'Rejected Photos',
                     style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
                       color: colorScheme.error,
                     ),
                   ),

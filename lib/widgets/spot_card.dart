@@ -283,9 +283,7 @@ class _SpotCardState extends State<SpotCard> {
                             Expanded(
                               child: Text(
                                 widget.spot.name,
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: Theme.of(context).textTheme.titleLarge,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -807,9 +805,7 @@ class _SpotCardState extends State<SpotCard> {
                           Expanded(
                             child: Text(
                               widget.spot.name,
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: Theme.of(context).textTheme.titleLarge,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
