@@ -157,7 +157,7 @@ class _SpotReportQueueScreenState extends State<SpotReportQueueScreen> {
 
                   return ListView.separated(
                     itemCount: reports.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    separatorBuilder: (_, _) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final report = reports[index];
                       final isUpdating = _updatingReportIds.contains(report.id);
