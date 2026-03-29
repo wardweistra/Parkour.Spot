@@ -35,7 +35,7 @@ class WebShareService {
     }
 
     try {
-      final data = web.ShareData(text: text, url: url);
+      final data = web.ShareData(title: text, text: text, url: url);
       final nav = web.window.navigator;
       if (!nav.canShare(data)) {
         return WebShareOutcome.fallback;
