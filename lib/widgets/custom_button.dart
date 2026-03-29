@@ -29,8 +29,18 @@ class CustomButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final defaultBackgroundColor = backgroundColor ?? theme.colorScheme.primary;
-    final defaultTextColor = textColor ?? theme.colorScheme.onPrimary;
+    final scheme = theme.colorScheme;
+    final defaultBackgroundColor = backgroundColor ?? scheme.primary;
+    final defaultTextColor = textColor ?? scheme.onPrimary;
+
+    // Filled buttons use M3 defaults that often fail WCAG when disabled on dark
+    // themes. Opaque blend keeps text/icons readable while still reading muted.
+    final disabledFill = scheme.surfaceContainerHighest;
+    final disabledBlendBase = isOutlined ? scheme.surface : disabledFill;
+    final disabledForeground = Color.alphaBlend(
+      scheme.onSurface.withValues(alpha: 0.78),
+      disabledBlendBase,
+    );
 
     return SizedBox(
       width: width,
@@ -40,6 +50,8 @@ class CustomButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: isOutlined ? Colors.transparent : defaultBackgroundColor,
           foregroundColor: isOutlined ? defaultBackgroundColor : defaultTextColor,
+          disabledBackgroundColor: isOutlined ? Colors.transparent : disabledFill,
+          disabledForegroundColor: disabledForeground,
           elevation: isOutlined ? 0 : 2,
           shadowColor: isOutlined ? Colors.transparent : null,
           shape: RoundedRectangleBorder(
@@ -68,11 +80,7 @@ class CustomButton extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (icon != null) ...[
-                    Icon(
-                      icon,
-                      size: 20,
-                      color: isOutlined ? defaultBackgroundColor : defaultTextColor,
-                    ),
+                    Icon(icon, size: 20),
                     const SizedBox(width: 8),
                   ],
                   Text(
@@ -80,7 +88,6 @@ class CustomButton extends StatelessWidget {
                     style: theme.textTheme.labelLarge?.copyWith(
                       fontWeight: FontWeight.w600,
                       fontSize: 16,
-                      color: isOutlined ? defaultBackgroundColor : defaultTextColor,
                     ),
                   ),
                 ],
