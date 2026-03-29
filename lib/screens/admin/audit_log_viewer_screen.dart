@@ -168,7 +168,7 @@ class _DateTimeRangePickerDialogState extends State<_DateTimeRangePickerDialog> 
             // Start date and time
             const Text(
               'Start:',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(),
             ),
             const SizedBox(height: 8),
             Row(
@@ -194,7 +194,7 @@ class _DateTimeRangePickerDialogState extends State<_DateTimeRangePickerDialog> 
             // End date and time
             const Text(
               'End:',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(),
             ),
             const SizedBox(height: 8),
             Row(
@@ -825,7 +825,6 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                       '$fieldName: ',
                       style: const TextStyle(
                         fontSize: 12,
-                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -888,7 +887,6 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                     '$fieldName: ',
                     style: const TextStyle(
                       fontSize: 12,
-                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -936,7 +934,6 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                   '$fieldName:',
                   style: const TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
@@ -1059,7 +1056,6 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                     '$fieldName: ',
                     style: const TextStyle(
                       fontSize: 12,
-                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -1099,7 +1095,6 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                     '$fieldName:',
                     style: const TextStyle(
                       fontSize: 12,
-                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -1114,7 +1109,6 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                   style: TextStyle(
                     fontSize: 11,
                     color: Colors.green[700],
-                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
@@ -1134,7 +1128,6 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                   style: TextStyle(
                     fontSize: 11,
                     color: Colors.red[700],
-                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
@@ -1155,7 +1148,6 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                   style: TextStyle(
                     fontSize: 11,
                     color: Colors.red[700],
-                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
@@ -1175,7 +1167,6 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                   style: TextStyle(
                     fontSize: 11,
                     color: Colors.green[700],
-                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
@@ -1196,7 +1187,6 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                   style: TextStyle(
                     fontSize: 11,
                     color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
@@ -1245,7 +1235,6 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                   '$fieldName:',
                   style: const TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
@@ -1603,7 +1592,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
             const Text('Audit Log Viewer'),
             Text(
               dateRangeText,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+              style: const TextStyle(fontSize: 12),
             ),
           ],
         ),
@@ -1698,8 +1687,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                               ),
                               title: Text(
                                 entry.title ?? 'Unknown',
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold),
+                                style: const TextStyle(),
                               ),
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1826,8 +1814,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                             const SizedBox(height: 16),
                                             const Text(
                                               'Changes:',
-                                              style: TextStyle(
-                                                  fontWeight: FontWeight.bold),
+                                              style: TextStyle(),
                                             ),
                                             const SizedBox(height: 8),
                                             _buildChangesWidget(
@@ -1842,8 +1829,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                               const SizedBox(height: 16),
                                               const Text(
                                                 'Additional Information:',
-                                                style: TextStyle(
-                                                    fontWeight: FontWeight.bold),
+                                                style: TextStyle(),
                                               ),
                                               const SizedBox(height: 8),
                                               if (entry.metadata?['reportId'] != null)
@@ -1864,7 +1850,6 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                                         'Notes:',
                                                         style: TextStyle(
                                                           fontSize: 12,
-                                                          fontWeight: FontWeight.w500,
                                                         ),
                                                       ),
                                                       const SizedBox(height: 4),
@@ -1881,8 +1866,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                             const SizedBox(height: 16),
                                             const Text(
                                               'Related Spots:',
-                                              style: TextStyle(
-                                                  fontWeight: FontWeight.bold),
+                                              style: TextStyle(),
                                             ),
                                             const SizedBox(height: 8),
                                             ...dialogSpotIds.asMap().entries.map(
@@ -1928,8 +1912,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                             const SizedBox(height: 16),
                                             const Text(
                                               'Metadata:',
-                                              style: TextStyle(
-                                                  fontWeight: FontWeight.bold),
+                                              style: TextStyle(),
                                             ),
                                             const SizedBox(height: 8),
                                             ...entry.metadata!.entries

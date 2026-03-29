@@ -65,7 +65,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: const [
-                    Text('What this does', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text('What this does', style: TextStyle()),
                     SizedBox(height: 8),
                     Text('• Finds all spots where any of address, city, or country are empty'),
                     Text('• Reverse geocodes coordinates to get address, city, country code'),
@@ -93,7 +93,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Last run', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                      const Text('Last run', style: TextStyle( fontSize: 18)),
                       const SizedBox(height: 12),
                       Text(
                         _lastResult!['message']?.toString() ?? '',
@@ -111,7 +111,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Overview', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                              const Text('Overview', style: TextStyle( fontSize: 16)),
                               const SizedBox(height: 8),
                               Row(
                                 children: [
@@ -146,7 +146,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Processing Results', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                              const Text('Processing Results', style: TextStyle( fontSize: 16)),
                               const SizedBox(height: 8),
                               Wrap(
                                 spacing: 12,
@@ -178,7 +178,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
                                 const SizedBox(height: 8),
                                 Text(
                                   'Success Rate: ${_lastResult!['stats']['successRate']}',
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                  style: const TextStyle( fontSize: 14),
                                 ),
                               ],
                             ],
@@ -310,7 +310,6 @@ class _StatChip extends StatelessWidget {
         '$label: ${value ?? '-'}',
         style: TextStyle(
           color: color ?? Colors.black87,
-          fontWeight: FontWeight.w500,
         ),
       ),
     );
@@ -343,7 +342,6 @@ class _StatCard extends StatelessWidget {
             value,
             style: TextStyle(
               fontSize: 24,
-              fontWeight: FontWeight.bold,
               color: color,
             ),
           ),
@@ -353,7 +351,6 @@ class _StatCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               color: color.withValues(alpha: 0.8),
-              fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.center,
           ),

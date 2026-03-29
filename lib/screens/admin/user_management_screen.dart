@@ -658,16 +658,14 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                     displayName != null && displayName.isNotEmpty
                                         ? '$displayName ($email)'
                                         : email,
-                                    style: Theme.of(ctx).textTheme.titleSmall?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                    style: Theme.of(ctx).textTheme.titleSmall,
                                   ),
                                   const SizedBox(height: 8),
                                   if (from != null) ...[
                                     Row(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        const Text('From: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                                        const Text('From: '),
                                         Expanded(
                                           child: Text(
                                             _formatTimestamp(from),
@@ -682,7 +680,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                   Row(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      const Text('To:   ', style: TextStyle(fontWeight: FontWeight.bold)),
+                                      const Text('To:   '),
                                       Expanded(
                                         child: Text(
                                           _formatTimestamp(to ?? ''),
@@ -1284,7 +1282,7 @@ class _StatTile extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             value,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 4),
           Text(label, style: Theme.of(context).textTheme.bodyMedium),

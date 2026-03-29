@@ -114,7 +114,6 @@ class _ApiClientsScreenState extends State<ApiClientsScreen> {
                           warning,
                           style: TextStyle(
                             color: Colors.amber.shade900,
-                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
@@ -125,7 +124,7 @@ class _ApiClientsScreenState extends State<ApiClientsScreen> {
               ],
               const Text(
                 'API Key:',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(),
               ),
               const SizedBox(height: 8),
               SelectableText(

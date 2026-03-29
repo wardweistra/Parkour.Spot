@@ -127,7 +127,6 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
                   '${_spots.length}',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
                 ),
@@ -222,7 +221,6 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
                     Text(
                       'Found ${_spots.length} spot${_spots.length == 1 ? '' : 's'} with duplicate image URLs',
                       style: const TextStyle(
-                        fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
                     ),
@@ -270,7 +268,6 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
                               child: Text(
                                 spot.name,
                                 style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
                                   fontSize: 16,
                                 ),
                               ),
@@ -371,7 +368,6 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
                                   Text(
                                     'Duplicate Image URLs Detected',
                                     style: TextStyle(
-                                      fontWeight: FontWeight.bold,
                                       color: Colors.orange[900],
                                     ),
                                   ),
@@ -400,7 +396,6 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
                                           style: TextStyle(
                                             fontSize: 11,
                                             color: Colors.orange[900],
-                                            fontWeight: FontWeight.bold,
                                           ),
                                         ),
                                       ),

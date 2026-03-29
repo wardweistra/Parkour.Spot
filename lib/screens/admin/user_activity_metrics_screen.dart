@@ -156,7 +156,7 @@ class _UserActivityMetricsScreenState extends State<UserActivityMetricsScreen> {
                 children: const [
                   Text(
                     'What this does',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                    style: TextStyle( fontSize: 18),
                   ),
                   SizedBox(height: 12),
                   Text(
@@ -215,7 +215,7 @@ class _UserActivityMetricsScreenState extends State<UserActivityMetricsScreen> {
                   children: [
                     const Text(
                       'Last Calculation Result',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                      style: TextStyle( fontSize: 18),
                     ),
                     const SizedBox(height: 12),
                     if (lastResult['date'] != null)
@@ -224,7 +224,7 @@ class _UserActivityMetricsScreenState extends State<UserActivityMetricsScreen> {
                     if (lastResult['metrics'] != null) ...[
                       const Text(
                         'Metrics:',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                        style: TextStyle(),
                       ),
                       const SizedBox(height: 4),
                       Text('  • DAU: ${lastResult['metrics']['dau'] ?? 0}'),

@@ -119,7 +119,6 @@ class _MissingResizedImagesScreenState extends State<MissingResizedImagesScreen>
                   '${_results.length}',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
                 ),
@@ -222,7 +221,6 @@ class _MissingResizedImagesScreenState extends State<MissingResizedImagesScreen>
                     Text(
                       'Found ${_results.length} spot${_results.length == 1 ? '' : 's'} with images missing resized versions',
                       style: const TextStyle(
-                        fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
                     ),
@@ -271,7 +269,6 @@ class _MissingResizedImagesScreenState extends State<MissingResizedImagesScreen>
                               child: Text(
                                 spot.name,
                                 style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
                                   fontSize: 16,
                                 ),
                               ),
@@ -347,7 +344,6 @@ class _MissingResizedImagesScreenState extends State<MissingResizedImagesScreen>
                                   Text(
                                     '${missingUrls.length} image${missingUrls.length == 1 ? '' : 's'} missing resized version',
                                     style: TextStyle(
-                                      fontWeight: FontWeight.bold,
                                       color: Colors.orange[900],
                                     ),
                                   ),

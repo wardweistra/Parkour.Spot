@@ -12,6 +12,14 @@ import '../../services/sync_source_service.dart';
 import '../../utils/image_preparation.dart';
 import '../../widgets/spot_form/attributes_section.dart';
 
+/// Material [Chip] / [ActionChip] labels use theme label styles that read as semi-bold.
+const TextStyle _kSyncChipLabelText = TextStyle(
+  fontSize: 11,
+  fontWeight: FontWeight.normal,
+);
+
+const TextStyle _kSyncChipPlainLabel = TextStyle(fontWeight: FontWeight.normal);
+
 class SyncSourcesScreen extends StatefulWidget {
   const SyncSourcesScreen({super.key});
 
@@ -307,7 +315,10 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Chip(label: Text(s.isActive ? 'Active' : 'Inactive')),
+                          Chip(
+                            label: Text(s.isActive ? 'Active' : 'Inactive'),
+                            labelStyle: _kSyncChipPlainLabel,
+                          ),
                           if (s.syncInProgress == true) ...[
                             const SizedBox(width: 8),
                             Chip(
@@ -323,6 +334,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                                   Text('Syncing ${s.syncType ?? 'unknown'}...'),
                                 ],
                               ),
+                              labelStyle: _kSyncChipPlainLabel,
                               backgroundColor: Colors.orange.shade100,
                             ),
                           ] else if (s.autoSyncEnabled == true) ...[
@@ -336,12 +348,16 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                                   Text('Auto-Sync ON'),
                                 ],
                               ),
+                              labelStyle: _kSyncChipPlainLabel,
                               backgroundColor: Colors.green.shade100,
                             ),
                           ],
                           if (s.lastSyncAt != null) ...[
                             const SizedBox(width: 8),
-                            Chip(label: Text('Last sync: ${s.lastSyncAt}')),
+                            Chip(
+                              label: Text('Last sync: ${s.lastSyncAt}'),
+                              labelStyle: _kSyncChipPlainLabel,
+                            ),
                           ],
                         ],
                       ),
@@ -361,7 +377,6 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                                     Text(
                                       'Sync in Progress (${s.syncType ?? 'unknown'})',
                                       style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
                                         fontSize: 12,
                                       ),
                                     ),
@@ -378,13 +393,12 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                                         children: [
                                           Text(
                                             'Progress: ${s.syncProgress!['processedCount']}/${s.syncProgress!['totalCount']} spots',
-                                            style: const TextStyle(fontSize: 11),
+                                            style: _kSyncChipLabelText,
                                           ),
                                           Text(
                                             '${((s.syncProgress!['processedCount'] as num) / (s.syncProgress!['totalCount'] as num) * 100).toStringAsFixed(1)}%',
                                             style: const TextStyle(
                                               fontSize: 11,
-                                              fontWeight: FontWeight.bold,
                                             ),
                                           ),
                                         ],
@@ -401,7 +415,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                                 else
                                   const Text(
                                     'Processing...',
-                                    style: TextStyle(fontSize: 11),
+                                    style: _kSyncChipLabelText,
                                   ),
                               ],
                             ),
@@ -414,15 +428,17 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                           spacing: 4,
                           runSpacing: 2,
                           children: [
-                            const Text('Auto-Sync Details:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                            const Text('Auto-Sync Details:', style: TextStyle( fontSize: 12)),
                             if (s.lightSyncSchedule != null && s.lightSyncSchedule!.isNotEmpty)
                               Chip(
-                                label: Text('Light: ${s.lightSyncSchedule}', style: const TextStyle(fontSize: 11)),
+                                label: Text('Light: ${s.lightSyncSchedule}', style: _kSyncChipLabelText),
+                                labelStyle: _kSyncChipLabelText,
                                 backgroundColor: Colors.blue.shade50,
                               ),
                             if (s.fullSyncSchedule != null && s.fullSyncSchedule!.isNotEmpty)
                               Chip(
-                                label: Text('Full: ${s.fullSyncSchedule}', style: const TextStyle(fontSize: 11)),
+                                label: Text('Full: ${s.fullSyncSchedule}', style: _kSyncChipLabelText),
+                                labelStyle: _kSyncChipLabelText,
                                 backgroundColor: Colors.purple.shade50,
                               ),
                           ],
@@ -435,12 +451,14 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                             children: [
                               if (s.lastLightSyncAt != null)
                                 Chip(
-                                  label: Text('Last light sync: ${s.lastLightSyncAt}', style: const TextStyle(fontSize: 11)),
+                                  label: Text('Last light sync: ${s.lastLightSyncAt}', style: _kSyncChipLabelText),
+                                  labelStyle: _kSyncChipLabelText,
                                   backgroundColor: Colors.blue.shade100,
                                 ),
                               if (s.lastFullSyncAt != null)
                                 Chip(
-                                  label: Text('Last full sync: ${s.lastFullSyncAt}', style: const TextStyle(fontSize: 11)),
+                                  label: Text('Last full sync: ${s.lastFullSyncAt}', style: _kSyncChipLabelText),
+                                  labelStyle: _kSyncChipLabelText,
                                   backgroundColor: Colors.purple.shade100,
                                 ),
                             ],
@@ -453,30 +471,35 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                           spacing: 4,
                           runSpacing: 2,
                           children: [
-                            const Text('Last sync stats:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                            const Text('Last sync stats:', style: TextStyle( fontSize: 12)),
                             if (s.lastSyncStats!['created'] != null)
                               Chip(
-                                label: Text('Created: ${s.lastSyncStats!['created']}', style: const TextStyle(fontSize: 11)),
+                                label: Text('Created: ${s.lastSyncStats!['created']}', style: _kSyncChipLabelText),
+                                labelStyle: _kSyncChipLabelText,
                                 backgroundColor: Colors.green.shade100,
                               ),
                             if (s.lastSyncStats!['updated'] != null)
                               Chip(
-                                label: Text('Updated: ${s.lastSyncStats!['updated']}', style: const TextStyle(fontSize: 11)),
+                                label: Text('Updated: ${s.lastSyncStats!['updated']}', style: _kSyncChipLabelText),
+                                labelStyle: _kSyncChipLabelText,
                                 backgroundColor: Colors.blue.shade100,
                               ),
                             if (s.lastSyncStats!['removed'] != null)
                               Chip(
-                                label: Text('Removed: ${s.lastSyncStats!['removed']}', style: const TextStyle(fontSize: 11)),
+                                label: Text('Removed: ${s.lastSyncStats!['removed']}', style: _kSyncChipLabelText),
+                                labelStyle: _kSyncChipLabelText,
                                 backgroundColor: Colors.red.shade100,
                               ),
                             if (s.lastSyncStats!['skipped'] != null)
                               Chip(
-                                label: Text('Skipped: ${s.lastSyncStats!['skipped']}', style: const TextStyle(fontSize: 11)),
+                                label: Text('Skipped: ${s.lastSyncStats!['skipped']}', style: _kSyncChipLabelText),
+                                labelStyle: _kSyncChipLabelText,
                                 backgroundColor: Colors.orange.shade100,
                               ),
                             if (s.lastSyncStats!['total'] != null)
                               Chip(
-                                label: Text('Total: ${s.lastSyncStats!['total']}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                label: Text('Total: ${s.lastSyncStats!['total']}', style: _kSyncChipLabelText),
+                                labelStyle: _kSyncChipLabelText,
                                 backgroundColor: Colors.grey.shade200,
                               ),
                           ],
@@ -488,9 +511,10 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                           spacing: 4,
                           runSpacing: 2,
                           children: [
-                            const Text('Include folders:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                            const Text('Include folders:', style: TextStyle( fontSize: 12)),
                             ...s.includeFolders!.map((folder) => Chip(
-                              label: Text(folder, style: const TextStyle(fontSize: 11)),
+                              label: Text(folder, style: _kSyncChipLabelText),
+                              labelStyle: _kSyncChipLabelText,
                               backgroundColor: Colors.green.shade100,
                             )),
                           ],
@@ -502,9 +526,10 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                           spacing: 4,
                           runSpacing: 2,
                           children: [
-                            const Text('All folders:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                            const Text('All folders:', style: TextStyle( fontSize: 12)),
                             ...s.allFolders!.map((folder) => Chip(
-                              label: Text(folder, style: const TextStyle(fontSize: 11)),
+                              label: Text(folder, style: _kSyncChipLabelText),
+                              labelStyle: _kSyncChipLabelText,
                               backgroundColor: Colors.blue.shade100,
                             )),
                           ],
@@ -521,16 +546,18 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                               Chip(
                                 label: const Text(
                                   'Source defaults enabled',
-                                  style: TextStyle(fontSize: 11),
+                                  style: _kSyncChipLabelText,
                                 ),
+                                labelStyle: _kSyncChipLabelText,
                                 backgroundColor: Colors.teal.shade100,
                               ),
                             if (s.folderSpotAttributes?.isNotEmpty ?? false)
                               Chip(
                                 label: Text(
                                   'Folder defaults: ${s.folderSpotAttributes!.length}',
-                                  style: const TextStyle(fontSize: 11),
+                                  style: _kSyncChipLabelText,
                                 ),
+                                labelStyle: _kSyncChipLabelText,
                                 backgroundColor: Colors.indigo.shade100,
                               ),
                           ],
@@ -773,7 +800,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
             SizedBox(height: 8),
             Text(
               'The function will:',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 12),
             ),
             SizedBox(height: 4),
             Text('• List all files in /spots folder (including /spots/resized)', style: TextStyle(fontSize: 12)),
@@ -1002,7 +1029,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                     children: [
                       Text('Found $orphanedCount orphaned spots out of $totalSpotsWithSource spots with spotSource field.'),
                       const SizedBox(height: 16),
-                      const Text('Orphaned spots:', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const Text('Orphaned spots:', style: TextStyle()),
                       const SizedBox(height: 8),
                       Flexible(
                         child: ListView.builder(
@@ -1025,7 +1052,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                                             children: [
                                               Text(
                                                 spot['spotName'] ?? 'Unnamed Spot',
-                                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                                style: const TextStyle(),
                                               ),
                                               Text('ID: ${spot['spotId']}'),
                                               Text('Source: ${spot['spotSource']}'),
@@ -1812,9 +1839,7 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   'Default Spot Attributes',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
               ),
               const SizedBox(height: 4),
@@ -1870,9 +1895,7 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   'Folder-specific Defaults',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
               ),
               const SizedBox(height: 4),
@@ -1916,6 +1939,7 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                             _findExistingFolderRuleKey(folder) == null)
                         .map((folder) => ActionChip(
                               label: Text(folder),
+                              labelStyle: _kSyncChipPlainLabel,
                               onPressed: () => _addFolderRule(folder),
                             ))
                         .toList(),
@@ -2016,7 +2040,7 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
               const Divider(),
               const Text(
                 'Auto-Sync Configuration',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle( fontSize: 16),
               ),
               const SizedBox(height: 8),
               SwitchListTile(

@@ -335,7 +335,6 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onPrimary,
                 fontSize: 12,
-                fontWeight: FontWeight.bold,
               ),
             ),
           ),
@@ -595,9 +594,7 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
                           const SizedBox(width: 8),
                           Text(
                             'Mobile Detection Service',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: Theme.of(context).textTheme.titleLarge,
                           ),
                         ],
                       ),
@@ -630,9 +627,7 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
                           const SizedBox(width: 8),
                           Text(
                             'PWA Install Service',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: Theme.of(context).textTheme.titleLarge,
                           ),
                         ],
                       ),
@@ -694,9 +689,7 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
                           const SizedBox(width: 8),
                           Text(
                             'PWA Diagnostics',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: Theme.of(context).textTheme.titleLarge,
                           ),
                         ],
                       ),
@@ -719,9 +712,7 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
                       const SizedBox(height: 8),
                       Text(
                         'Install Instructions',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.titleSmall,
                       ),
                       const SizedBox(height: 8),
                       _buildDiagnosticTip(context, 'iOS', 'Users see manual install instructions via Share button'),
@@ -745,9 +736,7 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
                     children: [
                       Text(
                         'Quick Status',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 12),
                       _buildStatusRow(
@@ -804,7 +793,7 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
             child: Text(
               label,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w500,
+                
                 color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
               ),
             ),
@@ -901,9 +890,7 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
               children: [
                 Text(
                   title,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 Text(
                   description,

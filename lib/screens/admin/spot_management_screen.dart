@@ -227,7 +227,7 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
                 children: [
                   const Text(
                     'Search Spots',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 18),
                   ),
                   const SizedBox(height: 16),
                   
@@ -237,7 +237,7 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
                     children: [
                       const Text(
                         'Search Mode',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                        style: TextStyle(fontSize: 14),
                       ),
                       const SizedBox(height: 8),
                       Row(
@@ -493,7 +493,6 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
               Expanded(
                 child: Text(
                   'Found ${_spots.length} spots',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
               if (_spots.isNotEmpty) ...[
@@ -506,7 +505,6 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
                 const SizedBox(width: 8),
                 Text(
                   '${_selectedSpotIds.length} selected',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ],
             ],
@@ -534,9 +532,6 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
                   ),
                   title: Text(
                     spot.name,
-                    style: TextStyle(
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    ),
                   ),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -581,7 +576,7 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
                             const SizedBox(width: 4),
                             Text(
                               'Removed: ${spot.spotSourceRemovedAt!.day}/${spot.spotSourceRemovedAt!.month}/${spot.spotSourceRemovedAt!.year}',
-                              style: TextStyle(color: Colors.red[600], fontSize: 12, fontWeight: FontWeight.w500),
+                              style: TextStyle(color: Colors.red[600], fontSize: 12),
                             ),
                           ],
                         ),
