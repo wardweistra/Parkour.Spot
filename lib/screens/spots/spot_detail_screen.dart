@@ -6604,20 +6604,31 @@ class _SuggestPhotoDialog extends StatefulWidget {
 
 class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
   late final TextEditingController detailsController;
+  late final TextEditingController emailController;
   final List<Uint8List> _selectedImageBytes = [];
   bool _isUploading = false;
   bool _isSubmitting = false;
   String? _submissionError;
+  String? emailError;
 
   @override
   void initState() {
     super.initState();
     detailsController = TextEditingController();
+    final authService = Provider.of<AuthService>(context, listen: false);
+    emailController = TextEditingController(
+      text: authService.isAuthenticated
+          ? (authService.userProfile?.email ??
+                authService.currentUser?.email ??
+                '')
+          : '',
+    );
   }
 
   @override
   void dispose() {
     detailsController.dispose();
+    emailController.dispose();
     super.dispose();
   }
 
@@ -6679,17 +6690,32 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
     }
 
     final authService = Provider.of<AuthService>(context, listen: false);
-    if (!authService.isAuthenticated) {
-      setState(() {
-        _submissionError =
-            'You must be logged in to suggest photos. Please log in and try again.';
-      });
-      return;
+    final bool isLoggedIn =
+        authService.isAuthenticated && authService.userProfile != null;
+
+    final trimmedEmail = emailController.text.trim();
+    if (!isLoggedIn) {
+      if (trimmedEmail.isEmpty) {
+        setState(() {
+          emailError = 'Please provide an email address.';
+          _submissionError = null;
+        });
+        return;
+      }
+      final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+      if (!emailRegex.hasMatch(trimmedEmail)) {
+        setState(() {
+          emailError = 'Enter a valid email address.';
+          _submissionError = null;
+        });
+        return;
+      }
     }
 
     setState(() {
       _isSubmitting = true;
       _submissionError = null;
+      emailError = null;
     });
 
     try {
@@ -6725,6 +6751,14 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
         return null;
       })();
 
+      final trimmedContactEmail = isLoggedIn
+          ? (emailController.text.trim().isNotEmpty
+                ? emailController.text.trim()
+                : authService.userProfile?.email ??
+                      authService.currentUser?.email ??
+                      '')
+          : trimmedEmail;
+
       // Create spot report
       final success = await reportService.submitSpotReport(
         spotId: widget.spot.id!,
@@ -6733,6 +6767,7 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
         details: detailsController.text.trim().isEmpty
             ? null
             : detailsController.text.trim(),
+        contactEmail: trimmedContactEmail.isEmpty ? null : trimmedContactEmail,
         reporterUserId: authService.userProfile?.id,
         reporterName: reporterName,
         reporterEmail:
@@ -6768,6 +6803,9 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
   @override
   Widget build(BuildContext dialogContext) {
     final theme = Theme.of(dialogContext);
+    final authService = Provider.of<AuthService>(dialogContext, listen: false);
+    final bool isLoggedIn =
+        authService.isAuthenticated && authService.userProfile != null;
 
     return PopScope(
       canPop: !_isSubmitting && !_isUploading,
@@ -6877,6 +6915,69 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
                   ),
                   enabled: !_isSubmitting && !_isUploading,
                 ),
+                const SizedBox(height: 16),
+                if (!isLoggedIn) ...[
+                  TextField(
+                    controller: emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    onChanged: (_) {
+                      if (emailError != null) {
+                        setState(() => emailError = null);
+                      }
+                    },
+                    decoration: InputDecoration(
+                      labelText: 'Email address',
+                      hintText: 'name@example.com',
+                      helperText:
+                          'We will contact you only about this suggestion.',
+                      errorText: emailError,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: theme.colorScheme.surfaceContainerHighest,
+                    ),
+                    enabled: !_isSubmitting && !_isUploading,
+                  ),
+                ] else ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: theme.colorScheme.outlineVariant.withValues(
+                          alpha: 0.5,
+                        ),
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.mail,
+                          size: 18,
+                          color: theme.colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            emailController.text.isNotEmpty
+                                ? 'We will reach out at ${emailController.text} if we need more info.'
+                                : 'We will reach out using your account email if we need more info.',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.7,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 if (_submissionError != null) ...[
                   const SizedBox(height: 16),
                   Text(
@@ -6925,6 +7026,7 @@ class _SuggestEditDialog extends StatefulWidget {
 class _SuggestEditDialogState extends State<_SuggestEditDialog> {
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
+  late final TextEditingController _emailController;
 
   LatLng? _suggestedLatLng;
   String? _geocodedAddress;
@@ -6937,6 +7039,7 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
 
   bool _isSubmitting = false;
   String? _submissionError;
+  String? _emailError;
 
   @override
   void initState() {
@@ -6944,6 +7047,14 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
     _nameController = TextEditingController(text: widget.spot.name);
     _descriptionController = TextEditingController(
       text: widget.spot.description,
+    );
+    final authService = Provider.of<AuthService>(context, listen: false);
+    _emailController = TextEditingController(
+      text: authService.isAuthenticated
+          ? (authService.userProfile?.email ??
+                authService.currentUser?.email ??
+                '')
+          : '',
     );
     _selectedAccess = widget.spot.spotAccess;
     _selectedFeatures.addAll(widget.spot.spotFeatures ?? []);
@@ -6955,6 +7066,7 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
+    _emailController.dispose();
     super.dispose();
   }
 
@@ -7057,17 +7169,32 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
     }
 
     final authService = Provider.of<AuthService>(context, listen: false);
-    if (!authService.isAuthenticated) {
-      setState(() {
-        _submissionError =
-            'You must be logged in to suggest edits. Please log in and try again.';
-      });
-      return;
+    final bool isLoggedIn =
+        authService.isAuthenticated && authService.userProfile != null;
+
+    final trimmedEmail = _emailController.text.trim();
+    if (!isLoggedIn) {
+      if (trimmedEmail.isEmpty) {
+        setState(() {
+          _emailError = 'Please provide an email address.';
+          _submissionError = null;
+        });
+        return;
+      }
+      final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+      if (!emailRegex.hasMatch(trimmedEmail)) {
+        setState(() {
+          _emailError = 'Enter a valid email address.';
+          _submissionError = null;
+        });
+        return;
+      }
     }
 
     setState(() {
       _isSubmitting = true;
       _submissionError = null;
+      _emailError = null;
     });
 
     try {
@@ -7075,6 +7202,14 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
         context,
         listen: false,
       );
+
+      final trimmedContactEmail = isLoggedIn
+          ? (_emailController.text.trim().isNotEmpty
+                ? _emailController.text.trim()
+                : authService.userProfile?.email ??
+                      authService.currentUser?.email ??
+                      '')
+          : trimmedEmail;
 
       final reporterName = (() {
         final profileName = authService.userProfile?.displayName;
@@ -7151,6 +7286,7 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
         spotName: widget.spot.name,
         categories: ['Edit suggestion'],
         details: null,
+        contactEmail: trimmedContactEmail.isEmpty ? null : trimmedContactEmail,
         reporterUserId: authService.userProfile?.id,
         reporterName: reporterName,
         reporterEmail:
@@ -7192,6 +7328,9 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final bool isLoggedIn =
+        authService.isAuthenticated && authService.userProfile != null;
 
     return PopScope(
       canPop: !_isSubmitting,
@@ -7215,6 +7354,70 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
                   style: theme.textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 16),
+                if (!isLoggedIn) ...[
+                  TextField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    onChanged: (_) {
+                      if (_emailError != null) {
+                        setState(() => _emailError = null);
+                      }
+                    },
+                    decoration: InputDecoration(
+                      labelText: 'Email address',
+                      hintText: 'name@example.com',
+                      helperText:
+                          'We will contact you only about this suggestion.',
+                      errorText: _emailError,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: theme.colorScheme.surfaceContainerHighest,
+                    ),
+                    enabled: !_isSubmitting,
+                  ),
+                  const SizedBox(height: 16),
+                ] else ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: theme.colorScheme.outlineVariant.withValues(
+                          alpha: 0.5,
+                        ),
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.mail,
+                          size: 18,
+                          color: theme.colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _emailController.text.isNotEmpty
+                                ? 'We will reach out at ${_emailController.text} if we need more info.'
+                                : 'We will reach out using your account email if we need more info.',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.7,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 Text(
                   'Location',
                   style: theme.textTheme.titleSmall,
