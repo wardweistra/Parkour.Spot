@@ -18,6 +18,7 @@ import '../screens/admin/missing_resized_images_screen.dart';
 import '../screens/admin/duplicate_spots_screen.dart';
 import '../screens/admin/duplicate_spots_results_screen.dart';
 import '../screens/admin/device_detection_screen.dart';
+import '../screens/debug/support_debug_screen.dart';
 import '../screens/admin/api_clients_screen.dart';
 import '../screens/moderator/moderator_tools_screen.dart';
 import '../screens/moderator/spot_report_queue_screen.dart';
@@ -412,6 +413,11 @@ class AppRouter {
             },
           ),
         ],
+      ),
+      // Hidden support page (not linked in UI); must be before /:countryCode routes
+      GoRoute(
+        path: '/debug',
+        builder: (context, state) => const SupportDebugScreen(),
       ),
       // Location routes - must come after specific routes like /spot/:spotId
       // Route for /:countryCode/:city (e.g., /gb/london)
