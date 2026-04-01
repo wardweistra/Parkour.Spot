@@ -346,9 +346,20 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     }
   }
 
+  String _formatSpotDocumentTitle(Spot s) {
+    final parts = <String>[];
+    final city = s.city?.trim();
+    if (city != null && city.isNotEmpty) parts.add(city);
+    final cc = s.countryCode?.trim();
+    if (cc != null && cc.isNotEmpty) parts.add(cc.toUpperCase());
+    final loc = parts.join(', ');
+    if (loc.isEmpty) return '${s.name} - Parkour·Spot';
+    return '${s.name} · $loc - Parkour·Spot';
+  }
+
   void _updateDocumentTitle() {
     if (kIsWeb) {
-      web.document.title = '${_spot.name} - Parkour·Spot';
+      web.document.title = _formatSpotDocumentTitle(_spot);
     }
   }
 

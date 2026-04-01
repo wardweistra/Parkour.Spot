@@ -94,6 +94,24 @@ const {
 const APP_DESCRIPTION = "Discover, map, and share the best parkour spots worldwide with community photos, ratings, and local tips for your next training session.";
 
 /**
+ * Browser tab title for spot detail pages (matches Flutter web SpotDetailScreen).
+ * @param {Object} spot
+ * @return {string}
+ */
+function spotTitleWithLocation(spot) {
+  const siteSuffix = "Parkour·Spot";
+  const name = spot.name;
+  const parts = [];
+  const city = spot.city != null ? String(spot.city).trim() : "";
+  if (city.length > 0) parts.push(city);
+  const cc = spot.countryCode != null ? String(spot.countryCode).trim() : "";
+  if (cc.length > 0) parts.push(cc.toUpperCase());
+  const loc = parts.join(", ");
+  if (loc.length === 0) return `${name} - ${siteSuffix}`;
+  return `${name} · ${loc} - ${siteSuffix}`;
+}
+
+/**
  * Helper: perform geocoding for given lat/lng
  * @param {number} latitude - The latitude coordinate
  * @param {number} longitude - The longitude coordinate
@@ -307,7 +325,7 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
 
     if (spot && spot.name) {
       // Spot detail page
-      title = `${spot.name} - Parkour·Spot`;
+      title = spotTitleWithLocation(spot);
       description = buildDescription(spot) + " — " + APP_DESCRIPTION;
     } else if (locationInfo) {
       // Location page
