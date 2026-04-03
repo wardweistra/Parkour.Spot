@@ -31,7 +31,16 @@ class UserManagementService extends ChangeNotifier {
 
   final List<app_user.User> _users = <app_user.User>[];
   bool _isLoading = false;
+  bool _isLoadingMore = false;
   String? _error;
+
+  /// Cursor for the next page of [users] (Firestore `orderBy createdAt` query).
+  QueryDocumentSnapshot<Map<String, dynamic>>? _lastUserDocument;
+
+  /// Whether another page may exist after the current [users] list.
+  bool _hasMoreUsers = true;
+
+  static const int _defaultPageSize = 50;
 
   final Map<String, UserStats> _statsCache = <String, UserStats>{};
   final Map<String, String> _statsErrors = <String, String>{};
@@ -59,6 +68,12 @@ class UserManagementService extends ChangeNotifier {
 
   /// Indicates whether the service is currently loading the user list.
   bool get isLoading => _isLoading;
+
+  /// True while loading the next page of users (first page uses [isLoading]).
+  bool get isLoadingMore => _isLoadingMore;
+
+  /// True if more users can be fetched with [loadMoreUsers].
+  bool get hasMoreUsers => _hasMoreUsers;
 
   /// Returns the latest error message for list loading operations, if present.
   String? get error => _error;
@@ -126,32 +141,35 @@ class UserManagementService extends ChangeNotifier {
   /// Returns cached statistics for the given user if available.
   UserStats? getStats(String userId) => _statsCache[userId];
 
-  /// Loads the most recent set of users from Firestore.
-  Future<void> fetchUsers({bool forceRefresh = false, int limit = 200}) async {
+  /// Loads the first page of users from Firestore (newest [createdAt] first).
+  ///
+  /// With [forceRefresh], clears the list and cursor and fetches from the start.
+  Future<void> fetchUsers({
+    bool forceRefresh = false,
+    int pageSize = _defaultPageSize,
+  }) async {
     if (_isLoading && !forceRefresh) {
       return;
     }
 
     _isLoading = true;
+    _isLoadingMore = false;
     _error = null;
+    if (forceRefresh) {
+      _users.clear();
+      _lastUserDocument = null;
+      _hasMoreUsers = true;
+    }
     notifyListeners();
 
     try {
       final querySnapshot = await _firestore
           .collection('users')
           .orderBy('createdAt', descending: true)
-          .limit(limit)
+          .limit(pageSize)
           .get();
 
-      _users
-        ..clear()
-        ..addAll(querySnapshot.docs.map((doc) {
-          final data = doc.data();
-          return app_user.User.fromMap(<String, dynamic>{
-            'id': doc.id,
-            ...data,
-          });
-        }));
+      _applyUserQueryPage(querySnapshot, pageSize, replaceExisting: true);
     } catch (e, stackTrace) {
       _error = 'Failed to load users';
       debugPrint('UserManagementService.fetchUsers error: $e');
@@ -159,6 +177,67 @@ class UserManagementService extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  /// Appends the next page of users using the Firestore cursor.
+  Future<void> loadMoreUsers({int pageSize = _defaultPageSize}) async {
+    if (!_hasMoreUsers ||
+        _isLoading ||
+        _isLoadingMore ||
+        _lastUserDocument == null) {
+      return;
+    }
+
+    _isLoadingMore = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final querySnapshot = await _firestore
+          .collection('users')
+          .orderBy('createdAt', descending: true)
+          .startAfterDocument(_lastUserDocument!)
+          .limit(pageSize)
+          .get();
+
+      _applyUserQueryPage(querySnapshot, pageSize, replaceExisting: false);
+    } catch (e, stackTrace) {
+      _error = 'Failed to load more users';
+      debugPrint('UserManagementService.loadMoreUsers error: $e');
+      debugPrint('$stackTrace');
+    } finally {
+      _isLoadingMore = false;
+      notifyListeners();
+    }
+  }
+
+  void _applyUserQueryPage(
+    QuerySnapshot<Map<String, dynamic>> snapshot,
+    int pageSize, {
+    required bool replaceExisting,
+  }) {
+    final docs = snapshot.docs;
+    if (replaceExisting) {
+      _users.clear();
+    }
+    for (final doc in docs) {
+      final data = doc.data();
+      _users.add(
+        app_user.User.fromMap(<String, dynamic>{
+          'id': doc.id,
+          ...data,
+        }),
+      );
+    }
+    if (replaceExisting) {
+      _lastUserDocument = docs.isNotEmpty ? docs.last : null;
+      _hasMoreUsers = docs.length >= pageSize;
+    } else if (docs.isEmpty) {
+      _hasMoreUsers = false;
+    } else {
+      _lastUserDocument = docs.last;
+      _hasMoreUsers = docs.length >= pageSize;
     }
   }
 

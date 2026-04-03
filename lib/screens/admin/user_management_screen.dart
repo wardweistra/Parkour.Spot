@@ -258,7 +258,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     return b.createdAt!.compareTo(a.createdAt!);
                   });
 
-                if (filteredUsers.isEmpty) {
+                if (filteredUsers.isEmpty && !service.hasMoreUsers) {
                   return RefreshIndicator(
                     onRefresh: () => service.fetchUsers(forceRefresh: true),
                     child: ListView(
@@ -279,13 +279,54 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   );
                 }
 
+                if (filteredUsers.isEmpty && service.hasMoreUsers) {
+                  return RefreshIndicator(
+                    onRefresh: () => service.fetchUsers(forceRefresh: true),
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(top: 80),
+                          child: Column(
+                            children: [
+                              const Icon(Icons.search_off, size: 64, color: Colors.grey),
+                              const SizedBox(height: 16),
+                              Text(
+                                _searchTerm.isEmpty
+                                    ? 'No users loaded'
+                                    : 'No users match your search in the loaded list',
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Load more accounts to search older users.',
+                                style: Theme.of(context).textTheme.bodySmall,
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 24),
+                              _UserListLoadMoreFooter(service: service),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                final bool showLoadMoreFooter = service.hasMoreUsers;
+                final int itemCount = filteredUsers.length + (showLoadMoreFooter ? 1 : 0);
+
                 return RefreshIndicator(
                   onRefresh: () => service.fetchUsers(forceRefresh: true),
                   child: ListView.separated(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                    itemCount: filteredUsers.length,
+                    itemCount: itemCount,
                     separatorBuilder: (_, _) => const SizedBox(height: 8),
                     itemBuilder: (context, index) {
+                      if (index >= filteredUsers.length) {
+                        return _UserListLoadMoreFooter(service: service);
+                      }
                       final user = filteredUsers[index];
                       final profilePath = _profilePathForUser(user);
                       return Card(
@@ -1544,6 +1585,33 @@ class _FeatureAccessSectionState extends State<_FeatureAccessSection> {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// Footer with "Load more" for paginated admin user list.
+class _UserListLoadMoreFooter extends StatelessWidget {
+  const _UserListLoadMoreFooter({required this.service});
+
+  final UserManagementService service;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Center(
+        child: service.isLoadingMore
+            ? const SizedBox(
+                width: 28,
+                height: 28,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : FilledButton.icon(
+                onPressed: () => service.loadMoreUsers(),
+                icon: const Icon(Icons.expand_more),
+                label: const Text('Load more'),
+              ),
+      ),
     );
   }
 }
