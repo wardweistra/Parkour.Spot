@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../services/auth_service.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../services/url_service.dart';
+import '../../widgets/page_scaffold.dart';
 
 class DuplicateSpotsResultsScreen extends StatefulWidget {
   final String runId;
@@ -50,28 +51,32 @@ class _DuplicateSpotsResultsScreenState extends State<DuplicateSpotsResultsScree
     final authService = context.watch<AuthService>();
     final hasModeratorAccess = authService.isModerator || authService.isAdmin;
     if (!hasModeratorAccess) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Duplicate Spot Results')),
+      return PageScaffold(
+        title: 'Duplicate Spot Results',
+        scrollable: false,
+        onBack: () {
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          } else {
+            context.go('/moderator/duplicate-spots');
+          }
+        },
         body: const Center(
           child: Text('Moderator access required'),
         ),
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Duplicate Spot Results'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            if (Navigator.canPop(context)) {
-              Navigator.pop(context);
-            } else {
-              context.go('/moderator/duplicate-spots');
-            }
-          },
-        ),
-      ),
+    return PageScaffold(
+      title: 'Duplicate Spot Results',
+      scrollable: false,
+      onBack: () {
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        } else {
+          context.go('/moderator/duplicate-spots');
+        }
+      },
       body: StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance
             .collection('duplicateDetectionResults')
@@ -299,7 +304,7 @@ class _DuplicateSpotsResultsScreenState extends State<DuplicateSpotsResultsScree
           child: ListView.builder(
             controller: _scrollController,
             key: PageStorageKey<String>('duplicate-results-${widget.runId}'),
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.zero,
             itemCount: displayPairs.length,
             itemBuilder: (context, listIndex) {
               final pairData = displayPairs[listIndex];

@@ -14,6 +14,7 @@ import '../../services/url_service.dart';
 import '../../services/spot_service.dart';
 import '../../widgets/photo_approval_dialog.dart';
 import '../../widgets/edit_suggestion_approval_dialog.dart';
+import '../../widgets/page_scaffold.dart';
 
 class SpotReportQueueScreen extends StatefulWidget {
   const SpotReportQueueScreen({super.key});
@@ -34,25 +35,19 @@ class _SpotReportQueueScreenState extends State<SpotReportQueueScreen> {
     final theme = Theme.of(context);
     final dateFormat = DateFormat.yMMMd().add_jm();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Spot Report Queue'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            if (Navigator.canPop(context)) {
-              Navigator.pop(context);
-            } else {
-              context.go('/moderator');
-            }
-          },
-        ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+    return PageScaffold(
+      title: 'Spot Report Queue',
+      scrollable: false,
+      onBack: () {
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        } else {
+          context.go('/moderator');
+        }
+      },
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
             Text(
               'Review user-submitted spot reports here. Mark reports as "Reviewing" when you start working on them to prevent duplicate efforts, and mark them as "Done" when complete.',
               style: theme.textTheme.bodyMedium?.copyWith(
@@ -173,7 +168,6 @@ class _SpotReportQueueScreenState extends State<SpotReportQueueScreen> {
             ),
           ],
         ),
-      ),
     );
   }
 

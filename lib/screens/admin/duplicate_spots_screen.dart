@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/auth_service.dart';
 import '../../services/spot_service.dart';
 import '../../services/sync_source_service.dart';
+import '../../widgets/page_scaffold.dart';
 
 class DuplicateSpotsScreen extends StatefulWidget {
   const DuplicateSpotsScreen({super.key});
@@ -77,28 +78,32 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
     final authService = context.watch<AuthService>();
     final hasModeratorAccess = authService.isModerator || authService.isAdmin;
     if (!hasModeratorAccess) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Duplicate Spots')),
+      return PageScaffold(
+        title: 'Duplicate Spot Detection',
+        scrollable: false,
+        onBack: () {
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          } else {
+            context.go('/moderator');
+          }
+        },
         body: const Center(
           child: Text('Moderator access required'),
         ),
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Duplicate Spot Detection'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            if (Navigator.canPop(context)) {
-              Navigator.pop(context);
-            } else {
-              context.go('/moderator');
-            }
-          },
-        ),
-      ),
+    return PageScaffold(
+      title: 'Duplicate Spot Detection',
+      scrollable: false,
+      onBack: () {
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        } else {
+          context.go('/moderator');
+        }
+      },
       body: Column(
         children: [
           // Instructions section
@@ -332,7 +337,7 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
               ),
             Expanded(
               child: ListView.builder(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.zero,
                 itemCount: filteredDocs.length,
                 itemBuilder: (context, index) {
                   final doc = filteredDocs[index];
