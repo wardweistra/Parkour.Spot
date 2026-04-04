@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:parkour_spot/l10n/app_localizations.dart';
+import 'package:parkour_spot/utils/web_meta_utils.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -189,7 +191,9 @@ class ParkourSpotApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => UserProfileService()),
       ],
       child: MaterialApp.router(
-        title: 'Parkour·Spot',
+        onGenerateTitle: (_) => WebMetaUtils.defaultTitle,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         routerConfig: AppRouter.router,
         scaffoldMessengerKey: SnackbarService.messengerKey,
         theme: ThemeData(
