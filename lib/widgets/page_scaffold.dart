@@ -55,38 +55,51 @@ class PageScaffold extends StatelessWidget {
     // Determine padding to use
     final effectivePadding = padding ?? const EdgeInsets.all(16.0);
     
-    final appBar = title != null || actions != null || showBackButton
-        ? PreferredSize(
-            preferredSize: const Size.fromHeight(kToolbarHeight),
-            child: Container(
-              color: Theme.of(context).colorScheme.surface,
-              child: SafeArea(
-                bottom: false,
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: maxWidth),
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: effectivePadding.horizontal / 2),
-                      child: AppBar(
-                        title: title != null ? Text(title!) : null,
-                        leading: showBackButton
-                            ? IconButton(
-                                icon: const Icon(Icons.arrow_back),
-                                onPressed: onBack ?? () {
-                                  if (Navigator.canPop(context)) {
-                                    Navigator.pop(context);
-                                  } else {
-                                    context.go('/explore');
-                                  }
-                                },
-                              )
-                            : null,
-                        actions: actions,
-                        automaticallyImplyLeading: false,
-                        backgroundColor: Colors.transparent,
-                        elevation: 0,
-                      ),
-                    ),
+    final PreferredSizeWidget? appBar =
+        title != null || actions != null || showBackButton
+        ? AppBar(
+            // Keep the toolbar row inside [maxWidth] centered on wide viewports,
+            // while this AppBar's Material (and M3 scrolled-under tint) spans
+            // the full scaffold width.
+            centerTitle: true,
+            automaticallyImplyLeading: false,
+            elevation: 0,
+            titleSpacing: NavigationToolbar.kMiddleSpacing,
+            title: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: maxWidth),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: effectivePadding.horizontal / 2,
+                  ),
+                  child: Row(
+                    children: [
+                      if (showBackButton)
+                        BackButton(
+                          onPressed: onBack ??
+                              () {
+                                if (Navigator.canPop(context)) {
+                                  Navigator.pop(context);
+                                } else {
+                                  context.go('/explore');
+                                }
+                              },
+                        ),
+                      if (title != null)
+                        Expanded(
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              title!,
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ),
+                        )
+                      else if (actions != null && actions!.isNotEmpty)
+                        const Spacer(),
+                      if (actions != null) ...actions!,
+                    ],
                   ),
                 ),
               ),
