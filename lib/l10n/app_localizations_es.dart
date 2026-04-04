@@ -16,4 +16,17 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tabAccount => 'Cuenta';
+
+  @override
+  String get profileSettingsTitle => 'Ajustes';
+
+  @override
+  String get profileSettingsLanguageLabel => 'Idioma';
+
+  @override
+  String get profileSettingsLanguageDescription =>
+      'Elige un idioma o usa el de tu dispositivo.';
+
+  @override
+  String get profileLanguageSystemDefault => 'Idioma del dispositivo';
 }

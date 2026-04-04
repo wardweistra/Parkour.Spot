@@ -123,6 +123,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Account'**
   String get tabAccount;
+
+  /// Profile: settings card title
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get profileSettingsTitle;
+
+  /// Profile settings: language row label
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get profileSettingsLanguageLabel;
+
+  /// Profile settings: short hint for language control
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a language or follow your device settings.'**
+  String get profileSettingsLanguageDescription;
+
+  /// Use OS/browser locale resolution instead of a fixed app language
+  ///
+  /// In en, this message translates to:
+  /// **'Device language'**
+  String get profileLanguageSystemDefault;
 }
 
 class _AppLocalizationsDelegate

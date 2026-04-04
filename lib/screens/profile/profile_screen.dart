@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:web/web.dart' as web;
 import 'package:lottie/lottie.dart';
 import '../../services/auth_service.dart';
+import '../../services/locale_preferences_service.dart';
 import '../../services/pwa_install_service.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../widgets/custom_button.dart';
@@ -14,6 +15,7 @@ import '../../widgets/instagram_button.dart';
 import '../../widgets/github_button.dart';
 import '../../widgets/report_issue_button.dart';
 import '../../widgets/email_button.dart';
+import '../../l10n/app_localizations.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -296,6 +298,117 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     ),
                   ),
                 ),
+
+              const SizedBox(height: 16),
+
+              Consumer<LocalePreferencesService>(
+                builder: (context, localePrefs, _) {
+                  final l10n = AppLocalizations.of(context)!;
+                  final scheme = Theme.of(context).colorScheme;
+                  final selection =
+                      localePrefs.overrideLanguageCode ?? 'system';
+                  return Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.profileSettingsTitle,
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            l10n.profileSettingsLanguageLabel,
+                            style: Theme.of(context).textTheme.titleSmall,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            l10n.profileSettingsLanguageDescription,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withValues(alpha: 0.7),
+                                ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: Theme.of(context).colorScheme.outline,
+                              ),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: ButtonTheme.fromButtonThemeData(
+                              data: ButtonTheme.of(context).copyWith(
+                                alignedDropdown: false,
+                              ),
+                              child: Material(
+                                type: MaterialType.transparency,
+                                child: Theme(
+                                  data: Theme.of(context).copyWith(
+                                    // Avoid a persistent grey fill after the menu closes (web focus).
+                                    focusColor: Colors.transparent,
+                                    hoverColor: scheme.onSurface
+                                        .withValues(alpha: 0.06),
+                                    splashColor: scheme.onSurface
+                                        .withValues(alpha: 0.10),
+                                    highlightColor: scheme.onSurface
+                                        .withValues(alpha: 0.06),
+                                  ),
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton<String>(
+                                      value: selection,
+                                      isExpanded: true,
+                                      isDense: true,
+                                      focusColor: Colors.transparent,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 10,
+                                      ),
+                                      borderRadius: BorderRadius.circular(4),
+                                      items: [
+                                        DropdownMenuItem(
+                                          value: 'system',
+                                          child: Text(
+                                            l10n.profileLanguageSystemDefault,
+                                          ),
+                                        ),
+                                        ...LocalePreferencesService
+                                            .supportedLanguageCodes()
+                                            .map(
+                                          (code) => DropdownMenuItem(
+                                            value: code,
+                                            child: Text(
+                                              LocalePreferencesService
+                                                  .nativeLanguageLabel(code),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                      onChanged: (value) async {
+                                        if (value == null) return;
+                                        if (value == 'system') {
+                                          await localePrefs.clearOverride();
+                                        } else {
+                                          await localePrefs.setOverride(value);
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
 
               const SizedBox(height: 16),
 

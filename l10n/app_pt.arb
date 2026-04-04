@@ -2,5 +2,9 @@
   "@@locale": "pt",
   "tabExplore": "Explorar",
   "tabAddSpot": "Adicionar spot",
-  "tabAccount": "Conta"
+  "tabAccount": "Conta",
+  "profileSettingsTitle": "Definições",
+  "profileSettingsLanguageLabel": "Idioma",
+  "profileSettingsLanguageDescription": "Escolha um idioma ou use o do dispositivo.",
+  "profileLanguageSystemDefault": "Idioma do dispositivo"
 }

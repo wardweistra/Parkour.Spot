@@ -16,4 +16,17 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tabAccount => 'Account';
+
+  @override
+  String get profileSettingsTitle => 'Instellingen';
+
+  @override
+  String get profileSettingsLanguageLabel => 'Taal';
+
+  @override
+  String get profileSettingsLanguageDescription =>
+      'Kies een taal of volg je apparaatinstellingen.';
+
+  @override
+  String get profileLanguageSystemDefault => 'Apparaattaal';
 }
