@@ -152,6 +152,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 
         return PageScaffold(
           title: 'Profile',
+          scrollable: false,
           actions: userIdOrUsername.isNotEmpty
               ? [
                   IconButton(
@@ -266,13 +267,10 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     app_user.User user,
     bool isOwnProfile,
   ) {
+    // Layout (padding, max width, centering) comes from [PageScaffold].
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1200),
-          child: Column(
-            children: [
+      child: Column(
+        children: [
               // Profile Header
               Card(
                 child: Padding(
@@ -514,8 +512,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
               ),
             ],
           ),
-        ),
-      ),
     );
   }
 
