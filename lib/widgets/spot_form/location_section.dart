@@ -233,35 +233,6 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
                 isGeocoding: widget.isGeocoding,
               ),
             ],
-            const SizedBox(height: 20),
-            Builder(
-              builder: (context) {
-                final isMobile = MobileDetectionService.isMobileDevice;
-                final tipText = isMobile
-                    ? 'Tip: You can also add spots from the Explore map by long-pressing on any location.'
-                    : 'Tip: You can also add spots from the Explore map by right-clicking on any location.';
-                
-                return Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      size: 16,
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        tipText,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                              fontSize: 12,
-                            ),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
           ],
         ),
       ),
