@@ -250,30 +250,45 @@
   "@exploreMetaTitleCityCountry": {
     "description": "Web SEO title for city pages",
     "placeholders": {
-      "city": {"type": "String", "example": "Amsterdam"},
-      "country": {"type": "String", "example": "Netherlands"}
+      "city": {
+        "type": "String",
+        "example": "Amsterdam"
+      },
+      "country": {
+        "type": "String",
+        "example": "Netherlands"
+      }
     }
   },
   "exploreMetaDescriptionCityCountry": "Discover the best parkour spots in {city}, {country}. Find training locations, share your favorite spots, and connect with the parkour community.",
   "@exploreMetaDescriptionCityCountry": {
     "description": "Web SEO description for city pages",
     "placeholders": {
-      "city": {"type": "String"},
-      "country": {"type": "String"}
+      "city": {
+        "type": "String"
+      },
+      "country": {
+        "type": "String"
+      }
     }
   },
   "exploreMetaTitleCountry": "Best parkour spots in {country}",
   "@exploreMetaTitleCountry": {
     "description": "Web SEO title for country-only pages",
     "placeholders": {
-      "country": {"type": "String", "example": "the Netherlands"}
+      "country": {
+        "type": "String",
+        "example": "the Netherlands"
+      }
     }
   },
   "exploreMetaDescriptionCountry": "Discover the best parkour spots in {country}. Find training locations, share your favorite spots, and connect with the parkour community.",
   "@exploreMetaDescriptionCountry": {
     "description": "Web SEO description for country-only pages",
     "placeholders": {
-      "country": {"type": "String"}
+      "country": {
+        "type": "String"
+      }
     }
   },
   "exploreAddSpotTitle": "Add New Spot",
@@ -368,7 +383,9 @@
   "@exploreLocationError": {
     "description": "SnackBar when geolocation fails",
     "placeholders": {
-      "error": {"type": "String"}
+      "error": {
+        "type": "String"
+      }
     }
   },
   "exploreCurrentLocationSnackbar": "This is your current location",
@@ -399,21 +416,28 @@
   "@exploreMapRankedTotalBar": {
     "description": "Bottom sheet: total spots in view when ranked",
     "placeholders": {
-      "total": {"type": "int", "example": "120"}
+      "total": {
+        "type": "int",
+        "example": "120"
+      }
     }
   },
   "exploreMapSpotsFoundLine": "{count, plural, one{1 spot found} other{{count} spots found}}",
   "@exploreMapSpotsFoundLine": {
     "description": "Bottom sheet: how many spots matched (unranked summary)",
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "exploreMapBestShownParenthetical": " ({count} best shown)",
   "@exploreMapBestShownParenthetical": {
     "description": "Suffix when not all spots are listed",
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "exploreNoSpotsSearch": "No spots found",
@@ -468,7 +492,9 @@
   "@exploreSpotCountShort": {
     "description": "Spot list preview: spot count",
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "explorePwaBannerInstall": "Install",
@@ -495,7 +521,9 @@
   "@addSpotCreateError": {
     "description": "Add spot: submit failed",
     "placeholders": {
-      "error": {"type": "String"}
+      "error": {
+        "type": "String"
+      }
     }
   },
   "addSpotNameLabel": "Spot Name *",
@@ -646,15 +674,22 @@
   "@spotCardShareFailed": {
     "description": "Share or clipboard error",
     "placeholders": {
-      "error": {"type": "String"}
+      "error": {
+        "type": "String"
+      }
     }
   },
   "spotCardShareClipboardText": "{name} 👉 {url}",
   "@spotCardShareClipboardText": {
     "description": "Clipboard text when native share unavailable",
     "placeholders": {
-      "name": {"type": "String", "example": "Spot name"},
-      "url": {"type": "String"}
+      "name": {
+        "type": "String",
+        "example": "Spot name"
+      },
+      "url": {
+        "type": "String"
+      }
     }
   },
   "spotCardRemovedFromSource": "Removed from source",
@@ -669,15 +704,595 @@
   "@spotCheckInTooltipPublic": {
     "description": "Avatar tooltip: public check-in",
     "placeholders": {
-      "name": {"type": "String"},
-      "time": {"type": "String", "example": "3:45 PM"}
+      "name": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String",
+        "example": "3:45 PM"
+      }
     }
   },
   "spotCheckInTooltipPrivate": "You're here now at this spot until {time} — only you can see this check-in",
   "@spotCheckInTooltipPrivate": {
     "description": "Avatar tooltip: private check-in",
     "placeholders": {
-      "time": {"type": "String"}
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "spotDetailRouteErrorLoading": "Error loading spot",
+  "spotDetailRouteTryAgainLater": "Please try again later",
+  "spotDetailRouteNotFound": "Spot not found",
+  "spotDetailRouteGoToExplore": "Go to Explore",
+  "spotDetailCheckInVerifyFailed": "Could not verify your check-ins",
+  "spotDetailCheckInEndPreviousFailed": "Could not end your previous check-in",
+  "spotDetailCheckInSuccess": "You’re checked in",
+  "spotDetailCheckInFailed": "Check-in failed",
+  "spotDetailCheckInRemoved": "Check-in removed",
+  "spotDetailCheckInDeleteFailed": "Could not delete check-in",
+  "spotDetailCheckInUpdated": "Check-in updated",
+  "spotDetailCheckInUpdateFailed": "Could not update check-in",
+  "spotDetailCheckInFabTooltipSignIn": "Sign in to check in",
+  "spotDetailCheckInFabTooltipEdit": "Edit check-in",
+  "spotDetailCheckInFabTooltipCheckIn": "Check in",
+  "spotDetailSpotCreatedOnDateBy": "Spot created {date} by ",
+  "@spotDetailSpotCreatedOnDateBy": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "spotDetailSpotCreatedBy": "Spot created by ",
+  "spotDetailUnknownSource": "Unknown Source",
+  "spotDetailSpotImportedOnDateFrom": "Spot imported {date} from ",
+  "@spotDetailSpotImportedOnDateFrom": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "spotDetailSpotImportedFrom": "Spot imported from ",
+  "spotDetailFromFolder": " from the folder ",
+  "spotDetailImprovedByAfterComma": ", improved by ",
+  "spotDetailImprovedByAfterAnd": " and improved by ",
+  "spotDetailUnknownUser": "Unknown",
+  "spotDetailListJoinAnd": " and ",
+  "spotDetailListJoinComma": ", ",
+  "spotDetailLastUpdatedAfterCommaAnd": ", and last updated {date}.",
+  "@spotDetailLastUpdatedAfterCommaAnd": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "spotDetailLastUpdatedAfterAnd": " and last updated {date}.",
+  "@spotDetailLastUpdatedAfterAnd": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "spotDetailDateToday": "today",
+  "spotDetailDateYesterday": "yesterday",
+  "spotDetailDateDaysAgo": "{count, plural, one{1 day ago} other{{count} days ago}}",
+  "@spotDetailDateDaysAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "spotDetailDateWeeksAgo": "{count, plural, one{1 week ago} other{{count} weeks ago}}",
+  "@spotDetailDateWeeksAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "spotDetailDateMonthsAgo": "{count, plural, one{1 month ago} other{{count} months ago}}",
+  "@spotDetailDateMonthsAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "spotDetailDateYearsAgo": "{count, plural, one{1 year ago} other{{count} years ago}}",
+  "@spotDetailDateYearsAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "spotDetailCopySpotFailed": "Failed to copy spot: {error}",
+  "@spotDetailCopySpotFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "spotDetailAddressCopiedToClipboard": "Address copied to clipboard!",
+  "spotDetailCopyAddressFailed": "Failed to copy address: {error}",
+  "@spotDetailCopyAddressFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "spotDetailOpenMapsFailed": "Could not open maps app: {error}",
+  "@spotDetailOpenMapsFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "spotDetailMoreActionsTooltip": "More actions",
+  "spotDetailMenuLogin": "Login",
+  "spotDetailMenuLoginSubtitle": "Sign in first to link edits to your account",
+  "spotDetailMenuFlagDuplicate": "Flag as duplicate",
+  "spotDetailMenuFlagDuplicateSubtitleYes": "This spot is a duplicate",
+  "spotDetailMenuFlagDuplicateSubtitleNo": "Already marked as duplicate",
+  "spotDetailMenuSuggestPhoto": "Suggest photo",
+  "spotDetailMenuSuggestPhotoSubtitleYes": "Submit photos for this spot",
+  "spotDetailMenuSuggestPhotoSubtitleNo": "Cannot suggest photos for duplicates",
+  "spotDetailMenuSuggestEdit": "Suggest an edit",
+  "spotDetailMenuSuggestEditSubtitleYes": "Propose changes to this spot",
+  "spotDetailMenuSuggestEditSubtitleNo": "Cannot suggest edits for duplicates",
+  "spotDetailMenuReportSpot": "Report spot",
+  "spotDetailMenuReportSpotSubtitle": "Help us review this spot",
+  "spotDetailMenuEditSpot": "Edit spot",
+  "spotDetailMenuEditSpotSubtitleNative": "Create native spot first",
+  "spotDetailMenuEditSpotSubtitleMod": "Moderator only",
+  "spotDetailMenuMarkDuplicate": "Mark as duplicate",
+  "spotDetailMenuMarkDuplicateSubtitleDup": "Already marked as duplicate",
+  "spotDetailMenuMarkDuplicateSubtitleMod": "Moderator only",
+  "spotDetailMenuRemoveDuplicateStatus": "Remove duplicate status",
+  "spotDetailMenuCreateNative": "Create native spot",
+  "spotDetailMenuHideSpot": "Hide spot",
+  "spotDetailMenuUnhideSpot": "Unhide spot",
+  "spotDetailMenuDeleteSpot": "Delete spot",
+  "spotDetailMenuDeleteSubtitleAdmin": "Admin only",
+  "spotDetailMenuTriggerResize": "Trigger image resize",
+  "spotDetailMenuTriggerResizeSubtitle": "Re-create resized versions",
+  "spotDetailExternalSourceCannotEdit": "Spots from external sources cannot be edited. Please create a native spot first using “Mark as Duplicate” → “Create Native Spot”.",
+  "spotDetailOk": "OK",
+  "spotDetailUnableEditNow": "Unable to edit this spot right now.",
+  "spotDetailOnlyAdminsDelete": "Only administrators can delete spots.",
+  "spotDetailResizeAllHaveVersions": "All images already have resized versions",
+  "spotDetailResizeSummary": "Resize: {triggered} triggered, {verified} verified{failedPart}",
+  "@spotDetailResizeSummary": {
+    "placeholders": {
+      "triggered": {
+        "type": "int"
+      },
+      "verified": {
+        "type": "int"
+      },
+      "failedPart": {
+        "type": "String"
+      }
+    }
+  },
+  "spotDetailResizeFailedPart": ", {failed} failed",
+  "@spotDetailResizeFailedPart": {
+    "placeholders": {
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
+  "spotDetailResizeTriggerFailed": "Failed to trigger resize: {error}",
+  "@spotDetailResizeTriggerFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "spotDetailUnableFlagDuplicate": "Unable to flag this spot as duplicate right now.",
+  "spotDetailThanksDuplicateReport": "Thanks! Your duplicate report has been submitted.",
+  "spotDetailUnableSuggestPhotos": "Unable to suggest photos for this spot right now.",
+  "spotDetailCannotSuggestPhotosDuplicate": "Cannot suggest photos for duplicate spots.",
+  "spotDetailThanksPhotoSuggestion": "Thanks! Your photo suggestion has been submitted for review.",
+  "spotDetailUnableSuggestEdits": "Unable to suggest edits for this spot right now.",
+  "spotDetailCannotSuggestEditsDuplicate": "Cannot suggest edits for duplicate spots.",
+  "spotDetailThanksEditSuggestion": "Thanks! Your edit suggestion has been submitted for review.",
+  "spotDetailUnableReportNow": "Unable to report this spot right now.",
+  "spotDetailThanksReportSubmitted": "Thanks! Your report has been submitted.",
+  "spotDetailUnableAddToList": "Unable to add this spot to a list right now.",
+  "spotDetailNoSpotListsAccess": "You do not have access to spot lists.",
+  "spotDetailListCreatedAndAdded": "List created and spot added!",
+  "spotDetailSpotAddedToList": "Spot added to list!",
+  "spotDetailEditReportTooltip": "Edit & report",
+  "spotDetailShareTooltip": "Share",
+  "spotDetailPresenceHereNow": "Here now",
+  "spotDetailHiddenBanner": "This spot is hidden from public view. It likely no longer exists or doesn’t meet our policies. It will not appear in search results or on the map.",
+  "spotDetailSourceRemovedBanner": "This spot is no longer listed in {source}. Details might be outdated, so double-check before visiting.",
+  "@spotDetailSourceRemovedBanner": {
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "spotDetailSourceRemovedUnknownSource": "its original source",
+  "spotDetailSectionFeatures": "Features",
+  "spotDetailSectionAccess": "Access",
+  "spotDetailSectionFacilities": "Facilities",
+  "spotDetailJumpflixFetchFailed": "Jumpflix fetch failed: {error}",
+  "@spotDetailJumpflixFetchFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "spotDetailBrandYoutube": "YouTube",
+  "spotDetailBrandJumpflix": "Jumpflix",
+  "spotDetailBrandAsSeenIn": "As seen in",
+  "spotDetailLoading": "Loading...",
+  "spotDetailLoadingYourRating": "Loading your rating...",
+  "spotDetailRateThisSpot": "Rate this spot",
+  "spotDetailCouldNotLoadProfile": "Couldn’t load your profile.",
+  "spotDetailRefreshPageToRate": "Please refresh the page to rate.",
+  "spotDetailSignInToRateTitle": "Sign in to rate this spot",
+  "spotDetailSignInToRateSubtitle": "Sign in to rate this spot and help other parkour enthusiasts.",
+  "spotDetailSignInButton": "Sign In",
+  "spotDetailCreateAccountButton": "Create an Account",
+  "spotDetailMapSwitchToMap": "Switch to Map",
+  "spotDetailMapSwitchToSatellite": "Switch to Satellite",
+  "spotDetailMapLocateOnMap": "Locate on map",
+  "spotDetailDuplicateOf": "Duplicate of",
+  "spotDetailOriginalSpotFallback": "Original spot",
+  "spotDetailAlsoBasedOn": "Also based on",
+  "spotDetailAlsoBasedOnCount": "Also based on ({count})",
+  "@spotDetailAlsoBasedOnCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "spotDetailNoImagesAvailable": "No images available",
+  "spotDetailGalleryPageIndicator": "{current} / {total}",
+  "@spotDetailGalleryPageIndicator": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "spotDetailSaveMenuTooltip": "Save spot",
+  "spotDetailSaveMenuSignInTitle": "Sign in to save spots",
+  "spotDetailSaveMenuSignInBody": "Add this spot to Want to visit, Been here, or your own lists. Log in or create a free account to get started.",
+  "spotDetailSaveMenuLogInOrCreate": "Log in or create account",
+  "spotDetailSaveTooltipUpdating": "Updating…",
+  "spotDetailSaveTooltipWantToVisit": "Saved: Want to visit",
+  "spotDetailSaveTooltipBeenHere": "Saved: Been here",
+  "spotDetailSaveTooltipGeneric": "Save spot",
+  "spotDetailRemovedFromWantToVisit": "Removed from Want to visit",
+  "spotDetailFailedToRemove": "Failed to remove",
+  "spotDetailAddedToWantToVisit": "Added to Want to visit",
+  "spotDetailFailedToAdd": "Failed to add",
+  "spotDetailRemovedFromBeenHere": "Removed from Been here",
+  "spotDetailAddedToBeenHere": "Added to Been here",
+  "spotDetailWantToVisit": "Want to visit",
+  "spotDetailBeenHere": "Been here",
+  "spotDetailViewFullListTooltip": "View full list",
+  "spotDetailAddToCustomList": "Add to custom list",
+  "spotDetailAddToCustomListSubtitle": "Choose or create a list",
+  "spotDetailListNameEmpty": "List name cannot be empty",
+  "spotDetailFailedAddToListGeneric": "Failed to add spot to list",
+  "spotDetailFailedCreateList": "Failed to create list",
+  "spotDetailFailedAddToSomeLists": "Failed to add spot to some lists",
+  "spotDetailAddToListTitle": "Add to {name}",
+  "@spotDetailAddToListTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "spotDetailSelectSections": "Select sections:",
+  "spotDetailSectionEntryCount": "Section ({count} spots)",
+  "@spotDetailSectionEntryCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "spotDetailAddToNewSection": "Add to new section",
+  "spotDetailSectionNameOptional": "Section name (optional)",
+  "spotDetailNoteOptional": "Note (optional)",
+  "spotDetailSkip": "Skip",
+  "spotDetailAdd": "Add",
+  "spotDetailAddToListDialogTitle": "Add to List",
+  "spotDetailAlreadyInLists": "Already in these lists:",
+  "spotDetailNoListsYet": "You don’t have any lists yet. Create one to get started!",
+  "spotDetailSelectListsPrompt": "Select lists to add this spot to:",
+  "spotDetailCreateNewList": "Create New List",
+  "spotDetailListNameLabel": "List Name",
+  "spotDetailListNameHint": "e.g., My Favorite Spots",
+  "spotDetailListDescriptionLabel": "Description (optional)",
+  "spotDetailListDescriptionHint": "Add a description for this list",
+  "spotDetailVisibilityLabel": "Visibility",
+  "spotDetailCreateAndAdd": "Create & Add",
+  "spotDetailReportDuplicateTitle": "Report duplicate spot",
+  "spotDetailReportDuplicateIntro": "Please select the spot this is a duplicate of.",
+  "spotDetailEmailInvalid": "Enter a valid email address.",
+  "spotDetailEmailRequired": "Please provide an email address.",
+  "spotDetailSubmitReport": "Submit report",
+  "spotDetailReportThisSpotTitle": "Report this spot",
+  "spotDetailReportIntro": "Let us know what is wrong with {name}. Moderators will review your report shortly.",
+  "@spotDetailReportIntro": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "spotDetailReportWhatWrong": "What is happening?",
+  "spotDetailReportCategoryLabel": "Select a category",
+  "spotDetailReportCategoryHint": "Choose a report category",
+  "spotDetailReportDescribeIssue": "Describe the issue",
+  "spotDetailReportDescribeIssueHint": "Tell us what does not match reality",
+  "spotDetailReportAdditionalDetails": "Additional details",
+  "spotDetailReportAdditionalDetailsHint": "Anything else we should know?",
+  "spotDetailReportEmailLabel": "Email address",
+  "spotDetailReportEmailHelper": "We will contact you only about this report.",
+  "spotDetailReportReachOutAt": "We will reach out at {email} if we need more info.",
+  "@spotDetailReportReachOutAt": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "spotDetailReportReachOutAccount": "We will reach out using your account email if we need more info.",
+  "spotDetailReportCategoryOtherDescribe": "Please describe the issue when selecting Other.",
+  "spotDetailReportCategoryRequired": "Please select a category.",
+  "spotDetailReportSendFailed": "Could not send your report. Please try again.",
+  "spotDetailReportCategoryClosed": "Spot closed or removed",
+  "spotDetailReportCategoryInaccurate": "Inaccurate location or details",
+  "spotDetailReportCategoryUnsafe": "Unsafe conditions",
+  "spotDetailReportCategoryNotASpot": "Not a spot",
+  "spotDetailReportCategoryOther": "Other",
+  "spotDetailReportCategoryClosedDesc": "The spot has been permanently closed, demolished, or removed and is no longer accessible. Please provide more details below.",
+  "spotDetailReportCategoryInaccurateDesc": "The spot’s location on the map is incorrect, or details like name, description, or address are wrong. Please provide more details below on what should be corrected.",
+  "spotDetailReportCategoryUnsafeDesc": "The spot has become dangerous due to structural issues, environmental hazards, or other safety concerns. Please provide more details below on what is unsafe.",
+  "spotDetailReportCategoryNotASpotDesc": "Only for objective issues like spam, spots in invalid locations (e.g., middle of the sea), private residences, entire cities, or other clearly invalid entries. For subjective opinions about spot quality, please use a rating instead. Please provide more details below on why this is not a spot.",
+  "spotDetailReportCategoryOtherDesc": "Any other issue not covered by the categories above. Please describe the issue in the field below.",
+  "spotDetailMarkDuplicateTitle": "Mark as Duplicate",
+  "spotDetailMarkDuplicateBody": "Are you sure you want to mark this spot as a duplicate? This action can be reversed later.",
+  "spotDetailMarkDuplicateAddToOriginal": "Select which items to add to the original spot:",
+  "spotDetailMarkDuplicatePhotos": "Photos",
+  "spotDetailMarkDuplicateYoutube": "YouTube links",
+  "spotDetailMarkDuplicateOverwrite": "Select which items to overwrite in the original spot (if set):",
+  "spotDetailMarkDuplicateName": "Name",
+  "spotDetailMarkDuplicateDescription": "Description",
+  "spotDetailMarkDuplicateLocation": "Location",
+  "spotDetailMarkDuplicateSpotAttributes": "Spot attributes",
+  "spotDetailConfirm": "Confirm",
+  "spotDetailPickImagesFailed": "Failed to pick images. Please try again.",
+  "spotDetailSelectAtLeastOnePhoto": "Please select at least one photo",
+  "spotDetailSuggestPhotosTitle": "Suggest Photos",
+  "spotDetailSuggestPhotosIntro": "Submit photos to be added to this spot. Photos will be reviewed by moderators before being added.",
+  "spotDetailSelectPhotos": "Select Photos",
+  "spotDetailPickPhotos": "Pick Photos",
+  "spotDetailAdditionalDetailsOptional": "Additional Details (Optional)",
+  "spotDetailAdditionalDetailsHint": "Add any additional information about these photos...",
+  "spotDetailSuggestPhotosEmailHelper": "We will contact you only about this suggestion.",
+  "spotDetailSuggestPhotosSubmitFailed": "Failed to submit photo suggestion. Please try again.",
+  "spotDetailSuggestPhotosSubmitError": "Error submitting photo suggestion: {error}",
+  "@spotDetailSuggestPhotosSubmitError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "spotDetailSuggestEditTitle": "Suggest an Edit",
+  "spotDetailSuggestEditIntro": "Propose changes to this spot. Moderators will review your suggestions.",
+  "spotDetailSuggestEditSuggestChange": "Please suggest at least one change.",
+  "spotDetailSuggestEditSubmitFailed": "Failed to submit edit suggestion. Please try again.",
+  "spotDetailSuggestEditSubmitError": "Error submitting edit suggestion: {error}",
+  "@spotDetailSuggestEditSubmitError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "spotDetailGeocoding": "Geocoding...",
+  "spotDetailChangeLocationPicked": "Change location (picked)",
+  "spotDetailPickLocationOnMap": "Pick different location on map",
+  "spotDetailFieldTitle": "Title",
+  "spotDetailFieldTitleHint": "Spot title",
+  "spotDetailFieldDescription": "Description",
+  "spotDetailFieldDescriptionHint": "Spot description",
+  "spotDetailFieldSpotAttributes": "Spot attributes",
+  "spotDetailSuggestEditEmailHelper": "We will contact you only about this suggestion.",
+  "spotDetailMustBeLoggedInToRate": "You must be logged in to rate spots",
+  "spotDetailRatingSubmitted": "{count, plural, one{Rating 1 star submitted!} other{Rating {count} stars submitted!}}",
+  "@spotDetailRatingSubmitted": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "spotDetailRatingSubmitFailed": "Failed to submit rating. Please try again.",
+  "spotDetailRatingSubmitError": "Error submitting rating: {error}",
+  "@spotDetailRatingSubmitError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "spotDetailNotExternalSource": "This spot is not from an external source.",
+  "spotDetailMustBeLoggedInCreateNative": "You must be logged in to create a native spot.",
+  "spotDetailCreateNativeDialogTitle": "Create Native Spot",
+  "spotDetailCreateNativeDialogBody": "This will create a new native spot based on this spot and mark the current spot as a duplicate of it. All spot data (name, description, location, photos, YouTube links, and attributes) will be copied to the new native spot.\n\nNote: Admins can remove spots and duplicate links can be removed if needed.",
+  "spotDetailCreateButton": "Create",
+  "spotDetailUnableCreateNativeNow": "Unable to create native spot right now.",
+  "spotDetailFailedCreateNativeSpot": "Failed to create native spot",
+  "spotDetailNativeCreatedDuplicateMarked": "Native spot created and current spot marked as duplicate.",
+  "spotDetailFailedMarkDuplicateGeneric": "Failed to mark spot as duplicate",
+  "spotDetailErrorCreatingNativeSpot": "Error creating native spot: {error}",
+  "@spotDetailErrorCreatingNativeSpot": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "spotDetailUnableMarkDuplicateNow": "Unable to mark this spot as duplicate right now.",
+  "spotDetailAlreadyMarkedDuplicate": "This spot is already marked as a duplicate.",
+  "spotDetailSpotMarkedDuplicateSuccess": "Spot marked as duplicate.",
+  "spotDetailErrorMarkingDuplicateSpot": "Error marking spot as duplicate: {error}",
+  "@spotDetailErrorMarkingDuplicateSpot": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "spotDetailModeratorsOnlyHideUnhide": "Only moderators can hide/unhide spots.",
+  "spotDetailHideSpotTitle": "Hide Spot",
+  "spotDetailUnhideSpotTitle": "Unhide Spot",
+  "spotDetailHideSpotMessage": "This will hide the spot from public view. Hidden spots will not appear in search results or on the map, but the spot data will be preserved and can be unhidden later.",
+  "spotDetailUnhideSpotMessage": "This will restore the spot to public view. The spot will appear in search results and on the map again.",
+  "spotDetailActionHide": "Hide",
+  "spotDetailActionUnhide": "Unhide",
+  "spotDetailUnableHideUnhideNow": "Unable to hide/unhide this spot right now.",
+  "spotDetailSpotHiddenSuccess": "Spot hidden successfully.",
+  "spotDetailSpotUnhiddenSuccess": "Spot unhidden successfully.",
+  "spotDetailFailedHideSpot": "Failed to hide spot",
+  "spotDetailFailedUnhideSpot": "Failed to unhide spot",
+  "spotDetailErrorHidingSpot": "Error hiding spot: {error}",
+  "@spotDetailErrorHidingSpot": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "spotDetailErrorUnhidingSpot": "Error unhiding spot: {error}",
+  "@spotDetailErrorUnhidingSpot": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "spotDetailNotMarkedAsDuplicate": "This spot is not marked as a duplicate.",
+  "spotDetailModeratorsOnlyRemoveDuplicateStatus": "Only moderators can remove duplicate status.",
+  "spotDetailRemoveDuplicateDialogBody": "This will remove the duplicate status from this spot. The spot will no longer be marked as a duplicate.\n\nDo you want to continue?",
+  "spotDetailRemoveButton": "Remove",
+  "spotDetailUnableRemoveDuplicateStatusNow": "Unable to remove duplicate status right now.",
+  "spotDetailDuplicateStatusRemovedSuccess": "Duplicate status removed successfully.",
+  "spotDetailFailedRemoveDuplicateStatusGeneric": "Failed to remove duplicate status",
+  "spotDetailErrorRemovingDuplicateStatus": "Error removing duplicate status: {error}",
+  "@spotDetailErrorRemovingDuplicateStatus": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "spotDetailCheckingLinkedData": "Checking linked data...",
+  "spotDetailDeleteSpotDialogTitle": "Delete Spot",
+  "spotDetailDeleteSpotConfirmMessage": "Are you sure you want to delete this spot? This action cannot be undone.",
+  "spotDetailLinkedDataHeading": "This spot has linked data:",
+  "spotDetailLinkedRatingsLine": "• Ratings: {count}",
+  "@spotDetailLinkedRatingsLine": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "spotDetailLinkedReportsLine": "• Spot reports: {count}",
+  "@spotDetailLinkedReportsLine": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "spotDetailLinkedDuplicatesLine": "• Duplicate spots: {count}",
+  "@spotDetailLinkedDuplicatesLine": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "spotDetailResolveLinksBeforeDelete": "Please resolve these links before deleting the spot.",
+  "spotDetailSpotDeletedSuccess": "Spot deleted successfully",
+  "spotDetailFailedDeleteSpot": "Failed to delete spot",
+  "spotDetailErrorDeletingSpot": "Error deleting spot: {error}",
+  "@spotDetailErrorDeletingSpot": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "spotDetailFlagDuplicateDialogTitle": "Flag as duplicate",
+  "spotDetailFlagDuplicateIntro": "This spot appears to be a duplicate of another spot. Please select the original spot below.",
+  "spotDetailFlagDuplicateWhichQuestion": "Which spot is this a duplicate of?",
+  "spotDetailDuplicateSearchHint": "Paste spot URL or enter spot ID",
+  "spotDetailSearch": "Search",
+  "spotDetailNearbySpotsWithin50m": "Nearby spots (within ~50m)",
+  "spotDetailFoundSpot": "Found Spot",
+  "spotDetailSpotIdLabel": "Spot ID: {id}",
+  "@spotDetailSpotIdLabel": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "spotDetailRemoveSelectionTooltip": "Remove selection",
+  "spotDetailImageFailedToLoad": "Image failed to load",
+  "spotDetailClose": "Close",
+  "spotDetailExpandMoreCount": "{count} more",
+  "@spotDetailExpandMoreCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "spotDetailSubmit": "Submit",
+  "spotDetailDuplicateReportSelectRequired": "Please select the spot this is a duplicate of.",
+  "spotDetailDuplicateSearchEmpty": "Please enter a spot ID or URL",
+  "spotDetailDuplicateInvalidUrl": "Invalid spot ID or URL format",
+  "spotDetailDuplicateCannotSelectSelf": "Cannot mark a spot as duplicate of itself",
+  "spotDetailDuplicateSpotNotFound": "Spot not found",
+  "spotDetailDuplicateFailedLoadSpot": "Failed to load spot: {error}",
+  "@spotDetailDuplicateFailedLoadSpot": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
     }
   }
 }

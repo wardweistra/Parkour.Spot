@@ -23,6 +23,7 @@ import '../screens/admin/api_clients_screen.dart';
 import '../screens/moderator/moderator_tools_screen.dart';
 import '../screens/moderator/spot_report_queue_screen.dart';
 import '../screens/spots/spot_detail_screen.dart';
+import '../l10n/app_localizations.dart';
 import '../screens/spots/edit_spot_screen.dart';
 import '../screens/spots/spot_list_detail_screen.dart';
 import '../screens/spots/spot_tracking_list_screen.dart';
@@ -620,6 +621,7 @@ class SpotDetailRoute extends StatelessWidget {
             }
 
             if (snapshot.hasError) {
+              final l10n = AppLocalizations.of(context)!;
               return Scaffold(
                 body: Center(
                   child: Column(
@@ -628,12 +630,12 @@ class SpotDetailRoute extends StatelessWidget {
                       const Icon(Icons.error, size: 64, color: Colors.red),
                       const SizedBox(height: 16),
                       Text(
-                        'Error loading spot',
+                        l10n.spotDetailRouteErrorLoading,
                         style: Theme.of(context).textTheme.headlineSmall,
                   ),
                       const SizedBox(height: 8),
                       Text(
-                        'Please try again later',
+                        l10n.spotDetailRouteTryAgainLater,
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ],
@@ -643,6 +645,7 @@ class SpotDetailRoute extends StatelessWidget {
             }
 
             if (!snapshot.hasData || snapshot.data == null) {
+              final l10n = AppLocalizations.of(context)!;
               return Scaffold(
                 body: Center(
                   child: Column(
@@ -650,11 +653,11 @@ class SpotDetailRoute extends StatelessWidget {
                     children: [
                       const Icon(Icons.location_off, size: 64, color: Colors.grey),
                       const SizedBox(height: 16),
-                      const Text('Spot not found'),
+                      Text(l10n.spotDetailRouteNotFound),
                       const SizedBox(height: 24),
                       ElevatedButton(
                         onPressed: () => context.go('/explore'),
-                        child: const Text('Go to Explore'),
+                        child: Text(l10n.spotDetailRouteGoToExplore),
                       ),
                     ],
                   ),

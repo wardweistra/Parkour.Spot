@@ -46,6 +46,45 @@ import 'package:image_picker/image_picker.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import '../../l10n/app_localizations.dart';
+
+String _spotDetailReportCategoryLabel(AppLocalizations l10n, String category) {
+  switch (category) {
+    case 'Spot closed or removed':
+      return l10n.spotDetailReportCategoryClosed;
+    case 'Inaccurate location or details':
+      return l10n.spotDetailReportCategoryInaccurate;
+    case 'Unsafe conditions':
+      return l10n.spotDetailReportCategoryUnsafe;
+    case 'Not a spot':
+      return l10n.spotDetailReportCategoryNotASpot;
+    case 'Other':
+      return l10n.spotDetailReportCategoryOther;
+    default:
+      return category;
+  }
+}
+
+String _spotDetailReportCategoryDescription(
+  AppLocalizations l10n,
+  String category,
+) {
+  switch (category) {
+    case 'Spot closed or removed':
+      return l10n.spotDetailReportCategoryClosedDesc;
+    case 'Inaccurate location or details':
+      return l10n.spotDetailReportCategoryInaccurateDesc;
+    case 'Unsafe conditions':
+      return l10n.spotDetailReportCategoryUnsafeDesc;
+    case 'Not a spot':
+      return l10n.spotDetailReportCategoryNotASpotDesc;
+    case 'Other':
+      return l10n.spotDetailReportCategoryOtherDesc;
+    default:
+      return '';
+  }
+}
+
 /// Max characters of description to show in the video overlay.
 const int _videoDescriptionPreviewLength = 80;
 
@@ -152,6 +191,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   // Getter for the current spot (falls back to widget.spot if not updated)
   Spot get _spot => _currentSpot ?? widget.spot;
 
+  AppLocalizations get _l10n => AppLocalizations.of(context)!;
+
   void _showSuccessSnack(String message) {
     // Use global messenger to avoid context churn issues
     Future.microtask(() {
@@ -177,7 +218,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     final activeElsewhere = results[0] as List<SpotCheckIn>?;
     final extendableAtSameSpot = results[1] as SpotCheckIn?;
     if (activeElsewhere == null) {
-      _showErrorSnack(service.error ?? 'Could not verify your check-ins');
+      _showErrorSnack(
+        service.error ?? _l10n.spotDetailCheckInVerifyFailed,
+      );
       return;
     }
     final result = await showSpotCheckInDialog(
@@ -195,7 +238,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       final ended = await service.endCheckInNow(other);
       if (!mounted) return;
       if (!ended) {
-        _showErrorSnack(service.error ?? 'Could not end your previous check-in');
+        _showErrorSnack(
+          service.error ?? _l10n.spotDetailCheckInEndPreviousFailed,
+        );
         return;
       }
     }
@@ -208,9 +253,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     );
     if (!mounted) return;
     if (ok) {
-      _showSuccessSnack('You’re checked in');
+      _showSuccessSnack(_l10n.spotDetailCheckInSuccess);
     } else {
-      _showErrorSnack(service.error ?? 'Check-in failed');
+      _showErrorSnack(service.error ?? _l10n.spotDetailCheckInFailed);
     }
   }
 
@@ -229,9 +274,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       final ok = await svc.deleteCheckIn(c.id);
       if (!mounted) return;
       if (ok) {
-        _showSuccessSnack('Check-in removed');
+        _showSuccessSnack(_l10n.spotDetailCheckInRemoved);
       } else {
-        _showErrorSnack(svc.error ?? 'Could not delete check-in');
+        _showErrorSnack(svc.error ?? _l10n.spotDetailCheckInDeleteFailed);
       }
       return;
     }
@@ -247,9 +292,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     );
     if (!mounted) return;
     if (ok) {
-      _showSuccessSnack('Check-in updated');
+      _showSuccessSnack(_l10n.spotDetailCheckInUpdated);
     } else {
-      _showErrorSnack(svc.error ?? 'Could not update check-in');
+      _showErrorSnack(svc.error ?? _l10n.spotDetailCheckInUpdateFailed);
     }
   }
 
@@ -296,8 +341,11 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     _loadRatingStats(); // Load rating stats once on init
     // Note: User rating will be loaded when auth state is restored via FutureBuilder
 
-    // Update document title for web
-    _updateDocumentTitle();
+    // Update document title for web (after first frame: Localizations is not
+    // available during initState).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _updateDocumentTitle();
+    });
 
     // Load original spot if this is a duplicate
     if (widget.spot.duplicateOf != null) {
@@ -346,20 +394,21 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     }
   }
 
-  String _formatSpotDocumentTitle(Spot s) {
+  String _formatSpotDocumentTitle(Spot s, AppLocalizations l10n) {
+    final brand = l10n.exploreMetaDefaultTitle;
     final parts = <String>[];
     final city = s.city?.trim();
     if (city != null && city.isNotEmpty) parts.add(city);
     final cc = s.countryCode?.trim();
     if (cc != null && cc.isNotEmpty) parts.add(cc.toUpperCase());
     final loc = parts.join(', ');
-    if (loc.isEmpty) return '${s.name} - Parkour·Spot';
-    return '${s.name} · $loc - Parkour·Spot';
+    if (loc.isEmpty) return '${s.name} - $brand';
+    return '${s.name} · $loc - $brand';
   }
 
   void _updateDocumentTitle() {
     if (kIsWeb) {
-      web.document.title = _formatSpotDocumentTitle(_spot);
+      web.document.title = _formatSpotDocumentTitle(_spot, _l10n);
     }
   }
 
@@ -375,7 +424,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   void dispose() {
     // Reset document title to default when leaving spot page
     if (kIsWeb) {
-      web.document.title = 'Parkour·Spot';
+      web.document.title = AppLocalizations.of(context)!.exploreMetaDefaultTitle;
     }
     _scrollController.dispose();
     _videoPageController.dispose();
@@ -451,6 +500,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   }
 
   Widget _buildMergedSourceInfo() {
+    final l10n = _l10n;
     final List<TextSpan> textSpans = [];
     final theme = Theme.of(context);
     final textStyle = theme.textTheme.bodyLarge?.copyWith(
@@ -472,12 +522,15 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
       // Add created date if available
       if (_spot.createdAt != null) {
-        final createdDateText = _formatRelativeDate(_spot.createdAt!);
+        final createdDateText = _formatRelativeDate(_spot.createdAt!, l10n);
         textSpans.add(
-          TextSpan(text: 'Spot created $createdDateText by ', style: textStyle),
+          TextSpan(
+            text: l10n.spotDetailSpotCreatedOnDateBy(createdDateText),
+            style: textStyle,
+          ),
         );
       } else {
-        textSpans.add(TextSpan(text: 'Spot created by ', style: textStyle));
+        textSpans.add(TextSpan(text: l10n.spotDetailSpotCreatedBy, style: textStyle));
       }
 
       // Make creator name clickable if we have a user ID
@@ -505,19 +558,21 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         textSpans.add(TextSpan(text: ' / ', style: textStyle));
       }
 
-      final sourceName = _spot.spotSourceName ?? 'Unknown Source';
+      final sourceName = _spot.spotSourceName ?? l10n.spotDetailUnknownSource;
 
       // Add created date if available and no createdBy (imported spots)
       if (!hasPreviousContent && _spot.createdAt != null) {
-        final createdDateText = _formatRelativeDate(_spot.createdAt!);
+        final createdDateText = _formatRelativeDate(_spot.createdAt!, l10n);
         textSpans.add(
           TextSpan(
-            text: 'Spot imported $createdDateText from ',
+            text: l10n.spotDetailSpotImportedOnDateFrom(createdDateText),
             style: textStyle,
           ),
         );
       } else {
-        textSpans.add(TextSpan(text: 'Spot imported from ', style: textStyle));
+        textSpans.add(
+          TextSpan(text: l10n.spotDetailSpotImportedFrom, style: textStyle),
+        );
       }
 
       // Make source name clickable
@@ -530,7 +585,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       );
 
       if (_spot.folderName != null) {
-        textSpans.add(TextSpan(text: ' from the folder ', style: textStyle));
+        textSpans.add(TextSpan(text: l10n.spotDetailFromFolder, style: textStyle));
         textSpans.add(
           TextSpan(
             text: _spot.folderName!,
@@ -557,24 +612,33 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       }).toList();
 
       if (filteredContributors.isNotEmpty) {
-        // Use comma if there will be an updated date part, otherwise use "and"
-        final String connector = willHaveUpdatedDate ? ',' : ' and';
-
         textSpans.add(
-          TextSpan(text: '$connector improved by ', style: textStyle),
+          TextSpan(
+            text: willHaveUpdatedDate
+                ? l10n.spotDetailImprovedByAfterComma
+                : l10n.spotDetailImprovedByAfterAnd,
+            style: textStyle,
+          ),
         );
 
         // Add each contributor name as a clickable link
         for (int i = 0; i < filteredContributors.length; i++) {
           final contributor = filteredContributors[i];
-          final userName = contributor['userName'] ?? 'Unknown';
+          final rawName = contributor['userName'];
+          final userName = rawName == null || rawName.toString().trim().isEmpty
+              ? l10n.spotDetailUnknownUser
+              : rawName.toString().trim();
           final userId = contributor['userId'];
 
           if (i > 0) {
             if (i == filteredContributors.length - 1) {
-              textSpans.add(TextSpan(text: ' and ', style: textStyle));
+              textSpans.add(
+                TextSpan(text: l10n.spotDetailListJoinAnd, style: textStyle),
+              );
             } else {
-              textSpans.add(TextSpan(text: ', ', style: textStyle));
+              textSpans.add(
+                TextSpan(text: l10n.spotDetailListJoinComma, style: textStyle),
+              );
             }
           }
 
@@ -604,28 +668,24 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     if (_spot.updatedAt != null &&
         _spot.createdAt != null &&
         _spot.updatedAt != _spot.createdAt) {
-      final updatedDateText = _formatRelativeDate(_spot.updatedAt!);
-      // Use ", and" if there are previous parts, otherwise just " and"
-      final String connector = (hasPreviousContent || hasContributors)
-          ? ', and'
-          : ' and';
+      final updatedDateText = _formatRelativeDate(_spot.updatedAt!, l10n);
       textSpans.add(
         TextSpan(
-          text: '$connector last updated $updatedDateText.',
+          text: (hasPreviousContent || hasContributors)
+              ? l10n.spotDetailLastUpdatedAfterCommaAnd(updatedDateText)
+              : l10n.spotDetailLastUpdatedAfterAnd(updatedDateText),
           style: textStyle,
         ),
       );
       hasUpdatedDate = true;
     } else if (_spot.updatedAt != null && _spot.createdAt == null) {
       // If no created date but there's an updated date
-      final updatedDateText = _formatRelativeDate(_spot.updatedAt!);
-      // Use ", and" if there are previous parts, otherwise just " and"
-      final String connector = (hasPreviousContent || hasContributors)
-          ? ', and'
-          : ' and';
+      final updatedDateText = _formatRelativeDate(_spot.updatedAt!, l10n);
       textSpans.add(
         TextSpan(
-          text: '$connector last updated $updatedDateText.',
+          text: (hasPreviousContent || hasContributors)
+              ? l10n.spotDetailLastUpdatedAfterCommaAnd(updatedDateText)
+              : l10n.spotDetailLastUpdatedAfterAnd(updatedDateText),
           style: textStyle,
         ),
       );
@@ -660,39 +720,40 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     );
   }
 
-  String _formatRelativeDate(DateTime date) {
+  String _formatRelativeDate(DateTime date, AppLocalizations l10n) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final dateOnly = DateTime(date.year, date.month, date.day);
     final difference = today.difference(dateOnly).inDays;
 
     if (difference == 0) {
-      return 'today';
+      return l10n.spotDetailDateToday;
     } else if (difference == 1) {
-      return 'yesterday';
+      return l10n.spotDetailDateYesterday;
     } else if (difference < 7) {
-      return '$difference days ago';
+      return l10n.spotDetailDateDaysAgo(difference);
     } else if (difference < 30) {
       final weeks = (difference / 7).floor();
-      return weeks == 1 ? '1 week ago' : '$weeks weeks ago';
+      return l10n.spotDetailDateWeeksAgo(weeks);
     } else if (difference < 365) {
       final months = (difference / 30).floor();
-      return months == 1 ? '1 month ago' : '$months months ago';
+      return l10n.spotDetailDateMonthsAgo(months);
     } else {
       final years = (difference / 365).floor();
-      return years == 1 ? '1 year ago' : '$years years ago';
+      return l10n.spotDetailDateYearsAgo(years);
     }
   }
 
   void _copySpotToClipboard() async {
     try {
+      final l10n = _l10n;
       final url = UrlService.generateSpotUrl(
         widget.spot.id!,
         countryCode: widget.spot.countryCode,
         city: widget.spot.city,
       );
       final label = widget.spot.name.trim();
-      final text = '$label 👉 $url';
+      final text = l10n.spotCardShareClipboardText(label, url);
 
       final outcome = await WebShareService.tryShareLink(text: label, url: url);
       if (outcome == WebShareOutcome.shared ||
@@ -704,10 +765,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Spot copied to clipboard!'),
+          SnackBar(
+            content: Text(l10n.spotCardCopiedToClipboard),
             backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -715,7 +776,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to copy spot: $e'),
+            content: Text(_l10n.spotDetailCopySpotFailed('$e')),
             backgroundColor: Colors.red,
           ),
         );
@@ -731,10 +792,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Address copied to clipboard!'),
+          SnackBar(
+            content: Text(_l10n.spotDetailAddressCopiedToClipboard),
             backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -742,7 +803,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to copy address: $e'),
+            content: Text(_l10n.spotDetailCopyAddressFailed('$e')),
             backgroundColor: Colors.red,
           ),
         );
@@ -770,7 +831,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Could not open maps app: $e'),
+            content: Text(_l10n.spotDetailOpenMapsFailed('$e')),
             backgroundColor: Colors.red,
           ),
         );
@@ -785,12 +846,13 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   }) {
     return PopupMenuButton<_SpotMenuAction>(
       position: PopupMenuPosition.under,
-      tooltip: tooltip ?? 'More actions',
+      tooltip: tooltip ?? _l10n.spotDetailMoreActionsTooltip,
       // Match circular 44×44 tap targets (InkWell defaults to square highlight).
       borderRadius: BorderRadius.circular(22),
       splashRadius: 22,
       onSelected: _onMenuActionSelected,
       itemBuilder: (menuContext) {
+        final l10n = AppLocalizations.of(menuContext)!;
         final theme = Theme.of(menuContext);
         final bool hasStaffAccess =
             authService.isAuthenticated &&
@@ -813,11 +875,11 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Login',
+                        l10n.spotDetailMenuLogin,
                         style: theme.textTheme.bodyMedium,
                       ),
                       Text(
-                        'Sign in first to link edits to your account',
+                        l10n.spotDetailMenuLoginSubtitle,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurface.withValues(
                             alpha: 0.6,
@@ -850,7 +912,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Flag as duplicate',
+                      l10n.spotDetailMenuFlagDuplicate,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: _spot.duplicateOf == null
                             ? null
@@ -861,8 +923,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     ),
                     Text(
                       _spot.duplicateOf == null
-                          ? 'This spot is a duplicate'
-                          : 'Already marked as duplicate',
+                          ? l10n.spotDetailMenuFlagDuplicateSubtitleYes
+                          : l10n.spotDetailMenuFlagDuplicateSubtitleNo,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurface.withValues(
                           alpha: 0.6,
@@ -893,7 +955,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Suggest photo',
+                      l10n.spotDetailMenuSuggestPhoto,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: _spot.duplicateOf == null
                             ? null
@@ -904,8 +966,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     ),
                     Text(
                       _spot.duplicateOf == null
-                          ? 'Submit photos for this spot'
-                          : 'Cannot suggest photos for duplicates',
+                          ? l10n.spotDetailMenuSuggestPhotoSubtitleYes
+                          : l10n.spotDetailMenuSuggestPhotoSubtitleNo,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurface.withValues(
                           alpha: 0.6,
@@ -936,7 +998,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Suggest an edit',
+                      l10n.spotDetailMenuSuggestEdit,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: _spot.duplicateOf == null
                             ? null
@@ -947,8 +1009,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     ),
                     Text(
                       _spot.duplicateOf == null
-                          ? 'Propose changes to this spot'
-                          : 'Cannot suggest edits for duplicates',
+                          ? l10n.spotDetailMenuSuggestEditSubtitleYes
+                          : l10n.spotDetailMenuSuggestEditSubtitleNo,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurface.withValues(
                           alpha: 0.6,
@@ -976,11 +1038,11 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Report spot',
+                      l10n.spotDetailMenuReportSpot,
                       style: theme.textTheme.bodyMedium,
                     ),
                     Text(
-                      'Help us review this spot',
+                      l10n.spotDetailMenuReportSpotSubtitle,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurface.withValues(
                           alpha: 0.6,
@@ -1026,7 +1088,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'Edit spot',
+                          l10n.spotDetailMenuEditSpot,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: shouldDisableEdit
                                 ? theme.colorScheme.onSurface.withValues(
@@ -1037,8 +1099,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         ),
                         Text(
                           shouldDisableEdit
-                              ? 'Create native spot first'
-                              : 'Moderator only',
+                              ? l10n.spotDetailMenuEditSpotSubtitleNative
+                              : l10n.spotDetailMenuEditSpotSubtitleMod,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurface.withValues(
                               alpha: 0.6,
@@ -1070,7 +1132,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Mark as duplicate',
+                        l10n.spotDetailMenuMarkDuplicate,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: isAlreadyDuplicate
                               ? theme.colorScheme.onSurface.withValues(
@@ -1081,8 +1143,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       ),
                       Text(
                         isAlreadyDuplicate
-                            ? 'Already marked as duplicate'
-                            : 'Moderator only',
+                            ? l10n.spotDetailMenuMarkDuplicateSubtitleDup
+                            : l10n.spotDetailMenuMarkDuplicateSubtitleMod,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurface.withValues(
                             alpha: 0.6,
@@ -1112,11 +1174,11 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'Remove duplicate status',
+                          l10n.spotDetailMenuRemoveDuplicateStatus,
                           style: theme.textTheme.bodyMedium,
                         ),
                         Text(
-                          'Moderator only',
+                          l10n.spotDetailMenuMarkDuplicateSubtitleMod,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurface.withValues(
                               alpha: 0.6,
@@ -1146,11 +1208,11 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'Create native spot',
+                          l10n.spotDetailMenuCreateNative,
                           style: theme.textTheme.bodyMedium,
                         ),
                         Text(
-                          'Moderator only',
+                          l10n.spotDetailMenuMarkDuplicateSubtitleMod,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurface.withValues(
                               alpha: 0.6,
@@ -1176,13 +1238,15 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
-                    children: [
+                      children: [
                       Text(
-                        _spot.hidden ? 'Unhide spot' : 'Hide spot',
+                        _spot.hidden
+                            ? l10n.spotDetailMenuUnhideSpot
+                            : l10n.spotDetailMenuHideSpot,
                         style: theme.textTheme.bodyMedium,
                       ),
                       Text(
-                        'Moderator only',
+                        l10n.spotDetailMenuMarkDuplicateSubtitleMod,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurface.withValues(
                             alpha: 0.6,
@@ -1211,13 +1275,13 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'Delete spot',
+                          l10n.spotDetailMenuDeleteSpot,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: Colors.red,
                           ),
                         ),
                         Text(
-                          'Admin only',
+                          l10n.spotDetailMenuDeleteSubtitleAdmin,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurface.withValues(
                               alpha: 0.6,
@@ -1251,11 +1315,11 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'Trigger image resize',
+                          l10n.spotDetailMenuTriggerResize,
                           style: theme.textTheme.bodyMedium,
                         ),
                         Text(
-                          'Re-create resized versions',
+                          l10n.spotDetailMenuTriggerResizeSubtitle,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurface.withValues(
                               alpha: 0.6,
@@ -1307,12 +1371,12 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(
-                  'Spots from external sources cannot be edited. '
-                  'Please create a native spot first using "Mark as Duplicate" → "Create Native Spot".',
-                ),
+                content: Text(_l10n.spotDetailExternalSourceCannotEdit),
                 duration: const Duration(seconds: 5),
-                action: SnackBarAction(label: 'OK', onPressed: () {}),
+                action: SnackBarAction(
+                  label: _l10n.spotDetailOk,
+                  onPressed: () {},
+                ),
               ),
             );
           }
@@ -1336,8 +1400,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           });
         } else if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Unable to edit this spot right now.'),
+            SnackBar(
+              content: Text(_l10n.spotDetailUnableEditNow),
               backgroundColor: Colors.red,
             ),
           );
@@ -1349,8 +1413,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           _showDeleteDialog();
         } else if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Only administrators can delete spots.'),
+            SnackBar(
+              content: Text(_l10n.spotDetailOnlyAdminsDelete),
               backgroundColor: Colors.red,
             ),
           );
@@ -1406,16 +1470,18 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       final verified = (data['verified'] as num?)?.toInt() ?? 0;
       final failed = (data['failed'] as num?)?.toInt() ?? 0;
 
+      final l10n = _l10n;
       if (total == 0) {
-        _showSuccessSnack('All images already have resized versions');
+        _showSuccessSnack(l10n.spotDetailResizeAllHaveVersions);
       } else {
+        final failedPart =
+            failed > 0 ? l10n.spotDetailResizeFailedPart(failed) : '';
         _showSuccessSnack(
-          'Resize: $triggered triggered, $verified verified'
-          '${failed > 0 ? ", $failed failed" : ""}',
+          l10n.spotDetailResizeSummary(triggered, verified, failedPart),
         );
       }
     } catch (e) {
-      if (mounted) _showErrorSnack('Failed to trigger resize: $e');
+      if (mounted) _showErrorSnack(_l10n.spotDetailResizeTriggerFailed('$e'));
     }
   }
 
@@ -1423,8 +1489,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     if (widget.spot.id == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Unable to flag this spot as duplicate right now.'),
+        SnackBar(
+          content: Text(_l10n.spotDetailUnableFlagDuplicate),
           backgroundColor: Colors.red,
         ),
       );
@@ -1440,8 +1506,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     if (!mounted) return;
     if (result == true) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Thanks! Your duplicate report has been submitted.'),
+        SnackBar(
+          content: Text(_l10n.spotDetailThanksDuplicateReport),
           backgroundColor: Colors.green,
         ),
       );
@@ -1452,8 +1518,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     if (widget.spot.id == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Unable to suggest photos for this spot right now.'),
+        SnackBar(
+          content: Text(_l10n.spotDetailUnableSuggestPhotos),
           backgroundColor: Colors.red,
         ),
       );
@@ -1463,8 +1529,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     if (widget.spot.duplicateOf != null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Cannot suggest photos for duplicate spots.'),
+        SnackBar(
+          content: Text(_l10n.spotDetailCannotSuggestPhotosDuplicate),
           backgroundColor: Colors.red,
         ),
       );
@@ -1480,10 +1546,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     if (!mounted) return;
     if (result == true) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Thanks! Your photo suggestion has been submitted for review.',
-          ),
+        SnackBar(
+          content: Text(_l10n.spotDetailThanksPhotoSuggestion),
           backgroundColor: Colors.green,
         ),
       );
@@ -1494,8 +1558,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     if (widget.spot.id == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Unable to suggest edits for this spot right now.'),
+        SnackBar(
+          content: Text(_l10n.spotDetailUnableSuggestEdits),
           backgroundColor: Colors.red,
         ),
       );
@@ -1505,8 +1569,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     if (widget.spot.duplicateOf != null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Cannot suggest edits for duplicate spots.'),
+        SnackBar(
+          content: Text(_l10n.spotDetailCannotSuggestEditsDuplicate),
           backgroundColor: Colors.red,
         ),
       );
@@ -1522,10 +1586,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     if (!mounted) return;
     if (result == true) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Thanks! Your edit suggestion has been submitted for review.',
-          ),
+        SnackBar(
+          content: Text(_l10n.spotDetailThanksEditSuggestion),
           backgroundColor: Colors.green,
         ),
       );
@@ -1536,8 +1598,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     if (widget.spot.id == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Unable to report this spot right now.'),
+        SnackBar(
+          content: Text(_l10n.spotDetailUnableReportNow),
           backgroundColor: Colors.red,
         ),
       );
@@ -1553,8 +1615,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     if (!mounted) return;
     if (result == true) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Thanks! Your report has been submitted.'),
+        SnackBar(
+          content: Text(_l10n.spotDetailThanksReportSubmitted),
           backgroundColor: Colors.green,
         ),
       );
@@ -1565,8 +1627,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     if (widget.spot.id == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Unable to add this spot to a list right now.'),
+        SnackBar(
+          content: Text(_l10n.spotDetailUnableAddToList),
           backgroundColor: Colors.red,
         ),
       );
@@ -1583,8 +1645,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     if (!featureAccessService.hasFeatureAccess('spotLists')) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('You do not have access to spot lists.'),
+        SnackBar(
+          content: Text(_l10n.spotDetailNoSpotListsAccess),
           backgroundColor: Colors.red,
         ),
       );
@@ -1618,15 +1680,15 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     if (result != null) {
       if (result['created'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('List created and spot added!'),
+          SnackBar(
+            content: Text(_l10n.spotDetailListCreatedAndAdded),
             backgroundColor: Colors.green,
           ),
         );
       } else if (result['added'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Spot added to list!'),
+          SnackBar(
+            content: Text(_l10n.spotDetailSpotAddedToList),
             backgroundColor: Colors.green,
           ),
         );
@@ -1816,7 +1878,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                           ),
                                           child: _buildSpotActionsPopupMenu(
                                             authService: authService,
-                                            tooltip: 'Edit & report',
+                                            tooltip: _l10n.spotDetailEditReportTooltip,
                                             child: SizedBox(
                                               width: 44,
                                               height: 44,
@@ -1848,7 +1910,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                         bottom: 16,
                                       ),
                                       child: Tooltip(
-                                        message: 'Share',
+                                        message: _l10n.spotDetailShareTooltip,
                                         child: Material(
                                           color: Theme.of(context)
                                               .colorScheme
@@ -1899,7 +1961,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                               SpotCheckInPresenceStrip(
                                 spotId: _spot.id!,
                                 variant: SpotCheckInPresenceVariant.detail,
-                                detailLeadingLabel: 'Here now',
+                                detailLeadingLabel: _l10n.spotDetailPresenceHereNow,
                               ),
                             ],
                           ),
@@ -1936,7 +1998,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
-                                    'This spot is hidden from public view. It likely no longer exists or doesn\'t meet our policies. It will not appear in search results or on the map.',
+                                    _l10n.spotDetailHiddenBanner,
                                     style: Theme.of(context)
                                         .textTheme
                                         .bodyMedium
@@ -1979,7 +2041,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
-                                    'This spot is no longer listed in ${widget.spot.spotSourceName ?? 'its original source'}. Details might be outdated, so double-check before visiting.',
+                                    _l10n.spotDetailSourceRemovedBanner(
+                                      widget.spot.spotSourceName ??
+                                          _l10n.spotDetailSourceRemovedUnknownSource,
+                                    ),
                                     style: Theme.of(context)
                                         .textTheme
                                         .bodyMedium
@@ -1997,7 +2062,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         // Description
                         SelectableText(
                           _spot.description.trim().isEmpty
-                              ? 'No description provided'
+                              ? _l10n.spotCardNoDescription
                               : _spot.description,
                           style: Theme.of(context).textTheme.bodyLarge
                               ?.copyWith(
@@ -2039,7 +2104,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                   widget.spot.goodFor!.isNotEmpty) {
                                 sections.add(
                                   _buildExpandableChipSection(
-                                    title: 'Good For',
+                                    title: _l10n.exploreGoodForSegment,
                                     chips: widget.spot.goodFor!.map((skill) {
                                       return _buildGoodForChip(skill);
                                     }).toList(),
@@ -2052,7 +2117,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                   widget.spot.spotFeatures!.isNotEmpty) {
                                 sections.add(
                                   _buildExpandableChipSection(
-                                    title: 'Features',
+                                    title: _l10n.spotDetailSectionFeatures,
                                     chips: widget.spot.spotFeatures!.map((
                                       feature,
                                     ) {
@@ -2070,7 +2135,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Access',
+                                        _l10n.spotDetailSectionAccess,
                                         style: Theme.of(context)
                                             .textTheme
                                             .titleMedium
@@ -2111,7 +2176,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
                                 sections.add(
                                   _buildExpandableChipSection(
-                                    title: 'Facilities',
+                                    title: _l10n.spotDetailSectionFacilities,
                                     chips: allFacilityChips,
                                   ),
                                 );
@@ -2209,7 +2274,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                   if (widget.spot.goodFor != null &&
                                       widget.spot.goodFor!.isNotEmpty) ...[
                                     _buildExpandableChipSection(
-                                      title: 'Good For',
+                                      title: _l10n.exploreGoodForSegment,
                                       chips: widget.spot.goodFor!.map((skill) {
                                         return _buildGoodForChip(skill);
                                       }).toList(),
@@ -2221,7 +2286,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                   if (widget.spot.spotFeatures != null &&
                                       widget.spot.spotFeatures!.isNotEmpty) ...[
                                     _buildExpandableChipSection(
-                                      title: 'Features',
+                                      title: _l10n.spotDetailSectionFeatures,
                                       chips: widget.spot.spotFeatures!.map((
                                         feature,
                                       ) {
@@ -2234,7 +2299,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                   // Access
                                   if (widget.spot.spotAccess != null) ...[
                                     Text(
-                                      'Access',
+                                      _l10n.spotDetailSectionAccess,
                                       style: Theme.of(context)
                                           .textTheme
                                           .titleMedium
@@ -2279,7 +2344,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                       ];
 
                                       return _buildExpandableChipSection(
-                                        title: 'Facilities',
+                                        title: _l10n.spotDetailSectionFacilities,
                                         chips: allFacilityChips,
                                       );
                                     }(),
@@ -2315,9 +2380,12 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                     _jumpflixVideosFuture ??
                                     Future<List<JumpflixVideo>>.value([]),
                                 builder: (context, jumpflixSnapshot) {
+                                  final l10n = AppLocalizations.of(context)!;
                                   if (jumpflixSnapshot.hasError) {
                                     debugPrint(
-                                      'Jumpflix fetch failed: ${jumpflixSnapshot.error}',
+                                      l10n.spotDetailJumpflixFetchFailed(
+                                        '${jumpflixSnapshot.error}',
+                                      ),
                                     );
                                   }
                                   final youtubeIds =
@@ -2332,7 +2400,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                           launchUrl:
                                               'https://www.youtube.com/watch?v=$id',
                                           useYoutubeIcon: true,
-                                          brandLabel: 'YouTube',
+                                          brandLabel: l10n.spotDetailBrandYoutube,
                                         ),
                                       )
                                       .toList();
@@ -2368,8 +2436,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                           'assets/images/jumpflix-logo.webp',
                                       brandLabel: v.title.isNotEmpty
                                           ? v.title
-                                          : 'Jumpflix',
-                                      brandSubtitle: 'As seen in',
+                                          : l10n.spotDetailBrandJumpflix,
+                                      brandSubtitle: l10n.spotDetailBrandAsSeenIn,
                                       brandDescription: descPreview,
                                     );
                                   }).toList();
@@ -2853,7 +2921,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                       ),
                                       const SizedBox(width: 12),
                                       Text(
-                                        'Loading...',
+                                        AppLocalizations.of(
+                                          context,
+                                        )!.spotDetailLoading,
                                         style: Theme.of(context)
                                             .textTheme
                                             .bodyMedium
@@ -2904,7 +2974,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                               ),
                                               const SizedBox(width: 12),
                                               Text(
-                                                'Loading your rating...',
+                                                AppLocalizations.of(
+                                                  context,
+                                                )!.spotDetailLoadingYourRating,
                                                 style: Theme.of(context)
                                                     .textTheme
                                                     .bodyMedium
@@ -2929,7 +3001,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          'Rate this spot',
+                                          AppLocalizations.of(
+                                            context,
+                                          )!.spotDetailRateThisSpot,
                                           style: Theme.of(context)
                                               .textTheme
                                               .titleMedium,
@@ -2966,7 +3040,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Rate this spot',
+                                    AppLocalizations.of(
+                                      context,
+                                    )!.spotDetailRateThisSpot,
                                     style: Theme.of(context)
                                         .textTheme
                                         .titleMedium,
@@ -3002,14 +3078,18 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Text(
-                                        "Couldn't load your profile.",
+                                        AppLocalizations.of(
+                                          context,
+                                        )!.spotDetailCouldNotLoadProfile,
                                         style: Theme.of(
                                           context,
                                         ).textTheme.bodyMedium,
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        'Please refresh the page to rate.',
+                                        AppLocalizations.of(
+                                          context,
+                                        )!.spotDetailRefreshPageToRate,
                                         style: Theme.of(context)
                                             .textTheme
                                             .bodySmall
@@ -3060,7 +3140,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                           ),
                                           const SizedBox(height: 16),
                                           Text(
-                                            'Sign in to rate this spot',
+                                            AppLocalizations.of(
+                                              context,
+                                            )!.spotDetailSignInToRateTitle,
                                             style: Theme.of(context)
                                                 .textTheme
                                                 .titleMedium
@@ -3069,7 +3151,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                           ),
                                           const SizedBox(height: 8),
                                           Text(
-                                            'Sign in to rate this spot and help other parkour enthusiasts.',
+                                            AppLocalizations.of(
+                                              context,
+                                            )!.spotDetailSignInToRateSubtitle,
                                             textAlign: TextAlign.center,
                                             style: Theme.of(context)
                                                 .textTheme
@@ -3093,7 +3177,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                                     '/login?redirectTo=${Uri.encodeComponent(redirectUrl)}',
                                                   );
                                                 },
-                                                text: 'Sign In',
+                                                text: AppLocalizations.of(
+                                                  context,
+                                                )!.spotDetailSignInButton,
                                                 width: double.infinity,
                                               ),
                                             ),
@@ -3116,7 +3202,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                                       horizontal: 16,
                                                     ),
                                                 child: Text(
-                                                  'OR',
+                                                  AppLocalizations.of(
+                                                    context,
+                                                  )!.profileOrDivider,
                                                   style: Theme.of(context)
                                                       .textTheme
                                                       .bodySmall
@@ -3152,7 +3240,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                                     '/login?mode=signup&redirectTo=${Uri.encodeComponent(redirectUrl)}',
                                                   );
                                                 },
-                                                text: 'Create an Account',
+                                                text: AppLocalizations.of(
+                                                  context,
+                                                )!.spotDetailCreateAccountButton,
                                                 width: double.infinity,
                                                 isOutlined: true,
                                               ),
@@ -3262,8 +3352,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                         heroTag: 'mapTypeToggleFab',
                                         mini: true,
                                         tooltip: isSatellite
-                                            ? 'Switch to Map'
-                                            : 'Switch to Satellite',
+                                            ? _l10n.spotDetailMapSwitchToMap
+                                            : _l10n.spotDetailMapSwitchToSatellite,
                                         child: Icon(
                                           isSatellite
                                               ? Icons.map
@@ -3301,7 +3391,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                         ),
                                         const SizedBox(width: 4),
                                         Text(
-                                          'Locate on map',
+                                          _l10n.spotDetailMapLocateOnMap,
                                           style: const TextStyle(
                                             color: Colors.white,
                                             fontSize: 11,
@@ -3364,11 +3454,12 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                   Icons.copy_all,
                                   color: Theme.of(context).colorScheme.primary,
                                 ),
-                                title: const Text('Duplicate of'),
+                                title: Text(_l10n.spotDetailDuplicateOf),
                                 subtitle: _isLoadingOriginalSpot
-                                    ? const Text('Loading...')
+                                    ? Text(_l10n.spotDetailLoading)
                                     : Text(
-                                        _originalSpot?.name ?? 'Original spot',
+                                        _originalSpot?.name ??
+                                            _l10n.spotDetailOriginalSpotFallback,
                                         style: TextStyle(
                                           color: Theme.of(
                                             context,
@@ -3394,8 +3485,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                     context,
                                   ).colorScheme.secondary,
                                 ),
-                                title: const Text('Also based on'),
-                                subtitle: const Text('Loading...'),
+                                title: Text(_l10n.spotDetailAlsoBasedOn),
+                                subtitle: Text(_l10n.spotDetailLoading),
                                 contentPadding: EdgeInsets.zero,
                               )
                             else if (_duplicateSpots.isNotEmpty) ...[
@@ -3407,7 +3498,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                   ).colorScheme.secondary,
                                 ),
                                 title: Text(
-                                  'Also based on (${_duplicateSpots.length})',
+                                  _l10n.spotDetailAlsoBasedOnCount(
+                                    _duplicateSpots.length,
+                                  ),
                                   style: Theme.of(context).textTheme.titleSmall,
                                 ),
                                 contentPadding: EdgeInsets.zero,
@@ -3506,7 +3599,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'No images available',
+                _l10n.spotDetailNoImagesAvailable,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: Theme.of(
                     context,
@@ -3622,7 +3715,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Image failed to load',
+                            _l10n.spotDetailImageFailedToLoad,
                             style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
                                   color: Theme.of(
@@ -3869,8 +3962,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       final authService = Provider.of<AuthService>(context, listen: false);
       if (authService.userProfile == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('You must be logged in to rate spots'),
+          SnackBar(
+            content: Text(_l10n.spotDetailMustBeLoggedInToRate),
             backgroundColor: Colors.red,
           ),
         );
@@ -3908,7 +4001,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Rating ${rating.toInt()} star${rating == 1 ? '' : 's'} submitted!',
+              _l10n.spotDetailRatingSubmitted(rating.toInt()),
             ),
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 2),
@@ -3927,8 +4020,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           _userRating = _previousRating;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to submit rating. Please try again.'),
+          SnackBar(
+            content: Text(_l10n.spotDetailRatingSubmitFailed),
             backgroundColor: Colors.red,
           ),
         );
@@ -3941,7 +4034,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error submitting rating: $e'),
+            content: Text(_l10n.spotDetailRatingSubmitError('$e')),
             backgroundColor: Colors.red,
           ),
         );
@@ -4035,14 +4128,14 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   _showCreateNativeSpotConfirmationDialog() async {
     if (widget.spot.spotSource == null) {
       if (!mounted) return null;
-      _showErrorSnack('This spot is not from an external source.');
+      _showErrorSnack(_l10n.spotDetailNotExternalSource);
       return null;
     }
 
     final authService = Provider.of<AuthService>(context, listen: false);
     if (!authService.isAuthenticated || authService.currentUser == null) {
       if (!mounted) return null;
-      _showErrorSnack('You must be logged in to create a native spot.');
+      _showErrorSnack(_l10n.spotDetailMustBeLoggedInCreateNative);
       return null;
     }
 
@@ -4053,18 +4146,15 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setState) {
+          final l10n = AppLocalizations.of(dialogContext)!;
           return AlertDialog(
-            title: const Text('Create Native Spot'),
+            title: Text(l10n.spotDetailCreateNativeDialogTitle),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'This will create a new native spot based on this spot and mark the current spot as a duplicate of it. '
-                    'All spot data (name, description, location, photos, YouTube links, and attributes) will be copied to the new native spot.\n\n'
-                    'Note: Admins can remove spots and duplicate links can be removed if needed.',
-                  ),
+                  Text(l10n.spotDetailCreateNativeDialogBody),
                   const SizedBox(height: 16),
                   ModeratorActionFields(
                     spotId: _spot.id,
@@ -4085,7 +4175,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                   notesController.dispose();
                   Navigator.of(dialogContext).pop(null);
                 },
-                child: const Text('Cancel'),
+                child: Text(l10n.profileCancel),
               ),
               ElevatedButton(
                 onPressed: () {
@@ -4099,7 +4189,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     'notes': notes,
                   });
                 },
-                child: const Text('Create'),
+                child: Text(l10n.spotDetailCreateButton),
               ),
             ],
           );
@@ -4111,7 +4201,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   Future<void> _createNativeSpot({String? reportId, String? notes}) async {
     if (widget.spot.id == null) {
       if (!mounted) return;
-      _showErrorSnack('Unable to create native spot right now.');
+      _showErrorSnack(_l10n.spotDetailUnableCreateNativeNow);
       return;
     }
 
@@ -4121,7 +4211,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     // Check if user is authenticated
     if (!authService.isAuthenticated || authService.currentUser == null) {
       if (!mounted) return;
-      _showErrorSnack('You must be logged in to create a native spot.');
+      _showErrorSnack(_l10n.spotDetailMustBeLoggedInCreateNative);
       return;
     }
 
@@ -4136,7 +4226,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       );
 
       if (nativeSpotId == null) {
-        final error = spotService.error ?? 'Failed to create native spot';
+        final error = spotService.error ?? _l10n.spotDetailFailedCreateNativeSpot;
         _showErrorSnack(error);
         return;
       }
@@ -4175,29 +4265,30 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         }
 
         _showSuccessSnack(
-          'Native spot created and current spot marked as duplicate.',
+          _l10n.spotDetailNativeCreatedDuplicateMarked,
         );
       } else {
-        final error = spotService.error ?? 'Failed to mark spot as duplicate';
+        final error =
+            spotService.error ?? _l10n.spotDetailFailedMarkDuplicateGeneric;
         _showErrorSnack(error);
       }
     } catch (e) {
       if (!mounted) return;
-      _showErrorSnack('Error creating native spot: $e');
+      _showErrorSnack(_l10n.spotDetailErrorCreatingNativeSpot('$e'));
     }
   }
 
   Future<void> _showMarkAsDuplicateDialog() async {
     if (widget.spot.id == null) {
       if (!mounted) return;
-      _showErrorSnack('Unable to mark this spot as duplicate right now.');
+      _showErrorSnack(_l10n.spotDetailUnableMarkDuplicateNow);
       return;
     }
 
     // Check if spot is already marked as duplicate
     if (widget.spot.duplicateOf != null) {
       if (!mounted) return;
-      _showErrorSnack('This spot is already marked as a duplicate.');
+      _showErrorSnack(_l10n.spotDetailAlreadyMarkedDuplicate);
       return;
     }
 
@@ -4288,14 +4379,15 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           // ignore fetch failure; UI already updated via success snackbar
         }
 
-        _showSuccessSnack('Spot marked as duplicate.');
+        _showSuccessSnack(_l10n.spotDetailSpotMarkedDuplicateSuccess);
       } else {
-        final error = spotService.error ?? 'Failed to mark spot as duplicate';
+        final error =
+            spotService.error ?? _l10n.spotDetailFailedMarkDuplicateGeneric;
         _showErrorSnack(error);
       }
     } catch (e) {
       if (!mounted) return;
-      _showErrorSnack('Error marking spot as duplicate: $e');
+      _showErrorSnack(_l10n.spotDetailErrorMarkingDuplicateSpot('$e'));
     }
   }
 
@@ -4304,12 +4396,11 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     if (!authService.isAuthenticated ||
         (!authService.isModerator && !authService.isAdmin)) {
       if (!mounted) return null;
-      _showErrorSnack('Only moderators can hide/unhide spots.');
+      _showErrorSnack(_l10n.spotDetailModeratorsOnlyHideUnhide);
       return null;
     }
 
     final isHiding = !_spot.hidden;
-    final actionCapitalized = isHiding ? 'Hide' : 'Unhide';
 
     String? selectedReportId;
     final notesController = TextEditingController();
@@ -4318,8 +4409,13 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setState) {
+          final l10n = AppLocalizations.of(dialogContext)!;
           return AlertDialog(
-            title: Text('$actionCapitalized Spot'),
+            title: Text(
+              isHiding
+                  ? l10n.spotDetailHideSpotTitle
+                  : l10n.spotDetailUnhideSpotTitle,
+            ),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -4327,11 +4423,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                 children: [
                   Text(
                     isHiding
-                        ? 'This will hide the spot from public view. '
-                              'Hidden spots will not appear in search results or on the map, '
-                              'but the spot data will be preserved and can be unhidden later.'
-                        : 'This will restore the spot to public view. '
-                              'The spot will appear in search results and on the map again.',
+                        ? l10n.spotDetailHideSpotMessage
+                        : l10n.spotDetailUnhideSpotMessage,
                   ),
                   const SizedBox(height: 16),
                   ModeratorActionFields(
@@ -4353,7 +4446,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                   notesController.dispose();
                   Navigator.of(dialogContext).pop(null);
                 },
-                child: const Text('Cancel'),
+                child: Text(l10n.profileCancel),
               ),
               ElevatedButton(
                 onPressed: () {
@@ -4367,7 +4460,11 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     'notes': notes,
                   });
                 },
-                child: Text(actionCapitalized),
+                child: Text(
+                  isHiding
+                      ? l10n.spotDetailActionHide
+                      : l10n.spotDetailActionUnhide,
+                ),
               ),
             ],
           );
@@ -4379,7 +4476,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   Future<void> _toggleSpotHidden({String? reportId, String? notes}) async {
     if (_spot.id == null) {
       if (!mounted) return;
-      _showErrorSnack('Unable to hide/unhide this spot right now.');
+      _showErrorSnack(_l10n.spotDetailUnableHideUnhideNow);
       return;
     }
 
@@ -4390,7 +4487,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     if (!authService.isAuthenticated ||
         (!authService.isModerator && !authService.isAdmin)) {
       if (!mounted) return;
-      _showErrorSnack('Only moderators can hide/unhide spots.');
+      _showErrorSnack(_l10n.spotDetailModeratorsOnlyHideUnhide);
       return;
     }
 
@@ -4426,19 +4523,22 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
         _showSuccessSnack(
           newHiddenState
-              ? 'Spot hidden successfully.'
-              : 'Spot unhidden successfully.',
+              ? _l10n.spotDetailSpotHiddenSuccess
+              : _l10n.spotDetailSpotUnhiddenSuccess,
         );
       } else {
-        final error =
-            spotService.error ??
-            'Failed to ${newHiddenState ? 'hide' : 'unhide'} spot';
+        final error = spotService.error ??
+            (newHiddenState
+                ? _l10n.spotDetailFailedHideSpot
+                : _l10n.spotDetailFailedUnhideSpot);
         _showErrorSnack(error);
       }
     } catch (e) {
       if (!mounted) return;
       _showErrorSnack(
-        'Error ${newHiddenState ? 'hiding' : 'unhiding'} spot: $e',
+        newHiddenState
+            ? _l10n.spotDetailErrorHidingSpot('$e')
+            : _l10n.spotDetailErrorUnhidingSpot('$e'),
       );
     }
   }
@@ -4447,7 +4547,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   _showRemoveDuplicateStatusConfirmationDialog() async {
     if (_spot.duplicateOf == null) {
       if (!mounted) return null;
-      _showErrorSnack('This spot is not marked as a duplicate.');
+      _showErrorSnack(_l10n.spotDetailNotMarkedAsDuplicate);
       return null;
     }
 
@@ -4455,7 +4555,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     if (!authService.isAuthenticated ||
         (!authService.isModerator && !authService.isAdmin)) {
       if (!mounted) return null;
-      _showErrorSnack('Only moderators can remove duplicate status.');
+      _showErrorSnack(_l10n.spotDetailModeratorsOnlyRemoveDuplicateStatus);
       return null;
     }
 
@@ -4467,18 +4567,15 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setState) {
+            final l10n = AppLocalizations.of(dialogContext)!;
             return AlertDialog(
-              title: const Text('Remove Duplicate Status'),
+              title: Text(l10n.spotDetailMenuRemoveDuplicateStatus),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'This will remove the duplicate status from this spot. '
-                      'The spot will no longer be marked as a duplicate.\n\n'
-                      'Do you want to continue?',
-                    ),
+                    Text(l10n.spotDetailRemoveDuplicateDialogBody),
                     const SizedBox(height: 16),
                     ModeratorActionFields(
                       spotId: _spot.id,
@@ -4499,7 +4596,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     notesController.dispose();
                     Navigator.of(dialogContext).pop(null);
                   },
-                  child: const Text('Cancel'),
+                  child: Text(l10n.profileCancel),
                 ),
                 ElevatedButton(
                   onPressed: () {
@@ -4513,7 +4610,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     notesController.dispose();
                     Navigator.of(dialogContext).pop(result);
                   },
-                  child: const Text('Remove'),
+                  child: Text(l10n.spotDetailRemoveButton),
                 ),
               ],
             );
@@ -4526,7 +4623,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   Future<void> _removeDuplicateStatus({String? reportId, String? notes}) async {
     if (_spot.id == null) {
       if (!mounted) return;
-      _showErrorSnack('Unable to remove duplicate status right now.');
+      _showErrorSnack(_l10n.spotDetailUnableRemoveDuplicateStatusNow);
       return;
     }
 
@@ -4537,14 +4634,14 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     if (!authService.isAuthenticated ||
         (!authService.isModerator && !authService.isAdmin)) {
       if (!mounted) return;
-      _showErrorSnack('Only moderators can remove duplicate status.');
+      _showErrorSnack(_l10n.spotDetailModeratorsOnlyRemoveDuplicateStatus);
       return;
     }
 
     // Check if spot is actually marked as duplicate
     if (_spot.duplicateOf == null) {
       if (!mounted) return;
-      _showErrorSnack('This spot is not marked as a duplicate.');
+      _showErrorSnack(_l10n.spotDetailNotMarkedAsDuplicate);
       return;
     }
 
@@ -4584,14 +4681,15 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           _updateDocumentTitle();
         }
 
-        _showSuccessSnack('Duplicate status removed successfully.');
+        _showSuccessSnack(_l10n.spotDetailDuplicateStatusRemovedSuccess);
       } else {
-        final error = spotService.error ?? 'Failed to remove duplicate status';
+        final error =
+            spotService.error ?? _l10n.spotDetailFailedRemoveDuplicateStatusGeneric;
         _showErrorSnack(error);
       }
     } catch (e) {
       if (!mounted) return;
-      _showErrorSnack('Error removing duplicate status: $e');
+      _showErrorSnack(_l10n.spotDetailErrorRemovingDuplicateStatus('$e'));
     }
   }
 
@@ -4602,13 +4700,13 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         content: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator(),
-            SizedBox(width: 16),
-            Text('Checking linked data...'),
+            const CircularProgressIndicator(),
+            const SizedBox(width: 16),
+            Text(AppLocalizations.of(dialogContext)!.spotDetailCheckingLinkedData),
           ],
         ),
       ),
@@ -4664,48 +4762,53 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setState) {
+          final l10n = AppLocalizations.of(dialogContext)!;
           String? selectedReportId;
           final notesController = TextEditingController();
 
           return AlertDialog(
-            title: const Text('Delete Spot'),
+            title: Text(l10n.spotDetailDeleteSpotDialogTitle),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Are you sure you want to delete this spot? This action cannot be undone.',
-                  ),
+                  Text(l10n.spotDetailDeleteSpotConfirmMessage),
                   const SizedBox(height: 16),
                   if (ratingsCount > 0 ||
                       spotReportsCount > 0 ||
                       duplicateSpotsCount > 0) ...[
                     const Divider(),
                     const SizedBox(height: 8),
-                    const Text(
-                      'This spot has linked data:',
-                    ),
+                    Text(l10n.spotDetailLinkedDataHeading),
                     const SizedBox(height: 8),
                     if (ratingsCount > 0)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 4),
-                        child: Text('• Ratings: $ratingsCount'),
+                        child: Text(
+                          l10n.spotDetailLinkedRatingsLine(ratingsCount),
+                        ),
                       ),
                     if (spotReportsCount > 0)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 4),
-                        child: Text('• Spot Reports: $spotReportsCount'),
+                        child: Text(
+                          l10n.spotDetailLinkedReportsLine(spotReportsCount),
+                        ),
                       ),
                     if (duplicateSpotsCount > 0)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 4),
-                        child: Text('• Duplicate Spots: $duplicateSpotsCount'),
+                        child: Text(
+                          l10n.spotDetailLinkedDuplicatesLine(
+                            duplicateSpotsCount,
+                          ),
+                        ),
                       ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Please resolve these links before deleting the spot.',
-                      style: TextStyle(
+                    Text(
+                      l10n.spotDetailResolveLinksBeforeDelete,
+                      style: const TextStyle(
                         color: Colors.red,
                       ),
                     ),
@@ -4732,7 +4835,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                   notesController.dispose();
                   Navigator.pop(context);
                 },
-                child: const Text('Cancel'),
+                child: Text(l10n.profileCancel),
               ),
               TextButton(
                 onPressed: canDelete
@@ -4804,8 +4907,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                               context,
                             );
                             scaffoldMessenger.showSnackBar(
-                              const SnackBar(
-                                content: Text('Spot deleted successfully'),
+                              SnackBar(
+                                content: Text(
+                                  _l10n.spotDetailSpotDeletedSuccess,
+                                ),
                                 backgroundColor: Colors.green,
                               ),
                             );
@@ -4820,8 +4925,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                               context,
                             );
                             scaffoldMessenger.showSnackBar(
-                              const SnackBar(
-                                content: Text('Failed to delete spot'),
+                              SnackBar(
+                                content: Text(_l10n.spotDetailFailedDeleteSpot),
                                 backgroundColor: Colors.red,
                               ),
                             );
@@ -4833,7 +4938,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                           );
                           scaffoldMessenger.showSnackBar(
                             SnackBar(
-                              content: Text('Error deleting spot: $e'),
+                              content: Text(
+                                _l10n.spotDetailErrorDeletingSpot('$e'),
+                              ),
                               backgroundColor: Colors.red,
                             ),
                           );
@@ -4841,7 +4948,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                       }
                     : null,
                 style: TextButton.styleFrom(foregroundColor: Colors.red),
-                child: const Text('Delete'),
+                child: Text(l10n.spotDetailMenuDeleteSpot),
               ),
             ],
           );
@@ -5039,7 +5146,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            '$remainingCount more',
+                            _l10n.spotDetailExpandMoreCount(remainingCount),
                             style: TextStyle(
                               fontSize: 14,
                               color: Theme.of(context).colorScheme.primary,
@@ -5098,7 +5205,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Close'),
+              child: Text(_l10n.spotDetailClose),
             ),
           ],
         );
@@ -5162,6 +5269,7 @@ class _SpotDetailCheckInFabState extends State<_SpotDetailCheckInFab> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     if (widget.isLoadingAuth) {
       return Padding(
@@ -5193,7 +5301,7 @@ class _SpotDetailCheckInFabState extends State<_SpotDetailCheckInFab> {
       return Padding(
         padding: const EdgeInsets.only(bottom: 16),
         child: Tooltip(
-          message: 'Sign in to check in',
+          message: l10n.spotDetailCheckInFabTooltipSignIn,
           child: Material(
             color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
             shape: const CircleBorder(),
@@ -5228,7 +5336,9 @@ class _SpotDetailCheckInFabState extends State<_SpotDetailCheckInFab> {
         return Padding(
           padding: const EdgeInsets.only(bottom: 16),
           child: Tooltip(
-            message: checkedIn ? 'Edit check-in' : 'Check in',
+            message: checkedIn
+                ? l10n.spotDetailCheckInFabTooltipEdit
+                : l10n.spotDetailCheckInFabTooltipCheckIn,
             child: Material(
               color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
               shape: const CircleBorder(),
@@ -5457,10 +5567,11 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
   }
 
   Future<void> _searchSpot() async {
+    final l10n = AppLocalizations.of(context)!;
     final input = searchController.text.trim();
     if (input.isEmpty) {
       setState(() {
-        searchError = 'Please enter a spot ID or URL';
+        searchError = l10n.spotDetailDuplicateSearchEmpty;
         _foundSpot = null;
       });
       return;
@@ -5469,7 +5580,7 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
     final spotId = _extractSpotId(input);
     if (spotId == null) {
       setState(() {
-        searchError = 'Invalid spot ID or URL format';
+        searchError = l10n.spotDetailDuplicateInvalidUrl;
         _foundSpot = null;
       });
       return;
@@ -5477,7 +5588,7 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
 
     if (spotId == widget.spot.id) {
       setState(() {
-        searchError = 'Cannot mark a spot as duplicate of itself';
+        searchError = l10n.spotDetailDuplicateCannotSelectSelf;
         _foundSpot = null;
       });
       return;
@@ -5497,7 +5608,7 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
 
       if (spot == null) {
         setState(() {
-          searchError = 'Spot not found';
+          searchError = l10n.spotDetailDuplicateSpotNotFound;
           _foundSpot = null;
           _isSearching = false;
         });
@@ -5512,7 +5623,7 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        searchError = 'Failed to load spot: $e';
+        searchError = l10n.spotDetailDuplicateFailedLoadSpot('$e');
         _foundSpot = null;
         _isSearching = false;
       });
@@ -5656,6 +5767,7 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
   @override
   Widget build(BuildContext dialogContext) {
     final theme = Theme.of(dialogContext);
+    final l10n = AppLocalizations.of(dialogContext)!;
     final authService = Provider.of<AuthService>(dialogContext, listen: false);
     final reportService = Provider.of<SpotReportService>(
       dialogContext,
@@ -5671,7 +5783,7 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
           children: [
             Icon(Icons.copy_all, color: theme.colorScheme.primary),
             const SizedBox(width: 8),
-            const Expanded(child: Text('Flag as duplicate')),
+            Expanded(child: Text(l10n.spotDetailFlagDuplicateDialogTitle)),
           ],
         ),
         content: ConstrainedBox(
@@ -5682,12 +5794,12 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'This spot appears to be a duplicate of another spot. Please select the original spot below.',
+                  l10n.spotDetailFlagDuplicateIntro,
                   style: theme.textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Which spot is this a duplicate of?',
+                  l10n.spotDetailFlagDuplicateWhichQuestion,
                   style: theme.textTheme.titleSmall,
                 ),
                 const SizedBox(height: 8),
@@ -5708,7 +5820,7 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
                         child: TextField(
                           controller: searchController,
                           decoration: InputDecoration(
-                            hintText: 'Paste spot URL or enter spot ID',
+                            hintText: l10n.spotDetailDuplicateSearchHint,
                             prefixIcon: const Icon(Icons.link),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -5734,7 +5846,7 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
                                 ),
                               )
                             : const Icon(Icons.search),
-                        label: const Text('Search'),
+                        label: Text(l10n.spotDetailSearch),
                       ),
                     ],
                   ),
@@ -5749,7 +5861,7 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
                     )
                   else if (_nearbySpots.isNotEmpty) ...[
                     Text(
-                      'Nearby spots (within ~50m)',
+                      l10n.spotDetailNearbySpotsWithin50m,
                       style: theme.textTheme.titleSmall,
                     ),
                     const SizedBox(height: 8),
@@ -5775,7 +5887,7 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
                   // Found spot from search
                   if (_foundSpot != null) ...[
                     Text(
-                      'Found Spot',
+                      l10n.spotDetailFoundSpot,
                       style: theme.textTheme.titleSmall,
                     ),
                     const SizedBox(height: 8),
@@ -5813,7 +5925,9 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
                                 if (_selectedDuplicateSpot!.id != null) ...[
                                   const SizedBox(height: 4),
                                   Text(
-                                    'Spot ID: ${_selectedDuplicateSpot!.id}',
+                                    l10n.spotDetailSpotIdLabel(
+                                      _selectedDuplicateSpot!.id!,
+                                    ),
                                     style: theme.textTheme.bodySmall?.copyWith(
                                       color: theme.colorScheme.onSurface
                                           .withValues(alpha: 0.5),
@@ -5833,7 +5947,7 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
                                 duplicateSpotError = null;
                               });
                             },
-                            tooltip: 'Remove selection',
+                            tooltip: l10n.spotDetailRemoveSelectionTooltip,
                           ),
                         ],
                       ),
@@ -5845,9 +5959,9 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
                   controller: detailsController,
                   minLines: 3,
                   maxLines: 5,
-                  decoration: const InputDecoration(
-                    labelText: 'Additional details',
-                    hintText: 'Anything else we should know?',
+                  decoration: InputDecoration(
+                    labelText: l10n.spotDetailReportAdditionalDetails,
+                    hintText: l10n.spotDetailReportAdditionalDetailsHint,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -5856,9 +5970,9 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
                     controller: emailController,
                     keyboardType: TextInputType.emailAddress,
                     decoration: InputDecoration(
-                      labelText: 'Email address',
-                      hintText: 'name@example.com',
-                      helperText: 'We will contact you only about this report.',
+                      labelText: l10n.spotDetailReportEmailLabel,
+                      hintText: l10n.spotDetailReportEmailLabel,
+                      helperText: l10n.spotDetailReportEmailHelper,
                       errorText: emailError,
                     ),
                   ),
@@ -5888,8 +6002,10 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
                         Expanded(
                           child: Text(
                             emailController.text.isNotEmpty
-                                ? 'We will reach out at ${emailController.text} if we need more info.'
-                                : 'We will reach out using your account email if we need more info.',
+                                ? l10n.spotDetailReportReachOutAt(
+                                    emailController.text,
+                                  )
+                                : l10n.spotDetailReportReachOutAccount,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurface.withValues(
                                 alpha: 0.7,
@@ -5919,7 +6035,7 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
             onPressed: isSubmitting
                 ? null
                 : () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l10n.profileCancel),
           ),
           FilledButton(
             onPressed: isSubmitting
@@ -5934,7 +6050,7 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
                     if (_duplicateOfSpotId == null) {
                       setState(() {
                         duplicateSpotError =
-                            'Please select the spot this is a duplicate of.';
+                            l10n.spotDetailDuplicateReportSelectRequired;
                       });
                       return;
                     }
@@ -5943,14 +6059,14 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
                     if (!isLoggedIn) {
                       if (trimmedEmail.isEmpty) {
                         setState(() {
-                          emailError = 'Please provide an email address.';
+                          emailError = l10n.spotDetailEmailRequired;
                         });
                         return;
                       }
                       final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
                       if (!emailRegex.hasMatch(trimmedEmail)) {
                         setState(() {
-                          emailError = 'Enter a valid email address.';
+                          emailError = l10n.spotDetailEmailInvalid;
                         });
                         return;
                       }
@@ -6007,8 +6123,7 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
                       if (!mounted) return;
                       setState(() {
                         isSubmitting = false;
-                        submissionError =
-                            'Could not send your report. Please try again.';
+                        submissionError = l10n.spotDetailReportSendFailed;
                       });
                     }
                   },
@@ -6023,7 +6138,7 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
                       ),
                     ),
                   )
-                : const Text('Submit report'),
+                : Text(l10n.spotDetailSubmitReport),
           ),
         ],
       ),
@@ -6077,6 +6192,7 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
 
   @override
   Widget build(BuildContext dialogContext) {
+    final l10n = AppLocalizations.of(dialogContext)!;
     final theme = Theme.of(dialogContext);
     final authService = Provider.of<AuthService>(dialogContext, listen: false);
     final reportService = Provider.of<SpotReportService>(
@@ -6095,7 +6211,7 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
           children: [
             Icon(Icons.flag_outlined, color: theme.colorScheme.primary),
             const SizedBox(width: 8),
-            const Expanded(child: Text('Report this spot')),
+            Expanded(child: Text(l10n.spotDetailReportThisSpotTitle)),
           ],
         ),
         content: SingleChildScrollView(
@@ -6104,20 +6220,20 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Let us know what is wrong with ${widget.spot.name}. Moderators will review your report shortly.',
+                l10n.spotDetailReportIntro(widget.spot.name),
                 style: theme.textTheme.bodyMedium,
               ),
               const SizedBox(height: 16),
               Text(
-                'What is happening?',
+                l10n.spotDetailReportWhatWrong,
                 style: theme.textTheme.titleSmall,
               ),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 initialValue: selectedCategory,
                 decoration: InputDecoration(
-                  labelText: 'Select a category',
-                  hintText: 'Choose a report category',
+                  labelText: l10n.spotDetailReportCategoryLabel,
+                  hintText: l10n.spotDetailReportCategoryHint,
                   errorText: categoryError,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -6128,7 +6244,7 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
                 items: SpotReportService.defaultCategories.map((category) {
                   return DropdownMenuItem<String>(
                     value: category,
-                    child: Text(category),
+                    child: Text(_spotDetailReportCategoryLabel(l10n, category)),
                   );
                 }).toList(),
                 onChanged: (value) {
@@ -6169,7 +6285,10 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          _getCategoryDescription(selectedCategory!),
+                          _spotDetailReportCategoryDescription(
+                            l10n,
+                            selectedCategory!,
+                          ),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSecondaryContainer,
                           ),
@@ -6185,8 +6304,8 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
                   controller: otherController,
                   maxLines: 2,
                   decoration: InputDecoration(
-                    labelText: 'Describe the issue',
-                    hintText: 'Tell us what does not match reality',
+                    labelText: l10n.spotDetailReportDescribeIssue,
+                    hintText: l10n.spotDetailReportDescribeIssueHint,
                     errorText: otherDescriptionError,
                   ),
                 ),
@@ -6196,9 +6315,9 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
                 controller: detailsController,
                 minLines: 3,
                 maxLines: 5,
-                decoration: const InputDecoration(
-                  labelText: 'Additional details',
-                  hintText: 'Anything else we should know?',
+                decoration: InputDecoration(
+                  labelText: l10n.spotDetailReportAdditionalDetails,
+                  hintText: l10n.spotDetailReportAdditionalDetailsHint,
                 ),
               ),
               const SizedBox(height: 16),
@@ -6207,9 +6326,9 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
                   controller: emailController,
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
-                    labelText: 'Email address',
-                    hintText: 'name@example.com',
-                    helperText: 'We will contact you only about this report.',
+                    labelText: l10n.spotDetailReportEmailLabel,
+                    hintText: l10n.spotDetailReportEmailLabel,
+                    helperText: l10n.spotDetailReportEmailHelper,
                     errorText: emailError,
                   ),
                 ),
@@ -6240,8 +6359,10 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
                       Expanded(
                         child: Text(
                           emailController.text.isNotEmpty
-                              ? 'We will reach out at ${emailController.text} if we need more info.'
-                              : 'We will reach out using your account email if we need more info.',
+                              ? l10n.spotDetailReportReachOutAt(
+                                  emailController.text,
+                                )
+                              : l10n.spotDetailReportReachOutAccount,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurface.withValues(
                               alpha: 0.7,
@@ -6270,7 +6391,7 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
             onPressed: isSubmitting
                 ? null
                 : () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l10n.profileCancel),
           ),
           FilledButton(
             onPressed: isSubmitting
@@ -6285,7 +6406,7 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
 
                     if (selectedCategory == null) {
                       setState(() {
-                        categoryError = 'Please select a category.';
+                        categoryError = l10n.spotDetailReportCategoryRequired;
                       });
                       return;
                     }
@@ -6294,7 +6415,7 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
                     if (otherSelected && trimmedOther.isEmpty) {
                       setState(() {
                         otherDescriptionError =
-                            'Please describe the issue when selecting Other.';
+                            l10n.spotDetailReportCategoryOtherDescribe;
                       });
                       return;
                     }
@@ -6303,14 +6424,14 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
                     if (!isLoggedIn) {
                       if (trimmedEmail.isEmpty) {
                         setState(() {
-                          emailError = 'Please provide an email address.';
+                          emailError = l10n.spotDetailEmailRequired;
                         });
                         return;
                       }
                       final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
                       if (!emailRegex.hasMatch(trimmedEmail)) {
                         setState(() {
-                          emailError = 'Enter a valid email address.';
+                          emailError = l10n.spotDetailEmailInvalid;
                         });
                         return;
                       }
@@ -6367,8 +6488,7 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
                       if (!mounted) return;
                       setState(() {
                         isSubmitting = false;
-                        submissionError =
-                            'Could not send your report. Please try again.';
+                        submissionError = l10n.spotDetailReportSendFailed;
                       });
                     }
                   },
@@ -6383,28 +6503,11 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
                       ),
                     ),
                   )
-                : const Text('Submit report'),
+                : Text(l10n.spotDetailSubmitReport),
           ),
         ],
       ),
     );
-  }
-
-  String _getCategoryDescription(String category) {
-    switch (category) {
-      case 'Spot closed or removed':
-        return 'The spot has been permanently closed, demolished, or removed and is no longer accessible. Please provide more details below.';
-      case 'Inaccurate location or details':
-        return 'The spot\'s location on the map is incorrect, or details like name, description, or address are wrong. Please provide more details below on what should be corrected.';
-      case 'Unsafe conditions':
-        return 'The spot has become dangerous due to structural issues, environmental hazards, or other safety concerns. Please provide more details below on what is unsafe.';
-      case 'Not a spot':
-        return 'Only for objective issues like spam, spots in invalid locations (e.g., middle of the sea), private residences, entire cities, or other clearly invalid entries. For subjective opinions about spot quality, please use a rating instead. Please provide more details below on why this is not a spot.';
-      case 'Other':
-        return 'Any other issue not covered by the categories above. Please describe the issue in the field below.';
-      default:
-        return '';
-    }
   }
 }
 
@@ -6456,31 +6559,30 @@ class _DuplicateTransferDialogState extends State<_DuplicateTransferDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final hasTransferOptions = widget.hasPhotos || widget.hasYoutubeLinks;
     final hasOverwriteOptions =
         _hasName || _hasDescription || _hasLocation || _hasSpotAttributes;
 
     return AlertDialog(
-      title: const Text('Mark as Duplicate'),
+      title: Text(l10n.spotDetailMarkDuplicateTitle),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Are you sure you want to mark this spot as a duplicate? This action can be reversed later.',
-            ),
+            Text(l10n.spotDetailMarkDuplicateBody),
             if (hasTransferOptions || hasOverwriteOptions) ...[
               const SizedBox(height: 16),
               if (hasTransferOptions) ...[
-                const Text(
-                  'Select which items to add to the original spot:',
-                  style: TextStyle(),
+                Text(
+                  l10n.spotDetailMarkDuplicateAddToOriginal,
+                  style: const TextStyle(),
                 ),
                 const SizedBox(height: 8),
                 if (widget.hasPhotos)
                   CheckboxListTile(
-                    title: const Text('Photos'),
+                    title: Text(l10n.spotDetailMarkDuplicatePhotos),
                     value: _transferPhotos,
                     onChanged: (value) {
                       setState(() {
@@ -6492,7 +6594,7 @@ class _DuplicateTransferDialogState extends State<_DuplicateTransferDialog> {
                   ),
                 if (widget.hasYoutubeLinks)
                   CheckboxListTile(
-                    title: const Text('YouTube links'),
+                    title: Text(l10n.spotDetailMarkDuplicateYoutube),
                     value: _transferYoutubeLinks,
                     onChanged: (value) {
                       setState(() {
@@ -6505,13 +6607,13 @@ class _DuplicateTransferDialogState extends State<_DuplicateTransferDialog> {
               ],
               if (hasOverwriteOptions) ...[
                 if (hasTransferOptions) const SizedBox(height: 16),
-                const Text(
-                  'Select which items to overwrite in the original spot (if set):',
+                Text(
+                  l10n.spotDetailMarkDuplicateOverwrite,
                 ),
                 const SizedBox(height: 8),
                 if (_hasName)
                   CheckboxListTile(
-                    title: const Text('Name'),
+                    title: Text(l10n.spotDetailMarkDuplicateName),
                     value: _overwriteName,
                     onChanged: (value) {
                       setState(() {
@@ -6523,7 +6625,7 @@ class _DuplicateTransferDialogState extends State<_DuplicateTransferDialog> {
                   ),
                 if (_hasDescription)
                   CheckboxListTile(
-                    title: const Text('Description'),
+                    title: Text(l10n.spotDetailMarkDuplicateDescription),
                     value: _overwriteDescription,
                     onChanged: (value) {
                       setState(() {
@@ -6535,7 +6637,7 @@ class _DuplicateTransferDialogState extends State<_DuplicateTransferDialog> {
                   ),
                 if (_hasLocation)
                   CheckboxListTile(
-                    title: const Text('Location'),
+                    title: Text(l10n.spotDetailMarkDuplicateLocation),
                     value: _overwriteLocation,
                     onChanged: (value) {
                       setState(() {
@@ -6547,7 +6649,7 @@ class _DuplicateTransferDialogState extends State<_DuplicateTransferDialog> {
                   ),
                 if (_hasSpotAttributes)
                   CheckboxListTile(
-                    title: const Text('Spot attributes'),
+                    title: Text(l10n.spotDetailMarkDuplicateSpotAttributes),
                     value: _overwriteSpotAttributes,
                     onChanged: (value) {
                       setState(() {
@@ -6576,7 +6678,7 @@ class _DuplicateTransferDialogState extends State<_DuplicateTransferDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(null),
-          child: const Text('Cancel'),
+          child: Text(l10n.profileCancel),
         ),
         TextButton(
           onPressed: () => Navigator.of(context).pop({
@@ -6591,7 +6693,7 @@ class _DuplicateTransferDialogState extends State<_DuplicateTransferDialog> {
                 ? null
                 : _notesController.text.trim(),
           }),
-          child: const Text('Confirm'),
+          child: Text(l10n.spotDetailConfirm),
         ),
       ],
     );
@@ -6672,12 +6774,13 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
     } catch (e) {
       debugPrint('Error picking images: $e');
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               e is ImagePreparationException
                   ? e.message
-                  : 'Failed to pick images. Please try again.',
+                  : l10n.spotDetailPickImagesFailed,
             ),
             backgroundColor: Colors.red,
           ),
@@ -6693,9 +6796,10 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
   }
 
   Future<void> _submitPhotos() async {
+    final l10n = AppLocalizations.of(context)!;
     if (_selectedImageBytes.isEmpty) {
       setState(() {
-        _submissionError = 'Please select at least one photo';
+        _submissionError = l10n.spotDetailSelectAtLeastOnePhoto;
       });
       return;
     }
@@ -6708,7 +6812,7 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
     if (!isLoggedIn) {
       if (trimmedEmail.isEmpty) {
         setState(() {
-          emailError = 'Please provide an email address.';
+          emailError = l10n.spotDetailEmailRequired;
           _submissionError = null;
         });
         return;
@@ -6716,7 +6820,7 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
       final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
       if (!emailRegex.hasMatch(trimmedEmail)) {
         setState(() {
-          emailError = 'Enter a valid email address.';
+          emailError = l10n.spotDetailEmailInvalid;
           _submissionError = null;
         });
         return;
@@ -6794,8 +6898,7 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
         Navigator.of(context).pop(true);
       } else {
         setState(() {
-          _submissionError =
-              'Failed to submit photo suggestion. Please try again.';
+          _submissionError = l10n.spotDetailSuggestPhotosSubmitFailed;
           _isSubmitting = false;
         });
       }
@@ -6803,7 +6906,7 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
       debugPrint('Error submitting photo suggestion: $e');
       if (mounted) {
         setState(() {
-          _submissionError = 'Error submitting photo suggestion: $e';
+          _submissionError = l10n.spotDetailSuggestPhotosSubmitError('$e');
           _isSubmitting = false;
           _isUploading = false;
         });
@@ -6814,6 +6917,7 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
   @override
   Widget build(BuildContext dialogContext) {
     final theme = Theme.of(dialogContext);
+    final l10n = AppLocalizations.of(dialogContext)!;
     final authService = Provider.of<AuthService>(dialogContext, listen: false);
     final bool isLoggedIn =
         authService.isAuthenticated && authService.userProfile != null;
@@ -6825,7 +6929,7 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
           children: [
             Icon(Icons.add_photo_alternate, color: theme.colorScheme.primary),
             const SizedBox(width: 8),
-            const Expanded(child: Text('Suggest Photos')),
+            Expanded(child: Text(l10n.spotDetailSuggestPhotosTitle)),
           ],
         ),
         content: ConstrainedBox(
@@ -6836,20 +6940,20 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Submit photos to be added to this spot. Photos will be reviewed by moderators before being added.',
+                  l10n.spotDetailSuggestPhotosIntro,
                   style: theme.textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 16),
                 // Photo selection
                 Text(
-                  'Select Photos',
+                  l10n.spotDetailSelectPhotos,
                   style: theme.textTheme.titleSmall,
                 ),
                 const SizedBox(height: 8),
                 ElevatedButton.icon(
                   onPressed: _isSubmitting || _isUploading ? null : _pickImages,
                   icon: const Icon(Icons.add_photo_alternate),
-                  label: const Text('Pick Photos'),
+                  label: Text(l10n.spotDetailPickPhotos),
                 ),
                 const SizedBox(height: 16),
                 // Display selected images
@@ -6908,7 +7012,7 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
                 ],
                 // Details field
                 Text(
-                  'Additional Details (Optional)',
+                  l10n.spotDetailAdditionalDetailsOptional,
                   style: theme.textTheme.titleSmall,
                 ),
                 const SizedBox(height: 8),
@@ -6916,8 +7020,7 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
                   controller: detailsController,
                   maxLines: 3,
                   decoration: InputDecoration(
-                    hintText:
-                        'Add any additional information about these photos...',
+                    hintText: l10n.spotDetailAdditionalDetailsHint,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -6937,10 +7040,9 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
                       }
                     },
                     decoration: InputDecoration(
-                      labelText: 'Email address',
-                      hintText: 'name@example.com',
-                      helperText:
-                          'We will contact you only about this suggestion.',
+                      labelText: l10n.spotDetailReportEmailLabel,
+                      hintText: l10n.spotDetailReportEmailLabel,
+                      helperText: l10n.spotDetailSuggestPhotosEmailHelper,
                       errorText: emailError,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -6976,8 +7078,10 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
                         Expanded(
                           child: Text(
                             emailController.text.isNotEmpty
-                                ? 'We will reach out at ${emailController.text} if we need more info.'
-                                : 'We will reach out using your account email if we need more info.',
+                                ? l10n.spotDetailReportReachOutAt(
+                                    emailController.text,
+                                  )
+                                : l10n.spotDetailReportReachOutAccount,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurface.withValues(
                                 alpha: 0.7,
@@ -7007,7 +7111,7 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
             onPressed: (_isSubmitting || _isUploading)
                 ? null
                 : () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l10n.profileCancel),
           ),
           ElevatedButton(
             onPressed: (_isSubmitting || _isUploading) ? null : _submitPhotos,
@@ -7017,7 +7121,7 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
                     height: 16,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text('Submit'),
+                : Text(l10n.spotDetailSubmit),
           ),
         ],
       ),
@@ -7172,9 +7276,10 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
   }
 
   Future<void> _submit() async {
+    final l10n = AppLocalizations.of(context)!;
     if (!_hasSuggestions()) {
       setState(() {
-        _submissionError = 'Please suggest at least one change.';
+        _submissionError = l10n.spotDetailSuggestEditSuggestChange;
       });
       return;
     }
@@ -7187,7 +7292,7 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
     if (!isLoggedIn) {
       if (trimmedEmail.isEmpty) {
         setState(() {
-          _emailError = 'Please provide an email address.';
+          _emailError = l10n.spotDetailEmailRequired;
           _submissionError = null;
         });
         return;
@@ -7195,7 +7300,7 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
       final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
       if (!emailRegex.hasMatch(trimmedEmail)) {
         setState(() {
-          _emailError = 'Enter a valid email address.';
+          _emailError = l10n.spotDetailEmailInvalid;
           _submissionError = null;
         });
         return;
@@ -7286,7 +7391,7 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
 
       if (!hasAny) {
         setState(() {
-          _submissionError = 'Please suggest at least one change.';
+          _submissionError = l10n.spotDetailSuggestEditSuggestChange;
           _isSubmitting = false;
         });
         return;
@@ -7320,8 +7425,7 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
         Navigator.of(context).pop(true);
       } else {
         setState(() {
-          _submissionError =
-              'Failed to submit edit suggestion. Please try again.';
+          _submissionError = l10n.spotDetailSuggestEditSubmitFailed;
           _isSubmitting = false;
         });
       }
@@ -7329,7 +7433,7 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
       debugPrint('Error submitting edit suggestion: $e');
       if (mounted) {
         setState(() {
-          _submissionError = 'Error submitting edit suggestion: $e';
+          _submissionError = l10n.spotDetailSuggestEditSubmitError('$e');
           _isSubmitting = false;
         });
       }
@@ -7339,6 +7443,7 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final authService = Provider.of<AuthService>(context, listen: false);
     final bool isLoggedIn =
         authService.isAuthenticated && authService.userProfile != null;
@@ -7350,7 +7455,7 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
           children: [
             Icon(Icons.edit_note, color: theme.colorScheme.primary),
             const SizedBox(width: 8),
-            const Expanded(child: Text('Suggest an Edit')),
+            Expanded(child: Text(l10n.spotDetailSuggestEditTitle)),
           ],
         ),
         content: ConstrainedBox(
@@ -7361,7 +7466,7 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Propose changes to this spot. Moderators will review your suggestions.',
+                  l10n.spotDetailSuggestEditIntro,
                   style: theme.textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 16),
@@ -7375,10 +7480,9 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
                       }
                     },
                     decoration: InputDecoration(
-                      labelText: 'Email address',
-                      hintText: 'name@example.com',
-                      helperText:
-                          'We will contact you only about this suggestion.',
+                      labelText: l10n.spotDetailReportEmailLabel,
+                      hintText: l10n.spotDetailReportEmailLabel,
+                      helperText: l10n.spotDetailSuggestEditEmailHelper,
                       errorText: _emailError,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -7415,8 +7519,10 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
                         Expanded(
                           child: Text(
                             _emailController.text.isNotEmpty
-                                ? 'We will reach out at ${_emailController.text} if we need more info.'
-                                : 'We will reach out using your account email if we need more info.',
+                                ? l10n.spotDetailReportReachOutAt(
+                                    _emailController.text,
+                                  )
+                                : l10n.spotDetailReportReachOutAccount,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurface.withValues(
                                 alpha: 0.7,
@@ -7430,7 +7536,7 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
                   const SizedBox(height: 16),
                 ],
                 Text(
-                  'Location',
+                  l10n.spotDetailMarkDuplicateLocation,
                   style: theme.textTheme.titleSmall,
                 ),
                 const SizedBox(height: 8),
@@ -7445,8 +7551,8 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
                   ),
                   label: Text(
                     _suggestedLatLng != null
-                        ? 'Change location (picked)'
-                        : 'Pick different location on map',
+                        ? l10n.spotDetailChangeLocationPicked
+                        : l10n.spotDetailPickLocationOnMap,
                   ),
                 ),
                 if (_suggestedLatLng != null &&
@@ -7457,7 +7563,7 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
                       final loc = _suggestedLatLng!;
                       return Text(
                         _isGeocoding
-                            ? 'Geocoding...'
+                            ? l10n.spotDetailGeocoding
                             : (_geocodedAddress ??
                                   '${loc.latitude.toStringAsFixed(4)}, ${loc.longitude.toStringAsFixed(4)}'),
                         style: theme.textTheme.bodySmall?.copyWith(
@@ -7471,14 +7577,14 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
                 ],
                 const SizedBox(height: 16),
                 Text(
-                  'Title',
+                  l10n.spotDetailFieldTitle,
                   style: theme.textTheme.titleSmall,
                 ),
                 const SizedBox(height: 4),
                 TextField(
                   controller: _nameController,
                   decoration: InputDecoration(
-                    hintText: 'Spot title',
+                    hintText: l10n.spotDetailFieldTitleHint,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -7490,7 +7596,7 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Description',
+                  l10n.spotDetailFieldDescription,
                   style: theme.textTheme.titleSmall,
                 ),
                 const SizedBox(height: 4),
@@ -7498,7 +7604,7 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
                   controller: _descriptionController,
                   maxLines: 4,
                   decoration: InputDecoration(
-                    hintText: 'Spot description',
+                    hintText: l10n.spotDetailFieldDescriptionHint,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -7510,7 +7616,7 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Spot attributes',
+                  l10n.spotDetailFieldSpotAttributes,
                   style: theme.textTheme.titleSmall,
                 ),
                 const SizedBox(height: 8),
@@ -7542,7 +7648,7 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
             onPressed: _isSubmitting
                 ? null
                 : () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l10n.profileCancel),
           ),
           ElevatedButton(
             onPressed: _isSubmitting ? null : _submit,
@@ -7552,7 +7658,7 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
                     height: 16,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text('Submit'),
+                : Text(l10n.spotDetailSubmit),
           ),
         ],
       ),
@@ -7570,6 +7676,7 @@ class _SpotSaveMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<AuthService>(
       builder: (context, authService, _) {
+        final l10n = AppLocalizations.of(context)!;
         final theme = Theme.of(context);
         final colorScheme = theme.colorScheme;
 
@@ -7612,7 +7719,7 @@ class _SpotSaveMenu extends StatelessWidget {
             child: Align(
               alignment: Alignment.centerLeft,
               child: PopupMenuButton<_SpotSaveMenuAction>(
-                tooltip: 'Save spot',
+                tooltip: l10n.spotDetailSaveMenuTooltip,
                 position: PopupMenuPosition.under,
                 borderRadius: BorderRadius.circular(22),
                 splashRadius: 22,
@@ -7623,6 +7730,7 @@ class _SpotSaveMenu extends StatelessWidget {
                 },
                 itemBuilder: (menuContext) {
                   final menuTheme = Theme.of(menuContext);
+                  final menuL10n = AppLocalizations.of(menuContext)!;
                   return <PopupMenuEntry<_SpotSaveMenuAction>>[
                     PopupMenuItem<_SpotSaveMenuAction>(
                       value: _SpotSaveMenuAction.login,
@@ -7631,13 +7739,12 @@ class _SpotSaveMenu extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            'Sign in to save spots',
+                            menuL10n.spotDetailSaveMenuSignInTitle,
                             style: menuTheme.textTheme.titleSmall,
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Add this spot to Want to visit, Been here, or your own lists. '
-                            'Log in or create a free account to get started.',
+                            menuL10n.spotDetailSaveMenuSignInBody,
                             style: menuTheme.textTheme.bodySmall?.copyWith(
                               color: menuTheme.colorScheme.onSurface.withValues(
                                 alpha: 0.85,
@@ -7655,7 +7762,7 @@ class _SpotSaveMenu extends StatelessWidget {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                'Log in or create account',
+                                menuL10n.spotDetailSaveMenuLogInOrCreate,
                                 style: menuTheme.textTheme.labelLarge?.copyWith(
                                   color: menuTheme.colorScheme.primary,
                                 ),
@@ -7708,19 +7815,19 @@ class _SpotSaveMenu extends StatelessWidget {
             if (isUpdating) {
               icon = Icons.bookmark_border;
               iconColor = colorScheme.onSurface.withValues(alpha: 0.38);
-              tooltip = 'Updating…';
+              tooltip = l10n.spotDetailSaveTooltipUpdating;
             } else if (inWantToVisit) {
               icon = Icons.bookmark;
               iconColor = colorScheme.primary;
-              tooltip = 'Saved: Want to visit';
+              tooltip = l10n.spotDetailSaveTooltipWantToVisit;
             } else if (inVisited) {
               icon = Icons.check_circle;
               iconColor = colorScheme.primary;
-              tooltip = 'Saved: Been here';
+              tooltip = l10n.spotDetailSaveTooltipBeenHere;
             } else {
               icon = Icons.bookmark_border;
               iconColor = colorScheme.onSurface.withValues(alpha: 0.6);
-              tooltip = 'Save spot';
+              tooltip = l10n.spotDetailSaveTooltipGeneric;
             }
 
             Future<void> handleAction(_SpotSaveMenuAction action) async {
@@ -7736,24 +7843,26 @@ class _SpotSaveMenu extends StatelessWidget {
                       spotId,
                     );
                     message = success
-                        ? 'Removed from Want to visit'
-                        : 'Failed to remove';
+                        ? l10n.spotDetailRemovedFromWantToVisit
+                        : l10n.spotDetailFailedToRemove;
                   } else {
                     success = await trackingService.addToWantToVisit(spotId);
                     message = success
-                        ? 'Added to Want to visit'
-                        : 'Failed to add';
+                        ? l10n.spotDetailAddedToWantToVisit
+                        : l10n.spotDetailFailedToAdd;
                   }
                   break;
                 case _SpotSaveMenuAction.toggleVisited:
                   if (inVisited) {
                     success = await trackingService.removeFromVisited(spotId);
                     message = success
-                        ? 'Removed from Been here'
-                        : 'Failed to remove';
+                        ? l10n.spotDetailRemovedFromBeenHere
+                        : l10n.spotDetailFailedToRemove;
                   } else {
                     success = await trackingService.addToVisited(spotId);
-                    message = success ? 'Added to Been here' : 'Failed to add';
+                    message = success
+                        ? l10n.spotDetailAddedToBeenHere
+                        : l10n.spotDetailFailedToAdd;
                   }
                   break;
                 case _SpotSaveMenuAction.openWantToVisitList:
@@ -7794,6 +7903,7 @@ class _SpotSaveMenu extends StatelessWidget {
                   onSelected: (action) => handleAction(action),
                   itemBuilder: (menuContext) {
                     final menuTheme = Theme.of(menuContext);
+                    final menuL10n = AppLocalizations.of(menuContext)!;
                     final primary = menuTheme.colorScheme.primary;
                     return <PopupMenuEntry<_SpotSaveMenuAction>>[
                       PopupMenuItem<_SpotSaveMenuAction>(
@@ -7809,12 +7919,12 @@ class _SpotSaveMenu extends StatelessWidget {
                             ),
                             Expanded(
                               child: Text(
-                                'Want to visit',
+                                menuL10n.spotDetailWantToVisit,
                                 style: menuTheme.textTheme.bodyMedium,
                               ),
                             ),
                             IconButton(
-                              tooltip: 'View full list',
+                              tooltip: menuL10n.spotDetailViewFullListTooltip,
                               icon: Icon(
                                 Icons.list_alt_outlined,
                                 size: 20,
@@ -7848,12 +7958,12 @@ class _SpotSaveMenu extends StatelessWidget {
                             ),
                             Expanded(
                               child: Text(
-                                'Been here',
+                                menuL10n.spotDetailBeenHere,
                                 style: menuTheme.textTheme.bodyMedium,
                               ),
                             ),
                             IconButton(
-                              tooltip: 'View full list',
+                              tooltip: menuL10n.spotDetailViewFullListTooltip,
                               icon: Icon(
                                 Icons.list_alt_outlined,
                                 size: 20,
@@ -7892,12 +8002,12 @@ class _SpotSaveMenu extends StatelessWidget {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Text(
-                                      'Add to custom list',
+                                      menuL10n.spotDetailAddToCustomList,
                                       style: menuTheme.textTheme.bodyMedium
                                           ,
                                     ),
                                     Text(
-                                      'Choose or create a list',
+                                      menuL10n.spotDetailAddToCustomListSubtitle,
                                       style: menuTheme.textTheme.bodySmall
                                           ?.copyWith(
                                             color: menuTheme
@@ -7984,9 +8094,10 @@ class _AddToListDialogState extends State<_AddToListDialog> {
   }
 
   Future<void> _createListAndAdd() async {
+    final l10n = AppLocalizations.of(context)!;
     if (_nameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('List name cannot be empty')),
+        SnackBar(content: Text(l10n.spotDetailListNameEmpty)),
       );
       return;
     }
@@ -8028,7 +8139,8 @@ class _AddToListDialogState extends State<_AddToListDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              widget.spotListService.error ?? 'Failed to add spot to list',
+              widget.spotListService.error ??
+                  l10n.spotDetailFailedAddToListGeneric,
             ),
           ),
         );
@@ -8040,7 +8152,7 @@ class _AddToListDialogState extends State<_AddToListDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            widget.spotListService.error ?? 'Failed to create list',
+            widget.spotListService.error ?? l10n.spotDetailFailedCreateList,
           ),
         ),
       );
@@ -8052,6 +8164,8 @@ class _AddToListDialogState extends State<_AddToListDialog> {
       Navigator.of(context).pop();
       return;
     }
+
+    final l10n = AppLocalizations.of(context)!;
 
     setState(() {
       _isAdding = true;
@@ -8084,7 +8198,7 @@ class _AddToListDialogState extends State<_AddToListDialog> {
             allSuccess = false;
             errorMessage =
                 widget.spotListService.error ??
-                'Failed to add spot to some lists';
+                l10n.spotDetailFailedAddToSomeLists;
             break;
           }
         }
@@ -8101,7 +8215,7 @@ class _AddToListDialogState extends State<_AddToListDialog> {
             allSuccess = false;
             errorMessage =
                 widget.spotListService.error ??
-                'Failed to add spot to some lists';
+                l10n.spotDetailFailedAddToSomeLists;
           }
         }
       } else {
@@ -8113,7 +8227,7 @@ class _AddToListDialogState extends State<_AddToListDialog> {
           allSuccess = false;
           errorMessage =
               widget.spotListService.error ??
-              'Failed to add spot to some lists';
+              l10n.spotDetailFailedAddToSomeLists;
           break;
         }
       }
@@ -8130,7 +8244,9 @@ class _AddToListDialogState extends State<_AddToListDialog> {
     } else {
       Navigator.of(
         context,
-      ).pop({'error': errorMessage ?? 'Failed to add spot to lists'});
+      ).pop({
+        'error': errorMessage ?? l10n.spotDetailFailedAddToListGeneric,
+      });
     }
   }
 
@@ -8144,16 +8260,17 @@ class _AddToListDialogState extends State<_AddToListDialog> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
+          final l10n = AppLocalizations.of(context)!;
           final hasSelection = selectedSectionIds.isNotEmpty || addToNewSection;
           return AlertDialog(
-            title: Text('Add to ${list.name}'),
+            title: Text(l10n.spotDetailAddToListTitle(list.name)),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Select sections:',
+                    l10n.spotDetailSelectSections,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 8),
@@ -8161,7 +8278,9 @@ class _AddToListDialogState extends State<_AddToListDialog> {
                     (section) => CheckboxListTile(
                       title: Text(
                         section.title?.trim().isEmpty != false
-                            ? 'Section (${section.entries.length} spots)'
+                            ? l10n.spotDetailSectionEntryCount(
+                                section.entries.length,
+                              )
                             : section.title!,
                       ),
                       value: selectedSectionIds.contains(section.id),
@@ -8179,7 +8298,7 @@ class _AddToListDialogState extends State<_AddToListDialog> {
                   ),
                   const SizedBox(height: 8),
                   CheckboxListTile(
-                    title: const Text('Add to new section'),
+                    title: Text(l10n.spotDetailAddToNewSection),
                     value: addToNewSection,
                     onChanged: (value) {
                       setDialogState(() => addToNewSection = value ?? false);
@@ -8190,16 +8309,16 @@ class _AddToListDialogState extends State<_AddToListDialog> {
                     const SizedBox(height: 8),
                     TextField(
                       controller: newSectionTitleController,
-                      decoration: const InputDecoration(
-                        labelText: 'Section name (optional)',
+                      decoration: InputDecoration(
+                        labelText: l10n.spotDetailSectionNameOptional,
                       ),
                     ),
                   ],
                   const SizedBox(height: 16),
                   TextField(
                     controller: noteController,
-                    decoration: const InputDecoration(
-                      labelText: 'Note (optional)',
+                    decoration: InputDecoration(
+                      labelText: l10n.spotDetailNoteOptional,
                     ),
                     maxLines: 2,
                   ),
@@ -8209,7 +8328,7 @@ class _AddToListDialogState extends State<_AddToListDialog> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, {'cancelled': true}),
-                child: const Text('Skip'),
+                child: Text(l10n.spotDetailSkip),
               ),
               TextButton(
                 onPressed: hasSelection
@@ -8224,7 +8343,7 @@ class _AddToListDialogState extends State<_AddToListDialog> {
                             : noteController.text.trim(),
                       })
                     : null,
-                child: const Text('Add'),
+                child: Text(l10n.spotDetailAdd),
               ),
             ],
           );
@@ -8240,9 +8359,10 @@ class _AddToListDialogState extends State<_AddToListDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return AlertDialog(
-      title: const Text('Add to List'),
+      title: Text(l10n.spotDetailAddToListDialogTitle),
       content: SizedBox(
         width: double.maxFinite,
         child: SingleChildScrollView(
@@ -8253,7 +8373,7 @@ class _AddToListDialogState extends State<_AddToListDialog> {
               if (!_showCreateForm) ...[
                 if (widget.listsWithSpot.isNotEmpty) ...[
                   Text(
-                    'Already in these lists:',
+                    l10n.spotDetailAlreadyInLists,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
@@ -8278,7 +8398,7 @@ class _AddToListDialogState extends State<_AddToListDialog> {
                           ),
                           if (list.id != null)
                             IconButton(
-                              tooltip: 'View full list',
+                              tooltip: l10n.spotDetailViewFullListTooltip,
                               icon: Icon(
                                 Icons.list_alt_outlined,
                                 size: 20,
@@ -8303,12 +8423,12 @@ class _AddToListDialogState extends State<_AddToListDialog> {
                 ],
                 if (widget.lists.isEmpty) ...[
                   Text(
-                    'You don\'t have any lists yet. Create one to get started!',
+                    l10n.spotDetailNoListsYet,
                     style: theme.textTheme.bodyMedium,
                   ),
                 ] else ...[
                   Text(
-                    'Select lists to add this spot to:',
+                    l10n.spotDetailSelectListsPrompt,
                     style: theme.textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 8),
@@ -8340,7 +8460,7 @@ class _AddToListDialogState extends State<_AddToListDialog> {
                       secondary: list.id == null
                           ? null
                           : IconButton(
-                              tooltip: 'View full list',
+                              tooltip: l10n.spotDetailViewFullListTooltip,
                               icon: Icon(
                                 Icons.list_alt_outlined,
                                 size: 20,
@@ -8371,19 +8491,19 @@ class _AddToListDialogState extends State<_AddToListDialog> {
                           });
                         },
                   icon: const Icon(Icons.add),
-                  label: const Text('Create New List'),
+                  label: Text(l10n.spotDetailCreateNewList),
                 ),
               ] else ...[
                 Text(
-                  'Create New List',
+                  l10n.spotDetailCreateNewList,
                   style: theme.textTheme.titleMedium,
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: _nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'List Name',
-                    hintText: 'e.g., My Favorite Spots',
+                  decoration: InputDecoration(
+                    labelText: l10n.spotDetailListNameLabel,
+                    hintText: l10n.spotDetailListNameHint,
                   ),
                   autofocus: true,
                   enabled: !_isCreating && !_isAdding,
@@ -8391,9 +8511,9 @@ class _AddToListDialogState extends State<_AddToListDialog> {
                 const SizedBox(height: 16),
                 TextField(
                   controller: _descriptionController,
-                  decoration: const InputDecoration(
-                    labelText: 'Description (optional)',
-                    hintText: 'Add a description for this list',
+                  decoration: InputDecoration(
+                    labelText: l10n.spotDetailListDescriptionLabel,
+                    hintText: l10n.spotDetailListDescriptionHint,
                   ),
                   maxLines: 3,
                   enabled: !_isCreating && !_isAdding,
@@ -8401,7 +8521,9 @@ class _AddToListDialogState extends State<_AddToListDialog> {
                 const SizedBox(height: 16),
                 DropdownButtonFormField<SpotListVisibility>(
                   initialValue: _newListVisibility,
-                  decoration: const InputDecoration(labelText: 'Visibility'),
+                  decoration: InputDecoration(
+                    labelText: l10n.spotDetailVisibilityLabel,
+                  ),
                   items: SpotListVisibility.values
                       .map(
                         (visibility) => DropdownMenuItem<SpotListVisibility>(
@@ -8441,7 +8563,7 @@ class _AddToListDialogState extends State<_AddToListDialog> {
                             _newListVisibility = SpotListVisibility.unlisted;
                           });
                         },
-                  child: const Text('Cancel'),
+                  child: Text(l10n.profileCancel),
                 ),
               ],
             ],
@@ -8453,7 +8575,7 @@ class _AddToListDialogState extends State<_AddToListDialog> {
           onPressed: (_isCreating || _isAdding)
               ? null
               : () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(l10n.profileCancel),
         ),
         if (!_showCreateForm && widget.lists.isNotEmpty)
           ElevatedButton(
@@ -8466,7 +8588,7 @@ class _AddToListDialogState extends State<_AddToListDialog> {
                     height: 16,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text('Add'),
+                : Text(l10n.spotDetailAdd),
           ),
         if (_showCreateForm)
           ElevatedButton(
@@ -8477,7 +8599,7 @@ class _AddToListDialogState extends State<_AddToListDialog> {
                     height: 16,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text('Create & Add'),
+                : Text(l10n.spotDetailCreateAndAdd),
           ),
       ],
     );
@@ -8600,7 +8722,10 @@ class _FullScreenPhotoViewerState extends State<_FullScreenPhotoViewer> {
             onPressed: () => Navigator.of(context).pop(_currentIndex),
           ),
           title: Text(
-            '${_currentIndex + 1} / ${widget.imageUrls.length}',
+            AppLocalizations.of(context)!.spotDetailGalleryPageIndicator(
+              _currentIndex + 1,
+              widget.imageUrls.length,
+            ),
             style: const TextStyle(color: Colors.white),
           ),
         ),

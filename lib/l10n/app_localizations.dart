@@ -1047,6 +1047,1798 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You\'re here now at this spot until {time} — only you can see this check-in'**
   String spotCheckInTooltipPrivate(String time);
+
+  /// No description provided for @spotDetailRouteErrorLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading spot'**
+  String get spotDetailRouteErrorLoading;
+
+  /// No description provided for @spotDetailRouteTryAgainLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Please try again later'**
+  String get spotDetailRouteTryAgainLater;
+
+  /// No description provided for @spotDetailRouteNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Spot not found'**
+  String get spotDetailRouteNotFound;
+
+  /// No description provided for @spotDetailRouteGoToExplore.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to Explore'**
+  String get spotDetailRouteGoToExplore;
+
+  /// No description provided for @spotDetailCheckInVerifyFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not verify your check-ins'**
+  String get spotDetailCheckInVerifyFailed;
+
+  /// No description provided for @spotDetailCheckInEndPreviousFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not end your previous check-in'**
+  String get spotDetailCheckInEndPreviousFailed;
+
+  /// No description provided for @spotDetailCheckInSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'You’re checked in'**
+  String get spotDetailCheckInSuccess;
+
+  /// No description provided for @spotDetailCheckInFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-in failed'**
+  String get spotDetailCheckInFailed;
+
+  /// No description provided for @spotDetailCheckInRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-in removed'**
+  String get spotDetailCheckInRemoved;
+
+  /// No description provided for @spotDetailCheckInDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete check-in'**
+  String get spotDetailCheckInDeleteFailed;
+
+  /// No description provided for @spotDetailCheckInUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-in updated'**
+  String get spotDetailCheckInUpdated;
+
+  /// No description provided for @spotDetailCheckInUpdateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update check-in'**
+  String get spotDetailCheckInUpdateFailed;
+
+  /// No description provided for @spotDetailCheckInFabTooltipSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to check in'**
+  String get spotDetailCheckInFabTooltipSignIn;
+
+  /// No description provided for @spotDetailCheckInFabTooltipEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit check-in'**
+  String get spotDetailCheckInFabTooltipEdit;
+
+  /// No description provided for @spotDetailCheckInFabTooltipCheckIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Check in'**
+  String get spotDetailCheckInFabTooltipCheckIn;
+
+  /// No description provided for @spotDetailSpotCreatedOnDateBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Spot created {date} by '**
+  String spotDetailSpotCreatedOnDateBy(String date);
+
+  /// No description provided for @spotDetailSpotCreatedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Spot created by '**
+  String get spotDetailSpotCreatedBy;
+
+  /// No description provided for @spotDetailUnknownSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown Source'**
+  String get spotDetailUnknownSource;
+
+  /// No description provided for @spotDetailSpotImportedOnDateFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Spot imported {date} from '**
+  String spotDetailSpotImportedOnDateFrom(String date);
+
+  /// No description provided for @spotDetailSpotImportedFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Spot imported from '**
+  String get spotDetailSpotImportedFrom;
+
+  /// No description provided for @spotDetailFromFolder.
+  ///
+  /// In en, this message translates to:
+  /// **' from the folder '**
+  String get spotDetailFromFolder;
+
+  /// No description provided for @spotDetailImprovedByAfterComma.
+  ///
+  /// In en, this message translates to:
+  /// **', improved by '**
+  String get spotDetailImprovedByAfterComma;
+
+  /// No description provided for @spotDetailImprovedByAfterAnd.
+  ///
+  /// In en, this message translates to:
+  /// **' and improved by '**
+  String get spotDetailImprovedByAfterAnd;
+
+  /// No description provided for @spotDetailUnknownUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get spotDetailUnknownUser;
+
+  /// No description provided for @spotDetailListJoinAnd.
+  ///
+  /// In en, this message translates to:
+  /// **' and '**
+  String get spotDetailListJoinAnd;
+
+  /// No description provided for @spotDetailListJoinComma.
+  ///
+  /// In en, this message translates to:
+  /// **', '**
+  String get spotDetailListJoinComma;
+
+  /// No description provided for @spotDetailLastUpdatedAfterCommaAnd.
+  ///
+  /// In en, this message translates to:
+  /// **', and last updated {date}.'**
+  String spotDetailLastUpdatedAfterCommaAnd(String date);
+
+  /// No description provided for @spotDetailLastUpdatedAfterAnd.
+  ///
+  /// In en, this message translates to:
+  /// **' and last updated {date}.'**
+  String spotDetailLastUpdatedAfterAnd(String date);
+
+  /// No description provided for @spotDetailDateToday.
+  ///
+  /// In en, this message translates to:
+  /// **'today'**
+  String get spotDetailDateToday;
+
+  /// No description provided for @spotDetailDateYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'yesterday'**
+  String get spotDetailDateYesterday;
+
+  /// No description provided for @spotDetailDateDaysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 day ago} other{{count} days ago}}'**
+  String spotDetailDateDaysAgo(int count);
+
+  /// No description provided for @spotDetailDateWeeksAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 week ago} other{{count} weeks ago}}'**
+  String spotDetailDateWeeksAgo(int count);
+
+  /// No description provided for @spotDetailDateMonthsAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 month ago} other{{count} months ago}}'**
+  String spotDetailDateMonthsAgo(int count);
+
+  /// No description provided for @spotDetailDateYearsAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 year ago} other{{count} years ago}}'**
+  String spotDetailDateYearsAgo(int count);
+
+  /// No description provided for @spotDetailCopySpotFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to copy spot: {error}'**
+  String spotDetailCopySpotFailed(String error);
+
+  /// No description provided for @spotDetailAddressCopiedToClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Address copied to clipboard!'**
+  String get spotDetailAddressCopiedToClipboard;
+
+  /// No description provided for @spotDetailCopyAddressFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to copy address: {error}'**
+  String spotDetailCopyAddressFailed(String error);
+
+  /// No description provided for @spotDetailOpenMapsFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open maps app: {error}'**
+  String spotDetailOpenMapsFailed(String error);
+
+  /// No description provided for @spotDetailMoreActionsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'More actions'**
+  String get spotDetailMoreActionsTooltip;
+
+  /// No description provided for @spotDetailMenuLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Login'**
+  String get spotDetailMenuLogin;
+
+  /// No description provided for @spotDetailMenuLoginSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in first to link edits to your account'**
+  String get spotDetailMenuLoginSubtitle;
+
+  /// No description provided for @spotDetailMenuFlagDuplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'Flag as duplicate'**
+  String get spotDetailMenuFlagDuplicate;
+
+  /// No description provided for @spotDetailMenuFlagDuplicateSubtitleYes.
+  ///
+  /// In en, this message translates to:
+  /// **'This spot is a duplicate'**
+  String get spotDetailMenuFlagDuplicateSubtitleYes;
+
+  /// No description provided for @spotDetailMenuFlagDuplicateSubtitleNo.
+  ///
+  /// In en, this message translates to:
+  /// **'Already marked as duplicate'**
+  String get spotDetailMenuFlagDuplicateSubtitleNo;
+
+  /// No description provided for @spotDetailMenuSuggestPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest photo'**
+  String get spotDetailMenuSuggestPhoto;
+
+  /// No description provided for @spotDetailMenuSuggestPhotoSubtitleYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit photos for this spot'**
+  String get spotDetailMenuSuggestPhotoSubtitleYes;
+
+  /// No description provided for @spotDetailMenuSuggestPhotoSubtitleNo.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot suggest photos for duplicates'**
+  String get spotDetailMenuSuggestPhotoSubtitleNo;
+
+  /// No description provided for @spotDetailMenuSuggestEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest an edit'**
+  String get spotDetailMenuSuggestEdit;
+
+  /// No description provided for @spotDetailMenuSuggestEditSubtitleYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Propose changes to this spot'**
+  String get spotDetailMenuSuggestEditSubtitleYes;
+
+  /// No description provided for @spotDetailMenuSuggestEditSubtitleNo.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot suggest edits for duplicates'**
+  String get spotDetailMenuSuggestEditSubtitleNo;
+
+  /// No description provided for @spotDetailMenuReportSpot.
+  ///
+  /// In en, this message translates to:
+  /// **'Report spot'**
+  String get spotDetailMenuReportSpot;
+
+  /// No description provided for @spotDetailMenuReportSpotSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Help us review this spot'**
+  String get spotDetailMenuReportSpotSubtitle;
+
+  /// No description provided for @spotDetailMenuEditSpot.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit spot'**
+  String get spotDetailMenuEditSpot;
+
+  /// No description provided for @spotDetailMenuEditSpotSubtitleNative.
+  ///
+  /// In en, this message translates to:
+  /// **'Create native spot first'**
+  String get spotDetailMenuEditSpotSubtitleNative;
+
+  /// No description provided for @spotDetailMenuEditSpotSubtitleMod.
+  ///
+  /// In en, this message translates to:
+  /// **'Moderator only'**
+  String get spotDetailMenuEditSpotSubtitleMod;
+
+  /// No description provided for @spotDetailMenuMarkDuplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as duplicate'**
+  String get spotDetailMenuMarkDuplicate;
+
+  /// No description provided for @spotDetailMenuMarkDuplicateSubtitleDup.
+  ///
+  /// In en, this message translates to:
+  /// **'Already marked as duplicate'**
+  String get spotDetailMenuMarkDuplicateSubtitleDup;
+
+  /// No description provided for @spotDetailMenuMarkDuplicateSubtitleMod.
+  ///
+  /// In en, this message translates to:
+  /// **'Moderator only'**
+  String get spotDetailMenuMarkDuplicateSubtitleMod;
+
+  /// No description provided for @spotDetailMenuRemoveDuplicateStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove duplicate status'**
+  String get spotDetailMenuRemoveDuplicateStatus;
+
+  /// No description provided for @spotDetailMenuCreateNative.
+  ///
+  /// In en, this message translates to:
+  /// **'Create native spot'**
+  String get spotDetailMenuCreateNative;
+
+  /// No description provided for @spotDetailMenuHideSpot.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide spot'**
+  String get spotDetailMenuHideSpot;
+
+  /// No description provided for @spotDetailMenuUnhideSpot.
+  ///
+  /// In en, this message translates to:
+  /// **'Unhide spot'**
+  String get spotDetailMenuUnhideSpot;
+
+  /// No description provided for @spotDetailMenuDeleteSpot.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete spot'**
+  String get spotDetailMenuDeleteSpot;
+
+  /// No description provided for @spotDetailMenuDeleteSubtitleAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin only'**
+  String get spotDetailMenuDeleteSubtitleAdmin;
+
+  /// No description provided for @spotDetailMenuTriggerResize.
+  ///
+  /// In en, this message translates to:
+  /// **'Trigger image resize'**
+  String get spotDetailMenuTriggerResize;
+
+  /// No description provided for @spotDetailMenuTriggerResizeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-create resized versions'**
+  String get spotDetailMenuTriggerResizeSubtitle;
+
+  /// No description provided for @spotDetailExternalSourceCannotEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Spots from external sources cannot be edited. Please create a native spot first using “Mark as Duplicate” → “Create Native Spot”.'**
+  String get spotDetailExternalSourceCannotEdit;
+
+  /// No description provided for @spotDetailOk.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get spotDetailOk;
+
+  /// No description provided for @spotDetailUnableEditNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to edit this spot right now.'**
+  String get spotDetailUnableEditNow;
+
+  /// No description provided for @spotDetailOnlyAdminsDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Only administrators can delete spots.'**
+  String get spotDetailOnlyAdminsDelete;
+
+  /// No description provided for @spotDetailResizeAllHaveVersions.
+  ///
+  /// In en, this message translates to:
+  /// **'All images already have resized versions'**
+  String get spotDetailResizeAllHaveVersions;
+
+  /// No description provided for @spotDetailResizeSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Resize: {triggered} triggered, {verified} verified{failedPart}'**
+  String spotDetailResizeSummary(
+    int triggered,
+    int verified,
+    String failedPart,
+  );
+
+  /// No description provided for @spotDetailResizeFailedPart.
+  ///
+  /// In en, this message translates to:
+  /// **', {failed} failed'**
+  String spotDetailResizeFailedPart(int failed);
+
+  /// No description provided for @spotDetailResizeTriggerFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to trigger resize: {error}'**
+  String spotDetailResizeTriggerFailed(String error);
+
+  /// No description provided for @spotDetailUnableFlagDuplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to flag this spot as duplicate right now.'**
+  String get spotDetailUnableFlagDuplicate;
+
+  /// No description provided for @spotDetailThanksDuplicateReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks! Your duplicate report has been submitted.'**
+  String get spotDetailThanksDuplicateReport;
+
+  /// No description provided for @spotDetailUnableSuggestPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to suggest photos for this spot right now.'**
+  String get spotDetailUnableSuggestPhotos;
+
+  /// No description provided for @spotDetailCannotSuggestPhotosDuplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot suggest photos for duplicate spots.'**
+  String get spotDetailCannotSuggestPhotosDuplicate;
+
+  /// No description provided for @spotDetailThanksPhotoSuggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks! Your photo suggestion has been submitted for review.'**
+  String get spotDetailThanksPhotoSuggestion;
+
+  /// No description provided for @spotDetailUnableSuggestEdits.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to suggest edits for this spot right now.'**
+  String get spotDetailUnableSuggestEdits;
+
+  /// No description provided for @spotDetailCannotSuggestEditsDuplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot suggest edits for duplicate spots.'**
+  String get spotDetailCannotSuggestEditsDuplicate;
+
+  /// No description provided for @spotDetailThanksEditSuggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks! Your edit suggestion has been submitted for review.'**
+  String get spotDetailThanksEditSuggestion;
+
+  /// No description provided for @spotDetailUnableReportNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to report this spot right now.'**
+  String get spotDetailUnableReportNow;
+
+  /// No description provided for @spotDetailThanksReportSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks! Your report has been submitted.'**
+  String get spotDetailThanksReportSubmitted;
+
+  /// No description provided for @spotDetailUnableAddToList.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to add this spot to a list right now.'**
+  String get spotDetailUnableAddToList;
+
+  /// No description provided for @spotDetailNoSpotListsAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'You do not have access to spot lists.'**
+  String get spotDetailNoSpotListsAccess;
+
+  /// No description provided for @spotDetailListCreatedAndAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'List created and spot added!'**
+  String get spotDetailListCreatedAndAdded;
+
+  /// No description provided for @spotDetailSpotAddedToList.
+  ///
+  /// In en, this message translates to:
+  /// **'Spot added to list!'**
+  String get spotDetailSpotAddedToList;
+
+  /// No description provided for @spotDetailEditReportTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit & report'**
+  String get spotDetailEditReportTooltip;
+
+  /// No description provided for @spotDetailShareTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get spotDetailShareTooltip;
+
+  /// No description provided for @spotDetailPresenceHereNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Here now'**
+  String get spotDetailPresenceHereNow;
+
+  /// No description provided for @spotDetailHiddenBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'This spot is hidden from public view. It likely no longer exists or doesn’t meet our policies. It will not appear in search results or on the map.'**
+  String get spotDetailHiddenBanner;
+
+  /// No description provided for @spotDetailSourceRemovedBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'This spot is no longer listed in {source}. Details might be outdated, so double-check before visiting.'**
+  String spotDetailSourceRemovedBanner(String source);
+
+  /// No description provided for @spotDetailSourceRemovedUnknownSource.
+  ///
+  /// In en, this message translates to:
+  /// **'its original source'**
+  String get spotDetailSourceRemovedUnknownSource;
+
+  /// No description provided for @spotDetailSectionFeatures.
+  ///
+  /// In en, this message translates to:
+  /// **'Features'**
+  String get spotDetailSectionFeatures;
+
+  /// No description provided for @spotDetailSectionAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Access'**
+  String get spotDetailSectionAccess;
+
+  /// No description provided for @spotDetailSectionFacilities.
+  ///
+  /// In en, this message translates to:
+  /// **'Facilities'**
+  String get spotDetailSectionFacilities;
+
+  /// No description provided for @spotDetailJumpflixFetchFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Jumpflix fetch failed: {error}'**
+  String spotDetailJumpflixFetchFailed(String error);
+
+  /// No description provided for @spotDetailBrandYoutube.
+  ///
+  /// In en, this message translates to:
+  /// **'YouTube'**
+  String get spotDetailBrandYoutube;
+
+  /// No description provided for @spotDetailBrandJumpflix.
+  ///
+  /// In en, this message translates to:
+  /// **'Jumpflix'**
+  String get spotDetailBrandJumpflix;
+
+  /// No description provided for @spotDetailBrandAsSeenIn.
+  ///
+  /// In en, this message translates to:
+  /// **'As seen in'**
+  String get spotDetailBrandAsSeenIn;
+
+  /// No description provided for @spotDetailLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading...'**
+  String get spotDetailLoading;
+
+  /// No description provided for @spotDetailLoadingYourRating.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading your rating...'**
+  String get spotDetailLoadingYourRating;
+
+  /// No description provided for @spotDetailRateThisSpot.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate this spot'**
+  String get spotDetailRateThisSpot;
+
+  /// No description provided for @spotDetailCouldNotLoadProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t load your profile.'**
+  String get spotDetailCouldNotLoadProfile;
+
+  /// No description provided for @spotDetailRefreshPageToRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Please refresh the page to rate.'**
+  String get spotDetailRefreshPageToRate;
+
+  /// No description provided for @spotDetailSignInToRateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to rate this spot'**
+  String get spotDetailSignInToRateTitle;
+
+  /// No description provided for @spotDetailSignInToRateSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to rate this spot and help other parkour enthusiasts.'**
+  String get spotDetailSignInToRateSubtitle;
+
+  /// No description provided for @spotDetailSignInButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign In'**
+  String get spotDetailSignInButton;
+
+  /// No description provided for @spotDetailCreateAccountButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create an Account'**
+  String get spotDetailCreateAccountButton;
+
+  /// No description provided for @spotDetailMapSwitchToMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to Map'**
+  String get spotDetailMapSwitchToMap;
+
+  /// No description provided for @spotDetailMapSwitchToSatellite.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to Satellite'**
+  String get spotDetailMapSwitchToSatellite;
+
+  /// No description provided for @spotDetailMapLocateOnMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Locate on map'**
+  String get spotDetailMapLocateOnMap;
+
+  /// No description provided for @spotDetailDuplicateOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate of'**
+  String get spotDetailDuplicateOf;
+
+  /// No description provided for @spotDetailOriginalSpotFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Original spot'**
+  String get spotDetailOriginalSpotFallback;
+
+  /// No description provided for @spotDetailAlsoBasedOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Also based on'**
+  String get spotDetailAlsoBasedOn;
+
+  /// No description provided for @spotDetailAlsoBasedOnCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Also based on ({count})'**
+  String spotDetailAlsoBasedOnCount(int count);
+
+  /// No description provided for @spotDetailNoImagesAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No images available'**
+  String get spotDetailNoImagesAvailable;
+
+  /// No description provided for @spotDetailGalleryPageIndicator.
+  ///
+  /// In en, this message translates to:
+  /// **'{current} / {total}'**
+  String spotDetailGalleryPageIndicator(int current, int total);
+
+  /// No description provided for @spotDetailSaveMenuTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Save spot'**
+  String get spotDetailSaveMenuTooltip;
+
+  /// No description provided for @spotDetailSaveMenuSignInTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to save spots'**
+  String get spotDetailSaveMenuSignInTitle;
+
+  /// No description provided for @spotDetailSaveMenuSignInBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add this spot to Want to visit, Been here, or your own lists. Log in or create a free account to get started.'**
+  String get spotDetailSaveMenuSignInBody;
+
+  /// No description provided for @spotDetailSaveMenuLogInOrCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Log in or create account'**
+  String get spotDetailSaveMenuLogInOrCreate;
+
+  /// No description provided for @spotDetailSaveTooltipUpdating.
+  ///
+  /// In en, this message translates to:
+  /// **'Updating…'**
+  String get spotDetailSaveTooltipUpdating;
+
+  /// No description provided for @spotDetailSaveTooltipWantToVisit.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved: Want to visit'**
+  String get spotDetailSaveTooltipWantToVisit;
+
+  /// No description provided for @spotDetailSaveTooltipBeenHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved: Been here'**
+  String get spotDetailSaveTooltipBeenHere;
+
+  /// No description provided for @spotDetailSaveTooltipGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Save spot'**
+  String get spotDetailSaveTooltipGeneric;
+
+  /// No description provided for @spotDetailRemovedFromWantToVisit.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed from Want to visit'**
+  String get spotDetailRemovedFromWantToVisit;
+
+  /// No description provided for @spotDetailFailedToRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to remove'**
+  String get spotDetailFailedToRemove;
+
+  /// No description provided for @spotDetailAddedToWantToVisit.
+  ///
+  /// In en, this message translates to:
+  /// **'Added to Want to visit'**
+  String get spotDetailAddedToWantToVisit;
+
+  /// No description provided for @spotDetailFailedToAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to add'**
+  String get spotDetailFailedToAdd;
+
+  /// No description provided for @spotDetailRemovedFromBeenHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed from Been here'**
+  String get spotDetailRemovedFromBeenHere;
+
+  /// No description provided for @spotDetailAddedToBeenHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Added to Been here'**
+  String get spotDetailAddedToBeenHere;
+
+  /// No description provided for @spotDetailWantToVisit.
+  ///
+  /// In en, this message translates to:
+  /// **'Want to visit'**
+  String get spotDetailWantToVisit;
+
+  /// No description provided for @spotDetailBeenHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Been here'**
+  String get spotDetailBeenHere;
+
+  /// No description provided for @spotDetailViewFullListTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'View full list'**
+  String get spotDetailViewFullListTooltip;
+
+  /// No description provided for @spotDetailAddToCustomList.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to custom list'**
+  String get spotDetailAddToCustomList;
+
+  /// No description provided for @spotDetailAddToCustomListSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose or create a list'**
+  String get spotDetailAddToCustomListSubtitle;
+
+  /// No description provided for @spotDetailListNameEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'List name cannot be empty'**
+  String get spotDetailListNameEmpty;
+
+  /// No description provided for @spotDetailFailedAddToListGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to add spot to list'**
+  String get spotDetailFailedAddToListGeneric;
+
+  /// No description provided for @spotDetailFailedCreateList.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to create list'**
+  String get spotDetailFailedCreateList;
+
+  /// No description provided for @spotDetailFailedAddToSomeLists.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to add spot to some lists'**
+  String get spotDetailFailedAddToSomeLists;
+
+  /// No description provided for @spotDetailAddToListTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to {name}'**
+  String spotDetailAddToListTitle(String name);
+
+  /// No description provided for @spotDetailSelectSections.
+  ///
+  /// In en, this message translates to:
+  /// **'Select sections:'**
+  String get spotDetailSelectSections;
+
+  /// No description provided for @spotDetailSectionEntryCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Section ({count} spots)'**
+  String spotDetailSectionEntryCount(int count);
+
+  /// No description provided for @spotDetailAddToNewSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to new section'**
+  String get spotDetailAddToNewSection;
+
+  /// No description provided for @spotDetailSectionNameOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Section name (optional)'**
+  String get spotDetailSectionNameOptional;
+
+  /// No description provided for @spotDetailNoteOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Note (optional)'**
+  String get spotDetailNoteOptional;
+
+  /// No description provided for @spotDetailSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get spotDetailSkip;
+
+  /// No description provided for @spotDetailAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get spotDetailAdd;
+
+  /// No description provided for @spotDetailAddToListDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to List'**
+  String get spotDetailAddToListDialogTitle;
+
+  /// No description provided for @spotDetailAlreadyInLists.
+  ///
+  /// In en, this message translates to:
+  /// **'Already in these lists:'**
+  String get spotDetailAlreadyInLists;
+
+  /// No description provided for @spotDetailNoListsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'You don’t have any lists yet. Create one to get started!'**
+  String get spotDetailNoListsYet;
+
+  /// No description provided for @spotDetailSelectListsPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Select lists to add this spot to:'**
+  String get spotDetailSelectListsPrompt;
+
+  /// No description provided for @spotDetailCreateNewList.
+  ///
+  /// In en, this message translates to:
+  /// **'Create New List'**
+  String get spotDetailCreateNewList;
+
+  /// No description provided for @spotDetailListNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'List Name'**
+  String get spotDetailListNameLabel;
+
+  /// No description provided for @spotDetailListNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g., My Favorite Spots'**
+  String get spotDetailListNameHint;
+
+  /// No description provided for @spotDetailListDescriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description (optional)'**
+  String get spotDetailListDescriptionLabel;
+
+  /// No description provided for @spotDetailListDescriptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a description for this list'**
+  String get spotDetailListDescriptionHint;
+
+  /// No description provided for @spotDetailVisibilityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Visibility'**
+  String get spotDetailVisibilityLabel;
+
+  /// No description provided for @spotDetailCreateAndAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Create & Add'**
+  String get spotDetailCreateAndAdd;
+
+  /// No description provided for @spotDetailReportDuplicateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report duplicate spot'**
+  String get spotDetailReportDuplicateTitle;
+
+  /// No description provided for @spotDetailReportDuplicateIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select the spot this is a duplicate of.'**
+  String get spotDetailReportDuplicateIntro;
+
+  /// No description provided for @spotDetailEmailInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid email address.'**
+  String get spotDetailEmailInvalid;
+
+  /// No description provided for @spotDetailEmailRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please provide an email address.'**
+  String get spotDetailEmailRequired;
+
+  /// No description provided for @spotDetailSubmitReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit report'**
+  String get spotDetailSubmitReport;
+
+  /// No description provided for @spotDetailReportThisSpotTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report this spot'**
+  String get spotDetailReportThisSpotTitle;
+
+  /// No description provided for @spotDetailReportIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Let us know what is wrong with {name}. Moderators will review your report shortly.'**
+  String spotDetailReportIntro(String name);
+
+  /// No description provided for @spotDetailReportWhatWrong.
+  ///
+  /// In en, this message translates to:
+  /// **'What is happening?'**
+  String get spotDetailReportWhatWrong;
+
+  /// No description provided for @spotDetailReportCategoryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a category'**
+  String get spotDetailReportCategoryLabel;
+
+  /// No description provided for @spotDetailReportCategoryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a report category'**
+  String get spotDetailReportCategoryHint;
+
+  /// No description provided for @spotDetailReportDescribeIssue.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe the issue'**
+  String get spotDetailReportDescribeIssue;
+
+  /// No description provided for @spotDetailReportDescribeIssueHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us what does not match reality'**
+  String get spotDetailReportDescribeIssueHint;
+
+  /// No description provided for @spotDetailReportAdditionalDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional details'**
+  String get spotDetailReportAdditionalDetails;
+
+  /// No description provided for @spotDetailReportAdditionalDetailsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Anything else we should know?'**
+  String get spotDetailReportAdditionalDetailsHint;
+
+  /// No description provided for @spotDetailReportEmailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Email address'**
+  String get spotDetailReportEmailLabel;
+
+  /// No description provided for @spotDetailReportEmailHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'We will contact you only about this report.'**
+  String get spotDetailReportEmailHelper;
+
+  /// No description provided for @spotDetailReportReachOutAt.
+  ///
+  /// In en, this message translates to:
+  /// **'We will reach out at {email} if we need more info.'**
+  String spotDetailReportReachOutAt(String email);
+
+  /// No description provided for @spotDetailReportReachOutAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'We will reach out using your account email if we need more info.'**
+  String get spotDetailReportReachOutAccount;
+
+  /// No description provided for @spotDetailReportCategoryOtherDescribe.
+  ///
+  /// In en, this message translates to:
+  /// **'Please describe the issue when selecting Other.'**
+  String get spotDetailReportCategoryOtherDescribe;
+
+  /// No description provided for @spotDetailReportCategoryRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a category.'**
+  String get spotDetailReportCategoryRequired;
+
+  /// No description provided for @spotDetailReportSendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send your report. Please try again.'**
+  String get spotDetailReportSendFailed;
+
+  /// No description provided for @spotDetailReportCategoryClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Spot closed or removed'**
+  String get spotDetailReportCategoryClosed;
+
+  /// No description provided for @spotDetailReportCategoryInaccurate.
+  ///
+  /// In en, this message translates to:
+  /// **'Inaccurate location or details'**
+  String get spotDetailReportCategoryInaccurate;
+
+  /// No description provided for @spotDetailReportCategoryUnsafe.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsafe conditions'**
+  String get spotDetailReportCategoryUnsafe;
+
+  /// No description provided for @spotDetailReportCategoryNotASpot.
+  ///
+  /// In en, this message translates to:
+  /// **'Not a spot'**
+  String get spotDetailReportCategoryNotASpot;
+
+  /// No description provided for @spotDetailReportCategoryOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get spotDetailReportCategoryOther;
+
+  /// No description provided for @spotDetailReportCategoryClosedDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'The spot has been permanently closed, demolished, or removed and is no longer accessible. Please provide more details below.'**
+  String get spotDetailReportCategoryClosedDesc;
+
+  /// No description provided for @spotDetailReportCategoryInaccurateDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'The spot’s location on the map is incorrect, or details like name, description, or address are wrong. Please provide more details below on what should be corrected.'**
+  String get spotDetailReportCategoryInaccurateDesc;
+
+  /// No description provided for @spotDetailReportCategoryUnsafeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'The spot has become dangerous due to structural issues, environmental hazards, or other safety concerns. Please provide more details below on what is unsafe.'**
+  String get spotDetailReportCategoryUnsafeDesc;
+
+  /// No description provided for @spotDetailReportCategoryNotASpotDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Only for objective issues like spam, spots in invalid locations (e.g., middle of the sea), private residences, entire cities, or other clearly invalid entries. For subjective opinions about spot quality, please use a rating instead. Please provide more details below on why this is not a spot.'**
+  String get spotDetailReportCategoryNotASpotDesc;
+
+  /// No description provided for @spotDetailReportCategoryOtherDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Any other issue not covered by the categories above. Please describe the issue in the field below.'**
+  String get spotDetailReportCategoryOtherDesc;
+
+  /// No description provided for @spotDetailMarkDuplicateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as Duplicate'**
+  String get spotDetailMarkDuplicateTitle;
+
+  /// No description provided for @spotDetailMarkDuplicateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to mark this spot as a duplicate? This action can be reversed later.'**
+  String get spotDetailMarkDuplicateBody;
+
+  /// No description provided for @spotDetailMarkDuplicateAddToOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'Select which items to add to the original spot:'**
+  String get spotDetailMarkDuplicateAddToOriginal;
+
+  /// No description provided for @spotDetailMarkDuplicatePhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get spotDetailMarkDuplicatePhotos;
+
+  /// No description provided for @spotDetailMarkDuplicateYoutube.
+  ///
+  /// In en, this message translates to:
+  /// **'YouTube links'**
+  String get spotDetailMarkDuplicateYoutube;
+
+  /// No description provided for @spotDetailMarkDuplicateOverwrite.
+  ///
+  /// In en, this message translates to:
+  /// **'Select which items to overwrite in the original spot (if set):'**
+  String get spotDetailMarkDuplicateOverwrite;
+
+  /// No description provided for @spotDetailMarkDuplicateName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get spotDetailMarkDuplicateName;
+
+  /// No description provided for @spotDetailMarkDuplicateDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get spotDetailMarkDuplicateDescription;
+
+  /// No description provided for @spotDetailMarkDuplicateLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get spotDetailMarkDuplicateLocation;
+
+  /// No description provided for @spotDetailMarkDuplicateSpotAttributes.
+  ///
+  /// In en, this message translates to:
+  /// **'Spot attributes'**
+  String get spotDetailMarkDuplicateSpotAttributes;
+
+  /// No description provided for @spotDetailConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get spotDetailConfirm;
+
+  /// No description provided for @spotDetailPickImagesFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to pick images. Please try again.'**
+  String get spotDetailPickImagesFailed;
+
+  /// No description provided for @spotDetailSelectAtLeastOnePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select at least one photo'**
+  String get spotDetailSelectAtLeastOnePhoto;
+
+  /// No description provided for @spotDetailSuggestPhotosTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest Photos'**
+  String get spotDetailSuggestPhotosTitle;
+
+  /// No description provided for @spotDetailSuggestPhotosIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit photos to be added to this spot. Photos will be reviewed by moderators before being added.'**
+  String get spotDetailSuggestPhotosIntro;
+
+  /// No description provided for @spotDetailSelectPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Photos'**
+  String get spotDetailSelectPhotos;
+
+  /// No description provided for @spotDetailPickPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick Photos'**
+  String get spotDetailPickPhotos;
+
+  /// No description provided for @spotDetailAdditionalDetailsOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional Details (Optional)'**
+  String get spotDetailAdditionalDetailsOptional;
+
+  /// No description provided for @spotDetailAdditionalDetailsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add any additional information about these photos...'**
+  String get spotDetailAdditionalDetailsHint;
+
+  /// No description provided for @spotDetailSuggestPhotosEmailHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'We will contact you only about this suggestion.'**
+  String get spotDetailSuggestPhotosEmailHelper;
+
+  /// No description provided for @spotDetailSuggestPhotosSubmitFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to submit photo suggestion. Please try again.'**
+  String get spotDetailSuggestPhotosSubmitFailed;
+
+  /// No description provided for @spotDetailSuggestPhotosSubmitError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error submitting photo suggestion: {error}'**
+  String spotDetailSuggestPhotosSubmitError(String error);
+
+  /// No description provided for @spotDetailSuggestEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest an Edit'**
+  String get spotDetailSuggestEditTitle;
+
+  /// No description provided for @spotDetailSuggestEditIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Propose changes to this spot. Moderators will review your suggestions.'**
+  String get spotDetailSuggestEditIntro;
+
+  /// No description provided for @spotDetailSuggestEditSuggestChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Please suggest at least one change.'**
+  String get spotDetailSuggestEditSuggestChange;
+
+  /// No description provided for @spotDetailSuggestEditSubmitFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to submit edit suggestion. Please try again.'**
+  String get spotDetailSuggestEditSubmitFailed;
+
+  /// No description provided for @spotDetailSuggestEditSubmitError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error submitting edit suggestion: {error}'**
+  String spotDetailSuggestEditSubmitError(String error);
+
+  /// No description provided for @spotDetailGeocoding.
+  ///
+  /// In en, this message translates to:
+  /// **'Geocoding...'**
+  String get spotDetailGeocoding;
+
+  /// No description provided for @spotDetailChangeLocationPicked.
+  ///
+  /// In en, this message translates to:
+  /// **'Change location (picked)'**
+  String get spotDetailChangeLocationPicked;
+
+  /// No description provided for @spotDetailPickLocationOnMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick different location on map'**
+  String get spotDetailPickLocationOnMap;
+
+  /// No description provided for @spotDetailFieldTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get spotDetailFieldTitle;
+
+  /// No description provided for @spotDetailFieldTitleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Spot title'**
+  String get spotDetailFieldTitleHint;
+
+  /// No description provided for @spotDetailFieldDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get spotDetailFieldDescription;
+
+  /// No description provided for @spotDetailFieldDescriptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Spot description'**
+  String get spotDetailFieldDescriptionHint;
+
+  /// No description provided for @spotDetailFieldSpotAttributes.
+  ///
+  /// In en, this message translates to:
+  /// **'Spot attributes'**
+  String get spotDetailFieldSpotAttributes;
+
+  /// No description provided for @spotDetailSuggestEditEmailHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'We will contact you only about this suggestion.'**
+  String get spotDetailSuggestEditEmailHelper;
+
+  /// No description provided for @spotDetailMustBeLoggedInToRate.
+  ///
+  /// In en, this message translates to:
+  /// **'You must be logged in to rate spots'**
+  String get spotDetailMustBeLoggedInToRate;
+
+  /// No description provided for @spotDetailRatingSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{Rating 1 star submitted!} other{Rating {count} stars submitted!}}'**
+  String spotDetailRatingSubmitted(int count);
+
+  /// No description provided for @spotDetailRatingSubmitFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to submit rating. Please try again.'**
+  String get spotDetailRatingSubmitFailed;
+
+  /// No description provided for @spotDetailRatingSubmitError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error submitting rating: {error}'**
+  String spotDetailRatingSubmitError(String error);
+
+  /// No description provided for @spotDetailNotExternalSource.
+  ///
+  /// In en, this message translates to:
+  /// **'This spot is not from an external source.'**
+  String get spotDetailNotExternalSource;
+
+  /// No description provided for @spotDetailMustBeLoggedInCreateNative.
+  ///
+  /// In en, this message translates to:
+  /// **'You must be logged in to create a native spot.'**
+  String get spotDetailMustBeLoggedInCreateNative;
+
+  /// No description provided for @spotDetailCreateNativeDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Native Spot'**
+  String get spotDetailCreateNativeDialogTitle;
+
+  /// No description provided for @spotDetailCreateNativeDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This will create a new native spot based on this spot and mark the current spot as a duplicate of it. All spot data (name, description, location, photos, YouTube links, and attributes) will be copied to the new native spot.\n\nNote: Admins can remove spots and duplicate links can be removed if needed.'**
+  String get spotDetailCreateNativeDialogBody;
+
+  /// No description provided for @spotDetailCreateButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get spotDetailCreateButton;
+
+  /// No description provided for @spotDetailUnableCreateNativeNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to create native spot right now.'**
+  String get spotDetailUnableCreateNativeNow;
+
+  /// No description provided for @spotDetailFailedCreateNativeSpot.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to create native spot'**
+  String get spotDetailFailedCreateNativeSpot;
+
+  /// No description provided for @spotDetailNativeCreatedDuplicateMarked.
+  ///
+  /// In en, this message translates to:
+  /// **'Native spot created and current spot marked as duplicate.'**
+  String get spotDetailNativeCreatedDuplicateMarked;
+
+  /// No description provided for @spotDetailFailedMarkDuplicateGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to mark spot as duplicate'**
+  String get spotDetailFailedMarkDuplicateGeneric;
+
+  /// No description provided for @spotDetailErrorCreatingNativeSpot.
+  ///
+  /// In en, this message translates to:
+  /// **'Error creating native spot: {error}'**
+  String spotDetailErrorCreatingNativeSpot(String error);
+
+  /// No description provided for @spotDetailUnableMarkDuplicateNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to mark this spot as duplicate right now.'**
+  String get spotDetailUnableMarkDuplicateNow;
+
+  /// No description provided for @spotDetailAlreadyMarkedDuplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'This spot is already marked as a duplicate.'**
+  String get spotDetailAlreadyMarkedDuplicate;
+
+  /// No description provided for @spotDetailSpotMarkedDuplicateSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Spot marked as duplicate.'**
+  String get spotDetailSpotMarkedDuplicateSuccess;
+
+  /// No description provided for @spotDetailErrorMarkingDuplicateSpot.
+  ///
+  /// In en, this message translates to:
+  /// **'Error marking spot as duplicate: {error}'**
+  String spotDetailErrorMarkingDuplicateSpot(String error);
+
+  /// No description provided for @spotDetailModeratorsOnlyHideUnhide.
+  ///
+  /// In en, this message translates to:
+  /// **'Only moderators can hide/unhide spots.'**
+  String get spotDetailModeratorsOnlyHideUnhide;
+
+  /// No description provided for @spotDetailHideSpotTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide Spot'**
+  String get spotDetailHideSpotTitle;
+
+  /// No description provided for @spotDetailUnhideSpotTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unhide Spot'**
+  String get spotDetailUnhideSpotTitle;
+
+  /// No description provided for @spotDetailHideSpotMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This will hide the spot from public view. Hidden spots will not appear in search results or on the map, but the spot data will be preserved and can be unhidden later.'**
+  String get spotDetailHideSpotMessage;
+
+  /// No description provided for @spotDetailUnhideSpotMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This will restore the spot to public view. The spot will appear in search results and on the map again.'**
+  String get spotDetailUnhideSpotMessage;
+
+  /// No description provided for @spotDetailActionHide.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide'**
+  String get spotDetailActionHide;
+
+  /// No description provided for @spotDetailActionUnhide.
+  ///
+  /// In en, this message translates to:
+  /// **'Unhide'**
+  String get spotDetailActionUnhide;
+
+  /// No description provided for @spotDetailUnableHideUnhideNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to hide/unhide this spot right now.'**
+  String get spotDetailUnableHideUnhideNow;
+
+  /// No description provided for @spotDetailSpotHiddenSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Spot hidden successfully.'**
+  String get spotDetailSpotHiddenSuccess;
+
+  /// No description provided for @spotDetailSpotUnhiddenSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Spot unhidden successfully.'**
+  String get spotDetailSpotUnhiddenSuccess;
+
+  /// No description provided for @spotDetailFailedHideSpot.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to hide spot'**
+  String get spotDetailFailedHideSpot;
+
+  /// No description provided for @spotDetailFailedUnhideSpot.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to unhide spot'**
+  String get spotDetailFailedUnhideSpot;
+
+  /// No description provided for @spotDetailErrorHidingSpot.
+  ///
+  /// In en, this message translates to:
+  /// **'Error hiding spot: {error}'**
+  String spotDetailErrorHidingSpot(String error);
+
+  /// No description provided for @spotDetailErrorUnhidingSpot.
+  ///
+  /// In en, this message translates to:
+  /// **'Error unhiding spot: {error}'**
+  String spotDetailErrorUnhidingSpot(String error);
+
+  /// No description provided for @spotDetailNotMarkedAsDuplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'This spot is not marked as a duplicate.'**
+  String get spotDetailNotMarkedAsDuplicate;
+
+  /// No description provided for @spotDetailModeratorsOnlyRemoveDuplicateStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Only moderators can remove duplicate status.'**
+  String get spotDetailModeratorsOnlyRemoveDuplicateStatus;
+
+  /// No description provided for @spotDetailRemoveDuplicateDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This will remove the duplicate status from this spot. The spot will no longer be marked as a duplicate.\n\nDo you want to continue?'**
+  String get spotDetailRemoveDuplicateDialogBody;
+
+  /// No description provided for @spotDetailRemoveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get spotDetailRemoveButton;
+
+  /// No description provided for @spotDetailUnableRemoveDuplicateStatusNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to remove duplicate status right now.'**
+  String get spotDetailUnableRemoveDuplicateStatusNow;
+
+  /// No description provided for @spotDetailDuplicateStatusRemovedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate status removed successfully.'**
+  String get spotDetailDuplicateStatusRemovedSuccess;
+
+  /// No description provided for @spotDetailFailedRemoveDuplicateStatusGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to remove duplicate status'**
+  String get spotDetailFailedRemoveDuplicateStatusGeneric;
+
+  /// No description provided for @spotDetailErrorRemovingDuplicateStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Error removing duplicate status: {error}'**
+  String spotDetailErrorRemovingDuplicateStatus(String error);
+
+  /// No description provided for @spotDetailCheckingLinkedData.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking linked data...'**
+  String get spotDetailCheckingLinkedData;
+
+  /// No description provided for @spotDetailDeleteSpotDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Spot'**
+  String get spotDetailDeleteSpotDialogTitle;
+
+  /// No description provided for @spotDetailDeleteSpotConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this spot? This action cannot be undone.'**
+  String get spotDetailDeleteSpotConfirmMessage;
+
+  /// No description provided for @spotDetailLinkedDataHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'This spot has linked data:'**
+  String get spotDetailLinkedDataHeading;
+
+  /// No description provided for @spotDetailLinkedRatingsLine.
+  ///
+  /// In en, this message translates to:
+  /// **'• Ratings: {count}'**
+  String spotDetailLinkedRatingsLine(int count);
+
+  /// No description provided for @spotDetailLinkedReportsLine.
+  ///
+  /// In en, this message translates to:
+  /// **'• Spot reports: {count}'**
+  String spotDetailLinkedReportsLine(int count);
+
+  /// No description provided for @spotDetailLinkedDuplicatesLine.
+  ///
+  /// In en, this message translates to:
+  /// **'• Duplicate spots: {count}'**
+  String spotDetailLinkedDuplicatesLine(int count);
+
+  /// No description provided for @spotDetailResolveLinksBeforeDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Please resolve these links before deleting the spot.'**
+  String get spotDetailResolveLinksBeforeDelete;
+
+  /// No description provided for @spotDetailSpotDeletedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Spot deleted successfully'**
+  String get spotDetailSpotDeletedSuccess;
+
+  /// No description provided for @spotDetailFailedDeleteSpot.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete spot'**
+  String get spotDetailFailedDeleteSpot;
+
+  /// No description provided for @spotDetailErrorDeletingSpot.
+  ///
+  /// In en, this message translates to:
+  /// **'Error deleting spot: {error}'**
+  String spotDetailErrorDeletingSpot(String error);
+
+  /// No description provided for @spotDetailFlagDuplicateDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Flag as duplicate'**
+  String get spotDetailFlagDuplicateDialogTitle;
+
+  /// No description provided for @spotDetailFlagDuplicateIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'This spot appears to be a duplicate of another spot. Please select the original spot below.'**
+  String get spotDetailFlagDuplicateIntro;
+
+  /// No description provided for @spotDetailFlagDuplicateWhichQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Which spot is this a duplicate of?'**
+  String get spotDetailFlagDuplicateWhichQuestion;
+
+  /// No description provided for @spotDetailDuplicateSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste spot URL or enter spot ID'**
+  String get spotDetailDuplicateSearchHint;
+
+  /// No description provided for @spotDetailSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get spotDetailSearch;
+
+  /// No description provided for @spotDetailNearbySpotsWithin50m.
+  ///
+  /// In en, this message translates to:
+  /// **'Nearby spots (within ~50m)'**
+  String get spotDetailNearbySpotsWithin50m;
+
+  /// No description provided for @spotDetailFoundSpot.
+  ///
+  /// In en, this message translates to:
+  /// **'Found Spot'**
+  String get spotDetailFoundSpot;
+
+  /// No description provided for @spotDetailSpotIdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Spot ID: {id}'**
+  String spotDetailSpotIdLabel(String id);
+
+  /// No description provided for @spotDetailRemoveSelectionTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove selection'**
+  String get spotDetailRemoveSelectionTooltip;
+
+  /// No description provided for @spotDetailImageFailedToLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Image failed to load'**
+  String get spotDetailImageFailedToLoad;
+
+  /// No description provided for @spotDetailClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get spotDetailClose;
+
+  /// No description provided for @spotDetailExpandMoreCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} more'**
+  String spotDetailExpandMoreCount(int count);
+
+  /// No description provided for @spotDetailSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit'**
+  String get spotDetailSubmit;
+
+  /// No description provided for @spotDetailDuplicateReportSelectRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select the spot this is a duplicate of.'**
+  String get spotDetailDuplicateReportSelectRequired;
+
+  /// No description provided for @spotDetailDuplicateSearchEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a spot ID or URL'**
+  String get spotDetailDuplicateSearchEmpty;
+
+  /// No description provided for @spotDetailDuplicateInvalidUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid spot ID or URL format'**
+  String get spotDetailDuplicateInvalidUrl;
+
+  /// No description provided for @spotDetailDuplicateCannotSelectSelf.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot mark a spot as duplicate of itself'**
+  String get spotDetailDuplicateCannotSelectSelf;
+
+  /// No description provided for @spotDetailDuplicateSpotNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Spot not found'**
+  String get spotDetailDuplicateSpotNotFound;
+
+  /// No description provided for @spotDetailDuplicateFailedLoadSpot.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load spot: {error}'**
+  String spotDetailDuplicateFailedLoadSpot(String error);
 }
 
 class _AppLocalizationsDelegate

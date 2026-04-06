@@ -555,4 +555,1111 @@ class AppLocalizationsPt extends AppLocalizations {
   String spotCheckInTooltipPrivate(String time) {
     return 'Estás agora aqui neste spot até $time — só tu vês este check-in';
   }
+
+  @override
+  String get spotDetailRouteErrorLoading => 'Erro ao carregar o spot';
+
+  @override
+  String get spotDetailRouteTryAgainLater => 'Tenta novamente mais tarde';
+
+  @override
+  String get spotDetailRouteNotFound => 'Spot não encontrado';
+
+  @override
+  String get spotDetailRouteGoToExplore => 'Ir para Explorar';
+
+  @override
+  String get spotDetailCheckInVerifyFailed =>
+      'Não foi possível verificar os teus check-ins';
+
+  @override
+  String get spotDetailCheckInEndPreviousFailed =>
+      'Não foi possível terminar o check-in anterior';
+
+  @override
+  String get spotDetailCheckInSuccess => 'Fizeste check-in';
+
+  @override
+  String get spotDetailCheckInFailed => 'Check-in falhou';
+
+  @override
+  String get spotDetailCheckInRemoved => 'Check-in removido';
+
+  @override
+  String get spotDetailCheckInDeleteFailed =>
+      'Não foi possível eliminar o check-in';
+
+  @override
+  String get spotDetailCheckInUpdated => 'Check-in atualizado';
+
+  @override
+  String get spotDetailCheckInUpdateFailed =>
+      'Não foi possível atualizar o check-in';
+
+  @override
+  String get spotDetailCheckInFabTooltipSignIn =>
+      'Inicia sessão para fazer check-in';
+
+  @override
+  String get spotDetailCheckInFabTooltipEdit => 'Editar check-in';
+
+  @override
+  String get spotDetailCheckInFabTooltipCheckIn => 'Check-in';
+
+  @override
+  String spotDetailSpotCreatedOnDateBy(String date) {
+    return 'Spot criado em $date por ';
+  }
+
+  @override
+  String get spotDetailSpotCreatedBy => 'Spot criado por ';
+
+  @override
+  String get spotDetailUnknownSource => 'Fonte desconhecida';
+
+  @override
+  String spotDetailSpotImportedOnDateFrom(String date) {
+    return 'Spot importado em $date de ';
+  }
+
+  @override
+  String get spotDetailSpotImportedFrom => 'Spot importado de ';
+
+  @override
+  String get spotDetailFromFolder => ' da pasta ';
+
+  @override
+  String get spotDetailImprovedByAfterComma => ', melhorado por ';
+
+  @override
+  String get spotDetailImprovedByAfterAnd => ' e melhorado por ';
+
+  @override
+  String get spotDetailUnknownUser => 'Desconhecido';
+
+  @override
+  String get spotDetailListJoinAnd => ' e ';
+
+  @override
+  String get spotDetailListJoinComma => ', ';
+
+  @override
+  String spotDetailLastUpdatedAfterCommaAnd(String date) {
+    return ', e última atualização em $date.';
+  }
+
+  @override
+  String spotDetailLastUpdatedAfterAnd(String date) {
+    return ' e última atualização em $date.';
+  }
+
+  @override
+  String get spotDetailDateToday => 'hoje';
+
+  @override
+  String get spotDetailDateYesterday => 'ontem';
+
+  @override
+  String spotDetailDateDaysAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Há $count dias',
+      one: 'Há 1 dia',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String spotDetailDateWeeksAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Há $count semanas',
+      one: 'Há 1 semana',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String spotDetailDateMonthsAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Há $count meses',
+      one: 'Há 1 mês',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String spotDetailDateYearsAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Há $count anos',
+      one: 'Há 1 ano',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String spotDetailCopySpotFailed(String error) {
+    return 'Não foi possível copiar o spot: $error';
+  }
+
+  @override
+  String get spotDetailAddressCopiedToClipboard =>
+      'Morada copiada para a área de transferência!';
+
+  @override
+  String spotDetailCopyAddressFailed(String error) {
+    return 'Não foi possível copiar a morada: $error';
+  }
+
+  @override
+  String spotDetailOpenMapsFailed(String error) {
+    return 'Não foi possível abrir a app de mapas: $error';
+  }
+
+  @override
+  String get spotDetailMoreActionsTooltip => 'Mais ações';
+
+  @override
+  String get spotDetailMenuLogin => 'Iniciar sessão';
+
+  @override
+  String get spotDetailMenuLoginSubtitle =>
+      'Inicia sessão primeiro para associar alterações à tua conta';
+
+  @override
+  String get spotDetailMenuFlagDuplicate => 'Marcar como duplicado';
+
+  @override
+  String get spotDetailMenuFlagDuplicateSubtitleYes =>
+      'Este spot é um duplicado';
+
+  @override
+  String get spotDetailMenuFlagDuplicateSubtitleNo =>
+      'Já marcado como duplicado';
+
+  @override
+  String get spotDetailMenuSuggestPhoto => 'Sugerir foto';
+
+  @override
+  String get spotDetailMenuSuggestPhotoSubtitleYes =>
+      'Enviar fotos para este spot';
+
+  @override
+  String get spotDetailMenuSuggestPhotoSubtitleNo =>
+      'Não é possível sugerir fotos em duplicados';
+
+  @override
+  String get spotDetailMenuSuggestEdit => 'Sugerir edição';
+
+  @override
+  String get spotDetailMenuSuggestEditSubtitleYes =>
+      'Propor alterações a este spot';
+
+  @override
+  String get spotDetailMenuSuggestEditSubtitleNo =>
+      'Não é possível sugerir edições em duplicados';
+
+  @override
+  String get spotDetailMenuReportSpot => 'Reportar spot';
+
+  @override
+  String get spotDetailMenuReportSpotSubtitle => 'Ajuda-nos a rever este spot';
+
+  @override
+  String get spotDetailMenuEditSpot => 'Editar spot';
+
+  @override
+  String get spotDetailMenuEditSpotSubtitleNative =>
+      'Cria primeiro um spot nativo';
+
+  @override
+  String get spotDetailMenuEditSpotSubtitleMod => 'Apenas moderadores';
+
+  @override
+  String get spotDetailMenuMarkDuplicate => 'Marcar como duplicado';
+
+  @override
+  String get spotDetailMenuMarkDuplicateSubtitleDup =>
+      'Já marcado como duplicado';
+
+  @override
+  String get spotDetailMenuMarkDuplicateSubtitleMod => 'Apenas moderadores';
+
+  @override
+  String get spotDetailMenuRemoveDuplicateStatus =>
+      'Remover estado de duplicado';
+
+  @override
+  String get spotDetailMenuCreateNative => 'Criar spot nativo';
+
+  @override
+  String get spotDetailMenuHideSpot => 'Ocultar spot';
+
+  @override
+  String get spotDetailMenuUnhideSpot => 'Mostrar spot';
+
+  @override
+  String get spotDetailMenuDeleteSpot => 'Eliminar spot';
+
+  @override
+  String get spotDetailMenuDeleteSubtitleAdmin => 'Apenas administradores';
+
+  @override
+  String get spotDetailMenuTriggerResize => 'Redimensionar imagem';
+
+  @override
+  String get spotDetailMenuTriggerResizeSubtitle =>
+      'Recriar versões redimensionadas';
+
+  @override
+  String get spotDetailExternalSourceCannotEdit =>
+      'Spots de fontes externas não podem ser editados. Cria primeiro um spot nativo com «Marcar como duplicado» → «Criar spot nativo».';
+
+  @override
+  String get spotDetailOk => 'OK';
+
+  @override
+  String get spotDetailUnableEditNow =>
+      'Este spot não pode ser editado de momento.';
+
+  @override
+  String get spotDetailOnlyAdminsDelete =>
+      'Apenas administradores podem eliminar spots.';
+
+  @override
+  String get spotDetailResizeAllHaveVersions =>
+      'Todas as imagens já têm versões redimensionadas';
+
+  @override
+  String spotDetailResizeSummary(
+    int triggered,
+    int verified,
+    String failedPart,
+  ) {
+    return 'Redimensionar: $triggered iniciados, $verified verificados$failedPart';
+  }
+
+  @override
+  String spotDetailResizeFailedPart(int failed) {
+    return ', $failed falhados';
+  }
+
+  @override
+  String spotDetailResizeTriggerFailed(String error) {
+    return 'Não foi possível iniciar o redimensionamento: $error';
+  }
+
+  @override
+  String get spotDetailUnableFlagDuplicate =>
+      'Não é possível marcar este spot como duplicado de momento.';
+
+  @override
+  String get spotDetailThanksDuplicateReport =>
+      'Obrigado! O teu relatório de duplicado foi enviado.';
+
+  @override
+  String get spotDetailUnableSuggestPhotos =>
+      'Não é possível sugerir fotos para este spot de momento.';
+
+  @override
+  String get spotDetailCannotSuggestPhotosDuplicate =>
+      'Não é possível sugerir fotos em spots duplicados.';
+
+  @override
+  String get spotDetailThanksPhotoSuggestion =>
+      'Obrigado! A tua sugestão de fotos foi enviada para revisão.';
+
+  @override
+  String get spotDetailUnableSuggestEdits =>
+      'Não é possível sugerir edições para este spot de momento.';
+
+  @override
+  String get spotDetailCannotSuggestEditsDuplicate =>
+      'Não é possível sugerir edições em spots duplicados.';
+
+  @override
+  String get spotDetailThanksEditSuggestion =>
+      'Obrigado! A tua sugestão de edição foi enviada para revisão.';
+
+  @override
+  String get spotDetailUnableReportNow =>
+      'Não é possível reportar este spot de momento.';
+
+  @override
+  String get spotDetailThanksReportSubmitted =>
+      'Obrigado! O teu relatório foi enviado.';
+
+  @override
+  String get spotDetailUnableAddToList =>
+      'Não é possível adicionar este spot a uma lista de momento.';
+
+  @override
+  String get spotDetailNoSpotListsAccess =>
+      'Não tens acesso às listas de spots.';
+
+  @override
+  String get spotDetailListCreatedAndAdded => 'Lista criada e spot adicionado!';
+
+  @override
+  String get spotDetailSpotAddedToList => 'Spot adicionado à lista!';
+
+  @override
+  String get spotDetailEditReportTooltip => 'Editar e reportar';
+
+  @override
+  String get spotDetailShareTooltip => 'Partilhar';
+
+  @override
+  String get spotDetailPresenceHereNow => 'Aqui agora';
+
+  @override
+  String get spotDetailHiddenBanner =>
+      'Este spot está oculto ao público. Provavelmente já não existe ou não cumpre as nossas regras. Não aparecerá nas pesquisas nem no mapa.';
+
+  @override
+  String spotDetailSourceRemovedBanner(String source) {
+    return 'Este spot já não está listado em $source. Os dados podem estar desatualizados—confirma antes de visitares.';
+  }
+
+  @override
+  String get spotDetailSourceRemovedUnknownSource => 'a fonte original';
+
+  @override
+  String get spotDetailSectionFeatures => 'Características';
+
+  @override
+  String get spotDetailSectionAccess => 'Acesso';
+
+  @override
+  String get spotDetailSectionFacilities => 'Instalações';
+
+  @override
+  String spotDetailJumpflixFetchFailed(String error) {
+    return 'Falha ao obter Jumpflix: $error';
+  }
+
+  @override
+  String get spotDetailBrandYoutube => 'YouTube';
+
+  @override
+  String get spotDetailBrandJumpflix => 'Jumpflix';
+
+  @override
+  String get spotDetailBrandAsSeenIn => 'Como em';
+
+  @override
+  String get spotDetailLoading => 'A carregar…';
+
+  @override
+  String get spotDetailLoadingYourRating => 'A carregar a tua avaliação…';
+
+  @override
+  String get spotDetailRateThisSpot => 'Avaliar este spot';
+
+  @override
+  String get spotDetailCouldNotLoadProfile =>
+      'Não foi possível carregar o teu perfil.';
+
+  @override
+  String get spotDetailRefreshPageToRate => 'Atualiza a página para avaliar.';
+
+  @override
+  String get spotDetailSignInToRateTitle =>
+      'Inicia sessão para avaliar este spot';
+
+  @override
+  String get spotDetailSignInToRateSubtitle =>
+      'Inicia sessão para avaliar este spot e ajudar outros.';
+
+  @override
+  String get spotDetailSignInButton => 'Iniciar sessão';
+
+  @override
+  String get spotDetailCreateAccountButton => 'Criar conta';
+
+  @override
+  String get spotDetailMapSwitchToMap => 'Ver mapa';
+
+  @override
+  String get spotDetailMapSwitchToSatellite => 'Ver satélite';
+
+  @override
+  String get spotDetailMapLocateOnMap => 'Ver no mapa';
+
+  @override
+  String get spotDetailDuplicateOf => 'Duplicado de';
+
+  @override
+  String get spotDetailOriginalSpotFallback => 'Spot original';
+
+  @override
+  String get spotDetailAlsoBasedOn => 'Também baseado em';
+
+  @override
+  String spotDetailAlsoBasedOnCount(int count) {
+    return 'Também baseado em ($count)';
+  }
+
+  @override
+  String get spotDetailNoImagesAvailable => 'Sem imagens disponíveis';
+
+  @override
+  String spotDetailGalleryPageIndicator(int current, int total) {
+    return '$current / $total';
+  }
+
+  @override
+  String get spotDetailSaveMenuTooltip => 'Guardar spot';
+
+  @override
+  String get spotDetailSaveMenuSignInTitle =>
+      'Inicia sessão para guardar spots';
+
+  @override
+  String get spotDetailSaveMenuSignInBody =>
+      'Adiciona este spot a «Quero visitar», «Já estive» ou às tuas listas. Inicia sessão ou cria uma conta gratuita.';
+
+  @override
+  String get spotDetailSaveMenuLogInOrCreate => 'Iniciar sessão ou criar conta';
+
+  @override
+  String get spotDetailSaveTooltipUpdating => 'A atualizar…';
+
+  @override
+  String get spotDetailSaveTooltipWantToVisit => 'Guardado: Quero visitar';
+
+  @override
+  String get spotDetailSaveTooltipBeenHere => 'Guardado: Já estive';
+
+  @override
+  String get spotDetailSaveTooltipGeneric => 'Guardar spot';
+
+  @override
+  String get spotDetailRemovedFromWantToVisit => 'Removido de Quero visitar';
+
+  @override
+  String get spotDetailFailedToRemove => 'Falha ao remover';
+
+  @override
+  String get spotDetailAddedToWantToVisit => 'Adicionado a Quero visitar';
+
+  @override
+  String get spotDetailFailedToAdd => 'Falha ao adicionar';
+
+  @override
+  String get spotDetailRemovedFromBeenHere => 'Removido de Já estive';
+
+  @override
+  String get spotDetailAddedToBeenHere => 'Adicionado a Já estive';
+
+  @override
+  String get spotDetailWantToVisit => 'Quero visitar';
+
+  @override
+  String get spotDetailBeenHere => 'Já estive';
+
+  @override
+  String get spotDetailViewFullListTooltip => 'Ver lista completa';
+
+  @override
+  String get spotDetailAddToCustomList => 'Adicionar a lista própria';
+
+  @override
+  String get spotDetailAddToCustomListSubtitle => 'Escolhe ou cria uma lista';
+
+  @override
+  String get spotDetailListNameEmpty => 'O nome da lista não pode estar vazio';
+
+  @override
+  String get spotDetailFailedAddToListGeneric =>
+      'Não foi possível adicionar o spot à lista';
+
+  @override
+  String get spotDetailFailedCreateList => 'Não foi possível criar a lista';
+
+  @override
+  String get spotDetailFailedAddToSomeLists =>
+      'Não foi possível adicionar o spot a algumas listas';
+
+  @override
+  String spotDetailAddToListTitle(String name) {
+    return 'Adicionar a $name';
+  }
+
+  @override
+  String get spotDetailSelectSections => 'Selecionar secções:';
+
+  @override
+  String spotDetailSectionEntryCount(int count) {
+    return 'Secção ($count spots)';
+  }
+
+  @override
+  String get spotDetailAddToNewSection => 'Adicionar a nova secção';
+
+  @override
+  String get spotDetailSectionNameOptional => 'Nome da secção (opcional)';
+
+  @override
+  String get spotDetailNoteOptional => 'Nota (opcional)';
+
+  @override
+  String get spotDetailSkip => 'Ignorar';
+
+  @override
+  String get spotDetailAdd => 'Adicionar';
+
+  @override
+  String get spotDetailAddToListDialogTitle => 'Adicionar à lista';
+
+  @override
+  String get spotDetailAlreadyInLists => 'Já está nestas listas:';
+
+  @override
+  String get spotDetailNoListsYet =>
+      'Ainda não tens listas. Cria uma para começar!';
+
+  @override
+  String get spotDetailSelectListsPrompt =>
+      'Seleciona as listas a adicionar este spot:';
+
+  @override
+  String get spotDetailCreateNewList => 'Criar lista nova';
+
+  @override
+  String get spotDetailListNameLabel => 'Nome da lista';
+
+  @override
+  String get spotDetailListNameHint => 'ex.: Os meus spots favoritos';
+
+  @override
+  String get spotDetailListDescriptionLabel => 'Descrição (opcional)';
+
+  @override
+  String get spotDetailListDescriptionHint =>
+      'Adiciona uma descrição para esta lista';
+
+  @override
+  String get spotDetailVisibilityLabel => 'Visibilidade';
+
+  @override
+  String get spotDetailCreateAndAdd => 'Criar e adicionar';
+
+  @override
+  String get spotDetailReportDuplicateTitle => 'Reportar spot duplicado';
+
+  @override
+  String get spotDetailReportDuplicateIntro =>
+      'Seleciona o spot do qual este é duplicado.';
+
+  @override
+  String get spotDetailEmailInvalid => 'Introduz um e-mail válido.';
+
+  @override
+  String get spotDetailEmailRequired => 'Introduz um e-mail.';
+
+  @override
+  String get spotDetailSubmitReport => 'Enviar relatório';
+
+  @override
+  String get spotDetailReportThisSpotTitle => 'Reportar este spot';
+
+  @override
+  String spotDetailReportIntro(String name) {
+    return 'Diz-nos o que está errado com $name. Os moderadores vão rever o relatório.';
+  }
+
+  @override
+  String get spotDetailReportWhatWrong => 'O que está a acontecer?';
+
+  @override
+  String get spotDetailReportCategoryLabel => 'Escolhe uma categoria';
+
+  @override
+  String get spotDetailReportCategoryHint =>
+      'Escolhe uma categoria de relatório';
+
+  @override
+  String get spotDetailReportDescribeIssue => 'Descreve o problema';
+
+  @override
+  String get spotDetailReportDescribeIssueHint =>
+      'Diz-nos o que não corresponde à realidade';
+
+  @override
+  String get spotDetailReportAdditionalDetails => 'Detalhes adicionais';
+
+  @override
+  String get spotDetailReportAdditionalDetailsHint =>
+      'Mais alguma coisa que devamos saber?';
+
+  @override
+  String get spotDetailReportEmailLabel => 'E-mail';
+
+  @override
+  String get spotDetailReportEmailHelper =>
+      'Só te contactamos sobre este relatório.';
+
+  @override
+  String spotDetailReportReachOutAt(String email) {
+    return 'Se precisarmos de mais informações, contactamos-te em $email.';
+  }
+
+  @override
+  String get spotDetailReportReachOutAccount =>
+      'Se precisarmos de mais informações, usamos o e-mail da tua conta.';
+
+  @override
+  String get spotDetailReportCategoryOtherDescribe =>
+      'Descreve o problema ao escolheres «Outro».';
+
+  @override
+  String get spotDetailReportCategoryRequired => 'Escolhe uma categoria.';
+
+  @override
+  String get spotDetailReportSendFailed =>
+      'Não foi possível enviar o relatório. Tenta novamente.';
+
+  @override
+  String get spotDetailReportCategoryClosed => 'Spot fechado ou removido';
+
+  @override
+  String get spotDetailReportCategoryInaccurate =>
+      'Localização ou dados incorretos';
+
+  @override
+  String get spotDetailReportCategoryUnsafe => 'Condições inseguras';
+
+  @override
+  String get spotDetailReportCategoryNotASpot => 'Não é um spot';
+
+  @override
+  String get spotDetailReportCategoryOther => 'Outro';
+
+  @override
+  String get spotDetailReportCategoryClosedDesc =>
+      'O spot foi fechado, demolido ou removido de forma permanente e já não é acessível. Dá mais detalhes abaixo.';
+
+  @override
+  String get spotDetailReportCategoryInaccurateDesc =>
+      'A posição no mapa está errada ou o nome, descrição ou morada estão incorretos. Indica abaixo o que corrigir.';
+
+  @override
+  String get spotDetailReportCategoryUnsafeDesc =>
+      'O spot tornou-se perigoso (estrutura, ambiente, etc.). Explica abaixo o que é inseguro.';
+
+  @override
+  String get spotDetailReportCategoryNotASpotDesc =>
+      'Apenas para casos objetivos: spam, locais inválidos (ex. mar), residências privadas, cidades inteiras ou entradas claramente inválidas. Para opiniões sobre qualidade, usa a avaliação. Explica por que não é um spot.';
+
+  @override
+  String get spotDetailReportCategoryOtherDesc =>
+      'Qualquer outro problema. Descreve no campo abaixo.';
+
+  @override
+  String get spotDetailMarkDuplicateTitle => 'Marcar como duplicado';
+
+  @override
+  String get spotDetailMarkDuplicateBody =>
+      'Tens a certeza de que queres marcar este spot como duplicado? Podes reverter mais tarde.';
+
+  @override
+  String get spotDetailMarkDuplicateAddToOriginal =>
+      'Escolhe o que adicionar ao spot original:';
+
+  @override
+  String get spotDetailMarkDuplicatePhotos => 'Fotos';
+
+  @override
+  String get spotDetailMarkDuplicateYoutube => 'Ligações do YouTube';
+
+  @override
+  String get spotDetailMarkDuplicateOverwrite =>
+      'Escolhe o que substituir no spot original (se definido):';
+
+  @override
+  String get spotDetailMarkDuplicateName => 'Nome';
+
+  @override
+  String get spotDetailMarkDuplicateDescription => 'Descrição';
+
+  @override
+  String get spotDetailMarkDuplicateLocation => 'Localização';
+
+  @override
+  String get spotDetailMarkDuplicateSpotAttributes => 'Atributos do spot';
+
+  @override
+  String get spotDetailConfirm => 'Confirmar';
+
+  @override
+  String get spotDetailPickImagesFailed =>
+      'Não foi possível escolher imagens. Tenta novamente.';
+
+  @override
+  String get spotDetailSelectAtLeastOnePhoto => 'Seleciona pelo menos uma foto';
+
+  @override
+  String get spotDetailSuggestPhotosTitle => 'Sugerir fotos';
+
+  @override
+  String get spotDetailSuggestPhotosIntro =>
+      'Envia fotos para adicionar a este spot. Os moderadores revêem antes de publicar.';
+
+  @override
+  String get spotDetailSelectPhotos => 'Selecionar fotos';
+
+  @override
+  String get spotDetailPickPhotos => 'Escolher fotos';
+
+  @override
+  String get spotDetailAdditionalDetailsOptional =>
+      'Detalhes adicionais (opcional)';
+
+  @override
+  String get spotDetailAdditionalDetailsHint =>
+      'Mais informação sobre estas fotos…';
+
+  @override
+  String get spotDetailSuggestPhotosEmailHelper =>
+      'Só te contactamos sobre esta sugestão.';
+
+  @override
+  String get spotDetailSuggestPhotosSubmitFailed =>
+      'Não foi possível enviar a sugestão de fotos. Tenta novamente.';
+
+  @override
+  String spotDetailSuggestPhotosSubmitError(String error) {
+    return 'Erro ao enviar sugestão de fotos: $error';
+  }
+
+  @override
+  String get spotDetailSuggestEditTitle => 'Sugerir edição';
+
+  @override
+  String get spotDetailSuggestEditIntro =>
+      'Propõe alterações a este spot. Os moderadores revêem as sugestões.';
+
+  @override
+  String get spotDetailSuggestEditSuggestChange =>
+      'Sugere pelo menos uma alteração.';
+
+  @override
+  String get spotDetailSuggestEditSubmitFailed =>
+      'Não foi possível enviar a sugestão de edição. Tenta novamente.';
+
+  @override
+  String spotDetailSuggestEditSubmitError(String error) {
+    return 'Erro ao enviar sugestão de edição: $error';
+  }
+
+  @override
+  String get spotDetailGeocoding => 'Geocodificação…';
+
+  @override
+  String get spotDetailChangeLocationPicked =>
+      'Alterar localização (escolhida)';
+
+  @override
+  String get spotDetailPickLocationOnMap =>
+      'Escolher outra localização no mapa';
+
+  @override
+  String get spotDetailFieldTitle => 'Título';
+
+  @override
+  String get spotDetailFieldTitleHint => 'Título do spot';
+
+  @override
+  String get spotDetailFieldDescription => 'Descrição';
+
+  @override
+  String get spotDetailFieldDescriptionHint => 'Descrição do spot';
+
+  @override
+  String get spotDetailFieldSpotAttributes => 'Atributos do spot';
+
+  @override
+  String get spotDetailSuggestEditEmailHelper =>
+      'Só te contactamos sobre esta sugestão.';
+
+  @override
+  String get spotDetailMustBeLoggedInToRate =>
+      'Tens de ter sessão iniciada para avaliar spots';
+
+  @override
+  String spotDetailRatingSubmitted(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Avaliação de $count estrelas enviada!',
+      one: 'Avaliação de 1 estrela enviada!',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get spotDetailRatingSubmitFailed =>
+      'Não foi possível enviar a avaliação. Tenta novamente.';
+
+  @override
+  String spotDetailRatingSubmitError(String error) {
+    return 'Erro ao enviar avaliação: $error';
+  }
+
+  @override
+  String get spotDetailNotExternalSource =>
+      'Este spot não vem de uma fonte externa.';
+
+  @override
+  String get spotDetailMustBeLoggedInCreateNative =>
+      'Tens de ter sessão iniciada para criar um spot nativo.';
+
+  @override
+  String get spotDetailCreateNativeDialogTitle => 'Criar spot nativo';
+
+  @override
+  String get spotDetailCreateNativeDialogBody =>
+      'Será criado um spot nativo com base neste e o spot atual será marcado como duplicado. Todos os dados (nome, descrição, localização, fotos, ligações YouTube, atributos) serão copiados.\n\nNota: os administradores podem remover spots e ligações de duplicado se necessário.';
+
+  @override
+  String get spotDetailCreateButton => 'Criar';
+
+  @override
+  String get spotDetailUnableCreateNativeNow =>
+      'Não é possível criar um spot nativo de momento.';
+
+  @override
+  String get spotDetailFailedCreateNativeSpot =>
+      'Não foi possível criar o spot nativo';
+
+  @override
+  String get spotDetailNativeCreatedDuplicateMarked =>
+      'Spot nativo criado e spot atual marcado como duplicado.';
+
+  @override
+  String get spotDetailFailedMarkDuplicateGeneric =>
+      'Não foi possível marcar como duplicado';
+
+  @override
+  String spotDetailErrorCreatingNativeSpot(String error) {
+    return 'Erro ao criar spot nativo: $error';
+  }
+
+  @override
+  String get spotDetailUnableMarkDuplicateNow =>
+      'Não é possível marcar este spot como duplicado de momento.';
+
+  @override
+  String get spotDetailAlreadyMarkedDuplicate =>
+      'Este spot já está marcado como duplicado.';
+
+  @override
+  String get spotDetailSpotMarkedDuplicateSuccess =>
+      'Spot marcado como duplicado.';
+
+  @override
+  String spotDetailErrorMarkingDuplicateSpot(String error) {
+    return 'Erro ao marcar como duplicado: $error';
+  }
+
+  @override
+  String get spotDetailModeratorsOnlyHideUnhide =>
+      'Apenas moderadores podem ocultar ou mostrar spots.';
+
+  @override
+  String get spotDetailHideSpotTitle => 'Ocultar spot';
+
+  @override
+  String get spotDetailUnhideSpotTitle => 'Mostrar spot';
+
+  @override
+  String get spotDetailHideSpotMessage =>
+      'O spot deixa de ser visível ao público. Não aparece nas pesquisas nem no mapa, mas os dados são guardados e podem ser mostrados depois.';
+
+  @override
+  String get spotDetailUnhideSpotMessage =>
+      'O spot volta a ser público e aparece nas pesquisas e no mapa.';
+
+  @override
+  String get spotDetailActionHide => 'Ocultar';
+
+  @override
+  String get spotDetailActionUnhide => 'Mostrar';
+
+  @override
+  String get spotDetailUnableHideUnhideNow =>
+      'Não é possível ocultar ou mostrar este spot de momento.';
+
+  @override
+  String get spotDetailSpotHiddenSuccess => 'Spot ocultado.';
+
+  @override
+  String get spotDetailSpotUnhiddenSuccess => 'Spot visível novamente.';
+
+  @override
+  String get spotDetailFailedHideSpot => 'Não foi possível ocultar o spot';
+
+  @override
+  String get spotDetailFailedUnhideSpot => 'Não foi possível mostrar o spot';
+
+  @override
+  String spotDetailErrorHidingSpot(String error) {
+    return 'Erro ao ocultar: $error';
+  }
+
+  @override
+  String spotDetailErrorUnhidingSpot(String error) {
+    return 'Erro ao mostrar: $error';
+  }
+
+  @override
+  String get spotDetailNotMarkedAsDuplicate =>
+      'Este spot não está marcado como duplicado.';
+
+  @override
+  String get spotDetailModeratorsOnlyRemoveDuplicateStatus =>
+      'Apenas moderadores podem remover o estado de duplicado.';
+
+  @override
+  String get spotDetailRemoveDuplicateDialogBody =>
+      'O estado de duplicado será removido; o spot deixa de ser considerado duplicado.\n\nContinuar?';
+
+  @override
+  String get spotDetailRemoveButton => 'Remover';
+
+  @override
+  String get spotDetailUnableRemoveDuplicateStatusNow =>
+      'Não é possível remover o estado de duplicado de momento.';
+
+  @override
+  String get spotDetailDuplicateStatusRemovedSuccess =>
+      'Estado de duplicado removido.';
+
+  @override
+  String get spotDetailFailedRemoveDuplicateStatusGeneric =>
+      'Não foi possível remover o estado de duplicado';
+
+  @override
+  String spotDetailErrorRemovingDuplicateStatus(String error) {
+    return 'Erro ao remover estado de duplicado: $error';
+  }
+
+  @override
+  String get spotDetailCheckingLinkedData => 'A verificar dados ligados…';
+
+  @override
+  String get spotDetailDeleteSpotDialogTitle => 'Eliminar spot';
+
+  @override
+  String get spotDetailDeleteSpotConfirmMessage =>
+      'Tens a certeza de que queres eliminar este spot? Esta ação não pode ser anulada.';
+
+  @override
+  String get spotDetailLinkedDataHeading => 'Este spot tem dados ligados:';
+
+  @override
+  String spotDetailLinkedRatingsLine(int count) {
+    return '• Avaliações: $count';
+  }
+
+  @override
+  String spotDetailLinkedReportsLine(int count) {
+    return '• Relatórios: $count';
+  }
+
+  @override
+  String spotDetailLinkedDuplicatesLine(int count) {
+    return '• Spots duplicados: $count';
+  }
+
+  @override
+  String get spotDetailResolveLinksBeforeDelete =>
+      'Resolve estas ligações antes de eliminar o spot.';
+
+  @override
+  String get spotDetailSpotDeletedSuccess => 'Spot eliminado.';
+
+  @override
+  String get spotDetailFailedDeleteSpot => 'Não foi possível eliminar o spot';
+
+  @override
+  String spotDetailErrorDeletingSpot(String error) {
+    return 'Erro ao eliminar o spot: $error';
+  }
+
+  @override
+  String get spotDetailFlagDuplicateDialogTitle => 'Marcar como duplicado';
+
+  @override
+  String get spotDetailFlagDuplicateIntro =>
+      'Este spot parece um duplicado de outro. Seleciona o spot original abaixo.';
+
+  @override
+  String get spotDetailFlagDuplicateWhichQuestion => 'De que spot é duplicado?';
+
+  @override
+  String get spotDetailDuplicateSearchHint =>
+      'Cola o URL do spot ou introduz o ID';
+
+  @override
+  String get spotDetailSearch => 'Pesquisar';
+
+  @override
+  String get spotDetailNearbySpotsWithin50m =>
+      'Spots próximos (num raio de ~50 m)';
+
+  @override
+  String get spotDetailFoundSpot => 'Spot encontrado';
+
+  @override
+  String spotDetailSpotIdLabel(String id) {
+    return 'ID do spot: $id';
+  }
+
+  @override
+  String get spotDetailRemoveSelectionTooltip => 'Remover seleção';
+
+  @override
+  String get spotDetailImageFailedToLoad =>
+      'Não foi possível carregar a imagem';
+
+  @override
+  String get spotDetailClose => 'Fechar';
+
+  @override
+  String spotDetailExpandMoreCount(int count) {
+    return 'mais $count';
+  }
+
+  @override
+  String get spotDetailSubmit => 'Enviar';
+
+  @override
+  String get spotDetailDuplicateReportSelectRequired =>
+      'Seleciona o spot do qual este é duplicado.';
+
+  @override
+  String get spotDetailDuplicateSearchEmpty => 'Introduz um ID ou URL do spot';
+
+  @override
+  String get spotDetailDuplicateInvalidUrl => 'ID ou URL do spot inválidos';
+
+  @override
+  String get spotDetailDuplicateCannotSelectSelf =>
+      'Um spot não pode ser duplicado de si próprio';
+
+  @override
+  String get spotDetailDuplicateSpotNotFound => 'Spot não encontrado';
+
+  @override
+  String spotDetailDuplicateFailedLoadSpot(String error) {
+    return 'Não foi possível carregar o spot: $error';
+  }
 }
