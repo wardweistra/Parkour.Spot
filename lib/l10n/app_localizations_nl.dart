@@ -148,6 +148,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileReportIssue => 'Probleem melden';
 
   @override
+  String get profileHelpTranslate => 'Help mee met vertalen';
+
+  @override
   String get profileInstallBannerTitle => 'Installeer de Parkour·Spot-app';
 
   @override

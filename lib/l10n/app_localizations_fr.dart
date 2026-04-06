@@ -149,6 +149,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get profileReportIssue => 'Signaler un problème';
 
   @override
+  String get profileHelpTranslate => 'Aider à traduire l’application';
+
+  @override
   String get profileInstallBannerTitle => 'Installer l’appli Parkour·Spot';
 
   @override

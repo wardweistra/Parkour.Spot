@@ -172,6 +172,10 @@
   "@profileReportIssue": {
     "description": "About section: GitHub issues button"
   },
+  "profileHelpTranslate": "Help translate the app",
+  "@profileHelpTranslate": {
+    "description": "About section: link to translation contribution (Crowdin or similar)"
+  },
   "profileInstallBannerTitle": "Install the Parkour·Spot app",
   "@profileInstallBannerTitle": {
     "description": "Account tab: PWA install card title"
