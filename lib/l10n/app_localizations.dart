@@ -453,6 +453,318 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Got it'**
   String get profileInstallGotIt;
+
+  /// Web: default document title when leaving a location page
+  ///
+  /// In en, this message translates to:
+  /// **'Parkour·Spot'**
+  String get exploreMetaDefaultTitle;
+
+  /// Web: default meta description when leaving a location page
+  ///
+  /// In en, this message translates to:
+  /// **'Discover, map, and share the best parkour spots worldwide with community photos, ratings, and local tips for your next training session.'**
+  String get exploreMetaDefaultDescription;
+
+  /// Web SEO title for city pages
+  ///
+  /// In en, this message translates to:
+  /// **'Best parkour spots in {city}, {country}'**
+  String exploreMetaTitleCityCountry(String city, String country);
+
+  /// Web SEO description for city pages
+  ///
+  /// In en, this message translates to:
+  /// **'Discover the best parkour spots in {city}, {country}. Find training locations, share your favorite spots, and connect with the parkour community.'**
+  String exploreMetaDescriptionCityCountry(String city, String country);
+
+  /// Web SEO title for country-only pages
+  ///
+  /// In en, this message translates to:
+  /// **'Best parkour spots in {country}'**
+  String exploreMetaTitleCountry(String country);
+
+  /// Web SEO description for country-only pages
+  ///
+  /// In en, this message translates to:
+  /// **'Discover the best parkour spots in {country}. Find training locations, share your favorite spots, and connect with the parkour community.'**
+  String exploreMetaDescriptionCountry(String country);
+
+  /// Add spot tab: heading when not signed in
+  ///
+  /// In en, this message translates to:
+  /// **'Add New Spot'**
+  String get exploreAddSpotTitle;
+
+  /// Add spot tab: supporting text when not signed in
+  ///
+  /// In en, this message translates to:
+  /// **'Share your favorite parkour spots with the community'**
+  String get exploreAddSpotSubtitle;
+
+  /// Add spot tab: sign-in prompt title
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to add a spot'**
+  String get exploreSignInToAddSpot;
+
+  /// Shown while profile loads before add spot
+  ///
+  /// In en, this message translates to:
+  /// **'Loading your profile…'**
+  String get exploreLoadingProfile;
+
+  /// Map search field placeholder
+  ///
+  /// In en, this message translates to:
+  /// **'Search location or spot…'**
+  String get exploreSearchHint;
+
+  /// Filters: section label
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by'**
+  String get exploreFilterBy;
+
+  /// Filter mode: amenities
+  ///
+  /// In en, this message translates to:
+  /// **'Amenities'**
+  String get exploreFilterAmenities;
+
+  /// Filter mode: data sources
+  ///
+  /// In en, this message translates to:
+  /// **'Sources'**
+  String get exploreFilterSources;
+
+  /// Filter card: access
+  ///
+  /// In en, this message translates to:
+  /// **'Spot Access'**
+  String get exploreSpotAccessTitle;
+
+  /// Filter card: access description
+  ///
+  /// In en, this message translates to:
+  /// **'Filter spots by access level'**
+  String get exploreSpotAccessSubtitle;
+
+  /// Access filter: any access level
+  ///
+  /// In en, this message translates to:
+  /// **'Any'**
+  String get exploreFilterAny;
+
+  /// Filter card: facilities
+  ///
+  /// In en, this message translates to:
+  /// **'Spot Facilities'**
+  String get exploreSpotFacilitiesTitle;
+
+  /// Filter card: facilities description
+  ///
+  /// In en, this message translates to:
+  /// **'Show spots with these amenities'**
+  String get exploreSpotFacilitiesSubtitle;
+
+  /// Filter card: skills/features
+  ///
+  /// In en, this message translates to:
+  /// **'With any of these attributes'**
+  String get exploreAttributesTitle;
+
+  /// Filter card: skills/features description
+  ///
+  /// In en, this message translates to:
+  /// **'Filter spots that have any of the selected skills or features'**
+  String get exploreAttributesSubtitle;
+
+  /// Attribute filter: good-for mode
+  ///
+  /// In en, this message translates to:
+  /// **'Good For'**
+  String get exploreGoodForSegment;
+
+  /// Attribute filter: features mode
+  ///
+  /// In en, this message translates to:
+  /// **'Spot Features'**
+  String get exploreSpotFeaturesSegment;
+
+  /// Source filter section label
+  ///
+  /// In en, this message translates to:
+  /// **'Spot Source'**
+  String get exploreSpotSourceLabel;
+
+  /// Error loading sync source list for filters
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load sources'**
+  String get exploreSourcesLoadError;
+
+  /// Source filter: all sources option
+  ///
+  /// In en, this message translates to:
+  /// **'All Sources'**
+  String get exploreAllSources;
+
+  /// Source filter: native app spots only
+  ///
+  /// In en, this message translates to:
+  /// **'Parkour·Spot (Native)'**
+  String get exploreParkourSpotNative;
+
+  /// Source filter: all folders chip
+  ///
+  /// In en, this message translates to:
+  /// **'All Folders'**
+  String get exploreAllFolders;
+
+  /// SnackBar when geolocation fails
+  ///
+  /// In en, this message translates to:
+  /// **'Error getting location: {error}'**
+  String exploreLocationError(String error);
+
+  /// Shown when centering map on user location
+  ///
+  /// In en, this message translates to:
+  /// **'This is your current location'**
+  String get exploreCurrentLocationSnackbar;
+
+  /// Close button tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get exploreCloseTooltip;
+
+  /// Clear search field
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get exploreClearSearchTooltip;
+
+  /// Open filters
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get exploreFiltersTooltip;
+
+  /// Loading state in search
+  ///
+  /// In en, this message translates to:
+  /// **'Finding location...'**
+  String get exploreFindingLocation;
+
+  /// Long-press map: add spot prompt
+  ///
+  /// In en, this message translates to:
+  /// **'Add spot at this location?'**
+  String get exploreAddSpotHereTitle;
+
+  /// Bottom sheet: total spots in view when ranked
+  ///
+  /// In en, this message translates to:
+  /// **'{total} spots'**
+  String exploreMapRankedTotalBar(int total);
+
+  /// Bottom sheet: how many spots matched (unranked summary)
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 spot found} other{{count} spots found}}'**
+  String exploreMapSpotsFoundLine(int count);
+
+  /// Suffix when not all spots are listed
+  ///
+  /// In en, this message translates to:
+  /// **' ({count} best shown)'**
+  String exploreMapBestShownParenthetical(int count);
+
+  /// Empty state when search has no results
+  ///
+  /// In en, this message translates to:
+  /// **'No spots found'**
+  String get exploreNoSpotsSearch;
+
+  /// Empty state when map area has no spots
+  ///
+  /// In en, this message translates to:
+  /// **'No spots in this area'**
+  String get exploreNoSpotsArea;
+
+  /// Empty state hint for search
+  ///
+  /// In en, this message translates to:
+  /// **'Try adjusting your search terms'**
+  String get exploreNoSpotsSearchHint;
+
+  /// Empty state hint for map
+  ///
+  /// In en, this message translates to:
+  /// **'Move the map to explore different areas'**
+  String get exploreNoSpotsMapHint;
+
+  /// FAB: reload spots
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh spots in current view'**
+  String get exploreRefreshMapTooltip;
+
+  /// FAB: from satellite to map
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to Map'**
+  String get exploreSwitchToMap;
+
+  /// FAB: to satellite/hybrid
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to Satellite'**
+  String get exploreSwitchToSatellite;
+
+  /// FAB tooltip when location blocked
+  ///
+  /// In en, this message translates to:
+  /// **'Location permission denied'**
+  String get exploreLocationPermissionDenied;
+
+  /// FAB tooltip for my location
+  ///
+  /// In en, this message translates to:
+  /// **'Center on my location'**
+  String get exploreCenterOnMyLocation;
+
+  /// Fullscreen filters panel title
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get exploreFiltersDialogTitle;
+
+  /// Reset all filters
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get exploreClearFilters;
+
+  /// Apply filters and close
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get exploreApplyFilters;
+
+  /// Spot list preview: spot count
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 spot} other{{count} spots}}'**
+  String exploreSpotCountShort(int count);
+
+  /// Compact install button on explore PWA banner
+  ///
+  /// In en, this message translates to:
+  /// **'Install'**
+  String get explorePwaBannerInstall;
 }
 
 class _AppLocalizationsDelegate

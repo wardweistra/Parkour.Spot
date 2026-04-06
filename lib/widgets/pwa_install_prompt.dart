@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:parkour_spot/l10n/app_localizations.dart';
 import 'package:parkour_spot/services/pwa_install_service.dart';
 import 'package:parkour_spot/services/mobile_detection_service.dart';
 import 'package:parkour_spot/widgets/custom_button.dart';
@@ -49,20 +50,23 @@ class _PwaInstallPromptState extends State<PwaInstallPrompt> {
   }
 
   void _showInstallInstructions() {
-    final instructions = MobileDetectionService.isIOS
-        ? _pwaService.getIOSInstallInstructions()
-        : _pwaService.getAndroidInstallInstructions();
-    
-    final platformName = MobileDetectionService.isIOS ? 'iPhone' : 'Android device';
-    
+    final l10n = AppLocalizations.of(context)!;
+    final isIos = MobileDetectionService.isIOS;
+    final deviceLabel =
+        isIos ? l10n.profileInstallDeviceIphone : l10n.profileInstallDeviceAndroid;
+    final step1 = isIos ? l10n.profileInstallIosStep1 : l10n.profileInstallAndroidStep1;
+    final step2 = isIos ? l10n.profileInstallIosStep2 : l10n.profileInstallAndroidStep2;
+    final step3 = isIos ? l10n.profileInstallIosStep3 : l10n.profileInstallAndroidStep3;
+    final step4 = isIos ? l10n.profileInstallIosStep4 : l10n.profileInstallAndroidStep4;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.get_app, color: Theme.of(context).colorScheme.primary),
+            Icon(Icons.get_app, color: Theme.of(dialogContext).colorScheme.primary),
             const SizedBox(width: 8),
-            Expanded(child: Text(instructions['title']!)),
+            Expanded(child: Text(l10n.profileInstallDialogTitle)),
           ],
         ),
         content: Column(
@@ -70,30 +74,30 @@ class _PwaInstallPromptState extends State<PwaInstallPrompt> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'To install Parkour·Spot on your $platformName:',
-              style: Theme.of(context).textTheme.titleMedium,
+              l10n.profileInstallIntro(deviceLabel),
+              style: Theme.of(dialogContext).textTheme.titleMedium,
             ),
             const SizedBox(height: 16),
-            _buildInstructionStep('1', instructions['step1']!),
+            _buildInstructionStep(dialogContext, '1', step1),
             const SizedBox(height: 12),
-            _buildInstructionStep('2', instructions['step2']!),
+            _buildInstructionStep(dialogContext, '2', step2),
             const SizedBox(height: 12),
-            _buildInstructionStep('3', instructions['step3']!),
+            _buildInstructionStep(dialogContext, '3', step3),
             const SizedBox(height: 12),
-            _buildInstructionStep('4', instructions['step4']!),
+            _buildInstructionStep(dialogContext, '4', step4),
           ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Got it'),
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(l10n.profileInstallGotIt),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildInstructionStep(String number, String text) {
+  Widget _buildInstructionStep(BuildContext context, String number, String text) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -148,6 +152,7 @@ class _PwaInstallPromptState extends State<PwaInstallPrompt> {
   }
 
   Widget _buildBanner() {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     
     return Container(
@@ -178,14 +183,14 @@ class _PwaInstallPromptState extends State<PwaInstallPrompt> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Install Parkour·Spot',
+                    l10n.profileInstallDialogTitle,
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Get the full app experience',
+                    l10n.profileInstallBannerSubtitle,
                     style: theme.textTheme.bodySmall,
                   ),
                 ],
@@ -194,7 +199,7 @@ class _PwaInstallPromptState extends State<PwaInstallPrompt> {
             const SizedBox(width: 8),
             CustomButton(
               onPressed: _handleInstall,
-              text: 'Install',
+              text: l10n.explorePwaBannerInstall,
               height: 36,
               width: 90,
             ),

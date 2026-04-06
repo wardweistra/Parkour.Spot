@@ -199,4 +199,193 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileInstallGotIt => 'Got it';
+
+  @override
+  String get exploreMetaDefaultTitle => 'Parkour·Spot';
+
+  @override
+  String get exploreMetaDefaultDescription =>
+      'Discover, map, and share the best parkour spots worldwide with community photos, ratings, and local tips for your next training session.';
+
+  @override
+  String exploreMetaTitleCityCountry(String city, String country) {
+    return 'Best parkour spots in $city, $country';
+  }
+
+  @override
+  String exploreMetaDescriptionCityCountry(String city, String country) {
+    return 'Discover the best parkour spots in $city, $country. Find training locations, share your favorite spots, and connect with the parkour community.';
+  }
+
+  @override
+  String exploreMetaTitleCountry(String country) {
+    return 'Best parkour spots in $country';
+  }
+
+  @override
+  String exploreMetaDescriptionCountry(String country) {
+    return 'Discover the best parkour spots in $country. Find training locations, share your favorite spots, and connect with the parkour community.';
+  }
+
+  @override
+  String get exploreAddSpotTitle => 'Add New Spot';
+
+  @override
+  String get exploreAddSpotSubtitle =>
+      'Share your favorite parkour spots with the community';
+
+  @override
+  String get exploreSignInToAddSpot => 'Sign in to add a spot';
+
+  @override
+  String get exploreLoadingProfile => 'Loading your profile…';
+
+  @override
+  String get exploreSearchHint => 'Search location or spot…';
+
+  @override
+  String get exploreFilterBy => 'Filter by';
+
+  @override
+  String get exploreFilterAmenities => 'Amenities';
+
+  @override
+  String get exploreFilterSources => 'Sources';
+
+  @override
+  String get exploreSpotAccessTitle => 'Spot Access';
+
+  @override
+  String get exploreSpotAccessSubtitle => 'Filter spots by access level';
+
+  @override
+  String get exploreFilterAny => 'Any';
+
+  @override
+  String get exploreSpotFacilitiesTitle => 'Spot Facilities';
+
+  @override
+  String get exploreSpotFacilitiesSubtitle => 'Show spots with these amenities';
+
+  @override
+  String get exploreAttributesTitle => 'With any of these attributes';
+
+  @override
+  String get exploreAttributesSubtitle =>
+      'Filter spots that have any of the selected skills or features';
+
+  @override
+  String get exploreGoodForSegment => 'Good For';
+
+  @override
+  String get exploreSpotFeaturesSegment => 'Spot Features';
+
+  @override
+  String get exploreSpotSourceLabel => 'Spot Source';
+
+  @override
+  String get exploreSourcesLoadError => 'Failed to load sources';
+
+  @override
+  String get exploreAllSources => 'All Sources';
+
+  @override
+  String get exploreParkourSpotNative => 'Parkour·Spot (Native)';
+
+  @override
+  String get exploreAllFolders => 'All Folders';
+
+  @override
+  String exploreLocationError(String error) {
+    return 'Error getting location: $error';
+  }
+
+  @override
+  String get exploreCurrentLocationSnackbar => 'This is your current location';
+
+  @override
+  String get exploreCloseTooltip => 'Close';
+
+  @override
+  String get exploreClearSearchTooltip => 'Clear';
+
+  @override
+  String get exploreFiltersTooltip => 'Filters';
+
+  @override
+  String get exploreFindingLocation => 'Finding location...';
+
+  @override
+  String get exploreAddSpotHereTitle => 'Add spot at this location?';
+
+  @override
+  String exploreMapRankedTotalBar(int total) {
+    return '$total spots';
+  }
+
+  @override
+  String exploreMapSpotsFoundLine(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count spots found',
+      one: '1 spot found',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String exploreMapBestShownParenthetical(int count) {
+    return ' ($count best shown)';
+  }
+
+  @override
+  String get exploreNoSpotsSearch => 'No spots found';
+
+  @override
+  String get exploreNoSpotsArea => 'No spots in this area';
+
+  @override
+  String get exploreNoSpotsSearchHint => 'Try adjusting your search terms';
+
+  @override
+  String get exploreNoSpotsMapHint => 'Move the map to explore different areas';
+
+  @override
+  String get exploreRefreshMapTooltip => 'Refresh spots in current view';
+
+  @override
+  String get exploreSwitchToMap => 'Switch to Map';
+
+  @override
+  String get exploreSwitchToSatellite => 'Switch to Satellite';
+
+  @override
+  String get exploreLocationPermissionDenied => 'Location permission denied';
+
+  @override
+  String get exploreCenterOnMyLocation => 'Center on my location';
+
+  @override
+  String get exploreFiltersDialogTitle => 'Filters';
+
+  @override
+  String get exploreClearFilters => 'Clear';
+
+  @override
+  String get exploreApplyFilters => 'Apply';
+
+  @override
+  String exploreSpotCountShort(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count spots',
+      one: '1 spot',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get explorePwaBannerInstall => 'Install';
 }

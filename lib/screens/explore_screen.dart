@@ -40,6 +40,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
   int _currentIndex = 0;
   late PageController _pageController;
   final GlobalKey<SearchScreenState> _searchKey = GlobalKey<SearchScreenState>();
+  /// Cached for web meta reset in [dispose] (cannot use [BuildContext] there).
+  String? _cachedMetaDefaultTitle;
+  String? _cachedMetaDefaultDescription;
 
   @override
   void initState() {
@@ -47,9 +50,14 @@ class _ExploreScreenState extends State<ExploreScreen> {
     _currentIndex = widget.initialTab;
     _pageController = PageController(initialPage: _currentIndex);
     
-    // Update document title and meta description for country/city pages
-    _updateDocumentMeta();
-    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
+      _cachedMetaDefaultTitle = l10n.exploreMetaDefaultTitle;
+      _cachedMetaDefaultDescription = l10n.exploreMetaDefaultDescription;
+      _updateDocumentMeta();
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.initialTab != 0 && _pageController.hasClients) {
         _pageController.jumpToPage(widget.initialTab);
@@ -98,17 +106,23 @@ class _ExploreScreenState extends State<ExploreScreen> {
         if (mounted) _searchKey.currentState?.onMapTabActivated();
       });
     }
+    if (widget.initialLocationQuery != oldWidget.initialLocationQuery) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _updateDocumentMeta();
+      });
+    }
   }
 
   @override
   void dispose() {
     // Reset document title and meta description when leaving the page
     if (kIsWeb && widget.initialLocationQuery != null) {
-      const defaultTitle = 'Parkour·Spot';
-      const defaultDescription = 'Discover, map, and share the best parkour spots worldwide with community photos, ratings, and local tips for your next training session.';
-      web.document.title = defaultTitle;
-      _updateMetaDescription(defaultDescription);
-      _updateMetaTitle(defaultTitle);
+      final title = _cachedMetaDefaultTitle ?? 'Parkour·Spot';
+      final description = _cachedMetaDefaultDescription ??
+          'Discover, map, and share the best parkour spots worldwide with community photos, ratings, and local tips for your next training session.';
+      web.document.title = title;
+      _updateMetaDescription(description);
+      _updateMetaTitle(title);
     }
     _pageController.dispose();
     super.dispose();
@@ -119,6 +133,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
       return;
     }
 
+    final l10n = AppLocalizations.of(context)!;
     final locationQuery = widget.initialLocationQuery!;
     
     // Extract country code from current URL to determine if "the" article is needed
@@ -136,8 +151,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
       // For city pages, don't add "the" article (matching cloud function behavior)
       final city = parts[0];
       final country = parts.sublist(1).join(', '); // Handle countries with commas
-      title = 'Best parkour spots in $city, $country';
-      description = 'Discover the best parkour spots in $city, $country. Find training locations, share your favorite spots, and connect with the parkour community.';
+      title = l10n.exploreMetaTitleCityCountry(city, country);
+      description = l10n.exploreMetaDescriptionCityCountry(city, country);
     } else {
       // Country only format: "Country" or "the Country"
       // For country pages, add "the" article if needed (matching cloud function behavior)
@@ -151,8 +166,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
         }
       }
       
-      title = 'Best parkour spots in $country';
-      description = 'Discover the best parkour spots in $country. Find training locations, share your favorite spots, and connect with the parkour community.';
+      title = l10n.exploreMetaTitleCountry(country);
+      description = l10n.exploreMetaDescriptionCountry(country);
     }
     
     web.document.title = title;
@@ -315,17 +330,14 @@ class _ExploreScreenState extends State<ExploreScreen> {
           ? const AddSpotScreen()
           : authService.isAuthenticated
               ? _buildProfileLoadingScreen(authService)
-              : _buildLoginPromptScreen(
-                  'Add New Spot',
-                  'Share your favorite parkour spots with the community',
-                  Icons.add_location,
-                ),
+              : _buildLoginPromptScreen(Icons.add_location),
       // Profile tab is always accessible
       const ProfileScreen(),
     ];
   }
 
   Widget _buildProfileLoadingScreen(AuthService authService) {
+    final l10n = AppLocalizations.of(context)!;
     final error = authService.profileLoadError;
     return Scaffold(
       appBar: AppBar(
@@ -368,7 +380,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   }
                 },
                 icon: const Icon(Icons.refresh),
-                label: Text(kIsWeb ? 'Refresh page' : 'Retry'),
+                label: Text(kIsWeb ? l10n.profileRefreshPage : l10n.profileRetry),
               ),
             ] else ...[
               SizedBox(
@@ -381,7 +393,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Loading your profile…',
+                l10n.exploreLoadingProfile,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context)
                       .colorScheme
@@ -396,7 +408,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
-  Widget _buildLoginPromptScreen(String title, String description, IconData icon) {
+  Widget _buildLoginPromptScreen(IconData icon) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         title: const SizedBox.shrink(),
@@ -426,7 +439,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Sign in to add a spot',
+                          l10n.exploreSignInToAddSpot,
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
@@ -434,7 +447,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          description,
+                          l10n.exploreAddSpotSubtitle,
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
@@ -448,7 +461,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                               onPressed: () {
                                 context.go('/login?redirectTo=${Uri.encodeComponent('/explore?tab=add')}');
                               },
-                              text: 'Sign In',
+                              text: l10n.profileSignInButton,
                               width: double.infinity,
                             ),
                           ),
@@ -465,7 +478,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 16),
                               child: Text(
-                                'OR',
+                                l10n.profileOrDivider,
                                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                   color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                                 ),
@@ -486,7 +499,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                               onPressed: () {
                                 context.go('/login?mode=signup&redirectTo=${Uri.encodeComponent('/explore?tab=add')}');
                               },
-                              text: 'Create an Account',
+                              text: l10n.profileCreateAccount,
                               width: double.infinity,
                               isOutlined: true,
                             ),

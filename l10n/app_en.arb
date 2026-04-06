@@ -237,5 +237,242 @@
   "profileInstallGotIt": "Got it",
   "@profileInstallGotIt": {
     "description": "Close PWA install instructions dialog"
+  },
+  "exploreMetaDefaultTitle": "Parkour·Spot",
+  "@exploreMetaDefaultTitle": {
+    "description": "Web: default document title when leaving a location page"
+  },
+  "exploreMetaDefaultDescription": "Discover, map, and share the best parkour spots worldwide with community photos, ratings, and local tips for your next training session.",
+  "@exploreMetaDefaultDescription": {
+    "description": "Web: default meta description when leaving a location page"
+  },
+  "exploreMetaTitleCityCountry": "Best parkour spots in {city}, {country}",
+  "@exploreMetaTitleCityCountry": {
+    "description": "Web SEO title for city pages",
+    "placeholders": {
+      "city": {"type": "String", "example": "Amsterdam"},
+      "country": {"type": "String", "example": "Netherlands"}
+    }
+  },
+  "exploreMetaDescriptionCityCountry": "Discover the best parkour spots in {city}, {country}. Find training locations, share your favorite spots, and connect with the parkour community.",
+  "@exploreMetaDescriptionCityCountry": {
+    "description": "Web SEO description for city pages",
+    "placeholders": {
+      "city": {"type": "String"},
+      "country": {"type": "String"}
+    }
+  },
+  "exploreMetaTitleCountry": "Best parkour spots in {country}",
+  "@exploreMetaTitleCountry": {
+    "description": "Web SEO title for country-only pages",
+    "placeholders": {
+      "country": {"type": "String", "example": "the Netherlands"}
+    }
+  },
+  "exploreMetaDescriptionCountry": "Discover the best parkour spots in {country}. Find training locations, share your favorite spots, and connect with the parkour community.",
+  "@exploreMetaDescriptionCountry": {
+    "description": "Web SEO description for country-only pages",
+    "placeholders": {
+      "country": {"type": "String"}
+    }
+  },
+  "exploreAddSpotTitle": "Add New Spot",
+  "@exploreAddSpotTitle": {
+    "description": "Add spot tab: heading when not signed in"
+  },
+  "exploreAddSpotSubtitle": "Share your favorite parkour spots with the community",
+  "@exploreAddSpotSubtitle": {
+    "description": "Add spot tab: supporting text when not signed in"
+  },
+  "exploreSignInToAddSpot": "Sign in to add a spot",
+  "@exploreSignInToAddSpot": {
+    "description": "Add spot tab: sign-in prompt title"
+  },
+  "exploreLoadingProfile": "Loading your profile…",
+  "@exploreLoadingProfile": {
+    "description": "Shown while profile loads before add spot"
+  },
+  "exploreSearchHint": "Search location or spot…",
+  "@exploreSearchHint": {
+    "description": "Map search field placeholder"
+  },
+  "exploreFilterBy": "Filter by",
+  "@exploreFilterBy": {
+    "description": "Filters: section label"
+  },
+  "exploreFilterAmenities": "Amenities",
+  "@exploreFilterAmenities": {
+    "description": "Filter mode: amenities"
+  },
+  "exploreFilterSources": "Sources",
+  "@exploreFilterSources": {
+    "description": "Filter mode: data sources"
+  },
+  "exploreSpotAccessTitle": "Spot Access",
+  "@exploreSpotAccessTitle": {
+    "description": "Filter card: access"
+  },
+  "exploreSpotAccessSubtitle": "Filter spots by access level",
+  "@exploreSpotAccessSubtitle": {
+    "description": "Filter card: access description"
+  },
+  "exploreFilterAny": "Any",
+  "@exploreFilterAny": {
+    "description": "Access filter: any access level"
+  },
+  "exploreSpotFacilitiesTitle": "Spot Facilities",
+  "@exploreSpotFacilitiesTitle": {
+    "description": "Filter card: facilities"
+  },
+  "exploreSpotFacilitiesSubtitle": "Show spots with these amenities",
+  "@exploreSpotFacilitiesSubtitle": {
+    "description": "Filter card: facilities description"
+  },
+  "exploreAttributesTitle": "With any of these attributes",
+  "@exploreAttributesTitle": {
+    "description": "Filter card: skills/features"
+  },
+  "exploreAttributesSubtitle": "Filter spots that have any of the selected skills or features",
+  "@exploreAttributesSubtitle": {
+    "description": "Filter card: skills/features description"
+  },
+  "exploreGoodForSegment": "Good For",
+  "@exploreGoodForSegment": {
+    "description": "Attribute filter: good-for mode"
+  },
+  "exploreSpotFeaturesSegment": "Spot Features",
+  "@exploreSpotFeaturesSegment": {
+    "description": "Attribute filter: features mode"
+  },
+  "exploreSpotSourceLabel": "Spot Source",
+  "@exploreSpotSourceLabel": {
+    "description": "Source filter section label"
+  },
+  "exploreSourcesLoadError": "Failed to load sources",
+  "@exploreSourcesLoadError": {
+    "description": "Error loading sync source list for filters"
+  },
+  "exploreAllSources": "All Sources",
+  "@exploreAllSources": {
+    "description": "Source filter: all sources option"
+  },
+  "exploreParkourSpotNative": "Parkour·Spot (Native)",
+  "@exploreParkourSpotNative": {
+    "description": "Source filter: native app spots only"
+  },
+  "exploreAllFolders": "All Folders",
+  "@exploreAllFolders": {
+    "description": "Source filter: all folders chip"
+  },
+  "exploreLocationError": "Error getting location: {error}",
+  "@exploreLocationError": {
+    "description": "SnackBar when geolocation fails",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "exploreCurrentLocationSnackbar": "This is your current location",
+  "@exploreCurrentLocationSnackbar": {
+    "description": "Shown when centering map on user location"
+  },
+  "exploreCloseTooltip": "Close",
+  "@exploreCloseTooltip": {
+    "description": "Close button tooltip"
+  },
+  "exploreClearSearchTooltip": "Clear",
+  "@exploreClearSearchTooltip": {
+    "description": "Clear search field"
+  },
+  "exploreFiltersTooltip": "Filters",
+  "@exploreFiltersTooltip": {
+    "description": "Open filters"
+  },
+  "exploreFindingLocation": "Finding location...",
+  "@exploreFindingLocation": {
+    "description": "Loading state in search"
+  },
+  "exploreAddSpotHereTitle": "Add spot at this location?",
+  "@exploreAddSpotHereTitle": {
+    "description": "Long-press map: add spot prompt"
+  },
+  "exploreMapRankedTotalBar": "{total} spots",
+  "@exploreMapRankedTotalBar": {
+    "description": "Bottom sheet: total spots in view when ranked",
+    "placeholders": {
+      "total": {"type": "int", "example": "120"}
+    }
+  },
+  "exploreMapSpotsFoundLine": "{count, plural, one{1 spot found} other{{count} spots found}}",
+  "@exploreMapSpotsFoundLine": {
+    "description": "Bottom sheet: how many spots matched (unranked summary)",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "exploreMapBestShownParenthetical": " ({count} best shown)",
+  "@exploreMapBestShownParenthetical": {
+    "description": "Suffix when not all spots are listed",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "exploreNoSpotsSearch": "No spots found",
+  "@exploreNoSpotsSearch": {
+    "description": "Empty state when search has no results"
+  },
+  "exploreNoSpotsArea": "No spots in this area",
+  "@exploreNoSpotsArea": {
+    "description": "Empty state when map area has no spots"
+  },
+  "exploreNoSpotsSearchHint": "Try adjusting your search terms",
+  "@exploreNoSpotsSearchHint": {
+    "description": "Empty state hint for search"
+  },
+  "exploreNoSpotsMapHint": "Move the map to explore different areas",
+  "@exploreNoSpotsMapHint": {
+    "description": "Empty state hint for map"
+  },
+  "exploreRefreshMapTooltip": "Refresh spots in current view",
+  "@exploreRefreshMapTooltip": {
+    "description": "FAB: reload spots"
+  },
+  "exploreSwitchToMap": "Switch to Map",
+  "@exploreSwitchToMap": {
+    "description": "FAB: from satellite to map"
+  },
+  "exploreSwitchToSatellite": "Switch to Satellite",
+  "@exploreSwitchToSatellite": {
+    "description": "FAB: to satellite/hybrid"
+  },
+  "exploreLocationPermissionDenied": "Location permission denied",
+  "@exploreLocationPermissionDenied": {
+    "description": "FAB tooltip when location blocked"
+  },
+  "exploreCenterOnMyLocation": "Center on my location",
+  "@exploreCenterOnMyLocation": {
+    "description": "FAB tooltip for my location"
+  },
+  "exploreFiltersDialogTitle": "Filters",
+  "@exploreFiltersDialogTitle": {
+    "description": "Fullscreen filters panel title"
+  },
+  "exploreClearFilters": "Clear",
+  "@exploreClearFilters": {
+    "description": "Reset all filters"
+  },
+  "exploreApplyFilters": "Apply",
+  "@exploreApplyFilters": {
+    "description": "Apply filters and close"
+  },
+  "exploreSpotCountShort": "{count, plural, one{1 spot} other{{count} spots}}",
+  "@exploreSpotCountShort": {
+    "description": "Spot list preview: spot count",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "explorePwaBannerInstall": "Install",
+  "@explorePwaBannerInstall": {
+    "description": "Compact install button on explore PWA banner"
   }
 }

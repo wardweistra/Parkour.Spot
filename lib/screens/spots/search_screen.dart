@@ -25,6 +25,7 @@ import '../../utils/marker_icon_utils.dart';
 import '../../utils/map_bounds_utils.dart';
 import '../../utils/location_permission_utils.dart';
 import '../../constants/spot_attributes.dart';
+import '../../l10n/app_localizations.dart';
 import 'add_spot_screen.dart';
 
 /// Stateful overlay for autocomplete suggestions; manages ScrollController lifecycle.
@@ -1033,7 +1034,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error getting location: $e'),
+            content: Text(AppLocalizations.of(context)!.exploreLocationError('$e')),
             backgroundColor: Colors.red,
           ),
         );
@@ -1168,21 +1169,22 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   }
 
   Widget _buildFilters() {
+    final l10n = AppLocalizations.of(context)!;
     final selectedFilterArea = _filterArea ?? 'amenities';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Filter by',
+          l10n.exploreFilterBy,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
               ),
         ),
         const SizedBox(height: 8),
         SegmentedButton<String?>(
-          segments: const [
-            ButtonSegment(value: 'amenities', label: Text('Amenities'), icon: Icon(Icons.workspace_premium)),
-            ButtonSegment(value: 'source', label: Text('Sources'), icon: Icon(Icons.folder)),
+          segments: [
+            ButtonSegment(value: 'amenities', label: Text(l10n.exploreFilterAmenities), icon: const Icon(Icons.workspace_premium)),
+            ButtonSegment(value: 'source', label: Text(l10n.exploreFilterSources), icon: const Icon(Icons.folder)),
           ],
           selected: {selectedFilterArea},
           onSelectionChanged: (Set<String?> selected) {
@@ -1235,6 +1237,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   }
 
   Widget _buildAccessFilterCard(SearchStateService searchState) {
+    final l10n = AppLocalizations.of(context)!;
     final keys = SpotAttributes.getKeys('access');
     return Card(
       child: Padding(
@@ -1243,14 +1246,14 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Spot Access',
+              l10n.exploreSpotAccessTitle,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Filter spots by access level',
+              l10n.exploreSpotAccessSubtitle,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
@@ -1261,7 +1264,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
               runSpacing: 8,
               children: [
                 _buildFilterChip(
-                  label: 'Any',
+                  label: l10n.exploreFilterAny,
                   icon: Icons.check_circle_outline,
                   selected: _spotAccess.isEmpty,
                   onTap: () {
@@ -1351,6 +1354,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   }
 
   Widget _buildFacilitiesFilterCard(SearchStateService searchState) {
+    final l10n = AppLocalizations.of(context)!;
     final facilityKeys = ['covered', 'lighting', 'water_tap', 'toilet', 'parking'];
     bool getFacility(String key) {
       switch (key) {
@@ -1380,14 +1384,14 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Spot Facilities',
+              l10n.exploreSpotFacilitiesTitle,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Show spots with these amenities',
+              l10n.exploreSpotFacilitiesSubtitle,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
@@ -1501,6 +1505,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   }
 
   Widget _buildAttributesFilterCard(SearchStateService searchState) {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -1508,23 +1513,23 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'With any of these attributes',
+              l10n.exploreAttributesTitle,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Filter spots that have any of the selected skills or features',
+              l10n.exploreAttributesSubtitle,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
             ),
             const SizedBox(height: 12),
             SegmentedButton<String>(
-              segments: const [
-                ButtonSegment(value: 'goodFor', label: Text('Good For')),
-                ButtonSegment(value: 'spotFeatures', label: Text('Spot Features')),
+              segments: [
+                ButtonSegment(value: 'goodFor', label: Text(l10n.exploreGoodForSegment)),
+                ButtonSegment(value: 'spotFeatures', label: Text(l10n.exploreSpotFeaturesSegment)),
               ],
               selected: {_attributeFilterMode},
               onSelectionChanged: (Set<String> selected) {
@@ -1644,11 +1649,12 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   }
 
   Widget _buildSourceFilters(SyncSourceService syncService, List<SyncSourceSummary> summaries) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Spot Source',
+          l10n.exploreSpotSourceLabel,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
             color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
           ),
@@ -1670,7 +1676,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                   children: [
                     Expanded(
                       child: Text(
-                        'Failed to load sources',
+                        l10n.exploreSourcesLoadError,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: Theme.of(context).colorScheme.error,
                             ),
@@ -1678,7 +1684,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                     ),
                     TextButton(
                       onPressed: () => _ensureSyncSourcesLoaded(force: true),
-                      child: const Text('Retry'),
+                      child: Text(l10n.profileRetry),
                     ),
                   ],
                 ),
@@ -1705,14 +1711,14 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                           if (index == 0) {
                             return RadioListTile<String?>(
                               contentPadding: EdgeInsets.zero,
-                              title: const Text('All Sources'),
+                              title: Text(l10n.exploreAllSources),
                               value: null,
                             );
                           }
                           if (index == 1) {
                             return RadioListTile<String?>(
                               contentPadding: EdgeInsets.zero,
-                              title: const Text('Parkour·Spot (Native)'),
+                              title: Text(l10n.exploreParkourSpotNative),
                               value: "",
                             );
                           }
@@ -1773,7 +1779,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                               searchState.getSelectedFoldersForSource(summary.id);
                                           final isAllSelected = selectedFolders.isEmpty;
                                           return FilterChip(
-                                            label: const Text('All Folders'),
+                                            label: Text(l10n.exploreAllFolders),
                                             selected: isAllSelected,
                                             onSelected: (selected) {
                                               if (selected && !isAllSelected) {
@@ -1891,9 +1897,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
           zIndexInt: 9999,
           onTap: () {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('This is your current location'),
-                duration: Duration(seconds: 2),
+              SnackBar(
+                content: Text(AppLocalizations.of(context)!.exploreCurrentLocationSnackbar),
+                duration: const Duration(seconds: 2),
                 behavior: SnackBarBehavior.floating,
               ),
             );
@@ -2371,8 +2377,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   Widget _buildSpotListPreviewCard({required double maxWidth}) {
     if (_selectedList == null) return const SizedBox.shrink();
 
+    final l10n = AppLocalizations.of(context)!;
     final spotCount = _selectedList!.effectiveSpotIds.length;
-    final spotCountText = spotCount == 1 ? '1 spot' : '$spotCount spots';
+    final spotCountText = l10n.exploreSpotCountShort(spotCount);
 
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: maxWidth),
@@ -2426,7 +2433,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                             _showListPreview = false;
                           });
                         },
-                        tooltip: 'Close',
+                        tooltip: AppLocalizations.of(context)!.exploreCloseTooltip,
                       ),
                     ],
                   ),
@@ -2798,11 +2805,12 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                   }
                                 });
                               }
+                              final l10n = AppLocalizations.of(context)!;
                               return TextField(
                                 controller: textEditingController,
                                 focusNode: focusNode,
                                 decoration: InputDecoration(
-                                  hintText: 'Search location or spot…',
+                                  hintText: l10n.exploreSearchHint,
                                   prefixIcon: const Padding(
                                     padding: EdgeInsets.only(left: 6),
                                     child: Icon(Icons.search),
@@ -2827,7 +2835,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                       if (!_isSearchingLocation && textEditingController.text.isNotEmpty)
                                         IconButton(
                                           icon: const Icon(Icons.clear),
-                                          tooltip: 'Clear',
+                                          tooltip: l10n.exploreClearSearchTooltip,
                                           onPressed: () {
                                             textEditingController.clear();
                                             setState(() => _searchQuery = '');
@@ -2842,7 +2850,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                                 icon: Icons.filter_list,
                                                 color: _showFiltersDialog ? Theme.of(context).colorScheme.primary : null,
                                               ),
-                                              tooltip: 'Filters',
+                                              tooltip: l10n.exploreFiltersTooltip,
                                               onPressed: () => _toggleFiltersDialog(),
                                             ),
                                             if (_hasActiveFilters())
@@ -2923,7 +2931,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                               child: CircularProgressIndicator(strokeWidth: 2),
                             ),
                             const SizedBox(width: 8),
-                            const Text('Finding location...'),
+                            Text(AppLocalizations.of(context)!.exploreFindingLocation),
                           ],
                         ),
                       ),
@@ -3067,7 +3075,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Text(
-                                      'Add spot at this location?',
+                                      AppLocalizations.of(context)!.exploreAddSpotHereTitle,
                                       style: Theme.of(context).textTheme.titleMedium,
                                     ),
                                     const SizedBox(height: 12),
@@ -3083,7 +3091,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                               _markers = _buildMarkers(_visibleSpots);
                                             });
                                           },
-                                          child: const Text('Cancel'),
+                                          child: Text(AppLocalizations.of(context)!.profileCancel),
                                         ),
                                         const SizedBox(width: 8),
                                         ElevatedButton.icon(
@@ -3103,7 +3111,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                               context.go('/login?redirectTo=${Uri.encodeComponent('/explore?tab=add')}');
                                             } else if (!authService.isProfileReady) {
                                               ScaffoldMessenger.of(context).showSnackBar(
-                                                const SnackBar(content: Text('Loading your profile…')),
+                                                SnackBar(content: Text(AppLocalizations.of(context)!.exploreLoadingProfile)),
                                               );
                                             } else {
                                               // Navigate to add spot screen with the location
@@ -3118,7 +3126,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                             }
                                           },
                                           icon: const ReliableIcon(icon: Icons.add_location),
-                                          label: const Text('Add Spot'),
+                                          label: Text(AppLocalizations.of(context)!.tabAddSpot),
                                         ),
                                       ],
                                     ),
@@ -3186,27 +3194,33 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                           fit: BoxFit.contain,
                                         ),
                                         const SizedBox(width: 12),
-                                        RichText(
-                                          text: TextSpan(
-                                            children: [
-                                              TextSpan(
-                                                text: _totalSpotsInView != null && _bestShownCount != null
-                                                    ? '$_totalSpotsInView spots'
-                                                    : '${_visibleSpots.length} ${_visibleSpots.length == 1 ? 'spot' : 'spots'} found',
-                                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                                  color: Theme.of(context).colorScheme.onSurface,
-                                                ),
-                                              ),
-                                              if (_totalSpotsInView != null && _bestShownCount != null && _bestShownCount! < _totalSpotsInView!)
-                                                TextSpan(
-                                                  text: ' ($_bestShownCount best shown)',
-                                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                                    fontWeight: FontWeight.normal,
-                                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                        Builder(
+                                          builder: (context) {
+                                            final l10n = AppLocalizations.of(context)!;
+                                            final mainLine = _totalSpotsInView != null && _bestShownCount != null
+                                                ? l10n.exploreMapRankedTotalBar(_totalSpotsInView!)
+                                                : l10n.exploreMapSpotsFoundLine(_visibleSpots.length);
+                                            return RichText(
+                                              text: TextSpan(
+                                                children: [
+                                                  TextSpan(
+                                                    text: mainLine,
+                                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                                      color: Theme.of(context).colorScheme.onSurface,
+                                                    ),
                                                   ),
-                                                ),
-                                            ],
-                                          ),
+                                                  if (_totalSpotsInView != null && _bestShownCount != null && _bestShownCount! < _totalSpotsInView!)
+                                                    TextSpan(
+                                                      text: l10n.exploreMapBestShownParenthetical(_bestShownCount!),
+                                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                                        fontWeight: FontWeight.normal,
+                                                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                                      ),
+                                                    ),
+                                                ],
+                                              ),
+                                            );
+                                          },
                                         ),
                                         const SizedBox(width: 8),
                                         ReliableIcon(
@@ -3233,14 +3247,16 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                                               ),
                                               const SizedBox(height: 16),
                                               Text(
-                                                _searchQuery.isNotEmpty ? 'No spots found' : 'No spots in this area',
+                                                _searchQuery.isNotEmpty
+                                                    ? AppLocalizations.of(context)!.exploreNoSpotsSearch
+                                                    : AppLocalizations.of(context)!.exploreNoSpotsArea,
                                                 style: Theme.of(context).textTheme.headlineSmall,
                                               ),
                                               const SizedBox(height: 8),
                                               Text(
                                                 _searchQuery.isNotEmpty
-                                                    ? 'Try adjusting your search terms'
-                                                    : 'Move the map to explore different areas',
+                                                    ? AppLocalizations.of(context)!.exploreNoSpotsSearchHint
+                                                    : AppLocalizations.of(context)!.exploreNoSpotsMapHint,
                                                 textAlign: TextAlign.center,
                                                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                                   color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
@@ -3327,7 +3343,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                       },
                       heroTag: 'refreshSpotsFab',
                       mini: true,
-                      tooltip: 'Refresh spots in current view',
+                      tooltip: AppLocalizations.of(context)!.exploreRefreshMapTooltip,
                       child: _isLoadingSpotsForView
                           ? const SizedBox(
                               width: 20,
@@ -3366,7 +3382,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                       },
                       heroTag: 'mapTypeToggleFab',
                       mini: true,
-                      tooltip: _isSatelliteView ? 'Switch to Map' : 'Switch to Satellite',
+                      tooltip: _isSatelliteView
+                          ? AppLocalizations.of(context)!.exploreSwitchToMap
+                          : AppLocalizations.of(context)!.exploreSwitchToSatellite,
                       child: ReliableIcon(
                         icon: _isSatelliteView ? Icons.map : Icons.terrain,
                       ),
@@ -3390,9 +3408,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                       onPressed: _getCurrentLocation,
                       heroTag: 'currentLocationFab',
                       mini: true,
-                      tooltip: _isLocationPermissionDenied 
-                          ? 'Location permission denied' 
-                          : 'Center on my location',
+                      tooltip: _isLocationPermissionDenied
+                          ? AppLocalizations.of(context)!.exploreLocationPermissionDenied
+                          : AppLocalizations.of(context)!.exploreCenterOnMyLocation,
                       child: _isGettingLocation
                           ? const SizedBox(
                               width: 20,
@@ -3470,7 +3488,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Filters',
+                    AppLocalizations.of(context)!.exploreFiltersDialogTitle,
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   IconButton(
@@ -3508,7 +3526,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                           _showFiltersDialog = false;
                         });
                       },
-                      child: const Text('Clear'),
+                      child: Text(AppLocalizations.of(context)!.exploreClearFilters),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -3521,7 +3539,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                         // Reload spots since source filtering is done at database level
                         _loadSpotsForCurrentView();
                       },
-                      child: const Text('Apply'),
+                      child: Text(AppLocalizations.of(context)!.exploreApplyFilters),
                     ),
                   ),
                 ],
