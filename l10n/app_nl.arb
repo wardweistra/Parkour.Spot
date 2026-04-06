@@ -1,0 +1,10 @@
+{
+  "@@locale": "nl",
+  "tabExplore": "Verkennen",
+  "tabAddSpot": "Spot toevoegen",
+  "tabAccount": "Account",
+  "profileSettingsTitle": "Instellingen",
+  "profileSettingsLanguageLabel": "Taal",
+  "profileSettingsLanguageDescription": "Kies een taal of volg je apparaatinstellingen.",
+  "profileLanguageSystemDefault": "Apparaattaal"
+}

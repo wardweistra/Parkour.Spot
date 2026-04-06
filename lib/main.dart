@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:parkour_spot/l10n/app_localizations.dart';
+import 'package:parkour_spot/utils/web_meta_utils.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -23,6 +25,7 @@ import 'package:parkour_spot/services/spot_check_in_service.dart';
 import 'package:parkour_spot/services/feature_access_service.dart';
 import 'package:parkour_spot/services/pwa_install_service.dart';
 import 'package:parkour_spot/services/user_profile_service.dart';
+import 'package:parkour_spot/services/locale_preferences_service.dart';
 import 'package:parkour_spot/router/app_router.dart';
 import 'package:parkour_spot/firebase_options.dart';
 import 'package:parkour_spot/config/app_config.dart';
@@ -187,28 +190,38 @@ class ParkourSpotApp extends StatelessWidget {
           create: (_) => PwaInstallService()..initialize(),
         ),
         ChangeNotifierProvider(create: (_) => UserProfileService()),
+        ChangeNotifierProvider(
+          create: (_) => LocalePreferencesService()..loadFromStorage(),
+        ),
       ],
-      child: MaterialApp.router(
-        title: 'Parkour·Spot',
-        routerConfig: AppRouter.router,
-        scaffoldMessengerKey: SnackbarService.messengerKey,
-        theme: ThemeData(
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF007FA8),
-            brightness: Brightness.light,
-          ),
-          textTheme: GoogleFonts.fredokaTextTheme(),
-        ),
-        darkTheme: ThemeData(
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF007FA8),
-            brightness: Brightness.dark,
-          ),
-          textTheme: GoogleFonts.fredokaTextTheme(ThemeData.dark().textTheme),
-        ),
-        debugShowCheckedModeBanner: false,
+      child: Consumer<LocalePreferencesService>(
+        builder: (context, localePrefs, _) {
+          return MaterialApp.router(
+            onGenerateTitle: (_) => WebMetaUtils.defaultTitle,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: localePrefs.locale,
+            routerConfig: AppRouter.router,
+            scaffoldMessengerKey: SnackbarService.messengerKey,
+            theme: ThemeData(
+              useMaterial3: true,
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: const Color(0xFF007FA8),
+                brightness: Brightness.light,
+              ),
+              textTheme: GoogleFonts.fredokaTextTheme(),
+            ),
+            darkTheme: ThemeData(
+              useMaterial3: true,
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: const Color(0xFF007FA8),
+                brightness: Brightness.dark,
+              ),
+              textTheme: GoogleFonts.fredokaTextTheme(ThemeData.dark().textTheme),
+            ),
+            debugShowCheckedModeBanner: false,
+          );
+        },
       ),
     );
   }

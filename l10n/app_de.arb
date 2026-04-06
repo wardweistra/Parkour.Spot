@@ -1,0 +1,10 @@
+{
+  "@@locale": "de",
+  "tabExplore": "Entdecken",
+  "tabAddSpot": "Spot hinzufügen",
+  "tabAccount": "Konto",
+  "profileSettingsTitle": "Einstellungen",
+  "profileSettingsLanguageLabel": "Sprache",
+  "profileSettingsLanguageDescription": "Sprache wählen oder Geräteeinstellung verwenden.",
+  "profileLanguageSystemDefault": "Gerätesprache"
+}

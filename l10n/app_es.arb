@@ -1,0 +1,10 @@
+{
+  "@@locale": "es",
+  "tabExplore": "Explorar",
+  "tabAddSpot": "Añadir spot",
+  "tabAccount": "Cuenta",
+  "profileSettingsTitle": "Ajustes",
+  "profileSettingsLanguageLabel": "Idioma",
+  "profileSettingsLanguageDescription": "Elige un idioma o usa el de tu dispositivo.",
+  "profileLanguageSystemDefault": "Idioma del dispositivo"
+}

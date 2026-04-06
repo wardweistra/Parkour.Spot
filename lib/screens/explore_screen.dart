@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:web/web.dart' as web;
 
+import '../l10n/app_localizations.dart';
 import '../services/auth_service.dart';
 import '../services/mobile_detection_service.dart';
 import '../widgets/custom_button.dart';
@@ -543,18 +544,18 @@ class _ExploreScreenState extends State<ExploreScreen> {
               unselectedItemColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
               backgroundColor: Theme.of(context).colorScheme.surface,
               elevation: 8,
-              items: const [
+              items: [
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.explore),
-                  label: 'Explore',
+                  icon: const Icon(Icons.explore),
+                  label: AppLocalizations.of(context)!.tabExplore,
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.add_location),
-                  label: 'Add Spot',
+                  icon: const Icon(Icons.add_location),
+                  label: AppLocalizations.of(context)!.tabAddSpot,
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.person),
-                  label: 'Account',
+                  icon: const Icon(Icons.person),
+                  label: AppLocalizations.of(context)!.tabAccount,
                 ),
               ],
             ),
