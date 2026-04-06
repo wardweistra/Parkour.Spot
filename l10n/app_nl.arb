@@ -1,10 +1,31 @@
 {
   "@@locale": "nl",
   "tabExplore": "Verkennen",
+  "@tabExplore": {
+    "description": "Bottom navigation: map and search tab"
+  },
   "tabAddSpot": "Spot toevoegen",
+  "@tabAddSpot": {
+    "description": "Bottom navigation: submit a new spot"
+  },
   "tabAccount": "Account",
+  "@tabAccount": {
+    "description": "Bottom navigation: profile and settings"
+  },
   "profileSettingsTitle": "Instellingen",
+  "@profileSettingsTitle": {
+    "description": "Profile: settings card title"
+  },
   "profileSettingsLanguageLabel": "Taal",
+  "@profileSettingsLanguageLabel": {
+    "description": "Profile settings: language row label"
+  },
   "profileSettingsLanguageDescription": "Kies een taal of volg je apparaatinstellingen.",
-  "profileLanguageSystemDefault": "Apparaattaal"
+  "@profileSettingsLanguageDescription": {
+    "description": "Profile settings: short hint for language control"
+  },
+  "profileLanguageSystemDefault": "Apparaattaal",
+  "@profileLanguageSystemDefault": {
+    "description": "Use OS/browser locale resolution instead of a fixed app language"
+  }
 }
