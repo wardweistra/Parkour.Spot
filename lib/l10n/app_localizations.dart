@@ -981,6 +981,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Getting address...'**
   String get addSpotGettingAddress;
+
+  /// Spot card: placeholder when spot has no photos
+  ///
+  /// In en, this message translates to:
+  /// **'No images'**
+  String get spotCardNoImages;
+
+  /// Spot card: empty description
+  ///
+  /// In en, this message translates to:
+  /// **'No description provided'**
+  String get spotCardNoDescription;
+
+  /// Spot card list chip: text before list name (keep trailing space)
+  ///
+  /// In en, this message translates to:
+  /// **'Part of '**
+  String get spotCardPartOfPrefix;
+
+  /// Spot card: remove from editable list
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from list'**
+  String get spotCardRemoveFromListTooltip;
+
+  /// After copying share link
+  ///
+  /// In en, this message translates to:
+  /// **'Spot copied to clipboard!'**
+  String get spotCardCopiedToClipboard;
+
+  /// Share or clipboard error
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to share spot: {error}'**
+  String spotCardShareFailed(String error);
+
+  /// Clipboard text when native share unavailable
+  ///
+  /// In en, this message translates to:
+  /// **'{name} 👉 {url}'**
+  String spotCardShareClipboardText(String name, String url);
+
+  /// Badge when external source dropped the spot
+  ///
+  /// In en, this message translates to:
+  /// **'Removed from source'**
+  String get spotCardRemovedFromSource;
+
+  /// Check-in tooltip when display name missing
+  ///
+  /// In en, this message translates to:
+  /// **'This person'**
+  String get spotCheckInUnnamedPerson;
+
+  /// Avatar tooltip: public check-in
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is here now at this spot (until {time})'**
+  String spotCheckInTooltipPublic(String name, String time);
+
+  /// Avatar tooltip: private check-in
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re here now at this spot until {time} — only you can see this check-in'**
+  String spotCheckInTooltipPrivate(String time);
 }
 
 class _AppLocalizationsDelegate

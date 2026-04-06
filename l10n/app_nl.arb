@@ -145,5 +145,16 @@
   "addSpotTipRightClickDesktop": "Tip: je kunt ook spots toevoegen vanaf de Verkennen-kaart door ergens rechts te klikken.",
   "addSpotUseThisLocation": "Deze locatie gebruiken",
   "addSpotDirectionsTooltip": "Route",
-  "addSpotGettingAddress": "Adres ophalen…"
+  "addSpotGettingAddress": "Adres ophalen…",
+  "spotCardNoImages": "Geen afbeeldingen",
+  "spotCardNoDescription": "Geen beschrijving",
+  "spotCardPartOfPrefix": "Onderdeel van ",
+  "spotCardRemoveFromListTooltip": "Uit lijst verwijderen",
+  "spotCardCopiedToClipboard": "Spot gekopieerd naar klembord!",
+  "spotCardShareFailed": "Spot delen mislukt: {error}",
+  "spotCardShareClipboardText": "{name} 👉 {url}",
+  "spotCardRemovedFromSource": "Verwijderd uit bron",
+  "spotCheckInUnnamedPerson": "Deze persoon",
+  "spotCheckInTooltipPublic": "{name} is nu hier op deze spot (tot {time})",
+  "spotCheckInTooltipPrivate": "Je bent nu hier op deze spot tot {time} — alleen jij ziet deze check-in"
 }

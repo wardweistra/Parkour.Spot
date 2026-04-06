@@ -513,4 +513,46 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get addSpotGettingAddress => 'A obter morada…';
+
+  @override
+  String get spotCardNoImages => 'Sem imagens';
+
+  @override
+  String get spotCardNoDescription => 'Sem descrição';
+
+  @override
+  String get spotCardPartOfPrefix => 'Parte de ';
+
+  @override
+  String get spotCardRemoveFromListTooltip => 'Remover da lista';
+
+  @override
+  String get spotCardCopiedToClipboard =>
+      'Spot copiado para a área de transferência!';
+
+  @override
+  String spotCardShareFailed(String error) {
+    return 'Não foi possível partilhar o spot: $error';
+  }
+
+  @override
+  String spotCardShareClipboardText(String name, String url) {
+    return '$name 👉 $url';
+  }
+
+  @override
+  String get spotCardRemovedFromSource => 'Removido da fonte';
+
+  @override
+  String get spotCheckInUnnamedPerson => 'Esta pessoa';
+
+  @override
+  String spotCheckInTooltipPublic(String name, String time) {
+    return '$name está agora aqui neste spot (até $time)';
+  }
+
+  @override
+  String spotCheckInTooltipPrivate(String time) {
+    return 'Estás agora aqui neste spot até $time — só tu vês este check-in';
+  }
 }

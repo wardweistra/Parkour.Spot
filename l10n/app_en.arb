@@ -621,5 +621,63 @@
   "addSpotGettingAddress": "Getting address...",
   "@addSpotGettingAddress": {
     "description": "While reverse-geocoding coordinates"
+  },
+  "spotCardNoImages": "No images",
+  "@spotCardNoImages": {
+    "description": "Spot card: placeholder when spot has no photos"
+  },
+  "spotCardNoDescription": "No description provided",
+  "@spotCardNoDescription": {
+    "description": "Spot card: empty description"
+  },
+  "spotCardPartOfPrefix": "Part of ",
+  "@spotCardPartOfPrefix": {
+    "description": "Spot card list chip: text before list name (keep trailing space)"
+  },
+  "spotCardRemoveFromListTooltip": "Remove from list",
+  "@spotCardRemoveFromListTooltip": {
+    "description": "Spot card: remove from editable list"
+  },
+  "spotCardCopiedToClipboard": "Spot copied to clipboard!",
+  "@spotCardCopiedToClipboard": {
+    "description": "After copying share link"
+  },
+  "spotCardShareFailed": "Failed to share spot: {error}",
+  "@spotCardShareFailed": {
+    "description": "Share or clipboard error",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "spotCardShareClipboardText": "{name} 👉 {url}",
+  "@spotCardShareClipboardText": {
+    "description": "Clipboard text when native share unavailable",
+    "placeholders": {
+      "name": {"type": "String", "example": "Spot name"},
+      "url": {"type": "String"}
+    }
+  },
+  "spotCardRemovedFromSource": "Removed from source",
+  "@spotCardRemovedFromSource": {
+    "description": "Badge when external source dropped the spot"
+  },
+  "spotCheckInUnnamedPerson": "This person",
+  "@spotCheckInUnnamedPerson": {
+    "description": "Check-in tooltip when display name missing"
+  },
+  "spotCheckInTooltipPublic": "{name} is here now at this spot (until {time})",
+  "@spotCheckInTooltipPublic": {
+    "description": "Avatar tooltip: public check-in",
+    "placeholders": {
+      "name": {"type": "String"},
+      "time": {"type": "String", "example": "3:45 PM"}
+    }
+  },
+  "spotCheckInTooltipPrivate": "You're here now at this spot until {time} — only you can see this check-in",
+  "@spotCheckInTooltipPrivate": {
+    "description": "Avatar tooltip: private check-in",
+    "placeholders": {
+      "time": {"type": "String"}
+    }
   }
 }

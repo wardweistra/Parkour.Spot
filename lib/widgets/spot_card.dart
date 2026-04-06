@@ -7,6 +7,7 @@ import '../models/spot.dart';
 import '../services/mobile_detection_service.dart';
 import '../services/url_service.dart';
 import '../services/web_share_service.dart';
+import '../l10n/app_localizations.dart';
 import 'resized_spot_image.dart';
 import 'spot_check_in_presence.dart';
 
@@ -85,6 +86,7 @@ class _SpotCardState extends State<SpotCard> {
   }
 
   Widget _buildListCard(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -256,7 +258,7 @@ class _SpotCardState extends State<SpotCard> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                'No images',
+                                l10n.spotCardNoImages,
                                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                   color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                                 ),
@@ -318,7 +320,7 @@ class _SpotCardState extends State<SpotCard> {
                         // Description - Removed fixed height constraints
                         Text(
                           widget.spot.description.trim().isEmpty 
-                              ? 'No description provided'
+                              ? l10n.spotCardNoDescription
                               : widget.spot.description,
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
@@ -371,7 +373,7 @@ class _SpotCardState extends State<SpotCard> {
                               ),
                               label: Text.rich(
                                 TextSpan(
-                                  text: 'Part of ',
+                                  text: l10n.spotCardPartOfPrefix,
                                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                     color: Theme.of(context).colorScheme.onPrimaryContainer,
                                   ),
@@ -541,7 +543,7 @@ class _SpotCardState extends State<SpotCard> {
                     if (widget.onRemove != null)
                       IconButton(
                         icon: const Icon(Icons.close),
-                        tooltip: 'Remove from list',
+                        tooltip: l10n.spotCardRemoveFromListTooltip,
                         onPressed: widget.onRemove,
                         style: IconButton.styleFrom(
                           backgroundColor: Theme.of(context).colorScheme.surface,
@@ -567,6 +569,7 @@ class _SpotCardState extends State<SpotCard> {
   }
 
   Widget _buildOverlayCard(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return PointerInterceptor(
       child: GestureDetector(
       onTap: widget.onTapWithImageIndex != null
@@ -740,7 +743,7 @@ class _SpotCardState extends State<SpotCard> {
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    'No images',
+                                    l10n.spotCardNoImages,
                                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                       color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                                     ),
@@ -835,7 +838,7 @@ class _SpotCardState extends State<SpotCard> {
                       const SizedBox(height: 8),
                       Text(
                         widget.spot.description.trim().isEmpty 
-                            ? 'No description provided'
+                            ? l10n.spotCardNoDescription
                             : widget.spot.description,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
@@ -862,7 +865,7 @@ class _SpotCardState extends State<SpotCard> {
                             ),
                             label: Text.rich(
                               TextSpan(
-                                text: 'Part of ',
+                                text: l10n.spotCardPartOfPrefix,
                                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                   color: Theme.of(context).colorScheme.onPrimaryContainer,
                                 ),
@@ -999,13 +1002,14 @@ class _SpotCardState extends State<SpotCard> {
     if (widget.spot.id == null) return;
     
     try {
+      final l10n = AppLocalizations.of(context)!;
       final url = UrlService.generateSpotUrl(
         widget.spot.id!,
         countryCode: widget.spot.countryCode,
         city: widget.spot.city,
       );
       final label = widget.spot.name.trim();
-      final text = '$label 👉 $url';
+      final text = l10n.spotCardShareClipboardText(label, url);
 
       final outcome = await WebShareService.tryShareLink(text: label, url: url);
       if (outcome == WebShareOutcome.shared ||
@@ -1017,10 +1021,10 @@ class _SpotCardState extends State<SpotCard> {
       
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Spot copied to clipboard!'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.spotCardCopiedToClipboard),
             backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -1028,7 +1032,7 @@ class _SpotCardState extends State<SpotCard> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to share spot: $e'),
+            content: Text(AppLocalizations.of(context)!.spotCardShareFailed('$e')),
             backgroundColor: Colors.red,
           ),
         );
@@ -1037,6 +1041,7 @@ class _SpotCardState extends State<SpotCard> {
   }
 
   Widget _buildRemovedBadge(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final textStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
           color: Colors.white,
           fontWeight: FontWeight.w600,
@@ -1067,7 +1072,7 @@ class _SpotCardState extends State<SpotCard> {
           ),
           const SizedBox(width: 4),
           Text(
-            'Removed from source',
+            l10n.spotCardRemovedFromSource,
             style: textStyle,
           ),
         ],

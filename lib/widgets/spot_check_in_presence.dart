@@ -12,6 +12,7 @@ import '../services/auth_service.dart';
 import '../services/spot_check_in_service.dart';
 import '../services/user_profile_service.dart';
 import 'spot_check_in_dialog.dart';
+import '../l10n/app_localizations.dart';
 
 /// Where [SpotCheckInPresenceStrip] is shown: detail header (tappable) vs spot card
 /// (tap passes through to the card; tooltips on hover).
@@ -443,11 +444,12 @@ class _SpotCheckInPresenceStripState extends State<SpotCheckInPresenceStrip> {
     ThemeData theme,
     SpotCheckIn c,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     final name = c.displayName?.trim();
-    final who = (name != null && name.isNotEmpty) ? name : 'This person';
+    final who = (name != null && name.isNotEmpty) ? name : l10n.spotCheckInUnnamedPerson;
     final comment = c.comment?.trim();
     final until = DateFormat('h:mm a').format(c.expectedEndAt.toLocal());
-    final headline = '$who is here now at this spot (until $until)';
+    final headline = l10n.spotCheckInTooltipPublic(who, until);
     final baseStyle = _tooltipBaseTextStyle(context, theme);
     return _checkInTooltipSpanWithOptionalComment(
       context,
@@ -463,10 +465,10 @@ class _SpotCheckInPresenceStripState extends State<SpotCheckInPresenceStrip> {
     ThemeData theme,
     SpotCheckIn mine,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     final comment = mine.comment?.trim();
     final until = DateFormat('h:mm a').format(mine.expectedEndAt.toLocal());
-    final headline =
-        "You're here now at this spot until $until — only you can see this check-in";
+    final headline = l10n.spotCheckInTooltipPrivate(until);
     final baseStyle = _tooltipBaseTextStyle(context, theme);
     return _checkInTooltipSpanWithOptionalComment(
       context,

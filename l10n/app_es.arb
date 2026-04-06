@@ -145,5 +145,16 @@
   "addSpotTipRightClickDesktop": "Consejo: también puedes añadir spots desde el mapa Explorar haciendo clic derecho en un lugar.",
   "addSpotUseThisLocation": "Usar esta ubicación",
   "addSpotDirectionsTooltip": "Indicaciones",
-  "addSpotGettingAddress": "Obteniendo dirección…"
+  "addSpotGettingAddress": "Obteniendo dirección…",
+  "spotCardNoImages": "Sin imágenes",
+  "spotCardNoDescription": "Sin descripción",
+  "spotCardPartOfPrefix": "Parte de ",
+  "spotCardRemoveFromListTooltip": "Quitar de la lista",
+  "spotCardCopiedToClipboard": "¡Spot copiado al portapapeles!",
+  "spotCardShareFailed": "No se pudo compartir el spot: {error}",
+  "spotCardShareClipboardText": "{name} 👉 {url}",
+  "spotCardRemovedFromSource": "Eliminado de la fuente",
+  "spotCheckInUnnamedPerson": "Esta persona",
+  "spotCheckInTooltipPublic": "{name} está ahora aquí en este spot (hasta las {time})",
+  "spotCheckInTooltipPrivate": "Estás ahora aquí en este spot hasta las {time} — solo tú ves este check-in"
 }

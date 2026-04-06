@@ -520,4 +520,45 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get addSpotGettingAddress => 'Récupération de l’adresse…';
+
+  @override
+  String get spotCardNoImages => 'Aucune image';
+
+  @override
+  String get spotCardNoDescription => 'Aucune description';
+
+  @override
+  String get spotCardPartOfPrefix => 'Fait partie de ';
+
+  @override
+  String get spotCardRemoveFromListTooltip => 'Retirer de la liste';
+
+  @override
+  String get spotCardCopiedToClipboard => 'Spot copié dans le presse-papiers !';
+
+  @override
+  String spotCardShareFailed(String error) {
+    return 'Impossible de partager le spot : $error';
+  }
+
+  @override
+  String spotCardShareClipboardText(String name, String url) {
+    return '$name 👉 $url';
+  }
+
+  @override
+  String get spotCardRemovedFromSource => 'Retiré de la source';
+
+  @override
+  String get spotCheckInUnnamedPerson => 'Cette personne';
+
+  @override
+  String spotCheckInTooltipPublic(String name, String time) {
+    return '$name est ici sur ce spot (jusqu’à $time)';
+  }
+
+  @override
+  String spotCheckInTooltipPrivate(String time) {
+    return 'Vous êtes ici sur ce spot jusqu’à $time — vous seul voyez ce check-in';
+  }
 }

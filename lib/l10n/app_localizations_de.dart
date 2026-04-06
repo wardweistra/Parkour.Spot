@@ -516,4 +516,45 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get addSpotGettingAddress => 'Adresse wird geladen…';
+
+  @override
+  String get spotCardNoImages => 'Keine Bilder';
+
+  @override
+  String get spotCardNoDescription => 'Keine Beschreibung';
+
+  @override
+  String get spotCardPartOfPrefix => 'Teil von ';
+
+  @override
+  String get spotCardRemoveFromListTooltip => 'Aus Liste entfernen';
+
+  @override
+  String get spotCardCopiedToClipboard => 'Spot in die Zwischenablage kopiert!';
+
+  @override
+  String spotCardShareFailed(String error) {
+    return 'Spot konnte nicht geteilt werden: $error';
+  }
+
+  @override
+  String spotCardShareClipboardText(String name, String url) {
+    return '$name 👉 $url';
+  }
+
+  @override
+  String get spotCardRemovedFromSource => 'Aus Quelle entfernt';
+
+  @override
+  String get spotCheckInUnnamedPerson => 'Diese Person';
+
+  @override
+  String spotCheckInTooltipPublic(String name, String time) {
+    return '$name ist gerade an diesem Spot (bis $time)';
+  }
+
+  @override
+  String spotCheckInTooltipPrivate(String time) {
+    return 'Du bist gerade an diesem Spot bis $time — nur du siehst diesen Check-in';
+  }
 }
