@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:country_flags/country_flags.dart';
+import '../l10n/app_localizations.dart';
 
 class LocationInfoBox extends StatelessWidget {
   final double latitude;
@@ -23,6 +24,7 @@ class LocationInfoBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -82,7 +84,7 @@ class LocationInfoBox extends StatelessWidget {
                       color: Theme.of(context).colorScheme.primary,
                       size: 20,
                     ),
-                    tooltip: 'Directions',
+                    tooltip: l10n.addSpotDirectionsTooltip,
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(
                       minWidth: 32,
@@ -126,7 +128,7 @@ class LocationInfoBox extends StatelessWidget {
                       color: Theme.of(context).colorScheme.primary,
                       size: 20,
                     ),
-                    tooltip: 'Directions',
+                    tooltip: l10n.addSpotDirectionsTooltip,
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(
                       minWidth: 32,
@@ -170,7 +172,7 @@ class LocationInfoBox extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Getting address...',
+                  l10n.addSpotGettingAddress,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.primary,
                       ),

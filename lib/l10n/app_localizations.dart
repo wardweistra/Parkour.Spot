@@ -765,6 +765,222 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Install'**
   String get explorePwaBannerInstall;
+
+  /// Add spot: gallery picker error
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to pick images. Please try again.'**
+  String get addSpotPickImagesFailed;
+
+  /// Add spot: camera error
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to take photo. Please try again.'**
+  String get addSpotTakePhotoFailed;
+
+  /// Add spot: validation
+  ///
+  /// In en, this message translates to:
+  /// **'Please upload at least one photo of the spot'**
+  String get addSpotNeedPhoto;
+
+  /// Add spot: validation
+  ///
+  /// In en, this message translates to:
+  /// **'Please wait for location to be determined or pick a location on the map'**
+  String get addSpotNeedLocation;
+
+  /// Add spot: submit failed
+  ///
+  /// In en, this message translates to:
+  /// **'Error creating spot: {error}'**
+  String addSpotCreateError(String error);
+
+  /// Add spot: name field label
+  ///
+  /// In en, this message translates to:
+  /// **'Spot Name *'**
+  String get addSpotNameLabel;
+
+  /// Add spot: name validation
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a spot name'**
+  String get addSpotNameRequired;
+
+  /// Add spot: description label
+  ///
+  /// In en, this message translates to:
+  /// **'Description *'**
+  String get addSpotDescriptionLabel;
+
+  /// Add spot: description validation empty
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a description'**
+  String get addSpotDescriptionRequired;
+
+  /// Add spot: description validation length
+  ///
+  /// In en, this message translates to:
+  /// **'Description must be at least 10 characters'**
+  String get addSpotDescriptionMinLength;
+
+  /// Add spot: submit in progress
+  ///
+  /// In en, this message translates to:
+  /// **'Creating Spot...'**
+  String get addSpotCreating;
+
+  /// Add spot: primary submit
+  ///
+  /// In en, this message translates to:
+  /// **'Create Spot'**
+  String get addSpotCreateButton;
+
+  /// Add spot: map card title
+  ///
+  /// In en, this message translates to:
+  /// **'Select Spot Location'**
+  String get addSpotLocationSectionTitle;
+
+  /// Add spot: GPS loading row
+  ///
+  /// In en, this message translates to:
+  /// **'Getting your location...'**
+  String get addSpotGettingLocation;
+
+  /// Add spot: no GPS
+  ///
+  /// In en, this message translates to:
+  /// **'Location not available'**
+  String get addSpotLocationNotAvailable;
+
+  /// Add spot: overlay on mini map
+  ///
+  /// In en, this message translates to:
+  /// **'Pick location'**
+  String get addSpotPickLocationHint;
+
+  /// Add spot: photos card title
+  ///
+  /// In en, this message translates to:
+  /// **'Select Spot Images'**
+  String get addSpotImagesSectionTitle;
+
+  /// Add spot: choose from gallery
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery'**
+  String get addSpotGalleryButton;
+
+  /// Add spot: take photo
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get addSpotCameraButton;
+
+  /// Add spot attributes: good for card
+  ///
+  /// In en, this message translates to:
+  /// **'Good For'**
+  String get addSpotGoodForTitle;
+
+  /// Add spot attributes: good for hint
+  ///
+  /// In en, this message translates to:
+  /// **'What parkour skills can be practiced here?'**
+  String get addSpotGoodForSubtitle;
+
+  /// Add spot attributes: features card
+  ///
+  /// In en, this message translates to:
+  /// **'Spot Features'**
+  String get addSpotFeaturesTitle;
+
+  /// Add spot attributes: features hint
+  ///
+  /// In en, this message translates to:
+  /// **'What physical features does this spot have?'**
+  String get addSpotFeaturesSubtitle;
+
+  /// Add spot attributes: access card
+  ///
+  /// In en, this message translates to:
+  /// **'Spot Access'**
+  String get addSpotAccessTitle;
+
+  /// Add spot attributes: access hint
+  ///
+  /// In en, this message translates to:
+  /// **'What is the access level for this spot?'**
+  String get addSpotAccessSubtitle;
+
+  /// Add spot attributes: facilities card (form)
+  ///
+  /// In en, this message translates to:
+  /// **'Spot Facilities'**
+  String get addSpotFacilitiesFormTitle;
+
+  /// Add spot attributes: facilities hint
+  ///
+  /// In en, this message translates to:
+  /// **'What amenities are available at this spot?'**
+  String get addSpotFacilitiesSubtitle;
+
+  /// Add spot: long-press hint for good-for chips
+  ///
+  /// In en, this message translates to:
+  /// **'Long press any skill for more info'**
+  String get addSpotLongPressHintSkill;
+
+  /// Add spot: long-press hint for feature chips
+  ///
+  /// In en, this message translates to:
+  /// **'Long press any feature for more info'**
+  String get addSpotLongPressHintFeature;
+
+  /// Add spot: long-press hint for facilities
+  ///
+  /// In en, this message translates to:
+  /// **'Long press any facility for more info'**
+  String get addSpotLongPressHintFacility;
+
+  /// Full-screen map: choose coordinates
+  ///
+  /// In en, this message translates to:
+  /// **'Pick Location'**
+  String get addSpotPickLocationAppBarTitle;
+
+  /// Location picker hint on mobile
+  ///
+  /// In en, this message translates to:
+  /// **'Tip: You can also add spots from the Explore map by long-pressing on any location.'**
+  String get addSpotTipLongPressMobile;
+
+  /// Location picker hint on desktop web
+  ///
+  /// In en, this message translates to:
+  /// **'Tip: You can also add spots from the Explore map by right-clicking on any location.'**
+  String get addSpotTipRightClickDesktop;
+
+  /// Location picker: confirm FAB
+  ///
+  /// In en, this message translates to:
+  /// **'Use this location'**
+  String get addSpotUseThisLocation;
+
+  /// Open in maps from address row
+  ///
+  /// In en, this message translates to:
+  /// **'Directions'**
+  String get addSpotDirectionsTooltip;
+
+  /// While reverse-geocoding coordinates
+  ///
+  /// In en, this message translates to:
+  /// **'Getting address...'**
+  String get addSpotGettingAddress;
 }
 
 class _AppLocalizationsDelegate

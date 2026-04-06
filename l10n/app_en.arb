@@ -474,5 +474,152 @@
   "explorePwaBannerInstall": "Install",
   "@explorePwaBannerInstall": {
     "description": "Compact install button on explore PWA banner"
+  },
+  "addSpotPickImagesFailed": "Failed to pick images. Please try again.",
+  "@addSpotPickImagesFailed": {
+    "description": "Add spot: gallery picker error"
+  },
+  "addSpotTakePhotoFailed": "Failed to take photo. Please try again.",
+  "@addSpotTakePhotoFailed": {
+    "description": "Add spot: camera error"
+  },
+  "addSpotNeedPhoto": "Please upload at least one photo of the spot",
+  "@addSpotNeedPhoto": {
+    "description": "Add spot: validation"
+  },
+  "addSpotNeedLocation": "Please wait for location to be determined or pick a location on the map",
+  "@addSpotNeedLocation": {
+    "description": "Add spot: validation"
+  },
+  "addSpotCreateError": "Error creating spot: {error}",
+  "@addSpotCreateError": {
+    "description": "Add spot: submit failed",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "addSpotNameLabel": "Spot Name *",
+  "@addSpotNameLabel": {
+    "description": "Add spot: name field label"
+  },
+  "addSpotNameRequired": "Please enter a spot name",
+  "@addSpotNameRequired": {
+    "description": "Add spot: name validation"
+  },
+  "addSpotDescriptionLabel": "Description *",
+  "@addSpotDescriptionLabel": {
+    "description": "Add spot: description label"
+  },
+  "addSpotDescriptionRequired": "Please enter a description",
+  "@addSpotDescriptionRequired": {
+    "description": "Add spot: description validation empty"
+  },
+  "addSpotDescriptionMinLength": "Description must be at least 10 characters",
+  "@addSpotDescriptionMinLength": {
+    "description": "Add spot: description validation length"
+  },
+  "addSpotCreating": "Creating Spot...",
+  "@addSpotCreating": {
+    "description": "Add spot: submit in progress"
+  },
+  "addSpotCreateButton": "Create Spot",
+  "@addSpotCreateButton": {
+    "description": "Add spot: primary submit"
+  },
+  "addSpotLocationSectionTitle": "Select Spot Location",
+  "@addSpotLocationSectionTitle": {
+    "description": "Add spot: map card title"
+  },
+  "addSpotGettingLocation": "Getting your location...",
+  "@addSpotGettingLocation": {
+    "description": "Add spot: GPS loading row"
+  },
+  "addSpotLocationNotAvailable": "Location not available",
+  "@addSpotLocationNotAvailable": {
+    "description": "Add spot: no GPS"
+  },
+  "addSpotPickLocationHint": "Pick location",
+  "@addSpotPickLocationHint": {
+    "description": "Add spot: overlay on mini map"
+  },
+  "addSpotImagesSectionTitle": "Select Spot Images",
+  "@addSpotImagesSectionTitle": {
+    "description": "Add spot: photos card title"
+  },
+  "addSpotGalleryButton": "Gallery",
+  "@addSpotGalleryButton": {
+    "description": "Add spot: choose from gallery"
+  },
+  "addSpotCameraButton": "Camera",
+  "@addSpotCameraButton": {
+    "description": "Add spot: take photo"
+  },
+  "addSpotGoodForTitle": "Good For",
+  "@addSpotGoodForTitle": {
+    "description": "Add spot attributes: good for card"
+  },
+  "addSpotGoodForSubtitle": "What parkour skills can be practiced here?",
+  "@addSpotGoodForSubtitle": {
+    "description": "Add spot attributes: good for hint"
+  },
+  "addSpotFeaturesTitle": "Spot Features",
+  "@addSpotFeaturesTitle": {
+    "description": "Add spot attributes: features card"
+  },
+  "addSpotFeaturesSubtitle": "What physical features does this spot have?",
+  "@addSpotFeaturesSubtitle": {
+    "description": "Add spot attributes: features hint"
+  },
+  "addSpotAccessTitle": "Spot Access",
+  "@addSpotAccessTitle": {
+    "description": "Add spot attributes: access card"
+  },
+  "addSpotAccessSubtitle": "What is the access level for this spot?",
+  "@addSpotAccessSubtitle": {
+    "description": "Add spot attributes: access hint"
+  },
+  "addSpotFacilitiesFormTitle": "Spot Facilities",
+  "@addSpotFacilitiesFormTitle": {
+    "description": "Add spot attributes: facilities card (form)"
+  },
+  "addSpotFacilitiesSubtitle": "What amenities are available at this spot?",
+  "@addSpotFacilitiesSubtitle": {
+    "description": "Add spot attributes: facilities hint"
+  },
+  "addSpotLongPressHintSkill": "Long press any skill for more info",
+  "@addSpotLongPressHintSkill": {
+    "description": "Add spot: long-press hint for good-for chips"
+  },
+  "addSpotLongPressHintFeature": "Long press any feature for more info",
+  "@addSpotLongPressHintFeature": {
+    "description": "Add spot: long-press hint for feature chips"
+  },
+  "addSpotLongPressHintFacility": "Long press any facility for more info",
+  "@addSpotLongPressHintFacility": {
+    "description": "Add spot: long-press hint for facilities"
+  },
+  "addSpotPickLocationAppBarTitle": "Pick Location",
+  "@addSpotPickLocationAppBarTitle": {
+    "description": "Full-screen map: choose coordinates"
+  },
+  "addSpotTipLongPressMobile": "Tip: You can also add spots from the Explore map by long-pressing on any location.",
+  "@addSpotTipLongPressMobile": {
+    "description": "Location picker hint on mobile"
+  },
+  "addSpotTipRightClickDesktop": "Tip: You can also add spots from the Explore map by right-clicking on any location.",
+  "@addSpotTipRightClickDesktop": {
+    "description": "Location picker hint on desktop web"
+  },
+  "addSpotUseThisLocation": "Use this location",
+  "@addSpotUseThisLocation": {
+    "description": "Location picker: confirm FAB"
+  },
+  "addSpotDirectionsTooltip": "Directions",
+  "@addSpotDirectionsTooltip": {
+    "description": "Open in maps from address row"
+  },
+  "addSpotGettingAddress": "Getting address...",
+  "@addSpotGettingAddress": {
+    "description": "While reverse-geocoding coordinates"
   }
 }

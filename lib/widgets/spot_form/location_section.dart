@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../widgets/location_info_box.dart';
+import '../../l10n/app_localizations.dart';
 
 class SpotLocationSection extends StatefulWidget {
   final LatLng? currentLocation;
@@ -41,6 +42,7 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -50,7 +52,7 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
             Row(
               children: [
                 Text(
-                  'Select Spot Location',
+                  l10n.addSpotLocationSectionTitle,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(width: 8),
@@ -64,11 +66,11 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
             ),
             const SizedBox(height: 12),
             if (widget.isGettingLocation)
-              const Row(
+              Row(
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(width: 12),
-                  Text('Getting your location...'),
+                  const CircularProgressIndicator(),
+                  const SizedBox(width: 12),
+                  Text(l10n.addSpotGettingLocation),
                 ],
               )
             else if (widget.currentLocation == null) ...[
@@ -91,7 +93,7 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Location not available',
+                      l10n.addSpotLocationNotAvailable,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Theme.of(context).colorScheme.error,
                           ),
@@ -165,7 +167,7 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                'Pick location',
+                                l10n.addSpotPickLocationHint,
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 11,
@@ -187,7 +189,9 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
                           },
                           heroTag: 'mapTypeToggleFab',
                           mini: true,
-                          tooltip: widget.isSatelliteView ? 'Switch to Map' : 'Switch to Satellite',
+                          tooltip: widget.isSatelliteView
+                              ? l10n.exploreSwitchToMap
+                              : l10n.exploreSwitchToSatellite,
                           child: Icon(
                             widget.isSatelliteView ? Icons.map : Icons.terrain,
                           ),
@@ -203,9 +207,9 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
                           onPressed: widget.isGettingLocation ? null : widget.onRefreshLocation,
                           heroTag: 'currentLocationFab',
                           mini: true,
-                          tooltip: widget.isLocationPermissionDenied 
-                              ? 'Location permission denied' 
-                              : 'Center on my location',
+                          tooltip: widget.isLocationPermissionDenied
+                              ? l10n.exploreLocationPermissionDenied
+                              : l10n.exploreCenterOnMyLocation,
                           child: widget.isGettingLocation
                               ? const SizedBox(
                                   width: 20,

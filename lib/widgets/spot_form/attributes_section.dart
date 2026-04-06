@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../constants/spot_attributes.dart';
+import '../../l10n/app_localizations.dart';
 
 class SpotAttributesSection extends StatelessWidget {
   final String? selectedAccess;
@@ -23,7 +24,7 @@ class SpotAttributesSection extends StatelessWidget {
     required this.onToggleGoodFor,
   });
 
-  Widget _buildLongPressHint(BuildContext context, String itemType) {
+  Widget _buildLongPressHint(BuildContext context, String message) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -44,7 +45,7 @@ class SpotAttributesSection extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Long press any $itemType for more info',
+              message,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.primary,
               ),
@@ -102,6 +103,7 @@ class SpotAttributesSection extends StatelessWidget {
   }
 
   Widget _buildGoodForCard(BuildContext context, {required bool isWide}) {
+    final l10n = AppLocalizations.of(context)!;
     final wrapContent = Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -164,12 +166,12 @@ class SpotAttributesSection extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Good For',
+              l10n.addSpotGoodForTitle,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
             Text(
-              'What parkour skills can be practiced here?',
+              l10n.addSpotGoodForSubtitle,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
@@ -183,7 +185,7 @@ class SpotAttributesSection extends StatelessWidget {
               wrapContent,
             if (!isWide) ...[
               const SizedBox(height: 12),
-              _buildLongPressHint(context, 'skill'),
+              _buildLongPressHint(context, l10n.addSpotLongPressHintSkill),
             ],
           ],
         ),
@@ -192,6 +194,7 @@ class SpotAttributesSection extends StatelessWidget {
   }
 
   Widget _buildFeaturesCard(BuildContext context, {required bool isWide}) {
+    final l10n = AppLocalizations.of(context)!;
     final wrapContent = Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -254,12 +257,12 @@ class SpotAttributesSection extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Spot Features',
+              l10n.addSpotFeaturesTitle,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
             Text(
-              'What physical features does this spot have?',
+              l10n.addSpotFeaturesSubtitle,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
@@ -273,7 +276,7 @@ class SpotAttributesSection extends StatelessWidget {
               wrapContent,
             if (!isWide) ...[
               const SizedBox(height: 12),
-              _buildLongPressHint(context, 'feature'),
+              _buildLongPressHint(context, l10n.addSpotLongPressHintFeature),
             ],
           ],
         ),
@@ -282,6 +285,7 @@ class SpotAttributesSection extends StatelessWidget {
   }
 
   Widget _buildAccessCard(BuildContext context, {required bool isWide}) {
+    final l10n = AppLocalizations.of(context)!;
     final keys = SpotAttributes.getKeys('access');
     return Card(
       child: Padding(
@@ -290,12 +294,12 @@ class SpotAttributesSection extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Spot Access',
+              l10n.addSpotAccessTitle,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
             Text(
-              'What is the access level for this spot?',
+              l10n.addSpotAccessSubtitle,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
@@ -440,6 +444,7 @@ class SpotAttributesSection extends StatelessWidget {
   }
 
   Widget _buildFacilitiesCard(BuildContext context, {required bool isWide}) {
+    final l10n = AppLocalizations.of(context)!;
     final entries = SpotAttributes.getEntries('facilities');
     final wrapContent = Wrap(
       spacing: 8,
@@ -518,12 +523,12 @@ class SpotAttributesSection extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Spot Facilities',
+              l10n.addSpotFacilitiesFormTitle,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
             Text(
-              'What amenities are available at this spot?',
+              l10n.addSpotFacilitiesSubtitle,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
@@ -537,7 +542,7 @@ class SpotAttributesSection extends StatelessWidget {
               wrapContent,
             if (!isWide) ...[
               const SizedBox(height: 12),
-              _buildLongPressHint(context, 'facility'),
+              _buildLongPressHint(context, l10n.addSpotLongPressHintFacility),
             ],
           ],
         ),

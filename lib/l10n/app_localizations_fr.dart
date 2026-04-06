@@ -398,4 +398,126 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get explorePwaBannerInstall => 'Installer';
+
+  @override
+  String get addSpotPickImagesFailed =>
+      'Impossible de choisir les images. Réessayez.';
+
+  @override
+  String get addSpotTakePhotoFailed =>
+      'Impossible de prendre la photo. Réessayez.';
+
+  @override
+  String get addSpotNeedPhoto => 'Ajoutez au moins une photo du spot';
+
+  @override
+  String get addSpotNeedLocation =>
+      'Attendez la localisation ou choisissez un point sur la carte';
+
+  @override
+  String addSpotCreateError(String error) {
+    return 'Erreur lors de la création du spot : $error';
+  }
+
+  @override
+  String get addSpotNameLabel => 'Nom du spot *';
+
+  @override
+  String get addSpotNameRequired => 'Saisissez un nom de spot';
+
+  @override
+  String get addSpotDescriptionLabel => 'Description *';
+
+  @override
+  String get addSpotDescriptionRequired => 'Saisissez une description';
+
+  @override
+  String get addSpotDescriptionMinLength =>
+      'La description doit contenir au moins 10 caractères';
+
+  @override
+  String get addSpotCreating => 'Création du spot…';
+
+  @override
+  String get addSpotCreateButton => 'Créer le spot';
+
+  @override
+  String get addSpotLocationSectionTitle => 'Choisir l’emplacement du spot';
+
+  @override
+  String get addSpotGettingLocation => 'Localisation en cours…';
+
+  @override
+  String get addSpotLocationNotAvailable => 'Localisation indisponible';
+
+  @override
+  String get addSpotPickLocationHint => 'Choisir l’emplacement';
+
+  @override
+  String get addSpotImagesSectionTitle => 'Choisir les images du spot';
+
+  @override
+  String get addSpotGalleryButton => 'Galerie';
+
+  @override
+  String get addSpotCameraButton => 'Appareil photo';
+
+  @override
+  String get addSpotGoodForTitle => 'Adapté pour';
+
+  @override
+  String get addSpotGoodForSubtitle =>
+      'Quelles compétences de parkour peut-on y travailler ?';
+
+  @override
+  String get addSpotFeaturesTitle => 'Caractéristiques du spot';
+
+  @override
+  String get addSpotFeaturesSubtitle =>
+      'Quelles caractéristiques physiques ce spot offre-t-il ?';
+
+  @override
+  String get addSpotAccessTitle => 'Accès au spot';
+
+  @override
+  String get addSpotAccessSubtitle => 'Quel est le niveau d’accès à ce spot ?';
+
+  @override
+  String get addSpotFacilitiesFormTitle => 'Équipements du spot';
+
+  @override
+  String get addSpotFacilitiesSubtitle =>
+      'Quels services sont disponibles sur ce spot ?';
+
+  @override
+  String get addSpotLongPressHintSkill =>
+      'Appui long sur une compétence pour plus d’infos';
+
+  @override
+  String get addSpotLongPressHintFeature =>
+      'Appui long sur une caractéristique pour plus d’infos';
+
+  @override
+  String get addSpotLongPressHintFacility =>
+      'Appui long sur un équipement pour plus d’infos';
+
+  @override
+  String get addSpotPickLocationAppBarTitle => 'Choisir l’emplacement';
+
+  @override
+  String get addSpotTipLongPressMobile =>
+      'Astuce : vous pouvez aussi ajouter des spots depuis la carte Explorer en appuyant longuement sur un lieu.';
+
+  @override
+  String get addSpotTipRightClickDesktop =>
+      'Astuce : vous pouvez aussi ajouter des spots depuis la carte Explorer en cliquant droit sur un lieu.';
+
+  @override
+  String get addSpotUseThisLocation => 'Utiliser cet emplacement';
+
+  @override
+  String get addSpotDirectionsTooltip => 'Itinéraire';
+
+  @override
+  String get addSpotGettingAddress => 'Récupération de l’adresse…';
 }

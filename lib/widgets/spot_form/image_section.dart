@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import '../../l10n/app_localizations.dart';
 
 class SpotImageSection extends StatelessWidget {
   final List<Uint8List?> selectedImageBytes;
@@ -25,6 +26,7 @@ class SpotImageSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -34,7 +36,7 @@ class SpotImageSection extends StatelessWidget {
             Row(
               children: [
                 Text(
-                  'Select Spot Images',
+                  l10n.addSpotImagesSectionTitle,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(width: 8),
@@ -158,7 +160,7 @@ class SpotImageSection extends StatelessWidget {
                   child: ElevatedButton.icon(
                     onPressed: onPickFromGallery,
                     icon: const Icon(Icons.photo_library),
-                    label: const Text('Gallery'),
+                    label: Text(l10n.addSpotGalleryButton),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -166,7 +168,7 @@ class SpotImageSection extends StatelessWidget {
                   child: ElevatedButton.icon(
                     onPressed: onTakePhoto,
                     icon: const Icon(Icons.camera_alt),
-                    label: const Text('Camera'),
+                    label: Text(l10n.addSpotCameraButton),
                   ),
                 ),
               ],

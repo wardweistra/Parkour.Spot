@@ -9,6 +9,7 @@ import '../../config/app_config.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../services/search_state_service.dart';
 import '../../utils/location_permission_utils.dart';
+import '../../l10n/app_localizations.dart';
 
 class LocationPickerScreen extends StatefulWidget {
   final LatLng? initialLocation;
@@ -99,6 +100,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final CameraPosition initialCameraPosition = CameraPosition(
       target:
           widget.initialLocation ??
@@ -110,8 +112,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     );
 
     final tipText = MobileDetectionService.isMobileDevice
-        ? 'Tip: You can also add spots from the Explore map by long-pressing on any location.'
-        : 'Tip: You can also add spots from the Explore map by right-clicking on any location.';
+        ? l10n.addSpotTipLongPressMobile
+        : l10n.addSpotTipRightClickDesktop;
 
     return Scaffold(
       appBar: PreferredSize(
@@ -126,7 +128,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: AppBar(
-                    title: const Text('Pick Location'),
+                    title: Text(l10n.addSpotPickLocationAppBarTitle),
                     leading: IconButton(
                       icon: const Icon(Icons.arrow_back),
                       onPressed: () {
@@ -229,8 +231,8 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                           heroTag: 'mapTypeToggleFab',
                           mini: true,
                           tooltip: _isSatelliteView
-                              ? 'Switch to Map'
-                              : 'Switch to Satellite',
+                              ? l10n.exploreSwitchToMap
+                              : l10n.exploreSwitchToSatellite,
                           child: Icon(
                             _isSatelliteView ? Icons.map : Icons.terrain,
                           ),
@@ -254,7 +256,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                           onPressed: _getCurrentLocation,
                           heroTag: 'currentLocationFab',
                           mini: true,
-                          tooltip: 'Center on my location',
+                          tooltip: l10n.exploreCenterOnMyLocation,
                           child: _isGettingLocation
                               ? const SizedBox(
                                   width: 20,
@@ -286,7 +288,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                                 Navigator.pop(context, _pickedLocation);
                               },
                         icon: const Icon(Icons.check),
-                        label: const Text('Use this location'),
+                        label: Text(l10n.addSpotUseThisLocation),
                       ),
                     ),
                   ),

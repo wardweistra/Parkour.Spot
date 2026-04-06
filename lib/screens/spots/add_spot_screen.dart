@@ -22,6 +22,7 @@ import 'package:go_router/go_router.dart';
 import '../../utils/map_recentering_mixin.dart';
 import '../../utils/image_preparation.dart';
 import '../../config/app_config.dart';
+import '../../l10n/app_localizations.dart';
 
 class AddSpotScreen extends StatefulWidget {
   final LatLng? initialLocation;
@@ -179,7 +180,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error getting location: $e'),
+            content: Text(AppLocalizations.of(context)!.exploreLocationError('$e')),
             backgroundColor: Colors.red,
           ),
         );
@@ -230,7 +231,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
             content: Text(
               e is ImagePreparationException
                   ? e.message
-                  : 'Failed to pick images. Please try again.',
+                  : AppLocalizations.of(context)!.addSpotPickImagesFailed,
             ),
             backgroundColor: Colors.red,
           ),
@@ -268,7 +269,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Failed to take photo. Please try again.'),
+            content: Text(AppLocalizations.of(context)!.addSpotTakePhotoFailed),
             backgroundColor: Colors.red,
           ),
         );
@@ -356,8 +357,8 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
     // Check if at least one photo is uploaded
     if (_selectedImageBytes.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please upload at least one photo of the spot'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.addSpotNeedPhoto),
           backgroundColor: Colors.red,
         ),
       );
@@ -366,8 +367,8 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
     
     if (_currentPosition == null && _pickedLocation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please wait for location to be determined or pick a location on the map'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.addSpotNeedLocation),
           backgroundColor: Colors.red,
         ),
       );
@@ -448,7 +449,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error creating spot: $e'),
+            content: Text(AppLocalizations.of(context)!.addSpotCreateError('$e')),
             backgroundColor: Colors.red,
           ),
         );
@@ -464,6 +465,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         title: const SizedBox.shrink(),
@@ -525,12 +527,12 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
               // Name Field
               CustomTextField(
                 controller: _nameController,
-                labelText: 'Spot Name *',
+                labelText: l10n.addSpotNameLabel,
                 prefixIcon: Icons.location_on,
                 textCapitalization: TextCapitalization.words,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a spot name';
+                    return l10n.addSpotNameRequired;
                   }
                   return null;
                 },
@@ -541,16 +543,16 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
               // Description Field
               CustomTextField(
                 controller: _descriptionController,
-                labelText: 'Description *',
+                labelText: l10n.addSpotDescriptionLabel,
                 prefixIcon: Icons.description,
                 maxLines: 3,
                 textCapitalization: TextCapitalization.sentences,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a description';
+                    return l10n.addSpotDescriptionRequired;
                   }
                   if (value.trim().length < 10) {
-                    return 'Description must be at least 10 characters';
+                    return l10n.addSpotDescriptionMinLength;
                   }
                   return null;
                 },
@@ -602,7 +604,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
                            (_currentPosition == null && _pickedLocation == null) || 
                            _selectedImageBytes.isEmpty 
                            ? null : _submitForm,
-                text: _isLoading ? 'Creating Spot...' : 'Create Spot',
+                text: _isLoading ? l10n.addSpotCreating : l10n.addSpotCreateButton,
                 isLoading: _isLoading,
                 icon: Icons.add_location,
             ),

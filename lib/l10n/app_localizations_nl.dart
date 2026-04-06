@@ -386,4 +386,127 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get explorePwaBannerInstall => 'Installeren';
+
+  @override
+  String get addSpotPickImagesFailed =>
+      'Foto\'s kiezen mislukt. Probeer het opnieuw.';
+
+  @override
+  String get addSpotTakePhotoFailed =>
+      'Foto maken mislukt. Probeer het opnieuw.';
+
+  @override
+  String get addSpotNeedPhoto => 'Upload minstens één foto van de spot';
+
+  @override
+  String get addSpotNeedLocation =>
+      'Wacht tot de locatie bekend is of kies een locatie op de kaart';
+
+  @override
+  String addSpotCreateError(String error) {
+    return 'Spot aanmaken mislukt: $error';
+  }
+
+  @override
+  String get addSpotNameLabel => 'Spotnaam *';
+
+  @override
+  String get addSpotNameRequired => 'Voer een spotnaam in';
+
+  @override
+  String get addSpotDescriptionLabel => 'Beschrijving *';
+
+  @override
+  String get addSpotDescriptionRequired => 'Voer een beschrijving in';
+
+  @override
+  String get addSpotDescriptionMinLength =>
+      'Beschrijving moet minstens 10 tekens zijn';
+
+  @override
+  String get addSpotCreating => 'Spot wordt aangemaakt…';
+
+  @override
+  String get addSpotCreateButton => 'Spot aanmaken';
+
+  @override
+  String get addSpotLocationSectionTitle => 'Spotlocatie kiezen';
+
+  @override
+  String get addSpotGettingLocation => 'Je locatie ophalen…';
+
+  @override
+  String get addSpotLocationNotAvailable => 'Locatie niet beschikbaar';
+
+  @override
+  String get addSpotPickLocationHint => 'Locatie kiezen';
+
+  @override
+  String get addSpotImagesSectionTitle => 'Spotfoto\'s kiezen';
+
+  @override
+  String get addSpotGalleryButton => 'Galerij';
+
+  @override
+  String get addSpotCameraButton => 'Camera';
+
+  @override
+  String get addSpotGoodForTitle => 'Geschikt voor';
+
+  @override
+  String get addSpotGoodForSubtitle =>
+      'Welke parkour-vaardigheden kun je hier trainen?';
+
+  @override
+  String get addSpotFeaturesTitle => 'Spotfeatures';
+
+  @override
+  String get addSpotFeaturesSubtitle =>
+      'Welke fysieke kenmerken heeft deze spot?';
+
+  @override
+  String get addSpotAccessTitle => 'Spottoegang';
+
+  @override
+  String get addSpotAccessSubtitle =>
+      'Wat is het toegangsniveau voor deze spot?';
+
+  @override
+  String get addSpotFacilitiesFormTitle => 'Spotvoorzieningen';
+
+  @override
+  String get addSpotFacilitiesSubtitle =>
+      'Welke voorzieningen zijn er op deze spot?';
+
+  @override
+  String get addSpotLongPressHintSkill =>
+      'Lang indrukken op een vaardigheid voor meer info';
+
+  @override
+  String get addSpotLongPressHintFeature =>
+      'Lang indrukken op een feature voor meer info';
+
+  @override
+  String get addSpotLongPressHintFacility =>
+      'Lang indrukken op een voorziening voor meer info';
+
+  @override
+  String get addSpotPickLocationAppBarTitle => 'Locatie kiezen';
+
+  @override
+  String get addSpotTipLongPressMobile =>
+      'Tip: je kunt ook spots toevoegen vanaf de Verkennen-kaart door lang op een plek te drukken.';
+
+  @override
+  String get addSpotTipRightClickDesktop =>
+      'Tip: je kunt ook spots toevoegen vanaf de Verkennen-kaart door ergens rechts te klikken.';
+
+  @override
+  String get addSpotUseThisLocation => 'Deze locatie gebruiken';
+
+  @override
+  String get addSpotDirectionsTooltip => 'Route';
+
+  @override
+  String get addSpotGettingAddress => 'Adres ophalen…';
 }
