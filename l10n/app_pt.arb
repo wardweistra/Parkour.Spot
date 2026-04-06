@@ -1,10 +1,31 @@
 {
-  "@@locale": "pt",
+  "@@locale": "pt-PT",
   "tabExplore": "Explorar",
+  "@tabExplore": {
+    "description": "Bottom navigation: map and search tab"
+  },
   "tabAddSpot": "Adicionar spot",
+  "@tabAddSpot": {
+    "description": "Bottom navigation: submit a new spot"
+  },
   "tabAccount": "Conta",
+  "@tabAccount": {
+    "description": "Bottom navigation: profile and settings"
+  },
   "profileSettingsTitle": "Definições",
+  "@profileSettingsTitle": {
+    "description": "Profile: settings card title"
+  },
   "profileSettingsLanguageLabel": "Idioma",
+  "@profileSettingsLanguageLabel": {
+    "description": "Profile settings: language row label"
+  },
   "profileSettingsLanguageDescription": "Escolha um idioma ou use o do dispositivo.",
-  "profileLanguageSystemDefault": "Idioma do dispositivo"
+  "@profileSettingsLanguageDescription": {
+    "description": "Profile settings: short hint for language control"
+  },
+  "profileLanguageSystemDefault": "Idioma do dispositivo",
+  "@profileLanguageSystemDefault": {
+    "description": "Use OS/browser locale resolution instead of a fixed app language"
+  }
 }
