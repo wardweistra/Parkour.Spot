@@ -658,7 +658,7 @@
   "@spotCardNoImages": {
     "description": "Spot card: placeholder when spot has no photos"
   },
-  "spotCardNoDescription": "No description provided",
+  "spotCardNoDescription": "No description yet",
   "@spotCardNoDescription": {
     "description": "Spot card: empty description"
   },

@@ -148,7 +148,7 @@
   "addSpotDirectionsTooltip": "Itinéraire",
   "addSpotGettingAddress": "Récupération de l’adresse…",
   "spotCardNoImages": "Aucune image",
-  "spotCardNoDescription": "Aucune description",
+  "spotCardNoDescription": "Pas encore de description",
   "spotCardPartOfPrefix": "Fait partie de ",
   "spotCardRemoveFromListTooltip": "Retirer de la liste",
   "spotCardCopiedToClipboard": "Spot copié dans le presse-papiers !",

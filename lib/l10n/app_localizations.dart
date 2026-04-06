@@ -997,7 +997,7 @@ abstract class AppLocalizations {
   /// Spot card: empty description
   ///
   /// In en, this message translates to:
-  /// **'No description provided'**
+  /// **'No description yet'**
   String get spotCardNoDescription;
 
   /// Spot card list chip: text before list name (keep trailing space)

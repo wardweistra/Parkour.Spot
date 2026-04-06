@@ -517,7 +517,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get spotCardNoImages => 'Geen afbeeldingen';
 
   @override
-  String get spotCardNoDescription => 'Geen beschrijving';
+  String get spotCardNoDescription => 'Nog geen beschrijving';
 
   @override
   String get spotCardPartOfPrefix => 'Onderdeel van ';
