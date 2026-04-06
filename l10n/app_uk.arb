@@ -1,0 +1,31 @@
+{
+  "@@locale": "uk",
+  "tabExplore": "Explore",
+  "@tabExplore": {
+    "description": "Bottom navigation: map and search tab"
+  },
+  "tabAddSpot": "Add Spot",
+  "@tabAddSpot": {
+    "description": "Bottom navigation: submit a new spot"
+  },
+  "tabAccount": "Account",
+  "@tabAccount": {
+    "description": "Bottom navigation: profile and settings"
+  },
+  "profileSettingsTitle": "Settings",
+  "@profileSettingsTitle": {
+    "description": "Profile: settings card title"
+  },
+  "profileSettingsLanguageLabel": "Language",
+  "@profileSettingsLanguageLabel": {
+    "description": "Profile settings: language row label"
+  },
+  "profileSettingsLanguageDescription": "Choose a language or follow your device settings.",
+  "@profileSettingsLanguageDescription": {
+    "description": "Profile settings: short hint for language control"
+  },
+  "profileLanguageSystemDefault": "Device language",
+  "@profileLanguageSystemDefault": {
+    "description": "Use OS/browser locale resolution instead of a fixed app language"
+  }
+}
