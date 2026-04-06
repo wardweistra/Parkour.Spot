@@ -1,10 +1,31 @@
 {
   "@@locale": "fr",
   "tabExplore": "Explorer",
+  "@tabExplore": {
+    "description": "Bottom navigation: map and search tab"
+  },
   "tabAddSpot": "Ajouter un spot",
+  "@tabAddSpot": {
+    "description": "Bottom navigation: submit a new spot"
+  },
   "tabAccount": "Compte",
+  "@tabAccount": {
+    "description": "Bottom navigation: profile and settings"
+  },
   "profileSettingsTitle": "Réglages",
+  "@profileSettingsTitle": {
+    "description": "Profile: settings card title"
+  },
   "profileSettingsLanguageLabel": "Langue",
+  "@profileSettingsLanguageLabel": {
+    "description": "Profile settings: language row label"
+  },
   "profileSettingsLanguageDescription": "Choisissez une langue ou suivez les réglages de l’appareil.",
-  "profileLanguageSystemDefault": "Langue de l’appareil"
+  "@profileSettingsLanguageDescription": {
+    "description": "Profile settings: short hint for language control"
+  },
+  "profileLanguageSystemDefault": "Langue de l’appareil",
+  "@profileLanguageSystemDefault": {
+    "description": "Use OS/browser locale resolution instead of a fixed app language"
+  }
 }
