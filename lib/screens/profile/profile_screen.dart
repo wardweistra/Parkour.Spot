@@ -8,7 +8,6 @@ import 'package:web/web.dart' as web;
 import 'package:lottie/lottie.dart';
 import '../../services/auth_service.dart';
 import '../../services/locale_preferences_service.dart';
-import '../../services/pwa_install_service.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/instagram_button.dart';
@@ -82,7 +81,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   }
 
   Widget _buildProfileLoadError(BuildContext context, AuthService authService) {
-    final error = authService.profileLoadError ?? 'Failed to load profile.';
+    final l10n = AppLocalizations.of(context)!;
+    final error = authService.profileLoadError ?? l10n.profileLoadErrorDefault;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -110,7 +110,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 }
               },
               icon: const Icon(Icons.refresh),
-              label: Text(kIsWeb ? 'Refresh page' : 'Retry'),
+              label: Text(kIsWeb ? l10n.profileRefreshPage : l10n.profileRetry),
             ),
           ],
         ),
@@ -119,6 +119,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   }
 
   Widget _buildAppInfo(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Center(
@@ -140,13 +141,13 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Sign in to access your account',
+                        l10n.profileSignInTitle,
                         style: Theme.of(context).textTheme.titleMedium,
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Sign in to manage your spots and rate locations.',
+                        l10n.profileSignInSubtitle,
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
@@ -160,7 +161,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                             onPressed: () {
                               context.go('/login?redirectTo=${Uri.encodeComponent('/explore?tab=profile')}');
                             },
-                            text: 'Sign In',
+                            text: l10n.profileSignInButton,
                             width: double.infinity,
                           ),
                         ),
@@ -177,7 +178,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             child: Text(
-                              'OR',
+                              l10n.profileOrDivider,
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                               ),
@@ -198,7 +199,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                             onPressed: () {
                               context.go('/login?mode=signup&redirectTo=${Uri.encodeComponent('/explore?tab=profile')}');
                             },
-                            text: 'Create an Account',
+                            text: l10n.profileCreateAccount,
                             width: double.infinity,
                             isOutlined: true,
                           ),
@@ -226,6 +227,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   }
 
   Widget _buildProfileContent(BuildContext context, AuthService authService) {
+    final l10n = AppLocalizations.of(context)!;
     final user = authService.userProfile;
     
     // Determine profile URL - use username if available, otherwise user ID
@@ -275,12 +277,12 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  user?.displayName ?? 'User',
+                                  user?.displayName ?? l10n.profileDefaultDisplayName,
                                   style: Theme.of(context).textTheme.titleMedium,
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  'View and edit your profile',
+                                  l10n.profileViewEditSubtitle,
                                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                                   ),
@@ -426,15 +428,15 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Moderator',
+                          l10n.profileModeratorSectionTitle,
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
                         const SizedBox(height: 8),
                         _buildActionTile(
                           context,
                           Icons.shield,
-                          'Moderator Tools',
-                          'Review and resolve incoming spot reports',
+                          l10n.profileModeratorToolsTitle,
+                          l10n.profileModeratorToolsSubtitle,
                           () {
                             context.push('/moderator');
                           },
@@ -456,15 +458,15 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Administrator',
+                          l10n.profileAdminSectionTitle,
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
                         const SizedBox(height: 8),
                         _buildActionTile(
                           context,
                           Icons.admin_panel_settings,
-                          'Admin Tools',
-                          'Manage sources and administrative tasks',
+                          l10n.profileAdminToolsTitle,
+                          l10n.profileAdminToolsSubtitle,
                           () {
                             context.push('/admin');
                           },
@@ -492,20 +494,23 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 onPressed: () async {
                   final shouldSignOut = await showDialog<bool>(
                     context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Sign Out'),
-                      content: const Text('Are you sure you want to sign out?'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text('Cancel'),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: const Text('Sign Out'),
-                        ),
-                      ],
-                    ),
+                    builder: (dialogContext) {
+                      final dlgL10n = AppLocalizations.of(dialogContext)!;
+                      return AlertDialog(
+                        title: Text(dlgL10n.profileSignOut),
+                        content: Text(dlgL10n.profileSignOutMessage),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(dialogContext, false),
+                            child: Text(dlgL10n.profileCancel),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(dialogContext, true),
+                            child: Text(dlgL10n.profileSignOut),
+                          ),
+                        ],
+                      );
+                    },
                   );
                   
                   if (shouldSignOut == true) {
@@ -515,7 +520,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     }
                   }
                 },
-                text: 'Sign Out',
+                text: l10n.profileSignOut,
                 icon: Icons.logout,
                 backgroundColor: Theme.of(context).colorScheme.error,
                 width: double.infinity,
@@ -527,7 +532,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildExpandedText(BuildContext context) {
+  Widget _buildExpandedText(BuildContext context, AppLocalizations l10n) {
     final textStyle = Theme.of(context).textTheme.bodyLarge?.copyWith(
       color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
     );
@@ -537,10 +542,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       decoration: TextDecoration.underline,
     );
     
-    // Split the text at "Ward Weistra"
-    const beforeLink = 'Started by ';
     const linkText = 'Ward Weistra';
-    const afterLink = ' from the Utrecht parkour community, the app brings together local knowledge from existing city and regional maps—whether they lived on Facebook, Instagram, websites, or retired apps—so great spot data doesn\'t get lost.';
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -549,7 +551,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           TextSpan(
             style: textStyle,
             children: [
-              TextSpan(text: beforeLink),
+              TextSpan(text: l10n.profileAboutStoryBeforeName),
               TextSpan(
                 text: linkText,
                 style: linkStyle,
@@ -561,18 +563,18 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     }
                   },
               ),
-              TextSpan(text: afterLink),
+              TextSpan(text: l10n.profileAboutStoryAfterName),
             ],
           ),
         ),
         const SizedBox(height: 16),
         SelectableText(
-          'This is your map. Add new spots, rate existing ones, and enrich listings with details. The more we contribute, the stronger the community\'s shared knowledge becomes.',
+          l10n.profileAboutMapMission,
           style: textStyle,
         ),
         const SizedBox(height: 16),
         SelectableText(
-          'Our principles:',
+          l10n.profileAboutPrinciplesHeader,
           style: textStyle,
         ),
         const SizedBox(height: 8),
@@ -582,17 +584,17 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SelectableText(
-                '• Transparency: you can browse the app without an account, and each spot shows which external sources contributed to it.',
+                l10n.profileAboutPrincipleTransparency,
                 style: textStyle,
               ),
               const SizedBox(height: 8),
               SelectableText(
-                '• Portability: we\'re building export tools so spot data can be used beyond the app.',
+                l10n.profileAboutPrinciplePortability,
                 style: textStyle,
               ),
               const SizedBox(height: 8),
               SelectableText(
-                '• Open source: the app is community-owned, not dependent on one person.',
+                l10n.profileAboutPrincipleOpenSource,
                 style: textStyle,
               ),
             ],
@@ -600,7 +602,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         ),
         const SizedBox(height: 16),
         SelectableText(
-          'Enjoy discovering and sharing spots with Parkour.spot. Questions or ideas? Tap the contact button—we\'d love to hear from you.',
+          l10n.profileAboutEnjoy,
           style: textStyle,
         ),
         const SizedBox(height: 16),
@@ -608,7 +610,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           TextSpan(
             style: textStyle,
             children: [
-              const TextSpan(text: 'Major contributions by '),
+              TextSpan(text: l10n.profileCreditsBy),
               TextSpan(
                 text: 'Daphne Fontijn',
                 style: linkStyle,
@@ -620,7 +622,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     }
                   },
               ),
-              const TextSpan(text: ' (art), '),
+              TextSpan(text: l10n.profileCreditsDaphneArt),
               TextSpan(
                 text: 'Tim Haerkens',
                 style: linkStyle,
@@ -632,7 +634,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     }
                   },
               ),
-              const TextSpan(text: ', '),
+              TextSpan(text: l10n.profileCreditsComma),
               TextSpan(
                 text: 'Marily Bronkhorst',
                 style: linkStyle,
@@ -644,7 +646,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     }
                   },
               ),
-              const TextSpan(text: ' and many others.'),
+              TextSpan(text: l10n.profileCreditsEnd),
             ],
           ),
         ),
@@ -653,6 +655,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   }
 
   Widget _buildAboutSection(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final textStyle = Theme.of(context).textTheme.bodyLarge?.copyWith(
       color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
     );
@@ -712,7 +715,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     SelectableText(
-                                      'Parkour·Spot is a community-driven app for discovering and sharing parkour and freerunning spots worldwide. We\'re making it simple to find quality locations—wherever you train.',
+                                      l10n.profileAboutIntro,
                                       style: textStyle,
                                     ),
                                     if (!_isExpanded) ...[
@@ -724,7 +727,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                                           });
                                         },
                                         child: Text(
-                                          'Read more',
+                                          l10n.profileReadMore,
                                           style: textStyle?.copyWith(
                                             color: Theme.of(context).colorScheme.primary,
                                             decoration: TextDecoration.underline,
@@ -749,16 +752,17 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                                         const SizedBox(height: 16),
                                         GitHubButton(
                                           url: 'https://github.com/wardweistra/Parkour.Spot/',
-                                          label: 'View source code',
+                                          label: l10n.profileViewSourceCode,
                                         ),
                                         const SizedBox(height: 16),
                                         ReportIssueButton(
                                           url: 'https://github.com/wardweistra/Parkour.Spot/issues',
+                                          label: l10n.profileReportIssue,
                                         ),
                                         const SizedBox(height: 16),
                                         EmailButton(
                                           email: 'parkour.spot@wardweistra.nl',
-                                          label: 'Contact us',
+                                          label: l10n.profileContactUs,
                                         ),
                                       ],
                                     ),
@@ -769,7 +773,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           ),
                           if (_isExpanded) ...[
                             const SizedBox(height: 16),
-                            _buildExpandedText(context),
+                            _buildExpandedText(context, l10n),
                           ],
                         ],
                       )
@@ -777,7 +781,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           SelectableText(
-                            'Parkour·Spot is a community-driven app for discovering and sharing parkour and freerunning spots worldwide. We\'re making it simple to find quality locations—wherever you train.',
+                            l10n.profileAboutIntro,
                             style: textStyle,
                           ),
                           if (!_isExpanded) ...[
@@ -789,7 +793,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                                 });
                               },
                               child: Text(
-                                'Read more',
+                                l10n.profileReadMore,
                                 style: textStyle?.copyWith(
                                   color: Theme.of(context).colorScheme.primary,
                                   decoration: TextDecoration.underline,
@@ -799,7 +803,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           ],
                           if (_isExpanded) ...[
                             const SizedBox(height: 16),
-                            _buildExpandedText(context),
+                            _buildExpandedText(context, l10n),
                           ],
                           const SizedBox(height: 16),
                           InstagramButton(
@@ -809,16 +813,17 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           const SizedBox(height: 16),
                           GitHubButton(
                             url: 'https://github.com/wardweistra/Parkour.Spot/',
-                            label: 'View source code',
+                            label: l10n.profileViewSourceCode,
                           ),
                           const SizedBox(height: 16),
                           ReportIssueButton(
                             url: 'https://github.com/wardweistra/Parkour.Spot/issues',
+                            label: l10n.profileReportIssue,
                           ),
                           const SizedBox(height: 16),
                           EmailButton(
                             email: 'parkour.spot@wardweistra.nl',
-                            label: 'Contact us',
+                            label: l10n.profileContactUs,
                           ),
                         ],
                       ),
@@ -861,6 +866,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
 
   /// Build the install app banner
   Widget _buildInstallBanner(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       child: InkWell(
         onTap: () => _showInstallInstructions(context),
@@ -880,12 +886,12 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Install the Parkour·Spot app',
+                      l10n.profileInstallBannerTitle,
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Get the full app experience',
+                      l10n.profileInstallBannerSubtitle,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                       ),
@@ -907,13 +913,15 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
 
   /// Show install instructions dialog
   void _showInstallInstructions(BuildContext context) {
-    final pwaService = PwaInstallService();
-    final instructions = MobileDetectionService.isIOS
-        ? pwaService.getIOSInstallInstructions()
-        : pwaService.getAndroidInstallInstructions();
-    
-    final platformName = MobileDetectionService.isIOS ? 'iPhone' : 'Android device';
-    
+    final l10n = AppLocalizations.of(context)!;
+    final isIos = MobileDetectionService.isIOS;
+    final deviceLabel =
+        isIos ? l10n.profileInstallDeviceIphone : l10n.profileInstallDeviceAndroid;
+    final step1 = isIos ? l10n.profileInstallIosStep1 : l10n.profileInstallAndroidStep1;
+    final step2 = isIos ? l10n.profileInstallIosStep2 : l10n.profileInstallAndroidStep2;
+    final step3 = isIos ? l10n.profileInstallIosStep3 : l10n.profileInstallAndroidStep3;
+    final step4 = isIos ? l10n.profileInstallIosStep4 : l10n.profileInstallAndroidStep4;
+
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -921,7 +929,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           children: [
             Icon(Icons.get_app, color: Theme.of(context).colorScheme.primary),
             const SizedBox(width: 8),
-            Expanded(child: Text(instructions['title']!)),
+            Expanded(child: Text(l10n.profileInstallDialogTitle)),
           ],
         ),
         content: Column(
@@ -929,23 +937,23 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'To install Parkour·Spot on your $platformName:',
+              l10n.profileInstallIntro(deviceLabel),
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 16),
-            _buildInstallInstructionStep(dialogContext, '1', instructions['step1']!),
+            _buildInstallInstructionStep(dialogContext, '1', step1),
             const SizedBox(height: 12),
-            _buildInstallInstructionStep(dialogContext, '2', instructions['step2']!),
+            _buildInstallInstructionStep(dialogContext, '2', step2),
             const SizedBox(height: 12),
-            _buildInstallInstructionStep(dialogContext, '3', instructions['step3']!),
+            _buildInstallInstructionStep(dialogContext, '3', step3),
             const SizedBox(height: 12),
-            _buildInstallInstructionStep(dialogContext, '4', instructions['step4']!),
+            _buildInstallInstructionStep(dialogContext, '4', step4),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Got it'),
+            child: Text(l10n.profileInstallGotIt),
           ),
         ],
       ),

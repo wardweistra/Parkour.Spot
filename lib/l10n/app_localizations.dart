@@ -147,6 +147,312 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Device language'**
   String get profileLanguageSystemDefault;
+
+  /// Account tab: shown when profile could not be loaded
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load profile.'**
+  String get profileLoadErrorDefault;
+
+  /// Account tab error: reload on web
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh page'**
+  String get profileRefreshPage;
+
+  /// Account tab error: retry loading profile on native
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get profileRetry;
+
+  /// Account tab signed-out: card heading
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to access your account'**
+  String get profileSignInTitle;
+
+  /// Account tab signed-out: supporting text
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to manage your spots and rate locations.'**
+  String get profileSignInSubtitle;
+
+  /// Account tab: primary sign-in button
+  ///
+  /// In en, this message translates to:
+  /// **'Sign In'**
+  String get profileSignInButton;
+
+  /// Account tab: divider between sign-in and sign-up
+  ///
+  /// In en, this message translates to:
+  /// **'OR'**
+  String get profileOrDivider;
+
+  /// Account tab: secondary sign-up button
+  ///
+  /// In en, this message translates to:
+  /// **'Create an Account'**
+  String get profileCreateAccount;
+
+  /// Fallback display name when missing
+  ///
+  /// In en, this message translates to:
+  /// **'User'**
+  String get profileDefaultDisplayName;
+
+  /// Account card subtitle linking to full profile
+  ///
+  /// In en, this message translates to:
+  /// **'View and edit your profile'**
+  String get profileViewEditSubtitle;
+
+  /// Account tab: moderator section heading
+  ///
+  /// In en, this message translates to:
+  /// **'Moderator'**
+  String get profileModeratorSectionTitle;
+
+  /// Account tab: moderator tools row title
+  ///
+  /// In en, this message translates to:
+  /// **'Moderator Tools'**
+  String get profileModeratorToolsTitle;
+
+  /// Account tab: moderator tools row subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Review and resolve incoming spot reports'**
+  String get profileModeratorToolsSubtitle;
+
+  /// Account tab: admin section heading
+  ///
+  /// In en, this message translates to:
+  /// **'Administrator'**
+  String get profileAdminSectionTitle;
+
+  /// Account tab: admin tools row title
+  ///
+  /// In en, this message translates to:
+  /// **'Admin Tools'**
+  String get profileAdminToolsTitle;
+
+  /// Account tab: admin tools row subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Manage sources and administrative tasks'**
+  String get profileAdminToolsSubtitle;
+
+  /// Account tab: sign out button and dialog action
+  ///
+  /// In en, this message translates to:
+  /// **'Sign Out'**
+  String get profileSignOut;
+
+  /// Account tab: sign out confirmation body
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to sign out?'**
+  String get profileSignOutMessage;
+
+  /// Dismiss dialog without action
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get profileCancel;
+
+  /// About section: short intro paragraph
+  ///
+  /// In en, this message translates to:
+  /// **'Parkour·Spot is a community-driven app for discovering and sharing parkour and freerunning spots worldwide. We\'re making it simple to find quality locations—wherever you train.'**
+  String get profileAboutIntro;
+
+  /// About section: expand long text
+  ///
+  /// In en, this message translates to:
+  /// **'Read more'**
+  String get profileReadMore;
+
+  /// About expanded: text before founder name link (keep trailing space)
+  ///
+  /// In en, this message translates to:
+  /// **'Started by '**
+  String get profileAboutStoryBeforeName;
+
+  /// About expanded: story after founder name
+  ///
+  /// In en, this message translates to:
+  /// **' from the Utrecht parkour community, the app brings together local knowledge from existing city and regional maps—whether they lived on Facebook, Instagram, websites, or retired apps—so great spot data doesn\'t get lost.'**
+  String get profileAboutStoryAfterName;
+
+  /// About expanded: community map paragraph
+  ///
+  /// In en, this message translates to:
+  /// **'This is your map. Add new spots, rate existing ones, and enrich listings with details. The more we contribute, the stronger the community\'s shared knowledge becomes.'**
+  String get profileAboutMapMission;
+
+  /// About expanded: principles list heading
+  ///
+  /// In en, this message translates to:
+  /// **'Our principles:'**
+  String get profileAboutPrinciplesHeader;
+
+  /// About expanded: transparency bullet
+  ///
+  /// In en, this message translates to:
+  /// **'• Transparency: you can browse the app without an account, and each spot shows which external sources contributed to it.'**
+  String get profileAboutPrincipleTransparency;
+
+  /// About expanded: portability bullet
+  ///
+  /// In en, this message translates to:
+  /// **'• Portability: we\'re building export tools so spot data can be used beyond the app.'**
+  String get profileAboutPrinciplePortability;
+
+  /// About expanded: open source bullet
+  ///
+  /// In en, this message translates to:
+  /// **'• Open source: the app is community-owned, not dependent on one person.'**
+  String get profileAboutPrincipleOpenSource;
+
+  /// About expanded: closing encouragement
+  ///
+  /// In en, this message translates to:
+  /// **'Enjoy discovering and sharing spots with Parkour.spot. Questions or ideas? Tap the contact button—we\'d love to hear from you.'**
+  String get profileAboutEnjoy;
+
+  /// Credits line before names (keep trailing space)
+  ///
+  /// In en, this message translates to:
+  /// **'Major contributions by '**
+  String get profileCreditsBy;
+
+  /// After Daphne's name: role and separator
+  ///
+  /// In en, this message translates to:
+  /// **' (art), '**
+  String get profileCreditsDaphneArt;
+
+  /// Separator between contributor names
+  ///
+  /// In en, this message translates to:
+  /// **', '**
+  String get profileCreditsComma;
+
+  /// End of credits line
+  ///
+  /// In en, this message translates to:
+  /// **' and many others.'**
+  String get profileCreditsEnd;
+
+  /// About section: GitHub button
+  ///
+  /// In en, this message translates to:
+  /// **'View source code'**
+  String get profileViewSourceCode;
+
+  /// About section: email button
+  ///
+  /// In en, this message translates to:
+  /// **'Contact us'**
+  String get profileContactUs;
+
+  /// About section: GitHub issues button
+  ///
+  /// In en, this message translates to:
+  /// **'Report an issue'**
+  String get profileReportIssue;
+
+  /// Account tab: PWA install card title
+  ///
+  /// In en, this message translates to:
+  /// **'Install the Parkour·Spot app'**
+  String get profileInstallBannerTitle;
+
+  /// Account tab: PWA install card subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Get the full app experience'**
+  String get profileInstallBannerSubtitle;
+
+  /// PWA install instructions dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Install Parkour·Spot'**
+  String get profileInstallDialogTitle;
+
+  /// PWA install dialog: intro before steps
+  ///
+  /// In en, this message translates to:
+  /// **'To install Parkour·Spot on your {device}:'**
+  String profileInstallIntro(String device);
+
+  /// Device name for iOS install instructions
+  ///
+  /// In en, this message translates to:
+  /// **'iPhone'**
+  String get profileInstallDeviceIphone;
+
+  /// Device name for Android install instructions
+  ///
+  /// In en, this message translates to:
+  /// **'Android device'**
+  String get profileInstallDeviceAndroid;
+
+  /// PWA install iOS step 1
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the Share button at the bottom of the screen'**
+  String get profileInstallIosStep1;
+
+  /// PWA install iOS step 2
+  ///
+  /// In en, this message translates to:
+  /// **'Scroll down and tap \"Add to Home Screen\"'**
+  String get profileInstallIosStep2;
+
+  /// PWA install iOS step 3
+  ///
+  /// In en, this message translates to:
+  /// **'Tap \"Add\" in the top right corner'**
+  String get profileInstallIosStep3;
+
+  /// PWA install iOS step 4
+  ///
+  /// In en, this message translates to:
+  /// **'The app will appear on your home screen!'**
+  String get profileInstallIosStep4;
+
+  /// PWA install Android step 1
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the More menu (⋯) in the top right corner'**
+  String get profileInstallAndroidStep1;
+
+  /// PWA install Android step 2
+  ///
+  /// In en, this message translates to:
+  /// **'Tap \"Add to home screen\"'**
+  String get profileInstallAndroidStep2;
+
+  /// PWA install Android step 3
+  ///
+  /// In en, this message translates to:
+  /// **'Tap \"Install app\"'**
+  String get profileInstallAndroidStep3;
+
+  /// PWA install Android step 4
+  ///
+  /// In en, this message translates to:
+  /// **'The app will appear on your home screen!'**
+  String get profileInstallAndroidStep4;
+
+  /// Close PWA install instructions dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get profileInstallGotIt;
 }
 
 class _AppLocalizationsDelegate
