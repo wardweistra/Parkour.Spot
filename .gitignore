@@ -94,3 +94,7 @@ yarn-error.log*
 .env.local
 .env.production
 .DS_Store
+
+#  Agents and skills
+skills-lock.json
+.agents/
