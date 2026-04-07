@@ -61,6 +61,15 @@ This is the recommended approach for most developers. No Firebase production acc
 
 **🌱 Emulator Seed Data**: When you start emulators for the first time, seed data from `scripts/seed-data/` is automatically copied to `.firebase/emulator-data/`. This gives you a working dataset with test users, spots, and other sample data to develop with. Your changes are automatically saved when you stop the emulators.
 
+**Seed data reference.** The committed export includes at least four users and sample content:
+
+- **user@parkour.spot** — Password: `user@parkour.spot`. Regular user.
+- **moderator@parkour.spot** — Password: `moderator@parkour.spot`. Moderator.
+- **admin@parkour.spot** — Password: `admin@parkour.spot`. Admin.
+- **google@parkour.spot** — Sign in with Google (not email/password). Regular user.
+
+There are at least two parkour spots in Évry-Courcouronnes, France.
+
 **🖥️ Emulator UI** (http://localhost:4000): The Firebase Emulator Suite provides a web UI for managing your local emulators. Use it to:
 - **Create users**: Go to Authentication → Users → Add user (email/password)
 - **Verify email**: Open a user → Edit → toggle "Email verified" on
@@ -150,7 +159,7 @@ firebase deploy --only firestore:indexes
 
 ### **Emulator Data Management**
 
-The project includes seed data for Firebase emulators to help new developers get started quickly.
+The project includes seed data for Firebase emulators to help new developers get started quickly. Test accounts and sample spots are documented in the **Seed data reference** subsection under **Option 1: Using Firebase Emulators** above.
 
 **Available Scripts:**
 ```bash
