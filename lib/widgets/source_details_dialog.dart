@@ -92,8 +92,9 @@ class _SourceDetailsDialogState extends State<SourceDetailsDialog> {
   }
 
   Widget _buildContent(SyncSource source) {
-    // Get spot count from lastSyncStats.total
-    final spotCount = source.lastSyncStats?['total'] ?? 0;
+    // Callable/JSON numbers are often double at runtime; normalize for display.
+    final spotCount =
+        (source.lastSyncStats?['total'] as num?)?.toInt() ?? 0;
 
     return AlertDialog(
       title: SelectableText(source.name),

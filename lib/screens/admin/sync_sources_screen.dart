@@ -20,6 +20,13 @@ const TextStyle _kSyncChipLabelText = TextStyle(
 
 const TextStyle _kSyncChipPlainLabel = TextStyle(fontWeight: FontWeight.normal);
 
+/// JSON/callable counts often decode as [double] on web — avoid showing `13893.0`.
+String _formatStatInt(dynamic v) {
+  final n = v as num?;
+  if (n == null) return '';
+  return n.toInt().toString();
+}
+
 class SyncSourcesScreen extends StatefulWidget {
   const SyncSourcesScreen({super.key});
 
@@ -474,31 +481,31 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                             const Text('Last sync stats:', style: TextStyle( fontSize: 12)),
                             if (s.lastSyncStats!['created'] != null)
                               Chip(
-                                label: Text('Created: ${s.lastSyncStats!['created']}', style: _kSyncChipLabelText),
+                                label: Text('Created: ${_formatStatInt(s.lastSyncStats!['created'])}', style: _kSyncChipLabelText),
                                 labelStyle: _kSyncChipLabelText,
                                 backgroundColor: Colors.green.shade100,
                               ),
                             if (s.lastSyncStats!['updated'] != null)
                               Chip(
-                                label: Text('Updated: ${s.lastSyncStats!['updated']}', style: _kSyncChipLabelText),
+                                label: Text('Updated: ${_formatStatInt(s.lastSyncStats!['updated'])}', style: _kSyncChipLabelText),
                                 labelStyle: _kSyncChipLabelText,
                                 backgroundColor: Colors.blue.shade100,
                               ),
                             if (s.lastSyncStats!['removed'] != null)
                               Chip(
-                                label: Text('Removed: ${s.lastSyncStats!['removed']}', style: _kSyncChipLabelText),
+                                label: Text('Removed: ${_formatStatInt(s.lastSyncStats!['removed'])}', style: _kSyncChipLabelText),
                                 labelStyle: _kSyncChipLabelText,
                                 backgroundColor: Colors.red.shade100,
                               ),
                             if (s.lastSyncStats!['skipped'] != null)
                               Chip(
-                                label: Text('Skipped: ${s.lastSyncStats!['skipped']}', style: _kSyncChipLabelText),
+                                label: Text('Skipped: ${_formatStatInt(s.lastSyncStats!['skipped'])}', style: _kSyncChipLabelText),
                                 labelStyle: _kSyncChipLabelText,
                                 backgroundColor: Colors.orange.shade100,
                               ),
                             if (s.lastSyncStats!['total'] != null)
                               Chip(
-                                label: Text('Total: ${s.lastSyncStats!['total']}', style: _kSyncChipLabelText),
+                                label: Text('Total: ${_formatStatInt(s.lastSyncStats!['total'])}', style: _kSyncChipLabelText),
                                 labelStyle: _kSyncChipLabelText,
                                 backgroundColor: Colors.grey.shade200,
                               ),
