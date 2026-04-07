@@ -30,6 +30,7 @@ const countries = require("i18n-iso-countries");
 
 // Initialize Firebase Admin
 admin.initializeApp();
+const {FieldValue} = require("firebase-admin/firestore");
 const db = admin.firestore();
 const bucket = admin.storage().bucket();
 
@@ -902,7 +903,7 @@ async function recomputeSpotRatingAggregates(spotId) {
             ratingCount: 0,
             wilsonLowerBound: 0,
             ranking: Math.random(),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
           },
           {merge: true},
       );
@@ -954,7 +955,7 @@ async function recomputeSpotRatingAggregates(spotId) {
               ratingCount: count,
               wilsonLowerBound: Number(wilsonLowerBound.toFixed(4)),
               ranking: Number(ranking.toFixed(4)),
-              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+              updatedAt: FieldValue.serverTimestamp(),
             },
             {merge: true},
         );
@@ -1061,7 +1062,7 @@ exports.recomputeSpotRankings = onCall(
             // Update the spot document with ranking field
             await spotDoc.ref.update({
               ranking: Number(ranking.toFixed(4)),
-              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+              updatedAt: FieldValue.serverTimestamp(),
             });
 
             updated++;
@@ -1589,7 +1590,7 @@ async function cacheImageMetadata(imageUrl, imageHash, publicUrl) {
       url: imageUrl,
       hash: imageHash,
       publicUrl: publicUrl,
-      lastChecked: admin.firestore.FieldValue.serverTimestamp(),
+      lastChecked: FieldValue.serverTimestamp(),
     });
     console.log(`Cached image metadata for: ${imageUrl.substring(0, 50)}...`);
   } catch (error) {
@@ -2660,7 +2661,7 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
       spotSource: sourceId,
       spotSourceName: source.name,
       spotSourceRemoved: false,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     };
 
     // Optionally record folder name on spot if configured and available
@@ -2751,7 +2752,7 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
       spotData.ranking = Math.random(); // Random ranking for new spots
       spotData.duplicateOf = null; // Initialize duplicateOf field
       spotData.hidden = false; // Initialize hidden field
-      spotData.createdAt = admin.firestore.FieldValue.serverTimestamp();
+      spotData.createdAt = FieldValue.serverTimestamp();
       const newSpotRef = await db.collection("spots").add(cleanUndefinedValues(spotData));
       created++;
       processedSpotIds.add(newSpotRef.id);
@@ -2791,7 +2792,7 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
       }
 
       // Remove spotSourceRemovedAt field if it exists (only valid in update operations)
-      spotData.spotSourceRemovedAt = admin.firestore.FieldValue.delete();
+      spotData.spotSourceRemovedAt = FieldValue.delete();
 
       await existingSpot.ref.update(cleanUndefinedValues(spotData));
       processedSpotIds.add(existingSpot.id);
@@ -2861,7 +2862,7 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
 
       await doc.ref.update({
         spotSourceRemoved: true,
-        spotSourceRemovedAt: admin.firestore.FieldValue.serverTimestamp(),
+        spotSourceRemovedAt: FieldValue.serverTimestamp(),
       });
 
       removed++;
@@ -2894,11 +2895,11 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
   const sourceDoc = await db.collection("syncSources").doc(sourceId).get();
   if (sourceDoc.exists) {
     const updateData = {
-      lastSyncAt: admin.firestore.FieldValue.serverTimestamp(),
+      lastSyncAt: FieldValue.serverTimestamp(),
       lastSyncStats: stats,
       syncInProgress: false,
-      syncProgress: admin.firestore.FieldValue.delete(),
-      syncType: admin.firestore.FieldValue.delete(),
+      syncProgress: FieldValue.delete(),
+      syncType: FieldValue.delete(),
     };
 
     // Update allFolders if recordFolderName is enabled
@@ -2944,7 +2945,7 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
       spotId: `syncSource:${sourceId}`,
       userId: null,
       userName: "Spot Sync Service",
-      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      timestamp: FieldValue.serverTimestamp(),
       metadata: {
         sourceId: sourceId,
         sourceName: source.name,
@@ -3434,8 +3435,8 @@ exports.createSyncSource = onCall(
           publicUrl: publicUrl || "",
           instagramHandle: instagramHandle || "",
           isActive: isActive,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          createdAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
         };
 
         // Add optional folder config only if they have values
@@ -3485,7 +3486,6 @@ exports.createSyncSource = onCall(
           success: true,
           message: "Sync source created successfully",
           sourceId: docRef.id,
-          data: sourceData,
         };
       } catch (error) {
         console.error("Error creating sync source:", error);
@@ -3522,7 +3522,7 @@ exports.updateSyncSource = onCall(
         }
 
         const updateData = {
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
         };
 
         if (name !== undefined) updateData.name = name;
@@ -3545,19 +3545,19 @@ exports.updateSyncSource = onCall(
                 .filter((s) => s.length > 0);
             updateData.includeFolders = list;
           } else if (includeFolders === null) {
-            updateData.includeFolders = admin.firestore.FieldValue.delete();
+            updateData.includeFolders = FieldValue.delete();
           }
         }
         if (recordFolderName !== undefined) {
           if (typeof recordFolderName === "boolean") {
             updateData.recordFolderName = recordFolderName;
           } else if (recordFolderName === null) {
-            updateData.recordFolderName = admin.firestore.FieldValue.delete();
+            updateData.recordFolderName = FieldValue.delete();
           }
         }
         if (defaultSpotAttributes !== undefined) {
           if (defaultSpotAttributes === null) {
-            updateData.defaultSpotAttributes = admin.firestore.FieldValue.delete();
+            updateData.defaultSpotAttributes = FieldValue.delete();
           } else {
             const normalizedDefaultSpotAttributes = normalizeSpotAttributeDefaults(
                 defaultSpotAttributes,
@@ -3565,13 +3565,13 @@ exports.updateSyncSource = onCall(
             if (normalizedDefaultSpotAttributes) {
               updateData.defaultSpotAttributes = normalizedDefaultSpotAttributes;
             } else {
-              updateData.defaultSpotAttributes = admin.firestore.FieldValue.delete();
+              updateData.defaultSpotAttributes = FieldValue.delete();
             }
           }
         }
         if (folderSpotAttributes !== undefined) {
           if (folderSpotAttributes === null) {
-            updateData.folderSpotAttributes = admin.firestore.FieldValue.delete();
+            updateData.folderSpotAttributes = FieldValue.delete();
           } else {
             const normalizedFolderSpotAttributes = normalizeFolderSpotAttributeDefaults(
                 folderSpotAttributes,
@@ -3579,7 +3579,7 @@ exports.updateSyncSource = onCall(
             if (Object.keys(normalizedFolderSpotAttributes).length > 0) {
               updateData.folderSpotAttributes = normalizedFolderSpotAttributes;
             } else {
-              updateData.folderSpotAttributes = admin.firestore.FieldValue.delete();
+              updateData.folderSpotAttributes = FieldValue.delete();
             }
           }
         }
@@ -3587,14 +3587,14 @@ exports.updateSyncSource = onCall(
           if (lightSyncSchedule && lightSyncSchedule.trim().length > 0) {
             updateData.lightSyncSchedule = lightSyncSchedule.trim();
           } else {
-            updateData.lightSyncSchedule = admin.firestore.FieldValue.delete();
+            updateData.lightSyncSchedule = FieldValue.delete();
           }
         }
         if (fullSyncSchedule !== undefined) {
           if (fullSyncSchedule && fullSyncSchedule.trim().length > 0) {
             updateData.fullSyncSchedule = fullSyncSchedule.trim();
           } else {
-            updateData.fullSyncSchedule = admin.firestore.FieldValue.delete();
+            updateData.fullSyncSchedule = FieldValue.delete();
           }
         }
         if (autoSyncEnabled !== undefined) {
@@ -3839,7 +3839,7 @@ exports.backfillSourceSpotAttributes = onCall(
                     spotDoc.ref,
                     buildSpotAttributeUpdateData(
                         mutableSpotData,
-                        admin.firestore.FieldValue.serverTimestamp(),
+                        FieldValue.serverTimestamp(),
                     ),
                 );
                 sourceResult.spotsUpdated += 1;
@@ -3884,7 +3884,7 @@ exports.backfillSourceSpotAttributes = onCall(
                       originalDoc.ref,
                       buildSpotAttributeUpdateData(
                           mutableOriginalData,
-                          admin.firestore.FieldValue.serverTimestamp(),
+                          FieldValue.serverTimestamp(),
                       ),
                   );
                   sourceResult.originalSpotsUpdated += 1;
@@ -4726,7 +4726,7 @@ exports.updateSpotSourceNames = onCall(
           if (!spotData.spotSourceName || spotData.spotSourceName !== sourceName) {
             batch.update(doc.ref, {
               spotSourceName: sourceName,
-              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+              updatedAt: FieldValue.serverTimestamp(),
             });
             updatedCount++;
             console.log(`Queued update for spot ${doc.id}: ${spotData.name} -> source: ${sourceName}`);
@@ -6277,7 +6277,7 @@ exports.geocodeMissingSpotAddresses = onCall(
                   address: result.address || null,
                   city: result.city || null,
                   countryCode: result.countryCode || null,
-                  updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                  updatedAt: FieldValue.serverTimestamp(),
                 });
                 updated++;
                 console.log(`✓ Updated spot ${doc.id}: ${result.address}`);
@@ -6418,7 +6418,7 @@ exports.checkAndRunAutoSyncs = onSchedule(
               if (!result.partial) {
                 const updateField = isFullSync ? "lastFullSyncAt" : "lastLightSyncAt";
                 await db.collection("syncSources").doc(sourceId).update({
-                  [updateField]: admin.firestore.FieldValue.serverTimestamp(),
+                  [updateField]: FieldValue.serverTimestamp(),
                 });
                 console.log(`Auto-sync completed: ${syncType} sync for ${source.name}`, result.stats);
               } else {
@@ -6476,7 +6476,7 @@ exports.checkAndRunAutoSyncs = onSchedule(
               // If sync completed (not partial), update timestamp
               if (!result.partial) {
                 await db.collection("syncSources").doc(sourceId).update({
-                  lastFullSyncAt: admin.firestore.FieldValue.serverTimestamp(),
+                  lastFullSyncAt: FieldValue.serverTimestamp(),
                 });
                 console.log(`Auto-sync completed: Full sync for ${source.name}`, result.stats);
               } else {
@@ -6514,7 +6514,7 @@ exports.checkAndRunAutoSyncs = onSchedule(
               // If sync completed (not partial), update timestamp
               if (!result.partial) {
                 await db.collection("syncSources").doc(sourceId).update({
-                  lastLightSyncAt: admin.firestore.FieldValue.serverTimestamp(),
+                  lastLightSyncAt: FieldValue.serverTimestamp(),
                 });
                 console.log(`Auto-sync completed: Light sync for ${source.name}`, result.stats);
               } else {
@@ -6725,7 +6725,7 @@ async function performJumpflixImport(token) {
   }
 
   const newJumpflixIds = new Set();
-  const now = admin.firestore.FieldValue.serverTimestamp();
+  const now = FieldValue.serverTimestamp();
 
   // Fetch details for each video, download thumbnails, store in jumpflixVideos
   for (const v of videos) {
@@ -7771,7 +7771,7 @@ exports.findDuplicateSpots = onCall(
           runId: runId,
           sourceId: sourceId,
           sourceName: sourceName,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          createdAt: FieldValue.serverTimestamp(),
           stats: {
             spotsChecked: spotsChecked,
             spotsSkipped: spotsSkipped,
@@ -7890,7 +7890,7 @@ exports.getSpotByApi = onRequest(
             }
             await db.runTransaction(async (transaction) => {
               transaction.update(db.collection(API_CLIENTS_COLLECTION).doc(clientId), {
-                lastUsedAt: admin.firestore.FieldValue.serverTimestamp(),
+                lastUsedAt: FieldValue.serverTimestamp(),
               });
               const usageRef = db.collection(API_CLIENTS_COLLECTION)
                   .doc(clientId)
@@ -7898,8 +7898,8 @@ exports.getSpotByApi = onRequest(
                   .doc(dateId);
               transaction.set(usageRef, {
                 date: dateId,
-                count: admin.firestore.FieldValue.increment(1),
-                lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                count: FieldValue.increment(1),
+                lastUpdatedAt: FieldValue.serverTimestamp(),
               }, {merge: true});
             });
             res.set("Content-Type", "application/json; charset=utf-8");
@@ -7943,7 +7943,7 @@ exports.getSpotByApi = onRequest(
 
           await db.runTransaction(async (transaction) => {
             transaction.update(db.collection(API_CLIENTS_COLLECTION).doc(clientId), {
-              lastUsedAt: admin.firestore.FieldValue.serverTimestamp(),
+              lastUsedAt: FieldValue.serverTimestamp(),
             });
             const usageRef = db.collection(API_CLIENTS_COLLECTION)
                 .doc(clientId)
@@ -7951,8 +7951,8 @@ exports.getSpotByApi = onRequest(
                 .doc(dateId);
             transaction.set(usageRef, {
               date: dateId,
-              count: admin.firestore.FieldValue.increment(1),
-              lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+              count: FieldValue.increment(1),
+              lastUpdatedAt: FieldValue.serverTimestamp(),
             }, {merge: true});
           });
 
@@ -7976,7 +7976,7 @@ exports.getSpotByApi = onRequest(
         const spotData = spotSnap.data();
         await db.runTransaction(async (transaction) => {
           transaction.update(db.collection(API_CLIENTS_COLLECTION).doc(clientId), {
-            lastUsedAt: admin.firestore.FieldValue.serverTimestamp(),
+            lastUsedAt: FieldValue.serverTimestamp(),
           });
           const usageRef = db.collection(API_CLIENTS_COLLECTION)
               .doc(clientId)
@@ -7984,8 +7984,8 @@ exports.getSpotByApi = onRequest(
               .doc(dateId);
           transaction.set(usageRef, {
             date: dateId,
-            count: admin.firestore.FieldValue.increment(1),
-            lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            count: FieldValue.increment(1),
+            lastUpdatedAt: FieldValue.serverTimestamp(),
           }, {merge: true});
         });
 
@@ -8081,7 +8081,7 @@ exports.createApiClient = onCall({region: "europe-west1"}, async (request) => {
       name: name.trim(),
       apiKeyHash,
       active: true,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
       createdBy: request.auth?.uid || null,
     });
 
