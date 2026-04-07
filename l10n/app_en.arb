@@ -1298,5 +1298,682 @@
         "type": "String"
       }
     }
+  },
+  "sourceDetailsLoadingSource": "Loading source...",
+  "@sourceDetailsLoadingSource": {
+    "description": "Source details dialog loading state"
+  },
+  "sourceDetailsErrorTitle": "Error",
+  "@sourceDetailsErrorTitle": {
+    "description": "Source details dialog generic error title"
+  },
+  "sourceDetailsNotFound": "Source not found",
+  "@sourceDetailsNotFound": {
+    "description": "Source details dialog missing source fallback"
+  },
+  "sourceDetailsTotalSpots": "Total Spots",
+  "@sourceDetailsTotalSpots": {
+    "description": "Source details: total number of imported spots label"
+  },
+  "sourceDetailsFolders": "Folders",
+  "@sourceDetailsFolders": {
+    "description": "Source details: folders section label"
+  },
+  "sourceDetailsGoToSource": "Go to Source",
+  "@sourceDetailsGoToSource": {
+    "description": "Source details: external source link button"
+  },
+  "sourceDetailsAdded": "Added",
+  "@sourceDetailsAdded": {
+    "description": "Source details: created date label"
+  },
+  "sourceDetailsLastImported": "Last Imported",
+  "@sourceDetailsLastImported": {
+    "description": "Source details: last import date label"
+  },
+  "sourceDetailsRelativeDaysAgo": "{count, plural, one{1 day ago} other{{count} days ago}}",
+  "@sourceDetailsRelativeDaysAgo": {
+    "description": "Relative time in days for source details",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sourceDetailsRelativeHoursAgo": "{count, plural, one{1 hour ago} other{{count} hours ago}}",
+  "@sourceDetailsRelativeHoursAgo": {
+    "description": "Relative time in hours for source details",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sourceDetailsRelativeMinutesAgo": "{count, plural, one{1 minute ago} other{{count} minutes ago}}",
+  "@sourceDetailsRelativeMinutesAgo": {
+    "description": "Relative time in minutes for source details",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sourceDetailsRelativeJustNow": "Just now",
+  "@sourceDetailsRelativeJustNow": {
+    "description": "Relative time for very recent source updates"
+  },
+  "spotTrackingSignInToViewList": "Sign in to view your {listName} list",
+  "@spotTrackingSignInToViewList": {
+    "description": "Prompt on spot tracking list pages when user is signed out",
+    "placeholders": {
+      "listName": {
+        "type": "String"
+      }
+    }
+  },
+  "spotTrackingNoSpotsInList": "No spots in {listName}",
+  "@spotTrackingNoSpotsInList": {
+    "description": "Empty state title for spot tracking list pages",
+    "placeholders": {
+      "listName": {
+        "type": "String"
+      }
+    }
+  },
+  "spotListSaveTooltipSaveList": "Save list",
+  "@spotListSaveTooltipSaveList": {
+    "description": "Tooltip on list save button when list is not saved"
+  },
+  "spotListSaveTooltipSavedList": "Saved list",
+  "@spotListSaveTooltipSavedList": {
+    "description": "Tooltip on list save button when list is already saved"
+  },
+  "spotListSaveSignInTitle": "Sign in to save lists",
+  "@spotListSaveSignInTitle": {
+    "description": "Title in save-list popup shown to signed-out users"
+  },
+  "spotListSaveSignInBody": "Save someone else’s spot list to your profile so you can open it again later.",
+  "@spotListSaveSignInBody": {
+    "description": "Description in save-list popup shown to signed-out users"
+  },
+  "spotListSaveSavedToProfile": "List saved to your profile",
+  "@spotListSaveSavedToProfile": {
+    "description": "Snackbar when a list is saved"
+  },
+  "spotListSaveCouldNotSaveList": "Could not save list",
+  "@spotListSaveCouldNotSaveList": {
+    "description": "Snackbar when saving a list fails"
+  },
+  "spotListSaveRemovedFromSavedLists": "Removed from saved lists",
+  "@spotListSaveRemovedFromSavedLists": {
+    "description": "Snackbar when a list is removed from saved"
+  },
+  "spotListSaveCouldNotRemoveList": "Could not remove list",
+  "@spotListSaveCouldNotRemoveList": {
+    "description": "Snackbar when unsaving a list fails"
+  },
+  "spotListSaveActionSaveList": "Save list",
+  "@spotListSaveActionSaveList": {
+    "description": "Popup action to save list"
+  },
+  "spotListSaveActionRemoveFromSaved": "Remove from saved",
+  "@spotListSaveActionRemoveFromSaved": {
+    "description": "Popup action to remove list from saved"
+  },
+  "spotListSaveActionViewSavedLists": "View saved lists",
+  "@spotListSaveActionViewSavedLists": {
+    "description": "Popup action to navigate to saved lists section"
+  },
+  "spotListDetailListNotFoundOrNotAccessible": "List not found or not accessible",
+  "@spotListDetailListNotFoundOrNotAccessible": {
+    "description": "Error message when list detail cannot load requested list"
+  },
+  "spotListDetailDeleteListTitle": "Delete List",
+  "@spotListDetailDeleteListTitle": {
+    "description": "Delete list confirmation dialog title"
+  },
+  "spotListDetailDeleteListConfirmation": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
+  "@spotListDetailDeleteListConfirmation": {
+    "description": "Delete list confirmation dialog body",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "spotListDetailDeleteAction": "Delete",
+  "@spotListDetailDeleteAction": {
+    "description": "Delete action label"
+  },
+  "spotListDetailListDeleted": "List deleted",
+  "@spotListDetailListDeleted": {
+    "description": "Snackbar after deleting a list"
+  },
+  "spotListDetailFailedToDeleteList": "Failed to delete list",
+  "@spotListDetailFailedToDeleteList": {
+    "description": "Snackbar when deleting list fails"
+  },
+  "spotListDetailNoSpotsInThisList": "No spots in this list",
+  "@spotListDetailNoSpotsInThisList": {
+    "description": "Empty state title for list detail page"
+  },
+  "spotListDetailEditListTitle": "Edit List",
+  "@spotListDetailEditListTitle": {
+    "description": "Edit list dialog title"
+  },
+  "spotListDetailMoreInfoLinkLabel": "More info link (optional)",
+  "@spotListDetailMoreInfoLinkLabel": {
+    "description": "Edit list dialog label for optional external info URL"
+  },
+  "spotListDetailMoreInfoLinkHint": "https://…",
+  "@spotListDetailMoreInfoLinkHint": {
+    "description": "Edit list dialog hint for optional external info URL"
+  },
+  "spotListDetailMoreInfoLinkHelper": "A page elsewhere on the web with more about this list",
+  "@spotListDetailMoreInfoLinkHelper": {
+    "description": "Edit list dialog helper text for optional external info URL"
+  },
+  "spotListDetailMoreInfoLinkValidationError": "More info link must be a valid URL (http or https), e.g. example.com or https://example.com/page",
+  "@spotListDetailMoreInfoLinkValidationError": {
+    "description": "Validation error for list more-info URL field"
+  },
+  "spotListDetailSave": "Save",
+  "@spotListDetailSave": {
+    "description": "Save action label in list edit flows"
+  },
+  "spotListDetailListUpdated": "List updated",
+  "@spotListDetailListUpdated": {
+    "description": "Snackbar when list update succeeds"
+  },
+  "spotListDetailFailedToUpdateList": "Failed to update list",
+  "@spotListDetailFailedToUpdateList": {
+    "description": "Snackbar when list update fails"
+  },
+  "spotListDetailVisibilityPublicList": "Public list",
+  "@spotListDetailVisibilityPublicList": {
+    "description": "List provenance visibility prefix"
+  },
+  "spotListDetailVisibilityUnlistedList": "Unlisted list",
+  "@spotListDetailVisibilityUnlistedList": {
+    "description": "List provenance visibility prefix"
+  },
+  "spotListDetailVisibilityPrivateList": "Private list",
+  "@spotListDetailVisibilityPrivateList": {
+    "description": "List provenance visibility prefix"
+  },
+  "spotListDetailCouldNotOpenProfile": "Could not open profile",
+  "@spotListDetailCouldNotOpenProfile": {
+    "description": "Snackbar when creator profile navigation fails"
+  },
+  "spotListDetailCreatedPart": "{visibility} created {date}",
+  "@spotListDetailCreatedPart": {
+    "description": "First phrase in list provenance sentence",
+    "placeholders": {
+      "visibility": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "spotListDetailCreatedBySuffix": " by ",
+  "@spotListDetailCreatedBySuffix": {
+    "description": "Suffix before creator name in list provenance sentence (keep spaces)"
+  },
+  "spotListDetailLastUpdatedPart": ", and last updated {date}.",
+  "@spotListDetailLastUpdatedPart": {
+    "description": "Suffix after creator in list provenance sentence",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "spotListDetailMoreInformationOn": "More information on ",
+  "@spotListDetailMoreInformationOn": {
+    "description": "Prefix text before external host link on list detail page (keep trailing space)"
+  },
+  "spotListDetailCopiedToClipboard": "List copied to clipboard!",
+  "@spotListDetailCopiedToClipboard": {
+    "description": "Snackbar after copying list share text"
+  },
+  "spotListDetailCopyFailed": "Failed to copy list: {error}",
+  "@spotListDetailCopyFailed": {
+    "description": "Snackbar when list copy fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "spotListDetailHighlightListOnMap": "Highlight list on map",
+  "@spotListDetailHighlightListOnMap": {
+    "description": "Hint badge shown on list mini-map"
+  },
+  "spotListDetailEditListTooltip": "Edit list",
+  "@spotListDetailEditListTooltip": {
+    "description": "Tooltip for list management menu button"
+  },
+  "spotListDetailMenuListSettings": "List Settings",
+  "@spotListDetailMenuListSettings": {
+    "description": "List management menu item"
+  },
+  "spotListDetailMenuOrganizeList": "Organize List",
+  "@spotListDetailMenuOrganizeList": {
+    "description": "List management menu item"
+  },
+  "spotListDetailMenuDeleteList": "Delete List",
+  "@spotListDetailMenuDeleteList": {
+    "description": "List management menu item"
+  },
+  "spotListDetailPageTitle": "Spot List",
+  "@spotListDetailPageTitle": {
+    "description": "Fallback page title for list detail"
+  },
+  "spotListDetailListNotFound": "List not found",
+  "@spotListDetailListNotFound": {
+    "description": "List detail not-found body text"
+  },
+  "spotListDetailMetaDescriptionFallback": "A curated list of {count, plural, one{1 parkour spot} other{{count} parkour spots}} on Parkour·Spot",
+  "@spotListDetailMetaDescriptionFallback": {
+    "description": "Fallback SEO description for list detail pages",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "publicProfilePageTitle": "Profile",
+  "@publicProfilePageTitle": {
+    "description": "Page title for public profile screen"
+  },
+  "publicProfileShareProfileTooltip": "Share Profile",
+  "@publicProfileShareProfileTooltip": {
+    "description": "Tooltip for profile share action"
+  },
+  "publicProfileErrorLoadingProfile": "Error loading profile",
+  "@publicProfileErrorLoadingProfile": {
+    "description": "Error heading on public profile screen"
+  },
+  "publicProfilePleaseTryAgainLater": "Please try again later",
+  "@publicProfilePleaseTryAgainLater": {
+    "description": "Error hint on public profile screen"
+  },
+  "publicProfileMetaDescription": "View {name}'s parkour spots and lists on Parkour·Spot — {defaultDescription}",
+  "@publicProfileMetaDescription": {
+    "description": "SEO description for a user profile page",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "defaultDescription": {
+        "type": "String"
+      }
+    }
+  },
+  "publicProfileProfileNotFound": "Profile not found",
+  "@publicProfileProfileNotFound": {
+    "description": "Heading when profile is missing or inaccessible"
+  },
+  "publicProfileNotFoundOrPrivate": "This profile does not exist or is private.",
+  "@publicProfileNotFoundOrPrivate": {
+    "description": "Body text when profile is missing or inaccessible"
+  },
+  "publicProfileMemberSince": "Member since {date}",
+  "@publicProfileMemberSince": {
+    "description": "Member since line on public profile",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "publicProfileEditProfileTooltip": "Edit Profile",
+  "@publicProfileEditProfileTooltip": {
+    "description": "Tooltip for opening profile settings sheet"
+  },
+  "publicProfileSpotTracking": "Spot tracking",
+  "@publicProfileSpotTracking": {
+    "description": "Card title for tracking lists section on own profile"
+  },
+  "publicProfileNoSpotsYet": "No spots yet",
+  "@publicProfileNoSpotsYet": {
+    "description": "Empty state title for tracking lists section"
+  },
+  "publicProfileAddSpotsFromSpotDetailPages": "Add spots from spot detail pages",
+  "@publicProfileAddSpotsFromSpotDetailPages": {
+    "description": "Hint for how to populate tracking/lists sections"
+  },
+  "publicProfileBeenTo": "Been to",
+  "@publicProfileBeenTo": {
+    "description": "Tracking list title"
+  },
+  "publicProfileMyCheckIns": "My check-ins",
+  "@publicProfileMyCheckIns": {
+    "description": "Row title to open check-in history"
+  },
+  "publicProfileMyCheckInsSubtitle": "Your recorded history of visits to spots",
+  "@publicProfileMyCheckInsSubtitle": {
+    "description": "Subtitle for check-in history row"
+  },
+  "publicProfileSpotLists": "Spot lists",
+  "@publicProfileSpotLists": {
+    "description": "Card title for user's own lists section"
+  },
+  "publicProfileYours": "Yours",
+  "@publicProfileYours": {
+    "description": "Subheading for user's own lists in unified card"
+  },
+  "publicProfileCreateYourFirstList": "Create your first list",
+  "@publicProfileCreateYourFirstList": {
+    "description": "CTA in empty owned-lists state"
+  },
+  "publicProfileSaved": "Saved",
+  "@publicProfileSaved": {
+    "description": "Subheading for saved lists in unified card"
+  },
+  "publicProfilePublicSpotLists": "Public Spot Lists",
+  "@publicProfilePublicSpotLists": {
+    "description": "Card title when viewing someone else's profile lists"
+  },
+  "publicProfileNoSavedListsYet": "No saved lists yet",
+  "@publicProfileNoSavedListsYet": {
+    "description": "Empty state title for saved lists subsection"
+  },
+  "publicProfileSaveListsHint": "Save lists you find on other users’ list pages",
+  "@publicProfileSaveListsHint": {
+    "description": "Empty state hint for saved lists subsection"
+  },
+  "publicProfileSavedListsUnavailable": "Your saved lists are no longer available or were removed.",
+  "@publicProfileSavedListsUnavailable": {
+    "description": "Message shown when saved IDs resolve to no accessible lists"
+  },
+  "publicProfileListCreatedSuccessfully": "List created successfully",
+  "@publicProfileListCreatedSuccessfully": {
+    "description": "Snackbar after creating a list from profile"
+  },
+  "publicProfileChangeProfilePicture": "Change Profile Picture",
+  "@publicProfileChangeProfilePicture": {
+    "description": "Dialog title for profile picture actions"
+  },
+  "publicProfileChooseFromGallery": "Choose from Gallery",
+  "@publicProfileChooseFromGallery": {
+    "description": "Option in profile picture dialog"
+  },
+  "publicProfileTakePhoto": "Take Photo",
+  "@publicProfileTakePhoto": {
+    "description": "Option in profile picture dialog"
+  },
+  "publicProfileRemovePicture": "Remove Picture",
+  "@publicProfileRemovePicture": {
+    "description": "Option in profile picture dialog"
+  },
+  "publicProfileErrorPickingImage": "Error picking image: {error}",
+  "@publicProfileErrorPickingImage": {
+    "description": "Snackbar when selecting gallery image fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "publicProfileErrorTakingPhoto": "Error taking photo: {error}",
+  "@publicProfileErrorTakingPhoto": {
+    "description": "Snackbar when camera capture fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "publicProfileProcessingImage": "Processing image...",
+  "@publicProfileProcessingImage": {
+    "description": "Progress status while handling profile image"
+  },
+  "publicProfileReadingImage": "Reading image...",
+  "@publicProfileReadingImage": {
+    "description": "Progress status while reading selected image"
+  },
+  "publicProfileUploading": "Uploading...",
+  "@publicProfileUploading": {
+    "description": "Progress status while uploading profile image"
+  },
+  "publicProfileFinishing": "Finishing...",
+  "@publicProfileFinishing": {
+    "description": "Progress status near completion of profile image upload"
+  },
+  "publicProfileUpdatingProfile": "Updating profile...",
+  "@publicProfileUpdatingProfile": {
+    "description": "Progress status while updating user document"
+  },
+  "publicProfileProfilePictureUpdatedSuccessfully": "Profile picture updated successfully",
+  "@publicProfileProfilePictureUpdatedSuccessfully": {
+    "description": "Snackbar after successful profile picture update"
+  },
+  "publicProfileFailedToUpdateProfilePicture": "Failed to update profile picture",
+  "@publicProfileFailedToUpdateProfilePicture": {
+    "description": "Snackbar when profile picture update fails"
+  },
+  "publicProfileErrorUploadingProfilePicture": "Error uploading profile picture: {error}",
+  "@publicProfileErrorUploadingProfilePicture": {
+    "description": "Snackbar when profile picture upload throws",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "publicProfileRemoveProfilePicture": "Remove Profile Picture",
+  "@publicProfileRemoveProfilePicture": {
+    "description": "Confirmation dialog title for removing profile picture"
+  },
+  "publicProfileRemoveProfilePictureConfirmation": "Are you sure you want to remove your profile picture?",
+  "@publicProfileRemoveProfilePictureConfirmation": {
+    "description": "Confirmation dialog body for removing profile picture"
+  },
+  "publicProfileProfilePictureRemovedSuccessfully": "Profile picture removed successfully",
+  "@publicProfileProfilePictureRemovedSuccessfully": {
+    "description": "Snackbar after profile picture removal succeeds"
+  },
+  "publicProfileFailedToRemoveProfilePicture": "Failed to remove profile picture",
+  "@publicProfileFailedToRemoveProfilePicture": {
+    "description": "Snackbar when removing profile picture fails"
+  },
+  "publicProfileErrorRemovingProfilePicture": "Error removing profile picture: {error}",
+  "@publicProfileErrorRemovingProfilePicture": {
+    "description": "Snackbar when removing profile picture throws",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "publicProfileProfileCopiedToClipboard": "Profile copied to clipboard!",
+  "@publicProfileProfileCopiedToClipboard": {
+    "description": "Snackbar after profile URL copy succeeds"
+  },
+  "publicProfileFailedToCopyProfile": "Failed to copy profile: {error}",
+  "@publicProfileFailedToCopyProfile": {
+    "description": "Snackbar when sharing/copying profile fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "publicProfileStatsSpots": "Spots",
+  "@publicProfileStatsSpots": {
+    "description": "Stats label for spots created"
+  },
+  "publicProfileStatsRatings": "Ratings",
+  "@publicProfileStatsRatings": {
+    "description": "Stats label for ratings given"
+  },
+  "publicProfileSettingsTitle": "Profile Settings",
+  "@publicProfileSettingsTitle": {
+    "description": "Bottom sheet title for editing profile"
+  },
+  "publicProfileEmailLabel": "Email",
+  "@publicProfileEmailLabel": {
+    "description": "Profile settings: email field label"
+  },
+  "publicProfileEmailNotShownHint": "Your email is not shown on your public profile.",
+  "@publicProfileEmailNotShownHint": {
+    "description": "Profile settings: email privacy hint"
+  },
+  "publicProfileDisplayNameLabel": "Display Name",
+  "@publicProfileDisplayNameLabel": {
+    "description": "Profile settings: display name label"
+  },
+  "publicProfileNoDisplayNameSet": "No display name set",
+  "@publicProfileNoDisplayNameSet": {
+    "description": "Profile settings: fallback when display name is empty"
+  },
+  "publicProfileEditAction": "Edit",
+  "@publicProfileEditAction": {
+    "description": "Generic edit action in profile settings"
+  },
+  "publicProfileDisplayNameHint": "Enter your display name",
+  "@publicProfileDisplayNameHint": {
+    "description": "Profile settings: display name input hint"
+  },
+  "publicProfileDisplayNameHelper": "Shown on your profile and spots you create (max {max} characters)",
+  "@publicProfileDisplayNameHelper": {
+    "description": "Profile settings: display name helper",
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "publicProfileDisplayNameMaxLengthError": "Display name must be at most {max} characters",
+  "@publicProfileDisplayNameMaxLengthError": {
+    "description": "Validation error when display name exceeds max length",
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "publicProfileDisplayNameUpdated": "Display name updated successfully",
+  "@publicProfileDisplayNameUpdated": {
+    "description": "Snackbar when display name update succeeds"
+  },
+  "publicProfileDisplayNameRemoved": "Display name removed",
+  "@publicProfileDisplayNameRemoved": {
+    "description": "Snackbar when display name is removed"
+  },
+  "publicProfileDisplayNameUpdateFailed": "Failed to update display name",
+  "@publicProfileDisplayNameUpdateFailed": {
+    "description": "Validation/error text when display name update fails"
+  },
+  "publicProfileSaveAction": "Save",
+  "@publicProfileSaveAction": {
+    "description": "Generic save action in profile settings"
+  },
+  "publicProfileUsernameLabel": "Username",
+  "@publicProfileUsernameLabel": {
+    "description": "Profile settings: username label"
+  },
+  "publicProfileNoUsernameSet": "No username set",
+  "@publicProfileNoUsernameSet": {
+    "description": "Profile settings: fallback when username is empty"
+  },
+  "publicProfileUsernameHint": "Enter username",
+  "@publicProfileUsernameHint": {
+    "description": "Profile settings: username input hint"
+  },
+  "publicProfileUsernameHelper": "3-27 characters, letters, numbers, underscores, and hyphens only",
+  "@publicProfileUsernameHelper": {
+    "description": "Profile settings: username helper text"
+  },
+  "publicProfileUsernameEmpty": "Username cannot be empty",
+  "@publicProfileUsernameEmpty": {
+    "description": "Validation error when username input is empty"
+  },
+  "publicProfileUsernameTaken": "Username is already taken",
+  "@publicProfileUsernameTaken": {
+    "description": "Validation error when username is not available"
+  },
+  "publicProfileUsernameUpdated": "Username updated successfully",
+  "@publicProfileUsernameUpdated": {
+    "description": "Snackbar when username update succeeds"
+  },
+  "publicProfileUsernameUpdateFailed": "Failed to update username",
+  "@publicProfileUsernameUpdateFailed": {
+    "description": "Fallback error when username update fails"
+  },
+  "publicProfileInstagramLabel": "Instagram",
+  "@publicProfileInstagramLabel": {
+    "description": "Profile settings: instagram section title"
+  },
+  "publicProfileNoInstagramSet": "No Instagram link set",
+  "@publicProfileNoInstagramSet": {
+    "description": "Profile settings: fallback when instagram link is empty"
+  },
+  "publicProfileAddAction": "Add",
+  "@publicProfileAddAction": {
+    "description": "Generic add action in profile settings"
+  },
+  "publicProfileInstagramLinkLabel": "Instagram Link",
+  "@publicProfileInstagramLinkLabel": {
+    "description": "Profile settings: instagram URL field label"
+  },
+  "publicProfileInstagramLinkHint": "https://www.instagram.com/your_handle/",
+  "@publicProfileInstagramLinkHint": {
+    "description": "Profile settings: instagram URL field hint"
+  },
+  "publicProfileInstagramLinkHelper": "You can also paste @handle or just the handle",
+  "@publicProfileInstagramLinkHelper": {
+    "description": "Profile settings: instagram URL helper text"
+  },
+  "publicProfileInstagramInvalid": "Enter a valid Instagram profile URL or handle",
+  "@publicProfileInstagramInvalid": {
+    "description": "Validation error for instagram input"
+  },
+  "publicProfileInstagramRemoved": "Instagram link removed",
+  "@publicProfileInstagramRemoved": {
+    "description": "Snackbar when instagram link is removed"
+  },
+  "publicProfileInstagramUpdated": "Instagram link updated successfully",
+  "@publicProfileInstagramUpdated": {
+    "description": "Snackbar when instagram link update succeeds"
+  },
+  "publicProfileInstagramUpdateFailed": "Failed to update Instagram link",
+  "@publicProfileInstagramUpdateFailed": {
+    "description": "Validation/error text when instagram update fails"
+  },
+  "publicProfilePrivacyTitle": "Profile Privacy",
+  "@publicProfilePrivacyTitle": {
+    "description": "Profile settings: privacy section title"
+  },
+  "publicProfilePrivacyPublicLabel": "Public Profile",
+  "@publicProfilePrivacyPublicLabel": {
+    "description": "Profile settings: label when profile is public"
+  },
+  "publicProfilePrivacyPrivateLabel": "Private Profile",
+  "@publicProfilePrivacyPrivateLabel": {
+    "description": "Profile settings: label when profile is private"
+  },
+  "publicProfilePrivacyPublicDescription": "Your profile is visible to everyone",
+  "@publicProfilePrivacyPublicDescription": {
+    "description": "Profile settings: explanation when profile is public"
+  },
+  "publicProfilePrivacyPrivateDescription": "Your profile is private and not visible to others",
+  "@publicProfilePrivacyPrivateDescription": {
+    "description": "Profile settings: explanation when profile is private"
+  },
+  "publicProfilePrivacyNowPublic": "Profile is now public",
+  "@publicProfilePrivacyNowPublic": {
+    "description": "Snackbar when privacy toggled to public"
+  },
+  "publicProfilePrivacyNowPrivate": "Profile is now private",
+  "@publicProfilePrivacyNowPrivate": {
+    "description": "Snackbar when privacy toggled to private"
+  },
+  "publicProfileFailedToUpdateProfilePrivacy": "Failed to update profile privacy",
+  "@publicProfileFailedToUpdateProfilePrivacy": {
+    "description": "Snackbar when privacy toggle update fails"
   }
 }

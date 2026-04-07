@@ -7,6 +7,7 @@ import '../../services/auth_service.dart';
 import '../../services/url_service.dart';
 import '../../widgets/page_scaffold.dart';
 import '../../widgets/spot_card.dart';
+import '../../l10n/app_localizations.dart';
 
 enum SpotTrackingListType {
   wantToVisit,
@@ -23,6 +24,8 @@ class SpotTrackingListScreen extends StatefulWidget {
 }
 
 class _SpotTrackingListScreenState extends State<SpotTrackingListScreen> {
+  AppLocalizations get _l10n => AppLocalizations.of(context)!;
+
   List<Spot> _spots = [];
   bool _isLoading = true;
   String? _error;
@@ -86,9 +89,9 @@ class _SpotTrackingListScreenState extends State<SpotTrackingListScreen> {
   String get _title {
     switch (widget.type) {
       case SpotTrackingListType.wantToVisit:
-        return 'Want to visit';
+        return _l10n.spotDetailWantToVisit;
       case SpotTrackingListType.visited:
-        return 'Been to';
+        return _l10n.publicProfileBeenTo;
     }
   }
 
@@ -124,14 +127,14 @@ class _SpotTrackingListScreenState extends State<SpotTrackingListScreen> {
                   const Icon(Icons.login, size: 64),
                   const SizedBox(height: 16),
                   Text(
-                    'Sign in to view your $_title list',
+                    _l10n.spotTrackingSignInToViewList(_title),
                     style: Theme.of(context).textTheme.titleMedium,
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
                   FilledButton(
                     onPressed: () => context.go('/login?redirectTo=${Uri.encodeComponent('/profile/${widget.type == SpotTrackingListType.wantToVisit ? 'want-to-visit' : 'visited'}')}'),
-                    child: const Text('Sign in'),
+                    child: Text(_l10n.profileSignInButton),
                   ),
                 ],
               ),
@@ -176,7 +179,7 @@ class _SpotTrackingListScreenState extends State<SpotTrackingListScreen> {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'No spots in $_title',
+                              _l10n.spotTrackingNoSpotsInList(_title),
                               style: Theme.of(context)
                                   .textTheme
                                   .titleMedium
@@ -190,7 +193,7 @@ class _SpotTrackingListScreenState extends State<SpotTrackingListScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Add spots from spot detail pages',
+                              _l10n.publicProfileAddSpotsFromSpotDetailPages,
                               style: Theme.of(context)
                                   .textTheme
                                   .bodyMedium

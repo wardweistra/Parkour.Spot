@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
+import '../l10n/app_localizations.dart';
 import '../services/sync_source_service.dart';
 import 'instagram_button.dart';
 
@@ -28,6 +29,8 @@ class _SourceDetailsDialogState extends State<SourceDetailsDialog> {
   bool _isLoading = true;
   String? _error;
 
+  AppLocalizations get _l10n => AppLocalizations.of(context)!;
+
   @override
   void initState() {
     super.initState();
@@ -46,7 +49,7 @@ class _SourceDetailsDialogState extends State<SourceDetailsDialog> {
     setState(() {
       _source = source;
       _isLoading = false;
-      _error = source == null ? 'Failed to load source' : null;
+      _error = source == null ? _l10n.exploreSourcesLoadError : null;
     });
   }
 
@@ -66,7 +69,7 @@ class _SourceDetailsDialogState extends State<SourceDetailsDialog> {
               ),
               const SizedBox(width: 16),
               Text(
-                'Loading source...',
+                _l10n.sourceDetailsLoadingSource,
                 style: Theme.of(context).textTheme.bodyLarge,
               ),
             ],
@@ -77,12 +80,12 @@ class _SourceDetailsDialogState extends State<SourceDetailsDialog> {
 
     if (_error != null || _source == null) {
       return AlertDialog(
-        title: const Text('Error'),
-        content: Text(_error ?? 'Source not found'),
+        title: Text(_l10n.sourceDetailsErrorTitle),
+        content: Text(_error ?? _l10n.sourceDetailsNotFound),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
+            child: Text(_l10n.spotDetailClose),
           ),
         ],
       );
@@ -104,21 +107,21 @@ class _SourceDetailsDialogState extends State<SourceDetailsDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (source.description != null && source.description!.isNotEmpty) ...[
-              const Text(
-                'Description',
+              Text(
+                _l10n.spotDetailFieldDescription,
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
               SelectableText(source.description!),
               const SizedBox(height: 16),
             ],
-            const Text(
-              'Total Spots',
+            Text(
+              _l10n.sourceDetailsTotalSpots,
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
             Text(
-              '$spotCount spot${spotCount == 1 ? '' : 's'}',
+              _l10n.exploreSpotCountShort(spotCount),
               style: TextStyle(
                 fontSize: 16,
                 color: Theme.of(context).colorScheme.primary,
@@ -127,8 +130,8 @@ class _SourceDetailsDialogState extends State<SourceDetailsDialog> {
             ),
             if (source.allFolders != null && source.allFolders!.isNotEmpty) ...[
               const SizedBox(height: 16),
-              const Text(
-                'Folders',
+              Text(
+                _l10n.sourceDetailsFolders,
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
@@ -182,7 +185,7 @@ class _SourceDetailsDialogState extends State<SourceDetailsDialog> {
                   child: ElevatedButton.icon(
                     onPressed: () => _launchUrl(source.publicUrl!),
                     icon: const Icon(Icons.open_in_new),
-                    label: const Text('Go to Source'),
+                    label: Text(_l10n.sourceDetailsGoToSource),
                   ),
                 ),
               ),
@@ -195,8 +198,8 @@ class _SourceDetailsDialogState extends State<SourceDetailsDialog> {
             ],
             if (source.createdAt != null) ...[
               const SizedBox(height: 16),
-              const Text(
-                'Added',
+              Text(
+                _l10n.sourceDetailsAdded,
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
@@ -204,8 +207,8 @@ class _SourceDetailsDialogState extends State<SourceDetailsDialog> {
             ],
             if (source.lastSyncAt != null) ...[
               const SizedBox(height: 16),
-              const Text(
-                'Last Imported',
+              Text(
+                _l10n.sourceDetailsLastImported,
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
@@ -218,7 +221,7 @@ class _SourceDetailsDialogState extends State<SourceDetailsDialog> {
         PointerInterceptor(
           child: TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
+            child: Text(_l10n.spotDetailClose),
           ),
         ),
       ],
@@ -230,13 +233,13 @@ class _SourceDetailsDialogState extends State<SourceDetailsDialog> {
     final difference = now.difference(dateTime);
 
     if (difference.inDays > 0) {
-      return '${difference.inDays} day${difference.inDays == 1 ? '' : 's'} ago';
+      return _l10n.sourceDetailsRelativeDaysAgo(difference.inDays);
     } else if (difference.inHours > 0) {
-      return '${difference.inHours} hour${difference.inHours == 1 ? '' : 's'} ago';
+      return _l10n.sourceDetailsRelativeHoursAgo(difference.inHours);
     } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes} minute${difference.inMinutes == 1 ? '' : 's'} ago';
+      return _l10n.sourceDetailsRelativeMinutesAgo(difference.inMinutes);
     } else {
-      return 'Just now';
+      return _l10n.sourceDetailsRelativeJustNow;
     }
   }
 

@@ -2845,6 +2845,870 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to load spot: {error}'**
   String spotDetailDuplicateFailedLoadSpot(String error);
+
+  /// Source details dialog loading state
+  ///
+  /// In en, this message translates to:
+  /// **'Loading source...'**
+  String get sourceDetailsLoadingSource;
+
+  /// Source details dialog generic error title
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get sourceDetailsErrorTitle;
+
+  /// Source details dialog missing source fallback
+  ///
+  /// In en, this message translates to:
+  /// **'Source not found'**
+  String get sourceDetailsNotFound;
+
+  /// Source details: total number of imported spots label
+  ///
+  /// In en, this message translates to:
+  /// **'Total Spots'**
+  String get sourceDetailsTotalSpots;
+
+  /// Source details: folders section label
+  ///
+  /// In en, this message translates to:
+  /// **'Folders'**
+  String get sourceDetailsFolders;
+
+  /// Source details: external source link button
+  ///
+  /// In en, this message translates to:
+  /// **'Go to Source'**
+  String get sourceDetailsGoToSource;
+
+  /// Source details: created date label
+  ///
+  /// In en, this message translates to:
+  /// **'Added'**
+  String get sourceDetailsAdded;
+
+  /// Source details: last import date label
+  ///
+  /// In en, this message translates to:
+  /// **'Last Imported'**
+  String get sourceDetailsLastImported;
+
+  /// Relative time in days for source details
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 day ago} other{{count} days ago}}'**
+  String sourceDetailsRelativeDaysAgo(int count);
+
+  /// Relative time in hours for source details
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 hour ago} other{{count} hours ago}}'**
+  String sourceDetailsRelativeHoursAgo(int count);
+
+  /// Relative time in minutes for source details
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 minute ago} other{{count} minutes ago}}'**
+  String sourceDetailsRelativeMinutesAgo(int count);
+
+  /// Relative time for very recent source updates
+  ///
+  /// In en, this message translates to:
+  /// **'Just now'**
+  String get sourceDetailsRelativeJustNow;
+
+  /// Prompt on spot tracking list pages when user is signed out
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to view your {listName} list'**
+  String spotTrackingSignInToViewList(String listName);
+
+  /// Empty state title for spot tracking list pages
+  ///
+  /// In en, this message translates to:
+  /// **'No spots in {listName}'**
+  String spotTrackingNoSpotsInList(String listName);
+
+  /// Tooltip on list save button when list is not saved
+  ///
+  /// In en, this message translates to:
+  /// **'Save list'**
+  String get spotListSaveTooltipSaveList;
+
+  /// Tooltip on list save button when list is already saved
+  ///
+  /// In en, this message translates to:
+  /// **'Saved list'**
+  String get spotListSaveTooltipSavedList;
+
+  /// Title in save-list popup shown to signed-out users
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to save lists'**
+  String get spotListSaveSignInTitle;
+
+  /// Description in save-list popup shown to signed-out users
+  ///
+  /// In en, this message translates to:
+  /// **'Save someone else’s spot list to your profile so you can open it again later.'**
+  String get spotListSaveSignInBody;
+
+  /// Snackbar when a list is saved
+  ///
+  /// In en, this message translates to:
+  /// **'List saved to your profile'**
+  String get spotListSaveSavedToProfile;
+
+  /// Snackbar when saving a list fails
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save list'**
+  String get spotListSaveCouldNotSaveList;
+
+  /// Snackbar when a list is removed from saved
+  ///
+  /// In en, this message translates to:
+  /// **'Removed from saved lists'**
+  String get spotListSaveRemovedFromSavedLists;
+
+  /// Snackbar when unsaving a list fails
+  ///
+  /// In en, this message translates to:
+  /// **'Could not remove list'**
+  String get spotListSaveCouldNotRemoveList;
+
+  /// Popup action to save list
+  ///
+  /// In en, this message translates to:
+  /// **'Save list'**
+  String get spotListSaveActionSaveList;
+
+  /// Popup action to remove list from saved
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from saved'**
+  String get spotListSaveActionRemoveFromSaved;
+
+  /// Popup action to navigate to saved lists section
+  ///
+  /// In en, this message translates to:
+  /// **'View saved lists'**
+  String get spotListSaveActionViewSavedLists;
+
+  /// Error message when list detail cannot load requested list
+  ///
+  /// In en, this message translates to:
+  /// **'List not found or not accessible'**
+  String get spotListDetailListNotFoundOrNotAccessible;
+
+  /// Delete list confirmation dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Delete List'**
+  String get spotListDetailDeleteListTitle;
+
+  /// Delete list confirmation dialog body
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete \"{name}\"? This action cannot be undone.'**
+  String spotListDetailDeleteListConfirmation(String name);
+
+  /// Delete action label
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get spotListDetailDeleteAction;
+
+  /// Snackbar after deleting a list
+  ///
+  /// In en, this message translates to:
+  /// **'List deleted'**
+  String get spotListDetailListDeleted;
+
+  /// Snackbar when deleting list fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete list'**
+  String get spotListDetailFailedToDeleteList;
+
+  /// Empty state title for list detail page
+  ///
+  /// In en, this message translates to:
+  /// **'No spots in this list'**
+  String get spotListDetailNoSpotsInThisList;
+
+  /// Edit list dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Edit List'**
+  String get spotListDetailEditListTitle;
+
+  /// Edit list dialog label for optional external info URL
+  ///
+  /// In en, this message translates to:
+  /// **'More info link (optional)'**
+  String get spotListDetailMoreInfoLinkLabel;
+
+  /// Edit list dialog hint for optional external info URL
+  ///
+  /// In en, this message translates to:
+  /// **'https://…'**
+  String get spotListDetailMoreInfoLinkHint;
+
+  /// Edit list dialog helper text for optional external info URL
+  ///
+  /// In en, this message translates to:
+  /// **'A page elsewhere on the web with more about this list'**
+  String get spotListDetailMoreInfoLinkHelper;
+
+  /// Validation error for list more-info URL field
+  ///
+  /// In en, this message translates to:
+  /// **'More info link must be a valid URL (http or https), e.g. example.com or https://example.com/page'**
+  String get spotListDetailMoreInfoLinkValidationError;
+
+  /// Save action label in list edit flows
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get spotListDetailSave;
+
+  /// Snackbar when list update succeeds
+  ///
+  /// In en, this message translates to:
+  /// **'List updated'**
+  String get spotListDetailListUpdated;
+
+  /// Snackbar when list update fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update list'**
+  String get spotListDetailFailedToUpdateList;
+
+  /// List provenance visibility prefix
+  ///
+  /// In en, this message translates to:
+  /// **'Public list'**
+  String get spotListDetailVisibilityPublicList;
+
+  /// List provenance visibility prefix
+  ///
+  /// In en, this message translates to:
+  /// **'Unlisted list'**
+  String get spotListDetailVisibilityUnlistedList;
+
+  /// List provenance visibility prefix
+  ///
+  /// In en, this message translates to:
+  /// **'Private list'**
+  String get spotListDetailVisibilityPrivateList;
+
+  /// Snackbar when creator profile navigation fails
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open profile'**
+  String get spotListDetailCouldNotOpenProfile;
+
+  /// First phrase in list provenance sentence
+  ///
+  /// In en, this message translates to:
+  /// **'{visibility} created {date}'**
+  String spotListDetailCreatedPart(String visibility, String date);
+
+  /// Suffix before creator name in list provenance sentence (keep spaces)
+  ///
+  /// In en, this message translates to:
+  /// **' by '**
+  String get spotListDetailCreatedBySuffix;
+
+  /// Suffix after creator in list provenance sentence
+  ///
+  /// In en, this message translates to:
+  /// **', and last updated {date}.'**
+  String spotListDetailLastUpdatedPart(String date);
+
+  /// Prefix text before external host link on list detail page (keep trailing space)
+  ///
+  /// In en, this message translates to:
+  /// **'More information on '**
+  String get spotListDetailMoreInformationOn;
+
+  /// Snackbar after copying list share text
+  ///
+  /// In en, this message translates to:
+  /// **'List copied to clipboard!'**
+  String get spotListDetailCopiedToClipboard;
+
+  /// Snackbar when list copy fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to copy list: {error}'**
+  String spotListDetailCopyFailed(String error);
+
+  /// Hint badge shown on list mini-map
+  ///
+  /// In en, this message translates to:
+  /// **'Highlight list on map'**
+  String get spotListDetailHighlightListOnMap;
+
+  /// Tooltip for list management menu button
+  ///
+  /// In en, this message translates to:
+  /// **'Edit list'**
+  String get spotListDetailEditListTooltip;
+
+  /// List management menu item
+  ///
+  /// In en, this message translates to:
+  /// **'List Settings'**
+  String get spotListDetailMenuListSettings;
+
+  /// List management menu item
+  ///
+  /// In en, this message translates to:
+  /// **'Organize List'**
+  String get spotListDetailMenuOrganizeList;
+
+  /// List management menu item
+  ///
+  /// In en, this message translates to:
+  /// **'Delete List'**
+  String get spotListDetailMenuDeleteList;
+
+  /// Fallback page title for list detail
+  ///
+  /// In en, this message translates to:
+  /// **'Spot List'**
+  String get spotListDetailPageTitle;
+
+  /// List detail not-found body text
+  ///
+  /// In en, this message translates to:
+  /// **'List not found'**
+  String get spotListDetailListNotFound;
+
+  /// Fallback SEO description for list detail pages
+  ///
+  /// In en, this message translates to:
+  /// **'A curated list of {count, plural, one{1 parkour spot} other{{count} parkour spots}} on Parkour·Spot'**
+  String spotListDetailMetaDescriptionFallback(int count);
+
+  /// Page title for public profile screen
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get publicProfilePageTitle;
+
+  /// Tooltip for profile share action
+  ///
+  /// In en, this message translates to:
+  /// **'Share Profile'**
+  String get publicProfileShareProfileTooltip;
+
+  /// Error heading on public profile screen
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading profile'**
+  String get publicProfileErrorLoadingProfile;
+
+  /// Error hint on public profile screen
+  ///
+  /// In en, this message translates to:
+  /// **'Please try again later'**
+  String get publicProfilePleaseTryAgainLater;
+
+  /// SEO description for a user profile page
+  ///
+  /// In en, this message translates to:
+  /// **'View {name}\'s parkour spots and lists on Parkour·Spot — {defaultDescription}'**
+  String publicProfileMetaDescription(String name, String defaultDescription);
+
+  /// Heading when profile is missing or inaccessible
+  ///
+  /// In en, this message translates to:
+  /// **'Profile not found'**
+  String get publicProfileProfileNotFound;
+
+  /// Body text when profile is missing or inaccessible
+  ///
+  /// In en, this message translates to:
+  /// **'This profile does not exist or is private.'**
+  String get publicProfileNotFoundOrPrivate;
+
+  /// Member since line on public profile
+  ///
+  /// In en, this message translates to:
+  /// **'Member since {date}'**
+  String publicProfileMemberSince(String date);
+
+  /// Tooltip for opening profile settings sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Profile'**
+  String get publicProfileEditProfileTooltip;
+
+  /// Card title for tracking lists section on own profile
+  ///
+  /// In en, this message translates to:
+  /// **'Spot tracking'**
+  String get publicProfileSpotTracking;
+
+  /// Empty state title for tracking lists section
+  ///
+  /// In en, this message translates to:
+  /// **'No spots yet'**
+  String get publicProfileNoSpotsYet;
+
+  /// Hint for how to populate tracking/lists sections
+  ///
+  /// In en, this message translates to:
+  /// **'Add spots from spot detail pages'**
+  String get publicProfileAddSpotsFromSpotDetailPages;
+
+  /// Tracking list title
+  ///
+  /// In en, this message translates to:
+  /// **'Been to'**
+  String get publicProfileBeenTo;
+
+  /// Row title to open check-in history
+  ///
+  /// In en, this message translates to:
+  /// **'My check-ins'**
+  String get publicProfileMyCheckIns;
+
+  /// Subtitle for check-in history row
+  ///
+  /// In en, this message translates to:
+  /// **'Your recorded history of visits to spots'**
+  String get publicProfileMyCheckInsSubtitle;
+
+  /// Card title for user's own lists section
+  ///
+  /// In en, this message translates to:
+  /// **'Spot lists'**
+  String get publicProfileSpotLists;
+
+  /// Subheading for user's own lists in unified card
+  ///
+  /// In en, this message translates to:
+  /// **'Yours'**
+  String get publicProfileYours;
+
+  /// CTA in empty owned-lists state
+  ///
+  /// In en, this message translates to:
+  /// **'Create your first list'**
+  String get publicProfileCreateYourFirstList;
+
+  /// Subheading for saved lists in unified card
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get publicProfileSaved;
+
+  /// Card title when viewing someone else's profile lists
+  ///
+  /// In en, this message translates to:
+  /// **'Public Spot Lists'**
+  String get publicProfilePublicSpotLists;
+
+  /// Empty state title for saved lists subsection
+  ///
+  /// In en, this message translates to:
+  /// **'No saved lists yet'**
+  String get publicProfileNoSavedListsYet;
+
+  /// Empty state hint for saved lists subsection
+  ///
+  /// In en, this message translates to:
+  /// **'Save lists you find on other users’ list pages'**
+  String get publicProfileSaveListsHint;
+
+  /// Message shown when saved IDs resolve to no accessible lists
+  ///
+  /// In en, this message translates to:
+  /// **'Your saved lists are no longer available or were removed.'**
+  String get publicProfileSavedListsUnavailable;
+
+  /// Snackbar after creating a list from profile
+  ///
+  /// In en, this message translates to:
+  /// **'List created successfully'**
+  String get publicProfileListCreatedSuccessfully;
+
+  /// Dialog title for profile picture actions
+  ///
+  /// In en, this message translates to:
+  /// **'Change Profile Picture'**
+  String get publicProfileChangeProfilePicture;
+
+  /// Option in profile picture dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from Gallery'**
+  String get publicProfileChooseFromGallery;
+
+  /// Option in profile picture dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Take Photo'**
+  String get publicProfileTakePhoto;
+
+  /// Option in profile picture dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Remove Picture'**
+  String get publicProfileRemovePicture;
+
+  /// Snackbar when selecting gallery image fails
+  ///
+  /// In en, this message translates to:
+  /// **'Error picking image: {error}'**
+  String publicProfileErrorPickingImage(String error);
+
+  /// Snackbar when camera capture fails
+  ///
+  /// In en, this message translates to:
+  /// **'Error taking photo: {error}'**
+  String publicProfileErrorTakingPhoto(String error);
+
+  /// Progress status while handling profile image
+  ///
+  /// In en, this message translates to:
+  /// **'Processing image...'**
+  String get publicProfileProcessingImage;
+
+  /// Progress status while reading selected image
+  ///
+  /// In en, this message translates to:
+  /// **'Reading image...'**
+  String get publicProfileReadingImage;
+
+  /// Progress status while uploading profile image
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading...'**
+  String get publicProfileUploading;
+
+  /// Progress status near completion of profile image upload
+  ///
+  /// In en, this message translates to:
+  /// **'Finishing...'**
+  String get publicProfileFinishing;
+
+  /// Progress status while updating user document
+  ///
+  /// In en, this message translates to:
+  /// **'Updating profile...'**
+  String get publicProfileUpdatingProfile;
+
+  /// Snackbar after successful profile picture update
+  ///
+  /// In en, this message translates to:
+  /// **'Profile picture updated successfully'**
+  String get publicProfileProfilePictureUpdatedSuccessfully;
+
+  /// Snackbar when profile picture update fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update profile picture'**
+  String get publicProfileFailedToUpdateProfilePicture;
+
+  /// Snackbar when profile picture upload throws
+  ///
+  /// In en, this message translates to:
+  /// **'Error uploading profile picture: {error}'**
+  String publicProfileErrorUploadingProfilePicture(String error);
+
+  /// Confirmation dialog title for removing profile picture
+  ///
+  /// In en, this message translates to:
+  /// **'Remove Profile Picture'**
+  String get publicProfileRemoveProfilePicture;
+
+  /// Confirmation dialog body for removing profile picture
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to remove your profile picture?'**
+  String get publicProfileRemoveProfilePictureConfirmation;
+
+  /// Snackbar after profile picture removal succeeds
+  ///
+  /// In en, this message translates to:
+  /// **'Profile picture removed successfully'**
+  String get publicProfileProfilePictureRemovedSuccessfully;
+
+  /// Snackbar when removing profile picture fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to remove profile picture'**
+  String get publicProfileFailedToRemoveProfilePicture;
+
+  /// Snackbar when removing profile picture throws
+  ///
+  /// In en, this message translates to:
+  /// **'Error removing profile picture: {error}'**
+  String publicProfileErrorRemovingProfilePicture(String error);
+
+  /// Snackbar after profile URL copy succeeds
+  ///
+  /// In en, this message translates to:
+  /// **'Profile copied to clipboard!'**
+  String get publicProfileProfileCopiedToClipboard;
+
+  /// Snackbar when sharing/copying profile fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to copy profile: {error}'**
+  String publicProfileFailedToCopyProfile(String error);
+
+  /// Stats label for spots created
+  ///
+  /// In en, this message translates to:
+  /// **'Spots'**
+  String get publicProfileStatsSpots;
+
+  /// Stats label for ratings given
+  ///
+  /// In en, this message translates to:
+  /// **'Ratings'**
+  String get publicProfileStatsRatings;
+
+  /// Bottom sheet title for editing profile
+  ///
+  /// In en, this message translates to:
+  /// **'Profile Settings'**
+  String get publicProfileSettingsTitle;
+
+  /// Profile settings: email field label
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get publicProfileEmailLabel;
+
+  /// Profile settings: email privacy hint
+  ///
+  /// In en, this message translates to:
+  /// **'Your email is not shown on your public profile.'**
+  String get publicProfileEmailNotShownHint;
+
+  /// Profile settings: display name label
+  ///
+  /// In en, this message translates to:
+  /// **'Display Name'**
+  String get publicProfileDisplayNameLabel;
+
+  /// Profile settings: fallback when display name is empty
+  ///
+  /// In en, this message translates to:
+  /// **'No display name set'**
+  String get publicProfileNoDisplayNameSet;
+
+  /// Generic edit action in profile settings
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get publicProfileEditAction;
+
+  /// Profile settings: display name input hint
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your display name'**
+  String get publicProfileDisplayNameHint;
+
+  /// Profile settings: display name helper
+  ///
+  /// In en, this message translates to:
+  /// **'Shown on your profile and spots you create (max {max} characters)'**
+  String publicProfileDisplayNameHelper(int max);
+
+  /// Validation error when display name exceeds max length
+  ///
+  /// In en, this message translates to:
+  /// **'Display name must be at most {max} characters'**
+  String publicProfileDisplayNameMaxLengthError(int max);
+
+  /// Snackbar when display name update succeeds
+  ///
+  /// In en, this message translates to:
+  /// **'Display name updated successfully'**
+  String get publicProfileDisplayNameUpdated;
+
+  /// Snackbar when display name is removed
+  ///
+  /// In en, this message translates to:
+  /// **'Display name removed'**
+  String get publicProfileDisplayNameRemoved;
+
+  /// Validation/error text when display name update fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update display name'**
+  String get publicProfileDisplayNameUpdateFailed;
+
+  /// Generic save action in profile settings
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get publicProfileSaveAction;
+
+  /// Profile settings: username label
+  ///
+  /// In en, this message translates to:
+  /// **'Username'**
+  String get publicProfileUsernameLabel;
+
+  /// Profile settings: fallback when username is empty
+  ///
+  /// In en, this message translates to:
+  /// **'No username set'**
+  String get publicProfileNoUsernameSet;
+
+  /// Profile settings: username input hint
+  ///
+  /// In en, this message translates to:
+  /// **'Enter username'**
+  String get publicProfileUsernameHint;
+
+  /// Profile settings: username helper text
+  ///
+  /// In en, this message translates to:
+  /// **'3-27 characters, letters, numbers, underscores, and hyphens only'**
+  String get publicProfileUsernameHelper;
+
+  /// Validation error when username input is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Username cannot be empty'**
+  String get publicProfileUsernameEmpty;
+
+  /// Validation error when username is not available
+  ///
+  /// In en, this message translates to:
+  /// **'Username is already taken'**
+  String get publicProfileUsernameTaken;
+
+  /// Snackbar when username update succeeds
+  ///
+  /// In en, this message translates to:
+  /// **'Username updated successfully'**
+  String get publicProfileUsernameUpdated;
+
+  /// Fallback error when username update fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update username'**
+  String get publicProfileUsernameUpdateFailed;
+
+  /// Profile settings: instagram section title
+  ///
+  /// In en, this message translates to:
+  /// **'Instagram'**
+  String get publicProfileInstagramLabel;
+
+  /// Profile settings: fallback when instagram link is empty
+  ///
+  /// In en, this message translates to:
+  /// **'No Instagram link set'**
+  String get publicProfileNoInstagramSet;
+
+  /// Generic add action in profile settings
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get publicProfileAddAction;
+
+  /// Profile settings: instagram URL field label
+  ///
+  /// In en, this message translates to:
+  /// **'Instagram Link'**
+  String get publicProfileInstagramLinkLabel;
+
+  /// Profile settings: instagram URL field hint
+  ///
+  /// In en, this message translates to:
+  /// **'https://www.instagram.com/your_handle/'**
+  String get publicProfileInstagramLinkHint;
+
+  /// Profile settings: instagram URL helper text
+  ///
+  /// In en, this message translates to:
+  /// **'You can also paste @handle or just the handle'**
+  String get publicProfileInstagramLinkHelper;
+
+  /// Validation error for instagram input
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid Instagram profile URL or handle'**
+  String get publicProfileInstagramInvalid;
+
+  /// Snackbar when instagram link is removed
+  ///
+  /// In en, this message translates to:
+  /// **'Instagram link removed'**
+  String get publicProfileInstagramRemoved;
+
+  /// Snackbar when instagram link update succeeds
+  ///
+  /// In en, this message translates to:
+  /// **'Instagram link updated successfully'**
+  String get publicProfileInstagramUpdated;
+
+  /// Validation/error text when instagram update fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update Instagram link'**
+  String get publicProfileInstagramUpdateFailed;
+
+  /// Profile settings: privacy section title
+  ///
+  /// In en, this message translates to:
+  /// **'Profile Privacy'**
+  String get publicProfilePrivacyTitle;
+
+  /// Profile settings: label when profile is public
+  ///
+  /// In en, this message translates to:
+  /// **'Public Profile'**
+  String get publicProfilePrivacyPublicLabel;
+
+  /// Profile settings: label when profile is private
+  ///
+  /// In en, this message translates to:
+  /// **'Private Profile'**
+  String get publicProfilePrivacyPrivateLabel;
+
+  /// Profile settings: explanation when profile is public
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile is visible to everyone'**
+  String get publicProfilePrivacyPublicDescription;
+
+  /// Profile settings: explanation when profile is private
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile is private and not visible to others'**
+  String get publicProfilePrivacyPrivateDescription;
+
+  /// Snackbar when privacy toggled to public
+  ///
+  /// In en, this message translates to:
+  /// **'Profile is now public'**
+  String get publicProfilePrivacyNowPublic;
+
+  /// Snackbar when privacy toggled to private
+  ///
+  /// In en, this message translates to:
+  /// **'Profile is now private'**
+  String get publicProfilePrivacyNowPrivate;
+
+  /// Snackbar when privacy toggle update fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update profile privacy'**
+  String get publicProfileFailedToUpdateProfilePrivacy;
 }
 
 class _AppLocalizationsDelegate
