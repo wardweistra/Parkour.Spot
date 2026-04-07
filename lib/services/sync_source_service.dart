@@ -2,6 +2,44 @@ import 'package:flutter/foundation.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// Callable/JSON on web can yield [Iterable]s that are not `List` on dart2wasm; avoid `as List`.
+List<String>? _stringListFromDynamic(dynamic value) {
+  if (value == null) return null;
+  if (value is! Iterable) return null;
+  return List<String>.from(value.map((e) => e.toString()));
+}
+
+/// JS-interop maps are often not `Map<String, dynamic>` at runtime on wasm; [Map.from] fixes that.
+Map<String, dynamic>? _coerceToStringKeyMap(dynamic value) {
+  if (value == null) return null;
+  if (value is! Map) return null;
+  return Map<String, dynamic>.from(value);
+}
+
+/// Callable `sources` (and similar) may be [Iterable] but not `List` on dart2wasm — `as List` throws.
+List<dynamic> _listFromCallableValue(dynamic value) {
+  if (value == null) return <dynamic>[];
+  if (value is List) return List<dynamic>.from(value);
+  if (value is Iterable) return value.toList();
+  throw FormatException('Expected List or Iterable, got ${value.runtimeType}');
+}
+
+/// One nested object from a callable (e.g. each source in `sources`).
+Map<String, dynamic> _mapFromCallableObject(dynamic value) {
+  if (value is! Map) {
+    throw FormatException('Expected Map, got ${value.runtimeType}');
+  }
+  return Map<String, dynamic>.from(value);
+}
+
+/// Use instead of `result.data as Map` when a real Dart map is required.
+Map<String, dynamic> _callableResponseAsMap(dynamic data) {
+  if (data is! Map) {
+    throw FormatException('Callable result.data is not a Map');
+  }
+  return Map<String, dynamic>.from(data);
+}
+
 /// Lightweight summary for filter lists. Only id, name, and folder data.
 /// Use fetchSyncSourceById for full details when opening the details dialog.
 class SyncSourceSummary {
@@ -22,9 +60,7 @@ class SyncSourceSummary {
       id: data['id'] ?? '',
       name: data['name'] ?? '',
       recordFolderName: data['recordFolderName'] is bool ? data['recordFolderName'] as bool : null,
-      allFolders: data['allFolders'] != null
-          ? List<String>.from((data['allFolders'] as List).map((e) => e.toString()))
-          : null,
+      allFolders: _stringListFromDynamic(data['allFolders']),
     );
   }
 }
@@ -91,19 +127,15 @@ class SyncSource {
       publicUrl: data['publicUrl'],
       instagramHandle: data['instagramHandle'],
       isActive: data['isActive'] ?? true,
-      includeFolders: data['includeFolders'] != null
-          ? List<String>.from((data['includeFolders'] as List).map((e) => e.toString()))
-          : null,
+      includeFolders: _stringListFromDynamic(data['includeFolders']),
       recordFolderName: data['recordFolderName'] is bool ? data['recordFolderName'] as bool : null,
-      allFolders: data['allFolders'] != null
-          ? List<String>.from((data['allFolders'] as List).map((e) => e.toString()))
-          : null,
+      allFolders: _stringListFromDynamic(data['allFolders']),
       defaultSpotAttributes: _parseDefaultSpotAttributes(data['defaultSpotAttributes']),
       folderSpotAttributes: _parseFolderSpotAttributes(data['folderSpotAttributes']),
       createdAt: _parseTimestamp(data['createdAt']),
       updatedAt: _parseTimestamp(data['updatedAt']),
       lastSyncAt: _parseTimestamp(data['lastSyncAt']),
-      lastSyncStats: data['lastSyncStats'],
+      lastSyncStats: _coerceToStringKeyMap(data['lastSyncStats']),
       lightSyncSchedule: data['lightSyncSchedule'],
       fullSyncSchedule: data['fullSyncSchedule'],
       autoSyncEnabled: data['autoSyncEnabled'],
@@ -111,9 +143,7 @@ class SyncSource {
       lastFullSyncAt: _parseTimestamp(data['lastFullSyncAt']),
       syncInProgress: data['syncInProgress'],
       syncType: data['syncType'],
-      syncProgress: data['syncProgress'] != null
-          ? Map<String, dynamic>.from(data['syncProgress'] as Map)
-          : null,
+      syncProgress: _coerceToStringKeyMap(data['syncProgress']),
     );
   }
 
@@ -125,10 +155,21 @@ class SyncSource {
       return timestamp.toDate();
     }
     
-    // Handle Map format from Firebase Functions
-    if (timestamp is Map<String, dynamic>) {
-      final seconds = timestamp['_seconds'] as int?;
-      final nanoseconds = timestamp['_nanoseconds'] as int? ?? 0;
+    // Handle Map format from Firebase Functions (any Map; wasm may not satisfy Map<String, dynamic>)
+    if (timestamp is Map) {
+      final m = Map<String, dynamic>.from(timestamp);
+      final secondsRaw = m['_seconds'];
+      final nanosecondsRaw = m['_nanoseconds'];
+      final seconds = secondsRaw is int
+          ? secondsRaw
+          : secondsRaw is num
+              ? secondsRaw.toInt()
+              : null;
+      final nanoseconds = nanosecondsRaw is int
+          ? nanosecondsRaw
+          : nanosecondsRaw is num
+              ? nanosecondsRaw.toInt()
+              : 0;
       if (seconds != null) {
         return DateTime.fromMillisecondsSinceEpoch(
           seconds * 1000 + (nanoseconds / 1000000).round(),
@@ -152,7 +193,7 @@ class SyncSource {
       final key = entry.key.toString().trim();
       if (key.isEmpty) continue;
       if (entry.value is! Map) continue;
-      final valueMap = Map<String, dynamic>.from(entry.value as Map);
+      final valueMap = Map<String, dynamic>.from(entry.value);
       if (valueMap.isEmpty) continue;
       parsed[key] = valueMap;
     }
@@ -195,9 +236,10 @@ class SyncSourceService extends ChangeNotifier {
         'includeInactive': includeInactive,
       });
 
-      if (result.data['success'] == true) {
-        _sources = (result.data['sources'] as List)
-            .map((source) => SyncSource.fromMap(source))
+      final data = result.data;
+      if (data['success'] == true) {
+        _sources = _listFromCallableValue(data['sources'])
+            .map((source) => SyncSource.fromMap(_mapFromCallableObject(source)))
             .toList();
         
         // Update cache
@@ -231,9 +273,10 @@ class SyncSourceService extends ChangeNotifier {
         'summaryOnly': true,
       });
 
-      if (result.data['success'] == true) {
-        _sourceSummaries = (result.data['sources'] as List)
-            .map((s) => SyncSourceSummary.fromMap(s))
+      final data = result.data;
+      if (data['success'] == true) {
+        _sourceSummaries = _listFromCallableValue(data['sources'])
+            .map((s) => SyncSourceSummary.fromMap(_mapFromCallableObject(s)))
             .toList();
         _sourceNameCache.addAll({
           for (final s in _sourceSummaries) s.id: s.name,
@@ -259,10 +302,9 @@ class SyncSourceService extends ChangeNotifier {
     try {
       final callable = _functions.httpsCallable('getSyncSource');
       final result = await callable.call({'sourceId': sourceId});
-      if (result.data['success'] == true && result.data['source'] != null) {
-        final source = SyncSource.fromMap(
-          Map<String, dynamic>.from(result.data['source'] as Map),
-        );
+      final data = result.data;
+      if (data['success'] == true && data['source'] != null) {
+        final source = SyncSource.fromMap(_mapFromCallableObject(data['source']));
         _sourceDetailsCache[sourceId] = source;
         _sourceNameCache[sourceId] = source.name;
         return source;
@@ -409,7 +451,7 @@ class SyncSourceService extends ChangeNotifier {
       if (result.data['success'] == true) {
         // Refresh the sources list to update last sync time
         await fetchSyncSources(includeInactive: true);
-        return Map<String, dynamic>.from(result.data as Map);
+        return _callableResponseAsMap(result.data);
       } else {
         _error = 'Sync failed: ${result.data['error'] ?? 'Unknown error'}';
         notifyListeners();
@@ -442,7 +484,7 @@ class SyncSourceService extends ChangeNotifier {
       if (result.data['success'] == true) {
         // Refresh the sources list to update last sync time
         await fetchSyncSources(includeInactive: true);
-        return Map<String, dynamic>.from(result.data as Map);
+        return _callableResponseAsMap(result.data);
       } else {
         _error = 'Sync failed: ${result.data['error'] ?? 'Unknown error'}';
         notifyListeners();
@@ -474,7 +516,7 @@ class SyncSourceService extends ChangeNotifier {
       if (result.data['success'] == true) {
         // Refresh the sources list to update sync progress
         await fetchSyncSources(includeInactive: true);
-        return Map<String, dynamic>.from(result.data as Map);
+        return _callableResponseAsMap(result.data);
       } else {
         _error = 'Resume sync failed: ${result.data['error'] ?? 'Unknown error'}';
         notifyListeners();
@@ -623,7 +665,9 @@ class SyncSourceService extends ChangeNotifier {
         ),
       );
       final result = await callable.call({});
-      return result.data as Map<String, dynamic>?;
+      final d = result.data;
+      if (d == null) return null;
+      return _callableResponseAsMap(d);
     } catch (e) {
       _error = 'Failed to backfill spotSearchTerms: $e';
       debugPrint(_error);
@@ -663,9 +707,10 @@ class SyncSourceService extends ChangeNotifier {
         'includeInactive': includeInactive,
       });
 
-      if (result.data['success'] == true) {
-        _sources = (result.data['sources'] as List)
-            .map((source) => SyncSource.fromMap(source))
+      final data = result.data;
+      if (data['success'] == true) {
+        _sources = _listFromCallableValue(data['sources'])
+            .map((source) => SyncSource.fromMap(_mapFromCallableObject(source)))
             .toList();
         
         // Update cache
