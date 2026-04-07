@@ -1656,36 +1656,36 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get sourceDetailsLoadingSource => 'Loading source...';
+  String get sourceDetailsLoadingSource => 'Bron laden...';
 
   @override
-  String get sourceDetailsErrorTitle => 'Error';
+  String get sourceDetailsErrorTitle => 'Fout';
 
   @override
-  String get sourceDetailsNotFound => 'Source not found';
+  String get sourceDetailsNotFound => 'Bron niet gevonden';
 
   @override
-  String get sourceDetailsTotalSpots => 'Total Spots';
+  String get sourceDetailsTotalSpots => 'Totaal aantal spots';
 
   @override
-  String get sourceDetailsFolders => 'Folders';
+  String get sourceDetailsFolders => 'Mappen';
 
   @override
-  String get sourceDetailsGoToSource => 'Go to Source';
+  String get sourceDetailsGoToSource => 'Ga naar bron';
 
   @override
-  String get sourceDetailsAdded => 'Added';
+  String get sourceDetailsAdded => 'Toegevoegd';
 
   @override
-  String get sourceDetailsLastImported => 'Last Imported';
+  String get sourceDetailsLastImported => 'Laatst geïmporteerd';
 
   @override
   String sourceDetailsRelativeDaysAgo(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count days ago',
-      one: '1 day ago',
+      other: '$count dagen geleden',
+      one: '1 dag geleden',
     );
     return '$_temp0';
   }
@@ -1695,8 +1695,8 @@ class AppLocalizationsNl extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count hours ago',
-      one: '1 hour ago',
+      other: '$count uur geleden',
+      one: '1 uur geleden',
     );
     return '$_temp0';
   }
@@ -1706,474 +1706,477 @@ class AppLocalizationsNl extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count minutes ago',
-      one: '1 minute ago',
+      other: '$count minuten geleden',
+      one: '1 minuut geleden',
     );
     return '$_temp0';
   }
 
   @override
-  String get sourceDetailsRelativeJustNow => 'Just now';
+  String get sourceDetailsRelativeJustNow => 'Zojuist';
 
   @override
   String spotTrackingSignInToViewList(String listName) {
-    return 'Sign in to view your $listName list';
+    return 'Log in om je $listName-lijst te bekijken';
   }
 
   @override
   String spotTrackingNoSpotsInList(String listName) {
-    return 'No spots in $listName';
+    return 'Geen spots in $listName';
   }
 
   @override
-  String get spotListSaveTooltipSaveList => 'Save list';
+  String get spotListSaveTooltipSaveList => 'Lijst opslaan';
 
   @override
-  String get spotListSaveTooltipSavedList => 'Saved list';
+  String get spotListSaveTooltipSavedList => 'Lijst opgeslagen';
 
   @override
-  String get spotListSaveSignInTitle => 'Sign in to save lists';
+  String get spotListSaveSignInTitle => 'Log in om lijsten op te slaan';
 
   @override
   String get spotListSaveSignInBody =>
-      'Save someone else’s spot list to your profile so you can open it again later.';
+      'Sla iemands spotlijst op in je profiel zodat je die later opnieuw kunt openen.';
 
   @override
-  String get spotListSaveSavedToProfile => 'List saved to your profile';
+  String get spotListSaveSavedToProfile => 'Lijst opgeslagen in je profiel';
 
   @override
-  String get spotListSaveCouldNotSaveList => 'Could not save list';
+  String get spotListSaveCouldNotSaveList => 'Lijst kon niet worden opgeslagen';
 
   @override
-  String get spotListSaveRemovedFromSavedLists => 'Removed from saved lists';
+  String get spotListSaveRemovedFromSavedLists =>
+      'Verwijderd uit opgeslagen lijsten';
 
   @override
-  String get spotListSaveCouldNotRemoveList => 'Could not remove list';
+  String get spotListSaveCouldNotRemoveList =>
+      'Lijst kon niet worden verwijderd';
 
   @override
-  String get spotListSaveActionSaveList => 'Save list';
+  String get spotListSaveActionSaveList => 'Lijst opslaan';
 
   @override
-  String get spotListSaveActionRemoveFromSaved => 'Remove from saved';
+  String get spotListSaveActionRemoveFromSaved => 'Verwijderen uit opgeslagen';
 
   @override
-  String get spotListSaveActionViewSavedLists => 'View saved lists';
+  String get spotListSaveActionViewSavedLists => 'Opgeslagen lijsten bekijken';
 
   @override
   String get spotListDetailListNotFoundOrNotAccessible =>
-      'List not found or not accessible';
+      'Lijst niet gevonden of niet toegankelijk';
 
   @override
-  String get spotListDetailDeleteListTitle => 'Delete List';
+  String get spotListDetailDeleteListTitle => 'Lijst verwijderen';
 
   @override
   String spotListDetailDeleteListConfirmation(String name) {
-    return 'Are you sure you want to delete \"$name\"? This action cannot be undone.';
+    return 'Weet je zeker dat je \"$name\" wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.';
   }
 
   @override
-  String get spotListDetailDeleteAction => 'Delete';
+  String get spotListDetailDeleteAction => 'Verwijderen';
 
   @override
-  String get spotListDetailListDeleted => 'List deleted';
+  String get spotListDetailListDeleted => 'Lijst verwijderd';
 
   @override
-  String get spotListDetailFailedToDeleteList => 'Failed to delete list';
+  String get spotListDetailFailedToDeleteList => 'Lijst verwijderen mislukt';
 
   @override
-  String get spotListDetailNoSpotsInThisList => 'No spots in this list';
+  String get spotListDetailNoSpotsInThisList => 'Geen spots in deze lijst';
 
   @override
-  String get spotListDetailEditListTitle => 'Edit List';
+  String get spotListDetailEditListTitle => 'Lijst bewerken';
 
   @override
-  String get spotListDetailMoreInfoLinkLabel => 'More info link (optional)';
+  String get spotListDetailMoreInfoLinkLabel => 'Meer-infolink (optioneel)';
 
   @override
   String get spotListDetailMoreInfoLinkHint => 'https://…';
 
   @override
   String get spotListDetailMoreInfoLinkHelper =>
-      'A page elsewhere on the web with more about this list';
+      'Een pagina elders op het web met meer informatie over deze lijst';
 
   @override
   String get spotListDetailMoreInfoLinkValidationError =>
-      'More info link must be a valid URL (http or https), e.g. example.com or https://example.com/page';
+      'Meer-infolink moet een geldige URL zijn (http of https), bijvoorbeeld example.com of https://example.com/pagina';
 
   @override
-  String get spotListDetailSave => 'Save';
+  String get spotListDetailSave => 'Opslaan';
 
   @override
-  String get spotListDetailListUpdated => 'List updated';
+  String get spotListDetailListUpdated => 'Lijst bijgewerkt';
 
   @override
-  String get spotListDetailFailedToUpdateList => 'Failed to update list';
+  String get spotListDetailFailedToUpdateList => 'Lijst bijwerken mislukt';
 
   @override
-  String get spotListDetailVisibilityPublicList => 'Public list';
+  String get spotListDetailVisibilityPublicList => 'Openbare lijst';
 
   @override
-  String get spotListDetailVisibilityUnlistedList => 'Unlisted list';
+  String get spotListDetailVisibilityUnlistedList => 'Niet-vermelde lijst';
 
   @override
-  String get spotListDetailVisibilityPrivateList => 'Private list';
+  String get spotListDetailVisibilityPrivateList => 'Privélijst';
 
   @override
-  String get spotListDetailCouldNotOpenProfile => 'Could not open profile';
+  String get spotListDetailCouldNotOpenProfile =>
+      'Profiel kon niet worden geopend';
 
   @override
   String spotListDetailCreatedPart(String visibility, String date) {
-    return '$visibility created $date';
+    return '$visibility aangemaakt $date';
   }
 
   @override
-  String get spotListDetailCreatedBySuffix => ' by ';
+  String get spotListDetailCreatedBySuffix => ' door ';
 
   @override
   String spotListDetailLastUpdatedPart(String date) {
-    return ', and last updated $date.';
+    return ', en laatst bijgewerkt $date.';
   }
 
   @override
-  String get spotListDetailMoreInformationOn => 'More information on ';
+  String get spotListDetailMoreInformationOn => 'Meer informatie op ';
 
   @override
-  String get spotListDetailCopiedToClipboard => 'List copied to clipboard!';
+  String get spotListDetailCopiedToClipboard =>
+      'Lijst gekopieerd naar klembord!';
 
   @override
   String spotListDetailCopyFailed(String error) {
-    return 'Failed to copy list: $error';
+    return 'Lijst kopiëren mislukt: $error';
   }
 
   @override
-  String get spotListDetailHighlightListOnMap => 'Highlight list on map';
+  String get spotListDetailHighlightListOnMap => 'Lijst markeren op kaart';
 
   @override
-  String get spotListDetailEditListTooltip => 'Edit list';
+  String get spotListDetailEditListTooltip => 'Lijst bewerken';
 
   @override
-  String get spotListDetailMenuListSettings => 'List Settings';
+  String get spotListDetailMenuListSettings => 'Lijstinstellingen';
 
   @override
-  String get spotListDetailMenuOrganizeList => 'Organize List';
+  String get spotListDetailMenuOrganizeList => 'Lijst ordenen';
 
   @override
-  String get spotListDetailMenuDeleteList => 'Delete List';
+  String get spotListDetailMenuDeleteList => 'Lijst verwijderen';
 
   @override
-  String get spotListDetailPageTitle => 'Spot List';
+  String get spotListDetailPageTitle => 'Spotlijst';
 
   @override
-  String get spotListDetailListNotFound => 'List not found';
+  String get spotListDetailListNotFound => 'Lijst niet gevonden';
 
   @override
   String spotListDetailMetaDescriptionFallback(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count parkour spots',
-      one: '1 parkour spot',
+      other: '$count parkourspots',
+      one: '1 parkourspot',
     );
-    return 'A curated list of $_temp0 on Parkour·Spot';
+    return 'Een samengestelde lijst met $_temp0 op Parkour·Spot';
   }
 
   @override
-  String get publicProfilePageTitle => 'Profile';
+  String get publicProfilePageTitle => 'Profiel';
 
   @override
-  String get publicProfileShareProfileTooltip => 'Share Profile';
+  String get publicProfileShareProfileTooltip => 'Profiel delen';
 
   @override
-  String get publicProfileErrorLoadingProfile => 'Error loading profile';
+  String get publicProfileErrorLoadingProfile => 'Fout bij laden van profiel';
 
   @override
-  String get publicProfilePleaseTryAgainLater => 'Please try again later';
+  String get publicProfilePleaseTryAgainLater => 'Probeer het later opnieuw';
 
   @override
   String publicProfileMetaDescription(String name, String defaultDescription) {
-    return 'View $name\'s parkour spots and lists on Parkour·Spot — $defaultDescription';
+    return 'Bekijk de parkourspots en lijsten van $name op Parkour·Spot — $defaultDescription';
   }
 
   @override
-  String get publicProfileProfileNotFound => 'Profile not found';
+  String get publicProfileProfileNotFound => 'Profiel niet gevonden';
 
   @override
   String get publicProfileNotFoundOrPrivate =>
-      'This profile does not exist or is private.';
+      'Dit profiel bestaat niet of is privé.';
 
   @override
   String publicProfileMemberSince(String date) {
-    return 'Member since $date';
+    return 'Lid sinds $date';
   }
 
   @override
-  String get publicProfileEditProfileTooltip => 'Edit Profile';
+  String get publicProfileEditProfileTooltip => 'Profiel bewerken';
 
   @override
-  String get publicProfileSpotTracking => 'Spot tracking';
+  String get publicProfileSpotTracking => 'Spottracking';
 
   @override
-  String get publicProfileNoSpotsYet => 'No spots yet';
+  String get publicProfileNoSpotsYet => 'Nog geen spots';
 
   @override
   String get publicProfileAddSpotsFromSpotDetailPages =>
-      'Add spots from spot detail pages';
+      'Voeg spots toe vanaf spotdetailpagina’s';
 
   @override
-  String get publicProfileBeenTo => 'Been to';
+  String get publicProfileBeenTo => 'Geweest';
 
   @override
-  String get publicProfileMyCheckIns => 'My check-ins';
+  String get publicProfileMyCheckIns => 'Mijn check-ins';
 
   @override
   String get publicProfileMyCheckInsSubtitle =>
-      'Your recorded history of visits to spots';
+      'Je geregistreerde geschiedenis van bezoeken aan spots';
 
   @override
-  String get publicProfileSpotLists => 'Spot lists';
+  String get publicProfileSpotLists => 'Spotlijsten';
 
   @override
-  String get publicProfileYours => 'Yours';
+  String get publicProfileYours => 'Van jou';
 
   @override
-  String get publicProfileCreateYourFirstList => 'Create your first list';
+  String get publicProfileCreateYourFirstList => 'Maak je eerste lijst';
 
   @override
-  String get publicProfileSaved => 'Saved';
+  String get publicProfileSaved => 'Opgeslagen';
 
   @override
-  String get publicProfilePublicSpotLists => 'Public Spot Lists';
+  String get publicProfilePublicSpotLists => 'Openbare spotlijsten';
 
   @override
-  String get publicProfileNoSavedListsYet => 'No saved lists yet';
+  String get publicProfileNoSavedListsYet => 'Nog geen opgeslagen lijsten';
 
   @override
   String get publicProfileSaveListsHint =>
-      'Save lists you find on other users’ list pages';
+      'Sla lijsten op die je vindt op lijstpagina’s van andere gebruikers';
 
   @override
   String get publicProfileSavedListsUnavailable =>
-      'Your saved lists are no longer available or were removed.';
+      'Je opgeslagen lijsten zijn niet meer beschikbaar of zijn verwijderd.';
 
   @override
   String get publicProfileListCreatedSuccessfully =>
-      'List created successfully';
+      'Lijst succesvol aangemaakt';
 
   @override
-  String get publicProfileChangeProfilePicture => 'Change Profile Picture';
+  String get publicProfileChangeProfilePicture => 'Profielfoto wijzigen';
 
   @override
-  String get publicProfileChooseFromGallery => 'Choose from Gallery';
+  String get publicProfileChooseFromGallery => 'Kies uit galerij';
 
   @override
-  String get publicProfileTakePhoto => 'Take Photo';
+  String get publicProfileTakePhoto => 'Foto maken';
 
   @override
-  String get publicProfileRemovePicture => 'Remove Picture';
+  String get publicProfileRemovePicture => 'Foto verwijderen';
 
   @override
   String publicProfileErrorPickingImage(String error) {
-    return 'Error picking image: $error';
+    return 'Fout bij kiezen van afbeelding: $error';
   }
 
   @override
   String publicProfileErrorTakingPhoto(String error) {
-    return 'Error taking photo: $error';
+    return 'Fout bij maken van foto: $error';
   }
 
   @override
-  String get publicProfileProcessingImage => 'Processing image...';
+  String get publicProfileProcessingImage => 'Afbeelding verwerken...';
 
   @override
-  String get publicProfileReadingImage => 'Reading image...';
+  String get publicProfileReadingImage => 'Afbeelding lezen...';
 
   @override
-  String get publicProfileUploading => 'Uploading...';
+  String get publicProfileUploading => 'Uploaden...';
 
   @override
-  String get publicProfileFinishing => 'Finishing...';
+  String get publicProfileFinishing => 'Afronden...';
 
   @override
-  String get publicProfileUpdatingProfile => 'Updating profile...';
+  String get publicProfileUpdatingProfile => 'Profiel bijwerken...';
 
   @override
   String get publicProfileProfilePictureUpdatedSuccessfully =>
-      'Profile picture updated successfully';
+      'Profielfoto succesvol bijgewerkt';
 
   @override
   String get publicProfileFailedToUpdateProfilePicture =>
-      'Failed to update profile picture';
+      'Bijwerken van profielfoto mislukt';
 
   @override
   String publicProfileErrorUploadingProfilePicture(String error) {
-    return 'Error uploading profile picture: $error';
+    return 'Fout bij uploaden van profielfoto: $error';
   }
 
   @override
-  String get publicProfileRemoveProfilePicture => 'Remove Profile Picture';
+  String get publicProfileRemoveProfilePicture => 'Profielfoto verwijderen';
 
   @override
   String get publicProfileRemoveProfilePictureConfirmation =>
-      'Are you sure you want to remove your profile picture?';
+      'Weet je zeker dat je je profielfoto wilt verwijderen?';
 
   @override
   String get publicProfileProfilePictureRemovedSuccessfully =>
-      'Profile picture removed successfully';
+      'Profielfoto succesvol verwijderd';
 
   @override
   String get publicProfileFailedToRemoveProfilePicture =>
-      'Failed to remove profile picture';
+      'Verwijderen van profielfoto mislukt';
 
   @override
   String publicProfileErrorRemovingProfilePicture(String error) {
-    return 'Error removing profile picture: $error';
+    return 'Fout bij verwijderen van profielfoto: $error';
   }
 
   @override
   String get publicProfileProfileCopiedToClipboard =>
-      'Profile copied to clipboard!';
+      'Profiel gekopieerd naar klembord!';
 
   @override
   String publicProfileFailedToCopyProfile(String error) {
-    return 'Failed to copy profile: $error';
+    return 'Profiel kopiëren mislukt: $error';
   }
 
   @override
   String get publicProfileStatsSpots => 'Spots';
 
   @override
-  String get publicProfileStatsRatings => 'Ratings';
+  String get publicProfileStatsRatings => 'Beoordelingen';
 
   @override
-  String get publicProfileSettingsTitle => 'Profile Settings';
+  String get publicProfileSettingsTitle => 'Profielinstellingen';
 
   @override
-  String get publicProfileEmailLabel => 'Email';
+  String get publicProfileEmailLabel => 'E-mail';
 
   @override
   String get publicProfileEmailNotShownHint =>
-      'Your email is not shown on your public profile.';
+      'Je e-mail wordt niet openbaar getoond.';
 
   @override
-  String get publicProfileDisplayNameLabel => 'Display Name';
+  String get publicProfileDisplayNameLabel => 'Weergavenaam';
 
   @override
-  String get publicProfileNoDisplayNameSet => 'No display name set';
+  String get publicProfileNoDisplayNameSet => 'Geen weergavenaam ingesteld';
 
   @override
-  String get publicProfileEditAction => 'Edit';
+  String get publicProfileEditAction => 'Bewerken';
 
   @override
-  String get publicProfileDisplayNameHint => 'Enter your display name';
+  String get publicProfileDisplayNameHint => 'Voer je naam in';
 
   @override
   String publicProfileDisplayNameHelper(int max) {
-    return 'Shown on your profile and spots you create (max $max characters)';
+    return 'Hoe je naam aan anderen wordt getoond';
   }
 
   @override
   String publicProfileDisplayNameMaxLengthError(int max) {
-    return 'Display name must be at most $max characters';
+    return 'Weergavenaam mag maximaal 50 tekens bevatten';
   }
 
   @override
-  String get publicProfileDisplayNameUpdated =>
-      'Display name updated successfully';
+  String get publicProfileDisplayNameUpdated => 'Weergavenaam bijgewerkt';
 
   @override
-  String get publicProfileDisplayNameRemoved => 'Display name removed';
+  String get publicProfileDisplayNameRemoved => 'Weergavenaam verwijderd';
 
   @override
   String get publicProfileDisplayNameUpdateFailed =>
-      'Failed to update display name';
+      'Bijwerken van weergavenaam mislukt';
 
   @override
-  String get publicProfileSaveAction => 'Save';
+  String get publicProfileSaveAction => 'Opslaan';
 
   @override
-  String get publicProfileUsernameLabel => 'Username';
+  String get publicProfileUsernameLabel => 'Gebruikersnaam';
 
   @override
-  String get publicProfileNoUsernameSet => 'No username set';
+  String get publicProfileNoUsernameSet => 'Geen gebruikersnaam ingesteld';
 
   @override
-  String get publicProfileUsernameHint => 'Enter username';
+  String get publicProfileUsernameHint => 'Voer een gebruikersnaam in';
 
   @override
   String get publicProfileUsernameHelper =>
-      '3-27 characters, letters, numbers, underscores, and hyphens only';
+      'Uniek en gebruikt in je profiel-URL';
 
   @override
-  String get publicProfileUsernameEmpty => 'Username cannot be empty';
+  String get publicProfileUsernameEmpty => 'Gebruikersnaam mag niet leeg zijn';
 
   @override
-  String get publicProfileUsernameTaken => 'Username is already taken';
+  String get publicProfileUsernameTaken =>
+      'Deze gebruikersnaam is al in gebruik';
 
   @override
-  String get publicProfileUsernameUpdated => 'Username updated successfully';
+  String get publicProfileUsernameUpdated => 'Gebruikersnaam bijgewerkt';
 
   @override
-  String get publicProfileUsernameUpdateFailed => 'Failed to update username';
+  String get publicProfileUsernameUpdateFailed =>
+      'Bijwerken van gebruikersnaam mislukt';
 
   @override
   String get publicProfileInstagramLabel => 'Instagram';
 
   @override
-  String get publicProfileNoInstagramSet => 'No Instagram link set';
+  String get publicProfileNoInstagramSet => 'Geen Instagram ingesteld';
 
   @override
-  String get publicProfileAddAction => 'Add';
+  String get publicProfileAddAction => 'Toevoegen';
 
   @override
-  String get publicProfileInstagramLinkLabel => 'Instagram Link';
+  String get publicProfileInstagramLinkLabel => 'Instagram-link';
 
   @override
-  String get publicProfileInstagramLinkHint =>
-      'https://www.instagram.com/your_handle/';
+  String get publicProfileInstagramLinkHint => 'https://instagram.com/jouwnaam';
 
   @override
   String get publicProfileInstagramLinkHelper =>
-      'You can also paste @handle or just the handle';
+      'Volledige URL naar je Instagram-profiel';
 
   @override
   String get publicProfileInstagramInvalid =>
-      'Enter a valid Instagram profile URL or handle';
+      'Voer een geldige Instagram-URL in';
 
   @override
-  String get publicProfileInstagramRemoved => 'Instagram link removed';
+  String get publicProfileInstagramRemoved => 'Instagram-link verwijderd';
 
   @override
-  String get publicProfileInstagramUpdated =>
-      'Instagram link updated successfully';
+  String get publicProfileInstagramUpdated => 'Instagram-link bijgewerkt';
 
   @override
   String get publicProfileInstagramUpdateFailed =>
-      'Failed to update Instagram link';
+      'Bijwerken van Instagram-link mislukt';
 
   @override
-  String get publicProfilePrivacyTitle => 'Profile Privacy';
+  String get publicProfilePrivacyTitle => 'Privacy';
 
   @override
-  String get publicProfilePrivacyPublicLabel => 'Public Profile';
+  String get publicProfilePrivacyPublicLabel => 'Openbaar profiel';
 
   @override
-  String get publicProfilePrivacyPrivateLabel => 'Private Profile';
+  String get publicProfilePrivacyPrivateLabel => 'Privéprofiel';
 
   @override
   String get publicProfilePrivacyPublicDescription =>
-      'Your profile is visible to everyone';
+      'Iedereen kan je profiel en openbare lijsten bekijken.';
 
   @override
   String get publicProfilePrivacyPrivateDescription =>
-      'Your profile is private and not visible to others';
+      'Alleen jij kunt je profiel bekijken.';
 
   @override
-  String get publicProfilePrivacyNowPublic => 'Profile is now public';
+  String get publicProfilePrivacyNowPublic => 'Je profiel is nu openbaar';
 
   @override
-  String get publicProfilePrivacyNowPrivate => 'Profile is now private';
+  String get publicProfilePrivacyNowPrivate => 'Je profiel is nu privé';
 
   @override
   String get publicProfileFailedToUpdateProfilePrivacy =>
-      'Failed to update profile privacy';
+      'Bijwerken van profielprivacy mislukt';
 }
