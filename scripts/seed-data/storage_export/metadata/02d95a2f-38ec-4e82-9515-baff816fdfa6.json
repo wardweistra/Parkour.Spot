@@ -1,0 +1,19 @@
+{
+  "name": "spots/1775587186249_web_image_0.jpg",
+  "bucket": "parkourspot-93c90.firebasestorage.app",
+  "metageneration": 1,
+  "generation": 1775587325708,
+  "contentType": "image/jpeg",
+  "storageClass": "STANDARD",
+  "contentDisposition": "inline",
+  "downloadTokens": [
+    "729b1ac6-5980-4dae-b7cb-f08b786498ba"
+  ],
+  "etag": "HGn1uMwu9jpyuy4EITi8uV4nPQA",
+  "customMetadata": {},
+  "timeCreated": "2026-04-07T18:42:05.708Z",
+  "updated": "2026-04-07T18:42:05.708Z",
+  "size": 75348,
+  "md5Hash": "8z3FdtpPvIBXNJLcC8Rf0A==",
+  "crc32c": "3411348323"
+}
