@@ -42,7 +42,7 @@ Alternatively, use the shell scripts: `./scripts/start_emulators.sh` and `./scri
 
 - A `.firebaserc` file must exist for the emulators to start. If missing, create one: `echo '{"projects":{"default":"parkourspot-93c90"}}' > .firebaserc`
 - Seed data is at `scripts/seed-data/` and must be copied to `.firebase/emulator-data/` before first emulator run. The `start_emulators.sh` script handles this automatically.
-- The seed auth account `peach.mountain.276@example.com` does not have a known password. To test login, create a new account via the app's signup flow, then verify the email in the Emulator UI at `http://localhost:4000/auth`.
+- **Seed auth test users** (see README **Seed data reference** for full detail): `user@parkour.spot`, `moderator@parkour.spot`, and `admin@parkour.spot` use email/password with password equal to the email address (regular user, moderator, and admin roles). `google@parkour.spot` is set up for Sign in with Google only (not email/password). For any new accounts you create locally, verify email in the Emulator UI at `http://localhost:4000/auth`.
 - `flutter analyze` will show ~119 `info`-level diagnostics (deprecated API usage, `use_build_context_synchronously`). These are not errors and do not block builds or tests.
 - The `run_local_with_emulators.sh` script has a `read -p` prompt. For non-interactive use, run the `flutter run` command directly with the dart-defines shown above.
 - Cloud Functions lint and tests: `cd functions && npm run lint` and `cd functions && npm test`.
