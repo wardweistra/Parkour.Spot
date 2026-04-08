@@ -1667,36 +1667,36 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get sourceDetailsLoadingSource => 'Loading source...';
+  String get sourceDetailsLoadingSource => 'A carregar fonte...';
 
   @override
-  String get sourceDetailsErrorTitle => 'Error';
+  String get sourceDetailsErrorTitle => 'Erro';
 
   @override
-  String get sourceDetailsNotFound => 'Source not found';
+  String get sourceDetailsNotFound => 'Fonte não encontrada';
 
   @override
-  String get sourceDetailsTotalSpots => 'Total Spots';
+  String get sourceDetailsTotalSpots => 'Total de spots';
 
   @override
-  String get sourceDetailsFolders => 'Folders';
+  String get sourceDetailsFolders => 'Pastas';
 
   @override
-  String get sourceDetailsGoToSource => 'Go to Source';
+  String get sourceDetailsGoToSource => 'Ir para a fonte';
 
   @override
-  String get sourceDetailsAdded => 'Added';
+  String get sourceDetailsAdded => 'Adicionado';
 
   @override
-  String get sourceDetailsLastImported => 'Last Imported';
+  String get sourceDetailsLastImported => 'Última importação';
 
   @override
   String sourceDetailsRelativeDaysAgo(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count days ago',
-      one: '1 day ago',
+      other: 'Há $count dias',
+      one: 'Há 1 dia',
     );
     return '$_temp0';
   }
@@ -1706,8 +1706,8 @@ class AppLocalizationsPt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count hours ago',
-      one: '1 hour ago',
+      other: 'Há $count horas',
+      one: 'Há 1 hora',
     );
     return '$_temp0';
   }
@@ -1717,474 +1717,480 @@ class AppLocalizationsPt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count minutes ago',
-      one: '1 minute ago',
+      other: 'Há $count minutos',
+      one: 'Há 1 minuto',
     );
     return '$_temp0';
   }
 
   @override
-  String get sourceDetailsRelativeJustNow => 'Just now';
+  String get sourceDetailsRelativeJustNow => 'Agora mesmo';
 
   @override
   String spotTrackingSignInToViewList(String listName) {
-    return 'Sign in to view your $listName list';
+    return 'Inicia sessão para ver a tua lista «$listName»';
   }
 
   @override
   String spotTrackingNoSpotsInList(String listName) {
-    return 'No spots in $listName';
+    return 'Sem spots em $listName';
   }
 
   @override
-  String get spotListSaveTooltipSaveList => 'Save list';
+  String get spotListSaveTooltipSaveList => 'Guardar lista';
 
   @override
-  String get spotListSaveTooltipSavedList => 'Saved list';
+  String get spotListSaveTooltipSavedList => 'Lista guardada';
 
   @override
-  String get spotListSaveSignInTitle => 'Sign in to save lists';
+  String get spotListSaveSignInTitle => 'Inicia sessão para guardar listas';
 
   @override
   String get spotListSaveSignInBody =>
-      'Save someone else’s spot list to your profile so you can open it again later.';
+      'Guarda a lista de spots de outra pessoa no teu perfil para poderes abri-la novamente mais tarde.';
 
   @override
-  String get spotListSaveSavedToProfile => 'List saved to your profile';
+  String get spotListSaveSavedToProfile => 'Lista guardada no teu perfil';
 
   @override
-  String get spotListSaveCouldNotSaveList => 'Could not save list';
+  String get spotListSaveCouldNotSaveList => 'Não foi possível guardar a lista';
 
   @override
-  String get spotListSaveRemovedFromSavedLists => 'Removed from saved lists';
+  String get spotListSaveRemovedFromSavedLists =>
+      'Removida das listas guardadas';
 
   @override
-  String get spotListSaveCouldNotRemoveList => 'Could not remove list';
+  String get spotListSaveCouldNotRemoveList =>
+      'Não foi possível remover a lista';
 
   @override
-  String get spotListSaveActionSaveList => 'Save list';
+  String get spotListSaveActionSaveList => 'Guardar lista';
 
   @override
-  String get spotListSaveActionRemoveFromSaved => 'Remove from saved';
+  String get spotListSaveActionRemoveFromSaved => 'Remover das guardadas';
 
   @override
-  String get spotListSaveActionViewSavedLists => 'View saved lists';
+  String get spotListSaveActionViewSavedLists => 'Ver listas guardadas';
 
   @override
   String get spotListDetailListNotFoundOrNotAccessible =>
-      'List not found or not accessible';
+      'Lista não encontrada ou sem acesso';
 
   @override
-  String get spotListDetailDeleteListTitle => 'Delete List';
+  String get spotListDetailDeleteListTitle => 'Eliminar lista';
 
   @override
   String spotListDetailDeleteListConfirmation(String name) {
-    return 'Are you sure you want to delete \"$name\"? This action cannot be undone.';
+    return 'Tens a certeza de que queres eliminar \"$name\"? Esta ação não pode ser anulada.';
   }
 
   @override
-  String get spotListDetailDeleteAction => 'Delete';
+  String get spotListDetailDeleteAction => 'Eliminar';
 
   @override
-  String get spotListDetailListDeleted => 'List deleted';
+  String get spotListDetailListDeleted => 'Lista eliminada';
 
   @override
-  String get spotListDetailFailedToDeleteList => 'Failed to delete list';
+  String get spotListDetailFailedToDeleteList =>
+      'Não foi possível eliminar a lista';
 
   @override
-  String get spotListDetailNoSpotsInThisList => 'No spots in this list';
+  String get spotListDetailNoSpotsInThisList => 'Sem spots nesta lista';
 
   @override
-  String get spotListDetailEditListTitle => 'Edit List';
+  String get spotListDetailEditListTitle => 'Editar lista';
 
   @override
-  String get spotListDetailMoreInfoLinkLabel => 'More info link (optional)';
+  String get spotListDetailMoreInfoLinkLabel =>
+      'Ligação com mais informação (opcional)';
 
   @override
   String get spotListDetailMoreInfoLinkHint => 'https://…';
 
   @override
   String get spotListDetailMoreInfoLinkHelper =>
-      'A page elsewhere on the web with more about this list';
+      'Uma página na web com mais informação sobre esta lista';
 
   @override
   String get spotListDetailMoreInfoLinkValidationError =>
-      'More info link must be a valid URL (http or https), e.g. example.com or https://example.com/page';
+      'A ligação com mais informação tem de ser um URL válido (http ou https), por exemplo example.com ou https://example.com/pagina';
 
   @override
-  String get spotListDetailSave => 'Save';
+  String get spotListDetailSave => 'Guardar';
 
   @override
-  String get spotListDetailListUpdated => 'List updated';
+  String get spotListDetailListUpdated => 'Lista atualizada';
 
   @override
-  String get spotListDetailFailedToUpdateList => 'Failed to update list';
+  String get spotListDetailFailedToUpdateList =>
+      'Não foi possível atualizar a lista';
 
   @override
-  String get spotListDetailVisibilityPublicList => 'Public list';
+  String get spotListDetailVisibilityPublicList => 'Lista pública';
 
   @override
-  String get spotListDetailVisibilityUnlistedList => 'Unlisted list';
+  String get spotListDetailVisibilityUnlistedList => 'Lista não listada';
 
   @override
-  String get spotListDetailVisibilityPrivateList => 'Private list';
+  String get spotListDetailVisibilityPrivateList => 'Lista privada';
 
   @override
-  String get spotListDetailCouldNotOpenProfile => 'Could not open profile';
+  String get spotListDetailCouldNotOpenProfile =>
+      'Não foi possível abrir o perfil';
 
   @override
   String spotListDetailCreatedPart(String visibility, String date) {
-    return '$visibility created $date';
+    return '$visibility criada em $date';
   }
 
   @override
-  String get spotListDetailCreatedBySuffix => ' by ';
+  String get spotListDetailCreatedBySuffix => ' por ';
 
   @override
   String spotListDetailLastUpdatedPart(String date) {
-    return ', and last updated $date.';
+    return ', e atualizada pela última vez em $date.';
   }
 
   @override
-  String get spotListDetailMoreInformationOn => 'More information on ';
+  String get spotListDetailMoreInformationOn => 'Mais informação em ';
 
   @override
-  String get spotListDetailCopiedToClipboard => 'List copied to clipboard!';
+  String get spotListDetailCopiedToClipboard =>
+      'Lista copiada para a área de transferência!';
 
   @override
   String spotListDetailCopyFailed(String error) {
-    return 'Failed to copy list: $error';
+    return 'Não foi possível copiar a lista: $error';
   }
 
   @override
-  String get spotListDetailHighlightListOnMap => 'Highlight list on map';
+  String get spotListDetailHighlightListOnMap => 'Destacar lista no mapa';
 
   @override
-  String get spotListDetailEditListTooltip => 'Edit list';
+  String get spotListDetailEditListTooltip => 'Editar lista';
 
   @override
-  String get spotListDetailMenuListSettings => 'List Settings';
+  String get spotListDetailMenuListSettings => 'Definições da lista';
 
   @override
-  String get spotListDetailMenuOrganizeList => 'Organize List';
+  String get spotListDetailMenuOrganizeList => 'Organizar lista';
 
   @override
-  String get spotListDetailMenuDeleteList => 'Delete List';
+  String get spotListDetailMenuDeleteList => 'Eliminar lista';
 
   @override
-  String get spotListDetailPageTitle => 'Spot List';
+  String get spotListDetailPageTitle => 'Lista de spots';
 
   @override
-  String get spotListDetailListNotFound => 'List not found';
+  String get spotListDetailListNotFound => 'Lista não encontrada';
 
   @override
   String spotListDetailMetaDescriptionFallback(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count parkour spots',
-      one: '1 parkour spot',
+      other: '$count spots de parkour',
+      one: '1 spot de parkour',
     );
-    return 'A curated list of $_temp0 on Parkour·Spot';
+    return 'Uma lista curada de $_temp0 no Parkour·Spot';
   }
 
   @override
-  String get publicProfilePageTitle => 'Profile';
+  String get publicProfilePageTitle => 'Perfil';
 
   @override
-  String get publicProfileShareProfileTooltip => 'Share Profile';
+  String get publicProfileShareProfileTooltip => 'Partilhar perfil';
 
   @override
-  String get publicProfileErrorLoadingProfile => 'Error loading profile';
+  String get publicProfileErrorLoadingProfile => 'Erro ao carregar perfil';
 
   @override
-  String get publicProfilePleaseTryAgainLater => 'Please try again later';
+  String get publicProfilePleaseTryAgainLater => 'Tenta novamente mais tarde';
 
   @override
   String publicProfileMetaDescription(String name, String defaultDescription) {
-    return 'View $name\'s parkour spots and lists on Parkour·Spot — $defaultDescription';
+    return 'Vê os spots e listas de parkour de $name no Parkour·Spot — $defaultDescription';
   }
 
   @override
-  String get publicProfileProfileNotFound => 'Profile not found';
+  String get publicProfileProfileNotFound => 'Perfil não encontrado';
 
   @override
   String get publicProfileNotFoundOrPrivate =>
-      'This profile does not exist or is private.';
+      'Este perfil não existe ou é privado.';
 
   @override
   String publicProfileMemberSince(String date) {
-    return 'Member since $date';
+    return 'Membro desde $date';
   }
 
   @override
-  String get publicProfileEditProfileTooltip => 'Edit Profile';
+  String get publicProfileEditProfileTooltip => 'Editar perfil';
 
   @override
-  String get publicProfileSpotTracking => 'Spot tracking';
+  String get publicProfileSpotTracking => 'Seguimento de spots';
 
   @override
-  String get publicProfileNoSpotsYet => 'No spots yet';
+  String get publicProfileNoSpotsYet => 'Ainda sem spots';
 
   @override
   String get publicProfileAddSpotsFromSpotDetailPages =>
-      'Add spots from spot detail pages';
+      'Adiciona spots a partir das páginas de detalhe do spot';
 
   @override
-  String get publicProfileBeenTo => 'Been to';
+  String get publicProfileBeenTo => 'Já visitados';
 
   @override
-  String get publicProfileMyCheckIns => 'My check-ins';
+  String get publicProfileMyCheckIns => 'Os meus check-ins';
 
   @override
   String get publicProfileMyCheckInsSubtitle =>
-      'Your recorded history of visits to spots';
+      'O teu histórico registado de visitas a spots';
 
   @override
-  String get publicProfileSpotLists => 'Spot lists';
+  String get publicProfileSpotLists => 'Listas de spots';
 
   @override
-  String get publicProfileYours => 'Yours';
+  String get publicProfileYours => 'Tuas';
 
   @override
-  String get publicProfileCreateYourFirstList => 'Create your first list';
+  String get publicProfileCreateYourFirstList => 'Cria a tua primeira lista';
 
   @override
-  String get publicProfileSaved => 'Saved';
+  String get publicProfileSaved => 'Guardadas';
 
   @override
-  String get publicProfilePublicSpotLists => 'Public Spot Lists';
+  String get publicProfilePublicSpotLists => 'Listas públicas de spots';
 
   @override
-  String get publicProfileNoSavedListsYet => 'No saved lists yet';
+  String get publicProfileNoSavedListsYet => 'Ainda sem listas guardadas';
 
   @override
   String get publicProfileSaveListsHint =>
-      'Save lists you find on other users’ list pages';
+      'Guarda listas que encontrares nas páginas de listas de outros utilizadores';
 
   @override
   String get publicProfileSavedListsUnavailable =>
-      'Your saved lists are no longer available or were removed.';
+      'As tuas listas guardadas já não estão disponíveis ou foram removidas.';
 
   @override
-  String get publicProfileListCreatedSuccessfully =>
-      'List created successfully';
+  String get publicProfileListCreatedSuccessfully => 'Lista criada com sucesso';
 
   @override
-  String get publicProfileChangeProfilePicture => 'Change Profile Picture';
+  String get publicProfileChangeProfilePicture => 'Alterar foto de perfil';
 
   @override
-  String get publicProfileChooseFromGallery => 'Choose from Gallery';
+  String get publicProfileChooseFromGallery => 'Escolher da galeria';
 
   @override
-  String get publicProfileTakePhoto => 'Take Photo';
+  String get publicProfileTakePhoto => 'Tirar foto';
 
   @override
-  String get publicProfileRemovePicture => 'Remove Picture';
+  String get publicProfileRemovePicture => 'Remover foto';
 
   @override
   String publicProfileErrorPickingImage(String error) {
-    return 'Error picking image: $error';
+    return 'Erro ao escolher imagem: $error';
   }
 
   @override
   String publicProfileErrorTakingPhoto(String error) {
-    return 'Error taking photo: $error';
+    return 'Erro ao tirar foto: $error';
   }
 
   @override
-  String get publicProfileProcessingImage => 'Processing image...';
+  String get publicProfileProcessingImage => 'A processar imagem...';
 
   @override
-  String get publicProfileReadingImage => 'Reading image...';
+  String get publicProfileReadingImage => 'A ler imagem...';
 
   @override
-  String get publicProfileUploading => 'Uploading...';
+  String get publicProfileUploading => 'A carregar...';
 
   @override
-  String get publicProfileFinishing => 'Finishing...';
+  String get publicProfileFinishing => 'A finalizar...';
 
   @override
-  String get publicProfileUpdatingProfile => 'Updating profile...';
+  String get publicProfileUpdatingProfile => 'A atualizar perfil...';
 
   @override
   String get publicProfileProfilePictureUpdatedSuccessfully =>
-      'Profile picture updated successfully';
+      'Foto de perfil atualizada com sucesso';
 
   @override
   String get publicProfileFailedToUpdateProfilePicture =>
-      'Failed to update profile picture';
+      'Não foi possível atualizar a foto de perfil';
 
   @override
   String publicProfileErrorUploadingProfilePicture(String error) {
-    return 'Error uploading profile picture: $error';
+    return 'Erro ao carregar foto de perfil: $error';
   }
 
   @override
-  String get publicProfileRemoveProfilePicture => 'Remove Profile Picture';
+  String get publicProfileRemoveProfilePicture => 'Remover foto de perfil';
 
   @override
   String get publicProfileRemoveProfilePictureConfirmation =>
-      'Are you sure you want to remove your profile picture?';
+      'Tens a certeza de que queres remover a tua foto de perfil?';
 
   @override
   String get publicProfileProfilePictureRemovedSuccessfully =>
-      'Profile picture removed successfully';
+      'Foto de perfil removida com sucesso';
 
   @override
   String get publicProfileFailedToRemoveProfilePicture =>
-      'Failed to remove profile picture';
+      'Não foi possível remover a foto de perfil';
 
   @override
   String publicProfileErrorRemovingProfilePicture(String error) {
-    return 'Error removing profile picture: $error';
+    return 'Erro ao remover foto de perfil: $error';
   }
 
   @override
   String get publicProfileProfileCopiedToClipboard =>
-      'Profile copied to clipboard!';
+      'Perfil copiado para a área de transferência!';
 
   @override
   String publicProfileFailedToCopyProfile(String error) {
-    return 'Failed to copy profile: $error';
+    return 'Não foi possível copiar o perfil: $error';
   }
 
   @override
   String get publicProfileStatsSpots => 'Spots';
 
   @override
-  String get publicProfileStatsRatings => 'Ratings';
+  String get publicProfileStatsRatings => 'Avaliações';
 
   @override
-  String get publicProfileSettingsTitle => 'Profile Settings';
+  String get publicProfileSettingsTitle => 'Definições do perfil';
 
   @override
-  String get publicProfileEmailLabel => 'Email';
+  String get publicProfileEmailLabel => 'E-mail';
 
   @override
   String get publicProfileEmailNotShownHint =>
-      'Your email is not shown on your public profile.';
+      'O teu e-mail não é mostrado publicamente.';
 
   @override
-  String get publicProfileDisplayNameLabel => 'Display Name';
+  String get publicProfileDisplayNameLabel => 'Nome de exibição';
 
   @override
-  String get publicProfileNoDisplayNameSet => 'No display name set';
+  String get publicProfileNoDisplayNameSet => 'Sem nome de exibição definido';
 
   @override
-  String get publicProfileEditAction => 'Edit';
+  String get publicProfileEditAction => 'Editar';
 
   @override
-  String get publicProfileDisplayNameHint => 'Enter your display name';
+  String get publicProfileDisplayNameHint => 'Introduz o teu nome';
 
   @override
   String publicProfileDisplayNameHelper(int max) {
-    return 'Shown on your profile and spots you create (max $max characters)';
+    return 'Como o teu nome é mostrado aos outros';
   }
 
   @override
   String publicProfileDisplayNameMaxLengthError(int max) {
-    return 'Display name must be at most $max characters';
+    return 'O nome de exibição deve ter no máximo 50 caracteres';
   }
 
   @override
-  String get publicProfileDisplayNameUpdated =>
-      'Display name updated successfully';
+  String get publicProfileDisplayNameUpdated => 'Nome de exibição atualizado';
 
   @override
-  String get publicProfileDisplayNameRemoved => 'Display name removed';
+  String get publicProfileDisplayNameRemoved => 'Nome de exibição removido';
 
   @override
   String get publicProfileDisplayNameUpdateFailed =>
-      'Failed to update display name';
+      'Não foi possível atualizar o nome de exibição';
 
   @override
-  String get publicProfileSaveAction => 'Save';
+  String get publicProfileSaveAction => 'Guardar';
 
   @override
-  String get publicProfileUsernameLabel => 'Username';
+  String get publicProfileUsernameLabel => 'Nome de utilizador';
 
   @override
-  String get publicProfileNoUsernameSet => 'No username set';
+  String get publicProfileNoUsernameSet => 'Sem nome de utilizador definido';
 
   @override
-  String get publicProfileUsernameHint => 'Enter username';
+  String get publicProfileUsernameHint => 'Introduz um nome de utilizador';
 
   @override
   String get publicProfileUsernameHelper =>
-      '3-27 characters, letters, numbers, underscores, and hyphens only';
+      'Único e usado no URL do teu perfil';
 
   @override
-  String get publicProfileUsernameEmpty => 'Username cannot be empty';
+  String get publicProfileUsernameEmpty =>
+      'O nome de utilizador não pode estar vazio';
 
   @override
-  String get publicProfileUsernameTaken => 'Username is already taken';
+  String get publicProfileUsernameTaken =>
+      'Esse nome de utilizador já está em uso';
 
   @override
-  String get publicProfileUsernameUpdated => 'Username updated successfully';
+  String get publicProfileUsernameUpdated => 'Nome de utilizador atualizado';
 
   @override
-  String get publicProfileUsernameUpdateFailed => 'Failed to update username';
+  String get publicProfileUsernameUpdateFailed =>
+      'Não foi possível atualizar o nome de utilizador';
 
   @override
   String get publicProfileInstagramLabel => 'Instagram';
 
   @override
-  String get publicProfileNoInstagramSet => 'No Instagram link set';
+  String get publicProfileNoInstagramSet => 'Sem Instagram definido';
 
   @override
-  String get publicProfileAddAction => 'Add';
+  String get publicProfileAddAction => 'Adicionar';
 
   @override
-  String get publicProfileInstagramLinkLabel => 'Instagram Link';
+  String get publicProfileInstagramLinkLabel => 'Ligação do Instagram';
 
   @override
-  String get publicProfileInstagramLinkHint =>
-      'https://www.instagram.com/your_handle/';
+  String get publicProfileInstagramLinkHint => 'https://instagram.com/teunome';
 
   @override
   String get publicProfileInstagramLinkHelper =>
-      'You can also paste @handle or just the handle';
+      'URL completo para o teu perfil de Instagram';
 
   @override
   String get publicProfileInstagramInvalid =>
-      'Enter a valid Instagram profile URL or handle';
+      'Introduz um URL válido de Instagram';
 
   @override
-  String get publicProfileInstagramRemoved => 'Instagram link removed';
+  String get publicProfileInstagramRemoved => 'Ligação do Instagram removida';
 
   @override
-  String get publicProfileInstagramUpdated =>
-      'Instagram link updated successfully';
+  String get publicProfileInstagramUpdated => 'Ligação do Instagram atualizada';
 
   @override
   String get publicProfileInstagramUpdateFailed =>
-      'Failed to update Instagram link';
+      'Não foi possível atualizar a ligação do Instagram';
 
   @override
-  String get publicProfilePrivacyTitle => 'Profile Privacy';
+  String get publicProfilePrivacyTitle => 'Privacidade';
 
   @override
-  String get publicProfilePrivacyPublicLabel => 'Public Profile';
+  String get publicProfilePrivacyPublicLabel => 'Perfil público';
 
   @override
-  String get publicProfilePrivacyPrivateLabel => 'Private Profile';
+  String get publicProfilePrivacyPrivateLabel => 'Perfil privado';
 
   @override
   String get publicProfilePrivacyPublicDescription =>
-      'Your profile is visible to everyone';
+      'Qualquer pessoa pode ver o teu perfil e listas públicas.';
 
   @override
   String get publicProfilePrivacyPrivateDescription =>
-      'Your profile is private and not visible to others';
+      'Só tu podes ver o teu perfil.';
 
   @override
-  String get publicProfilePrivacyNowPublic => 'Profile is now public';
+  String get publicProfilePrivacyNowPublic => 'O teu perfil é agora público';
 
   @override
-  String get publicProfilePrivacyNowPrivate => 'Profile is now private';
+  String get publicProfilePrivacyNowPrivate => 'O teu perfil é agora privado';
 
   @override
   String get publicProfileFailedToUpdateProfilePrivacy =>
-      'Failed to update profile privacy';
+      'Não foi possível atualizar a privacidade do perfil';
 }
