@@ -716,7 +716,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
 
     // Creator name (clickable if we have userId)
     if (hasCreator) {
-      final name = creatorName ?? 'Unknown';
+      final name = creatorName ?? _l10n.spotDetailUnknownUser;
       children.add(
         TextSpan(
           text: name,
