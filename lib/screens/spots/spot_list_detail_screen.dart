@@ -25,6 +25,8 @@ import '../../widgets/page_scaffold.dart';
 import '../../widgets/spot_list_save_button.dart';
 import 'package:flutter/services.dart';
 import 'spot_list_advanced_organization_screen.dart';
+import '../../l10n/app_localizations.dart';
+import '../../utils/spot_list_localization.dart';
 
 enum _ListManageMenuAction { listSettings, organize, delete }
 
@@ -38,6 +40,8 @@ class SpotListDetailScreen extends StatefulWidget {
 }
 
 class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
+  AppLocalizations get _l10n => AppLocalizations.of(context)!;
+
   SpotList? _list;
   List<Spot> _spots = [];
   bool _isLoading = true;
@@ -106,7 +110,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     if (list == null) {
       setState(() {
         _isLoading = false;
-        _error = 'List not found or not accessible';
+        _error = _l10n.spotListDetailListNotFoundOrNotAccessible;
       });
       return;
     }
@@ -124,7 +128,8 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       final user = await userProfileService.getUserProfile(list.createdBy);
       if (mounted) {
         setState(() {
-          _creatorName = user?.displayName ?? user?.username ?? 'Unknown';
+          _creatorName =
+              user?.displayName ?? user?.username ?? _l10n.spotDetailUnknownUser;
         });
       }
     }
@@ -185,21 +190,21 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete List'),
+        title: Text(_l10n.spotListDetailDeleteListTitle),
         content: Text(
-          'Are you sure you want to delete "${_list?.name}"? This action cannot be undone.',
+          _l10n.spotListDetailDeleteListConfirmation(_list?.name ?? ''),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(_l10n.profileCancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(
               foregroundColor: Theme.of(context).colorScheme.error,
             ),
-            child: const Text('Delete'),
+            child: Text(_l10n.spotListDetailDeleteAction),
           ),
         ],
       ),
@@ -214,12 +219,12 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       final success = await spotListService.deleteSpotList(_list!.id!);
 
       if (success) {
-        SnackbarService.showSuccess('List deleted');
+        SnackbarService.showSuccess(_l10n.spotListDetailListDeleted);
         if (!mounted) return;
         context.pop();
       } else {
         SnackbarService.showError(
-          spotListService.error ?? 'Failed to delete list',
+          spotListService.error ?? _l10n.spotListDetailFailedToDeleteList,
         );
       }
     }
@@ -242,7 +247,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'No spots in this list',
+              _l10n.spotListDetailNoSpotsInThisList,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: Theme.of(
                   context,
@@ -251,7 +256,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Add spots from spot detail pages',
+              _l10n.publicProfileAddSpotsFromSpotDetailPages,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(
                   context,
@@ -502,32 +507,33 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setDialogState) => AlertDialog(
-          title: const Text('Edit List'),
+          title: Text(_l10n.spotListDetailEditListTitle),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
                   controller: nameController,
-                  decoration: const InputDecoration(labelText: 'List Name'),
+                  decoration: InputDecoration(
+                    labelText: _l10n.spotDetailListNameLabel,
+                  ),
                   autofocus: true,
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: descriptionController,
-                  decoration: const InputDecoration(
-                    labelText: 'Description (optional)',
+                  decoration: InputDecoration(
+                    labelText: _l10n.spotDetailListDescriptionLabel,
                   ),
                   maxLines: 3,
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: moreInfoUrlController,
-                  decoration: const InputDecoration(
-                    labelText: 'More info link (optional)',
-                    hintText: 'https://…',
-                    helperText:
-                        'A page elsewhere on the web with more about this list',
+                  decoration: InputDecoration(
+                    labelText: _l10n.spotListDetailMoreInfoLinkLabel,
+                    hintText: _l10n.spotListDetailMoreInfoLinkHint,
+                    helperText: _l10n.spotListDetailMoreInfoLinkHelper,
                   ),
                   keyboardType: TextInputType.url,
                   autocorrect: false,
@@ -535,7 +541,9 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                 const SizedBox(height: 16),
                 DropdownButtonFormField<SpotListVisibility>(
                   initialValue: selectedVisibility,
-                  decoration: const InputDecoration(labelText: 'Visibility'),
+                  decoration: InputDecoration(
+                    labelText: _l10n.spotDetailVisibilityLabel,
+                  ),
                   items: SpotListVisibility.values
                       .map(
                         (visibility) => DropdownMenuItem<SpotListVisibility>(
@@ -570,13 +578,13 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Cancel'),
+              child: Text(_l10n.profileCancel),
             ),
             TextButton(
               onPressed: () {
                 if (nameController.text.trim().isEmpty) {
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    const SnackBar(content: Text('List name cannot be empty')),
+                    SnackBar(content: Text(_l10n.spotDetailListNameEmpty)),
                   );
                   return;
                 }
@@ -584,10 +592,9 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                 if (link.isNotEmpty &&
                     !UrlService.isValidHttpOrHttpsUrl(link)) {
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    const SnackBar(
+                    SnackBar(
                       content: Text(
-                        'More info link must be a valid URL (http or https), '
-                        'e.g. example.com or https://example.com/page',
+                        _l10n.spotListDetailMoreInfoLinkValidationError,
                       ),
                     ),
                   );
@@ -595,7 +602,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                 }
                 Navigator.pop(dialogContext, true);
               },
-              child: const Text('Save'),
+              child: Text(_l10n.spotListDetailSave),
             ),
           ],
         ),
@@ -620,11 +627,11 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
 
       if (!mounted) return;
       if (success) {
-        SnackbarService.showSuccess('List updated');
+        SnackbarService.showSuccess(_l10n.spotListDetailListUpdated);
         await _loadList();
       } else {
         SnackbarService.showError(
-          spotListService.error ?? 'Failed to update list',
+          spotListService.error ?? _l10n.spotListDetailFailedToUpdateList,
         );
       }
     }
@@ -651,14 +658,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
   }
 
   String _visibilitySummary(SpotListVisibility visibility) {
-    switch (visibility) {
-      case SpotListVisibility.public:
-        return 'Public list';
-      case SpotListVisibility.unlisted:
-        return 'Unlisted list';
-      case SpotListVisibility.private:
-        return 'Private list';
-    }
+    return spotListVisibilitySummary(_l10n, visibility);
   }
 
   String _formatRelativeDate(DateTime date) {
@@ -700,7 +700,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       }
     } catch (e) {
       if (mounted) {
-        SnackbarService.showError('Could not open profile');
+        SnackbarService.showError(_l10n.spotListDetailCouldNotOpenProfile);
       }
     }
   }
@@ -725,9 +725,12 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     final List<InlineSpan> children = [];
 
     // "{Visibility} list created {X} ago"
-    String createdPart = '$visibilityLabel created $createdDateText';
+    String createdPart = _l10n.spotListDetailCreatedPart(
+      visibilityLabel,
+      createdDateText,
+    );
     if (hasCreator) {
-      createdPart += ' by ';
+      createdPart += _l10n.spotListDetailCreatedBySuffix;
     } else {
       createdPart += '.';
     }
@@ -751,7 +754,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       if (hasUpdated && updatedDateText != null) {
         children.add(
           TextSpan(
-            text: ', and last updated $updatedDateText.',
+            text: _l10n.spotListDetailLastUpdatedPart(updatedDateText),
             style: textStyle,
           ),
         );
@@ -811,7 +814,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
               text: TextSpan(
                 style: textStyle,
                 children: [
-                  const TextSpan(text: 'More information on '),
+                  TextSpan(text: _l10n.spotListDetailMoreInformationOn),
                   TextSpan(
                     text: hostLabel,
                     style: textStyle?.copyWith(
@@ -850,10 +853,10 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('List copied to clipboard!'),
+          SnackBar(
+            content: Text(_l10n.spotListDetailCopiedToClipboard),
             backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -861,7 +864,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to copy list: $e'),
+            content: Text(_l10n.spotListDetailCopyFailed(e.toString())),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 2),
           ),
@@ -1062,8 +1065,8 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                 heroTag: 'mapTypeToggleFab',
                 mini: true,
                 tooltip: _isSatelliteView
-                    ? 'Switch to Map'
-                    : 'Switch to Satellite',
+                    ? _l10n.spotDetailMapSwitchToMap
+                    : _l10n.spotDetailMapSwitchToSatellite,
                 child: Icon(_isSatelliteView ? Icons.map : Icons.terrain),
               ),
             ),
@@ -1094,7 +1097,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      'Highlight list on map',
+                      _l10n.spotListDetailHighlightListOnMap,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 11,
@@ -1127,7 +1130,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
               padding: const EdgeInsets.only(bottom: 16),
               child: PopupMenuButton<_ListManageMenuAction>(
                 position: PopupMenuPosition.under,
-                tooltip: 'Edit list',
+                tooltip: _l10n.spotListDetailEditListTooltip,
                 borderRadius: BorderRadius.circular(22),
                 splashRadius: 22,
                 onSelected: _onListManageMenuSelected,
@@ -1143,7 +1146,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'List Settings',
+                              _l10n.spotListDetailMenuListSettings,
                               style: theme.textTheme.bodyMedium,
                             ),
                           ),
@@ -1158,7 +1161,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'Organize List',
+                              _l10n.spotListDetailMenuOrganizeList,
                               style: theme.textTheme.bodyMedium,
                             ),
                           ),
@@ -1177,7 +1180,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'Delete List',
+                              _l10n.spotListDetailMenuDeleteList,
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: theme.colorScheme.error,
                               ),
@@ -1217,7 +1220,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
           Padding(
             padding: const EdgeInsets.only(bottom: 16),
             child: Tooltip(
-              message: 'Share',
+              message: _l10n.spotDetailShareTooltip,
               child: Material(
                 color: Theme.of(context)
                     .colorScheme
@@ -1278,7 +1281,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return PageScaffold(
-        title: _list?.name ?? 'Spot List',
+        title: _list?.name ?? _l10n.spotListDetailPageTitle,
         onBack: _handleBack,
         scrollable: false,
         body: const Center(child: CircularProgressIndicator()),
@@ -1292,7 +1295,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
         });
       }
       return PageScaffold(
-        title: _list?.name ?? 'Spot List',
+        title: _list?.name ?? _l10n.spotListDetailPageTitle,
         onBack: _handleBack,
         scrollable: false,
         body: Center(
@@ -1309,7 +1312,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _handleBack,
-                child: const Text('Go Back'),
+                child: Text(_l10n.spotDetailRouteGoToExplore),
               ),
             ],
           ),
@@ -1324,10 +1327,10 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
         });
       }
       return PageScaffold(
-        title: 'Spot List',
+        title: _l10n.spotListDetailPageTitle,
         onBack: _handleBack,
         scrollable: false,
-        body: const Center(child: Text('List not found')),
+        body: Center(child: Text(_l10n.spotListDetailListNotFound)),
       );
     }
 
@@ -1337,7 +1340,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       final baseDescription =
           _list!.description != null && _list!.description!.trim().isNotEmpty
           ? WebMetaUtils.clipForMeta(_list!.description!.trim())
-          : 'A curated list of $spotCount parkour spot${spotCount == 1 ? '' : 's'} on Parkour·Spot';
+          : _l10n.spotListDetailMetaDescriptionFallback(spotCount);
       final description =
           '$baseDescription — ${WebMetaUtils.defaultDescription}';
       WidgetsBinding.instance.addPostFrameCallback((_) {

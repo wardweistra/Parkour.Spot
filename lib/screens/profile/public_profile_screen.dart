@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -18,6 +19,8 @@ import '../../services/feature_access_service.dart';
 import '../../widgets/instagram_button.dart';
 import '../../utils/web_meta_utils.dart';
 import '../../widgets/page_scaffold.dart';
+import '../../l10n/app_localizations.dart';
+import '../../utils/spot_list_localization.dart';
 import 'package:flutter/services.dart';
 
 class PublicProfileScreen extends StatefulWidget {
@@ -30,6 +33,8 @@ class PublicProfileScreen extends StatefulWidget {
 }
 
 class _PublicProfileScreenState extends State<PublicProfileScreen> {
+  AppLocalizations get _l10n => AppLocalizations.of(context)!;
+
   Future<app_user.User?>? _profileFuture;
   String?
   _lastUserIdOrUsername; // Track the last userIdOrUsername used to create the future
@@ -37,6 +42,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   final ProfilePictureService _profilePictureService = ProfilePictureService();
   final GlobalKey _savedSpotListsSectionKey = GlobalKey();
   bool _didScrollToSavedSpotListsSection = false;
+
+  String _spotCountLabel(int count) => _l10n.exploreSpotCountShort(count);
 
   @override
   void didChangeDependencies() {
@@ -144,20 +151,20 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       future: _profileFuture,
       builder: (context, snapshot) {
         final user = snapshot.data;
-        final displayName = user?.displayName ?? 'User';
+        final displayName = user?.displayName ?? _l10n.profileDefaultDisplayName;
         final userIdOrUsername =
             user?.username != null && user!.username!.isNotEmpty
             ? user.username!
             : user?.id ?? '';
 
         return PageScaffold(
-          title: 'Profile',
+          title: _l10n.publicProfilePageTitle,
           scrollable: false,
           actions: userIdOrUsername.isNotEmpty
               ? [
                   IconButton(
                     icon: const Icon(Icons.share),
-                    tooltip: 'Share Profile',
+                    tooltip: _l10n.publicProfileShareProfileTooltip,
                     onPressed: () =>
                         _copyProfileToClipboard(userIdOrUsername, displayName),
                   ),
@@ -181,18 +188,18 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Error loading profile',
+                        _l10n.publicProfileErrorLoadingProfile,
                         style: Theme.of(context).textTheme.headlineSmall,
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Please try again later',
+                        _l10n.publicProfilePleaseTryAgainLater,
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       const SizedBox(height: 24),
                       ElevatedButton(
                         onPressed: () => context.go('/explore'),
-                        child: const Text('Go to Explore'),
+                        child: Text(_l10n.spotDetailRouteGoToExplore),
                       ),
                     ],
                   ),
@@ -202,9 +209,14 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
               final user = snapshot.data;
 
               if (user != null && kIsWeb) {
-                final name = user.displayName ?? user.username ?? 'User';
-                final description =
-                    "View $name's parkour spots and lists on Parkour·Spot — ${WebMetaUtils.defaultDescription}";
+                final name =
+                    user.displayName ??
+                    user.username ??
+                    _l10n.profileDefaultDisplayName;
+                final description = _l10n.publicProfileMetaDescription(
+                  name,
+                  WebMetaUtils.defaultDescription,
+                );
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted) {
                     WebMetaUtils.updatePageMeta(
@@ -234,19 +246,19 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Profile not found',
+                        _l10n.publicProfileProfileNotFound,
                         style: Theme.of(context).textTheme.headlineSmall,
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'This profile does not exist or is private.',
+                        _l10n.publicProfileNotFoundOrPrivate,
                         style: Theme.of(context).textTheme.bodyMedium,
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 24),
                       ElevatedButton(
                         onPressed: () => context.go('/explore'),
-                        child: const Text('Go to Explore'),
+                        child: Text(_l10n.spotDetailRouteGoToExplore),
                       ),
                     ],
                   ),
@@ -309,7 +321,10 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                   ),
                                   const SizedBox(width: 6),
                                   Text(
-                                    'Only visible to you',
+                                    spotListVisibilityDescription(
+                                      _l10n,
+                                      SpotListVisibility.private,
+                                    ),
                                     style: Theme.of(context).textTheme.bodySmall
                                         ?.copyWith(
                                           color: Theme.of(
@@ -401,7 +416,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 
                           // User Name
                           Text(
-                            user.displayName ?? 'User',
+                            user.displayName ?? _l10n.profileDefaultDisplayName,
                             style: Theme.of(context).textTheme.headlineSmall,
                           ),
 
@@ -469,7 +484,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                           if (user.createdAt != null) ...[
                             const SizedBox(height: 16),
                             Text(
-                              'Member since ${_formatDate(user.createdAt!)}',
+                              _l10n.publicProfileMemberSince(
+                                _formatDate(user.createdAt!),
+                              ),
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(
                                     color: Theme.of(context)
@@ -491,7 +508,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                           right: 0,
                           child: IconButton(
                             icon: const Icon(Icons.edit),
-                            tooltip: 'Edit Profile',
+                            tooltip: _l10n.publicProfileEditProfileTooltip,
                             onPressed: () =>
                                 _showProfileSettingsSheet(context, user),
                           ),
@@ -532,7 +549,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Spot tracking',
+                    _l10n.publicProfileSpotTracking,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 8),
@@ -552,7 +569,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'No spots yet',
+                            _l10n.publicProfileNoSpotsYet,
                             textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
@@ -562,7 +579,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Add spots from spot detail pages',
+                            _l10n.publicProfileAddSpotsFromSpotDetailPages,
                             textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
@@ -578,9 +595,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                       margin: const EdgeInsets.only(bottom: 8),
                       child: ListTile(
                         leading: const Icon(Icons.bookmark_outlined),
-                        title: const Text('Want to visit'),
+                        title: Text(_l10n.spotDetailWantToVisit),
                         subtitle: Text(
-                          '$wantCount ${wantCount == 1 ? 'spot' : 'spots'}',
+                          _spotCountLabel(wantCount),
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(
                                 color: Theme.of(context).colorScheme.onSurface
@@ -599,9 +616,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                       margin: const EdgeInsets.only(bottom: 8),
                       child: ListTile(
                         leading: const Icon(Icons.check_circle_outline),
-                        title: const Text('Been to'),
+                        title: Text(_l10n.publicProfileBeenTo),
                         subtitle: Text(
-                          '$visitedCount ${visitedCount == 1 ? 'spot' : 'spots'}',
+                          _spotCountLabel(visitedCount),
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(
                                 color: Theme.of(context).colorScheme.onSurface
@@ -619,9 +636,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                     margin: const EdgeInsets.only(bottom: 8),
                     child: ListTile(
                       leading: const Icon(Icons.how_to_reg_outlined),
-                      title: const Text('My check-ins'),
+                      title: Text(_l10n.publicProfileMyCheckIns),
                       subtitle: Text(
-                        'Your recorded history of visits to spots',
+                        _l10n.publicProfileMyCheckInsSubtitle,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: Theme.of(context)
                                   .colorScheme
@@ -725,13 +742,13 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  'Spot lists',
+                                  _l10n.publicProfileSpotLists,
                                   style: Theme.of(context).textTheme.titleLarge,
                                 ),
                                 if (canManageLists)
                                   IconButton(
                                     icon: const Icon(Icons.add),
-                                    tooltip: 'Create New List',
+                                    tooltip: _l10n.spotDetailCreateNewList,
                                     onPressed: () => _showCreateListDialog(
                                       context,
                                       spotListService,
@@ -742,7 +759,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                             if (canManageLists || lists.isNotEmpty) ...[
                               const SizedBox(height: 12),
                               Text(
-                                'Yours',
+                                _l10n.publicProfileYours,
                                 style: Theme.of(context).textTheme.titleMedium,
                               ),
                               const SizedBox(height: 8),
@@ -764,7 +781,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                       ),
                                       const SizedBox(height: 8),
                                       Text(
-                                        'No lists yet',
+                                        _l10n.spotDetailNoListsYet,
                                         textAlign: TextAlign.center,
                                         style: Theme.of(context)
                                             .textTheme
@@ -784,8 +801,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                                 context,
                                                 spotListService,
                                               ),
-                                          child: const Text(
-                                            'Create your first list',
+                                          child: Text(
+                                            _l10n.publicProfileCreateYourFirstList,
                                           ),
                                         ),
                                     ],
@@ -859,7 +876,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                               const SizedBox(height: 12),
                             ],
                             Text(
-                              'Saved',
+                              _l10n.publicProfileSaved,
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
                             const SizedBox(height: 8),
@@ -888,14 +905,14 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                             children: [
                               Text(
                                 isOwnProfile
-                                    ? 'Spot lists'
-                                    : 'Public Spot Lists',
+                                    ? _l10n.publicProfileSpotLists
+                                    : _l10n.publicProfilePublicSpotLists,
                                 style: Theme.of(context).textTheme.titleLarge,
                               ),
                               if (canManageLists)
                                 IconButton(
                                   icon: const Icon(Icons.add),
-                                  tooltip: 'Create New List',
+                                  tooltip: _l10n.spotDetailCreateNewList,
                                   onPressed: () => _showCreateListDialog(
                                     context,
                                     spotListService,
@@ -921,7 +938,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    'No lists yet',
+                                    _l10n.spotDetailNoListsYet,
                                     textAlign: TextAlign.center,
                                     style: Theme.of(context)
                                         .textTheme
@@ -940,8 +957,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                         context,
                                         spotListService,
                                       ),
-                                      child: const Text(
-                                        'Create your first list',
+                                      child: Text(
+                                        _l10n.publicProfileCreateYourFirstList,
                                       ),
                                     ),
                                 ],
@@ -1054,7 +1071,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'No saved lists yet',
+                  _l10n.publicProfileNoSavedListsYet,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(
@@ -1064,7 +1081,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Save lists you find on other users’ list pages',
+                  _l10n.publicProfileSaveListsHint,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(
@@ -1095,7 +1112,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
               return Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Text(
-                  'Your saved lists are no longer available or were removed.',
+                  _l10n.publicProfileSavedListsUnavailable,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(
                       context,
@@ -1172,32 +1189,34 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setDialogState) => AlertDialog(
-          title: const Text('Create New List'),
+          title: Text(_l10n.spotDetailCreateNewList),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
                   controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'List Name',
-                    hintText: 'e.g., My Favorite Spots',
+                  decoration: InputDecoration(
+                    labelText: _l10n.spotDetailListNameLabel,
+                    hintText: _l10n.spotDetailListNameHint,
                   ),
                   autofocus: true,
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: descriptionController,
-                  decoration: const InputDecoration(
-                    labelText: 'Description (optional)',
-                    hintText: 'Add a description for this list',
+                  decoration: InputDecoration(
+                    labelText: _l10n.spotDetailListDescriptionLabel,
+                    hintText: _l10n.spotDetailListDescriptionHint,
                   ),
                   maxLines: 3,
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<SpotListVisibility>(
                   initialValue: selectedVisibility,
-                  decoration: const InputDecoration(labelText: 'Visibility'),
+                  decoration: InputDecoration(
+                    labelText: _l10n.spotDetailVisibilityLabel,
+                  ),
                   items: SpotListVisibility.values
                       .map(
                         (visibility) => DropdownMenuItem<SpotListVisibility>(
@@ -1232,13 +1251,13 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
+              child: Text(_l10n.profileCancel),
             ),
             TextButton(
               onPressed: () async {
                 if (nameController.text.trim().isEmpty) {
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    const SnackBar(content: Text('List name cannot be empty')),
+                    SnackBar(content: Text(_l10n.spotDetailListNameEmpty)),
                   );
                   return;
                 }
@@ -1255,8 +1274,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                   Navigator.pop(dialogContext);
                   if (listId != null) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('List created successfully'),
+                      SnackBar(
+                        content: Text(_l10n.publicProfileListCreatedSuccessfully),
                       ),
                     );
                   } else if (spotListService.error != null) {
@@ -1266,7 +1285,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                   }
                 }
               },
-              child: const Text('Create'),
+              child: Text(_l10n.spotDetailCreateButton),
             ),
           ],
         ),
@@ -1317,13 +1336,13 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Change Profile Picture'),
+        title: Text(_l10n.publicProfileChangeProfilePicture),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
               leading: const Icon(Icons.photo_library),
-              title: const Text('Choose from Gallery'),
+              title: Text(_l10n.publicProfileChooseFromGallery),
               onTap: () {
                 Navigator.pop(dialogContext);
                 _pickImageFromGallery();
@@ -1331,7 +1350,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.camera_alt),
-              title: const Text('Take Photo'),
+              title: Text(_l10n.publicProfileTakePhoto),
               onTap: () {
                 Navigator.pop(dialogContext);
                 _takePhoto();
@@ -1344,7 +1363,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                   color: Theme.of(context).colorScheme.error,
                 ),
                 title: Text(
-                  'Remove Picture',
+                  _l10n.publicProfileRemovePicture,
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
                 onTap: () {
@@ -1357,7 +1376,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(_l10n.profileCancel),
           ),
         ],
       ),
@@ -1382,7 +1401,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error picking image: $e'),
+            content: Text(_l10n.publicProfileErrorPickingImage(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -1408,7 +1427,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error taking photo: $e'),
+            content: Text(_l10n.publicProfileErrorTakingPhoto(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -1428,7 +1447,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 
     // Show progress dialog with state management
     double uploadProgress = 0.0;
-    String statusMessage = 'Processing image...';
+    String statusMessage = _l10n.publicProfileProcessingImage;
 
     BuildContext? dialogContext;
     StateSetter? dialogSetState;
@@ -1501,7 +1520,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 
       if (kIsWeb) {
         // Web: read as bytes
-        updateProgress(0.1, 'Reading image...');
+        updateProgress(0.1, _l10n.publicProfileReadingImage);
         final bytes = await pickedFile.readAsBytes();
 
         // Upload with progress updates
@@ -1510,18 +1529,18 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           onProgress: (progress) {
             String message;
             if (progress < 0.3) {
-              message = 'Processing image...';
+              message = _l10n.publicProfileProcessingImage;
             } else if (progress < 0.9) {
-              message = 'Uploading...';
+              message = _l10n.publicProfileUploading;
             } else {
-              message = 'Finishing...';
+              message = _l10n.publicProfileFinishing;
             }
             updateProgress(progress, message);
           },
         );
       } else {
         // Mobile: use File
-        updateProgress(0.1, 'Reading image...');
+        updateProgress(0.1, _l10n.publicProfileReadingImage);
         final file = File(pickedFile.path);
 
         // Upload with progress updates
@@ -1530,11 +1549,11 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           onProgress: (progress) {
             String message;
             if (progress < 0.3) {
-              message = 'Processing image...';
+              message = _l10n.publicProfileProcessingImage;
             } else if (progress < 0.9) {
-              message = 'Uploading...';
+              message = _l10n.publicProfileUploading;
             } else {
-              message = 'Finishing...';
+              message = _l10n.publicProfileFinishing;
             }
             updateProgress(progress, message);
           },
@@ -1542,7 +1561,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       }
 
       // Update profile
-      updateProgress(0.95, 'Updating profile...');
+      updateProgress(0.95, _l10n.publicProfileUpdatingProfile);
       final success = await authService.updateProfile(
         photoURL: photoURL,
         deleteOldPhoto: true,
@@ -1567,15 +1586,15 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             currentUserId: currentUserId,
           );
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Profile picture updated successfully'),
+            SnackBar(
+              content: Text(_l10n.publicProfileProfilePictureUpdatedSuccessfully),
               backgroundColor: Colors.green,
             ),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to update profile picture'),
+            SnackBar(
+              content: Text(_l10n.publicProfileFailedToUpdateProfilePicture),
               backgroundColor: Colors.red,
             ),
           );
@@ -1590,7 +1609,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error uploading profile picture: $e'),
+            content: Text(
+              _l10n.publicProfileErrorUploadingProfilePicture(e.toString()),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -1617,21 +1638,19 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     final shouldRemove = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Remove Profile Picture'),
-        content: const Text(
-          'Are you sure you want to remove your profile picture?',
-        ),
+        title: Text(_l10n.publicProfileRemoveProfilePicture),
+        content: Text(_l10n.publicProfileRemoveProfilePictureConfirmation),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+            child: Text(_l10n.profileCancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, true),
             style: TextButton.styleFrom(
               foregroundColor: Theme.of(context).colorScheme.error,
             ),
-            child: const Text('Remove'),
+            child: Text(_l10n.spotDetailRemoveButton),
           ),
         ],
       ),
@@ -1674,15 +1693,15 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           );
 
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Profile picture removed successfully'),
+            SnackBar(
+              content: Text(_l10n.publicProfileProfilePictureRemovedSuccessfully),
               backgroundColor: Colors.green,
             ),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to remove profile picture'),
+            SnackBar(
+              content: Text(_l10n.publicProfileFailedToRemoveProfilePicture),
               backgroundColor: Colors.red,
             ),
           );
@@ -1692,7 +1711,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error removing profile picture: $e'),
+            content: Text(
+              _l10n.publicProfileErrorRemovingProfilePicture(e.toString()),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -1707,21 +1728,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   }
 
   String _formatDate(DateTime date) {
-    final months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-    return '${months[date.month - 1]} ${date.year}';
+    final localeName = Localizations.localeOf(context).toLanguageTag();
+    return DateFormat.yMMMM(localeName).format(date);
   }
 
   void _copyProfileToClipboard(
@@ -1743,8 +1751,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile copied to clipboard!'),
+          SnackBar(
+            content: Text(_l10n.publicProfileProfileCopiedToClipboard),
             backgroundColor: Colors.green,
             duration: Duration(seconds: 2),
           ),
@@ -1754,7 +1762,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to copy profile: $e'),
+            content: Text(_l10n.publicProfileFailedToCopyProfile(e.toString())),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 2),
           ),
@@ -1787,8 +1795,18 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildStatItem(context, Icons.add_location, spotsCount, 'Spots'),
-            _buildStatItem(context, Icons.star, ratingsCount, 'Ratings'),
+            _buildStatItem(
+              context,
+              Icons.add_location,
+              spotsCount,
+              _l10n.publicProfileStatsSpots,
+            ),
+            _buildStatItem(
+              context,
+              Icons.star,
+              ratingsCount,
+              _l10n.publicProfileStatsRatings,
+            ),
           ],
         );
       },
@@ -1877,6 +1895,8 @@ class _ProfileSettingsSheetContent extends StatefulWidget {
 
 class _ProfileSettingsSheetContentState
     extends State<_ProfileSettingsSheetContent> {
+  AppLocalizations get _l10n => AppLocalizations.of(context)!;
+
   late TextEditingController _displayNameController;
   late TextEditingController _usernameController;
   late TextEditingController _instagramUrlController;
@@ -1924,7 +1944,7 @@ class _ProfileSettingsSheetContentState
           child: Row(
             children: [
               Text(
-                'Profile Settings',
+                _l10n.publicProfileSettingsTitle,
                 style: Theme.of(
                   context,
                 ).textTheme.titleLarge,
@@ -1932,7 +1952,7 @@ class _ProfileSettingsSheetContentState
               const Spacer(),
               IconButton(
                 icon: const Icon(Icons.close),
-                tooltip: 'Close',
+                tooltip: _l10n.spotDetailClose,
                 onPressed: () => Navigator.pop(context),
               ),
             ],
@@ -1969,7 +1989,7 @@ class _ProfileSettingsSheetContentState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Email',
+          _l10n.publicProfileEmailLabel,
           style: Theme.of(
             context,
           ).textTheme.titleMedium,
@@ -1985,7 +2005,7 @@ class _ProfileSettingsSheetContentState
         ),
         const SizedBox(height: 4),
         Text(
-          'Your email is not shown on your public profile.',
+          _l10n.publicProfileEmailNotShownHint,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
             color: Theme.of(
               context,
@@ -2004,7 +2024,7 @@ class _ProfileSettingsSheetContentState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Display Name',
+          _l10n.publicProfileDisplayNameLabel,
           style: Theme.of(
             context,
           ).textTheme.titleMedium,
@@ -2017,7 +2037,7 @@ class _ProfileSettingsSheetContentState
                 child: Text(
                   currentDisplayName.isNotEmpty
                       ? currentDisplayName
-                      : 'No display name set',
+                      : _l10n.publicProfileNoDisplayNameSet,
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),
               ),
@@ -2029,7 +2049,7 @@ class _ProfileSettingsSheetContentState
                     _displayNameError = null;
                   });
                 },
-                child: const Text('Edit'),
+                child: Text(_l10n.publicProfileEditAction),
               ),
             ],
           ),
@@ -2037,12 +2057,12 @@ class _ProfileSettingsSheetContentState
           TextField(
             controller: _displayNameController,
             decoration: InputDecoration(
-              labelText: 'Display Name',
-              hintText: 'Enter your display name',
+              labelText: _l10n.publicProfileDisplayNameLabel,
+              hintText: _l10n.publicProfileDisplayNameHint,
               errorText: _displayNameError,
-              helperText:
-                  'Shown on your profile and spots you create '
-                  '(max $_displayNameMaxLength characters)',
+              helperText: _l10n.publicProfileDisplayNameHelper(
+                _displayNameMaxLength,
+              ),
             ),
             enabled: !_isUpdatingDisplayName,
             maxLength: _displayNameMaxLength,
@@ -2061,7 +2081,7 @@ class _ProfileSettingsSheetContentState
                           _displayNameError = null;
                         });
                       },
-                child: const Text('Cancel'),
+                child: Text(_l10n.profileCancel),
               ),
               const SizedBox(width: 8),
               ElevatedButton(
@@ -2076,8 +2096,9 @@ class _ProfileSettingsSheetContentState
                         if (rawInput.length > _displayNameMaxLength) {
                           setState(() {
                             _displayNameError =
-                                'Display name must be at most '
-                                '$_displayNameMaxLength characters';
+                                _l10n.publicProfileDisplayNameMaxLengthError(
+                              _displayNameMaxLength,
+                            );
                           });
                           return;
                         }
@@ -2112,15 +2133,16 @@ class _ProfileSettingsSheetContentState
                             SnackBar(
                               content: Text(
                                 newDisplayName != null
-                                    ? 'Display name updated successfully'
-                                    : 'Display name removed',
+                                    ? _l10n.publicProfileDisplayNameUpdated
+                                    : _l10n.publicProfileDisplayNameRemoved,
                               ),
                               backgroundColor: Colors.green,
                             ),
                           );
                         } else {
                           setState(() {
-                            _displayNameError = 'Failed to update display name';
+                            _displayNameError =
+                                _l10n.publicProfileDisplayNameUpdateFailed;
                           });
                         }
                       },
@@ -2130,7 +2152,7 @@ class _ProfileSettingsSheetContentState
                         height: 16,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Save'),
+                    : Text(_l10n.publicProfileSaveAction),
               ),
             ],
           ),
@@ -2145,7 +2167,7 @@ class _ProfileSettingsSheetContentState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Username',
+          _l10n.publicProfileUsernameLabel,
           style: Theme.of(
             context,
           ).textTheme.titleMedium,
@@ -2158,7 +2180,7 @@ class _ProfileSettingsSheetContentState
                 child: Text(
                   user.username != null && user.username!.isNotEmpty
                       ? '@${user.username}'
-                      : 'No username set',
+                      : _l10n.publicProfileNoUsernameSet,
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),
               ),
@@ -2170,7 +2192,7 @@ class _ProfileSettingsSheetContentState
                     _usernameError = null;
                   });
                 },
-                child: const Text('Edit'),
+                child: Text(_l10n.publicProfileEditAction),
               ),
             ],
           ),
@@ -2178,12 +2200,11 @@ class _ProfileSettingsSheetContentState
           TextField(
             controller: _usernameController,
             decoration: InputDecoration(
-              labelText: 'Username',
-              hintText: 'Enter username',
+              labelText: _l10n.publicProfileUsernameLabel,
+              hintText: _l10n.publicProfileUsernameHint,
               errorText: _usernameError,
               prefixText: '@',
-              helperText:
-                  '3-27 characters, letters, numbers, underscores, and hyphens only',
+              helperText: _l10n.publicProfileUsernameHelper,
             ),
             enabled: !_isCheckingUsername,
           ),
@@ -2201,7 +2222,7 @@ class _ProfileSettingsSheetContentState
                           _usernameError = null;
                         });
                       },
-                child: const Text('Cancel'),
+                child: Text(_l10n.profileCancel),
               ),
               const SizedBox(width: 8),
               ElevatedButton(
@@ -2212,7 +2233,7 @@ class _ProfileSettingsSheetContentState
 
                         if (newUsername.isEmpty) {
                           setState(() {
-                            _usernameError = 'Username cannot be empty';
+                            _usernameError = _l10n.publicProfileUsernameEmpty;
                           });
                           return;
                         }
@@ -2241,7 +2262,8 @@ class _ProfileSettingsSheetContentState
                           if (mounted) {
                             setState(() {
                               _isCheckingUsername = false;
-                              _usernameError = 'Username is already taken';
+                              _usernameError =
+                                  _l10n.publicProfileUsernameTaken;
                             });
                           }
                           return;
@@ -2271,8 +2293,8 @@ class _ProfileSettingsSheetContentState
                           }
 
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Username updated successfully'),
+                            SnackBar(
+                              content: Text(_l10n.publicProfileUsernameUpdated),
                               backgroundColor: Colors.green,
                             ),
                           );
@@ -2280,7 +2302,7 @@ class _ProfileSettingsSheetContentState
                           setState(() {
                             _usernameError =
                                 userProfileService.error ??
-                                'Failed to update username';
+                                _l10n.publicProfileUsernameUpdateFailed;
                           });
                         }
                       },
@@ -2290,7 +2312,7 @@ class _ProfileSettingsSheetContentState
                         height: 16,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Save'),
+                    : Text(_l10n.publicProfileSaveAction),
               ),
             ],
           ),
@@ -2308,7 +2330,7 @@ class _ProfileSettingsSheetContentState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Instagram',
+          _l10n.publicProfileInstagramLabel,
           style: Theme.of(
             context,
           ).textTheme.titleMedium,
@@ -2340,7 +2362,7 @@ class _ProfileSettingsSheetContentState
                         ),
                       )
                     : Text(
-                        'No Instagram link set',
+                        _l10n.publicProfileNoInstagramSet,
                         style: Theme.of(context).textTheme.bodyLarge,
                       ),
               ),
@@ -2352,7 +2374,11 @@ class _ProfileSettingsSheetContentState
                     _instagramUrlError = null;
                   });
                 },
-                child: Text(hasInstagramUrl ? 'Edit' : 'Add'),
+                child: Text(
+                  hasInstagramUrl
+                      ? _l10n.publicProfileEditAction
+                      : _l10n.publicProfileAddAction,
+                ),
               ),
             ],
           ),
@@ -2360,9 +2386,9 @@ class _ProfileSettingsSheetContentState
           TextField(
             controller: _instagramUrlController,
             decoration: InputDecoration(
-              labelText: 'Instagram Link',
-              hintText: 'https://www.instagram.com/your_handle/',
-              helperText: 'You can also paste @handle or just the handle',
+              labelText: _l10n.publicProfileInstagramLinkLabel,
+              hintText: _l10n.publicProfileInstagramLinkHint,
+              helperText: _l10n.publicProfileInstagramLinkHelper,
               errorText: _instagramUrlError,
             ),
             enabled: !_isUpdatingInstagramUrl,
@@ -2381,7 +2407,7 @@ class _ProfileSettingsSheetContentState
                           _instagramUrlError = null;
                         });
                       },
-                child: const Text('Cancel'),
+                child: Text(_l10n.profileCancel),
               ),
               const SizedBox(width: 8),
               ElevatedButton(
@@ -2397,7 +2423,7 @@ class _ProfileSettingsSheetContentState
                             normalizedInstagramUrl == null) {
                           setState(() {
                             _instagramUrlError =
-                                'Enter a valid Instagram profile URL or handle';
+                                _l10n.publicProfileInstagramInvalid;
                           });
                           return;
                         }
@@ -2432,8 +2458,8 @@ class _ProfileSettingsSheetContentState
                             SnackBar(
                               content: Text(
                                 rawInput.isEmpty
-                                    ? 'Instagram link removed'
-                                    : 'Instagram link updated successfully',
+                                    ? _l10n.publicProfileInstagramRemoved
+                                    : _l10n.publicProfileInstagramUpdated,
                               ),
                               backgroundColor: Colors.green,
                             ),
@@ -2441,7 +2467,7 @@ class _ProfileSettingsSheetContentState
                         } else {
                           setState(() {
                             _instagramUrlError =
-                                'Failed to update Instagram link';
+                                _l10n.publicProfileInstagramUpdateFailed;
                           });
                         }
                       },
@@ -2451,7 +2477,7 @@ class _ProfileSettingsSheetContentState
                         height: 16,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Save'),
+                    : Text(_l10n.publicProfileSaveAction),
               ),
             ],
           ),
@@ -2468,7 +2494,7 @@ class _ProfileSettingsSheetContentState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Profile Privacy',
+          _l10n.publicProfilePrivacyTitle,
           style: Theme.of(
             context,
           ).textTheme.titleMedium,
@@ -2481,14 +2507,16 @@ class _ProfileSettingsSheetContentState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    isPublic ? 'Public Profile' : 'Private Profile',
+                    isPublic
+                        ? _l10n.publicProfilePrivacyPublicLabel
+                        : _l10n.publicProfilePrivacyPrivateLabel,
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     isPublic
-                        ? 'Your profile is visible to everyone'
-                        : 'Your profile is private and not visible to others',
+                        ? _l10n.publicProfilePrivacyPublicDescription
+                        : _l10n.publicProfilePrivacyPrivateDescription,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(
                         context,
@@ -2513,16 +2541,18 @@ class _ProfileSettingsSheetContentState
                       SnackBar(
                         content: Text(
                           value
-                              ? 'Profile is now public'
-                              : 'Profile is now private',
+                              ? _l10n.publicProfilePrivacyNowPublic
+                              : _l10n.publicProfilePrivacyNowPrivate,
                         ),
                         backgroundColor: Colors.green,
                       ),
                     );
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Failed to update profile privacy'),
+                      SnackBar(
+                        content: Text(
+                          _l10n.publicProfileFailedToUpdateProfilePrivacy,
+                        ),
                         backgroundColor: Colors.red,
                       ),
                     );

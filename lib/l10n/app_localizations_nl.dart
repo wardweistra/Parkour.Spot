@@ -1654,4 +1654,529 @@ class AppLocalizationsNl extends AppLocalizations {
   String spotDetailDuplicateFailedLoadSpot(String error) {
     return 'Spot laden mislukt: $error';
   }
+
+  @override
+  String get sourceDetailsLoadingSource => 'Bron laden...';
+
+  @override
+  String get sourceDetailsErrorTitle => 'Fout';
+
+  @override
+  String get sourceDetailsNotFound => 'Bron niet gevonden';
+
+  @override
+  String get sourceDetailsTotalSpots => 'Totaal aantal spots';
+
+  @override
+  String get sourceDetailsFolders => 'Mappen';
+
+  @override
+  String get sourceDetailsGoToSource => 'Ga naar bron';
+
+  @override
+  String get sourceDetailsAdded => 'Toegevoegd';
+
+  @override
+  String get sourceDetailsLastImported => 'Laatst geïmporteerd';
+
+  @override
+  String sourceDetailsRelativeDaysAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dagen geleden',
+      one: '1 dag geleden',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String sourceDetailsRelativeHoursAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count uur geleden',
+      one: '1 uur geleden',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String sourceDetailsRelativeMinutesAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count minuten geleden',
+      one: '1 minuut geleden',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get sourceDetailsRelativeJustNow => 'Zojuist';
+
+  @override
+  String spotTrackingSignInToViewList(String listName) {
+    return 'Log in om je $listName-lijst te bekijken';
+  }
+
+  @override
+  String spotTrackingNoSpotsInList(String listName) {
+    return 'Geen spots in $listName';
+  }
+
+  @override
+  String get spotListSaveTooltipSaveList => 'Lijst opslaan';
+
+  @override
+  String get spotListSaveTooltipSavedList => 'Lijst opgeslagen';
+
+  @override
+  String get spotListSaveSignInTitle => 'Log in om lijsten op te slaan';
+
+  @override
+  String get spotListSaveSignInBody =>
+      'Sla iemands spotlijst op in je profiel zodat je die later opnieuw kunt openen.';
+
+  @override
+  String get spotListSaveSavedToProfile => 'Lijst opgeslagen in je profiel';
+
+  @override
+  String get spotListSaveCouldNotSaveList => 'Lijst kon niet worden opgeslagen';
+
+  @override
+  String get spotListSaveRemovedFromSavedLists =>
+      'Verwijderd uit opgeslagen lijsten';
+
+  @override
+  String get spotListSaveCouldNotRemoveList =>
+      'Lijst kon niet worden verwijderd';
+
+  @override
+  String get spotListSaveActionSaveList => 'Lijst opslaan';
+
+  @override
+  String get spotListSaveActionRemoveFromSaved => 'Verwijderen uit opgeslagen';
+
+  @override
+  String get spotListSaveActionViewSavedLists => 'Opgeslagen lijsten bekijken';
+
+  @override
+  String get spotListDetailListNotFoundOrNotAccessible =>
+      'Lijst niet gevonden of niet toegankelijk';
+
+  @override
+  String get spotListDetailDeleteListTitle => 'Lijst verwijderen';
+
+  @override
+  String spotListDetailDeleteListConfirmation(String name) {
+    return 'Weet je zeker dat je \"$name\" wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.';
+  }
+
+  @override
+  String get spotListDetailDeleteAction => 'Verwijderen';
+
+  @override
+  String get spotListDetailListDeleted => 'Lijst verwijderd';
+
+  @override
+  String get spotListDetailFailedToDeleteList => 'Lijst verwijderen mislukt';
+
+  @override
+  String get spotListDetailNoSpotsInThisList => 'Geen spots in deze lijst';
+
+  @override
+  String get spotListDetailEditListTitle => 'Lijst bewerken';
+
+  @override
+  String get spotListDetailMoreInfoLinkLabel => 'Meer-infolink (optioneel)';
+
+  @override
+  String get spotListDetailMoreInfoLinkHint => 'https://…';
+
+  @override
+  String get spotListDetailMoreInfoLinkHelper =>
+      'Een pagina elders op het web met meer informatie over deze lijst';
+
+  @override
+  String get spotListDetailMoreInfoLinkValidationError =>
+      'Meer-infolink moet een geldige URL zijn (http of https), bijvoorbeeld example.com of https://example.com/pagina';
+
+  @override
+  String get spotListDetailSave => 'Opslaan';
+
+  @override
+  String get spotListDetailListUpdated => 'Lijst bijgewerkt';
+
+  @override
+  String get spotListDetailFailedToUpdateList => 'Lijst bijwerken mislukt';
+
+  @override
+  String get spotListDetailVisibilityPublicList => 'Openbare lijst';
+
+  @override
+  String get spotListDetailVisibilityUnlistedList => 'Niet-vermelde lijst';
+
+  @override
+  String get spotListDetailVisibilityPrivateList => 'Privélijst';
+
+  @override
+  String get spotListDetailCouldNotOpenProfile =>
+      'Profiel kon niet worden geopend';
+
+  @override
+  String spotListDetailCreatedPart(String visibility, String date) {
+    return '$visibility aangemaakt $date';
+  }
+
+  @override
+  String get spotListDetailCreatedBySuffix => ' door ';
+
+  @override
+  String spotListDetailLastUpdatedPart(String date) {
+    return ', en laatst bijgewerkt $date.';
+  }
+
+  @override
+  String get spotListDetailMoreInformationOn => 'Meer informatie op ';
+
+  @override
+  String get spotListDetailCopiedToClipboard =>
+      'Lijst gekopieerd naar klembord!';
+
+  @override
+  String spotListDetailCopyFailed(String error) {
+    return 'Lijst kopiëren mislukt: $error';
+  }
+
+  @override
+  String get spotListDetailHighlightListOnMap => 'Lijst markeren op kaart';
+
+  @override
+  String get spotListDetailEditListTooltip => 'Lijst bewerken';
+
+  @override
+  String get spotListDetailMenuListSettings => 'Lijstinstellingen';
+
+  @override
+  String get spotListDetailMenuOrganizeList => 'Lijst ordenen';
+
+  @override
+  String get spotListDetailMenuDeleteList => 'Lijst verwijderen';
+
+  @override
+  String get spotListDetailPageTitle => 'Spotlijst';
+
+  @override
+  String get spotListDetailListNotFound => 'Lijst niet gevonden';
+
+  @override
+  String spotListDetailMetaDescriptionFallback(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count parkourspots',
+      one: '1 parkourspot',
+    );
+    return 'Een samengestelde lijst met $_temp0 op Parkour·Spot';
+  }
+
+  @override
+  String get publicProfilePageTitle => 'Profiel';
+
+  @override
+  String get publicProfileShareProfileTooltip => 'Profiel delen';
+
+  @override
+  String get publicProfileErrorLoadingProfile => 'Fout bij laden van profiel';
+
+  @override
+  String get publicProfilePleaseTryAgainLater => 'Probeer het later opnieuw';
+
+  @override
+  String publicProfileMetaDescription(String name, String defaultDescription) {
+    return 'Bekijk de parkourspots en lijsten van $name op Parkour·Spot — $defaultDescription';
+  }
+
+  @override
+  String get publicProfileProfileNotFound => 'Profiel niet gevonden';
+
+  @override
+  String get publicProfileNotFoundOrPrivate =>
+      'Dit profiel bestaat niet of is privé.';
+
+  @override
+  String publicProfileMemberSince(String date) {
+    return 'Lid sinds $date';
+  }
+
+  @override
+  String get publicProfileEditProfileTooltip => 'Profiel bewerken';
+
+  @override
+  String get publicProfileSpotTracking => 'Spottracking';
+
+  @override
+  String get publicProfileNoSpotsYet => 'Nog geen spots';
+
+  @override
+  String get publicProfileAddSpotsFromSpotDetailPages =>
+      'Voeg spots toe vanaf spotdetailpagina’s';
+
+  @override
+  String get publicProfileBeenTo => 'Geweest';
+
+  @override
+  String get publicProfileMyCheckIns => 'Mijn check-ins';
+
+  @override
+  String get publicProfileMyCheckInsSubtitle =>
+      'Je geregistreerde geschiedenis van bezoeken aan spots';
+
+  @override
+  String get publicProfileSpotLists => 'Spotlijsten';
+
+  @override
+  String get publicProfileYours => 'Van jou';
+
+  @override
+  String get publicProfileCreateYourFirstList => 'Maak je eerste lijst';
+
+  @override
+  String get publicProfileSaved => 'Opgeslagen';
+
+  @override
+  String get publicProfilePublicSpotLists => 'Openbare spotlijsten';
+
+  @override
+  String get publicProfileNoSavedListsYet => 'Nog geen opgeslagen lijsten';
+
+  @override
+  String get publicProfileSaveListsHint =>
+      'Sla lijsten op die je vindt op lijstpagina’s van andere gebruikers';
+
+  @override
+  String get publicProfileSavedListsUnavailable =>
+      'Je opgeslagen lijsten zijn niet meer beschikbaar of zijn verwijderd.';
+
+  @override
+  String get publicProfileListCreatedSuccessfully =>
+      'Lijst succesvol aangemaakt';
+
+  @override
+  String get publicProfileChangeProfilePicture => 'Profielfoto wijzigen';
+
+  @override
+  String get publicProfileChooseFromGallery => 'Kies uit galerij';
+
+  @override
+  String get publicProfileTakePhoto => 'Foto maken';
+
+  @override
+  String get publicProfileRemovePicture => 'Foto verwijderen';
+
+  @override
+  String publicProfileErrorPickingImage(String error) {
+    return 'Fout bij kiezen van afbeelding: $error';
+  }
+
+  @override
+  String publicProfileErrorTakingPhoto(String error) {
+    return 'Fout bij maken van foto: $error';
+  }
+
+  @override
+  String get publicProfileProcessingImage => 'Afbeelding verwerken...';
+
+  @override
+  String get publicProfileReadingImage => 'Afbeelding lezen...';
+
+  @override
+  String get publicProfileUploading => 'Uploaden...';
+
+  @override
+  String get publicProfileFinishing => 'Afronden...';
+
+  @override
+  String get publicProfileUpdatingProfile => 'Profiel bijwerken...';
+
+  @override
+  String get publicProfileProfilePictureUpdatedSuccessfully =>
+      'Profielfoto succesvol bijgewerkt';
+
+  @override
+  String get publicProfileFailedToUpdateProfilePicture =>
+      'Bijwerken van profielfoto mislukt';
+
+  @override
+  String publicProfileErrorUploadingProfilePicture(String error) {
+    return 'Fout bij uploaden van profielfoto: $error';
+  }
+
+  @override
+  String get publicProfileRemoveProfilePicture => 'Profielfoto verwijderen';
+
+  @override
+  String get publicProfileRemoveProfilePictureConfirmation =>
+      'Weet je zeker dat je je profielfoto wilt verwijderen?';
+
+  @override
+  String get publicProfileProfilePictureRemovedSuccessfully =>
+      'Profielfoto succesvol verwijderd';
+
+  @override
+  String get publicProfileFailedToRemoveProfilePicture =>
+      'Verwijderen van profielfoto mislukt';
+
+  @override
+  String publicProfileErrorRemovingProfilePicture(String error) {
+    return 'Fout bij verwijderen van profielfoto: $error';
+  }
+
+  @override
+  String get publicProfileProfileCopiedToClipboard =>
+      'Profiel gekopieerd naar klembord!';
+
+  @override
+  String publicProfileFailedToCopyProfile(String error) {
+    return 'Profiel kopiëren mislukt: $error';
+  }
+
+  @override
+  String get publicProfileStatsSpots => 'Spots';
+
+  @override
+  String get publicProfileStatsRatings => 'Beoordelingen';
+
+  @override
+  String get publicProfileSettingsTitle => 'Profielinstellingen';
+
+  @override
+  String get publicProfileEmailLabel => 'E-mail';
+
+  @override
+  String get publicProfileEmailNotShownHint =>
+      'Je e-mail wordt niet openbaar getoond.';
+
+  @override
+  String get publicProfileDisplayNameLabel => 'Weergavenaam';
+
+  @override
+  String get publicProfileNoDisplayNameSet => 'Geen weergavenaam ingesteld';
+
+  @override
+  String get publicProfileEditAction => 'Bewerken';
+
+  @override
+  String get publicProfileDisplayNameHint => 'Voer je naam in';
+
+  @override
+  String publicProfileDisplayNameHelper(int max) {
+    return 'Hoe je naam aan anderen wordt getoond';
+  }
+
+  @override
+  String publicProfileDisplayNameMaxLengthError(int max) {
+    return 'Weergavenaam mag maximaal 50 tekens bevatten';
+  }
+
+  @override
+  String get publicProfileDisplayNameUpdated => 'Weergavenaam bijgewerkt';
+
+  @override
+  String get publicProfileDisplayNameRemoved => 'Weergavenaam verwijderd';
+
+  @override
+  String get publicProfileDisplayNameUpdateFailed =>
+      'Bijwerken van weergavenaam mislukt';
+
+  @override
+  String get publicProfileSaveAction => 'Opslaan';
+
+  @override
+  String get publicProfileUsernameLabel => 'Gebruikersnaam';
+
+  @override
+  String get publicProfileNoUsernameSet => 'Geen gebruikersnaam ingesteld';
+
+  @override
+  String get publicProfileUsernameHint => 'Voer een gebruikersnaam in';
+
+  @override
+  String get publicProfileUsernameHelper =>
+      'Uniek en gebruikt in je profiel-URL';
+
+  @override
+  String get publicProfileUsernameEmpty => 'Gebruikersnaam mag niet leeg zijn';
+
+  @override
+  String get publicProfileUsernameTaken =>
+      'Deze gebruikersnaam is al in gebruik';
+
+  @override
+  String get publicProfileUsernameUpdated => 'Gebruikersnaam bijgewerkt';
+
+  @override
+  String get publicProfileUsernameUpdateFailed =>
+      'Bijwerken van gebruikersnaam mislukt';
+
+  @override
+  String get publicProfileInstagramLabel => 'Instagram';
+
+  @override
+  String get publicProfileNoInstagramSet => 'Geen Instagram ingesteld';
+
+  @override
+  String get publicProfileAddAction => 'Toevoegen';
+
+  @override
+  String get publicProfileInstagramLinkLabel => 'Instagram-link';
+
+  @override
+  String get publicProfileInstagramLinkHint => 'https://instagram.com/jouwnaam';
+
+  @override
+  String get publicProfileInstagramLinkHelper =>
+      'Volledige URL naar je Instagram-profiel';
+
+  @override
+  String get publicProfileInstagramInvalid =>
+      'Voer een geldige Instagram-URL in';
+
+  @override
+  String get publicProfileInstagramRemoved => 'Instagram-link verwijderd';
+
+  @override
+  String get publicProfileInstagramUpdated => 'Instagram-link bijgewerkt';
+
+  @override
+  String get publicProfileInstagramUpdateFailed =>
+      'Bijwerken van Instagram-link mislukt';
+
+  @override
+  String get publicProfilePrivacyTitle => 'Privacy';
+
+  @override
+  String get publicProfilePrivacyPublicLabel => 'Openbaar profiel';
+
+  @override
+  String get publicProfilePrivacyPrivateLabel => 'Privéprofiel';
+
+  @override
+  String get publicProfilePrivacyPublicDescription =>
+      'Iedereen kan je profiel en openbare lijsten bekijken.';
+
+  @override
+  String get publicProfilePrivacyPrivateDescription =>
+      'Alleen jij kunt je profiel bekijken.';
+
+  @override
+  String get publicProfilePrivacyNowPublic => 'Je profiel is nu openbaar';
+
+  @override
+  String get publicProfilePrivacyNowPrivate => 'Je profiel is nu privé';
+
+  @override
+  String get publicProfileFailedToUpdateProfilePrivacy =>
+      'Bijwerken van profielprivacy mislukt';
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../l10n/app_localizations.dart';
 import '../services/auth_service.dart';
 import '../services/saved_spot_list_service.dart';
 import '../services/snackbar_service.dart';
@@ -20,6 +21,7 @@ class SpotListSaveButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return Consumer2<AuthService, SavedSpotListService>(
       builder: (context, authService, savedSpotListService, _) {
@@ -60,7 +62,7 @@ class SpotListSaveButton extends StatelessWidget {
             child: Align(
               alignment: Alignment.centerLeft,
               child: PopupMenuButton<_SpotListSaveAction>(
-                tooltip: 'Save list',
+                tooltip: l10n.spotListSaveTooltipSaveList,
                 position: PopupMenuPosition.under,
                 borderRadius: BorderRadius.circular(22),
                 splashRadius: 22,
@@ -79,12 +81,12 @@ class SpotListSaveButton extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            'Sign in to save lists',
+                            l10n.spotListSaveSignInTitle,
                             style: menuTheme.textTheme.titleSmall,
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Save someone else’s spot list to your profile so you can open it again later.',
+                            l10n.spotListSaveSignInBody,
                             style: menuTheme.textTheme.bodySmall?.copyWith(
                               color: menuTheme.colorScheme.onSurface.withValues(
                                 alpha: 0.85,
@@ -102,7 +104,7 @@ class SpotListSaveButton extends StatelessWidget {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                'Log in or create account',
+                                l10n.spotDetailSaveMenuLogInOrCreate,
                                 style: menuTheme.textTheme.labelLarge?.copyWith(
                                   color: menuTheme.colorScheme.primary,
                                 ),
@@ -149,15 +151,15 @@ class SpotListSaveButton extends StatelessWidget {
             if (isBusy) {
               icon = Icons.bookmark_border;
               iconColor = colorScheme.onSurface.withValues(alpha: 0.38);
-              tooltip = 'Updating…';
+              tooltip = l10n.spotDetailSaveTooltipUpdating;
             } else if (isSaved) {
               icon = Icons.bookmark;
               iconColor = colorScheme.primary;
-              tooltip = 'Saved list';
+              tooltip = l10n.spotListSaveTooltipSavedList;
             } else {
               icon = Icons.bookmark_border;
               iconColor = colorScheme.onSurface.withValues(alpha: 0.6);
-              tooltip = 'Save list';
+              tooltip = l10n.spotListSaveTooltipSaveList;
             }
 
             Future<void> handleAction(_SpotListSaveAction action) async {
@@ -168,10 +170,13 @@ class SpotListSaveButton extends StatelessWidget {
                   final ok = await savedSpotListService.saveList(listId);
                   if (context.mounted) {
                     if (ok) {
-                      SnackbarService.showSuccess('List saved to your profile');
+                      SnackbarService.showSuccess(
+                        l10n.spotListSaveSavedToProfile,
+                      );
                     } else {
                       SnackbarService.showError(
-                        savedSpotListService.error ?? 'Could not save list',
+                        savedSpotListService.error ??
+                            l10n.spotListSaveCouldNotSaveList,
                       );
                     }
                   }
@@ -180,10 +185,13 @@ class SpotListSaveButton extends StatelessWidget {
                   final ok = await savedSpotListService.unsaveList(listId);
                   if (context.mounted) {
                     if (ok) {
-                      SnackbarService.showSuccess('Removed from saved lists');
+                      SnackbarService.showSuccess(
+                        l10n.spotListSaveRemovedFromSavedLists,
+                      );
                     } else {
                       SnackbarService.showError(
-                        savedSpotListService.error ?? 'Could not remove list',
+                        savedSpotListService.error ??
+                            l10n.spotListSaveCouldNotRemoveList,
                       );
                     }
                   }
@@ -229,7 +237,7 @@ class SpotListSaveButton extends StatelessWidget {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  'Save list',
+                                  l10n.spotListSaveActionSaveList,
                                   style: menuTheme.textTheme.bodyMedium,
                                 ),
                               ),
@@ -249,7 +257,7 @@ class SpotListSaveButton extends StatelessWidget {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  'Remove from saved',
+                                  l10n.spotListSaveActionRemoveFromSaved,
                                   style: menuTheme.textTheme.bodyMedium,
                                 ),
                               ),
@@ -269,7 +277,7 @@ class SpotListSaveButton extends StatelessWidget {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                'View saved lists',
+                                l10n.spotListSaveActionViewSavedLists,
                                 style: menuTheme.textTheme.bodyMedium,
                               ),
                             ),
