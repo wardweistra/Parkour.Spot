@@ -27,6 +27,7 @@ import 'package:flutter/services.dart';
 import 'spot_list_advanced_organization_screen.dart';
 import '../../l10n/app_localizations.dart';
 import '../../utils/spot_list_localization.dart';
+import '../../utils/relative_date_localization.dart';
 
 enum _ListManageMenuAction { listSettings, organize, delete }
 
@@ -129,7 +130,9 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       if (mounted) {
         setState(() {
           _creatorName =
-              user?.displayName ?? user?.username ?? _l10n.spotDetailUnknownUser;
+              user?.displayName ??
+              user?.username ??
+              _l10n.spotDetailUnknownUser;
         });
       }
     }
@@ -291,8 +294,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       if (section.entries.isEmpty) continue;
       final hasTitle =
           section.title != null && section.title!.trim().isNotEmpty;
-      final hasBody =
-          section.text != null && section.text!.trim().isNotEmpty;
+      final hasBody = section.text != null && section.text!.trim().isNotEmpty;
       sectionWidgets.add(
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 32, 16, 24),
@@ -300,10 +302,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (hasTitle)
-                Text(
-                  section.title!,
-                  style: theme.textTheme.titleLarge,
-                ),
+                Text(section.title!, style: theme.textTheme.titleLarge),
               if (hasTitle && hasBody) const SizedBox(height: 10),
               if (hasBody)
                 Text(
@@ -661,29 +660,8 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     return spotListVisibilitySummary(_l10n, visibility);
   }
 
-  String _formatRelativeDate(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final dateOnly = DateTime(date.year, date.month, date.day);
-    final difference = today.difference(dateOnly).inDays;
-
-    if (difference == 0) {
-      return 'today';
-    } else if (difference == 1) {
-      return 'yesterday';
-    } else if (difference < 7) {
-      return '$difference days ago';
-    } else if (difference < 30) {
-      final weeks = (difference / 7).floor();
-      return weeks == 1 ? '1 week ago' : '$weeks weeks ago';
-    } else if (difference < 365) {
-      final months = (difference / 30).floor();
-      return months == 1 ? '1 month ago' : '$months months ago';
-    } else {
-      final years = (difference / 365).floor();
-      return years == 1 ? '1 year ago' : '$years years ago';
-    }
-  }
+  String _formatRelativeDate(DateTime date) =>
+      formatRelativeDateInDays(date, _l10n);
 
   Future<void> _navigateToUserProfile(String userId) async {
     try {
@@ -803,11 +781,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.link,
-            size: 16,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
+          Icon(Icons.link, size: 16, color: theme.colorScheme.onSurfaceVariant),
           const SizedBox(width: 8),
           Expanded(
             child: RichText(
@@ -821,7 +795,8 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                       color: theme.colorScheme.primary,
                     ),
                     recognizer: TapGestureRecognizer()
-                      ..onTap = () => UrlService.openHttpOrHttpsUrl(url, context),
+                      ..onTap = () =>
+                          UrlService.openHttpOrHttpsUrl(url, context),
                   ),
                   TextSpan(text: '.', style: textStyle),
                 ],
@@ -1098,10 +1073,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                     const SizedBox(width: 4),
                     Text(
                       _l10n.spotListDetailHighlightListOnMap,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                      ),
+                      style: const TextStyle(color: Colors.white, fontSize: 11),
                     ),
                   ],
                 ),
@@ -1142,7 +1114,11 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                       value: _ListManageMenuAction.listSettings,
                       child: Row(
                         children: [
-                          Icon(Icons.settings_outlined, color: primary, size: 20),
+                          Icon(
+                            Icons.settings_outlined,
+                            color: primary,
+                            size: 20,
+                          ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
@@ -1204,10 +1180,9 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                     ),
                     child: Icon(
                       Icons.edit_outlined,
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.6),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.6),
                       size: 24,
                     ),
                   ),
@@ -1222,10 +1197,9 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
             child: Tooltip(
               message: _l10n.spotDetailShareTooltip,
               child: Material(
-                color: Theme.of(context)
-                    .colorScheme
-                    .surfaceContainerHighest
-                    .withValues(alpha: 0.6),
+                color: Theme.of(
+                  context,
+                ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
                 shape: const CircleBorder(),
                 clipBehavior: Clip.antiAlias,
                 child: InkWell(
@@ -1236,10 +1210,9 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                     height: 44,
                     child: Icon(
                       Icons.share,
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.6),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.6),
                       size: 24,
                     ),
                   ),
@@ -1373,8 +1346,8 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
               ),
             _buildMoreInfoLinkRow(),
             _buildProvenanceSentence(
-              compactTop: _list!.moreInfoUrl != null &&
-                  _list!.moreInfoUrl!.isNotEmpty,
+              compactTop:
+                  _list!.moreInfoUrl != null && _list!.moreInfoUrl!.isNotEmpty,
             ),
             // Spots list
             _buildSpotsList(),
