@@ -3284,6 +3284,66 @@ abstract class AppLocalizations {
   /// **'Your recorded history of visits to spots'**
   String get publicProfileMyCheckInsSubtitle;
 
+  /// Prompt shown on my check-ins page when signed out
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to view your check-ins'**
+  String get myCheckInsSignInPrompt;
+
+  /// Button label to load more check-ins
+  ///
+  /// In en, this message translates to:
+  /// **'Load more'**
+  String get myCheckInsLoadMore;
+
+  /// Empty state title on my check-ins page
+  ///
+  /// In en, this message translates to:
+  /// **'No check-ins yet'**
+  String get myCheckInsEmptyTitle;
+
+  /// Empty state helper text on my check-ins page
+  ///
+  /// In en, this message translates to:
+  /// **'Open a spot and tap Check in to record a visit. Until the end time you set, others can see you as “here now” on that spot unless you keep the check-in private.'**
+  String get myCheckInsEmptyDescription;
+
+  /// Introductory text at the top of my check-ins page
+  ///
+  /// In en, this message translates to:
+  /// **'A check-in records that you visited a spot, when you arrived, and until when you expect to be there. Public check-ins can show you in “who’s here now” on that spot until that end time; private check-ins stay visible only to you.'**
+  String get myCheckInsIntro;
+
+  /// Fallback spot name in check-in history tile
+  ///
+  /// In en, this message translates to:
+  /// **'Spot'**
+  String get myCheckInsSpotFallback;
+
+  /// Label shown for private check-ins in history
+  ///
+  /// In en, this message translates to:
+  /// **'Private — only you can see this'**
+  String get myCheckInsPrivateOnlyYou;
+
+  /// Short day unit in check-in duration summary
+  ///
+  /// In en, this message translates to:
+  /// **'{count}d'**
+  String myCheckInsDurationDaysShort(int count);
+
+  /// Short hour unit in check-in duration summary
+  ///
+  /// In en, this message translates to:
+  /// **'{count}h'**
+  String myCheckInsDurationHoursShort(int count);
+
+  /// Short minute unit in check-in duration summary
+  ///
+  /// In en, this message translates to:
+  /// **'{count}m'**
+  String myCheckInsDurationMinutesShort(int count);
+
   /// Card title for user's own lists section
   ///
   /// In en, this message translates to:

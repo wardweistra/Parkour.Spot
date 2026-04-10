@@ -5,45 +5,49 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/spot_check_in.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/auth_service.dart';
 import '../../services/spot_check_in_service.dart';
 import '../../widgets/page_scaffold.dart';
 import '../../widgets/spot_check_in_dialog.dart';
 import '../../widgets/spot_check_in_presence.dart';
 
-String _formatSessionDuration(Duration d) {
+String _formatSessionDuration(Duration d, AppLocalizations l10n) {
   if (d.isNegative) d = Duration.zero;
   var totalMinutes = d.inMinutes;
-  if (totalMinutes == 0) return '0m';
+  if (totalMinutes == 0) return l10n.myCheckInsDurationMinutesShort(0);
   final days = totalMinutes ~/ (24 * 60);
   totalMinutes %= (24 * 60);
   final hours = totalMinutes ~/ 60;
   final minutes = totalMinutes % 60;
   final parts = <String>[];
-  if (days > 0) parts.add('${days}d');
-  if (hours > 0) parts.add('${hours}h');
-  if (minutes > 0) parts.add('${minutes}m');
-  if (parts.isEmpty) parts.add('0m');
+  if (days > 0) parts.add(l10n.myCheckInsDurationDaysShort(days));
+  if (hours > 0) parts.add(l10n.myCheckInsDurationHoursShort(hours));
+  if (minutes > 0) parts.add(l10n.myCheckInsDurationMinutesShort(minutes));
+  if (parts.isEmpty) parts.add(l10n.myCheckInsDurationMinutesShort(0));
   return parts.join(' ');
 }
 
 /// Time line for a tile when the [start] date is shown in a section header above.
-String _formatCheckInTimeLineUnderHeader(SpotCheckIn checkIn) {
+String _formatCheckInTimeLineUnderHeader(
+  SpotCheckIn checkIn,
+  AppLocalizations l10n,
+) {
   final start = checkIn.checkedInAt.toLocal();
   final end = checkIn.expectedEndAt.toLocal();
   final duration = checkIn.expectedEndAt.difference(checkIn.checkedInAt);
-  final durStr = _formatSessionDuration(duration);
+  final durStr = _formatSessionDuration(duration, l10n);
   final sameDay =
       start.year == end.year &&
       start.month == end.month &&
       start.day == end.day;
-  final timeFmt = DateFormat('h:mm a');
+  final timeFmt = DateFormat.jm();
 
   if (sameDay) {
     return '${timeFmt.format(start)} — ${timeFmt.format(end)} ($durStr)';
   }
 
-  final endFull = DateFormat('MMM d, yyyy • h:mm a').format(end);
+  final endFull = DateFormat.yMMMd().add_jm().format(end);
   return '${timeFmt.format(start)} — $endFull ($durStr)';
 }
 
@@ -72,6 +76,8 @@ class MyCheckInsScreen extends StatefulWidget {
 }
 
 class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
+  AppLocalizations get _l10n => AppLocalizations.of(context)!;
+
   final List<SpotCheckIn> _items = [];
   DocumentSnapshot<Map<String, dynamic>>? _lastDoc;
   bool _hasMore = true;
@@ -160,12 +166,14 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
         setState(() {
           _items.removeWhere((x) => x.id == c.id);
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Check-in removed')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(_l10n.spotDetailCheckInRemoved)));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(svc.error ?? 'Could not delete')),
+          SnackBar(
+            content: Text(svc.error ?? _l10n.spotDetailCheckInDeleteFailed),
+          ),
         );
       }
       return;
@@ -199,12 +207,14 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
           );
         });
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Check-in updated')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_l10n.spotDetailCheckInUpdated)));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(svc.error ?? 'Could not update check-in')),
+        SnackBar(
+          content: Text(svc.error ?? _l10n.spotDetailCheckInUpdateFailed),
+        ),
       );
     }
   }
@@ -242,10 +252,7 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
             );
           case _CheckInListDateHeader(:final day):
             final prevIsIntro = i > 0 && rows[i - 1] is _CheckInListIntro;
-            return _CheckInDateHeader(
-              day: day,
-              isFirst: prevIsIntro,
-            );
+            return _CheckInDateHeader(day: day, isFirst: prevIsIntro);
           case _CheckInListTile(:final checkIn):
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
@@ -263,7 +270,7 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
                     ? const CircularProgressIndicator()
                     : TextButton(
                         onPressed: _loadMore,
-                        child: const Text('Load more'),
+                        child: Text(_l10n.myCheckInsLoadMore),
                       ),
               ),
             );
@@ -278,7 +285,7 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
       builder: (context, auth, _) {
         if (!auth.isAuthenticated) {
           return PageScaffold(
-            title: 'My check-ins',
+            title: _l10n.publicProfileMyCheckIns,
             body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -286,7 +293,7 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
                   const Icon(Icons.login, size: 64),
                   const SizedBox(height: 16),
                   Text(
-                    'Sign in to view your check-ins',
+                    _l10n.myCheckInsSignInPrompt,
                     style: Theme.of(context).textTheme.titleMedium,
                     textAlign: TextAlign.center,
                   ),
@@ -295,7 +302,7 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
                     onPressed: () => context.go(
                       '/login?redirectTo=${Uri.encodeComponent('/profile/check-ins')}',
                     ),
-                    child: const Text('Sign in'),
+                    child: Text(_l10n.profileSignInButton),
                   ),
                 ],
               ),
@@ -304,15 +311,15 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
         }
 
         if (_loading) {
-          return const PageScaffold(
-            title: 'My check-ins',
+          return PageScaffold(
+            title: _l10n.publicProfileMyCheckIns,
             body: Center(child: CircularProgressIndicator()),
           );
         }
 
         if (_error != null && _items.isEmpty) {
           return PageScaffold(
-            title: 'My check-ins',
+            title: _l10n.publicProfileMyCheckIns,
             body: Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
@@ -329,7 +336,7 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
                     const SizedBox(height: 16),
                     FilledButton(
                       onPressed: _loadInitial,
-                      child: const Text('Retry'),
+                      child: Text(_l10n.profileRetry),
                     ),
                   ],
                 ),
@@ -339,7 +346,7 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
         }
 
         return PageScaffold(
-          title: 'My check-ins',
+          title: _l10n.publicProfileMyCheckIns,
           scrollable: false,
           body: RefreshIndicator(
             onRefresh: _loadInitial,
@@ -362,7 +369,7 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'No check-ins yet',
+                              _l10n.myCheckInsEmptyTitle,
                               style: Theme.of(context).textTheme.titleMedium
                                   ?.copyWith(
                                     color: Theme.of(context)
@@ -374,8 +381,7 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Open a spot and tap Check in to record a visit. '
-                              'Until the end time you set, others can see you as “here now” on that spot unless you keep the check-in private.',
+                              _l10n.myCheckInsEmptyDescription,
                               style: Theme.of(context).textTheme.bodyMedium
                                   ?.copyWith(
                                     color: Theme.of(context)
@@ -400,9 +406,7 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
   Widget _intro(BuildContext context) {
     final theme = Theme.of(context);
     return Text(
-      'A check-in records that you visited a spot, when you arrived, and until when you expect to be there. '
-      'Public check-ins can show you in “who’s here now” on that spot until that end time; '
-      'private check-ins stay visible only to you.',
+      _l10n.myCheckInsIntro,
       style: theme.textTheme.bodyMedium?.copyWith(
         color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
         height: 1.4,
@@ -412,10 +416,7 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
 }
 
 class _CheckInDateHeader extends StatelessWidget {
-  const _CheckInDateHeader({
-    required this.day,
-    required this.isFirst,
-  });
+  const _CheckInDateHeader({required this.day, required this.isFirst});
 
   final DateTime day;
   final bool isFirst;
@@ -424,12 +425,9 @@ class _CheckInDateHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: EdgeInsets.only(
-        top: isFirst ? 0 : 20,
-        bottom: 8,
-      ),
+      padding: EdgeInsets.only(top: isFirst ? 0 : 20, bottom: 8),
       child: Text(
-        DateFormat('MMM d, yyyy').format(day),
+        DateFormat.yMMMd().format(day),
         style: theme.textTheme.titleSmall?.copyWith(
           fontWeight: FontWeight.w600,
           color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
@@ -452,12 +450,13 @@ class _CheckInHistoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final title =
         (checkIn.spotName != null && checkIn.spotName!.trim().isNotEmpty)
         ? checkIn.spotName!.trim()
-        : 'Spot';
-    final timeRangeStr = _formatCheckInTimeLineUnderHeader(checkIn);
+        : l10n.myCheckInsSpotFallback;
+    final timeRangeStr = _formatCheckInTimeLineUnderHeader(checkIn, l10n);
     final comment = checkIn.comment?.trim();
 
     return Card(
@@ -493,7 +492,7 @@ class _CheckInHistoryTile extends StatelessWidget {
                     if (checkIn.isPrivate) ...[
                       const SizedBox(height: 4),
                       Text(
-                        'Private — only you can see this',
+                        l10n.myCheckInsPrivateOnlyYou,
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: theme.colorScheme.primary,
                           fontWeight: FontWeight.w600,
@@ -508,12 +507,9 @@ class _CheckInHistoryTile extends StatelessWidget {
                 ),
               ),
               IconButton(
-                tooltip: 'Edit check-in',
+                tooltip: l10n.spotDetailCheckInFabTooltipEdit,
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(
-                  minWidth: 36,
-                  minHeight: 36,
-                ),
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                 icon: Icon(
                   Icons.edit_outlined,
                   size: 20,

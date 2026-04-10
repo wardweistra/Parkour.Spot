@@ -1657,6 +1657,61 @@
   "@publicProfileMyCheckInsSubtitle": {
     "description": "Subtitle for check-in history row"
   },
+  "myCheckInsSignInPrompt": "Sign in to view your check-ins",
+  "@myCheckInsSignInPrompt": {
+    "description": "Prompt shown on my check-ins page when signed out"
+  },
+  "myCheckInsLoadMore": "Load more",
+  "@myCheckInsLoadMore": {
+    "description": "Button label to load more check-ins"
+  },
+  "myCheckInsEmptyTitle": "No check-ins yet",
+  "@myCheckInsEmptyTitle": {
+    "description": "Empty state title on my check-ins page"
+  },
+  "myCheckInsEmptyDescription": "Open a spot and tap Check in to record a visit. Until the end time you set, others can see you as “here now” on that spot unless you keep the check-in private.",
+  "@myCheckInsEmptyDescription": {
+    "description": "Empty state helper text on my check-ins page"
+  },
+  "myCheckInsIntro": "A check-in records that you visited a spot, when you arrived, and until when you expect to be there. Public check-ins can show you in “who’s here now” on that spot until that end time; private check-ins stay visible only to you.",
+  "@myCheckInsIntro": {
+    "description": "Introductory text at the top of my check-ins page"
+  },
+  "myCheckInsSpotFallback": "Spot",
+  "@myCheckInsSpotFallback": {
+    "description": "Fallback spot name in check-in history tile"
+  },
+  "myCheckInsPrivateOnlyYou": "Private — only you can see this",
+  "@myCheckInsPrivateOnlyYou": {
+    "description": "Label shown for private check-ins in history"
+  },
+  "myCheckInsDurationDaysShort": "{count}d",
+  "@myCheckInsDurationDaysShort": {
+    "description": "Short day unit in check-in duration summary",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "myCheckInsDurationHoursShort": "{count}h",
+  "@myCheckInsDurationHoursShort": {
+    "description": "Short hour unit in check-in duration summary",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "myCheckInsDurationMinutesShort": "{count}m",
+  "@myCheckInsDurationMinutesShort": {
+    "description": "Short minute unit in check-in duration summary",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "publicProfileSpotLists": "Spot lists",
   "@publicProfileSpotLists": {
     "description": "Card title for user's own lists section"
