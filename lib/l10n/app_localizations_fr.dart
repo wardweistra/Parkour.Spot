@@ -1959,6 +1959,44 @@ class AppLocalizationsFr extends AppLocalizations {
       'Votre historique enregistré des visites de spots';
 
   @override
+  String get myCheckInsSignInPrompt => 'Connectez-vous pour voir vos check-ins';
+
+  @override
+  String get myCheckInsLoadMore => 'Charger plus';
+
+  @override
+  String get myCheckInsEmptyTitle => 'Aucun check-in pour le moment';
+
+  @override
+  String get myCheckInsEmptyDescription =>
+      'Ouvrez un spot et appuyez sur Check in pour enregistrer une visite. Jusqu’à l’heure de fin définie, les autres peuvent vous voir comme « ici maintenant » sur ce spot sauf si vous gardez le check-in privé.';
+
+  @override
+  String get myCheckInsIntro =>
+      'Un check-in enregistre votre visite d’un spot, quand vous êtes arrivé et jusqu’à quand vous prévoyez d’y rester. Les check-ins publics peuvent vous afficher dans « qui est ici maintenant » sur ce spot jusqu’à cette heure de fin ; les check-ins privés restent visibles uniquement pour vous.';
+
+  @override
+  String get myCheckInsSpotFallback => 'Spot';
+
+  @override
+  String get myCheckInsPrivateOnlyYou => 'Privé — visible uniquement par vous';
+
+  @override
+  String myCheckInsDurationDaysShort(int count) {
+    return '${count}j';
+  }
+
+  @override
+  String myCheckInsDurationHoursShort(int count) {
+    return '${count}h';
+  }
+
+  @override
+  String myCheckInsDurationMinutesShort(int count) {
+    return '${count}min';
+  }
+
+  @override
   String get publicProfileSpotLists => 'Listes de spots';
 
   @override
