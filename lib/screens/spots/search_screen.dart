@@ -382,7 +382,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
 
   bool _hasActiveFilters() {
     final searchState = _searchStateServiceRef;
-    if (_filterArea == 'amenities') {
+    // Match _buildFilters / spot queries: null means default amenities, not "source".
+    if ((_filterArea ?? 'amenities') == 'amenities') {
       return _spotAccess.isNotEmpty ||
           _spotFacilitiesCovered == true ||
           _spotFacilitiesLighting == true ||
