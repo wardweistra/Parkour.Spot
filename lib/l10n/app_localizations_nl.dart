@@ -641,12 +641,12 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String spotDetailLastUpdatedAfterCommaAnd(String date) {
-    return ', en voor het laatst bijgewerkt op $date.';
+    return ', en voor het laatst bijgewerkt $date.';
   }
 
   @override
   String spotDetailLastUpdatedAfterAnd(String date) {
-    return ' en voor het laatst bijgewerkt op $date.';
+    return ' en voor het laatst bijgewerkt $date.';
   }
 
   @override
