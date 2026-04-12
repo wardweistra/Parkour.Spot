@@ -37,6 +37,7 @@ import '../../widgets/spot_check_in_presence.dart';
 import '../../utils/image_preparation.dart';
 import '../../services/user_profile_service.dart';
 import '../../services/jumpflix_service.dart';
+import '../../utils/relative_date_localization.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode, debugPrint;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -218,9 +219,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     final activeElsewhere = results[0] as List<SpotCheckIn>?;
     final extendableAtSameSpot = results[1] as SpotCheckIn?;
     if (activeElsewhere == null) {
-      _showErrorSnack(
-        service.error ?? _l10n.spotDetailCheckInVerifyFailed,
-      );
+      _showErrorSnack(service.error ?? _l10n.spotDetailCheckInVerifyFailed);
       return;
     }
     final result = await showSpotCheckInDialog(
@@ -424,7 +423,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   void dispose() {
     // Reset document title to default when leaving spot page
     if (kIsWeb) {
-      web.document.title = AppLocalizations.of(context)!.exploreMetaDefaultTitle;
+      web.document.title = AppLocalizations.of(
+        context,
+      )!.exploreMetaDefaultTitle;
     }
     _scrollController.dispose();
     _videoPageController.dispose();
@@ -530,7 +531,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           ),
         );
       } else {
-        textSpans.add(TextSpan(text: l10n.spotDetailSpotCreatedBy, style: textStyle));
+        textSpans.add(
+          TextSpan(text: l10n.spotDetailSpotCreatedBy, style: textStyle),
+        );
       }
 
       // Make creator name clickable if we have a user ID
@@ -585,13 +588,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       );
 
       if (_spot.folderName != null) {
-        textSpans.add(TextSpan(text: l10n.spotDetailFromFolder, style: textStyle));
         textSpans.add(
-          TextSpan(
-            text: _spot.folderName!,
-            style: textStyle,
-          ),
+          TextSpan(text: l10n.spotDetailFromFolder, style: textStyle),
         );
+        textSpans.add(TextSpan(text: _spot.folderName!, style: textStyle));
       }
 
       hasPreviousContent = true;
@@ -721,27 +721,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   }
 
   String _formatRelativeDate(DateTime date, AppLocalizations l10n) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final dateOnly = DateTime(date.year, date.month, date.day);
-    final difference = today.difference(dateOnly).inDays;
-
-    if (difference == 0) {
-      return l10n.spotDetailDateToday;
-    } else if (difference == 1) {
-      return l10n.spotDetailDateYesterday;
-    } else if (difference < 7) {
-      return l10n.spotDetailDateDaysAgo(difference);
-    } else if (difference < 30) {
-      final weeks = (difference / 7).floor();
-      return l10n.spotDetailDateWeeksAgo(weeks);
-    } else if (difference < 365) {
-      final months = (difference / 30).floor();
-      return l10n.spotDetailDateMonthsAgo(months);
-    } else {
-      final years = (difference / 365).floor();
-      return l10n.spotDetailDateYearsAgo(years);
-    }
+    return formatRelativeDateInDays(date, l10n);
   }
 
   void _copySpotToClipboard() async {
@@ -1238,7 +1218,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
-                      children: [
+                    children: [
                       Text(
                         _spot.hidden
                             ? l10n.spotDetailMenuUnhideSpot
@@ -1474,8 +1454,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       if (total == 0) {
         _showSuccessSnack(l10n.spotDetailResizeAllHaveVersions);
       } else {
-        final failedPart =
-            failed > 0 ? l10n.spotDetailResizeFailedPart(failed) : '';
+        final failedPart = failed > 0
+            ? l10n.spotDetailResizeFailedPart(failed)
+            : '';
         _showSuccessSnack(
           l10n.spotDetailResizeSummary(triggered, verified, failedPart),
         );
@@ -1772,7 +1753,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             Expanded(
                               child: SelectableText(
                                 _spot.name,
-                                style: Theme.of(context).textTheme.headlineMedium,
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.headlineMedium,
                               ),
                             ),
                             // Rating display using cached data
@@ -1798,10 +1781,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                       Text(
                                         _cachedRatingStats!['averageRating']
                                             .toStringAsFixed(1),
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleLarge
-                                            ,
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.titleLarge,
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
@@ -1860,12 +1842,13 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                                   child: SizedBox(
                                                     width: 22,
                                                     height: 22,
-                                                    child: CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      color: Theme.of(
-                                                        context,
-                                                      ).colorScheme.primary,
-                                                    ),
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                          strokeWidth: 2,
+                                                          color: Theme.of(
+                                                            context,
+                                                          ).colorScheme.primary,
+                                                        ),
                                                   ),
                                                 ),
                                               ),
@@ -1878,7 +1861,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                           ),
                                           child: _buildSpotActionsPopupMenu(
                                             authService: authService,
-                                            tooltip: _l10n.spotDetailEditReportTooltip,
+                                            tooltip: _l10n
+                                                .spotDetailEditReportTooltip,
                                             child: SizedBox(
                                               width: 44,
                                               height: 44,
@@ -1961,7 +1945,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                               SpotCheckInPresenceStrip(
                                 spotId: _spot.id!,
                                 variant: SpotCheckInPresenceVariant.detail,
-                                detailLeadingLabel: _l10n.spotDetailPresenceHereNow,
+                                detailLeadingLabel:
+                                    _l10n.spotDetailPresenceHereNow,
                               ),
                             ],
                           ),
@@ -2043,7 +2028,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                   child: Text(
                                     _l10n.spotDetailSourceRemovedBanner(
                                       widget.spot.spotSourceName ??
-                                          _l10n.spotDetailSourceRemovedUnknownSource,
+                                          _l10n
+                                              .spotDetailSourceRemovedUnknownSource,
                                     ),
                                     style: Theme.of(context)
                                         .textTheme
@@ -2136,10 +2122,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                     children: [
                                       Text(
                                         _l10n.spotDetailSectionAccess,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleMedium
-                                            ,
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.titleMedium,
                                       ),
                                       const SizedBox(height: 8),
                                       _buildAccessChip(widget.spot.spotAccess!),
@@ -2300,10 +2285,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                   if (widget.spot.spotAccess != null) ...[
                                     Text(
                                       _l10n.spotDetailSectionAccess,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleMedium
-                                          ,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.titleMedium,
                                     ),
                                     const SizedBox(height: 8),
                                     _buildAccessChip(widget.spot.spotAccess!),
@@ -2344,7 +2328,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                       ];
 
                                       return _buildExpandableChipSection(
-                                        title: _l10n.spotDetailSectionFacilities,
+                                        title:
+                                            _l10n.spotDetailSectionFacilities,
                                         chips: allFacilityChips,
                                       );
                                     }(),
@@ -2400,7 +2385,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                           launchUrl:
                                               'https://www.youtube.com/watch?v=$id',
                                           useYoutubeIcon: true,
-                                          brandLabel: l10n.spotDetailBrandYoutube,
+                                          brandLabel:
+                                              l10n.spotDetailBrandYoutube,
                                         ),
                                       )
                                       .toList();
@@ -2437,7 +2423,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                       brandLabel: v.title.isNotEmpty
                                           ? v.title
                                           : l10n.spotDetailBrandJumpflix,
-                                      brandSubtitle: l10n.spotDetailBrandAsSeenIn,
+                                      brandSubtitle:
+                                          l10n.spotDetailBrandAsSeenIn,
                                       brandDescription: descPreview,
                                     );
                                   }).toList();
@@ -3004,9 +2991,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                           AppLocalizations.of(
                                             context,
                                           )!.spotDetailRateThisSpot,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .titleMedium,
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.titleMedium,
                                         ),
                                         const SizedBox(height: 16),
                                         Row(
@@ -3043,9 +3030,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                     AppLocalizations.of(
                                       context,
                                     )!.spotDetailRateThisSpot,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.titleMedium,
                                   ),
                                   const SizedBox(height: 16),
                                   Row(
@@ -3143,10 +3130,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                             AppLocalizations.of(
                                               context,
                                             )!.spotDetailSignInToRateTitle,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .titleMedium
-                                                ,
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.titleMedium,
                                             textAlign: TextAlign.center,
                                           ),
                                           const SizedBox(height: 8),
@@ -3353,7 +3339,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                         mini: true,
                                         tooltip: isSatellite
                                             ? _l10n.spotDetailMapSwitchToMap
-                                            : _l10n.spotDetailMapSwitchToSatellite,
+                                            : _l10n
+                                                  .spotDetailMapSwitchToSatellite,
                                         child: Icon(
                                           isSatellite
                                               ? Icons.map
@@ -3459,7 +3446,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                     ? Text(_l10n.spotDetailLoading)
                                     : Text(
                                         _originalSpot?.name ??
-                                            _l10n.spotDetailOriginalSpotFallback,
+                                            _l10n
+                                                .spotDetailOriginalSpotFallback,
                                         style: TextStyle(
                                           color: Theme.of(
                                             context,
@@ -4000,9 +3988,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              _l10n.spotDetailRatingSubmitted(rating.toInt()),
-            ),
+            content: Text(_l10n.spotDetailRatingSubmitted(rating.toInt())),
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 2),
           ),
@@ -4226,7 +4212,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       );
 
       if (nativeSpotId == null) {
-        final error = spotService.error ?? _l10n.spotDetailFailedCreateNativeSpot;
+        final error =
+            spotService.error ?? _l10n.spotDetailFailedCreateNativeSpot;
         _showErrorSnack(error);
         return;
       }
@@ -4264,9 +4251,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           // ignore fetch failure; UI already updated via success snackbar
         }
 
-        _showSuccessSnack(
-          _l10n.spotDetailNativeCreatedDuplicateMarked,
-        );
+        _showSuccessSnack(_l10n.spotDetailNativeCreatedDuplicateMarked);
       } else {
         final error =
             spotService.error ?? _l10n.spotDetailFailedMarkDuplicateGeneric;
@@ -4527,7 +4512,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
               : _l10n.spotDetailSpotUnhiddenSuccess,
         );
       } else {
-        final error = spotService.error ??
+        final error =
+            spotService.error ??
             (newHiddenState
                 ? _l10n.spotDetailFailedHideSpot
                 : _l10n.spotDetailFailedUnhideSpot);
@@ -4684,7 +4670,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         _showSuccessSnack(_l10n.spotDetailDuplicateStatusRemovedSuccess);
       } else {
         final error =
-            spotService.error ?? _l10n.spotDetailFailedRemoveDuplicateStatusGeneric;
+            spotService.error ??
+            _l10n.spotDetailFailedRemoveDuplicateStatusGeneric;
         _showErrorSnack(error);
       }
     } catch (e) {
@@ -4706,7 +4693,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           children: [
             const CircularProgressIndicator(),
             const SizedBox(width: 16),
-            Text(AppLocalizations.of(dialogContext)!.spotDetailCheckingLinkedData),
+            Text(
+              AppLocalizations.of(dialogContext)!.spotDetailCheckingLinkedData,
+            ),
           ],
         ),
       ),
@@ -4808,9 +4797,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     const SizedBox(height: 8),
                     Text(
                       l10n.spotDetailResolveLinksBeforeDelete,
-                      style: const TextStyle(
-                        color: Colors.red,
-                      ),
+                      style: const TextStyle(color: Colors.red),
                     ),
                   ],
                   if (canDelete) ...[
@@ -4988,10 +4975,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         avatar: Icon(icon, size: 16, color: textColor),
         label: Text(label),
         backgroundColor: backgroundColor,
-        labelStyle: TextStyle(
-          color: textColor,
-          fontWeight: FontWeight.normal,
-        ),
+        labelStyle: TextStyle(color: textColor, fontWeight: FontWeight.normal),
       ),
     );
   }
@@ -5060,10 +5044,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           ],
         ),
         backgroundColor: backgroundColor,
-        labelStyle: TextStyle(
-          color: textColor,
-          fontWeight: FontWeight.normal,
-        ),
+        labelStyle: TextStyle(color: textColor, fontWeight: FontWeight.normal),
       ),
     );
   }
@@ -5077,12 +5058,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium,
-          ),
+          Text(title, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           Wrap(spacing: 8, runSpacing: 8, children: chips),
         ],
@@ -5100,12 +5076,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium,
-            ),
+            Text(title, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -5253,8 +5224,9 @@ class _SpotDetailCheckInFabState extends State<_SpotDetailCheckInFab> {
     }
     if (uid != _lastUid) {
       _lastUid = uid;
-      _myStream =
-          uid == null ? Stream.value(null) : svc.watchMyCheckIn(widget.spotId);
+      _myStream = uid == null
+          ? Stream.value(null)
+          : svc.watchMyCheckIn(widget.spotId);
     }
   }
 
@@ -5703,10 +5675,7 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      spot.name,
-                      style: theme.textTheme.titleSmall,
-                    ),
+                    Text(spot.name, style: theme.textTheme.titleSmall),
                     if (spot.description.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(
@@ -6607,9 +6576,7 @@ class _DuplicateTransferDialogState extends State<_DuplicateTransferDialog> {
               ],
               if (hasOverwriteOptions) ...[
                 if (hasTransferOptions) const SizedBox(height: 16),
-                Text(
-                  l10n.spotDetailMarkDuplicateOverwrite,
-                ),
+                Text(l10n.spotDetailMarkDuplicateOverwrite),
                 const SizedBox(height: 8),
                 if (_hasName)
                   CheckboxListTile(
@@ -8003,11 +7970,11 @@ class _SpotSaveMenu extends StatelessWidget {
                                   children: [
                                     Text(
                                       menuL10n.spotDetailAddToCustomList,
-                                      style: menuTheme.textTheme.bodyMedium
-                                          ,
+                                      style: menuTheme.textTheme.bodyMedium,
                                     ),
                                     Text(
-                                      menuL10n.spotDetailAddToCustomListSubtitle,
+                                      menuL10n
+                                          .spotDetailAddToCustomListSubtitle,
                                       style: menuTheme.textTheme.bodySmall
                                           ?.copyWith(
                                             color: menuTheme
@@ -8096,9 +8063,9 @@ class _AddToListDialogState extends State<_AddToListDialog> {
   Future<void> _createListAndAdd() async {
     final l10n = AppLocalizations.of(context)!;
     if (_nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.spotDetailListNameEmpty)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.spotDetailListNameEmpty)));
       return;
     }
 
@@ -8244,9 +8211,7 @@ class _AddToListDialogState extends State<_AddToListDialog> {
     } else {
       Navigator.of(
         context,
-      ).pop({
-        'error': errorMessage ?? l10n.spotDetailFailedAddToListGeneric,
-      });
+      ).pop({'error': errorMessage ?? l10n.spotDetailFailedAddToListGeneric});
     }
   }
 

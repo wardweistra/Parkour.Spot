@@ -611,7 +611,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String spotDetailSpotCreatedOnDateBy(String date) {
-    return 'Spot criado em $date por ';
+    return 'Spot criado $date por ';
   }
 
   @override
@@ -622,7 +622,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String spotDetailSpotImportedOnDateFrom(String date) {
-    return 'Spot importado em $date de ';
+    return 'Spot importado $date de ';
   }
 
   @override
@@ -648,12 +648,12 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String spotDetailLastUpdatedAfterCommaAnd(String date) {
-    return ', e última atualização em $date.';
+    return ', e atualizado pela última vez $date.';
   }
 
   @override
   String spotDetailLastUpdatedAfterAnd(String date) {
-    return ' e última atualização em $date.';
+    return ' e atualizado pela última vez $date.';
   }
 
   @override
@@ -1840,7 +1840,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String spotListDetailCreatedPart(String visibility, String date) {
-    return '$visibility criada em $date';
+    return '$visibility criada $date';
   }
 
   @override
@@ -1848,7 +1848,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String spotListDetailLastUpdatedPart(String date) {
-    return ', e atualizada pela última vez em $date.';
+    return ', e atualizada pela última vez $date.';
   }
 
   @override
