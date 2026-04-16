@@ -89,6 +89,16 @@ class UserLocationsOfInterestService extends ChangeNotifier {
       if (collection == null) {
         throw StateError('Not authenticated');
       }
+      if (!enabled) {
+        try {
+          await collection.doc('lastKnown').delete();
+        } on FirebaseException catch (e) {
+          if (e.code != 'not-found') {
+            rethrow;
+          }
+        }
+        return;
+      }
       try {
         await collection.doc('lastKnown').update({
           'enabled': enabled,
