@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/location_of_interest.dart';
 import '../../services/auth_service.dart';
+import '../../services/geocoding_service.dart';
 import '../../services/locale_preferences_service.dart';
 import '../../services/user_locations_of_interest_service.dart';
 import '../../utils/location_permission_utils.dart';
@@ -214,13 +215,14 @@ class AccountSettingsScreen extends StatelessWidget {
                               .updateShareLastKnownLocationForAlerts(enabled);
                           if (!prefSaved || !context.mounted) return;
                           await locationsService.setLastKnownEnabled(enabled);
+                          if (!context.mounted) return;
                           if (enabled) {
                             final position =
                                 await LocationPermissionUtils.getCurrentPositionWithPermission(
                                   context: context,
                                   showErrorMessages: false,
                                 );
-                            if (position != null) {
+                            if (position != null && context.mounted) {
                               await locationsService.upsertLastKnownLocation(
                                 latitude: position.latitude,
                                 longitude: position.longitude,
@@ -238,6 +240,22 @@ class AccountSettingsScreen extends StatelessWidget {
                           location.label ??
                               l10n.profileLocationAlertsDefaultLabel,
                         ),
+                        subtitle:
+                            location.address != null &&
+                                location.address!.isNotEmpty
+                            ? Text(
+                                location.address!,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.65),
+                                    ),
+                              )
+                            : null,
                         leading: Icon(
                           Icons.place_outlined,
                           color: Theme.of(context).colorScheme.primary,
@@ -343,7 +361,7 @@ class AccountSettingsScreen extends StatelessWidget {
     String? validationError;
     double? selectedLat = existing?.latitude;
     double? selectedLng = existing?.longitude;
-    String? selectedAddress;
+    String? selectedAddress = existing?.address;
     var enabled = existing?.enabled ?? true;
 
     await showDialog<void>(
@@ -380,6 +398,10 @@ class AccountSettingsScreen extends StatelessWidget {
                               selectedLat ?? existing?.latitude;
                           final initialLng =
                               selectedLng ?? existing?.longitude;
+                          final geo = Provider.of<GeocodingService>(
+                            dialogContext,
+                            listen: false,
+                          );
                           final result = await Navigator.of(dialogContext).push<
                               LatLng?>(
                             MaterialPageRoute(
@@ -397,6 +419,16 @@ class AccountSettingsScreen extends StatelessWidget {
                               selectedLat = result.latitude;
                               selectedLng = result.longitude;
                               validationError = null;
+                              selectedAddress = null;
+                            });
+                            final details =
+                                await geo.geocodeCoordinatesDetailsSilently(
+                                  result.latitude,
+                                  result.longitude,
+                                );
+                            if (!dialogContext.mounted) return;
+                            setDialogState(() {
+                              selectedAddress = details['address'];
                             });
                           }
                         },
@@ -464,6 +496,7 @@ class AccountSettingsScreen extends StatelessWidget {
                             latitude: selectedLat!,
                             longitude: selectedLng!,
                             enabled: enabled,
+                            address: selectedAddress,
                           )
                         : await service.updateSavedLocation(
                             id: existing.id,
@@ -471,6 +504,7 @@ class AccountSettingsScreen extends StatelessWidget {
                             latitude: selectedLat!,
                             longitude: selectedLng!,
                             enabled: enabled,
+                            address: selectedAddress,
                           );
                     if (success && dialogContext.mounted) {
                       Navigator.of(dialogContext).pop();

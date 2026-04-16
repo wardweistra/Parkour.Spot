@@ -36,7 +36,7 @@ class User {
     this.isAdmin = false,
     this.isModerator = false,
     this.featureAccess,
-    this.shareLastKnownLocationForAlerts = false,
+    this.shareLastKnownLocationForAlerts = true,
   });
 
   factory User.fromMap(Map<String, dynamic> map) {
@@ -67,7 +67,9 @@ class User {
           ? Map<String, bool>.from(map['featureAccess'])
           : null,
       shareLastKnownLocationForAlerts:
-          map['shareLastKnownLocationForAlerts'] ?? false,
+          map['shareLastKnownLocationForAlerts'] is bool
+              ? map['shareLastKnownLocationForAlerts'] as bool
+              : true,
     );
   }
 

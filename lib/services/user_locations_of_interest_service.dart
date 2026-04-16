@@ -117,6 +117,7 @@ class UserLocationsOfInterestService extends ChangeNotifier {
     required double latitude,
     required double longitude,
     bool enabled = true,
+    String? address,
   }) async {
     return _runWrite(() async {
       final uid = _uid;
@@ -126,6 +127,7 @@ class UserLocationsOfInterestService extends ChangeNotifier {
       }
       _validateCoordinates(latitude, longitude);
       final normalizedLabel = _normalizeLabel(label);
+      final trimmedAddress = address?.trim();
       await collection.add({
         'userId': uid,
         'latitude': latitude,
@@ -133,6 +135,8 @@ class UserLocationsOfInterestService extends ChangeNotifier {
         'kind': LocationOfInterestKind.saved.name,
         'enabled': enabled,
         'label': normalizedLabel,
+        if (trimmedAddress != null && trimmedAddress.isNotEmpty)
+          'address': trimmedAddress,
         'updatedAt': FieldValue.serverTimestamp(),
         'createdAt': FieldValue.serverTimestamp(),
       });
@@ -145,6 +149,7 @@ class UserLocationsOfInterestService extends ChangeNotifier {
     required double latitude,
     required double longitude,
     required bool enabled,
+    String? address,
   }) async {
     return _runWrite(() async {
       final uid = _uid;
@@ -154,6 +159,7 @@ class UserLocationsOfInterestService extends ChangeNotifier {
       }
       _validateCoordinates(latitude, longitude);
       final normalizedLabel = _normalizeLabel(label);
+      final trimmed = address?.trim();
       await collection.doc(id).update({
         'userId': uid,
         'latitude': latitude,
@@ -161,6 +167,9 @@ class UserLocationsOfInterestService extends ChangeNotifier {
         'kind': LocationOfInterestKind.saved.name,
         'enabled': enabled,
         'label': normalizedLabel,
+        'address': trimmed == null || trimmed.isEmpty
+            ? FieldValue.delete()
+            : trimmed,
         'updatedAt': FieldValue.serverTimestamp(),
       });
     });

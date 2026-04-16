@@ -11,6 +11,7 @@ class LocationOfInterest {
     required this.kind,
     required this.enabled,
     this.label,
+    this.address,
     this.updatedAt,
     this.createdAt,
   });
@@ -22,6 +23,8 @@ class LocationOfInterest {
   final LocationOfInterestKind kind;
   final bool enabled;
   final String? label;
+  /// Reverse-geocoded formatted address for display (optional).
+  final String? address;
   final DateTime? updatedAt;
   final DateTime? createdAt;
 
@@ -39,6 +42,7 @@ class LocationOfInterest {
       kind: _kindFromString(data['kind'] as String?),
       enabled: data['enabled'] as bool? ?? true,
       label: data['label'] as String?,
+      address: data['address'] as String?,
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
     );
@@ -52,6 +56,7 @@ class LocationOfInterest {
       'kind': kind.name,
       'enabled': enabled,
       'label': label,
+      'address': address,
       'updatedAt': updatedAt,
       'createdAt': createdAt,
     };
