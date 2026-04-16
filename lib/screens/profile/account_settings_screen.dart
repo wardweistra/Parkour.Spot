@@ -8,6 +8,7 @@ import '../../services/auth_service.dart';
 import '../../services/locale_preferences_service.dart';
 import '../../services/user_locations_of_interest_service.dart';
 import '../../utils/location_permission_utils.dart';
+import '../../widgets/page_scaffold.dart';
 import '../spots/location_picker_screen.dart';
 
 class AccountSettingsScreen extends StatelessWidget {
@@ -16,35 +17,23 @@ class AccountSettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.profileSettingsTitle),
-        leading: BackButton(
-          onPressed: () {
-            if (Navigator.canPop(context)) {
-              Navigator.pop(context);
-            } else {
-              context.go('/profile');
-            }
-          },
-        ),
-      ),
+    return PageScaffold(
+      title: l10n.profileSettingsTitle,
+      onBack: () {
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        } else {
+          context.go('/profile');
+        }
+      },
       body: Consumer<AuthService>(
         builder: (context, authService, _) {
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1200),
-                child: Column(
-                  children: [
-                    _buildLanguageCard(context),
-                    const SizedBox(height: 16),
-                    _buildLocationAlertsCard(context, authService),
-                  ],
-                ),
-              ),
-            ),
+          return Column(
+            children: [
+              _buildLanguageCard(context),
+              const SizedBox(height: 16),
+              _buildLocationAlertsCard(context, authService),
+            ],
           );
         },
       ),
