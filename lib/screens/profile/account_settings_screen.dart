@@ -190,18 +190,10 @@ class AccountSettingsScreen extends StatelessWidget {
               stream: locationsService.watchLocations(),
               builder: (context, snapshot) {
                 final locations = snapshot.data ?? const <LocationOfInterest>[];
-                LocationOfInterest? lastKnownLocation;
-                for (final location in locations) {
-                  if (location.isLastKnown) {
-                    lastKnownLocation = location;
-                    break;
-                  }
-                }
                 final saved = locations
                     .where((loc) => !loc.isLastKnown)
                     .toList();
-                final hasLastKnownRow = shareLastKnown || lastKnownLocation != null;
-                if (!hasLastKnownRow && saved.isEmpty) {
+                if (saved.isEmpty) {
                   return Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
@@ -216,44 +208,42 @@ class AccountSettingsScreen extends StatelessWidget {
                 }
                 return Column(
                   children: [
-                    if (hasLastKnownRow) ...[
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: Icon(
-                          Icons.my_location_outlined,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        title: Text(
-                          l10n.profileLocationAlertsShareLastKnownTitle,
-                        ),
-                        subtitle: Text(
-                          l10n.profileLocationAlertsShareLastKnownSubtitle,
-                        ),
-                        trailing: Switch(
-                          value: shareLastKnown,
-                          onChanged: (enabled) async {
-                            final prefSaved = await authService
-                                .updateShareLastKnownLocationForAlerts(enabled);
-                            if (!prefSaved || !context.mounted) return;
-                            await locationsService.setLastKnownEnabled(enabled);
-                            if (enabled) {
-                              final position =
-                                  await LocationPermissionUtils.getCurrentPositionWithPermission(
-                                    context: context,
-                                    showErrorMessages: false,
-                                  );
-                              if (position != null) {
-                                await locationsService.upsertLastKnownLocation(
-                                  latitude: position.latitude,
-                                  longitude: position.longitude,
-                                );
-                              }
-                            }
-                          },
-                        ),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(
+                        Icons.my_location_outlined,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
-                      const Divider(),
-                    ],
+                      title: Text(
+                        l10n.profileLocationAlertsShareLastKnownTitle,
+                      ),
+                      subtitle: Text(
+                        l10n.profileLocationAlertsShareLastKnownSubtitle,
+                      ),
+                      trailing: Switch(
+                        value: shareLastKnown,
+                        onChanged: (enabled) async {
+                          final prefSaved = await authService
+                              .updateShareLastKnownLocationForAlerts(enabled);
+                          if (!prefSaved || !context.mounted) return;
+                          await locationsService.setLastKnownEnabled(enabled);
+                          if (enabled) {
+                            final position =
+                                await LocationPermissionUtils.getCurrentPositionWithPermission(
+                                  context: context,
+                                  showErrorMessages: false,
+                                );
+                            if (position != null) {
+                              await locationsService.upsertLastKnownLocation(
+                                latitude: position.latitude,
+                                longitude: position.longitude,
+                              );
+                            }
+                          }
+                        },
+                      ),
+                    ),
+                    if (saved.isNotEmpty) const Divider(),
                     ...saved.map(
                       (location) => ListTile(
                         contentPadding: EdgeInsets.zero,
