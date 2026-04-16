@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../l10n/app_localizations.dart';
@@ -16,7 +17,18 @@ class AccountSettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.profileSettingsTitle)),
+      appBar: AppBar(
+        title: Text(l10n.profileSettingsTitle),
+        leading: BackButton(
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              context.go('/profile');
+            }
+          },
+        ),
+      ),
       body: Consumer<AuthService>(
         builder: (context, authService, _) {
           return SingleChildScrollView(
