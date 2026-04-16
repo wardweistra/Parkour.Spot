@@ -107,7 +107,8 @@ class AppLocalizationsDe extends AppLocalizations {
       'Store your device\'s last known location in the cloud to match nearby alerts.';
 
   @override
-  String get profileLocationAlertsSavedLocationsTitle => 'Saved locations';
+  String get profileLocationAlertsSavedLocationsTitle =>
+      'My locations of interest';
 
   @override
   String get profileLocationAlertsAddLocationButton => 'Add';

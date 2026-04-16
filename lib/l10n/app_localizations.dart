@@ -289,7 +289,7 @@ abstract class AppLocalizations {
   /// Account settings: saved locations subsection title
   ///
   /// In en, this message translates to:
-  /// **'Saved locations'**
+  /// **'My locations of interest'**
   String get profileLocationAlertsSavedLocationsTitle;
 
   /// Account settings: button label for adding a saved location

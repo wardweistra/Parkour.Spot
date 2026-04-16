@@ -193,19 +193,6 @@ class AccountSettingsScreen extends StatelessWidget {
                 final saved = locations
                     .where((loc) => !loc.isLastKnown)
                     .toList();
-                if (saved.isEmpty) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      l10n.profileLocationAlertsEmptyState,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.7),
-                      ),
-                    ),
-                  );
-                }
                 return Column(
                   children: [
                     ListTile(

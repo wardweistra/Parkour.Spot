@@ -120,7 +120,7 @@
   "@profileLocationAlertsShareLastKnownSubtitle": {
     "description": "Account settings: toggle subtitle for using last known location in alerts"
   },
-  "profileLocationAlertsSavedLocationsTitle": "Saved locations",
+  "profileLocationAlertsSavedLocationsTitle": "My locations of interest",
   "@profileLocationAlertsSavedLocationsTitle": {
     "description": "Account settings: saved locations subsection title"
   },
