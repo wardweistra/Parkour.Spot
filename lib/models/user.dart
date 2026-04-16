@@ -16,6 +16,7 @@ class User {
   final bool isAdmin;
   final bool isModerator;
   final Map<String, bool>? featureAccess;
+  final bool shareLastKnownLocationForAlerts;
 
   User({
     required this.id,
@@ -35,6 +36,7 @@ class User {
     this.isAdmin = false,
     this.isModerator = false,
     this.featureAccess,
+    this.shareLastKnownLocationForAlerts = false,
   });
 
   factory User.fromMap(Map<String, dynamic> map) {
@@ -49,14 +51,14 @@ class User {
       createdAt: map['createdAt']?.toDate(),
       lastLoginAt: map['lastLoginAt']?.toDate(),
       lastActiveAt: map['lastActiveAt']?.toDate(),
-      favoriteSpots: map['favoriteSpots'] != null 
-          ? List<String>.from(map['favoriteSpots']) 
+      favoriteSpots: map['favoriteSpots'] != null
+          ? List<String>.from(map['favoriteSpots'])
           : null,
-      wantToVisit: map['wantToVisit'] != null 
-          ? List<String>.from(map['wantToVisit']) 
+      wantToVisit: map['wantToVisit'] != null
+          ? List<String>.from(map['wantToVisit'])
           : null,
-      visited: map['visited'] != null 
-          ? List<String>.from(map['visited']) 
+      visited: map['visited'] != null
+          ? List<String>.from(map['visited'])
           : null,
       isEmailVerified: map['isEmailVerified'] ?? false,
       isAdmin: map['isAdmin'] ?? false,
@@ -64,6 +66,8 @@ class User {
       featureAccess: map['featureAccess'] != null
           ? Map<String, bool>.from(map['featureAccess'])
           : null,
+      shareLastKnownLocationForAlerts:
+          map['shareLastKnownLocationForAlerts'] ?? false,
     );
   }
 
@@ -86,6 +90,7 @@ class User {
       'isAdmin': isAdmin,
       'isModerator': isModerator,
       'featureAccess': featureAccess,
+      'shareLastKnownLocationForAlerts': shareLastKnownLocationForAlerts,
     };
   }
 
@@ -109,6 +114,7 @@ class User {
     bool? isAdmin,
     bool? isModerator,
     Map<String, bool>? featureAccess,
+    bool? shareLastKnownLocationForAlerts,
   }) {
     return User(
       id: id ?? this.id,
@@ -116,7 +122,9 @@ class User {
       displayName: displayName ?? this.displayName,
       photoURL: photoURL == _omit ? this.photoURL : photoURL as String?,
       username: username ?? this.username,
-      instagramUrl: instagramUrl == _omit ? this.instagramUrl : instagramUrl as String?,
+      instagramUrl: instagramUrl == _omit
+          ? this.instagramUrl
+          : instagramUrl as String?,
       isPublicProfile: isPublicProfile ?? this.isPublicProfile,
       createdAt: createdAt ?? this.createdAt,
       lastLoginAt: lastLoginAt ?? this.lastLoginAt,
@@ -128,6 +136,9 @@ class User {
       isAdmin: isAdmin ?? this.isAdmin,
       isModerator: isModerator ?? this.isModerator,
       featureAccess: featureAccess ?? this.featureAccess,
+      shareLastKnownLocationForAlerts:
+          shareLastKnownLocationForAlerts ??
+          this.shareLastKnownLocationForAlerts,
     );
   }
 

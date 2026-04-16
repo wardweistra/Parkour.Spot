@@ -57,6 +57,9 @@ const {
   calculateDistance,
   calculateBounds,
 } = require("./lib/geo");
+// Nearby notification fan-out will use collectionGroup("locationsOfInterest")
+// and must dedupe matches by userId because a user can match via multiple
+// anchors (e.g. lastKnown + home/work).
 const {
   cleanUndefinedValues,
   buildSpotSearchWords,

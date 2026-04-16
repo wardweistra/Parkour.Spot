@@ -14,7 +14,7 @@ class AuthService extends ChangeNotifier {
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final ProfilePictureService _profilePictureService = ProfilePictureService();
   final UserProfileService _userProfileService = UserProfileService();
-  
+
   User? get currentUser => _auth.currentUser;
   bool get isAdmin => _userProfile?.isAdmin == true;
   bool get isModerator => _userProfile?.isModerator == true;
@@ -22,13 +22,16 @@ class AuthService extends ChangeNotifier {
     final user = _auth.currentUser;
     if (user == null) return false;
     // Require email verification for password (email/password) accounts
-    final hasPasswordProvider = user.providerData.any((p) => p.providerId == 'password');
+    final hasPasswordProvider = user.providerData.any(
+      (p) => p.providerId == 'password',
+    );
     if (hasPasswordProvider) {
       return user.emailVerified;
     }
     // For other providers (e.g., Google, Apple), consider authenticated
     return true;
   }
+
   bool get isLoading => _isLoading;
 
   /// True when authenticated and user profile has loaded from Firestore.
@@ -54,10 +57,12 @@ class AuthService extends ChangeNotifier {
 
   bool _isLoading = true; // Start as loading while auth state is being restored
   app_user.User? _userProfile;
-  bool _isCopyingGooglePicture = false; // Track if Google picture copy is in progress
+  bool _isCopyingGooglePicture =
+      false; // Track if Google picture copy is in progress
   bool _isLoadingProfile = false; // Prevent concurrent profile loads
   String? _loadingProfileUid; // Track which UID is currently being loaded
-  final Map<String, Completer<void>> _profileLoadCompleters = {}; // Track profile load completers by UID
+  final Map<String, Completer<void>> _profileLoadCompleters =
+      {}; // Track profile load completers by UID
 
   app_user.User? get userProfile => _userProfile;
 
@@ -67,7 +72,8 @@ class AuthService extends ChangeNotifier {
 
   void _onAuthStateChanged(User? user) {
     if (user != null) {
-      _isLoading = true; // Stay loading until profile is fetched (fixes refresh on admin routes)
+      _isLoading =
+          true; // Stay loading until profile is fetched (fixes refresh on admin routes)
       _loadUserProfile(user.uid);
     } else {
       _userProfile = null;
@@ -93,11 +99,11 @@ class AuthService extends ChangeNotifier {
         return;
       }
     }
-    
+
     // Create a completer to track this profile load
     final completer = Completer<void>();
     _profileLoadCompleters[uid] = completer;
-    
+
     // Set flags immediately (synchronously) to prevent race conditions
     _isLoadingProfile = true;
     _loadingProfileUid = uid;
@@ -117,10 +123,7 @@ class AuthService extends ChangeNotifier {
       if (doc.exists) {
         _profileLoadError = null;
         final data = doc.data() as Map<String, dynamic>;
-        _userProfile = app_user.User.fromMap({
-          'id': uid,
-          ...data,
-        });
+        _userProfile = app_user.User.fromMap({'id': uid, ...data});
       } else {
         // Guard against overwrite: if Auth user was created long ago, Firestore
         // get() may have returned stale "no doc" (e.g. cache bug). Retry before
@@ -141,10 +144,7 @@ class AuthService extends ChangeNotifier {
             if (retryDoc.exists) {
               _profileLoadError = null;
               final data = retryDoc.data() as Map<String, dynamic>;
-              _userProfile = app_user.User.fromMap({
-                'id': uid,
-                ...data,
-              });
+              _userProfile = app_user.User.fromMap({'id': uid, ...data});
               completer.complete();
               return;
             }
@@ -172,7 +172,10 @@ class AuthService extends ChangeNotifier {
           isModerator: false,
           featureAccess: null,
         );
-        await _firestore.collection('users').doc(uid).set(_userProfile!.toMap());
+        await _firestore
+            .collection('users')
+            .doc(uid)
+            .set(_userProfile!.toMap());
       }
 
       // Note: lastActiveAt is updated by the router observer on page views/navigation
@@ -181,7 +184,7 @@ class AuthService extends ChangeNotifier {
 
       // Note: Google profile picture copy is handled in sign-in methods, not here
       // This prevents copying on every page refresh
-      
+
       // Complete the completer to signal that profile loading is done
       completer.complete();
     } catch (e) {
@@ -263,8 +266,12 @@ class AuthService extends ChangeNotifier {
     }
 
     // Check if user already has a Firebase Storage profile picture
-    if (_profilePictureService.isFirebaseStorageProfilePictureUrl(storedPhotoURL)) {
-      debugPrint('User already has Firebase Storage profile picture, skipping copy');
+    if (_profilePictureService.isFirebaseStorageProfilePictureUrl(
+      storedPhotoURL,
+    )) {
+      debugPrint(
+        'User already has Firebase Storage profile picture, skipping copy',
+      );
       return;
     }
 
@@ -286,39 +293,45 @@ class AuthService extends ChangeNotifier {
       debugPrint('Copy already in progress, skipping');
       return;
     }
-    
+
     _isCopyingGooglePicture = true;
-    
+
     try {
       // Check if file already exists in Storage before copying
       final user = _auth.currentUser;
       if (user != null) {
         final fileName = 'users/${user.uid}/profile.jpg';
         final ref = _storage.ref().child(fileName);
-        
+
         try {
           // Try to get metadata - if it exists, we already have the picture
           await ref.getMetadata();
-          debugPrint('Profile picture already exists in Storage, skipping copy');
-          
+          debugPrint(
+            'Profile picture already exists in Storage, skipping copy',
+          );
+
           // Get the download URL and update profile if it's not already set
           final existingURL = await ref.getDownloadURL();
           final storedPhotoURL = _userProfile?.photoURL;
-          
+
           if (storedPhotoURL != existingURL) {
             debugPrint('Updating profile with existing Storage URL');
             await updateProfile(photoURL: existingURL, deleteOldPhoto: false);
           }
-          
+
           return;
         } catch (e) {
           // File doesn't exist, proceed with copy
-          debugPrint('Profile picture not found in Storage, proceeding with copy');
+          debugPrint(
+            'Profile picture not found in Storage, proceeding with copy',
+          );
         }
       }
-      
+
       debugPrint('Copying Google profile picture to Storage');
-      final storageURL = await _profilePictureService.copyImageFromUrl(googlePhotoURL);
+      final storageURL = await _profilePictureService.copyImageFromUrl(
+        googlePhotoURL,
+      );
       // Update profile with Storage URL
       await updateProfile(photoURL: storageURL, deleteOldPhoto: false);
       debugPrint('Successfully copied Google profile picture to Storage');
@@ -337,18 +350,18 @@ class AuthService extends ChangeNotifier {
     try {
       _isLoading = true;
       notifyListeners();
-      
+
       await _auth.signInWithEmailAndPassword(email: email, password: password);
       // Reload user to ensure latest emailVerified state
       await _auth.currentUser?.reload();
-      
+
       if (_auth.currentUser != null) {
         await _updateLastLogin();
         // Check if user signed in with Google (might have linked accounts)
         // and copy Google profile picture if needed
         _copyGoogleProfilePictureIfNeeded();
       }
-      
+
       return true;
     } on FirebaseAuthException catch (e) {
       debugPrint('Sign in error: ${e.message}');
@@ -395,19 +408,19 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<bool> createUserWithEmailAndPassword(
-    String email, 
-    String password, 
-    String displayName
+    String email,
+    String password,
+    String displayName,
   ) async {
     try {
       _isLoading = true;
       notifyListeners();
-      
+
       final userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email, 
-        password: password
+        email: email,
+        password: password,
       );
-      
+
       if (userCredential.user != null) {
         await userCredential.user!.updateDisplayName(displayName);
         // Send email verification to the newly created user
@@ -416,7 +429,7 @@ class AuthService extends ChangeNotifier {
         } catch (e) {
           debugPrint('Failed to send verification email: $e');
         }
-        
+
         // Create user profile in Firestore
         final user = app_user.User(
           id: userCredential.user!.uid,
@@ -428,14 +441,14 @@ class AuthService extends ChangeNotifier {
           isAdmin: false,
           featureAccess: null,
         );
-        
+
         await _firestore.collection('users').doc(user.id).set(user.toMap());
         _userProfile = user;
-        
+
         // Note: Email/password accounts don't have Google profile pictures
         // so no need to copy profile picture here
       }
-      
+
       return true;
     } on FirebaseAuthException catch (e) {
       debugPrint('Sign up error: ${e.message}');
@@ -482,14 +495,14 @@ class AuthService extends ChangeNotifier {
     try {
       final now = DateTime.now();
       final uid = _auth.currentUser!.uid;
-      
+
       // Use update() to only modify lastLoginAt and lastActiveAt
       // This ensures createdAt is never overwritten
       await _firestore.collection('users').doc(uid).update({
         'lastLoginAt': now,
         'lastActiveAt': now, // Also update lastActiveAt on login
       });
-      
+
       // Update local profile if it exists
       if (_userProfile != null) {
         _userProfile = _userProfile!.copyWith(
@@ -514,13 +527,13 @@ class AuthService extends ChangeNotifier {
     try {
       final now = DateTime.now();
       final uid = _auth.currentUser!.uid;
-      
+
       // Use update() to only modify lastActiveAt
       // This ensures createdAt and other fields are never overwritten
       await _firestore.collection('users').doc(uid).update({
         'lastActiveAt': now,
       });
-      
+
       // Update local profile if it exists
       if (_userProfile != null) {
         _userProfile = _userProfile!.copyWith(lastActiveAt: now);
@@ -546,7 +559,9 @@ class AuthService extends ChangeNotifier {
     bool removeInstagramUrl = false,
   }) async {
     if (_auth.currentUser == null || _userProfile == null) {
-      debugPrint('Cannot update profile: user not authenticated or profile not loaded');
+      debugPrint(
+        'Cannot update profile: user not authenticated or profile not loaded',
+      );
       return false;
     }
 
@@ -627,20 +642,27 @@ class AuthService extends ChangeNotifier {
   /// Returns true on success, false on failure
   Future<bool> updateUsername(String username) async {
     if (_auth.currentUser == null || _userProfile == null) {
-      debugPrint('Cannot update username: user not authenticated or profile not loaded');
+      debugPrint(
+        'Cannot update username: user not authenticated or profile not loaded',
+      );
       return false;
     }
 
     try {
       final userId = _auth.currentUser!.uid;
-      final success = await _userProfileService.updateUsername(userId, username);
-      
+      final success = await _userProfileService.updateUsername(
+        userId,
+        username,
+      );
+
       if (success) {
         // Update local profile
-        _userProfile = _userProfile!.copyWith(username: username.trim().toLowerCase());
+        _userProfile = _userProfile!.copyWith(
+          username: username.trim().toLowerCase(),
+        );
         notifyListeners();
       }
-      
+
       return success;
     } catch (e) {
       debugPrint('Error updating username: $e');
@@ -652,23 +674,54 @@ class AuthService extends ChangeNotifier {
   /// Returns true on success, false on failure
   Future<bool> updateProfilePrivacy(bool isPublic) async {
     if (_auth.currentUser == null || _userProfile == null) {
-      debugPrint('Cannot update profile privacy: user not authenticated or profile not loaded');
+      debugPrint(
+        'Cannot update profile privacy: user not authenticated or profile not loaded',
+      );
       return false;
     }
 
     try {
       final userId = _auth.currentUser!.uid;
-      final success = await _userProfileService.updateProfilePrivacy(userId, isPublic);
-      
+      final success = await _userProfileService.updateProfilePrivacy(
+        userId,
+        isPublic,
+      );
+
       if (success) {
         // Update local profile
         _userProfile = _userProfile!.copyWith(isPublicProfile: isPublic);
         notifyListeners();
       }
-      
+
       return success;
     } catch (e) {
       debugPrint('Error updating profile privacy: $e');
+      return false;
+    }
+  }
+
+  /// Update whether the user allows storing last-known location for alerts.
+  Future<bool> updateShareLastKnownLocationForAlerts(bool enabled) async {
+    if (_auth.currentUser == null || _userProfile == null) {
+      debugPrint(
+        'Cannot update location sharing preference: user not authenticated or profile not loaded',
+      );
+      return false;
+    }
+
+    try {
+      final userId = _auth.currentUser!.uid;
+      await _firestore.collection('users').doc(userId).update({
+        'shareLastKnownLocationForAlerts': enabled,
+      });
+
+      _userProfile = _userProfile!.copyWith(
+        shareLastKnownLocationForAlerts: enabled,
+      );
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Error updating location sharing preference: $e');
       return false;
     }
   }

@@ -25,6 +25,7 @@ import 'package:parkour_spot/services/spot_check_in_service.dart';
 import 'package:parkour_spot/services/feature_access_service.dart';
 import 'package:parkour_spot/services/pwa_install_service.dart';
 import 'package:parkour_spot/services/user_profile_service.dart';
+import 'package:parkour_spot/services/user_locations_of_interest_service.dart';
 import 'package:parkour_spot/services/locale_preferences_service.dart';
 import 'package:parkour_spot/router/app_router.dart';
 import 'package:parkour_spot/firebase_options.dart';
@@ -190,6 +191,18 @@ class ParkourSpotApp extends StatelessWidget {
           create: (_) => PwaInstallService()..initialize(),
         ),
         ChangeNotifierProvider(create: (_) => UserProfileService()),
+        ChangeNotifierProxyProvider<AuthService, UserLocationsOfInterestService>(
+          create: (context) {
+            final authService = Provider.of<AuthService>(
+              context,
+              listen: false,
+            );
+            return UserLocationsOfInterestService(authService);
+          },
+          update: (context, authService, previous) {
+            return previous ?? UserLocationsOfInterestService(authService);
+          },
+        ),
         ChangeNotifierProvider(
           create: (_) => LocalePreferencesService()..loadFromStorage(),
         ),

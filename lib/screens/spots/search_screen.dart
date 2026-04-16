@@ -16,6 +16,7 @@ import '../../services/geocoding_service.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/spot_list_service.dart';
+import '../../services/user_locations_of_interest_service.dart';
 import '../../models/spot.dart';
 import '../../models/spot_list.dart';
 import '../../widgets/spot_card.dart';
@@ -41,10 +42,12 @@ class _AutocompleteOverlayContent extends StatefulWidget {
   });
 
   @override
-  State<_AutocompleteOverlayContent> createState() => _AutocompleteOverlayContentState();
+  State<_AutocompleteOverlayContent> createState() =>
+      _AutocompleteOverlayContentState();
 }
 
-class _AutocompleteOverlayContentState extends State<_AutocompleteOverlayContent> {
+class _AutocompleteOverlayContentState
+    extends State<_AutocompleteOverlayContent> {
   late ScrollController _scrollController;
 
   /// Last highlight index we scrolled to match. RawAutocomplete defaults highlight to 0; we must
@@ -72,13 +75,17 @@ class _AutocompleteOverlayContentState extends State<_AutocompleteOverlayContent
     String descAt(List<Map<String, dynamic>> list, int i) =>
         list[i]['description'] as String? ?? '';
     return descAt(oldList, 0) != descAt(newList, 0) ||
-        descAt(oldList, oldList.length - 1) != descAt(newList, newList.length - 1);
+        descAt(oldList, oldList.length - 1) !=
+            descAt(newList, newList.length - 1);
   }
 
   @override
   void didUpdateWidget(_AutocompleteOverlayContent oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (_optionsListMeaningfullyChanged(oldWidget.optionsList, widget.optionsList)) {
+    if (_optionsListMeaningfullyChanged(
+      oldWidget.optionsList,
+      widget.optionsList,
+    )) {
       _lastSyncedHighlightIndex = null;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted || !_scrollController.hasClients) return;
@@ -137,7 +144,9 @@ class _AutocompleteOverlayContentState extends State<_AutocompleteOverlayContent
                 return Container(
                   decoration: isSelected
                       ? BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.15),
                           border: Border(
                             left: BorderSide(
                               color: Theme.of(context).colorScheme.primary,
@@ -170,7 +179,8 @@ class _AutocompleteOverlayContentState extends State<_AutocompleteOverlayContent
                             overflow: TextOverflow.ellipsis,
                             style: isSelected
                                 ? TextStyle(
-                                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
+                                    color: Theme.of(context).colorScheme.primary
+                                        .withValues(alpha: 0.8),
                                   )
                                 : null,
                           )
@@ -195,12 +205,7 @@ class ReliableIcon extends StatelessWidget {
   final double? size;
   final Color? color;
 
-  const ReliableIcon({
-    super.key,
-    required this.icon,
-    this.size,
-    this.color,
-  });
+  const ReliableIcon({super.key, required this.icon, this.size, this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -216,26 +221,27 @@ class ReliableIcon extends StatelessWidget {
         textDirection: TextDirection.ltr,
       );
     }
-    
-    return Icon(
-      icon,
-      size: size,
-      color: color,
-    );
+
+    return Icon(icon, size: size, color: color);
   }
 }
 
 class SearchScreen extends StatefulWidget {
   final String? initialLocationQuery;
   final String? initialListId;
-  
-  const SearchScreen({super.key, this.initialLocationQuery, this.initialListId});
+
+  const SearchScreen({
+    super.key,
+    this.initialLocationQuery,
+    this.initialListId,
+  });
 
   @override
   State<SearchScreen> createState() => SearchScreenState();
 }
 
-class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixin {
+class SearchScreenState extends State<SearchScreen>
+    with TickerProviderStateMixin {
   GoogleMapController? _mapController;
   bool _isGettingLocation = false;
   bool _isLocationPermissionDenied = false;
@@ -245,19 +251,23 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   BitmapDescriptor? _userLocationIcon;
   BitmapDescriptor? _spotDefaultIcon; // Web fallback
   BitmapDescriptor? _spotSelectedIcon; // Web fallback
-  BitmapDescriptor? _spotHighlightedIcon; // Web fallback for black highlighted spots
-  BitmapDescriptor? _spotSelectedHighlightedIcon; // Web fallback for selected+highlighted spots (lighter grey)
+  BitmapDescriptor?
+  _spotHighlightedIcon; // Web fallback for black highlighted spots
+  BitmapDescriptor?
+  _spotSelectedHighlightedIcon; // Web fallback for selected+highlighted spots (lighter grey)
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   String _searchQuery = '';
   String? _placesSessionToken;
-  TextEditingController? _autocompleteController; // Keep reference to autocomplete's controller
+  TextEditingController?
+  _autocompleteController; // Keep reference to autocomplete's controller
   FocusNode? _autocompleteFocusNode; // Focus node for search field
   List<Spot> _visibleSpots = [];
   List<Spot> _loadedSpots = []; // Spots loaded for the current map view
   Set<Marker> _markers = {};
   Spot? _selectedSpot;
-  bool _isLoadingSpotsForView = false; // Loading state for spots within current view
+  bool _isLoadingSpotsForView =
+      false; // Loading state for spots within current view
   bool _isSearchingLocation = false; // Loading state for location search
   int? _totalSpotsInView; // Total unfiltered spots in current bounds
   int? _bestShownCount; // Number of ranked spots returned (up to 100)
@@ -269,8 +279,10 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   double _lastKnownZoom = 14.0;
   // Filters
   String? _filterArea; // "amenities" | "source" | null (default = amenities)
-  String? _selectedSpotSource; // null = all sources, "" = native only, string = specific source ID
-  List<String> _spotAccess = []; // when amenities: ["public", "restricted", "paid"] for OR query
+  String?
+  _selectedSpotSource; // null = all sources, "" = native only, string = specific source ID
+  List<String> _spotAccess =
+      []; // when amenities: ["public", "restricted", "paid"] for OR query
   bool? _spotFacilitiesCovered; // when amenities: true = "yes"
   bool? _spotFacilitiesLighting; // when amenities: true = "yes"
   bool? _spotFacilitiesWaterTap; // when amenities: true = "yes"
@@ -282,12 +294,15 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   bool _showFiltersDialog = false; // Controls filters dialog visibility
   bool _hasRequestedSyncSourcesForFilters = false;
   SpotService? _spotServiceRef; // To attach a listener for spot updates
-  SyncSourceService? _syncSourceServiceRef; // To attach a listener for sync source updates
-  SearchStateService? _searchStateServiceRef; // To attach a listener for search state updates
+  SyncSourceService?
+  _syncSourceServiceRef; // To attach a listener for sync source updates
+  SearchStateService?
+  _searchStateServiceRef; // To attach a listener for search state updates
   LatLng? _longPressedLocation; // Location from long press on map
   Timer? _longPressTimer; // Timer for detecting long press on mobile web
   Offset? _longPressStartPosition; // Starting position for long press detection
-  bool _longPressHandled = false; // Flag to track if long press was successfully handled
+  bool _longPressHandled =
+      false; // Flag to track if long press was successfully handled
   String? _spotIdToLocate; // Spot ID to locate from query parameter
   Timer? _locationPollingTimer; // Timer for polling user location periodically
   // Spot list highlighting
@@ -298,14 +313,15 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   Set<String> _highlightedSpotIds = {}; // Spot IDs from selected list
   DateTime? _lastAutocompleteSpotSelection; // Guard against mobile tap-through
   bool _hasSetInitialAutocompleteQuery = false;
-  bool _hasAutocompleteOptions = false; // True when options overlay has suggestions (for Enter-key behavior)
+  bool _hasAutocompleteOptions =
+      false; // True when options overlay has suggestions (for Enter-key behavior)
 
   void _onSpotsChanged() {
     if (mounted) {
       _updateVisibleSpots();
     }
   }
-  
+
   void _onSyncSourcesChanged() {
     // Sync sources changed - no action needed for single source selection
   }
@@ -314,7 +330,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     if (!mounted) return;
     final searchState = _searchStateServiceRef;
     if (searchState == null) return;
-    
+
     // Update local state from SearchStateService
     final newFilterArea = searchState.filterArea;
     final newSelectedSpotSource = searchState.selectedSpotSource;
@@ -329,8 +345,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     final newAttributeFilterMode = searchState.attributeFilterMode;
     final newIsSatelliteView = searchState.isSatellite;
     final newSelectedListId = searchState.selectedListId;
-    
-    final filterChanged = _filterArea != newFilterArea ||
+
+    final filterChanged =
+        _filterArea != newFilterArea ||
         _selectedSpotSource != newSelectedSpotSource ||
         !listEquals(_spotAccess, newSpotAccess) ||
         _spotFacilitiesCovered != newSpotFacilitiesCovered ||
@@ -342,7 +359,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         !listEquals(_spotFeatures, newSpotFeatures) ||
         _attributeFilterMode != newAttributeFilterMode;
     final listIdChanged = _selectedListId != newSelectedListId;
-    
+
     setState(() {
       _isSatelliteView = newIsSatelliteView;
       _filterArea = newFilterArea;
@@ -358,7 +375,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       _attributeFilterMode = newAttributeFilterMode;
       _selectedListId = newSelectedListId;
     });
-    
+
     if (listIdChanged) {
       if (newSelectedListId != null) {
         _loadSpotList(newSelectedListId);
@@ -372,7 +389,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         });
       }
     }
-    
+
     if (filterChanged && _mapController != null) {
       _loadSpotsForCurrentView();
     } else if (filterChanged) {
@@ -393,10 +410,13 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
           _goodFor.isNotEmpty ||
           _spotFeatures.isNotEmpty;
     }
-    final hasFolderFilter = _selectedSpotSource != null &&
+    final hasFolderFilter =
+        _selectedSpotSource != null &&
         _selectedSpotSource!.isNotEmpty &&
         searchState != null &&
-        searchState.getSelectedFoldersForSource(_selectedSpotSource!).isNotEmpty;
+        searchState
+            .getSelectedFoldersForSource(_selectedSpotSource!)
+            .isNotEmpty;
     return _selectedSpotSource != null || hasFolderFilter;
   }
 
@@ -405,34 +425,39 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     super.initState();
     // Removed automatic location fetching - now user-controlled
     _searchController.addListener(_onSearchChanged);
-    
+
     // Check permission status on initialization to show correct icon
     _checkLocationPermission();
-    
+
     // Set initial location query if provided (displayed via Autocomplete fieldViewBuilder)
-    if (widget.initialLocationQuery != null && widget.initialLocationQuery!.isNotEmpty) {
+    if (widget.initialLocationQuery != null &&
+        widget.initialLocationQuery!.isNotEmpty) {
       _searchQuery = widget.initialLocationQuery!;
     }
-    
+
     // Set initial list ID - prioritize URL parameter, then fall back to stored value
     // Will be set from SearchStateService in post-frame callback if not provided via URL
-    
+
     _loadUserLocationIcon();
     _loadSpotIcons();
-    
+
     // Initialize bottom sheet animation
     _bottomSheetAnimationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _bottomSheetAnimation = Tween<double>(
-      begin: 0.09, // Very compact when collapsed - minimal footprint
-      end: 0.75,   // Less expanded - still good for browsing but leaves more map visible
-    ).animate(CurvedAnimation(
-      parent: _bottomSheetAnimationController,
-      curve: Curves.easeInOut,
-    ));
-    
+    _bottomSheetAnimation =
+        Tween<double>(
+          begin: 0.09, // Very compact when collapsed - minimal footprint
+          end:
+              0.75, // Less expanded - still good for browsing but leaves more map visible
+        ).animate(
+          CurvedAnimation(
+            parent: _bottomSheetAnimationController,
+            curve: Curves.easeInOut,
+          ),
+        );
+
     // Initialize image page controller
     _imagePageController = PageController();
 
@@ -440,28 +465,33 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     // Safe to call with listen: false in initState.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Listen to SearchStateService changes to update filters when storage loads
-      _searchStateServiceRef = Provider.of<SearchStateService>(context, listen: false);
+      _searchStateServiceRef = Provider.of<SearchStateService>(
+        context,
+        listen: false,
+      );
       _searchStateServiceRef!.addListener(_onSearchStateChanged);
-      
+
       // Initial state load (will be updated when storage finishes loading via listener)
       // Prioritize URL parameter over stored value
       final listIdFromUrl = widget.initialListId;
       final listIdFromStorage = _searchStateServiceRef!.selectedListId;
       final initialListId = listIdFromUrl ?? listIdFromStorage;
-      
+
       // If URL has a listId, save it to storage
       if (listIdFromUrl != null && listIdFromUrl != listIdFromStorage) {
         _searchStateServiceRef!.setSelectedListId(listIdFromUrl);
       }
-      
+
       setState(() {
         _isSatelliteView = _searchStateServiceRef!.isSatellite;
         _filterArea = _searchStateServiceRef!.filterArea;
         _selectedSpotSource = _searchStateServiceRef!.selectedSpotSource;
         _spotAccess = List<String>.from(_searchStateServiceRef!.spotAccess);
         _spotFacilitiesCovered = _searchStateServiceRef!.spotFacilitiesCovered;
-        _spotFacilitiesLighting = _searchStateServiceRef!.spotFacilitiesLighting;
-        _spotFacilitiesWaterTap = _searchStateServiceRef!.spotFacilitiesWaterTap;
+        _spotFacilitiesLighting =
+            _searchStateServiceRef!.spotFacilitiesLighting;
+        _spotFacilitiesWaterTap =
+            _searchStateServiceRef!.spotFacilitiesWaterTap;
         _spotFacilitiesToilet = _searchStateServiceRef!.spotFacilitiesToilet;
         _spotFacilitiesParking = _searchStateServiceRef!.spotFacilitiesParking;
         _goodFor = List<String>.from(_searchStateServiceRef!.goodFor);
@@ -469,7 +499,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         _attributeFilterMode = _searchStateServiceRef!.attributeFilterMode;
         _selectedListId = initialListId;
       });
-      
+
       // If we have a list ID (from URL or storage), load it
       if (initialListId != null) {
         _loadSpotList(initialListId);
@@ -482,7 +512,10 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       _spotServiceRef!.addListener(_onSpotsChanged);
 
       // Listen to SyncSourceService changes to update selected sources
-      _syncSourceServiceRef = Provider.of<SyncSourceService>(context, listen: false);
+      _syncSourceServiceRef = Provider.of<SyncSourceService>(
+        context,
+        listen: false,
+      );
       _syncSourceServiceRef!.addListener(_onSyncSourcesChanged);
     });
   }
@@ -518,7 +551,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     } catch (_) {}
 
     final listId = listIdFromUrl ?? widget.initialListId;
-    final hasFocusIntent = (locateSpotId != null && locateSpotId.isNotEmpty) ||
+    final hasFocusIntent =
+        (locateSpotId != null && locateSpotId.isNotEmpty) ||
         (listId != null && listId.isNotEmpty);
 
     // Zoom nudge forces tile refresh when map was built off-screen. Skip when
@@ -595,22 +629,27 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   }
 
   void _ensureSyncSourcesLoaded({bool force = false}) {
-    final syncService = _syncSourceServiceRef ??
+    final syncService =
+        _syncSourceServiceRef ??
         Provider.of<SyncSourceService>(context, listen: false);
 
     if (syncService.isLoadingSummaries) return;
     if (!force) {
       if (syncService.sourceSummaries.isNotEmpty) return;
-      if (_hasRequestedSyncSourcesForFilters && syncService.summariesError == null) return;
+      if (_hasRequestedSyncSourcesForFilters &&
+          syncService.summariesError == null)
+        return;
     }
 
     _hasRequestedSyncSourcesForFilters = true;
     unawaited(
-      syncService.fetchSyncSourceSummaries(includeInactive: false).whenComplete(() {
-        if (syncService.summariesError != null) {
-          _hasRequestedSyncSourcesForFilters = false;
-        }
-      }),
+      syncService.fetchSyncSourceSummaries(includeInactive: false).whenComplete(
+        () {
+          if (syncService.summariesError != null) {
+            _hasRequestedSyncSourcesForFilters = false;
+          }
+        },
+      ),
     );
   }
 
@@ -619,48 +658,54 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   double _getZoomLevelForPlace(Map<String, dynamic> details) {
     // Get place types from the place details
     final types = details['types'] as List<dynamic>? ?? [];
-    
+
     // Country level - zoom out significantly
     if (types.contains('country')) {
       return 6.0;
     }
-    
+
     // Administrative area level 1 (state/province) - moderate zoom
     if (types.contains('administrative_area_level_1')) {
       return 8.0;
     }
-    
+
     // Administrative area level 2 (county) - closer zoom
     if (types.contains('administrative_area_level_2')) {
       return 10.0;
     }
-    
+
     // City level - closer zoom
-    if (types.contains('locality') || types.contains('administrative_area_level_3')) {
+    if (types.contains('locality') ||
+        types.contains('administrative_area_level_3')) {
       return 12.0;
     }
-    
+
     // Neighborhood level - close zoom
     if (types.contains('sublocality') || types.contains('neighborhood')) {
       return 13.0;
     }
-    
+
     // Specific places (restaurants, businesses, etc.) - very close zoom
-    if (types.contains('establishment') || types.contains('point_of_interest')) {
+    if (types.contains('establishment') ||
+        types.contains('point_of_interest')) {
       return 15.0;
     }
-    
+
     // Default zoom level for other types
     return 13.5;
   }
 
-  Future<void> _selectPlaceSuggestion(Map<String, dynamic> suggestion, {bool manageLoadingState = true, bool fromInitialQuery = false}) async {
+  Future<void> _selectPlaceSuggestion(
+    Map<String, dynamic> suggestion, {
+    bool manageLoadingState = true,
+    bool fromInitialQuery = false,
+  }) async {
     if (manageLoadingState) {
       setState(() {
         _isSearchingLocation = true;
       });
     }
-    
+
     try {
       final geocoding = Provider.of<GeocodingService>(context, listen: false);
       final placeId = suggestion['placeId'] as String?;
@@ -688,21 +733,26 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       }
       final double? lat = (details['latitude'] as num?)?.toDouble();
       final double? lng = (details['longitude'] as num?)?.toDouble();
-      final String? formatted = details['formattedAddress'] as String? ?? details['formatted_address'] as String?;
-      
+      final String? formatted =
+          details['formattedAddress'] as String? ??
+          details['formatted_address'] as String?;
+
       if (lat != null && lng != null && _mapController != null) {
         final zoomLevel = _getZoomLevelForPlace(details);
-        await _mapController!.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(
-          target: LatLng(lat, lng),
-          zoom: zoomLevel,
-        )));
+        await _mapController!.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(target: LatLng(lat, lng), zoom: zoomLevel),
+          ),
+        );
       }
       // Update search field - use autocomplete controller if available, otherwise fall back to _searchController
       final controllerToUpdate = _autocompleteController ?? _searchController;
       final newText = formatted ?? (suggestion['description'] as String? ?? '');
       setState(() {
         controllerToUpdate.text = newText;
-        controllerToUpdate.selection = TextSelection.fromPosition(TextPosition(offset: controllerToUpdate.text.length));
+        controllerToUpdate.selection = TextSelection.fromPosition(
+          TextPosition(offset: controllerToUpdate.text.length),
+        );
         _searchQuery = newText; // Keep _searchQuery in sync
         // Guard against mobile tap-through: ignore map taps briefly after any autocomplete selection
         _lastAutocompleteSpotSelection = DateTime.now();
@@ -732,12 +782,16 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   String _formatSpotSuggestionLocation(Spot spot) {
     final city = spot.city?.trim();
     final trimmedCountryCode = spot.countryCode?.trim();
-    final countryCode = trimmedCountryCode != null && trimmedCountryCode.isNotEmpty
+    final countryCode =
+        trimmedCountryCode != null && trimmedCountryCode.isNotEmpty
         ? trimmedCountryCode.toUpperCase()
         : null;
     final address = spot.address?.trim();
 
-    if (city != null && city.isNotEmpty && countryCode != null && countryCode.isNotEmpty) {
+    if (city != null &&
+        city.isNotEmpty &&
+        countryCode != null &&
+        countryCode.isNotEmpty) {
       return '$city, $countryCode';
     }
     if (city != null && city.isNotEmpty) {
@@ -798,7 +852,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   }
 
   /// Fetches autocomplete options from both geocoding and spot search (Future.wait).
-  Future<List<Map<String, dynamic>>> _buildAutocompleteOptions(String query) async {
+  Future<List<Map<String, dynamic>>> _buildAutocompleteOptions(
+    String query,
+  ) async {
     final trimmedQuery = query.trim();
     if (trimmedQuery.isEmpty) return [];
 
@@ -841,10 +897,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       final matchingSpots = results[1] as List<Spot>;
 
       final combinedOptions = <Map<String, dynamic>>[
-        ...locationSuggestions.map((suggestion) => {
-              ...suggestion,
-              'optionType': 'place',
-            }),
+        ...locationSuggestions.map(
+          (suggestion) => {...suggestion, 'optionType': 'place'},
+        ),
       ];
 
       for (final spot in matchingSpots) {
@@ -874,7 +929,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
 
     try {
       final geocoding = Provider.of<GeocodingService>(context, listen: false);
-      
+
       // Ensure session token
       _placesSessionToken ??= const Uuid().v4();
 
@@ -902,11 +957,16 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       // If we have results, select the first one
       if (results.isNotEmpty) {
         // Check if this search came from an initial location query (country/city route)
-        final fromInitialQuery = widget.initialLocationQuery != null && 
-                                  widget.initialLocationQuery!.isNotEmpty &&
-                                  _searchQuery == widget.initialLocationQuery;
+        final fromInitialQuery =
+            widget.initialLocationQuery != null &&
+            widget.initialLocationQuery!.isNotEmpty &&
+            _searchQuery == widget.initialLocationQuery;
         // Don't let _selectPlaceSuggestion manage loading state since we're managing it here
-        await _selectPlaceSuggestion(results.first, manageLoadingState: false, fromInitialQuery: fromInitialQuery);
+        await _selectPlaceSuggestion(
+          results.first,
+          manageLoadingState: false,
+          fromInitialQuery: fromInitialQuery,
+        );
         // Clear loading state after selection completes
         setState(() {
           _isSearchingLocation = false;
@@ -929,12 +989,12 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     // Only show as denied if it's permanently denied, not if it's just not asked yet
     final isDenied = permission == LocationPermission.deniedForever;
     final isGranted = LocationPermissionUtils.isPermissionGranted(permission);
-    
+
     if (mounted) {
       setState(() {
         _isLocationPermissionDenied = isDenied;
       });
-      
+
       // Start or stop location polling based on permission status
       if (isGranted) {
         // Start location polling - it will get the current position
@@ -956,14 +1016,16 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       context: context,
       showErrorMessages: true,
     );
-    
-    final isPermissionGranted = LocationPermissionUtils.isPermissionGranted(permission);
-    
+
+    final isPermissionGranted = LocationPermissionUtils.isPermissionGranted(
+      permission,
+    );
+
     if (mounted) {
       setState(() {
         _isLocationPermissionDenied = !isPermissionGranted;
       });
-      
+
       // Start or stop location polling based on permission status
       if (isPermissionGranted) {
         _startLocationPolling();
@@ -985,15 +1047,12 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     final searchState = Provider.of<SearchStateService>(context, listen: false);
     final cachedLat = searchState.lastKnownUserLat;
     final cachedLng = searchState.lastKnownUserLng;
-    
+
     if (cachedLat != null && cachedLng != null && _mapController != null) {
       // Center on cached location immediately
       _mapController!.animateCamera(
         CameraUpdate.newCameraPosition(
-          CameraPosition(
-            target: LatLng(cachedLat, cachedLng),
-            zoom: 13.5,
-          ),
+          CameraPosition(target: LatLng(cachedLat, cachedLng), zoom: 13.5),
         ),
       );
       _lastKnownZoom = 13.5;
@@ -1012,10 +1071,14 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
           _currentPosition = position;
           _isLocationPermissionDenied = false;
         });
-        
+
         // Save to cache
-        await searchState.saveLastKnownUserLocation(position.latitude, position.longitude);
-        
+        await searchState.saveLastKnownUserLocation(
+          position.latitude,
+          position.longitude,
+        );
+        await _syncLastKnownLocationForAlerts(position);
+
         // Move camera to fresh user location if map is ready
         if (_mapController != null) {
           _mapController!.animateCamera(
@@ -1035,7 +1098,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.exploreLocationError('$e')),
+            content: Text(
+              AppLocalizations.of(context)!.exploreLocationError('$e'),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -1062,11 +1127,18 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         setState(() {
           _currentPosition = position;
         });
-        
+
         // Save to cache
-        final searchState = Provider.of<SearchStateService>(context, listen: false);
-        await searchState.saveLastKnownUserLocation(position.latitude, position.longitude);
-        
+        final searchState = Provider.of<SearchStateService>(
+          context,
+          listen: false,
+        );
+        await searchState.saveLastKnownUserLocation(
+          position.latitude,
+          position.longitude,
+        );
+        await _syncLastKnownLocationForAlerts(position);
+
         // Refresh markers to update location marker position
         _updateVisibleSpots();
       }
@@ -1076,16 +1148,32 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     }
   }
 
+  Future<void> _syncLastKnownLocationForAlerts(Position position) async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    if (!authService.isAuthenticated ||
+        authService.userProfile?.shareLastKnownLocationForAlerts != true) {
+      return;
+    }
+    final locationsService = Provider.of<UserLocationsOfInterestService>(
+      context,
+      listen: false,
+    );
+    await locationsService.upsertLastKnownLocation(
+      latitude: position.latitude,
+      longitude: position.longitude,
+    );
+  }
+
   /// Starts polling for user location periodically
   void _startLocationPolling() {
     // Cancel existing timer if any
     _stopLocationPolling();
-    
+
     // Poll immediately first
     if (mounted) {
       _updateLocationWithoutCentering();
     }
-    
+
     // Then poll every 5 seconds
     _locationPollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (mounted) {
@@ -1107,21 +1195,26 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     if (_mapController == null) {
       return;
     }
-    
+
     setState(() {
       _isLoadingSpotsForView = true;
     });
 
     try {
       final bounds = await _mapController!.getVisibleRegion();
-      
+
       if (!mounted) return;
       final spotService = Provider.of<SpotService>(context, listen: false);
-      final searchState = Provider.of<SearchStateService>(context, listen: false);
-      
+      final searchState = Provider.of<SearchStateService>(
+        context,
+        listen: false,
+      );
+
       List<String> selectedFolders = [];
       if (_selectedSpotSource != null && _selectedSpotSource!.isNotEmpty) {
-        selectedFolders = searchState.getSelectedFoldersForSource(_selectedSpotSource!);
+        selectedFolders = searchState.getSelectedFoldersForSource(
+          _selectedSpotSource!,
+        );
       }
 
       final ranked = await spotService.getTopRankedSpotsInBounds(
@@ -1131,7 +1224,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         bounds.northeast.longitude,
         limit: 100,
         filterArea: _filterArea ?? 'amenities',
-        spotSource: (_filterArea ?? 'amenities') == 'amenities' ? null : _selectedSpotSource,
+        spotSource: (_filterArea ?? 'amenities') == 'amenities'
+            ? null
+            : _selectedSpotSource,
         folders: selectedFolders.isEmpty ? null : selectedFolders,
         spotAccess: _spotAccess.isEmpty ? null : _spotAccess,
         spotFacilitiesCovered: _spotFacilitiesCovered,
@@ -1146,7 +1241,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       _loadedSpots = (ranked['spots'] as List<Spot>?) ?? <Spot>[];
       _totalSpotsInView = ranked['totalCount'] as int?;
       _bestShownCount = ranked['shownCount'] as int?;
-      
+
       // All filtering is now done at database level, just update visible spots
       _updateVisibleSpots();
     } catch (e) {
@@ -1178,19 +1273,32 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         Text(
           l10n.exploreFilterBy,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-              ),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.7),
+          ),
         ),
         const SizedBox(height: 8),
         SegmentedButton<String?>(
           segments: [
-            ButtonSegment(value: 'amenities', label: Text(l10n.exploreFilterAmenities), icon: const Icon(Icons.workspace_premium)),
-            ButtonSegment(value: 'source', label: Text(l10n.exploreFilterSources), icon: const Icon(Icons.folder)),
+            ButtonSegment(
+              value: 'amenities',
+              label: Text(l10n.exploreFilterAmenities),
+              icon: const Icon(Icons.workspace_premium),
+            ),
+            ButtonSegment(
+              value: 'source',
+              label: Text(l10n.exploreFilterSources),
+              icon: const Icon(Icons.folder),
+            ),
           ],
           selected: {selectedFilterArea},
           onSelectionChanged: (Set<String?> selected) {
             final value = selected.first;
-            Provider.of<SearchStateService>(context, listen: false).setFilterArea(value);
+            Provider.of<SearchStateService>(
+              context,
+              listen: false,
+            ).setFilterArea(value);
             setState(() {
               _filterArea = value;
             });
@@ -1200,7 +1308,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
             // Defer spot reload so the tab switch paints immediately
             if (_mapController != null) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted && _mapController != null) _loadSpotsForCurrentView();
+                if (mounted && _mapController != null)
+                  _loadSpotsForCurrentView();
               });
             }
           },
@@ -1211,8 +1320,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         else
           Consumer<SyncSourceService>(
             builder: (context, syncService, child) {
-              final summaries = List<SyncSourceSummary>.from(syncService.sourceSummaries)
-                ..sort((a, b) => a.name.compareTo(b.name));
+              final summaries = List<SyncSourceSummary>.from(
+                syncService.sourceSummaries,
+              )..sort((a, b) => a.name.compareTo(b.name));
               return _buildSourceFilters(syncService, summaries);
             },
           ),
@@ -1248,16 +1358,18 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
           children: [
             Text(
               l10n.exploreSpotAccessTitle,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             Text(
               l10n.exploreSpotAccessSubtitle,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                  ),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
             ),
             const SizedBox(height: 12),
             Wrap(
@@ -1277,7 +1389,10 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                 ...keys.map((key) {
                   final label = SpotAttributes.getLabel('access', key);
                   final icon = SpotAttributes.getIcon('access', key);
-                  final description = SpotAttributes.getDescription('access', key);
+                  final description = SpotAttributes.getDescription(
+                    'access',
+                    key,
+                  );
                   final selected = _spotAccess.contains(key);
                   Color backgroundColor;
                   Color textColor;
@@ -1296,12 +1411,18 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                         textColor = Colors.blue.shade700;
                         break;
                       default:
-                        backgroundColor = Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3);
+                        backgroundColor = Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer.withValues(alpha: 0.3);
                         textColor = Theme.of(context).colorScheme.primary;
                     }
                   } else {
-                    backgroundColor = Theme.of(context).colorScheme.surfaceContainerHighest;
-                    textColor = Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6);
+                    backgroundColor = Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest;
+                    textColor = Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.6);
                   }
                   return Tooltip(
                     message: description,
@@ -1310,15 +1431,20 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                         searchState.toggleSpotAccess(key);
                         setState(() {
                           if (selected) {
-                            _spotAccess = List<String>.from(_spotAccess)..remove(key);
+                            _spotAccess = List<String>.from(_spotAccess)
+                              ..remove(key);
                           } else {
-                            _spotAccess = List<String>.from(_spotAccess)..add(key);
+                            _spotAccess = List<String>.from(_spotAccess)
+                              ..add(key);
                           }
                         });
                         if (_mapController != null) _loadSpotsForCurrentView();
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: backgroundColor,
                           borderRadius: BorderRadius.circular(20),
@@ -1356,28 +1482,57 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
 
   Widget _buildFacilitiesFilterCard(SearchStateService searchState) {
     final l10n = AppLocalizations.of(context)!;
-    final facilityKeys = ['covered', 'lighting', 'water_tap', 'toilet', 'parking'];
+    final facilityKeys = [
+      'covered',
+      'lighting',
+      'water_tap',
+      'toilet',
+      'parking',
+    ];
     bool getFacility(String key) {
       switch (key) {
-        case 'covered': return _spotFacilitiesCovered == true;
-        case 'lighting': return _spotFacilitiesLighting == true;
-        case 'water_tap': return _spotFacilitiesWaterTap == true;
-        case 'toilet': return _spotFacilitiesToilet == true;
-        case 'parking': return _spotFacilitiesParking == true;
-        default: return false;
+        case 'covered':
+          return _spotFacilitiesCovered == true;
+        case 'lighting':
+          return _spotFacilitiesLighting == true;
+        case 'water_tap':
+          return _spotFacilitiesWaterTap == true;
+        case 'toilet':
+          return _spotFacilitiesToilet == true;
+        case 'parking':
+          return _spotFacilitiesParking == true;
+        default:
+          return false;
       }
     }
+
     void setFacility(String key, bool value) {
       final v = value ? true : null;
       switch (key) {
-        case 'covered': searchState.setSpotFacilitiesCovered(v); setState(() => _spotFacilitiesCovered = v); break;
-        case 'lighting': searchState.setSpotFacilitiesLighting(v); setState(() => _spotFacilitiesLighting = v); break;
-        case 'water_tap': searchState.setSpotFacilitiesWaterTap(v); setState(() => _spotFacilitiesWaterTap = v); break;
-        case 'toilet': searchState.setSpotFacilitiesToilet(v); setState(() => _spotFacilitiesToilet = v); break;
-        case 'parking': searchState.setSpotFacilitiesParking(v); setState(() => _spotFacilitiesParking = v); break;
+        case 'covered':
+          searchState.setSpotFacilitiesCovered(v);
+          setState(() => _spotFacilitiesCovered = v);
+          break;
+        case 'lighting':
+          searchState.setSpotFacilitiesLighting(v);
+          setState(() => _spotFacilitiesLighting = v);
+          break;
+        case 'water_tap':
+          searchState.setSpotFacilitiesWaterTap(v);
+          setState(() => _spotFacilitiesWaterTap = v);
+          break;
+        case 'toilet':
+          searchState.setSpotFacilitiesToilet(v);
+          setState(() => _spotFacilitiesToilet = v);
+          break;
+        case 'parking':
+          searchState.setSpotFacilitiesParking(v);
+          setState(() => _spotFacilitiesParking = v);
+          break;
       }
       if (_mapController != null) _loadSpotsForCurrentView();
     }
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -1386,16 +1541,18 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
           children: [
             Text(
               l10n.exploreSpotFacilitiesTitle,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             Text(
               l10n.exploreSpotFacilitiesSubtitle,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                  ),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
             ),
             const SizedBox(height: 12),
             Wrap(
@@ -1404,7 +1561,10 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
               children: facilityKeys.map((key) {
                 final label = SpotAttributes.getLabel('facilities', key);
                 final icon = SpotAttributes.getIcon('facilities', key);
-                final description = SpotAttributes.getDescription('facilities', key);
+                final description = SpotAttributes.getDescription(
+                  'facilities',
+                  key,
+                );
                 final selected = getFacility(key);
                 Color backgroundColor;
                 Color textColor;
@@ -1414,8 +1574,12 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                   textColor = Colors.green.shade700;
                   statusIcon = Icons.check;
                 } else {
-                  backgroundColor = Theme.of(context).colorScheme.surfaceContainerHighest;
-                  textColor = Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6);
+                  backgroundColor = Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerHighest;
+                  textColor = Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.6);
                   statusIcon = Icons.help_outline;
                 }
                 return Tooltip(
@@ -1423,7 +1587,10 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                   child: GestureDetector(
                     onTap: () => setFacility(key, !selected),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: backgroundColor,
                         borderRadius: BorderRadius.circular(20),
@@ -1482,7 +1649,11 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
           color: backgroundColor,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: (selected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline).withValues(alpha: 0.3),
+            color:
+                (selected
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.outline)
+                    .withValues(alpha: 0.3),
             width: 1,
           ),
         ),
@@ -1515,22 +1686,30 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
           children: [
             Text(
               l10n.exploreAttributesTitle,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             Text(
               l10n.exploreAttributesSubtitle,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                  ),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
             ),
             const SizedBox(height: 12),
             SegmentedButton<String>(
               segments: [
-                ButtonSegment(value: 'goodFor', label: Text(l10n.exploreGoodForSegment)),
-                ButtonSegment(value: 'spotFeatures', label: Text(l10n.exploreSpotFeaturesSegment)),
+                ButtonSegment(
+                  value: 'goodFor',
+                  label: Text(l10n.exploreGoodForSegment),
+                ),
+                ButtonSegment(
+                  value: 'spotFeatures',
+                  label: Text(l10n.exploreSpotFeaturesSegment),
+                ),
               ],
               selected: {_attributeFilterMode},
               onSelectionChanged: (Set<String> selected) {
@@ -1555,7 +1734,10 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                 children: SpotAttributes.getKeys('features').map((key) {
                   final label = SpotAttributes.getLabel('features', key);
                   final icon = SpotAttributes.getIcon('features', key);
-                  final description = SpotAttributes.getDescription('features', key);
+                  final description = SpotAttributes.getDescription(
+                    'features',
+                    key,
+                  );
                   final selected = _spotFeatures.contains(key);
                   return Tooltip(
                     message: description,
@@ -1564,14 +1746,20 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                         searchState.toggleSpotFeatures(key);
                         setState(() {
                           if (selected) {
-                            _spotFeatures = List<String>.from(_spotFeatures)..remove(key);
+                            _spotFeatures = List<String>.from(_spotFeatures)
+                              ..remove(key);
                           } else {
-                            _spotFeatures = List<String>.from(_spotFeatures)..add(key);
+                            _spotFeatures = List<String>.from(_spotFeatures)
+                              ..add(key);
                           }
                         });
                         if (_mapController != null) _loadSpotsForCurrentView();
                       },
-                      child: _buildAttributeChip(label: label, icon: icon, selected: selected),
+                      child: _buildAttributeChip(
+                        label: label,
+                        icon: icon,
+                        selected: selected,
+                      ),
                     ),
                   );
                 }).toList(),
@@ -1583,7 +1771,10 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                 children: SpotAttributes.getKeys('goodFor').map((key) {
                   final label = SpotAttributes.getLabel('goodFor', key);
                   final icon = SpotAttributes.getIcon('goodFor', key);
-                  final description = SpotAttributes.getDescription('goodFor', key);
+                  final description = SpotAttributes.getDescription(
+                    'goodFor',
+                    key,
+                  );
                   final selected = _goodFor.contains(key);
                   return Tooltip(
                     message: description,
@@ -1599,7 +1790,11 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                         });
                         if (_mapController != null) _loadSpotsForCurrentView();
                       },
-                      child: _buildAttributeChip(label: label, icon: icon, selected: selected),
+                      child: _buildAttributeChip(
+                        label: label,
+                        icon: icon,
+                        selected: selected,
+                      ),
                     ),
                   );
                 }).toList(),
@@ -1627,7 +1822,11 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         color: backgroundColor,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: (selected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline).withValues(alpha: 0.3),
+          color:
+              (selected
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.outline)
+                  .withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -1649,7 +1848,10 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     );
   }
 
-  Widget _buildSourceFilters(SyncSourceService syncService, List<SyncSourceSummary> summaries) {
+  Widget _buildSourceFilters(
+    SyncSourceService syncService,
+    List<SyncSourceSummary> summaries,
+  ) {
     final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1657,191 +1859,220 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         Text(
           l10n.exploreSpotSourceLabel,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.7),
           ),
         ),
-            const SizedBox(height: 8),
-            if (syncService.isLoadingSummaries && summaries.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8),
+        const SizedBox(height: 8),
+        if (syncService.isLoadingSummaries && summaries.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: SizedBox(
+              height: 24,
+              width: 24,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          )
+        else if (syncService.summariesError != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    l10n.exploreSourcesLoadError,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => _ensureSyncSourcesLoaded(force: true),
+                  child: Text(l10n.profileRetry),
+                ),
+              ],
+            ),
+          )
+        else
+          Consumer<SearchStateService>(
+            builder: (context, searchState, child) {
+              return RadioGroup<String?>(
+                groupValue: _selectedSpotSource,
+                onChanged: (String? value) {
+                  setState(() {
+                    _selectedSpotSource = value;
+                  });
+                  Provider.of<SearchStateService>(
+                    context,
+                    listen: false,
+                  ).setSelectedSpotSource(value);
+                  // Reload spots with new filter
+                  _loadSpotsForCurrentView();
+                },
                 child: SizedBox(
-                  height: 24,
-                  width: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              )
-            else if (syncService.summariesError != null)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        l10n.exploreSourcesLoadError,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.error,
-                            ),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () => _ensureSyncSourcesLoaded(force: true),
-                      child: Text(l10n.profileRetry),
-                    ),
-                  ],
-                ),
-              )
-            else
-              Consumer<SearchStateService>(
-                builder: (context, searchState, child) {
-                  return RadioGroup<String?>(
-                    groupValue: _selectedSpotSource,
-                    onChanged: (String? value) {
-                      setState(() {
-                        _selectedSpotSource = value;
-                      });
-                      Provider.of<SearchStateService>(context, listen: false)
-                          .setSelectedSpotSource(value);
-                      // Reload spots with new filter
-                      _loadSpotsForCurrentView();
-                    },
-                    child: SizedBox(
-                      height: (MediaQuery.of(context).size.height * 0.5).clamp(200.0, 450.0),
-                      child: ListView.builder(
-                        itemCount: 2 + summaries.length,
-                        itemBuilder: (context, index) {
-                          if (index == 0) {
-                            return RadioListTile<String?>(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(l10n.exploreAllSources),
-                              value: null,
-                            );
-                          }
-                          if (index == 1) {
-                            return RadioListTile<String?>(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(l10n.exploreParkourSpotNative),
-                              value: "",
-                            );
-                          }
-                          final summary = summaries[index - 2];
-                          final isWideScreen = MediaQuery.of(context).size.width > 600;
-                          final isSelected = _selectedSpotSource == summary.id;
-                          final hasFolders = summary.allFolders != null &&
-                              summary.allFolders!.isNotEmpty;
+                  height: (MediaQuery.of(context).size.height * 0.5).clamp(
+                    200.0,
+                    450.0,
+                  ),
+                  child: ListView.builder(
+                    itemCount: 2 + summaries.length,
+                    itemBuilder: (context, index) {
+                      if (index == 0) {
+                        return RadioListTile<String?>(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(l10n.exploreAllSources),
+                          value: null,
+                        );
+                      }
+                      if (index == 1) {
+                        return RadioListTile<String?>(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(l10n.exploreParkourSpotNative),
+                          value: "",
+                        );
+                      }
+                      final summary = summaries[index - 2];
+                      final isWideScreen =
+                          MediaQuery.of(context).size.width > 600;
+                      final isSelected = _selectedSpotSource == summary.id;
+                      final hasFolders =
+                          summary.allFolders != null &&
+                          summary.allFolders!.isNotEmpty;
 
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              RadioListTile<String?>(
-                                contentPadding: EdgeInsets.zero,
-                                title: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    if (isWideScreen)
-                                      Text(summary.name)
-                                    else
-                                      Expanded(
-                                        child: Text(summary.name),
-                                      ),
-                                    const SizedBox(width: 4),
-                                    GestureDetector(
-                                      onTap: () => _showSourceDetailsDialog(summary.id),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(4),
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .primary
-                                              .withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: Icon(
-                                          Icons.info_outline,
-                                          size: 16,
-                                          color: Theme.of(context).colorScheme.primary,
-                                        ),
-                                      ),
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          RadioListTile<String?>(
+                            contentPadding: EdgeInsets.zero,
+                            title: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (isWideScreen)
+                                  Text(summary.name)
+                                else
+                                  Expanded(child: Text(summary.name)),
+                                const SizedBox(width: 4),
+                                GestureDetector(
+                                  onTap: () =>
+                                      _showSourceDetailsDialog(summary.id),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary
+                                          .withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(12),
                                     ),
-                                  ],
+                                    child: Icon(
+                                      Icons.info_outline,
+                                      size: 16,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                    ),
+                                  ),
                                 ),
-                                value: summary.id,
+                              ],
+                            ),
+                            value: summary.id,
+                          ),
+                          if (isSelected && hasFolders)
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                left: 40,
+                                top: 8,
+                                bottom: 8,
                               ),
-                              if (isSelected && hasFolders)
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 40, top: 8, bottom: 8),
-                                  child: Wrap(
-                                    spacing: 8,
-                                    runSpacing: 8,
-                                    children: [
-                                      Builder(
-                                        builder: (context) {
-                                          final selectedFolders =
-                                              searchState.getSelectedFoldersForSource(summary.id);
-                                          final isAllSelected = selectedFolders.isEmpty;
-                                          return FilterChip(
-                                            label: Text(l10n.exploreAllFolders),
-                                            selected: isAllSelected,
-                                            onSelected: (selected) {
-                                              if (selected && !isAllSelected) {
-                                                searchState.clearFoldersForSource(summary.id);
-                                                if (_mapController != null) {
-                                                  _loadSpotsForCurrentView();
-                                                }
-                                              }
-                                            },
-                                            selectedColor:
-                                                Theme.of(context).colorScheme.primaryContainer,
-                                            checkmarkColor:
-                                                Theme.of(context).colorScheme.onPrimaryContainer,
-                                            labelStyle: TextStyle(
-                                              color: isAllSelected
-                                                  ? Theme.of(context)
-                                                      .colorScheme
-                                                      .onPrimaryContainer
-                                                  : null,
-                                            ),
+                              child: Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  Builder(
+                                    builder: (context) {
+                                      final selectedFolders = searchState
+                                          .getSelectedFoldersForSource(
+                                            summary.id,
                                           );
-                                        },
-                                      ),
-                                      ...(summary.allFolders ?? []).map((folder) {
-                                        final isFolderSelected = searchState
-                                            .isFolderSelectedForSource(summary.id, folder);
-                                        return FilterChip(
-                                          label: Text(folder),
-                                          selected: isFolderSelected,
-                                          onSelected: (selected) {
-                                            searchState.toggleFolderForSource(summary.id, folder);
+                                      final isAllSelected =
+                                          selectedFolders.isEmpty;
+                                      return FilterChip(
+                                        label: Text(l10n.exploreAllFolders),
+                                        selected: isAllSelected,
+                                        onSelected: (selected) {
+                                          if (selected && !isAllSelected) {
+                                            searchState.clearFoldersForSource(
+                                              summary.id,
+                                            );
                                             if (_mapController != null) {
                                               _loadSpotsForCurrentView();
                                             }
-                                          },
-                                          selectedColor:
-                                              Theme.of(context).colorScheme.primaryContainer,
-                                          checkmarkColor:
-                                              Theme.of(context).colorScheme.onPrimaryContainer,
-                                          labelStyle: TextStyle(
-                                            color: isFolderSelected
-                                                ? Theme.of(context)
-                                                    .colorScheme
-                                                    .onPrimaryContainer
-                                                : null,
-                                          ),
-                                        );
-                                      }),
-                                    ],
+                                          }
+                                        },
+                                        selectedColor: Theme.of(
+                                          context,
+                                        ).colorScheme.primaryContainer,
+                                        checkmarkColor: Theme.of(
+                                          context,
+                                        ).colorScheme.onPrimaryContainer,
+                                        labelStyle: TextStyle(
+                                          color: isAllSelected
+                                              ? Theme.of(
+                                                  context,
+                                                ).colorScheme.onPrimaryContainer
+                                              : null,
+                                        ),
+                                      );
+                                    },
                                   ),
-                                ),
-                            ],
-                          );
-                        },
-                      ),
-                    ),
-                  );
-                },
-              ),
-          ],
-        );
+                                  ...(summary.allFolders ?? []).map((folder) {
+                                    final isFolderSelected = searchState
+                                        .isFolderSelectedForSource(
+                                          summary.id,
+                                          folder,
+                                        );
+                                    return FilterChip(
+                                      label: Text(folder),
+                                      selected: isFolderSelected,
+                                      onSelected: (selected) {
+                                        searchState.toggleFolderForSource(
+                                          summary.id,
+                                          folder,
+                                        );
+                                        if (_mapController != null) {
+                                          _loadSpotsForCurrentView();
+                                        }
+                                      },
+                                      selectedColor: Theme.of(
+                                        context,
+                                      ).colorScheme.primaryContainer,
+                                      checkmarkColor: Theme.of(
+                                        context,
+                                      ).colorScheme.onPrimaryContainer,
+                                      labelStyle: TextStyle(
+                                        color: isFolderSelected
+                                            ? Theme.of(
+                                                context,
+                                              ).colorScheme.onPrimaryContainer
+                                            : null,
+                                      ),
+                                    );
+                                  }),
+                                ],
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
+      ],
+    );
   }
 
   Set<Marker> _buildMarkers(List<Spot> spots) {
@@ -1849,25 +2080,33 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       final bool isSelected = _selectedSpot?.id != null
           ? _selectedSpot!.id == spot.id
           : _selectedSpot?.name == spot.name;
-      final bool isHighlighted = spot.id != null && _highlightedSpotIds.contains(spot.id);
-      
+      final bool isHighlighted =
+          spot.id != null && _highlightedSpotIds.contains(spot.id);
+
       // Marker color priority: 1. Selected+Highlighted (lighter grey), 2. Selected (rose/pink), 3. Highlighted (black), 4. Default (red)
       // On web, use generated icons because hue-based markers are not supported.
       final BitmapDescriptor icon = kIsWeb
           ? (isSelected && isHighlighted
-              ? (_spotSelectedHighlightedIcon ?? BitmapDescriptor.defaultMarker)
-              : (isSelected
-                  ? (_spotSelectedIcon ?? BitmapDescriptor.defaultMarker)
-                  : (isHighlighted
-                      ? (_spotHighlightedIcon ?? BitmapDescriptor.defaultMarker)
-                      : (_spotDefaultIcon ?? BitmapDescriptor.defaultMarker))))
+                ? (_spotSelectedHighlightedIcon ??
+                      BitmapDescriptor.defaultMarker)
+                : (isSelected
+                      ? (_spotSelectedIcon ?? BitmapDescriptor.defaultMarker)
+                      : (isHighlighted
+                            ? (_spotHighlightedIcon ??
+                                  BitmapDescriptor.defaultMarker)
+                            : (_spotDefaultIcon ??
+                                  BitmapDescriptor.defaultMarker))))
           : (isSelected && isHighlighted
-              ? (_spotSelectedHighlightedIcon ?? BitmapDescriptor.defaultMarker)
-              : (isSelected
-                  ? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose)
-                  : (isHighlighted
-                      ? (_spotHighlightedIcon ?? BitmapDescriptor.defaultMarker)
-                      : BitmapDescriptor.defaultMarker)));
+                ? (_spotSelectedHighlightedIcon ??
+                      BitmapDescriptor.defaultMarker)
+                : (isSelected
+                      ? BitmapDescriptor.defaultMarkerWithHue(
+                          BitmapDescriptor.hueRose,
+                        )
+                      : (isHighlighted
+                            ? (_spotHighlightedIcon ??
+                                  BitmapDescriptor.defaultMarker)
+                            : BitmapDescriptor.defaultMarker)));
       return Marker(
         markerId: MarkerId(spot.id ?? spot.name),
         position: LatLng(spot.latitude, spot.longitude),
@@ -1893,13 +2132,20 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       markers.add(
         Marker(
           markerId: const MarkerId('current_location'),
-          position: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
-          icon: _userLocationIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+          position: LatLng(
+            _currentPosition!.latitude,
+            _currentPosition!.longitude,
+          ),
+          icon:
+              _userLocationIcon ??
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
           zIndexInt: 9999,
           onTap: () {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(AppLocalizations.of(context)!.exploreCurrentLocationSnackbar),
+                content: Text(
+                  AppLocalizations.of(context)!.exploreCurrentLocationSnackbar,
+                ),
                 duration: const Duration(seconds: 2),
                 behavior: SnackBarBehavior.floating,
               ),
@@ -1915,7 +2161,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         Marker(
           markerId: const MarkerId('long_pressed_location'),
           position: _longPressedLocation!,
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            BitmapDescriptor.hueGreen,
+          ),
           zIndexInt: 10000, // Above other markers
         ),
       );
@@ -1926,7 +2174,10 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
 
   Future<void> _loadUserLocationIcon() async {
     try {
-      final icon = await MarkerIconUtils.createUserLocationIcon(size: 24, fillColor: Colors.blue);
+      final icon = await MarkerIconUtils.createUserLocationIcon(
+        size: 24,
+        fillColor: Colors.blue,
+      );
       if (mounted) {
         setState(() {
           _userLocationIcon = icon;
@@ -1940,13 +2191,29 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   Future<void> _loadSpotIcons() async {
     try {
       // Simple circular icons to ensure consistent coloring on web
-      final BitmapDescriptor defaultIcon = await MarkerIconUtils.createMarkerIcon(size: 22, fillColor: Colors.red);
+      final BitmapDescriptor defaultIcon =
+          await MarkerIconUtils.createMarkerIcon(
+            size: 22,
+            fillColor: Colors.red,
+          );
       // Make selected more distinct and smaller
-      final BitmapDescriptor selectedIcon = await MarkerIconUtils.createMarkerIcon(size: 22, fillColor: Color(0xFFFF8A80));
+      final BitmapDescriptor selectedIcon =
+          await MarkerIconUtils.createMarkerIcon(
+            size: 22,
+            fillColor: Color(0xFFFF8A80),
+          );
       // Black icon for highlighted spots from selected list
-      final BitmapDescriptor highlightedIcon = await MarkerIconUtils.createMarkerIcon(size: 22, fillColor: Colors.black);
+      final BitmapDescriptor highlightedIcon =
+          await MarkerIconUtils.createMarkerIcon(
+            size: 22,
+            fillColor: Colors.black,
+          );
       // Lighter grey icon for selected+highlighted spots
-      final BitmapDescriptor selectedHighlightedIcon = await MarkerIconUtils.createMarkerIcon(size: 22, fillColor: Colors.grey.shade400);
+      final BitmapDescriptor selectedHighlightedIcon =
+          await MarkerIconUtils.createMarkerIcon(
+            size: 22,
+            fillColor: Colors.grey.shade400,
+          );
       if (mounted) {
         setState(() {
           _spotDefaultIcon = defaultIcon;
@@ -1962,7 +2229,10 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
 
   Future<void> _loadSpotList(String listId) async {
     try {
-      final spotListService = Provider.of<SpotListService>(context, listen: false);
+      final spotListService = Provider.of<SpotListService>(
+        context,
+        listen: false,
+      );
       final list = await spotListService.getSpotListById(listId);
 
       if (!mounted) return;
@@ -2002,44 +2272,44 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     }
 
     if (!mounted || _selectedList == null) return;
-    
+
     // Collapse bottom sheet if open
     if (_isBottomSheetOpen) {
       _toggleBottomSheet();
     }
-    
+
     setState(() {
       _showListPreview = true;
       // Close spot detail if open
       _selectedSpot = null;
     });
-    
+
     // Fit map to show all spots in the list
     if (_selectedList != null && _selectedList!.effectiveSpotIds.isNotEmpty) {
       await _fitMapToSpotList(_selectedList!.effectiveSpotIds);
     }
   }
-  
+
   /// Fit the map to show all spots in a list with 5% padding
   Future<void> _fitMapToSpotList(List<String> spotIds) async {
     if (spotIds.isEmpty || _mapController == null) return;
-    
+
     try {
       // Fetch all spots by their IDs
       final spotService = Provider.of<SpotService>(context, listen: false);
       final spots = await Future.wait(
         spotIds.map((id) => spotService.getSpotById(id)),
       );
-      
+
       // Filter out null spots (spots that don't exist)
       final validSpots = spots.whereType<Spot>().toList();
-      
+
       if (validSpots.isEmpty) return;
-      
+
       // Calculate bounds with 5% padding
       final bounds = calculateBoundsForSpots(validSpots);
       if (bounds == null) return;
-      
+
       // Fit the map to the bounds with padding
       await _mapController!.animateCamera(
         CameraUpdate.newLatLngBounds(bounds, 50.0), // 50px padding
@@ -2048,7 +2318,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       debugPrint('Error fitting map to spot list: $e');
     }
   }
-  
+
   void _clearSpotListSelection() {
     setState(() {
       _selectedList = null;
@@ -2058,28 +2328,31 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       _highlightedSpotIds.clear();
       _markers = _buildMarkers(_visibleSpots);
     });
-    
+
     // Update SearchStateService to persist the change
     final searchState = _searchStateServiceRef;
     if (searchState != null) {
       searchState.setSelectedListId(null);
     }
-    
+
     // Update URL query parameter, preserving existing params
     try {
       final routerState = GoRouterState.of(context);
       final currentUri = routerState.uri;
       final queryParams = Map<String, String>.from(currentUri.queryParameters);
       queryParams.remove('listId');
-      
+
       // Build new URL with updated query params
       final queryString = queryParams.entries
-          .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+          .map(
+            (e) =>
+                '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}',
+          )
           .join('&');
-      final newPath = queryString.isNotEmpty 
+      final newPath = queryString.isNotEmpty
           ? '${currentUri.path}?$queryString'
           : currentUri.path;
-      
+
       context.go(newPath);
     } catch (e) {
       // Fallback: simple URL update
@@ -2143,7 +2416,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   }
 
   Timer? _cameraMoveDebounce;
-  
+
   void _onMapCameraMove(CameraPosition position) {
     // Persist camera position
     final searchState = Provider.of<SearchStateService>(context, listen: false);
@@ -2153,7 +2426,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       position.zoom,
     );
     _lastKnownZoom = position.zoom;
-    
+
     // Debounce loading spots to avoid too many requests while user is panning
     _cameraMoveDebounce?.cancel();
     _cameraMoveDebounce = Timer(const Duration(milliseconds: 1000), () {
@@ -2170,11 +2443,11 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
 
   void _handleDragUpdate(DragUpdateDetails details) {
     if (!_isDragging) return;
-    
+
     final currentY = details.globalPosition.dy;
     final deltaY = currentY - _dragStartY;
     final sensitivity = 2.0; // Higher sensitivity for better responsiveness
-    
+
     // Only trigger if drag distance is significant
     if (deltaY.abs() > 20) {
       if (deltaY < -sensitivity && !_isBottomSheetOpen) {
@@ -2201,7 +2474,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     }
     // Note: _longPressHandled is already set to true in the timer callback
     // before this async function is called, so onPointerUp won't interfere
-    
+
     // Collapse bottom sheet if open (similar to when spot detail card is shown)
     if (_isBottomSheetOpen) {
       await _bottomSheetAnimationController.reverse();
@@ -2237,18 +2510,16 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     // Center map on spot with fluid zoom-in (no zoom-out)
     if (_mapController != null) {
       const double desiredZoom = 15.0;
-      final double targetZoom = _lastKnownZoom < desiredZoom ? desiredZoom : _lastKnownZoom;
+      final double targetZoom = _lastKnownZoom < desiredZoom
+          ? desiredZoom
+          : _lastKnownZoom;
       // Step 1: pan to target at current zoom (smoother motion)
       await _mapController!.animateCamera(
-        CameraUpdate.newLatLng(
-          LatLng(spot.latitude, spot.longitude),
-        ),
+        CameraUpdate.newLatLng(LatLng(spot.latitude, spot.longitude)),
       );
       // Step 2: if we need to zoom in, do that as a separate animation
       if (_lastKnownZoom < targetZoom) {
-        await _mapController!.animateCamera(
-          CameraUpdate.zoomTo(targetZoom),
-        );
+        await _mapController!.animateCamera(CameraUpdate.zoomTo(targetZoom));
       }
     }
 
@@ -2264,9 +2535,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   Future<void> _locateSpotById(String spotId) async {
     // Wait for spot service to be available
     _spotServiceRef ??= Provider.of<SpotService>(context, listen: false);
-    
+
     if (_spotServiceRef == null) return;
-    
+
     try {
       final spot = await _spotServiceRef!.getSpotById(spotId);
       if (spot != null && mounted) {
@@ -2287,7 +2558,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
   Widget _buildSpotsList() {
     final screenWidth = MediaQuery.of(context).size.width;
     final useGrid = screenWidth >= 600; // Use grid layout on wider screens
-    
+
     if (useGrid) {
       // Calculate optimal grid dimensions based on screen size
       final maxCrossAxisExtent = 480.0;
@@ -2304,7 +2575,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         itemCount: _visibleSpots.length,
         itemBuilder: (context, index) {
           final spot = _visibleSpots[index];
-          final bool isHighlighted = spot.id != null && _highlightedSpotIds.contains(spot.id);
+          final bool isHighlighted =
+              spot.id != null && _highlightedSpotIds.contains(spot.id);
           return SpotCard(
             spot: spot,
             showCheckInPresence: true,
@@ -2316,9 +2588,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
             onTapWithImageIndex: (imageIndex) {
               // Center map on selected spot
               _mapController?.animateCamera(
-                CameraUpdate.newLatLng(
-                  LatLng(spot.latitude, spot.longitude),
-                ),
+                CameraUpdate.newLatLng(LatLng(spot.latitude, spot.longitude)),
               );
               // Navigate to spot detail using proper URL format with image index
               final baseUrl = UrlService.generateNavigationUrl(
@@ -2326,7 +2596,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                 countryCode: spot.countryCode,
                 city: spot.city,
               );
-              final navigationUrl = imageIndex > 0 ? '$baseUrl?imageIndex=$imageIndex' : baseUrl;
+              final navigationUrl = imageIndex > 0
+                  ? '$baseUrl?imageIndex=$imageIndex'
+                  : baseUrl;
               context.push(navigationUrl);
             },
             onLocate: () => _locateSpot(spot),
@@ -2340,7 +2612,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         itemCount: _visibleSpots.length,
         itemBuilder: (context, index) {
           final spot = _visibleSpots[index];
-          final bool isHighlighted = spot.id != null && _highlightedSpotIds.contains(spot.id);
+          final bool isHighlighted =
+              spot.id != null && _highlightedSpotIds.contains(spot.id);
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: SpotCard(
@@ -2354,9 +2627,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
               onTapWithImageIndex: (imageIndex) {
                 // Center map on selected spot
                 _mapController?.animateCamera(
-                  CameraUpdate.newLatLng(
-                    LatLng(spot.latitude, spot.longitude),
-                  ),
+                  CameraUpdate.newLatLng(LatLng(spot.latitude, spot.longitude)),
                 );
                 // Navigate to spot detail using proper URL format with image index
                 final baseUrl = UrlService.generateNavigationUrl(
@@ -2364,7 +2635,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                   countryCode: spot.countryCode,
                   city: spot.city,
                 );
-                final navigationUrl = imageIndex > 0 ? '$baseUrl?imageIndex=$imageIndex' : baseUrl;
+                final navigationUrl = imageIndex > 0
+                    ? '$baseUrl?imageIndex=$imageIndex'
+                    : baseUrl;
                 context.push(navigationUrl);
               },
               onLocate: () => _locateSpot(spot),
@@ -2434,13 +2707,16 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                             _showListPreview = false;
                           });
                         },
-                        tooltip: AppLocalizations.of(context)!.exploreCloseTooltip,
+                        tooltip: AppLocalizations.of(
+                          context,
+                        )!.exploreCloseTooltip,
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
                   // Description if available
-                  if (_selectedList!.description != null && _selectedList!.description!.isNotEmpty)
+                  if (_selectedList!.description != null &&
+                      _selectedList!.description!.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: Text(
@@ -2487,955 +2763,1375 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
           // Determine initial camera position - use persisted state, user location, or default
           Consumer<SearchStateService>(
             builder: (context, searchState, child) {
-              LatLng initialTarget = const LatLng(AppConfig.defaultMapCenterLat, AppConfig.defaultMapCenterLng); // Default center location
+              LatLng initialTarget = const LatLng(
+                AppConfig.defaultMapCenterLat,
+                AppConfig.defaultMapCenterLng,
+              ); // Default center location
               double initialZoom = 14;
-              
+
               // Use persisted camera position if available
-              if (searchState.centerLat != null && searchState.centerLng != null && searchState.zoom != null) {
-                initialTarget = LatLng(searchState.centerLat!, searchState.centerLng!);
+              if (searchState.centerLat != null &&
+                  searchState.centerLng != null &&
+                  searchState.zoom != null) {
+                initialTarget = LatLng(
+                  searchState.centerLat!,
+                  searchState.centerLng!,
+                );
                 initialZoom = searchState.zoom!;
               }
               // Otherwise try to use current user location
               else if (_currentPosition != null) {
-                initialTarget = LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
+                initialTarget = LatLng(
+                  _currentPosition!.latitude,
+                  _currentPosition!.longitude,
+                );
                 initialZoom = 15;
               }
-              
+
               final CameraPosition initialCameraPosition = CameraPosition(
                 target: initialTarget,
                 zoom: initialZoom,
               );
 
-          return Stack(
-            children: [
-              // Map View
-              GoogleMap(
-                initialCameraPosition: initialCameraPosition,
-                mapType: _isSatelliteView ? MapType.hybrid : MapType.normal,
-                markers: _markers,
-                myLocationEnabled: true,
-                myLocationButtonEnabled: !_isBottomSheetOpen && _selectedSpot == null && !_showListPreview && !_showFiltersDialog, // Disable location button when expanded, spot detail is open, list preview is open, or filters dialog is open
-                zoomControlsEnabled: false,
-                zoomGesturesEnabled: !_isBottomSheetOpen && !_showFiltersDialog && (_selectedSpot == null && !_showListPreview || !MobileDetectionService.isMobileDevice),
-                scrollGesturesEnabled: !_isBottomSheetOpen && !_showFiltersDialog && (_selectedSpot == null && !_showListPreview || !MobileDetectionService.isMobileDevice),
-                rotateGesturesEnabled: !_isBottomSheetOpen && !_showFiltersDialog && (_selectedSpot == null && !_showListPreview || !MobileDetectionService.isMobileDevice),
-                tiltGesturesEnabled: !_isBottomSheetOpen && !_showFiltersDialog && (_selectedSpot == null && !_showListPreview || !MobileDetectionService.isMobileDevice),
-                liteModeEnabled: kIsWeb,
-                compassEnabled: false,
-                onMapCreated: (GoogleMapController controller) {
-                  _mapController = controller;
-                  _lastKnownZoom = initialCameraPosition.zoom;
-                  
-                  // Trigger location search if initialLocationQuery is provided
-                  if (widget.initialLocationQuery != null && widget.initialLocationQuery!.isNotEmpty) {
-                    // Wait a bit for the map to be fully ready
-                    Future.delayed(const Duration(milliseconds: 500), () {
-                      if (mounted && _mapController != null) {
-                        _searchAndNavigateToLocation();
-                      }
-                    });
-                  }
-                  
-                  // Open spot list preview if listId came from URL
-                  if (widget.initialListId != null && _selectedListId == widget.initialListId) {
-                    // Wait a bit for the map to be fully ready
-                    Future.delayed(const Duration(milliseconds: 500), () {
-                      if (mounted && _mapController != null && _selectedListId != null) {
-                        _openSpotListPreview(_selectedListId!);
-                      }
-                    });
-                  }
-                  
-                  // Check for locateSpotId query parameter if not already set
-                  if (_spotIdToLocate == null) {
-                    try {
-                      final routerState = GoRouterState.of(context);
-                      final locateSpotId = routerState.uri.queryParameters['locateSpotId'];
-                      if (locateSpotId != null && locateSpotId.isNotEmpty) {
-                        _spotIdToLocate = locateSpotId;
-                      }
-                    } catch (e) {
-                      // Ignore errors when accessing router state
-                    }
-                  }
-                  
-                  // Load spots for the current view after a short delay to ensure map is ready
-                  Future.delayed(const Duration(milliseconds: 500), () {
-                    _loadSpotsForCurrentView();
-                    
-                    // If we have a spot ID to locate, locate it after spots are loaded
-                    if (_spotIdToLocate != null) {
-                      final spotId = _spotIdToLocate!;
-                      _spotIdToLocate = null; // Clear before attempting to locate
-                      Future.delayed(const Duration(milliseconds: 300), () {
-                        _locateSpotById(spotId);
-                      });
-                    }
-                    
-                  });
-                  
-                  // Restore persisted camera after map is ready (in case state loaded late)
-                  final state = Provider.of<SearchStateService>(context, listen: false);
-                  if (state.centerLat != null && state.centerLng != null && state.zoom != null) {
-                    controller.moveCamera(
-                      CameraUpdate.newCameraPosition(
-                        CameraPosition(
-                          target: LatLng(state.centerLat!, state.centerLng!),
-                          zoom: state.zoom!,
-                        ),
-                      ),
-                    );
-                  } else {
-                    // If no persisted camera and no initial location query (city/country URL),
-                    // try to center on user's current location
-                    // Don't auto-center on user location if they came from a city/country URL
-                    if (widget.initialLocationQuery == null || widget.initialLocationQuery!.isEmpty) {
-                      _getCurrentLocation();
-                    }
-                  }
-                },
-                onCameraMove: (CameraPosition position) {
-                  _onMapCameraMove(position);
-                },
-                onTap: (LatLng position) {
-                  // On mobile web, tap on autocomplete can pass through when overlay dismisses.
-                  // Ignore map taps for a short window after selecting a spot from autocomplete.
-                  if (kIsWeb && MobileDetectionService.isMobileDevice &&
-                      _lastAutocompleteSpotSelection != null &&
-                      DateTime.now().difference(_lastAutocompleteSpotSelection!).inMilliseconds < 400) {
-                    _lastAutocompleteSpotSelection = null;
-                    return;
-                  }
-                  // Dismiss spot detail card or list preview when map is tapped (but not when markers are tapped)
-                  if ((_selectedSpot != null || _showListPreview) && !_isBottomSheetOpen) {
-                    setState(() {
-                      _selectedSpot = null;
-                      _showListPreview = false;
-                      // Rebuild markers to clear selection color
-                      _markers = _buildMarkers(_visibleSpots);
-                    });
-                  }
-                  // Clear long press location on regular tap
-                  // The overlay handles most dismissals, but this is a safety net
-                  if (_longPressedLocation != null && !_longPressHandled) {
-                    setState(() {
-                      _longPressedLocation = null;
-                      _longPressHandled = false;
-                      // Rebuild markers to remove the long-pressed location marker
-                      _markers = _buildMarkers(_visibleSpots);
-                    });
-                  }
-                },
-                onLongPress: (LatLng position) async {
-                  // This works on desktop web (right click) but not on mobile web
-                  // Mobile web uses the GestureDetector overlay below
-                  if (kIsWeb && MobileDetectionService.isMobileDevice) {
-                    return; // Let the overlay handle it on mobile web
-                  }
-                  await _handleLongPress(position);
-                },
-              ),
+              return Stack(
+                children: [
+                  // Map View
+                  GoogleMap(
+                    initialCameraPosition: initialCameraPosition,
+                    mapType: _isSatelliteView ? MapType.hybrid : MapType.normal,
+                    markers: _markers,
+                    myLocationEnabled: true,
+                    myLocationButtonEnabled:
+                        !_isBottomSheetOpen &&
+                        _selectedSpot == null &&
+                        !_showListPreview &&
+                        !_showFiltersDialog, // Disable location button when expanded, spot detail is open, list preview is open, or filters dialog is open
+                    zoomControlsEnabled: false,
+                    zoomGesturesEnabled:
+                        !_isBottomSheetOpen &&
+                        !_showFiltersDialog &&
+                        (_selectedSpot == null && !_showListPreview ||
+                            !MobileDetectionService.isMobileDevice),
+                    scrollGesturesEnabled:
+                        !_isBottomSheetOpen &&
+                        !_showFiltersDialog &&
+                        (_selectedSpot == null && !_showListPreview ||
+                            !MobileDetectionService.isMobileDevice),
+                    rotateGesturesEnabled:
+                        !_isBottomSheetOpen &&
+                        !_showFiltersDialog &&
+                        (_selectedSpot == null && !_showListPreview ||
+                            !MobileDetectionService.isMobileDevice),
+                    tiltGesturesEnabled:
+                        !_isBottomSheetOpen &&
+                        !_showFiltersDialog &&
+                        (_selectedSpot == null && !_showListPreview ||
+                            !MobileDetectionService.isMobileDevice),
+                    liteModeEnabled: kIsWeb,
+                    compassEnabled: false,
+                    onMapCreated: (GoogleMapController controller) {
+                      _mapController = controller;
+                      _lastKnownZoom = initialCameraPosition.zoom;
 
-              // Map clickable overlay when bottom sheet is expanded
-              if (_isBottomSheetOpen)
-                Positioned.fill(
-                  child: PointerInterceptor(
-                    child: GestureDetector(
-                      onTap: _toggleBottomSheet, // Collapse sheet when map is tapped
-                      child: Container(
-                        color: Colors.transparent,
-                      ),
-                    ),
-                  ),
-                ),
+                      // Trigger location search if initialLocationQuery is provided
+                      if (widget.initialLocationQuery != null &&
+                          widget.initialLocationQuery!.isNotEmpty) {
+                        // Wait a bit for the map to be fully ready
+                        Future.delayed(const Duration(milliseconds: 500), () {
+                          if (mounted && _mapController != null) {
+                            _searchAndNavigateToLocation();
+                          }
+                        });
+                      }
 
-              // Long press detection overlay for mobile web (Google Maps doesn't support onLongPress on mobile web)
-              // Uses Listener to detect pointer events without blocking map gestures
-              if (kIsWeb && MobileDetectionService.isMobileDevice && !_isBottomSheetOpen && !_showFiltersDialog && _selectedSpot == null && !_showListPreview && _longPressedLocation == null)
-                Positioned.fill(
-                  child: Listener(
-                    behavior: HitTestBehavior.translucent,
-                    onPointerDown: (PointerDownEvent event) {
-                      // Reset handled flag for new press
-                      _longPressHandled = false;
-                      
-                      // Cancel any existing timer
-                      _longPressTimer?.cancel();
-                      
-                      // Store the start position
-                      _longPressStartPosition = event.localPosition;
-                      
-                      // Start a timer to detect long press (500ms)
-                      _longPressTimer = Timer(const Duration(milliseconds: 500), () async {
-                        if (_mapController == null || _longPressStartPosition == null || !mounted) return;
-                        
-                        // Mark as handled IMMEDIATELY before any async operations
-                        // This prevents onPointerUp from clearing it
-                        _longPressHandled = true;
-                        
+                      // Open spot list preview if listId came from URL
+                      if (widget.initialListId != null &&
+                          _selectedListId == widget.initialListId) {
+                        // Wait a bit for the map to be fully ready
+                        Future.delayed(const Duration(milliseconds: 500), () {
+                          if (mounted &&
+                              _mapController != null &&
+                              _selectedListId != null) {
+                            _openSpotListPreview(_selectedListId!);
+                          }
+                        });
+                      }
+
+                      // Check for locateSpotId query parameter if not already set
+                      if (_spotIdToLocate == null) {
                         try {
-                          // Get the visible region to calculate the LatLng from screen coordinates
-                          final visibleRegion = await _mapController!.getVisibleRegion();
-                          
-                          // Calculate the center of the visible region
-                          final centerLat = (visibleRegion.northeast.latitude + visibleRegion.southwest.latitude) / 2;
-                          final centerLng = (visibleRegion.northeast.longitude + visibleRegion.southwest.longitude) / 2;
-                          
-                          // Get the screen size
-                          if (!mounted) return;
-                          final screenSize = MediaQuery.of(context).size;
-                          
-                          // Calculate the offset from center (in pixels)
-                          final offsetX = _longPressStartPosition!.dx - screenSize.width / 2;
-                          final offsetY = _longPressStartPosition!.dy - screenSize.height / 2;
-                          
-                          // Calculate the lat/lng range of the visible region
-                          final latRange = visibleRegion.northeast.latitude - visibleRegion.southwest.latitude;
-                          final lngRange = visibleRegion.northeast.longitude - visibleRegion.southwest.longitude;
-                          
-                          // Convert pixel offset to lat/lng offset
-                          // Note: Y is inverted (screen Y increases downward, but latitude increases upward)
-                          final latOffset = -(offsetY / screenSize.height) * latRange;
-                          final lngOffset = (offsetX / screenSize.width) * lngRange;
-                          
-                          final longPressLatLng = LatLng(
-                            centerLat + latOffset,
-                            centerLng + lngOffset,
-                          );
-                          
-                          // Clear timer and position after marking as handled
-                          _longPressTimer = null;
-                          _longPressStartPosition = null;
-                          
-                          await _handleLongPress(longPressLatLng);
+                          final routerState = GoRouterState.of(context);
+                          final locateSpotId =
+                              routerState.uri.queryParameters['locateSpotId'];
+                          if (locateSpotId != null && locateSpotId.isNotEmpty) {
+                            _spotIdToLocate = locateSpotId;
+                          }
                         } catch (e) {
-                          debugPrint('Error converting long press position: $e');
-                          // Clear on error too
-                          _longPressTimer = null;
-                          _longPressStartPosition = null;
-                          _longPressHandled = false;
+                          // Ignore errors when accessing router state
+                        }
+                      }
+
+                      // Load spots for the current view after a short delay to ensure map is ready
+                      Future.delayed(const Duration(milliseconds: 500), () {
+                        _loadSpotsForCurrentView();
+
+                        // If we have a spot ID to locate, locate it after spots are loaded
+                        if (_spotIdToLocate != null) {
+                          final spotId = _spotIdToLocate!;
+                          _spotIdToLocate =
+                              null; // Clear before attempting to locate
+                          Future.delayed(const Duration(milliseconds: 300), () {
+                            _locateSpotById(spotId);
+                          });
                         }
                       });
-                    },
-                    onPointerUp: (PointerUpEvent event) {
-                      // Only cancel if long press hasn't been handled yet
-                      // Check the flag first (set synchronously in timer callback)
-                      if (!_longPressHandled) {
-                        _longPressTimer?.cancel();
-                        _longPressTimer = null;
-                        _longPressStartPosition = null;
-                      }
-                    },
-                    onPointerCancel: (PointerCancelEvent event) {
-                      // Only cancel if long press hasn't been handled yet
-                      if (!_longPressHandled) {
-                        _longPressTimer?.cancel();
-                        _longPressTimer = null;
-                        _longPressStartPosition = null;
-                      }
-                    },
-                    onPointerMove: (PointerMoveEvent event) {
-                      // Cancel long press if pointer moves significantly (user is panning)
-                      // But only if it hasn't been handled yet
-                      if (_longPressStartPosition != null && !_longPressHandled) {
-                        final distance = (event.localPosition - _longPressStartPosition!).distance;
-                        if (distance > 10) { // 10 pixels threshold
-                          _longPressTimer?.cancel();
-                          _longPressTimer = null;
-                          _longPressStartPosition = null;
+
+                      // Restore persisted camera after map is ready (in case state loaded late)
+                      final state = Provider.of<SearchStateService>(
+                        context,
+                        listen: false,
+                      );
+                      if (state.centerLat != null &&
+                          state.centerLng != null &&
+                          state.zoom != null) {
+                        controller.moveCamera(
+                          CameraUpdate.newCameraPosition(
+                            CameraPosition(
+                              target: LatLng(
+                                state.centerLat!,
+                                state.centerLng!,
+                              ),
+                              zoom: state.zoom!,
+                            ),
+                          ),
+                        );
+                      } else {
+                        // If no persisted camera and no initial location query (city/country URL),
+                        // try to center on user's current location
+                        // Don't auto-center on user location if they came from a city/country URL
+                        if (widget.initialLocationQuery == null ||
+                            widget.initialLocationQuery!.isEmpty) {
+                          _getCurrentLocation();
                         }
                       }
                     },
-                    child: Container(
-                      color: Colors.transparent,
-                    ),
+                    onCameraMove: (CameraPosition position) {
+                      _onMapCameraMove(position);
+                    },
+                    onTap: (LatLng position) {
+                      // On mobile web, tap on autocomplete can pass through when overlay dismisses.
+                      // Ignore map taps for a short window after selecting a spot from autocomplete.
+                      if (kIsWeb &&
+                          MobileDetectionService.isMobileDevice &&
+                          _lastAutocompleteSpotSelection != null &&
+                          DateTime.now()
+                                  .difference(_lastAutocompleteSpotSelection!)
+                                  .inMilliseconds <
+                              400) {
+                        _lastAutocompleteSpotSelection = null;
+                        return;
+                      }
+                      // Dismiss spot detail card or list preview when map is tapped (but not when markers are tapped)
+                      if ((_selectedSpot != null || _showListPreview) &&
+                          !_isBottomSheetOpen) {
+                        setState(() {
+                          _selectedSpot = null;
+                          _showListPreview = false;
+                          // Rebuild markers to clear selection color
+                          _markers = _buildMarkers(_visibleSpots);
+                        });
+                      }
+                      // Clear long press location on regular tap
+                      // The overlay handles most dismissals, but this is a safety net
+                      if (_longPressedLocation != null && !_longPressHandled) {
+                        setState(() {
+                          _longPressedLocation = null;
+                          _longPressHandled = false;
+                          // Rebuild markers to remove the long-pressed location marker
+                          _markers = _buildMarkers(_visibleSpots);
+                        });
+                      }
+                    },
+                    onLongPress: (LatLng position) async {
+                      // This works on desktop web (right click) but not on mobile web
+                      // Mobile web uses the GestureDetector overlay below
+                      if (kIsWeb && MobileDetectionService.isMobileDevice) {
+                        return; // Let the overlay handle it on mobile web
+                      }
+                      await _handleLongPress(position);
+                    },
                   ),
-                ),
 
-              // Top Search Bar
-              Positioned(
-                top: MediaQuery.of(context).padding.top + 16,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1200),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: PointerInterceptor(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surface,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Autocomplete<Map<String, dynamic>>(
-                            optionsBuilder: (TextEditingValue textEditingValue) async {
-                              final query = textEditingValue.text.trim();
-                              if (query.isEmpty) {
-                                return const Iterable<Map<String, dynamic>>.empty();
-                              }
-                              if (_searchQuery != query) {
-                                setState(() => _searchQuery = query);
-                              }
-                              return _buildAutocompleteOptions(query);
-                            },
-                            onSelected: (Map<String, dynamic> suggestion) async {
-                              await _selectAutocompleteOption(suggestion);
-                            },
-                            displayStringForOption: (Map<String, dynamic> option) {
-                              return option['description'] as String? ?? '';
-                            },
-                            fieldViewBuilder: (BuildContext context, TextEditingController textEditingController, FocusNode focusNode, VoidCallback onFieldSubmitted) {
-                              _autocompleteController = textEditingController;
-                              _autocompleteFocusNode = focusNode;
-                              if (!_hasSetInitialAutocompleteQuery &&
-                                  widget.initialLocationQuery != null &&
-                                  widget.initialLocationQuery!.isNotEmpty) {
-                                _hasSetInitialAutocompleteQuery = true;
-                                WidgetsBinding.instance.addPostFrameCallback((_) {
-                                  if (mounted && textEditingController.text.isEmpty) {
-                                    textEditingController.text = widget.initialLocationQuery!;
-                                    setState(() => _searchQuery = widget.initialLocationQuery!);
-                                  }
-                                });
-                              }
-                              final l10n = AppLocalizations.of(context)!;
-                              return TextField(
-                                controller: textEditingController,
-                                focusNode: focusNode,
-                                decoration: InputDecoration(
-                                  hintText: l10n.exploreSearchHint,
-                                  prefixIcon: const Padding(
-                                    padding: EdgeInsets.only(left: 6),
-                                    child: Icon(Icons.search),
-                                  ),
-                                  suffixIcon: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      if (_isSearchingLocation)
-                                        Padding(
-                                          padding: const EdgeInsets.all(12),
-                                          child: SizedBox(
-                                            width: 20,
-                                            height: 20,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              valueColor: AlwaysStoppedAnimation<Color>(
-                                                Theme.of(context).colorScheme.primary,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      if (!_isSearchingLocation && textEditingController.text.isNotEmpty)
-                                        IconButton(
-                                          icon: const Icon(Icons.clear),
-                                          tooltip: l10n.exploreClearSearchTooltip,
-                                          onPressed: () {
-                                            textEditingController.clear();
-                                            setState(() => _searchQuery = '');
-                                          },
-                                        ),
-                                      Padding(
-                                        padding: const EdgeInsets.only(right: 6),
-                                        child: Stack(
-                                          children: [
-                                            IconButton(
-                                              icon: ReliableIcon(
-                                                icon: Icons.filter_list,
-                                                color: _showFiltersDialog ? Theme.of(context).colorScheme.primary : null,
-                                              ),
-                                              tooltip: l10n.exploreFiltersTooltip,
-                                              onPressed: () => _toggleFiltersDialog(),
-                                            ),
-                                            if (_hasActiveFilters())
-                                              Positioned(
-                                                right: 8,
-                                                top: 8,
-                                                child: Container(
-                                                  width: 8,
-                                                  height: 8,
-                                                  decoration: BoxDecoration(
-                                                    color: Theme.of(context).colorScheme.primary,
-                                                    shape: BoxShape.circle,
-                                                  ),
-                                                ),
-                                              ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                ),
-                                onChanged: (value) {
-                                  setState(() => _searchQuery = value);
-                                },
-                                onSubmitted: (_) {
-                                  if (_hasAutocompleteOptions) {
-                                    onFieldSubmitted();
-                                  } else {
-                                    _searchAndNavigateToLocation();
-                                  }
-                                },
-                              );
-                            },
-                            optionsViewBuilder: (BuildContext context, AutocompleteOnSelected<Map<String, dynamic>> onSelected, Iterable<Map<String, dynamic>> options) {
-                              final optionsList = options.toList();
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                if (mounted) {
-                                  setState(() => _hasAutocompleteOptions = optionsList.isNotEmpty);
-                                }
-                              });
-                              final highlightedIndex = AutocompleteHighlightedOption.of(context);
-                              return _AutocompleteOverlayContent(
-                                optionsList: optionsList,
-                                currentSelection: highlightedIndex >= 0 && highlightedIndex < optionsList.length
-                                    ? highlightedIndex
-                                    : null,
-                                onSelected: onSelected,
-                              );
-                            },
-                          )
-                        )
-                      )
-                    )
-                  )
-                )
-                ),
-
-              // Location Loading Indicator
-              if (_isGettingLocation)
-                Positioned(
-                  top: MediaQuery.of(context).padding.top + 80,
-                  right: 16,
-                  child: PointerInterceptor(
-                    child: Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(AppLocalizations.of(context)!.exploreFindingLocation),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-              // Spot Detail Card (when marker is selected)
-              if (_selectedSpot != null && !_isBottomSheetOpen)
-                Positioned(
-                  left: 16,
-                  right: MediaQuery.of(context).size.width >= 600 ? null : 16,
-                  bottom: 16,
-                  child: MediaQuery.of(context).size.width >= 600 
-                    ? SpotCard(
-                        spot: _selectedSpot!,
-                        variant: SpotCardVariant.overlay,
-                        showCheckInPresence: true,
-                        maxWidth: 400,
-                        spotListId: (_selectedSpot!.id != null && _highlightedSpotIds.contains(_selectedSpot!.id)) ? _selectedListId : null,
-                        spotListName: (_selectedSpot!.id != null && _highlightedSpotIds.contains(_selectedSpot!.id)) ? _selectedListName : null,
-                        onSpotListTap: (_selectedSpot!.id != null && _highlightedSpotIds.contains(_selectedSpot!.id) && _selectedListId != null)
-                            ? () => _openSpotListPreview(_selectedListId!)
-                            : null,
-                        onTapWithImageIndex: (imageIndex) {
-                          final baseUrl = UrlService.generateNavigationUrl(
-                            _selectedSpot!.id!,
-                            countryCode: _selectedSpot!.countryCode,
-                            city: _selectedSpot!.city,
-                          );
-                          final navigationUrl = imageIndex > 0 ? '$baseUrl?imageIndex=$imageIndex' : baseUrl;
-                          context.push(navigationUrl);
-                        },
-                        onViewDetails: () {
-                          final baseUrl = UrlService.generateNavigationUrl(
-                            _selectedSpot!.id!,
-                            countryCode: _selectedSpot!.countryCode,
-                            city: _selectedSpot!.city,
-                          );
-                          // For onViewDetails, we don't have access to image index, so just use base URL
-                          context.push(baseUrl);
-                        },
-                        onClose: () {
-                          setState(() {
-                            _selectedSpot = null;
-                            _markers = _buildMarkers(_visibleSpots);
-                          });
-                        },
-                      )
-                    : Center(
-                        child: SpotCard(
-                          spot: _selectedSpot!,
-                          variant: SpotCardVariant.overlay,
-                          showCheckInPresence: true,
-                          maxWidth: double.infinity,
-                          spotListId: (_selectedSpot!.id != null && _highlightedSpotIds.contains(_selectedSpot!.id)) ? _selectedListId : null,
-                          spotListName: (_selectedSpot!.id != null && _highlightedSpotIds.contains(_selectedSpot!.id)) ? _selectedListName : null,
-                          onSpotListTap: (_selectedSpot!.id != null && _highlightedSpotIds.contains(_selectedSpot!.id) && _selectedListId != null)
-                              ? () => _openSpotListPreview(_selectedListId!)
-                              : null,
-                          onTapWithImageIndex: (imageIndex) {
-                            final baseUrl = UrlService.generateNavigationUrl(
-                              _selectedSpot!.id!,
-                              countryCode: _selectedSpot!.countryCode,
-                              city: _selectedSpot!.city,
-                            );
-                            final navigationUrl = imageIndex > 0 ? '$baseUrl?imageIndex=$imageIndex' : baseUrl;
-                            context.push(navigationUrl);
-                          },
-                          onViewDetails: () {
-                            final baseUrl = UrlService.generateNavigationUrl(
-                              _selectedSpot!.id!,
-                              countryCode: _selectedSpot!.countryCode,
-                              city: _selectedSpot!.city,
-                            );
-                            // For onViewDetails, we don't have access to image index, so just use base URL
-                            context.push(baseUrl);
-                          },
-                          onClose: () {
-                            setState(() {
-                              _selectedSpot = null;
-                              _markers = _buildMarkers(_visibleSpots);
-                            });
-                          },
-                        ),
-                      ),
-                ),
-
-              // Spot List Preview Card (when chip is clicked)
-              if (_showListPreview && _selectedList != null && !_isBottomSheetOpen && _selectedSpot == null)
-                Positioned(
-                  left: 16,
-                  right: MediaQuery.of(context).size.width >= 600 ? null : 16,
-                  bottom: 16,
-                  child: MediaQuery.of(context).size.width >= 600 
-                    ? _buildSpotListPreviewCard(maxWidth: 400)
-                    : Center(
-                        child: _buildSpotListPreviewCard(maxWidth: double.infinity),
-                      ),
-                ),
-
-              // Add Spot Button (when long press is detected)
-              if (_longPressedLocation != null && _selectedSpot == null && !_showListPreview && !_showFiltersDialog)
-                Stack(
-                  children: [
-                    // Transparent overlay to dismiss on tap outside
+                  // Map clickable overlay when bottom sheet is expanded
+                  if (_isBottomSheetOpen)
                     Positioned.fill(
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _longPressedLocation = null;
-                            _longPressHandled = false;
-                            // Rebuild markers to remove the long-pressed location marker
-                            _markers = _buildMarkers(_visibleSpots);
-                          });
-                        },
-                        child: Container(
-                          color: Colors.transparent,
-                        ),
-                      ),
-                    ),
-                    // The popup card
-                    Positioned(
-                      left: 16,
-                      right: 16,
-                      bottom: 16,
                       child: PointerInterceptor(
-                        child: Center(
-                          child: GestureDetector(
-                            onTap: () {
-                              // Prevent tap from propagating to the overlay
-                            },
-                            child: Card(
-                              elevation: 8,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      AppLocalizations.of(context)!.exploreAddSpotHereTitle,
-                                      style: Theme.of(context).textTheme.titleMedium,
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        TextButton(
-                                          onPressed: () {
-                                            setState(() {
-                                              _longPressedLocation = null;
-                                              _longPressHandled = false;
-                                              // Rebuild markers to remove the long-pressed location marker
-                                              _markers = _buildMarkers(_visibleSpots);
-                                            });
-                                          },
-                                          child: Text(AppLocalizations.of(context)!.profileCancel),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        ElevatedButton.icon(
-                                          onPressed: () {
-                                            final location = _longPressedLocation!;
-                                            final authService = Provider.of<AuthService>(context, listen: false);
-                                            
-                                            setState(() {
-                                              _longPressedLocation = null;
-                                              _longPressHandled = false;
-                                              // Rebuild markers to remove the long-pressed location marker
-                                              _markers = _buildMarkers(_visibleSpots);
-                                            });
-                                            
-                                            // Require profile loaded before add spot (prevents email-as-createdByName)
-                                            if (!authService.isAuthenticated) {
-                                              context.go('/login?redirectTo=${Uri.encodeComponent('/explore?tab=add')}');
-                                            } else if (!authService.isProfileReady) {
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(content: Text(AppLocalizations.of(context)!.exploreLoadingProfile)),
-                                              );
-                                            } else {
-                                              // Navigate to add spot screen with the location
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) => AddSpotScreen(
-                                                    initialLocation: location,
-                                                  ),
-                                                ),
-                                              );
-                                            }
-                                          },
-                                          icon: const ReliableIcon(icon: Icons.add_location),
-                                          label: Text(AppLocalizations.of(context)!.tabAddSpot),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
+                        child: GestureDetector(
+                          onTap:
+                              _toggleBottomSheet, // Collapse sheet when map is tapped
+                          child: Container(color: Colors.transparent),
                         ),
                       ),
                     ),
-                  ],
-                ),
 
-              // Bottom Sheet with Spots List - hide when spot detail card, list preview, or add spot button is visible
-              if (_selectedSpot == null && !_showListPreview && _longPressedLocation == null)
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: AnimatedBuilder(
-                    animation: _bottomSheetAnimation,
-                    builder: (context, child) {
-                    return PointerInterceptor(
-                      child: GestureDetector(
-                        onTap: _isBottomSheetOpen ? null : _toggleBottomSheet, // Only clickable when collapsed
-                        onPanStart: _handleDragStart, // Always enable drag gestures
-                        onPanUpdate: _handleDragUpdate,
-                        onPanEnd: _handleDragEnd,
-                        child: Center(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 1200),
+                  // Long press detection overlay for mobile web (Google Maps doesn't support onLongPress on mobile web)
+                  // Uses Listener to detect pointer events without blocking map gestures
+                  if (kIsWeb &&
+                      MobileDetectionService.isMobileDevice &&
+                      !_isBottomSheetOpen &&
+                      !_showFiltersDialog &&
+                      _selectedSpot == null &&
+                      !_showListPreview &&
+                      _longPressedLocation == null)
+                    Positioned.fill(
+                      child: Listener(
+                        behavior: HitTestBehavior.translucent,
+                        onPointerDown: (PointerDownEvent event) {
+                          // Reset handled flag for new press
+                          _longPressHandled = false;
+
+                          // Cancel any existing timer
+                          _longPressTimer?.cancel();
+
+                          // Store the start position
+                          _longPressStartPosition = event.localPosition;
+
+                          // Start a timer to detect long press (500ms)
+                          _longPressTimer = Timer(
+                            const Duration(milliseconds: 500),
+                            () async {
+                              if (_mapController == null ||
+                                  _longPressStartPosition == null ||
+                                  !mounted)
+                                return;
+
+                              // Mark as handled IMMEDIATELY before any async operations
+                              // This prevents onPointerUp from clearing it
+                              _longPressHandled = true;
+
+                              try {
+                                // Get the visible region to calculate the LatLng from screen coordinates
+                                final visibleRegion = await _mapController!
+                                    .getVisibleRegion();
+
+                                // Calculate the center of the visible region
+                                final centerLat =
+                                    (visibleRegion.northeast.latitude +
+                                        visibleRegion.southwest.latitude) /
+                                    2;
+                                final centerLng =
+                                    (visibleRegion.northeast.longitude +
+                                        visibleRegion.southwest.longitude) /
+                                    2;
+
+                                // Get the screen size
+                                if (!mounted) return;
+                                final screenSize = MediaQuery.of(context).size;
+
+                                // Calculate the offset from center (in pixels)
+                                final offsetX =
+                                    _longPressStartPosition!.dx -
+                                    screenSize.width / 2;
+                                final offsetY =
+                                    _longPressStartPosition!.dy -
+                                    screenSize.height / 2;
+
+                                // Calculate the lat/lng range of the visible region
+                                final latRange =
+                                    visibleRegion.northeast.latitude -
+                                    visibleRegion.southwest.latitude;
+                                final lngRange =
+                                    visibleRegion.northeast.longitude -
+                                    visibleRegion.southwest.longitude;
+
+                                // Convert pixel offset to lat/lng offset
+                                // Note: Y is inverted (screen Y increases downward, but latitude increases upward)
+                                final latOffset =
+                                    -(offsetY / screenSize.height) * latRange;
+                                final lngOffset =
+                                    (offsetX / screenSize.width) * lngRange;
+
+                                final longPressLatLng = LatLng(
+                                  centerLat + latOffset,
+                                  centerLng + lngOffset,
+                                );
+
+                                // Clear timer and position after marking as handled
+                                _longPressTimer = null;
+                                _longPressStartPosition = null;
+
+                                await _handleLongPress(longPressLatLng);
+                              } catch (e) {
+                                debugPrint(
+                                  'Error converting long press position: $e',
+                                );
+                                // Clear on error too
+                                _longPressTimer = null;
+                                _longPressStartPosition = null;
+                                _longPressHandled = false;
+                              }
+                            },
+                          );
+                        },
+                        onPointerUp: (PointerUpEvent event) {
+                          // Only cancel if long press hasn't been handled yet
+                          // Check the flag first (set synchronously in timer callback)
+                          if (!_longPressHandled) {
+                            _longPressTimer?.cancel();
+                            _longPressTimer = null;
+                            _longPressStartPosition = null;
+                          }
+                        },
+                        onPointerCancel: (PointerCancelEvent event) {
+                          // Only cancel if long press hasn't been handled yet
+                          if (!_longPressHandled) {
+                            _longPressTimer?.cancel();
+                            _longPressTimer = null;
+                            _longPressStartPosition = null;
+                          }
+                        },
+                        onPointerMove: (PointerMoveEvent event) {
+                          // Cancel long press if pointer moves significantly (user is panning)
+                          // But only if it hasn't been handled yet
+                          if (_longPressStartPosition != null &&
+                              !_longPressHandled) {
+                            final distance =
+                                (event.localPosition - _longPressStartPosition!)
+                                    .distance;
+                            if (distance > 10) {
+                              // 10 pixels threshold
+                              _longPressTimer?.cancel();
+                              _longPressTimer = null;
+                              _longPressStartPosition = null;
+                            }
+                          }
+                        },
+                        child: Container(color: Colors.transparent),
+                      ),
+                    ),
+
+                  // Top Search Bar
+                  Positioned(
+                    top: MediaQuery.of(context).padding.top + 16,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 1200),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: PointerInterceptor(
                             child: Container(
-                              height: MediaQuery.of(context).size.height * _bottomSheetAnimation.value,
                               decoration: BoxDecoration(
                                 color: Theme.of(context).colorScheme.surface,
-                                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                                borderRadius: BorderRadius.circular(12),
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.black.withValues(alpha: 0.1),
                                     blurRadius: 8,
-                                    offset: const Offset(0, -2),
+                                    offset: const Offset(0, 2),
                                   ),
                                 ],
                               ),
-                              child: Column(
-                            children: [
-                              // Header with spot count
-                              Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Center(
-                                  child: TextButton(
-                                    onPressed: _toggleBottomSheet,
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      crossAxisAlignment: CrossAxisAlignment.center,
-                                      children: [
-                                        SvgPicture.asset(
-                                          Theme.of(context).brightness == Brightness.dark
-                                              ? 'assets/images/logo-square-dark.svg'
-                                              : 'assets/images/logo-square.svg',
-                                          width: 24,
-                                          height: 24,
-                                          fit: BoxFit.contain,
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Builder(
-                                          builder: (context) {
-                                            final l10n = AppLocalizations.of(context)!;
-                                            final mainLine = _totalSpotsInView != null && _bestShownCount != null
-                                                ? l10n.exploreMapRankedTotalBar(_totalSpotsInView!)
-                                                : l10n.exploreMapSpotsFoundLine(_visibleSpots.length);
-                                            return RichText(
-                                              text: TextSpan(
-                                                children: [
-                                                  TextSpan(
-                                                    text: mainLine,
-                                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                                      color: Theme.of(context).colorScheme.onSurface,
+                              child: Autocomplete<Map<String, dynamic>>(
+                                optionsBuilder:
+                                    (TextEditingValue textEditingValue) async {
+                                      final query = textEditingValue.text
+                                          .trim();
+                                      if (query.isEmpty) {
+                                        return const Iterable<
+                                          Map<String, dynamic>
+                                        >.empty();
+                                      }
+                                      if (_searchQuery != query) {
+                                        setState(() => _searchQuery = query);
+                                      }
+                                      return _buildAutocompleteOptions(query);
+                                    },
+                                onSelected:
+                                    (Map<String, dynamic> suggestion) async {
+                                      await _selectAutocompleteOption(
+                                        suggestion,
+                                      );
+                                    },
+                                displayStringForOption:
+                                    (Map<String, dynamic> option) {
+                                      return option['description'] as String? ??
+                                          '';
+                                    },
+                                fieldViewBuilder:
+                                    (
+                                      BuildContext context,
+                                      TextEditingController
+                                      textEditingController,
+                                      FocusNode focusNode,
+                                      VoidCallback onFieldSubmitted,
+                                    ) {
+                                      _autocompleteController =
+                                          textEditingController;
+                                      _autocompleteFocusNode = focusNode;
+                                      if (!_hasSetInitialAutocompleteQuery &&
+                                          widget.initialLocationQuery != null &&
+                                          widget
+                                              .initialLocationQuery!
+                                              .isNotEmpty) {
+                                        _hasSetInitialAutocompleteQuery = true;
+                                        WidgetsBinding.instance
+                                            .addPostFrameCallback((_) {
+                                              if (mounted &&
+                                                  textEditingController
+                                                      .text
+                                                      .isEmpty) {
+                                                textEditingController.text =
+                                                    widget
+                                                        .initialLocationQuery!;
+                                                setState(
+                                                  () => _searchQuery = widget
+                                                      .initialLocationQuery!,
+                                                );
+                                              }
+                                            });
+                                      }
+                                      final l10n = AppLocalizations.of(
+                                        context,
+                                      )!;
+                                      return TextField(
+                                        controller: textEditingController,
+                                        focusNode: focusNode,
+                                        decoration: InputDecoration(
+                                          hintText: l10n.exploreSearchHint,
+                                          prefixIcon: const Padding(
+                                            padding: EdgeInsets.only(left: 6),
+                                            child: Icon(Icons.search),
+                                          ),
+                                          suffixIcon: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              if (_isSearchingLocation)
+                                                Padding(
+                                                  padding: const EdgeInsets.all(
+                                                    12,
+                                                  ),
+                                                  child: SizedBox(
+                                                    width: 20,
+                                                    height: 20,
+                                                    child: CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      valueColor:
+                                                          AlwaysStoppedAnimation<
+                                                            Color
+                                                          >(
+                                                            Theme.of(context)
+                                                                .colorScheme
+                                                                .primary,
+                                                          ),
                                                     ),
                                                   ),
-                                                  if (_totalSpotsInView != null && _bestShownCount != null && _bestShownCount! < _totalSpotsInView!)
-                                                    TextSpan(
-                                                      text: l10n.exploreMapBestShownParenthetical(_bestShownCount!),
-                                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                                        fontWeight: FontWeight.normal,
-                                                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                                ),
+                                              if (!_isSearchingLocation &&
+                                                  textEditingController
+                                                      .text
+                                                      .isNotEmpty)
+                                                IconButton(
+                                                  icon: const Icon(Icons.clear),
+                                                  tooltip: l10n
+                                                      .exploreClearSearchTooltip,
+                                                  onPressed: () {
+                                                    textEditingController
+                                                        .clear();
+                                                    setState(
+                                                      () => _searchQuery = '',
+                                                    );
+                                                  },
+                                                ),
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                  right: 6,
+                                                ),
+                                                child: Stack(
+                                                  children: [
+                                                    IconButton(
+                                                      icon: ReliableIcon(
+                                                        icon: Icons.filter_list,
+                                                        color:
+                                                            _showFiltersDialog
+                                                            ? Theme.of(context)
+                                                                  .colorScheme
+                                                                  .primary
+                                                            : null,
+                                                      ),
+                                                      tooltip: l10n
+                                                          .exploreFiltersTooltip,
+                                                      onPressed: () =>
+                                                          _toggleFiltersDialog(),
+                                                    ),
+                                                    if (_hasActiveFilters())
+                                                      Positioned(
+                                                        right: 8,
+                                                        top: 8,
+                                                        child: Container(
+                                                          width: 8,
+                                                          height: 8,
+                                                          decoration: BoxDecoration(
+                                                            color:
+                                                                Theme.of(
+                                                                      context,
+                                                                    )
+                                                                    .colorScheme
+                                                                    .primary,
+                                                            shape:
+                                                                BoxShape.circle,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            borderSide: BorderSide.none,
+                                          ),
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                horizontal: 16,
+                                                vertical: 12,
+                                              ),
+                                        ),
+                                        onChanged: (value) {
+                                          setState(() => _searchQuery = value);
+                                        },
+                                        onSubmitted: (_) {
+                                          if (_hasAutocompleteOptions) {
+                                            onFieldSubmitted();
+                                          } else {
+                                            _searchAndNavigateToLocation();
+                                          }
+                                        },
+                                      );
+                                    },
+                                optionsViewBuilder:
+                                    (
+                                      BuildContext context,
+                                      AutocompleteOnSelected<
+                                        Map<String, dynamic>
+                                      >
+                                      onSelected,
+                                      Iterable<Map<String, dynamic>> options,
+                                    ) {
+                                      final optionsList = options.toList();
+                                      WidgetsBinding.instance
+                                          .addPostFrameCallback((_) {
+                                            if (mounted) {
+                                              setState(
+                                                () => _hasAutocompleteOptions =
+                                                    optionsList.isNotEmpty,
+                                              );
+                                            }
+                                          });
+                                      final highlightedIndex =
+                                          AutocompleteHighlightedOption.of(
+                                            context,
+                                          );
+                                      return _AutocompleteOverlayContent(
+                                        optionsList: optionsList,
+                                        currentSelection:
+                                            highlightedIndex >= 0 &&
+                                                highlightedIndex <
+                                                    optionsList.length
+                                            ? highlightedIndex
+                                            : null,
+                                        onSelected: onSelected,
+                                      );
+                                    },
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Location Loading Indicator
+                  if (_isGettingLocation)
+                    Positioned(
+                      top: MediaQuery.of(context).padding.top + 80,
+                      right: 16,
+                      child: PointerInterceptor(
+                        child: Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  AppLocalizations.of(
+                                    context,
+                                  )!.exploreFindingLocation,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                  // Spot Detail Card (when marker is selected)
+                  if (_selectedSpot != null && !_isBottomSheetOpen)
+                    Positioned(
+                      left: 16,
+                      right: MediaQuery.of(context).size.width >= 600
+                          ? null
+                          : 16,
+                      bottom: 16,
+                      child: MediaQuery.of(context).size.width >= 600
+                          ? SpotCard(
+                              spot: _selectedSpot!,
+                              variant: SpotCardVariant.overlay,
+                              showCheckInPresence: true,
+                              maxWidth: 400,
+                              spotListId:
+                                  (_selectedSpot!.id != null &&
+                                      _highlightedSpotIds.contains(
+                                        _selectedSpot!.id,
+                                      ))
+                                  ? _selectedListId
+                                  : null,
+                              spotListName:
+                                  (_selectedSpot!.id != null &&
+                                      _highlightedSpotIds.contains(
+                                        _selectedSpot!.id,
+                                      ))
+                                  ? _selectedListName
+                                  : null,
+                              onSpotListTap:
+                                  (_selectedSpot!.id != null &&
+                                      _highlightedSpotIds.contains(
+                                        _selectedSpot!.id,
+                                      ) &&
+                                      _selectedListId != null)
+                                  ? () => _openSpotListPreview(_selectedListId!)
+                                  : null,
+                              onTapWithImageIndex: (imageIndex) {
+                                final baseUrl =
+                                    UrlService.generateNavigationUrl(
+                                      _selectedSpot!.id!,
+                                      countryCode: _selectedSpot!.countryCode,
+                                      city: _selectedSpot!.city,
+                                    );
+                                final navigationUrl = imageIndex > 0
+                                    ? '$baseUrl?imageIndex=$imageIndex'
+                                    : baseUrl;
+                                context.push(navigationUrl);
+                              },
+                              onViewDetails: () {
+                                final baseUrl =
+                                    UrlService.generateNavigationUrl(
+                                      _selectedSpot!.id!,
+                                      countryCode: _selectedSpot!.countryCode,
+                                      city: _selectedSpot!.city,
+                                    );
+                                // For onViewDetails, we don't have access to image index, so just use base URL
+                                context.push(baseUrl);
+                              },
+                              onClose: () {
+                                setState(() {
+                                  _selectedSpot = null;
+                                  _markers = _buildMarkers(_visibleSpots);
+                                });
+                              },
+                            )
+                          : Center(
+                              child: SpotCard(
+                                spot: _selectedSpot!,
+                                variant: SpotCardVariant.overlay,
+                                showCheckInPresence: true,
+                                maxWidth: double.infinity,
+                                spotListId:
+                                    (_selectedSpot!.id != null &&
+                                        _highlightedSpotIds.contains(
+                                          _selectedSpot!.id,
+                                        ))
+                                    ? _selectedListId
+                                    : null,
+                                spotListName:
+                                    (_selectedSpot!.id != null &&
+                                        _highlightedSpotIds.contains(
+                                          _selectedSpot!.id,
+                                        ))
+                                    ? _selectedListName
+                                    : null,
+                                onSpotListTap:
+                                    (_selectedSpot!.id != null &&
+                                        _highlightedSpotIds.contains(
+                                          _selectedSpot!.id,
+                                        ) &&
+                                        _selectedListId != null)
+                                    ? () =>
+                                          _openSpotListPreview(_selectedListId!)
+                                    : null,
+                                onTapWithImageIndex: (imageIndex) {
+                                  final baseUrl =
+                                      UrlService.generateNavigationUrl(
+                                        _selectedSpot!.id!,
+                                        countryCode: _selectedSpot!.countryCode,
+                                        city: _selectedSpot!.city,
+                                      );
+                                  final navigationUrl = imageIndex > 0
+                                      ? '$baseUrl?imageIndex=$imageIndex'
+                                      : baseUrl;
+                                  context.push(navigationUrl);
+                                },
+                                onViewDetails: () {
+                                  final baseUrl =
+                                      UrlService.generateNavigationUrl(
+                                        _selectedSpot!.id!,
+                                        countryCode: _selectedSpot!.countryCode,
+                                        city: _selectedSpot!.city,
+                                      );
+                                  // For onViewDetails, we don't have access to image index, so just use base URL
+                                  context.push(baseUrl);
+                                },
+                                onClose: () {
+                                  setState(() {
+                                    _selectedSpot = null;
+                                    _markers = _buildMarkers(_visibleSpots);
+                                  });
+                                },
+                              ),
+                            ),
+                    ),
+
+                  // Spot List Preview Card (when chip is clicked)
+                  if (_showListPreview &&
+                      _selectedList != null &&
+                      !_isBottomSheetOpen &&
+                      _selectedSpot == null)
+                    Positioned(
+                      left: 16,
+                      right: MediaQuery.of(context).size.width >= 600
+                          ? null
+                          : 16,
+                      bottom: 16,
+                      child: MediaQuery.of(context).size.width >= 600
+                          ? _buildSpotListPreviewCard(maxWidth: 400)
+                          : Center(
+                              child: _buildSpotListPreviewCard(
+                                maxWidth: double.infinity,
+                              ),
+                            ),
+                    ),
+
+                  // Add Spot Button (when long press is detected)
+                  if (_longPressedLocation != null &&
+                      _selectedSpot == null &&
+                      !_showListPreview &&
+                      !_showFiltersDialog)
+                    Stack(
+                      children: [
+                        // Transparent overlay to dismiss on tap outside
+                        Positioned.fill(
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _longPressedLocation = null;
+                                _longPressHandled = false;
+                                // Rebuild markers to remove the long-pressed location marker
+                                _markers = _buildMarkers(_visibleSpots);
+                              });
+                            },
+                            child: Container(color: Colors.transparent),
+                          ),
+                        ),
+                        // The popup card
+                        Positioned(
+                          left: 16,
+                          right: 16,
+                          bottom: 16,
+                          child: PointerInterceptor(
+                            child: Center(
+                              child: GestureDetector(
+                                onTap: () {
+                                  // Prevent tap from propagating to the overlay
+                                },
+                                child: Card(
+                                  elevation: 8,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          AppLocalizations.of(
+                                            context,
+                                          )!.exploreAddSpotHereTitle,
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.titleMedium,
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            TextButton(
+                                              onPressed: () {
+                                                setState(() {
+                                                  _longPressedLocation = null;
+                                                  _longPressHandled = false;
+                                                  // Rebuild markers to remove the long-pressed location marker
+                                                  _markers = _buildMarkers(
+                                                    _visibleSpots,
+                                                  );
+                                                });
+                                              },
+                                              child: Text(
+                                                AppLocalizations.of(
+                                                  context,
+                                                )!.profileCancel,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            ElevatedButton.icon(
+                                              onPressed: () {
+                                                final location =
+                                                    _longPressedLocation!;
+                                                final authService =
+                                                    Provider.of<AuthService>(
+                                                      context,
+                                                      listen: false,
+                                                    );
+
+                                                setState(() {
+                                                  _longPressedLocation = null;
+                                                  _longPressHandled = false;
+                                                  // Rebuild markers to remove the long-pressed location marker
+                                                  _markers = _buildMarkers(
+                                                    _visibleSpots,
+                                                  );
+                                                });
+
+                                                // Require profile loaded before add spot (prevents email-as-createdByName)
+                                                if (!authService
+                                                    .isAuthenticated) {
+                                                  context.go(
+                                                    '/login?redirectTo=${Uri.encodeComponent('/explore?tab=add')}',
+                                                  );
+                                                } else if (!authService
+                                                    .isProfileReady) {
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text(
+                                                        AppLocalizations.of(
+                                                          context,
+                                                        )!.exploreLoadingProfile,
                                                       ),
                                                     ),
-                                                ],
+                                                  );
+                                                } else {
+                                                  // Navigate to add spot screen with the location
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          AddSpotScreen(
+                                                            initialLocation:
+                                                                location,
+                                                          ),
+                                                    ),
+                                                  );
+                                                }
+                                              },
+                                              icon: const ReliableIcon(
+                                                icon: Icons.add_location,
                                               ),
-                                            );
-                                          },
-                                        ),
-                                        const SizedBox(width: 8),
-                                        ReliableIcon(
-                                          icon: _isBottomSheetOpen ? Icons.expand_more : Icons.expand_less,
+                                              label: Text(
+                                                AppLocalizations.of(
+                                                  context,
+                                                )!.tabAddSpot,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),
                                   ),
                                 ),
                               ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
 
-                              // Spots List - only show when expanded
-                              if (_isBottomSheetOpen)
-                                Expanded(
-                                  child: _visibleSpots.isEmpty
-                                      ? Center(
-                                          child: Column(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              Icon(
-                                                _searchQuery.isNotEmpty ? Icons.search_off : Icons.location_off,
-                                                size: 64,
-                                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-                                              ),
-                                              const SizedBox(height: 16),
-                                              Text(
-                                                _searchQuery.isNotEmpty
-                                                    ? AppLocalizations.of(context)!.exploreNoSpotsSearch
-                                                    : AppLocalizations.of(context)!.exploreNoSpotsArea,
-                                                style: Theme.of(context).textTheme.headlineSmall,
-                                              ),
-                                              const SizedBox(height: 8),
-                                              Text(
-                                                _searchQuery.isNotEmpty
-                                                    ? AppLocalizations.of(context)!.exploreNoSpotsSearchHint
-                                                    : AppLocalizations.of(context)!.exploreNoSpotsMapHint,
-                                                textAlign: TextAlign.center,
-                                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                                                ),
-                                              ),
-                                            ],
+                  // Bottom Sheet with Spots List - hide when spot detail card, list preview, or add spot button is visible
+                  if (_selectedSpot == null &&
+                      !_showListPreview &&
+                      _longPressedLocation == null)
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: AnimatedBuilder(
+                        animation: _bottomSheetAnimation,
+                        builder: (context, child) {
+                          return PointerInterceptor(
+                            child: GestureDetector(
+                              onTap: _isBottomSheetOpen
+                                  ? null
+                                  : _toggleBottomSheet, // Only clickable when collapsed
+                              onPanStart:
+                                  _handleDragStart, // Always enable drag gestures
+                              onPanUpdate: _handleDragUpdate,
+                              onPanEnd: _handleDragEnd,
+                              child: Center(
+                                child: ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxWidth: 1200,
+                                  ),
+                                  child: Container(
+                                    height:
+                                        MediaQuery.of(context).size.height *
+                                        _bottomSheetAnimation.value,
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.surface,
+                                      borderRadius: const BorderRadius.vertical(
+                                        top: Radius.circular(20),
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(
+                                            alpha: 0.1,
                                           ),
-                                        )
-                                      : _buildSpotsList(),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, -2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        // Header with spot count
+                                        Padding(
+                                          padding: const EdgeInsets.all(16),
+                                          child: Center(
+                                            child: TextButton(
+                                              onPressed: _toggleBottomSheet,
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.center,
+                                                children: [
+                                                  SvgPicture.asset(
+                                                    Theme.of(
+                                                              context,
+                                                            ).brightness ==
+                                                            Brightness.dark
+                                                        ? 'assets/images/logo-square-dark.svg'
+                                                        : 'assets/images/logo-square.svg',
+                                                    width: 24,
+                                                    height: 24,
+                                                    fit: BoxFit.contain,
+                                                  ),
+                                                  const SizedBox(width: 12),
+                                                  Builder(
+                                                    builder: (context) {
+                                                      final l10n =
+                                                          AppLocalizations.of(
+                                                            context,
+                                                          )!;
+                                                      final mainLine =
+                                                          _totalSpotsInView !=
+                                                                  null &&
+                                                              _bestShownCount !=
+                                                                  null
+                                                          ? l10n.exploreMapRankedTotalBar(
+                                                              _totalSpotsInView!,
+                                                            )
+                                                          : l10n.exploreMapSpotsFoundLine(
+                                                              _visibleSpots
+                                                                  .length,
+                                                            );
+                                                      return RichText(
+                                                        text: TextSpan(
+                                                          children: [
+                                                            TextSpan(
+                                                              text: mainLine,
+                                                              style: Theme.of(context)
+                                                                  .textTheme
+                                                                  .titleMedium
+                                                                  ?.copyWith(
+                                                                    color: Theme.of(
+                                                                      context,
+                                                                    ).colorScheme.onSurface,
+                                                                  ),
+                                                            ),
+                                                            if (_totalSpotsInView !=
+                                                                    null &&
+                                                                _bestShownCount !=
+                                                                    null &&
+                                                                _bestShownCount! <
+                                                                    _totalSpotsInView!)
+                                                              TextSpan(
+                                                                text: l10n
+                                                                    .exploreMapBestShownParenthetical(
+                                                                      _bestShownCount!,
+                                                                    ),
+                                                                style: Theme.of(context)
+                                                                    .textTheme
+                                                                    .titleMedium
+                                                                    ?.copyWith(
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .normal,
+                                                                      color: Theme.of(context)
+                                                                          .colorScheme
+                                                                          .onSurface
+                                                                          .withValues(
+                                                                            alpha:
+                                                                                0.6,
+                                                                          ),
+                                                                    ),
+                                                              ),
+                                                          ],
+                                                        ),
+                                                      );
+                                                    },
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  ReliableIcon(
+                                                    icon: _isBottomSheetOpen
+                                                        ? Icons.expand_more
+                                                        : Icons.expand_less,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+
+                                        // Spots List - only show when expanded
+                                        if (_isBottomSheetOpen)
+                                          Expanded(
+                                            child: _visibleSpots.isEmpty
+                                                ? Center(
+                                                    child: Column(
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .center,
+                                                      children: [
+                                                        Icon(
+                                                          _searchQuery
+                                                                  .isNotEmpty
+                                                              ? Icons.search_off
+                                                              : Icons
+                                                                    .location_off,
+                                                          size: 64,
+                                                          color:
+                                                              Theme.of(context)
+                                                                  .colorScheme
+                                                                  .onSurface
+                                                                  .withValues(
+                                                                    alpha: 0.5,
+                                                                  ),
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 16,
+                                                        ),
+                                                        Text(
+                                                          _searchQuery
+                                                                  .isNotEmpty
+                                                              ? AppLocalizations.of(
+                                                                  context,
+                                                                )!.exploreNoSpotsSearch
+                                                              : AppLocalizations.of(
+                                                                  context,
+                                                                )!.exploreNoSpotsArea,
+                                                          style:
+                                                              Theme.of(context)
+                                                                  .textTheme
+                                                                  .headlineSmall,
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 8,
+                                                        ),
+                                                        Text(
+                                                          _searchQuery
+                                                                  .isNotEmpty
+                                                              ? AppLocalizations.of(
+                                                                  context,
+                                                                )!.exploreNoSpotsSearchHint
+                                                              : AppLocalizations.of(
+                                                                  context,
+                                                                )!.exploreNoSpotsMapHint,
+                                                          textAlign:
+                                                              TextAlign.center,
+                                                          style: Theme.of(context)
+                                                              .textTheme
+                                                              .bodyMedium
+                                                              ?.copyWith(
+                                                                color:
+                                                                    Theme.of(
+                                                                          context,
+                                                                        )
+                                                                        .colorScheme
+                                                                        .onSurface
+                                                                        .withValues(
+                                                                          alpha:
+                                                                              0.7,
+                                                                        ),
+                                                              ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  )
+                                                : _buildSpotsList(),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
-                            ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+
+                  // Spot List Chip - Shows when spots are highlighted from a list
+                  if (_selectedListName != null &&
+                      _highlightedSpotIds.isNotEmpty)
+                    Builder(
+                      builder: (context) {
+                        final screenWidth = MediaQuery.of(context).size.width;
+                        final rightPosition = screenWidth > 1200
+                            ? (screenWidth - 1200) / 2 + 16
+                            : 16.0;
+                        return Positioned(
+                          top:
+                              MediaQuery.of(context).padding.top +
+                              16 +
+                              64 +
+                              8, // Below search bar (16 top padding + 16 margin + ~64 search bar height + 8 spacing)
+                          right: rightPosition,
+                          child: PointerInterceptor(
+                            child: InkWell(
+                              onTap: _selectedList != null
+                                  ? () async {
+                                      // Show spot list preview card
+                                      // Collapse bottom sheet if open
+                                      if (_isBottomSheetOpen) {
+                                        _toggleBottomSheet();
+                                      }
+                                      setState(() {
+                                        _showListPreview = true;
+                                        // Close spot detail if open
+                                        _selectedSpot = null;
+                                      });
+                                      // Fit map to show all spots in the list
+                                      if (_selectedList != null &&
+                                          _selectedList!
+                                              .effectiveSpotIds
+                                              .isNotEmpty) {
+                                        await _fitMapToSpotList(
+                                          _selectedList!.effectiveSpotIds,
+                                        );
+                                      }
+                                    }
+                                  : null,
+                              borderRadius: BorderRadius.circular(16),
+                              child: Chip(
+                                label: Text(_selectedListName!),
+                                avatar: Icon(Icons.list, size: 18),
+                                backgroundColor: Theme.of(
+                                  context,
+                                ).colorScheme.surface,
+                                elevation: 2,
+                                onDeleted: () {
+                                  _clearSpotListSelection();
+                                  // Clear from SearchStateService
+                                  final searchState =
+                                      Provider.of<SearchStateService>(
+                                        context,
+                                        listen: false,
+                                      );
+                                  searchState.setSelectedListId(null);
+                                },
+                                deleteIcon: Icon(Icons.close, size: 18),
                               ),
                             ),
                           ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                ),
-
-              // Spot List Chip - Shows when spots are highlighted from a list
-              if (_selectedListName != null && _highlightedSpotIds.isNotEmpty)
-                Builder(
-                  builder: (context) {
-                    final screenWidth = MediaQuery.of(context).size.width;
-                    final rightPosition = screenWidth > 1200 ? (screenWidth - 1200) / 2 + 16 : 16.0;
-                    return Positioned(
-                      top: MediaQuery.of(context).padding.top + 16 + 64 + 8, // Below search bar (16 top padding + 16 margin + ~64 search bar height + 8 spacing)
-                      right: rightPosition,
-                      child: PointerInterceptor(
-                        child: InkWell(
-                          onTap: _selectedList != null
-                              ? () async {
-                                  // Show spot list preview card
-                                  // Collapse bottom sheet if open
-                                  if (_isBottomSheetOpen) {
-                                    _toggleBottomSheet();
-                                  }
-                                  setState(() {
-                                    _showListPreview = true;
-                                    // Close spot detail if open
-                                    _selectedSpot = null;
-                                  });
-                                  // Fit map to show all spots in the list
-                                  if (_selectedList != null && _selectedList!.effectiveSpotIds.isNotEmpty) {
-                                    await _fitMapToSpotList(_selectedList!.effectiveSpotIds);
-                                  }
-                                }
-                              : null,
-                          borderRadius: BorderRadius.circular(16),
-                          child: Chip(
-                            label: Text(_selectedListName!),
-                            avatar: Icon(Icons.list, size: 18),
-                            backgroundColor: Theme.of(context).colorScheme.surface,
-                            elevation: 2,
-                            onDeleted: () {
-                              _clearSpotListSelection();
-                              // Clear from SearchStateService
-                              final searchState = Provider.of<SearchStateService>(context, listen: false);
-                              searchState.setSelectedListId(null);
-                            },
-                            deleteIcon: Icon(Icons.close, size: 18),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-
-              // Refresh Spots Button - Floating Action Button
-              if (!_isBottomSheetOpen && _selectedSpot == null && !_showListPreview)
-                Builder(
-                  builder: (context) {
-                    final screenWidth = MediaQuery.of(context).size.width;
-                    final rightPosition = screenWidth > 1200 ? (screenWidth - 1200) / 2 + 16 : 16.0;
-                    return Positioned(
-                      right: rightPosition,
-                      bottom: MediaQuery.of(context).size.height * 0.09 + 144, // Position above map/satellite button
-                  child: PointerInterceptor(
-                    child: FloatingActionButton(
-                      onPressed: _isLoadingSpotsForView ? null : () {
-                        _loadSpotsForCurrentView();
+                        );
                       },
-                      heroTag: 'refreshSpotsFab',
-                      mini: true,
-                      tooltip: AppLocalizations.of(context)!.exploreRefreshMapTooltip,
-                      child: _isLoadingSpotsForView
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            )
-                          : const ReliableIcon(
-                              icon: Icons.refresh,
+                    ),
+
+                  // Refresh Spots Button - Floating Action Button
+                  if (!_isBottomSheetOpen &&
+                      _selectedSpot == null &&
+                      !_showListPreview)
+                    Builder(
+                      builder: (context) {
+                        final screenWidth = MediaQuery.of(context).size.width;
+                        final rightPosition = screenWidth > 1200
+                            ? (screenWidth - 1200) / 2 + 16
+                            : 16.0;
+                        return Positioned(
+                          right: rightPosition,
+                          bottom:
+                              MediaQuery.of(context).size.height * 0.09 +
+                              144, // Position above map/satellite button
+                          child: PointerInterceptor(
+                            child: FloatingActionButton(
+                              onPressed: _isLoadingSpotsForView
+                                  ? null
+                                  : () {
+                                      _loadSpotsForCurrentView();
+                                    },
+                              heroTag: 'refreshSpotsFab',
+                              mini: true,
+                              tooltip: AppLocalizations.of(
+                                context,
+                              )!.exploreRefreshMapTooltip,
+                              child: _isLoadingSpotsForView
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Colors.white,
+                                            ),
+                                      ),
+                                    )
+                                  : const ReliableIcon(icon: Icons.refresh),
                             ),
-                    ),
-                  ),
-                    );
-                  },
-                ),
-
-              // Map Type Toggle Button - Floating Action Button
-              if (!_isBottomSheetOpen && _selectedSpot == null && !_showListPreview)
-                Builder(
-                  builder: (context) {
-                    final screenWidth = MediaQuery.of(context).size.width;
-                    final rightPosition = screenWidth > 1200 ? (screenWidth - 1200) / 2 + 16 : 16.0;
-                    return Positioned(
-                      right: rightPosition,
-                      bottom: MediaQuery.of(context).size.height * 0.09 + 80, // Position above location button
-                  child: PointerInterceptor(
-                    child: FloatingActionButton(
-                      onPressed: () {
-                        setState(() {
-                          _isSatelliteView = !_isSatelliteView;
-                        });
-                        final searchState = Provider.of<SearchStateService>(context, listen: false);
-                        searchState.setSatellite(_isSatelliteView);
+                          ),
+                        );
                       },
-                      heroTag: 'mapTypeToggleFab',
-                      mini: true,
-                      tooltip: _isSatelliteView
-                          ? AppLocalizations.of(context)!.exploreSwitchToMap
-                          : AppLocalizations.of(context)!.exploreSwitchToSatellite,
-                      child: ReliableIcon(
-                        icon: _isSatelliteView ? Icons.map : Icons.terrain,
-                      ),
                     ),
-                  ),
-                    );
-                  },
-                ),
 
-              // Location Button - Floating Action Button (only show when bottom sheet is collapsed and no spot selected)
-              if (!_isBottomSheetOpen && _selectedSpot == null && !_showListPreview)
-                Builder(
-                  builder: (context) {
-                    final screenWidth = MediaQuery.of(context).size.width;
-                    final rightPosition = screenWidth > 1200 ? (screenWidth - 1200) / 2 + 16 : 16.0;
-                    return Positioned(
-                      right: rightPosition,
-                      bottom: MediaQuery.of(context).size.height * 0.09 + 16, // Position above bottom sheet
-                  child: PointerInterceptor(
-                    child: FloatingActionButton(
-                      onPressed: _getCurrentLocation,
-                      heroTag: 'currentLocationFab',
-                      mini: true,
-                      tooltip: _isLocationPermissionDenied
-                          ? AppLocalizations.of(context)!.exploreLocationPermissionDenied
-                          : AppLocalizations.of(context)!.exploreCenterOnMyLocation,
-                      child: _isGettingLocation
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  // Map Type Toggle Button - Floating Action Button
+                  if (!_isBottomSheetOpen &&
+                      _selectedSpot == null &&
+                      !_showListPreview)
+                    Builder(
+                      builder: (context) {
+                        final screenWidth = MediaQuery.of(context).size.width;
+                        final rightPosition = screenWidth > 1200
+                            ? (screenWidth - 1200) / 2 + 16
+                            : 16.0;
+                        return Positioned(
+                          right: rightPosition,
+                          bottom:
+                              MediaQuery.of(context).size.height * 0.09 +
+                              80, // Position above location button
+                          child: PointerInterceptor(
+                            child: FloatingActionButton(
+                              onPressed: () {
+                                setState(() {
+                                  _isSatelliteView = !_isSatelliteView;
+                                });
+                                final searchState =
+                                    Provider.of<SearchStateService>(
+                                      context,
+                                      listen: false,
+                                    );
+                                searchState.setSatellite(_isSatelliteView);
+                              },
+                              heroTag: 'mapTypeToggleFab',
+                              mini: true,
+                              tooltip: _isSatelliteView
+                                  ? AppLocalizations.of(
+                                      context,
+                                    )!.exploreSwitchToMap
+                                  : AppLocalizations.of(
+                                      context,
+                                    )!.exploreSwitchToSatellite,
+                              child: ReliableIcon(
+                                icon: _isSatelliteView
+                                    ? Icons.map
+                                    : Icons.terrain,
                               ),
-                            )
-                          : Icon(_isLocationPermissionDenied 
-                              ? Icons.location_disabled 
-                              : Icons.my_location),
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                  ),
-                    );
-                  },
-                ),
-            ],
-          );
-        },
-      ),
+
+                  // Location Button - Floating Action Button (only show when bottom sheet is collapsed and no spot selected)
+                  if (!_isBottomSheetOpen &&
+                      _selectedSpot == null &&
+                      !_showListPreview)
+                    Builder(
+                      builder: (context) {
+                        final screenWidth = MediaQuery.of(context).size.width;
+                        final rightPosition = screenWidth > 1200
+                            ? (screenWidth - 1200) / 2 + 16
+                            : 16.0;
+                        return Positioned(
+                          right: rightPosition,
+                          bottom:
+                              MediaQuery.of(context).size.height * 0.09 +
+                              16, // Position above bottom sheet
+                          child: PointerInterceptor(
+                            child: FloatingActionButton(
+                              onPressed: _getCurrentLocation,
+                              heroTag: 'currentLocationFab',
+                              mini: true,
+                              tooltip: _isLocationPermissionDenied
+                                  ? AppLocalizations.of(
+                                      context,
+                                    )!.exploreLocationPermissionDenied
+                                  : AppLocalizations.of(
+                                      context,
+                                    )!.exploreCenterOnMyLocation,
+                              child: _isGettingLocation
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Colors.white,
+                                            ),
+                                      ),
+                                    )
+                                  : Icon(
+                                      _isLocationPermissionDenied
+                                          ? Icons.location_disabled
+                                          : Icons.my_location,
+                                    ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                ],
+              );
+            },
+          ),
           // Filters Dialog
-          if (_showFiltersDialog)
-            _buildFiltersDialog(),
+          if (_showFiltersDialog) _buildFiltersDialog(),
         ],
       ),
     );
@@ -3452,111 +4148,125 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       child: PointerInterceptor(
         // Intercept pointer events on the full-screen barrier area
         child: Container(
-        color: Colors.black.withValues(alpha: 0.5), // Semi-transparent background
-        child: Center(
-          child: PointerInterceptor(
-            child: GestureDetector(
-              onTap: () {
-                // Prevent dialog from closing when tapping inside
-              },
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: 1200,
-                ),
-                child: Container(
-                  constraints: BoxConstraints(
-                    maxHeight: MediaQuery.of(context).size.height * 0.8,
-                    maxWidth: MediaQuery.of(context).size.width * 0.9,
-                  ),
-                  decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    AppLocalizations.of(context)!.exploreFiltersDialogTitle,
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      setState(() {
-                        _showFiltersDialog = false;
-                      });
-                    },
-                    icon: const Icon(Icons.close),
-                  ),
-                ],
-              ),
-            ),
-            
-            // Filters Content
-            Flexible(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _buildFilters(),
-              ),
-            ),
-            
-            // Clear and Apply Buttons
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () async {
-                        final searchState = Provider.of<SearchStateService>(context, listen: false);
-                        await searchState.clearAllFilters();
-                        if (!mounted) return;
-                        setState(() {
-                          _showFiltersDialog = false;
-                        });
-                      },
-                      child: Text(AppLocalizations.of(context)!.exploreClearFilters),
+          color: Colors.black.withValues(
+            alpha: 0.5,
+          ), // Semi-transparent background
+          child: Center(
+            child: PointerInterceptor(
+              child: GestureDetector(
+                onTap: () {
+                  // Prevent dialog from closing when tapping inside
+                },
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: 1200),
+                  child: Container(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(context).size.height * 0.8,
+                      maxWidth: MediaQuery.of(context).size.width * 0.9,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Header
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                AppLocalizations.of(
+                                  context,
+                                )!.exploreFiltersDialogTitle,
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.headlineSmall,
+                              ),
+                              IconButton(
+                                onPressed: () {
+                                  setState(() {
+                                    _showFiltersDialog = false;
+                                  });
+                                },
+                                icon: const Icon(Icons.close),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Filters Content
+                        Flexible(
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: _buildFilters(),
+                          ),
+                        ),
+
+                        // Clear and Apply Buttons
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: TextButton(
+                                  onPressed: () async {
+                                    final searchState =
+                                        Provider.of<SearchStateService>(
+                                          context,
+                                          listen: false,
+                                        );
+                                    await searchState.clearAllFilters();
+                                    if (!mounted) return;
+                                    setState(() {
+                                      _showFiltersDialog = false;
+                                    });
+                                  },
+                                  child: Text(
+                                    AppLocalizations.of(
+                                      context,
+                                    )!.exploreClearFilters,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      _showFiltersDialog = false;
+                                    });
+                                    // Reload spots since source filtering is done at database level
+                                    _loadSpotsForCurrentView();
+                                  },
+                                  child: Text(
+                                    AppLocalizations.of(
+                                      context,
+                                    )!.exploreApplyFilters,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          _showFiltersDialog = false;
-                        });
-                        // Reload spots since source filtering is done at database level
-                        _loadSpotsForCurrentView();
-                      },
-                      child: Text(AppLocalizations.of(context)!.exploreApplyFilters),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-                ],
-              ),
                 ),
               ),
             ),
           ),
         ),
       ),
-      ),
     );
   }
-
 }
-

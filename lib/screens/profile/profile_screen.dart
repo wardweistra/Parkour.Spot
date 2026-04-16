@@ -9,6 +9,9 @@ import 'package:lottie/lottie.dart';
 import '../../services/auth_service.dart';
 import '../../services/locale_preferences_service.dart';
 import '../../services/mobile_detection_service.dart';
+import '../../services/user_locations_of_interest_service.dart';
+import '../../models/location_of_interest.dart';
+import '../../utils/location_permission_utils.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/instagram_button.dart';
 import '../../widgets/github_button.dart';
@@ -24,7 +27,8 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderStateMixin {
+class _ProfileScreenState extends State<ProfileScreen>
+    with SingleTickerProviderStateMixin {
   bool _isExpanded = false;
   late AnimationController _lottieController;
   bool _hasAnimatedOnLoad = false;
@@ -138,7 +142,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       Icon(
                         Icons.person_outline,
                         size: 48,
-                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.6),
                       ),
                       const SizedBox(height: 16),
                       Text(
@@ -151,7 +157,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                         l10n.profileSignInSubtitle,
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.7),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -160,7 +168,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           constraints: const BoxConstraints(maxWidth: 400),
                           child: CustomButton(
                             onPressed: () {
-                              context.go('/login?redirectTo=${Uri.encodeComponent('/explore?tab=profile')}');
+                              context.go(
+                                '/login?redirectTo=${Uri.encodeComponent('/explore?tab=profile')}',
+                              );
                             },
                             text: l10n.profileSignInButton,
                             width: double.infinity,
@@ -173,21 +183,29 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                         children: [
                           Expanded(
                             child: Divider(
-                              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.outline.withValues(alpha: 0.3),
                             ),
                           ),
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             child: Text(
                               l10n.profileOrDivider,
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                              ),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.6),
+                                  ),
                             ),
                           ),
                           Expanded(
                             child: Divider(
-                              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.outline.withValues(alpha: 0.3),
                             ),
                           ),
                         ],
@@ -198,7 +216,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           constraints: const BoxConstraints(maxWidth: 400),
                           child: CustomButton(
                             onPressed: () {
-                              context.go('/login?mode=signup&redirectTo=${Uri.encodeComponent('/explore?tab=profile')}');
+                              context.go(
+                                '/login?mode=signup&redirectTo=${Uri.encodeComponent('/explore?tab=profile')}',
+                              );
                             },
                             text: l10n.profileCreateAccount,
                             width: double.infinity,
@@ -210,9 +230,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // App Info Card
               Card(
                 child: Padding(
@@ -230,14 +250,15 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   Widget _buildProfileContent(BuildContext context, AuthService authService) {
     final l10n = AppLocalizations.of(context)!;
     final user = authService.userProfile;
-    
+
     // Determine profile URL - use username if available, otherwise user ID
-    final profileUrl = user != null && user.username != null && user.username!.isNotEmpty
+    final profileUrl =
+        user != null && user.username != null && user.username!.isNotEmpty
         ? '/user/${user.username}'
         : user?.id != null
-            ? '/user/${user!.id}'
-            : null;
-    
+        ? '/user/${user!.id}'
+        : null;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Center(
@@ -259,16 +280,27 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           CircleAvatar(
                             key: ValueKey(user?.photoURL ?? 'no-photo'),
                             radius: 36,
-                            backgroundColor: Theme.of(context).colorScheme.primary,
-                            backgroundImage: user != null && user.photoURL != null && user.photoURL!.isNotEmpty
-                                ? NetworkImage(_getCacheBustedImageUrl(user.photoURL!))
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.primary,
+                            backgroundImage:
+                                user != null &&
+                                    user.photoURL != null &&
+                                    user.photoURL!.isNotEmpty
+                                ? NetworkImage(
+                                    _getCacheBustedImageUrl(user.photoURL!),
+                                  )
                                 : null,
                             child: (user?.photoURL?.isEmpty ?? true)
                                 ? Text(
-                                    user?.displayName?.substring(0, 1).toUpperCase() ?? 'U',
-                                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                      color: Colors.white,
-                                    ),
+                                    user?.displayName
+                                            ?.substring(0, 1)
+                                            .toUpperCase() ??
+                                        'U',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .headlineMedium
+                                        ?.copyWith(color: Colors.white),
                                   )
                                 : null,
                           ),
@@ -278,15 +310,22 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  user?.displayName ?? l10n.profileDefaultDisplayName,
-                                  style: Theme.of(context).textTheme.titleMedium,
+                                  user?.displayName ??
+                                      l10n.profileDefaultDisplayName,
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.titleMedium,
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   l10n.profileViewEditSubtitle,
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                                  ),
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withValues(alpha: 0.7),
+                                      ),
                                 ),
                               ],
                             ),
@@ -294,7 +333,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           Icon(
                             Icons.arrow_forward_ios,
                             size: 16,
-                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.5),
                           ),
                         ],
                       ),
@@ -328,10 +369,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           const SizedBox(height: 4),
                           Text(
                             l10n.profileSettingsLanguageDescription,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurface
                                       .withValues(alpha: 0.7),
                                 ),
                           ),
@@ -346,21 +386,24 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                             ),
                             clipBehavior: Clip.antiAlias,
                             child: ButtonTheme.fromButtonThemeData(
-                              data: ButtonTheme.of(context).copyWith(
-                                alignedDropdown: false,
-                              ),
+                              data: ButtonTheme.of(
+                                context,
+                              ).copyWith(alignedDropdown: false),
                               child: Material(
                                 type: MaterialType.transparency,
                                 child: Theme(
                                   data: Theme.of(context).copyWith(
                                     // Avoid a persistent grey fill after the menu closes (web focus).
                                     focusColor: Colors.transparent,
-                                    hoverColor: scheme.onSurface
-                                        .withValues(alpha: 0.06),
-                                    splashColor: scheme.onSurface
-                                        .withValues(alpha: 0.10),
-                                    highlightColor: scheme.onSurface
-                                        .withValues(alpha: 0.06),
+                                    hoverColor: scheme.onSurface.withValues(
+                                      alpha: 0.06,
+                                    ),
+                                    splashColor: scheme.onSurface.withValues(
+                                      alpha: 0.10,
+                                    ),
+                                    highlightColor: scheme.onSurface.withValues(
+                                      alpha: 0.06,
+                                    ),
                                   ),
                                   child: DropdownButtonHideUnderline(
                                     child: DropdownButton<String>(
@@ -380,17 +423,17 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                                             l10n.profileLanguageSystemDefault,
                                           ),
                                         ),
-                                        ...LocalePreferencesService
-                                            .supportedLanguageCodes()
+                                        ...LocalePreferencesService.supportedLanguageCodes()
                                             .map(
-                                          (code) => DropdownMenuItem(
-                                            value: code,
-                                            child: Text(
-                                              LocalePreferencesService
-                                                  .nativeLanguageLabel(code),
+                                              (code) => DropdownMenuItem(
+                                                value: code,
+                                                child: Text(
+                                                  LocalePreferencesService.nativeLanguageLabel(
+                                                    code,
+                                                  ),
+                                                ),
+                                              ),
                                             ),
-                                          ),
-                                        ),
                                       ],
                                       onChanged: (value) async {
                                         if (value == null) return;
@@ -412,6 +455,10 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   );
                 },
               ),
+
+              const SizedBox(height: 16),
+
+              _buildLocationAlertsCard(context, authService),
 
               const SizedBox(height: 16),
 
@@ -487,9 +534,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   child: _buildAboutSection(context),
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Sign Out Button
               CustomButton(
                 onPressed: () async {
@@ -502,7 +549,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                         content: Text(dlgL10n.profileSignOutMessage),
                         actions: [
                           TextButton(
-                            onPressed: () => Navigator.pop(dialogContext, false),
+                            onPressed: () =>
+                                Navigator.pop(dialogContext, false),
                             child: Text(dlgL10n.profileCancel),
                           ),
                           TextButton(
@@ -513,7 +561,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       );
                     },
                   );
-                  
+
                   if (shouldSignOut == true) {
                     await authService.signOut();
                     if (context.mounted) {
@@ -537,14 +585,14 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     final textStyle = Theme.of(context).textTheme.bodyLarge?.copyWith(
       color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
     );
-    
+
     final linkStyle = textStyle?.copyWith(
       color: Theme.of(context).colorScheme.primary,
       decoration: TextDecoration.underline,
     );
-    
+
     const linkText = 'Ward Weistra';
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -558,9 +606,14 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 style: linkStyle,
                 recognizer: TapGestureRecognizer()
                   ..onTap = () async {
-                    final uri = Uri.parse('https://www.instagram.com/wardweistra/');
+                    final uri = Uri.parse(
+                      'https://www.instagram.com/wardweistra/',
+                    );
                     if (await canLaunchUrl(uri)) {
-                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      await launchUrl(
+                        uri,
+                        mode: LaunchMode.externalApplication,
+                      );
                     }
                   },
               ),
@@ -569,15 +622,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           ),
         ),
         const SizedBox(height: 16),
-        SelectableText(
-          l10n.profileAboutMapMission,
-          style: textStyle,
-        ),
+        SelectableText(l10n.profileAboutMapMission, style: textStyle),
         const SizedBox(height: 16),
-        SelectableText(
-          l10n.profileAboutPrinciplesHeader,
-          style: textStyle,
-        ),
+        SelectableText(l10n.profileAboutPrinciplesHeader, style: textStyle),
         const SizedBox(height: 8),
         Padding(
           padding: const EdgeInsets.only(left: 16),
@@ -602,10 +649,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           ),
         ),
         const SizedBox(height: 16),
-        SelectableText(
-          l10n.profileAboutEnjoy,
-          style: textStyle,
-        ),
+        SelectableText(l10n.profileAboutEnjoy, style: textStyle),
         const SizedBox(height: 16),
         SelectableText.rich(
           TextSpan(
@@ -617,9 +661,14 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 style: linkStyle,
                 recognizer: TapGestureRecognizer()
                   ..onTap = () async {
-                    final uri = Uri.parse('https://www.instagram.com/daphnefontijn/');
+                    final uri = Uri.parse(
+                      'https://www.instagram.com/daphnefontijn/',
+                    );
                     if (await canLaunchUrl(uri)) {
-                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      await launchUrl(
+                        uri,
+                        mode: LaunchMode.externalApplication,
+                      );
                     }
                   },
               ),
@@ -629,9 +678,14 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 style: linkStyle,
                 recognizer: TapGestureRecognizer()
                   ..onTap = () async {
-                    final uri = Uri.parse('https://www.instagram.com/tim.haerkens/');
+                    final uri = Uri.parse(
+                      'https://www.instagram.com/tim.haerkens/',
+                    );
                     if (await canLaunchUrl(uri)) {
-                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      await launchUrl(
+                        uri,
+                        mode: LaunchMode.externalApplication,
+                      );
                     }
                   },
               ),
@@ -641,9 +695,14 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 style: linkStyle,
                 recognizer: TapGestureRecognizer()
                   ..onTap = () async {
-                    final uri = Uri.parse('https://www.instagram.com/marilybronk/');
+                    final uri = Uri.parse(
+                      'https://www.instagram.com/marilybronk/',
+                    );
                     if (await canLaunchUrl(uri)) {
-                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      await launchUrl(
+                        uri,
+                        mode: LaunchMode.externalApplication,
+                      );
                     }
                   },
               ),
@@ -664,7 +723,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWideScreen = constraints.maxWidth > 600;
-        
+
         return Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1200),
@@ -730,8 +789,11 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                                         child: Text(
                                           l10n.profileReadMore,
                                           style: textStyle?.copyWith(
-                                            color: Theme.of(context).colorScheme.primary,
-                                            decoration: TextDecoration.underline,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
+                                            decoration:
+                                                TextDecoration.underline,
                                           ),
                                         ),
                                       ),
@@ -743,7 +805,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                               Expanded(
                                 child: Center(
                                   child: ConstrainedBox(
-                                    constraints: const BoxConstraints(maxWidth: 350),
+                                    constraints: const BoxConstraints(
+                                      maxWidth: 350,
+                                    ),
                                     child: Column(
                                       children: [
                                         InstagramButton(
@@ -752,12 +816,14 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                                         ),
                                         const SizedBox(height: 16),
                                         GitHubButton(
-                                          url: 'https://github.com/wardweistra/Parkour.Spot/',
+                                          url:
+                                              'https://github.com/wardweistra/Parkour.Spot/',
                                           label: l10n.profileViewSourceCode,
                                         ),
                                         const SizedBox(height: 16),
                                         ReportIssueButton(
-                                          url: 'https://github.com/wardweistra/Parkour.Spot/issues',
+                                          url:
+                                              'https://github.com/wardweistra/Parkour.Spot/issues',
                                           label: l10n.profileReportIssue,
                                         ),
                                         const SizedBox(height: 16),
@@ -823,7 +889,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           ),
                           const SizedBox(height: 16),
                           ReportIssueButton(
-                            url: 'https://github.com/wardweistra/Parkour.Spot/issues',
+                            url:
+                                'https://github.com/wardweistra/Parkour.Spot/issues',
                             label: l10n.profileReportIssue,
                           ),
                           const SizedBox(height: 16),
@@ -854,10 +921,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     VoidCallback onTap,
   ) {
     return ListTile(
-      leading: Icon(
-        icon,
-        color: Theme.of(context).colorScheme.primary,
-      ),
+      leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
       title: Text(title),
       subtitle: Text(subtitle),
       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
@@ -866,12 +930,280 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     );
   }
 
+  Widget _buildLocationAlertsCard(
+    BuildContext context,
+    AuthService authService,
+  ) {
+    final locationsService = Provider.of<UserLocationsOfInterestService>(
+      context,
+      listen: false,
+    );
+    final shareLastKnown =
+        authService.userProfile?.shareLastKnownLocationForAlerts == true;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Location alerts',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Control which locations are used for nearby check-in notifications.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Share last known location'),
+              subtitle: const Text(
+                'Use your device location (when granted) to match nearby alerts.',
+              ),
+              value: shareLastKnown,
+              onChanged: (enabled) async {
+                final prefSaved = await authService
+                    .updateShareLastKnownLocationForAlerts(enabled);
+                if (!prefSaved || !context.mounted) return;
+                await locationsService.setLastKnownEnabled(enabled);
+                if (enabled) {
+                  final position =
+                      await LocationPermissionUtils.getCurrentPositionWithPermission(
+                        context: context,
+                        showErrorMessages: false,
+                      );
+                  if (position != null) {
+                    await locationsService.upsertLastKnownLocation(
+                      latitude: position.latitude,
+                      longitude: position.longitude,
+                    );
+                  }
+                }
+              },
+            ),
+            const Divider(),
+            Row(
+              children: [
+                Text(
+                  'Saved locations',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: () => _showLocationEditorDialog(context),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add'),
+                ),
+              ],
+            ),
+            StreamBuilder<List<LocationOfInterest>>(
+              stream: locationsService.watchLocations(),
+              builder: (context, snapshot) {
+                final locations = snapshot.data ?? const <LocationOfInterest>[];
+                final saved = locations
+                    .where((loc) => !loc.isLastKnown)
+                    .toList();
+                if (saved.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      'No saved locations yet. Add places like Home or Work.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  );
+                }
+                return Column(
+                  children: saved
+                      .map(
+                        (location) => ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(location.label ?? 'Saved location'),
+                          subtitle: Text(
+                            '${location.latitude.toStringAsFixed(5)}, '
+                            '${location.longitude.toStringAsFixed(5)}',
+                          ),
+                          leading: Icon(
+                            Icons.place_outlined,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          trailing: Wrap(
+                            spacing: 4,
+                            children: [
+                              IconButton(
+                                tooltip: location.enabled
+                                    ? 'Disable'
+                                    : 'Enable',
+                                onPressed: () async {
+                                  await locationsService.setLocationEnabled(
+                                    id: location.id,
+                                    enabled: !location.enabled,
+                                  );
+                                },
+                                icon: Icon(
+                                  location.enabled
+                                      ? Icons.notifications_active_outlined
+                                      : Icons.notifications_off_outlined,
+                                ),
+                              ),
+                              IconButton(
+                                tooltip: 'Edit',
+                                onPressed: () => _showLocationEditorDialog(
+                                  context,
+                                  existing: location,
+                                ),
+                                icon: const Icon(Icons.edit_outlined),
+                              ),
+                              IconButton(
+                                tooltip: 'Delete',
+                                onPressed: () async {
+                                  await locationsService.deleteSavedLocation(
+                                    location.id,
+                                  );
+                                },
+                                icon: const Icon(Icons.delete_outline),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                      .toList(),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showLocationEditorDialog(
+    BuildContext context, {
+    LocationOfInterest? existing,
+  }) async {
+    final service = Provider.of<UserLocationsOfInterestService>(
+      context,
+      listen: false,
+    );
+    final labelController = TextEditingController(text: existing?.label ?? '');
+    final latController = TextEditingController(
+      text: existing?.latitude.toString() ?? '',
+    );
+    final lngController = TextEditingController(
+      text: existing?.longitude.toString() ?? '',
+    );
+    var enabled = existing?.enabled ?? true;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            return AlertDialog(
+              title: Text(existing == null ? 'Add location' : 'Edit location'),
+              content: SizedBox(
+                width: 420,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: labelController,
+                      decoration: const InputDecoration(
+                        labelText: 'Label',
+                        hintText: 'Home',
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: latController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                        signed: true,
+                      ),
+                      decoration: const InputDecoration(labelText: 'Latitude'),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: lngController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                        signed: true,
+                      ),
+                      decoration: const InputDecoration(labelText: 'Longitude'),
+                    ),
+                    const SizedBox(height: 12),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Enabled'),
+                      value: enabled,
+                      onChanged: (value) =>
+                          setDialogState(() => enabled = value),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () async {
+                    final label = labelController.text.trim();
+                    final lat = double.tryParse(latController.text.trim());
+                    final lng = double.tryParse(lngController.text.trim());
+                    if (label.isEmpty || lat == null || lng == null) {
+                      return;
+                    }
+
+                    final success = existing == null
+                        ? await service.addSavedLocation(
+                            label: label,
+                            latitude: lat,
+                            longitude: lng,
+                            enabled: enabled,
+                          )
+                        : await service.updateSavedLocation(
+                            id: existing.id,
+                            label: label,
+                            latitude: lat,
+                            longitude: lng,
+                            enabled: enabled,
+                          );
+                    if (success && dialogContext.mounted) {
+                      Navigator.of(dialogContext).pop();
+                    }
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    labelController.dispose();
+    latController.dispose();
+    lngController.dispose();
+  }
+
   /// Check if install banner should be shown
   /// Always shown on mobile when not running as PWA (regardless of engagement)
   bool _shouldShowInstallBanner() {
     if (!MobileDetectionService.isMobileDevice) return false;
     if (MobileDetectionService.isRunningAsPWA) return false;
-    
+
     return true;
   }
 
@@ -904,7 +1236,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     Text(
                       l10n.profileInstallBannerSubtitle,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.7),
                       ),
                     ),
                   ],
@@ -913,7 +1247,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               Icon(
                 Icons.arrow_forward_ios,
                 size: 16,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.5),
               ),
             ],
           ),
@@ -926,12 +1262,21 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   void _showInstallInstructions(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final isIos = MobileDetectionService.isIOS;
-    final deviceLabel =
-        isIos ? l10n.profileInstallDeviceIphone : l10n.profileInstallDeviceAndroid;
-    final step1 = isIos ? l10n.profileInstallIosStep1 : l10n.profileInstallAndroidStep1;
-    final step2 = isIos ? l10n.profileInstallIosStep2 : l10n.profileInstallAndroidStep2;
-    final step3 = isIos ? l10n.profileInstallIosStep3 : l10n.profileInstallAndroidStep3;
-    final step4 = isIos ? l10n.profileInstallIosStep4 : l10n.profileInstallAndroidStep4;
+    final deviceLabel = isIos
+        ? l10n.profileInstallDeviceIphone
+        : l10n.profileInstallDeviceAndroid;
+    final step1 = isIos
+        ? l10n.profileInstallIosStep1
+        : l10n.profileInstallAndroidStep1;
+    final step2 = isIos
+        ? l10n.profileInstallIosStep2
+        : l10n.profileInstallAndroidStep2;
+    final step3 = isIos
+        ? l10n.profileInstallIosStep3
+        : l10n.profileInstallAndroidStep3;
+    final step4 = isIos
+        ? l10n.profileInstallIosStep4
+        : l10n.profileInstallAndroidStep4;
 
     showDialog(
       context: context,
@@ -975,24 +1320,23 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   String _getCacheBustedImageUrl(String url) {
     try {
       final uri = Uri.parse(url);
-      
-      final isFirebaseStorage = url.contains('firebasestorage.googleapis.com') ||
+
+      final isFirebaseStorage =
+          url.contains('firebasestorage.googleapis.com') ||
           url.contains('storage.googleapis.com');
-      
+
       final version = isFirebaseStorage
           ? DateTime.now().millisecondsSinceEpoch.toString()
           : url.hashCode.toString();
-      
+
       final cacheBustedUri = uri.replace(
-        queryParameters: {
-          ...uri.queryParameters,
-          'v': version,
-        },
+        queryParameters: {...uri.queryParameters, 'v': version},
       );
       return cacheBustedUri.toString();
     } catch (e) {
       final separator = url.contains('?') ? '&' : '?';
-      final isFirebaseStorage = url.contains('firebasestorage.googleapis.com') ||
+      final isFirebaseStorage =
+          url.contains('firebasestorage.googleapis.com') ||
           url.contains('storage.googleapis.com');
       final version = isFirebaseStorage
           ? DateTime.now().millisecondsSinceEpoch.toString()
@@ -1001,7 +1345,11 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     }
   }
 
-  Widget _buildInstallInstructionStep(BuildContext context, String number, String text) {
+  Widget _buildInstallInstructionStep(
+    BuildContext context,
+    String number,
+    String text,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1024,10 +1372,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: Text(
-            text,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
+          child: Text(text, style: Theme.of(context).textTheme.bodyMedium),
         ),
       ],
     );

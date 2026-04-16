@@ -103,6 +103,32 @@ service cloud.firestore {
         allow read, create, update, delete: if request.auth != null
           && request.auth.uid == userId;
       }
+
+      // Per-user location anchors used for nearby notification targeting.
+      match /locationsOfInterest/{docId} {
+        function hasValidLocationFields(data) {
+          return data.latitude is number &&
+            data.longitude is number &&
+            data.latitude >= -90 && data.latitude <= 90 &&
+            data.longitude >= -180 && data.longitude <= 180 &&
+            data.enabled is bool &&
+            data.kind is string &&
+            data.kind in ['lastKnown', 'saved'] &&
+            (!('label' in data) || data.label is string) &&
+            data.userId is string &&
+            data.userId == userId;
+        }
+
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null &&
+          request.auth.uid == userId &&
+          hasValidLocationFields(request.resource.data);
+        allow update: if request.auth != null &&
+          request.auth.uid == userId &&
+          resource.data.userId == userId &&
+          hasValidLocationFields(request.resource.data);
+        allow delete: if request.auth != null && request.auth.uid == userId;
+      }
     }
     
     // Ratings collection - users can read all ratings, authenticated users can create their own
