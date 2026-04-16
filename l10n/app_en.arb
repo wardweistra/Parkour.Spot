@@ -108,15 +108,15 @@
   "@profileLocationAlertsTitle": {
     "description": "Account settings: location alerts section title"
   },
-  "profileLocationAlertsDescription": "Control which locations are used for nearby check-in notifications.",
+  "profileLocationAlertsDescription": "Control which locations are used for nearby alerts, including check-ins, new spots, and future events.",
   "@profileLocationAlertsDescription": {
     "description": "Account settings: location alerts section description"
   },
-  "profileLocationAlertsShareLastKnownTitle": "Share last known location",
+  "profileLocationAlertsShareLastKnownTitle": "Use last known location",
   "@profileLocationAlertsShareLastKnownTitle": {
     "description": "Account settings: toggle title for using last known location in alerts"
   },
-  "profileLocationAlertsShareLastKnownSubtitle": "Use your device location (when granted) to match nearby alerts.",
+  "profileLocationAlertsShareLastKnownSubtitle": "Store your device's last known location in the cloud to match nearby alerts.",
   "@profileLocationAlertsShareLastKnownSubtitle": {
     "description": "Account settings: toggle subtitle for using last known location in alerts"
   },

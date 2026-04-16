@@ -53,15 +53,10 @@ class AccountSettingsScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  l10n.profileSettingsTitle,
+                  l10n.profileSettingsLanguageLabel,
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 16),
-                Text(
-                  l10n.profileSettingsLanguageLabel,
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-                const SizedBox(height: 4),
                 Text(
                   l10n.profileSettingsLanguageDescription,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -177,34 +172,6 @@ class AccountSettingsScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.profileLocationAlertsShareLastKnownTitle),
-              subtitle: Text(
-                l10n.profileLocationAlertsShareLastKnownSubtitle,
-              ),
-              value: shareLastKnown,
-              onChanged: (enabled) async {
-                final prefSaved = await authService
-                    .updateShareLastKnownLocationForAlerts(enabled);
-                if (!prefSaved || !context.mounted) return;
-                await locationsService.setLastKnownEnabled(enabled);
-                if (enabled) {
-                  final position =
-                      await LocationPermissionUtils.getCurrentPositionWithPermission(
-                        context: context,
-                        showErrorMessages: false,
-                      );
-                  if (position != null) {
-                    await locationsService.upsertLastKnownLocation(
-                      latitude: position.latitude,
-                      longitude: position.longitude,
-                    );
-                  }
-                }
-              },
-            ),
-            const Divider(),
             Row(
               children: [
                 Text(
@@ -223,10 +190,18 @@ class AccountSettingsScreen extends StatelessWidget {
               stream: locationsService.watchLocations(),
               builder: (context, snapshot) {
                 final locations = snapshot.data ?? const <LocationOfInterest>[];
+                LocationOfInterest? lastKnownLocation;
+                for (final location in locations) {
+                  if (location.isLastKnown) {
+                    lastKnownLocation = location;
+                    break;
+                  }
+                }
                 final saved = locations
                     .where((loc) => !loc.isLastKnown)
                     .toList();
-                if (saved.isEmpty) {
+                final hasLastKnownRow = shareLastKnown || lastKnownLocation != null;
+                if (!hasLastKnownRow && saved.isEmpty) {
                   return Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
@@ -240,97 +215,135 @@ class AccountSettingsScreen extends StatelessWidget {
                   );
                 }
                 return Column(
-                  children: saved
-                      .map(
-                        (location) => ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(
-                            location.label ??
-                                l10n.profileLocationAlertsDefaultLabel,
-                          ),
-                          leading: Icon(
-                            Icons.place_outlined,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          trailing: Wrap(
-                            spacing: 4,
-                            children: [
-                              IconButton(
-                                tooltip: location.enabled
-                                    ? l10n.profileLocationAlertsDisableTooltip
-                                    : l10n.profileLocationAlertsEnableTooltip,
-                                onPressed: () async {
-                                  await locationsService.setLocationEnabled(
-                                    id: location.id,
-                                    enabled: !location.enabled,
-                                  );
-                                },
-                                icon: Icon(
-                                  location.enabled
-                                      ? Icons.notifications_active_outlined
-                                      : Icons.notifications_off_outlined,
-                                ),
-                              ),
-                              IconButton(
-                                tooltip:
-                                    l10n.profileLocationAlertsEditTooltip,
-                                onPressed: () => _showLocationEditorDialog(
-                                  context,
-                                  existing: location,
-                                ),
-                                icon: const Icon(Icons.edit_outlined),
-                              ),
-                              IconButton(
-                                tooltip:
-                                    l10n.profileLocationAlertsDeleteTooltip,
-                                onPressed: () async {
-                                  final shouldDelete =
-                                      await showDialog<bool>(
-                                    context: context,
-                                    builder: (dialogContext) {
-                                      return AlertDialog(
-                                        title: Text(
-                                          l10n.profileLocationAlertsDeleteTitle,
-                                        ),
-                                        content: Text(
-                                          l10n.profileLocationAlertsDeleteMessage(
-                                            location.label ??
-                                                l10n
-                                                    .profileLocationAlertsDefaultLabel,
-                                          ),
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.of(dialogContext)
-                                                    .pop(false),
-                                            child: Text(l10n.profileCancel),
-                                          ),
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.of(dialogContext)
-                                                    .pop(true),
-                                            child: Text(
-                                              l10n.profileLocationAlertsDeleteConfirmButton,
-                                            ),
-                                          ),
-                                        ],
-                                      );
-                                    },
-                                  );
-                                  if (shouldDelete == true) {
-                                    await locationsService.deleteSavedLocation(
-                                      location.id,
-                                    );
-                                  }
-                                },
-                                icon: const Icon(Icons.delete_outline),
-                              ),
-                            ],
-                          ),
+                  children: [
+                    if (hasLastKnownRow) ...[
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Icon(
+                          Icons.my_location_outlined,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
-                      )
-                      .toList(),
+                        title: Text(
+                          l10n.profileLocationAlertsShareLastKnownTitle,
+                        ),
+                        subtitle: Text(
+                          l10n.profileLocationAlertsShareLastKnownSubtitle,
+                        ),
+                        trailing: Switch(
+                          value: shareLastKnown,
+                          onChanged: (enabled) async {
+                            final prefSaved = await authService
+                                .updateShareLastKnownLocationForAlerts(enabled);
+                            if (!prefSaved || !context.mounted) return;
+                            await locationsService.setLastKnownEnabled(enabled);
+                            if (enabled) {
+                              final position =
+                                  await LocationPermissionUtils.getCurrentPositionWithPermission(
+                                    context: context,
+                                    showErrorMessages: false,
+                                  );
+                              if (position != null) {
+                                await locationsService.upsertLastKnownLocation(
+                                  latitude: position.latitude,
+                                  longitude: position.longitude,
+                                );
+                              }
+                            }
+                          },
+                        ),
+                      ),
+                      const Divider(),
+                    ],
+                    ...saved.map(
+                      (location) => ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(
+                          location.label ??
+                              l10n.profileLocationAlertsDefaultLabel,
+                        ),
+                        leading: Icon(
+                          Icons.place_outlined,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        trailing: Wrap(
+                          spacing: 4,
+                          children: [
+                            IconButton(
+                              tooltip: location.enabled
+                                  ? l10n.profileLocationAlertsDisableTooltip
+                                  : l10n.profileLocationAlertsEnableTooltip,
+                              onPressed: () async {
+                                await locationsService.setLocationEnabled(
+                                  id: location.id,
+                                  enabled: !location.enabled,
+                                );
+                              },
+                              icon: Icon(
+                                location.enabled
+                                    ? Icons.notifications_active_outlined
+                                    : Icons.notifications_off_outlined,
+                              ),
+                            ),
+                            IconButton(
+                              tooltip:
+                                  l10n.profileLocationAlertsEditTooltip,
+                              onPressed: () => _showLocationEditorDialog(
+                                context,
+                                existing: location,
+                              ),
+                              icon: const Icon(Icons.edit_outlined),
+                            ),
+                            IconButton(
+                              tooltip:
+                                  l10n.profileLocationAlertsDeleteTooltip,
+                              onPressed: () async {
+                                final shouldDelete =
+                                    await showDialog<bool>(
+                                  context: context,
+                                  builder: (dialogContext) {
+                                    return AlertDialog(
+                                      title: Text(
+                                        l10n.profileLocationAlertsDeleteTitle,
+                                      ),
+                                      content: Text(
+                                        l10n.profileLocationAlertsDeleteMessage(
+                                          location.label ??
+                                              l10n
+                                                  .profileLocationAlertsDefaultLabel,
+                                        ),
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.of(dialogContext)
+                                                  .pop(false),
+                                          child: Text(l10n.profileCancel),
+                                        ),
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.of(dialogContext)
+                                                  .pop(true),
+                                          child: Text(
+                                            l10n.profileLocationAlertsDeleteConfirmButton,
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                                if (shouldDelete == true) {
+                                  await locationsService.deleteSavedLocation(
+                                    location.id,
+                                  );
+                                }
+                              },
+                              icon: const Icon(Icons.delete_outline),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 );
               },
             ),

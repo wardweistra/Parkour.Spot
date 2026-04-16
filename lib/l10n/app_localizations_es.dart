@@ -95,15 +95,15 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get profileLocationAlertsDescription =>
-      'Control which locations are used for nearby check-in notifications.';
+      'Control which locations are used for nearby alerts, including check-ins, new spots, and future events.';
 
   @override
   String get profileLocationAlertsShareLastKnownTitle =>
-      'Share last known location';
+      'Use last known location';
 
   @override
   String get profileLocationAlertsShareLastKnownSubtitle =>
-      'Use your device location (when granted) to match nearby alerts.';
+      'Store your device\'s last known location in the cloud to match nearby alerts.';
 
   @override
   String get profileLocationAlertsSavedLocationsTitle => 'Saved locations';

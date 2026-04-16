@@ -271,19 +271,19 @@ abstract class AppLocalizations {
   /// Account settings: location alerts section description
   ///
   /// In en, this message translates to:
-  /// **'Control which locations are used for nearby check-in notifications.'**
+  /// **'Control which locations are used for nearby alerts, including check-ins, new spots, and future events.'**
   String get profileLocationAlertsDescription;
 
   /// Account settings: toggle title for using last known location in alerts
   ///
   /// In en, this message translates to:
-  /// **'Share last known location'**
+  /// **'Use last known location'**
   String get profileLocationAlertsShareLastKnownTitle;
 
   /// Account settings: toggle subtitle for using last known location in alerts
   ///
   /// In en, this message translates to:
-  /// **'Use your device location (when granted) to match nearby alerts.'**
+  /// **'Store your device\'s last known location in the cloud to match nearby alerts.'**
   String get profileLocationAlertsShareLastKnownSubtitle;
 
   /// Account settings: saved locations subsection title
