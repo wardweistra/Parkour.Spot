@@ -129,6 +129,50 @@ service cloud.firestore {
           hasValidLocationFields(request.resource.data);
         allow delete: if request.auth != null && request.auth.uid == userId;
       }
+
+      // In-app notifications inbox (documents written by Admin SDK / Cloud Functions only).
+      match /notifications/{notificationId} {
+        function notificationStringsOk(data) {
+          return data.title is string &&
+            data.title.size() > 0 &&
+            data.title.size() <= 200 &&
+            (!('body' in data) ||
+              (data.body is string && data.body.size() <= 2000));
+        }
+        function notificationDeeplinkOk(data) {
+          return data.deeplinkKind is string &&
+            data.deeplinkKind in ['spot', 'profile'] &&
+            data.deeplinkId is string &&
+            data.deeplinkId.size() > 0 &&
+            data.deeplinkId.size() <= 200;
+        }
+        function notificationReadShape(data) {
+          return (!('read' in data) || data.read is bool) &&
+            (!('readAt' in data) || data.readAt is timestamp);
+        }
+        function notificationImmutableFieldsUnchanged() {
+          return request.resource.data.createdAt == resource.data.createdAt &&
+            request.resource.data.title == resource.data.title &&
+            request.resource.data.deeplinkKind == resource.data.deeplinkKind &&
+            request.resource.data.deeplinkId == resource.data.deeplinkId &&
+            ((!('body' in resource.data) && !('body' in request.resource.data)) ||
+              (('body' in resource.data) == ('body' in request.resource.data) &&
+                (!('body' in resource.data) ||
+                  request.resource.data.body == resource.data.body)));
+        }
+
+        // List queries must not use field checks the query cannot guarantee for every
+        // matching document (see Firestore "rules are not filters"). Clients cannot
+        // create docs here; only validate shape on update (mark-read).
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create, delete: if false;
+        allow update: if request.auth != null && request.auth.uid == userId &&
+          request.resource.data.read == true &&
+          notificationImmutableFieldsUnchanged() &&
+          notificationReadShape(request.resource.data) &&
+          notificationStringsOk(request.resource.data) &&
+          notificationDeeplinkOk(request.resource.data);
+      }
     }
     
     // Ratings collection - users can read all ratings, authenticated users can create their own

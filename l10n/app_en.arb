@@ -68,6 +68,39 @@
   "@profileViewEditSubtitle": {
     "description": "Account card subtitle linking to full profile"
   },
+  "notificationsTitle": "Notifications",
+  "@notificationsTitle": {
+    "description": "Notifications inbox screen title and Account tab row"
+  },
+  "notificationsSubtitle": "Activity about your spots and profile",
+  "@notificationsSubtitle": {
+    "description": "Account tab: short hint under notifications row"
+  },
+  "notificationsEmptyTitle": "No notifications yet",
+  "@notificationsEmptyTitle": {
+    "description": "Notifications inbox empty state heading"
+  },
+  "notificationsEmptyBody": "When something happens that concerns you, it will show up here.",
+  "@notificationsEmptyBody": {
+    "description": "Notifications inbox empty state supporting text"
+  },
+  "notificationsLoadError": "Couldn’t load notifications.",
+  "@notificationsLoadError": {
+    "description": "Notifications inbox error message"
+  },
+  "notificationsTimeUnknown": "Recently",
+  "@notificationsTimeUnknown": {
+    "description": "Fallback timestamp when createdAt is missing"
+  },
+  "notificationsOpenSemantic": "Open notification: {title}",
+  "@notificationsOpenSemantic": {
+    "description": "Accessibility label for a notification list row",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "profileModeratorSectionTitle": "Moderator",
   "@profileModeratorSectionTitle": {
     "description": "Account tab: moderator section heading"

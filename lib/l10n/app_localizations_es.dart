@@ -62,6 +62,31 @@ class AppLocalizationsEs extends AppLocalizations {
   String get profileViewEditSubtitle => 'Ver y editar tu perfil';
 
   @override
+  String get notificationsTitle => 'Notificaciones';
+
+  @override
+  String get notificationsSubtitle => 'Actividad sobre tus spots y tu perfil';
+
+  @override
+  String get notificationsEmptyTitle => 'Aún no hay notificaciones';
+
+  @override
+  String get notificationsEmptyBody =>
+      'Cuando pase algo que te concierna, aparecerá aquí.';
+
+  @override
+  String get notificationsLoadError =>
+      'No se pudieron cargar las notificaciones.';
+
+  @override
+  String get notificationsTimeUnknown => 'Recientemente';
+
+  @override
+  String notificationsOpenSemantic(String title) {
+    return 'Abrir notificación: $title';
+  }
+
+  @override
   String get profileModeratorSectionTitle => 'Moderador';
 
   @override

@@ -208,6 +208,48 @@ abstract class AppLocalizations {
   /// **'View and edit your profile'**
   String get profileViewEditSubtitle;
 
+  /// Notifications inbox screen title and Account tab row
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notificationsTitle;
+
+  /// Account tab: short hint under notifications row
+  ///
+  /// In en, this message translates to:
+  /// **'Activity about your spots and profile'**
+  String get notificationsSubtitle;
+
+  /// Notifications inbox empty state heading
+  ///
+  /// In en, this message translates to:
+  /// **'No notifications yet'**
+  String get notificationsEmptyTitle;
+
+  /// Notifications inbox empty state supporting text
+  ///
+  /// In en, this message translates to:
+  /// **'When something happens that concerns you, it will show up here.'**
+  String get notificationsEmptyBody;
+
+  /// Notifications inbox error message
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t load notifications.'**
+  String get notificationsLoadError;
+
+  /// Fallback timestamp when createdAt is missing
+  ///
+  /// In en, this message translates to:
+  /// **'Recently'**
+  String get notificationsTimeUnknown;
+
+  /// Accessibility label for a notification list row
+  ///
+  /// In en, this message translates to:
+  /// **'Open notification: {title}'**
+  String notificationsOpenSemantic(String title);
+
   /// Account tab: moderator section heading
   ///
   /// In en, this message translates to:

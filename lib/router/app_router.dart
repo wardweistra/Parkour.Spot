@@ -30,6 +30,7 @@ import '../screens/spots/spot_tracking_list_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/profile/my_check_ins_screen.dart';
 import '../screens/profile/account_settings_screen.dart';
+import '../screens/profile/notifications_screen.dart';
 import '../screens/profile/public_profile_screen.dart';
 import '../models/spot.dart';
 import '../services/spot_service.dart';
@@ -217,7 +218,7 @@ class AppRouter {
         final isAuthenticated = authService.isAuthenticated;
 
         // Routes that require authentication
-        final protectedRoutes = ['/spots/add', '/moderator'];
+        final protectedRoutes = ['/spots/add', '/moderator', '/profile/notifications'];
         if (protectedRoutes.contains(state.matchedLocation) &&
             !isAuthenticated) {
           // Redirect to login with the intended destination
@@ -287,7 +288,8 @@ class AppRouter {
             if (path == '/profile/want-to-visit' ||
                 path == '/profile/visited' ||
                 path == '/profile/check-ins' ||
-                path == '/profile/settings') {
+                path == '/profile/settings' ||
+                path == '/profile/notifications') {
               return null;
             }
             return '/explore?tab=profile';
@@ -312,6 +314,10 @@ class AppRouter {
             GoRoute(
               path: 'settings',
               builder: (context, state) => const AccountSettingsScreen(),
+            ),
+            GoRoute(
+              path: 'notifications',
+              builder: (context, state) => const NotificationsScreen(),
             ),
           ],
         ),

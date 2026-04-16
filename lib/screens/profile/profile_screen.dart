@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:web/web.dart' as web;
 import 'package:lottie/lottie.dart';
 import '../../services/auth_service.dart';
+import '../../services/user_notification_service.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/instagram_button.dart';
@@ -338,6 +339,53 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ),
                   ),
                 ),
+
+              const SizedBox(height: 16),
+
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: StreamBuilder<int>(
+                    stream: Provider.of<UserNotificationService>(
+                      context,
+                      listen: false,
+                    ).watchUnreadCount(),
+                    builder: (context, snapshot) {
+                      final unread = snapshot.data ?? 0;
+                      return ListTile(
+                        leading: Icon(
+                          Icons.notifications_outlined,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        title: Text(l10n.notificationsTitle),
+                        subtitle: Text(l10n.notificationsSubtitle),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (unread > 0)
+                              Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: Badge(
+                                  label: Text('$unread'),
+                                ),
+                              ),
+                            Icon(
+                              Icons.arrow_forward_ios,
+                              size: 16,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.5),
+                            ),
+                          ],
+                        ),
+                        onTap: () => context.push('/profile/notifications'),
+                        contentPadding: EdgeInsets.zero,
+                      );
+                    },
+                  ),
+                ),
+              ),
 
               const SizedBox(height: 16),
 

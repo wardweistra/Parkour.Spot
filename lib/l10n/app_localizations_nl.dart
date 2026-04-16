@@ -62,6 +62,30 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileViewEditSubtitle => 'Profiel bekijken en bewerken';
 
   @override
+  String get notificationsTitle => 'Meldingen';
+
+  @override
+  String get notificationsSubtitle => 'Activiteit over jouw spots en profiel';
+
+  @override
+  String get notificationsEmptyTitle => 'Nog geen meldingen';
+
+  @override
+  String get notificationsEmptyBody =>
+      'Als er iets gebeurt dat jou aangaat, zie je het hier.';
+
+  @override
+  String get notificationsLoadError => 'Meldingen konden niet worden geladen.';
+
+  @override
+  String get notificationsTimeUnknown => 'Recent';
+
+  @override
+  String notificationsOpenSemantic(String title) {
+    return 'Melding openen: $title';
+  }
+
+  @override
   String get profileModeratorSectionTitle => 'Moderator';
 
   @override
