@@ -13,8 +13,13 @@ import '../../l10n/app_localizations.dart';
 
 class LocationPickerScreen extends StatefulWidget {
   final LatLng? initialLocation;
+  final bool showUsageTip;
 
-  const LocationPickerScreen({super.key, this.initialLocation});
+  const LocationPickerScreen({
+    super.key,
+    this.initialLocation,
+    this.showUsageTip = false,
+  });
 
   @override
   State<LocationPickerScreen> createState() => _LocationPickerScreenState();
@@ -153,24 +158,25 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: _kMaxContentWidth),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-                child: Text(
-                  tipText,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.65),
-                    height: 1.35,
+          if (widget.showUsageTip)
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: _kMaxContentWidth),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                  child: Text(
+                    tipText,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.65),
+                      height: 1.35,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
           Expanded(
             child: Stack(
               children: [

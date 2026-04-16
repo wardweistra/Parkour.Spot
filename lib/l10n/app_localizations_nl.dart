@@ -90,6 +90,81 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileCancel => 'Annuleren';
 
   @override
+  String get profileLocationAlertsTitle => 'Locatie-meldingen';
+
+  @override
+  String get profileLocationAlertsDescription =>
+      'Bepaal welke locaties worden gebruikt voor meldingen in de buurt.';
+
+  @override
+  String get profileLocationAlertsShareLastKnownTitle =>
+      'Laatste bekende locatie delen';
+
+  @override
+  String get profileLocationAlertsShareLastKnownSubtitle =>
+      'Gebruik je apparaatlocatie (als toegestaan) voor meldingen in de buurt.';
+
+  @override
+  String get profileLocationAlertsSavedLocationsTitle => 'Opgeslagen locaties';
+
+  @override
+  String get profileLocationAlertsAddLocationButton => 'Toevoegen';
+
+  @override
+  String get profileLocationAlertsEmptyState =>
+      'Nog geen opgeslagen locaties. Voeg plekken toe zoals Thuis of Werk.';
+
+  @override
+  String get profileLocationAlertsDefaultLabel => 'Opgeslagen locatie';
+
+  @override
+  String get profileLocationAlertsDisableTooltip => 'Uitschakelen';
+
+  @override
+  String get profileLocationAlertsEnableTooltip => 'Inschakelen';
+
+  @override
+  String get profileLocationAlertsEditTooltip => 'Bewerken';
+
+  @override
+  String get profileLocationAlertsDeleteTooltip => 'Verwijderen';
+
+  @override
+  String get profileLocationAlertsDeleteTitle =>
+      'Opgeslagen locatie verwijderen?';
+
+  @override
+  String profileLocationAlertsDeleteMessage(String label) {
+    return 'Weet je zeker dat je $label wilt verwijderen?';
+  }
+
+  @override
+  String get profileLocationAlertsDeleteConfirmButton => 'Verwijderen';
+
+  @override
+  String get profileLocationAlertsDialogAddTitle => 'Locatie toevoegen';
+
+  @override
+  String get profileLocationAlertsDialogEditTitle => 'Locatie bewerken';
+
+  @override
+  String get profileLocationAlertsLabelFieldLabel => 'Label';
+
+  @override
+  String get profileLocationAlertsLabelFieldPlaceholder => 'Thuis';
+
+  @override
+  String get profileLocationAlertsEnabledLabel => 'Ingeschakeld';
+
+  @override
+  String get profileLocationAlertsLabelRequired =>
+      'Voer een label in alsjeblieft';
+
+  @override
+  String get profileLocationAlertsLocationRequired =>
+      'Kies een locatie op de kaart';
+
+  @override
   String get profileAboutIntro =>
       'Parkour·Spot is een community-app om parkour- en freerunningspots wereldwijd te ontdekken en te delen. We maken het eenvoudig om goede locaties te vinden—waar je ook traint.';
 

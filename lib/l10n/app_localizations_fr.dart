@@ -91,6 +91,79 @@ class AppLocalizationsFr extends AppLocalizations {
   String get profileCancel => 'Annuler';
 
   @override
+  String get profileLocationAlertsTitle => 'Location alerts';
+
+  @override
+  String get profileLocationAlertsDescription =>
+      'Control which locations are used for nearby check-in notifications.';
+
+  @override
+  String get profileLocationAlertsShareLastKnownTitle =>
+      'Share last known location';
+
+  @override
+  String get profileLocationAlertsShareLastKnownSubtitle =>
+      'Use your device location (when granted) to match nearby alerts.';
+
+  @override
+  String get profileLocationAlertsSavedLocationsTitle => 'Saved locations';
+
+  @override
+  String get profileLocationAlertsAddLocationButton => 'Add';
+
+  @override
+  String get profileLocationAlertsEmptyState =>
+      'No saved locations yet. Add places like Home or Work.';
+
+  @override
+  String get profileLocationAlertsDefaultLabel => 'Saved location';
+
+  @override
+  String get profileLocationAlertsDisableTooltip => 'Disable';
+
+  @override
+  String get profileLocationAlertsEnableTooltip => 'Enable';
+
+  @override
+  String get profileLocationAlertsEditTooltip => 'Edit';
+
+  @override
+  String get profileLocationAlertsDeleteTooltip => 'Delete';
+
+  @override
+  String get profileLocationAlertsDeleteTitle => 'Delete saved location?';
+
+  @override
+  String profileLocationAlertsDeleteMessage(String label) {
+    return 'Are you sure you want to delete $label?';
+  }
+
+  @override
+  String get profileLocationAlertsDeleteConfirmButton => 'Delete';
+
+  @override
+  String get profileLocationAlertsDialogAddTitle => 'Add location';
+
+  @override
+  String get profileLocationAlertsDialogEditTitle => 'Edit location';
+
+  @override
+  String get profileLocationAlertsLabelFieldLabel => 'Label';
+
+  @override
+  String get profileLocationAlertsLabelFieldPlaceholder => 'Home';
+
+  @override
+  String get profileLocationAlertsEnabledLabel => 'Enabled';
+
+  @override
+  String get profileLocationAlertsLabelRequired => 'Please enter a label';
+
+  @override
+  String get profileLocationAlertsLocationRequired =>
+      'Please pick a location on the map';
+
+  @override
   String get profileAboutIntro =>
       'Parkour·Spot est une appli communautaire pour découvrir et partager des spots de parkour et de freerunning dans le monde entier. Nous simplifions la recherche de bons lieux—où que vous vous entraîniez.';
 

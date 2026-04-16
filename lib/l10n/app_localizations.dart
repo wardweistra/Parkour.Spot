@@ -262,6 +262,138 @@ abstract class AppLocalizations {
   /// **'Cancel'**
   String get profileCancel;
 
+  /// Account settings: location alerts section title
+  ///
+  /// In en, this message translates to:
+  /// **'Location alerts'**
+  String get profileLocationAlertsTitle;
+
+  /// Account settings: location alerts section description
+  ///
+  /// In en, this message translates to:
+  /// **'Control which locations are used for nearby check-in notifications.'**
+  String get profileLocationAlertsDescription;
+
+  /// Account settings: toggle title for using last known location in alerts
+  ///
+  /// In en, this message translates to:
+  /// **'Share last known location'**
+  String get profileLocationAlertsShareLastKnownTitle;
+
+  /// Account settings: toggle subtitle for using last known location in alerts
+  ///
+  /// In en, this message translates to:
+  /// **'Use your device location (when granted) to match nearby alerts.'**
+  String get profileLocationAlertsShareLastKnownSubtitle;
+
+  /// Account settings: saved locations subsection title
+  ///
+  /// In en, this message translates to:
+  /// **'Saved locations'**
+  String get profileLocationAlertsSavedLocationsTitle;
+
+  /// Account settings: button label for adding a saved location
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get profileLocationAlertsAddLocationButton;
+
+  /// Account settings: empty state text when no saved locations exist
+  ///
+  /// In en, this message translates to:
+  /// **'No saved locations yet. Add places like Home or Work.'**
+  String get profileLocationAlertsEmptyState;
+
+  /// Account settings: fallback label for saved location items
+  ///
+  /// In en, this message translates to:
+  /// **'Saved location'**
+  String get profileLocationAlertsDefaultLabel;
+
+  /// Account settings: tooltip for disabling saved location alerts
+  ///
+  /// In en, this message translates to:
+  /// **'Disable'**
+  String get profileLocationAlertsDisableTooltip;
+
+  /// Account settings: tooltip for enabling saved location alerts
+  ///
+  /// In en, this message translates to:
+  /// **'Enable'**
+  String get profileLocationAlertsEnableTooltip;
+
+  /// Account settings: tooltip for editing a saved location
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get profileLocationAlertsEditTooltip;
+
+  /// Account settings: tooltip for deleting a saved location
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get profileLocationAlertsDeleteTooltip;
+
+  /// Account settings: confirmation dialog title before deleting a saved location
+  ///
+  /// In en, this message translates to:
+  /// **'Delete saved location?'**
+  String get profileLocationAlertsDeleteTitle;
+
+  /// Account settings: confirmation dialog body before deleting a saved location
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete {label}?'**
+  String profileLocationAlertsDeleteMessage(String label);
+
+  /// Account settings: confirmation button label for deleting a saved location
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get profileLocationAlertsDeleteConfirmButton;
+
+  /// Account settings: dialog title for adding a saved location
+  ///
+  /// In en, this message translates to:
+  /// **'Add location'**
+  String get profileLocationAlertsDialogAddTitle;
+
+  /// Account settings: dialog title for editing a saved location
+  ///
+  /// In en, this message translates to:
+  /// **'Edit location'**
+  String get profileLocationAlertsDialogEditTitle;
+
+  /// Account settings: label field label in saved location dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Label'**
+  String get profileLocationAlertsLabelFieldLabel;
+
+  /// Account settings: label field placeholder in saved location dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get profileLocationAlertsLabelFieldPlaceholder;
+
+  /// Account settings: enabled toggle label in saved location dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled'**
+  String get profileLocationAlertsEnabledLabel;
+
+  /// Account settings: validation error when label is missing
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a label'**
+  String get profileLocationAlertsLabelRequired;
+
+  /// Account settings: validation error when no location is selected
+  ///
+  /// In en, this message translates to:
+  /// **'Please pick a location on the map'**
+  String get profileLocationAlertsLocationRequired;
+
   /// About section: short intro paragraph
   ///
   /// In en, this message translates to:

@@ -300,8 +300,9 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
         builder: (context) => LocationPickerScreen(
           initialLocation: _pickedLocation ?? 
               (_currentPosition != null 
-                  ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude) 
+                  ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
                   : null),
+          showUsageTip: true,
         ),
       ),
     );

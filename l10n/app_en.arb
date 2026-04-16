@@ -104,6 +104,99 @@
   "@profileCancel": {
     "description": "Dismiss dialog without action"
   },
+  "profileLocationAlertsTitle": "Location alerts",
+  "@profileLocationAlertsTitle": {
+    "description": "Account settings: location alerts section title"
+  },
+  "profileLocationAlertsDescription": "Control which locations are used for nearby check-in notifications.",
+  "@profileLocationAlertsDescription": {
+    "description": "Account settings: location alerts section description"
+  },
+  "profileLocationAlertsShareLastKnownTitle": "Share last known location",
+  "@profileLocationAlertsShareLastKnownTitle": {
+    "description": "Account settings: toggle title for using last known location in alerts"
+  },
+  "profileLocationAlertsShareLastKnownSubtitle": "Use your device location (when granted) to match nearby alerts.",
+  "@profileLocationAlertsShareLastKnownSubtitle": {
+    "description": "Account settings: toggle subtitle for using last known location in alerts"
+  },
+  "profileLocationAlertsSavedLocationsTitle": "Saved locations",
+  "@profileLocationAlertsSavedLocationsTitle": {
+    "description": "Account settings: saved locations subsection title"
+  },
+  "profileLocationAlertsAddLocationButton": "Add",
+  "@profileLocationAlertsAddLocationButton": {
+    "description": "Account settings: button label for adding a saved location"
+  },
+  "profileLocationAlertsEmptyState": "No saved locations yet. Add places like Home or Work.",
+  "@profileLocationAlertsEmptyState": {
+    "description": "Account settings: empty state text when no saved locations exist"
+  },
+  "profileLocationAlertsDefaultLabel": "Saved location",
+  "@profileLocationAlertsDefaultLabel": {
+    "description": "Account settings: fallback label for saved location items"
+  },
+  "profileLocationAlertsDisableTooltip": "Disable",
+  "@profileLocationAlertsDisableTooltip": {
+    "description": "Account settings: tooltip for disabling saved location alerts"
+  },
+  "profileLocationAlertsEnableTooltip": "Enable",
+  "@profileLocationAlertsEnableTooltip": {
+    "description": "Account settings: tooltip for enabling saved location alerts"
+  },
+  "profileLocationAlertsEditTooltip": "Edit",
+  "@profileLocationAlertsEditTooltip": {
+    "description": "Account settings: tooltip for editing a saved location"
+  },
+  "profileLocationAlertsDeleteTooltip": "Delete",
+  "@profileLocationAlertsDeleteTooltip": {
+    "description": "Account settings: tooltip for deleting a saved location"
+  },
+  "profileLocationAlertsDeleteTitle": "Delete saved location?",
+  "@profileLocationAlertsDeleteTitle": {
+    "description": "Account settings: confirmation dialog title before deleting a saved location"
+  },
+  "profileLocationAlertsDeleteMessage": "Are you sure you want to delete {label}?",
+  "@profileLocationAlertsDeleteMessage": {
+    "description": "Account settings: confirmation dialog body before deleting a saved location",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "profileLocationAlertsDeleteConfirmButton": "Delete",
+  "@profileLocationAlertsDeleteConfirmButton": {
+    "description": "Account settings: confirmation button label for deleting a saved location"
+  },
+  "profileLocationAlertsDialogAddTitle": "Add location",
+  "@profileLocationAlertsDialogAddTitle": {
+    "description": "Account settings: dialog title for adding a saved location"
+  },
+  "profileLocationAlertsDialogEditTitle": "Edit location",
+  "@profileLocationAlertsDialogEditTitle": {
+    "description": "Account settings: dialog title for editing a saved location"
+  },
+  "profileLocationAlertsLabelFieldLabel": "Label",
+  "@profileLocationAlertsLabelFieldLabel": {
+    "description": "Account settings: label field label in saved location dialog"
+  },
+  "profileLocationAlertsLabelFieldPlaceholder": "Home",
+  "@profileLocationAlertsLabelFieldPlaceholder": {
+    "description": "Account settings: label field placeholder in saved location dialog"
+  },
+  "profileLocationAlertsEnabledLabel": "Enabled",
+  "@profileLocationAlertsEnabledLabel": {
+    "description": "Account settings: enabled toggle label in saved location dialog"
+  },
+  "profileLocationAlertsLabelRequired": "Please enter a label",
+  "@profileLocationAlertsLabelRequired": {
+    "description": "Account settings: validation error when label is missing"
+  },
+  "profileLocationAlertsLocationRequired": "Please pick a location on the map",
+  "@profileLocationAlertsLocationRequired": {
+    "description": "Account settings: validation error when no location is selected"
+  },
   "profileAboutIntro": "Parkour·Spot is a community-driven app for discovering and sharing parkour and freerunning spots worldwide. We're making it simple to find quality locations—wherever you train.",
   "@profileAboutIntro": {
     "description": "About section: short intro paragraph"

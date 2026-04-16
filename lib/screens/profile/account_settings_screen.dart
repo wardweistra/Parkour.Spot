@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/location_of_interest.dart';
@@ -6,6 +7,7 @@ import '../../services/auth_service.dart';
 import '../../services/locale_preferences_service.dart';
 import '../../services/user_locations_of_interest_service.dart';
 import '../../utils/location_permission_utils.dart';
+import '../spots/location_picker_screen.dart';
 
 class AccountSettingsScreen extends StatelessWidget {
   const AccountSettingsScreen({super.key});
@@ -146,6 +148,7 @@ class AccountSettingsScreen extends StatelessWidget {
     BuildContext context,
     AuthService authService,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     final locationsService = Provider.of<UserLocationsOfInterestService>(
       context,
       listen: false,
@@ -160,12 +163,12 @@ class AccountSettingsScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Location alerts',
+              l10n.profileLocationAlertsTitle,
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 6),
             Text(
-              'Control which locations are used for nearby check-in notifications.',
+              l10n.profileLocationAlertsDescription,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(
                   context,
@@ -175,9 +178,9 @@ class AccountSettingsScreen extends StatelessWidget {
             const SizedBox(height: 12),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Share last known location'),
-              subtitle: const Text(
-                'Use your device location (when granted) to match nearby alerts.',
+              title: Text(l10n.profileLocationAlertsShareLastKnownTitle),
+              subtitle: Text(
+                l10n.profileLocationAlertsShareLastKnownSubtitle,
               ),
               value: shareLastKnown,
               onChanged: (enabled) async {
@@ -204,14 +207,14 @@ class AccountSettingsScreen extends StatelessWidget {
             Row(
               children: [
                 Text(
-                  'Saved locations',
+                  l10n.profileLocationAlertsSavedLocationsTitle,
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
                 const Spacer(),
                 TextButton.icon(
                   onPressed: () => _showLocationEditorDialog(context),
                   icon: const Icon(Icons.add),
-                  label: const Text('Add'),
+                  label: Text(l10n.profileLocationAlertsAddLocationButton),
                 ),
               ],
             ),
@@ -226,7 +229,7 @@ class AccountSettingsScreen extends StatelessWidget {
                   return Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
-                      'No saved locations yet. Add places like Home or Work.',
+                      l10n.profileLocationAlertsEmptyState,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(
                           context,
@@ -240,10 +243,9 @@ class AccountSettingsScreen extends StatelessWidget {
                       .map(
                         (location) => ListTile(
                           contentPadding: EdgeInsets.zero,
-                          title: Text(location.label ?? 'Saved location'),
-                          subtitle: Text(
-                            '${location.latitude.toStringAsFixed(5)}, '
-                            '${location.longitude.toStringAsFixed(5)}',
+                          title: Text(
+                            location.label ??
+                                l10n.profileLocationAlertsDefaultLabel,
                           ),
                           leading: Icon(
                             Icons.place_outlined,
@@ -254,8 +256,8 @@ class AccountSettingsScreen extends StatelessWidget {
                             children: [
                               IconButton(
                                 tooltip: location.enabled
-                                    ? 'Disable'
-                                    : 'Enable',
+                                    ? l10n.profileLocationAlertsDisableTooltip
+                                    : l10n.profileLocationAlertsEnableTooltip,
                                 onPressed: () async {
                                   await locationsService.setLocationEnabled(
                                     id: location.id,
@@ -269,7 +271,8 @@ class AccountSettingsScreen extends StatelessWidget {
                                 ),
                               ),
                               IconButton(
-                                tooltip: 'Edit',
+                                tooltip:
+                                    l10n.profileLocationAlertsEditTooltip,
                                 onPressed: () => _showLocationEditorDialog(
                                   context,
                                   existing: location,
@@ -277,11 +280,48 @@ class AccountSettingsScreen extends StatelessWidget {
                                 icon: const Icon(Icons.edit_outlined),
                               ),
                               IconButton(
-                                tooltip: 'Delete',
+                                tooltip:
+                                    l10n.profileLocationAlertsDeleteTooltip,
                                 onPressed: () async {
-                                  await locationsService.deleteSavedLocation(
-                                    location.id,
+                                  final shouldDelete =
+                                      await showDialog<bool>(
+                                    context: context,
+                                    builder: (dialogContext) {
+                                      return AlertDialog(
+                                        title: Text(
+                                          l10n.profileLocationAlertsDeleteTitle,
+                                        ),
+                                        content: Text(
+                                          l10n.profileLocationAlertsDeleteMessage(
+                                            location.label ??
+                                                l10n
+                                                    .profileLocationAlertsDefaultLabel,
+                                          ),
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.of(dialogContext)
+                                                    .pop(false),
+                                            child: Text(l10n.profileCancel),
+                                          ),
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.of(dialogContext)
+                                                    .pop(true),
+                                            child: Text(
+                                              l10n.profileLocationAlertsDeleteConfirmButton,
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    },
                                   );
+                                  if (shouldDelete == true) {
+                                    await locationsService.deleteSavedLocation(
+                                      location.id,
+                                    );
+                                  }
                                 },
                                 icon: const Icon(Icons.delete_outline),
                               ),
@@ -303,17 +343,16 @@ class AccountSettingsScreen extends StatelessWidget {
     BuildContext context, {
     LocationOfInterest? existing,
   }) async {
+    final l10n = AppLocalizations.of(context)!;
     final service = Provider.of<UserLocationsOfInterestService>(
       context,
       listen: false,
     );
     final labelController = TextEditingController(text: existing?.label ?? '');
-    final latController = TextEditingController(
-      text: existing?.latitude.toString() ?? '',
-    );
-    final lngController = TextEditingController(
-      text: existing?.longitude.toString() ?? '',
-    );
+    String? validationError;
+    double? selectedLat = existing?.latitude;
+    double? selectedLng = existing?.longitude;
+    String? selectedAddress;
     var enabled = existing?.enabled ?? true;
 
     await showDialog<void>(
@@ -322,7 +361,11 @@ class AccountSettingsScreen extends StatelessWidget {
         return StatefulBuilder(
           builder: (dialogContext, setDialogState) {
             return AlertDialog(
-              title: Text(existing == null ? 'Add location' : 'Edit location'),
+              title: Text(
+                existing == null
+                    ? l10n.profileLocationAlertsDialogAddTitle
+                    : l10n.profileLocationAlertsDialogEditTitle,
+              ),
               content: SizedBox(
                 width: 420,
                 child: Column(
@@ -330,33 +373,70 @@ class AccountSettingsScreen extends StatelessWidget {
                   children: [
                     TextField(
                       controller: labelController,
-                      decoration: const InputDecoration(
-                        labelText: 'Label',
-                        hintText: 'Home',
+                      decoration: InputDecoration(
+                        labelText: l10n.profileLocationAlertsLabelFieldLabel,
+                        hintText:
+                            l10n.profileLocationAlertsLabelFieldPlaceholder,
+                        errorText: validationError,
                       ),
                     ),
                     const SizedBox(height: 10),
-                    TextField(
-                      controller: latController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                        signed: true,
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: () async {
+                          final initialLat =
+                              selectedLat ?? existing?.latitude;
+                          final initialLng =
+                              selectedLng ?? existing?.longitude;
+                          final result = await Navigator.of(dialogContext).push<
+                              LatLng?>(
+                            MaterialPageRoute(
+                              fullscreenDialog: true,
+                              builder: (context) => LocationPickerScreen(
+                                initialLocation: initialLat != null &&
+                                        initialLng != null
+                                    ? LatLng(initialLat, initialLng)
+                                    : null,
+                              ),
+                            ),
+                          );
+                          if (result != null) {
+                            setDialogState(() {
+                              selectedLat = result.latitude;
+                              selectedLng = result.longitude;
+                              validationError = null;
+                            });
+                          }
+                        },
+                        icon: const Icon(Icons.map),
+                        label: Text(
+                          selectedLat != null && selectedLng != null
+                              ? l10n.spotDetailChangeLocationPicked
+                              : l10n.spotDetailPickLocationOnMap,
+                        ),
                       ),
-                      decoration: const InputDecoration(labelText: 'Latitude'),
                     ),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: lngController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                        signed: true,
+                    if (selectedLat != null && selectedLng != null) ...[
+                      const SizedBox(height: 4),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          selectedAddress ??
+                              '${selectedLat!.toStringAsFixed(4)}, ${selectedLng!.toStringAsFixed(4)}',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withValues(alpha: 0.7),
+                              ),
+                        ),
                       ),
-                      decoration: const InputDecoration(labelText: 'Longitude'),
-                    ),
+                    ],
                     const SizedBox(height: 12),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Enabled'),
+                      title: Text(l10n.profileLocationAlertsEnabledLabel),
                       value: enabled,
                       onChanged: (value) =>
                           setDialogState(() => enabled = value),
@@ -367,29 +447,38 @@ class AccountSettingsScreen extends StatelessWidget {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: const Text('Cancel'),
+                  child: Text(l10n.profileCancel),
                 ),
                 FilledButton(
                   onPressed: () async {
                     final label = labelController.text.trim();
-                    final lat = double.tryParse(latController.text.trim());
-                    final lng = double.tryParse(lngController.text.trim());
-                    if (label.isEmpty || lat == null || lng == null) {
+                    if (label.isEmpty) {
+                      setDialogState(() {
+                        validationError =
+                            l10n.profileLocationAlertsLabelRequired;
+                      });
+                      return;
+                    }
+                    if (selectedLat == null || selectedLng == null) {
+                      setDialogState(() {
+                        validationError =
+                            l10n.profileLocationAlertsLocationRequired;
+                      });
                       return;
                     }
 
                     final success = existing == null
                         ? await service.addSavedLocation(
                             label: label,
-                            latitude: lat,
-                            longitude: lng,
+                            latitude: selectedLat!,
+                            longitude: selectedLng!,
                             enabled: enabled,
                           )
                         : await service.updateSavedLocation(
                             id: existing.id,
                             label: label,
-                            latitude: lat,
-                            longitude: lng,
+                            latitude: selectedLat!,
+                            longitude: selectedLng!,
                             enabled: enabled,
                           );
                     if (success && dialogContext.mounted) {
@@ -406,7 +495,5 @@ class AccountSettingsScreen extends StatelessWidget {
     );
 
     labelController.dispose();
-    latController.dispose();
-    lngController.dispose();
   }
 }
