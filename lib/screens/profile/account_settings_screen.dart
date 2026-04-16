@@ -194,6 +194,10 @@ class AccountSettingsScreen extends StatelessWidget {
                 final saved = locations
                     .where((loc) => !loc.isLastKnown)
                     .toList();
+                final noActiveSaved =
+                    saved.isEmpty || saved.every((loc) => !loc.enabled);
+                final showNoLocationAlertsMessage =
+                    !shareLastKnown && noActiveSaved;
                 return Column(
                   children: [
                     ListTile(
@@ -338,6 +342,34 @@ class AccountSettingsScreen extends StatelessWidget {
                         ),
                       ),
                     ),
+                    if (showNoLocationAlertsMessage) ...[
+                      const SizedBox(height: 12),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            size: 20,
+                            color: Theme.of(context).colorScheme.outline,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              l10n.profileLocationAlertsNoLocationsEnabledWarning,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.75),
+                                  ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 );
               },

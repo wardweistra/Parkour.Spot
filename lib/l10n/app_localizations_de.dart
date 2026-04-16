@@ -114,6 +114,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileLocationAlertsAddLocationButton => 'Add';
 
   @override
+  String get profileLocationAlertsNoLocationsEnabledWarning =>
+      'Du erhältst keine standortbasierten Benachrichtigungen, solange die letzte bekannte Position nicht verwendet wird und kein gespeicherter Ort aktiviert ist.';
+
+  @override
   String get profileLocationAlertsEmptyState =>
       'No saved locations yet. Add places like Home or Work.';
 

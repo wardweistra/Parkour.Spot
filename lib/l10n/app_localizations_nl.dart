@@ -111,6 +111,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileLocationAlertsAddLocationButton => 'Toevoegen';
 
   @override
+  String get profileLocationAlertsNoLocationsEnabledWarning =>
+      'Je ontvangt geen meldingen op basis van locatie zolang «Laatste bekende locatie delen» uit staat en geen opgeslagen plek is ingeschakeld.';
+
+  @override
   String get profileLocationAlertsEmptyState =>
       'Nog geen opgeslagen locaties. Voeg plekken toe zoals Thuis of Werk.';
 

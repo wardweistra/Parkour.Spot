@@ -32,6 +32,7 @@
   "profileLocationAlertsShareLastKnownSubtitle": "Gebruik je apparaatlocatie (als toegestaan) voor meldingen in de buurt.",
   "profileLocationAlertsSavedLocationsTitle": "Opgeslagen locaties",
   "profileLocationAlertsAddLocationButton": "Toevoegen",
+  "profileLocationAlertsNoLocationsEnabledWarning": "Je ontvangt geen meldingen op basis van locatie zolang «Laatste bekende locatie delen» uit staat en geen opgeslagen plek is ingeschakeld.",
   "profileLocationAlertsEmptyState": "Nog geen opgeslagen locaties. Voeg plekken toe zoals Thuis of Werk.",
   "profileLocationAlertsDefaultLabel": "Opgeslagen locatie",
   "profileLocationAlertsDisableTooltip": "Uitschakelen",

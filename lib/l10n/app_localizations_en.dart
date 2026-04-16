@@ -113,6 +113,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileLocationAlertsAddLocationButton => 'Add';
 
   @override
+  String get profileLocationAlertsNoLocationsEnabledWarning =>
+      'You won’t receive any location-based notifications until you turn on “Use last known location” or enable at least one saved place.';
+
+  @override
   String get profileLocationAlertsEmptyState =>
       'No saved locations yet. Add places like Home or Work.';
 

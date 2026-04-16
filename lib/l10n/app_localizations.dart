@@ -298,6 +298,12 @@ abstract class AppLocalizations {
   /// **'Add'**
   String get profileLocationAlertsAddLocationButton;
 
+  /// Account settings: shown when last-known is off and no saved locations are enabled for alerts
+  ///
+  /// In en, this message translates to:
+  /// **'You won’t receive any location-based notifications until you turn on “Use last known location” or enable at least one saved place.'**
+  String get profileLocationAlertsNoLocationsEnabledWarning;
+
   /// Account settings: empty state text when no saved locations exist
   ///
   /// In en, this message translates to:

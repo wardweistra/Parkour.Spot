@@ -609,5 +609,6 @@
   "publicProfilePrivacyPrivateDescription": "Solo tú puedes ver tu perfil.",
   "publicProfilePrivacyNowPublic": "Tu perfil ahora es público",
   "publicProfilePrivacyNowPrivate": "Tu perfil ahora es privado",
-  "publicProfileFailedToUpdateProfilePrivacy": "No se pudo actualizar la privacidad del perfil"
+  "publicProfileFailedToUpdateProfilePrivacy": "No se pudo actualizar la privacidad del perfil",
+  "profileLocationAlertsNoLocationsEnabledWarning": "No recibirás notificaciones basadas en la ubicación mientras la opción de última ubicación conocida esté desactivada y no tengas ningún lugar guardado activo."
 }
