@@ -130,6 +130,12 @@ abstract class AppLocalizations {
   /// **'Settings'**
   String get profileSettingsTitle;
 
+  /// Account tab: settings cover language and locations of interest
+  ///
+  /// In en, this message translates to:
+  /// **'Language and locations you care about'**
+  String get profileSettingsSubtitle;
+
   /// Profile settings: language row label
   ///
   /// In en, this message translates to:
@@ -214,10 +220,10 @@ abstract class AppLocalizations {
   /// **'Notifications'**
   String get notificationsTitle;
 
-  /// Account tab: short hint under notifications row
+  /// Account tab: hint that notifications reflect nearby map/community activity
   ///
   /// In en, this message translates to:
-  /// **'Activity about your spots and profile'**
+  /// **'New spots nearby, people training, and other updates for you'**
   String get notificationsSubtitle;
 
   /// Notifications inbox empty state heading

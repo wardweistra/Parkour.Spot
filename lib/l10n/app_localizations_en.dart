@@ -21,6 +21,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileSettingsTitle => 'Settings';
 
   @override
+  String get profileSettingsSubtitle => 'Language and locations you care about';
+
+  @override
   String get profileSettingsLanguageLabel => 'Language';
 
   @override
@@ -65,7 +68,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationsTitle => 'Notifications';
 
   @override
-  String get notificationsSubtitle => 'Activity about your spots and profile';
+  String get notificationsSubtitle =>
+      'New spots nearby, people training, and other updates for you';
 
   @override
   String get notificationsEmptyTitle => 'No notifications yet';

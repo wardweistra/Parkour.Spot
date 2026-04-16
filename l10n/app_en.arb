@@ -16,6 +16,10 @@
   "@profileSettingsTitle": {
     "description": "Profile: settings card title"
   },
+  "profileSettingsSubtitle": "Language and locations you care about",
+  "@profileSettingsSubtitle": {
+    "description": "Account tab: settings cover language and locations of interest"
+  },
   "profileSettingsLanguageLabel": "Language",
   "@profileSettingsLanguageLabel": {
     "description": "Profile settings: language row label"
@@ -72,9 +76,9 @@
   "@notificationsTitle": {
     "description": "Notifications inbox screen title and Account tab row"
   },
-  "notificationsSubtitle": "Activity about your spots and profile",
+  "notificationsSubtitle": "New spots nearby, people training, and other updates for you",
   "@notificationsSubtitle": {
-    "description": "Account tab: short hint under notifications row"
+    "description": "Account tab: hint that notifications reflect nearby map/community activity"
   },
   "notificationsEmptyTitle": "No notifications yet",
   "@notificationsEmptyTitle": {

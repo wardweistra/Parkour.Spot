@@ -21,6 +21,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileSettingsTitle => 'Instellingen';
 
   @override
+  String get profileSettingsSubtitle => 'Taal en locaties die je interesseren';
+
+  @override
   String get profileSettingsLanguageLabel => 'Taal';
 
   @override
@@ -65,7 +68,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get notificationsTitle => 'Meldingen';
 
   @override
-  String get notificationsSubtitle => 'Activiteit over jouw spots en profiel';
+  String get notificationsSubtitle =>
+      'Nieuwe spots in de buurt, trainen en andere updates voor jou';
 
   @override
   String get notificationsEmptyTitle => 'Nog geen meldingen';

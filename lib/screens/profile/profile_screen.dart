@@ -267,207 +267,160 @@ class _ProfileScreenState extends State<ProfileScreen>
               // Uses same layout as Profile page (CircleAvatar not in ListTile) to avoid clipping
               if (profileUrl != null)
                 Card(
-                  child: InkWell(
-                    onTap: () => context.push(profileUrl),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            key: ValueKey(user?.photoURL ?? 'no-photo'),
-                            radius: 36,
-                            backgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.primary,
-                            backgroundImage:
-                                user != null &&
-                                    user.photoURL != null &&
-                                    user.photoURL!.isNotEmpty
-                                ? NetworkImage(
-                                    _getCacheBustedImageUrl(user.photoURL!),
-                                  )
-                                : null,
-                            child: (user?.photoURL?.isEmpty ?? true)
-                                ? Text(
-                                    user?.displayName
-                                            ?.substring(0, 1)
-                                            .toUpperCase() ??
-                                        'U',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .headlineMedium
-                                        ?.copyWith(color: Colors.white),
-                                  )
-                                : null,
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  user?.displayName ??
-                                      l10n.profileDefaultDisplayName,
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.titleMedium,
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  l10n.profileViewEditSubtitle,
-                                  style: Theme.of(context).textTheme.bodyMedium
-                                      ?.copyWith(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurface
-                                            .withValues(alpha: 0.7),
-                                      ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Icon(
-                            Icons.arrow_forward_ios,
-                            size: 16,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withValues(alpha: 0.5),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
-              const SizedBox(height: 16),
-
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: StreamBuilder<int>(
-                    stream: Provider.of<UserNotificationService>(
-                      context,
-                      listen: false,
-                    ).watchUnreadCount(),
-                    builder: (context, snapshot) {
-                      final unread = snapshot.data ?? 0;
-                      return ListTile(
-                        leading: Icon(
-                          Icons.notifications_outlined,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        title: Text(l10n.notificationsTitle),
-                        subtitle: Text(l10n.notificationsSubtitle),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (unread > 0)
-                              Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: Badge(
-                                  label: Text('$unread'),
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                        child: _profileInkWell(
+                          onTap: () => context.push(profileUrl),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                key: ValueKey(user?.photoURL ?? 'no-photo'),
+                                radius: 36,
+                                backgroundColor: Theme.of(
+                                  context,
+                                ).colorScheme.primary,
+                                backgroundImage:
+                                    user != null &&
+                                        user.photoURL != null &&
+                                        user.photoURL!.isNotEmpty
+                                    ? NetworkImage(
+                                        _getCacheBustedImageUrl(
+                                          user.photoURL!,
+                                        ),
+                                      )
+                                    : null,
+                                child: (user?.photoURL?.isEmpty ?? true)
+                                    ? Text(
+                                        user?.displayName
+                                                ?.substring(0, 1)
+                                                .toUpperCase() ??
+                                            'U',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .headlineMedium
+                                            ?.copyWith(color: Colors.white),
+                                      )
+                                    : null,
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      user?.displayName ??
+                                          l10n.profileDefaultDisplayName,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.titleMedium,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      l10n.profileViewEditSubtitle,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withValues(alpha: 0.7),
+                                          ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            Icon(
-                              Icons.arrow_forward_ios,
-                              size: 16,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withValues(alpha: 0.5),
+                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.arrow_forward_ios,
+                                size: 16,
+                                color: Theme.of(context).colorScheme.onSurface
+                                    .withValues(alpha: 0.5),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Divider(
+                        height: 1,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .outlineVariant
+                            .withValues(alpha: 0.5),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            StreamBuilder<int>(
+                              stream: Provider.of<UserNotificationService>(
+                                context,
+                                listen: false,
+                              ).watchUnreadCount(),
+                              builder: (context, snapshot) {
+                                final unread = snapshot.data ?? 0;
+                                return _buildActionTile(
+                                  context,
+                                  Icons.notifications_outlined,
+                                  l10n.notificationsTitle,
+                                  l10n.notificationsSubtitle,
+                                  () => context.push('/profile/notifications'),
+                                  badgeCount: unread > 0 ? unread : null,
+                                );
+                              },
                             ),
+                            _buildActionTile(
+                              context,
+                              Icons.settings_outlined,
+                              l10n.profileSettingsTitle,
+                              l10n.profileSettingsSubtitle,
+                              () => context.push('/profile/settings'),
+                            ),
+                            if (authService.isModerator ||
+                                authService.isAdmin) ...[
+                              _buildActionTile(
+                                context,
+                                Icons.shield,
+                                l10n.profileModeratorToolsTitle,
+                                l10n.profileModeratorToolsSubtitle,
+                                () {
+                                  context.push('/moderator');
+                                },
+                              ),
+                            ],
+                            if (authService.isAdmin) ...[
+                              _buildActionTile(
+                                context,
+                                Icons.admin_panel_settings,
+                                l10n.profileAdminToolsTitle,
+                                l10n.profileAdminToolsSubtitle,
+                                () {
+                                  context.push('/admin');
+                                },
+                              ),
+                            ],
                           ],
                         ),
-                        onTap: () => context.push('/profile/notifications'),
-                        contentPadding: EdgeInsets.zero,
-                      );
-                    },
+                      ),
+                    ],
                   ),
                 ),
-              ),
-
-              const SizedBox(height: 16),
-
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: _buildActionTile(
-                    context,
-                    Icons.settings_outlined,
-                    l10n.profileSettingsTitle,
-                    l10n.profileSettingsLanguageDescription,
-                    () {
-                      context.push('/profile/settings');
-                    },
-                  ),
-                ),
-              ),
 
               const SizedBox(height: 16),
 
               // Install App Banner (for mobile users not on PWA)
               if (_shouldShowInstallBanner()) ...[
                 _buildInstallBanner(context),
-                const SizedBox(height: 16),
-              ],
-
-              if (authService.isModerator || authService.isAdmin) ...[
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.profileModeratorSectionTitle,
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        const SizedBox(height: 8),
-                        _buildActionTile(
-                          context,
-                          Icons.shield,
-                          l10n.profileModeratorToolsTitle,
-                          l10n.profileModeratorToolsSubtitle,
-                          () {
-                            context.push('/moderator');
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-              ],
-
-              if (authService.isAdmin) ...[
-                // Administrator Section
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.profileAdminSectionTitle,
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        const SizedBox(height: 8),
-                        _buildActionTile(
-                          context,
-                          Icons.admin_panel_settings,
-                          l10n.profileAdminToolsTitle,
-                          l10n.profileAdminToolsSubtitle,
-                          () {
-                            context.push('/admin');
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
                 const SizedBox(height: 16),
               ],
 
@@ -857,20 +810,90 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
+  /// Rounded, clipped ink splash for web hover and touch (avoids square overlay
+  /// inside [Card]s when [clipBehavior] is used on the card).
+  static const BorderRadius _inkBorderRadius = BorderRadius.all(
+    Radius.circular(12),
+  );
+
+  Widget _profileInkWell({required VoidCallback onTap, required Widget child}) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: _inkBorderRadius,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: _inkBorderRadius,
+        customBorder: const RoundedRectangleBorder(
+          borderRadius: _inkBorderRadius,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          child: child,
+        ),
+      ),
+    );
+  }
+
   Widget _buildActionTile(
     BuildContext context,
     IconData icon,
     String title,
     String subtitle,
-    VoidCallback onTap,
-  ) {
-    return ListTile(
-      leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
-      title: Text(title),
-      subtitle: Text(subtitle),
-      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-      onTap: onTap,
-      contentPadding: EdgeInsets.zero,
+    VoidCallback onTap, {
+    int? badgeCount,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    Widget leading = Icon(icon, color: scheme.primary);
+    if (badgeCount != null && badgeCount > 0) {
+      leading = Badge(
+        label: Text('$badgeCount'),
+        child: leading,
+      );
+    }
+    return Material(
+      color: Colors.transparent,
+      borderRadius: _inkBorderRadius,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: _inkBorderRadius,
+        customBorder: const RoundedRectangleBorder(
+          borderRadius: _inkBorderRadius,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              leading,
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(title, style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: scheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: scheme.onSurface.withValues(alpha: 0.5),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -887,47 +910,56 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget _buildInstallBanner(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Card(
-      child: InkWell(
-        onTap: () => _showInstallInstructions(context),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            children: [
-              Icon(
-                Icons.get_app,
-                color: Theme.of(context).colorScheme.primary,
-                size: 32,
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.profileInstallBannerTitle,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      l10n.profileInstallBannerSubtitle,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.7),
-                      ),
-                    ),
-                  ],
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: _inkBorderRadius,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => _showInstallInstructions(context),
+          borderRadius: _inkBorderRadius,
+          customBorder: const RoundedRectangleBorder(
+            borderRadius: _inkBorderRadius,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.get_app,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 32,
                 ),
-              ),
-              Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.5),
-              ),
-            ],
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.profileInstallBannerTitle,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        l10n.profileInstallBannerSubtitle,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
+              ],
+            ),
           ),
         ),
       ),
