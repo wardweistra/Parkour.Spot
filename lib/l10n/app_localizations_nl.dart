@@ -90,33 +90,34 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileCancel => 'Annuleren';
 
   @override
-  String get profileLocationAlertsTitle => 'Locatie-meldingen';
+  String get profileLocationAlertsTitle => 'Locatiemeldingen';
 
   @override
   String get profileLocationAlertsDescription =>
-      'Bepaal welke locaties worden gebruikt voor meldingen in de buurt.';
+      'Bepaal welke locaties worden gebruikt voor meldingen in de buurt, waaronder check-ins, nieuwe spots en toekomstige evenementen.';
 
   @override
   String get profileLocationAlertsShareLastKnownTitle =>
-      'Laatste bekende locatie delen';
+      'Laatste bekende locatie gebruiken';
 
   @override
   String get profileLocationAlertsShareLastKnownSubtitle =>
-      'Gebruik je apparaatlocatie (als toegestaan) voor meldingen in de buurt.';
+      'Sla de laatst bekende locatie van je apparaat op in de cloud, zodat meldingen in de buurt bij je passen.';
 
   @override
-  String get profileLocationAlertsSavedLocationsTitle => 'Opgeslagen locaties';
+  String get profileLocationAlertsSavedLocationsTitle =>
+      'Mijn locaties van interesse';
 
   @override
   String get profileLocationAlertsAddLocationButton => 'Toevoegen';
 
   @override
   String get profileLocationAlertsNoLocationsEnabledWarning =>
-      'Je ontvangt geen meldingen op basis van locatie zolang «Laatste bekende locatie delen» uit staat en geen opgeslagen plek is ingeschakeld.';
+      'Je ontvangt geen meldingen op basis van locatie totdat je «Laatste bekende locatie gebruiken» inschakelt of minstens één opgeslagen plek activeert.';
 
   @override
   String get profileLocationAlertsEmptyState =>
-      'Nog geen opgeslagen locaties. Voeg plekken toe zoals Thuis of Werk.';
+      'Nog geen opgeslagen locaties. Voeg plekken toe, zoals Thuis of Werk.';
 
   @override
   String get profileLocationAlertsDefaultLabel => 'Opgeslagen locatie';

@@ -92,82 +92,83 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileCancel => 'Abbrechen';
 
   @override
-  String get profileLocationAlertsTitle => 'Location alerts';
+  String get profileLocationAlertsTitle => 'Standort-Benachrichtigungen';
 
   @override
   String get profileLocationAlertsDescription =>
-      'Control which locations are used for nearby alerts, including check-ins, new spots, and future events.';
+      'Lege fest, welche Standorte für Benachrichtigungen in der Nähe verwendet werden – z. B. für Check-ins, neue Spots und künftige Events.';
 
   @override
   String get profileLocationAlertsShareLastKnownTitle =>
-      'Use last known location';
+      'Letzten bekannten Standort verwenden';
 
   @override
   String get profileLocationAlertsShareLastKnownSubtitle =>
-      'Store your device\'s last known location in the cloud to match nearby alerts.';
+      'Speichere den letzten bekannten Standort deines Geräts in der Cloud, um passende Benachrichtigungen in der Nähe zu erhalten.';
 
   @override
   String get profileLocationAlertsSavedLocationsTitle =>
-      'My locations of interest';
+      'Meine Orte von Interesse';
 
   @override
-  String get profileLocationAlertsAddLocationButton => 'Add';
+  String get profileLocationAlertsAddLocationButton => 'Hinzufügen';
 
   @override
   String get profileLocationAlertsNoLocationsEnabledWarning =>
-      'Du erhältst keine standortbasierten Benachrichtigungen, solange die letzte bekannte Position nicht verwendet wird und kein gespeicherter Ort aktiviert ist.';
+      'Du erhältst keine standortbasierten Benachrichtigungen, bis du „Letzten bekannten Standort verwenden“ aktivierst oder mindestens einen gespeicherten Ort einschaltest.';
 
   @override
   String get profileLocationAlertsEmptyState =>
-      'No saved locations yet. Add places like Home or Work.';
+      'Noch keine gespeicherten Orte. Füge z. B. Zuhause oder Arbeit hinzu.';
 
   @override
-  String get profileLocationAlertsDefaultLabel => 'Saved location';
+  String get profileLocationAlertsDefaultLabel => 'Gespeicherter Ort';
 
   @override
-  String get profileLocationAlertsDisableTooltip => 'Disable';
+  String get profileLocationAlertsDisableTooltip => 'Deaktivieren';
 
   @override
-  String get profileLocationAlertsEnableTooltip => 'Enable';
+  String get profileLocationAlertsEnableTooltip => 'Aktivieren';
 
   @override
-  String get profileLocationAlertsEditTooltip => 'Edit';
+  String get profileLocationAlertsEditTooltip => 'Bearbeiten';
 
   @override
-  String get profileLocationAlertsDeleteTooltip => 'Delete';
+  String get profileLocationAlertsDeleteTooltip => 'Löschen';
 
   @override
-  String get profileLocationAlertsDeleteTitle => 'Delete saved location?';
+  String get profileLocationAlertsDeleteTitle => 'Gespeicherten Ort löschen?';
 
   @override
   String profileLocationAlertsDeleteMessage(String label) {
-    return 'Are you sure you want to delete $label?';
+    return 'Möchtest du $label wirklich löschen?';
   }
 
   @override
-  String get profileLocationAlertsDeleteConfirmButton => 'Delete';
+  String get profileLocationAlertsDeleteConfirmButton => 'Löschen';
 
   @override
-  String get profileLocationAlertsDialogAddTitle => 'Add location';
+  String get profileLocationAlertsDialogAddTitle => 'Ort hinzufügen';
 
   @override
-  String get profileLocationAlertsDialogEditTitle => 'Edit location';
+  String get profileLocationAlertsDialogEditTitle => 'Ort bearbeiten';
 
   @override
-  String get profileLocationAlertsLabelFieldLabel => 'Label';
+  String get profileLocationAlertsLabelFieldLabel => 'Bezeichnung';
 
   @override
-  String get profileLocationAlertsLabelFieldPlaceholder => 'Home';
+  String get profileLocationAlertsLabelFieldPlaceholder => 'Zuhause';
 
   @override
-  String get profileLocationAlertsEnabledLabel => 'Enabled';
+  String get profileLocationAlertsEnabledLabel => 'Aktiviert';
 
   @override
-  String get profileLocationAlertsLabelRequired => 'Please enter a label';
+  String get profileLocationAlertsLabelRequired =>
+      'Bitte gib eine Bezeichnung ein';
 
   @override
   String get profileLocationAlertsLocationRequired =>
-      'Please pick a location on the map';
+      'Bitte wähle einen Ort auf der Karte';
 
   @override
   String get profileAboutIntro =>
