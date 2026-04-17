@@ -1,6 +1,6 @@
 const {
   shouldFanOutNearbyNewSpotNotifications,
-  mergeLngFilteredUserIdsFromSnapshot,
+  mergeUserIdsFromSnapshot,
   buildNotificationTitle,
   fanOutNearbyNewSpotNotifications,
 } = require("../lib/nearby-new-spot-notifications");
@@ -49,19 +49,18 @@ describe("shouldFanOutNearbyNewSpotNotifications", () => {
   });
 });
 
-describe("mergeLngFilteredUserIdsFromSnapshot", () => {
-  it("dedupes user ids and filters longitude", () => {
+describe("mergeUserIdsFromSnapshot", () => {
+  it("dedupes user ids from snapshot docs", () => {
     const set = new Set();
     const snapshot = {
       docs: [
         mockDoc("a", 4.89),
         mockDoc("a", 4.90),
         mockDoc("b", 10.0),
-        mockDoc("c", 4.888),
       ],
     };
-    mergeLngFilteredUserIdsFromSnapshot(snapshot, 4.885, 4.895, set);
-    expect([...set].sort()).toEqual(["a", "c"]);
+    mergeUserIdsFromSnapshot(snapshot, set);
+    expect([...set].sort()).toEqual(["a", "b"]);
   });
 });
 
@@ -98,15 +97,9 @@ describe("fanOutNearbyNewSpotNotifications", () => {
       docs: [mockDoc("u1", 4.89, 52.37)],
     };
     const queryChain = {
-      where: jest.fn(function() {
-        return queryChain;
-      }),
-      limit: jest.fn(function() {
-        return queryChain;
-      }),
-      startAfter: jest.fn(function() {
-        return queryChain;
-      }),
+      where: jest.fn(() => queryChain),
+      limit: jest.fn(() => queryChain),
+      startAfter: jest.fn(() => queryChain),
       get: jest.fn(async () => locSnap),
     };
     const db = {

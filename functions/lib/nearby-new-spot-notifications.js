@@ -39,6 +39,8 @@ async function fanOutNearbyNewSpotNotifications({db, FieldValue, spotId, spotDat
         .where("enabled", "==", true)
         .where("latitude", ">=", minLat)
         .where("latitude", "<=", maxLat)
+        .where("longitude", ">=", minLng)
+        .where("longitude", "<=", maxLng)
         .limit(QUERY_PAGE_SIZE);
     if (lastDoc) {
       q = q.startAfter(lastDoc);
@@ -47,7 +49,7 @@ async function fanOutNearbyNewSpotNotifications({db, FieldValue, spotId, spotDat
     if (snap.empty) {
       break;
     }
-    mergeLngFilteredUserIdsFromSnapshot(snap, minLng, maxLng, candidateUserIds);
+    mergeUserIdsFromSnapshot(snap, candidateUserIds);
     if (snap.size < QUERY_PAGE_SIZE) {
       break;
     }
@@ -127,20 +129,10 @@ function shouldFanOutNearbyNewSpotNotifications(spotData) {
 
 /**
  * @param {object} snapshot QuerySnapshot
- * @param {number} minLng
- * @param {number} maxLng
  * @param {Set<string>} intoSet
  */
-function mergeLngFilteredUserIdsFromSnapshot(snapshot, minLng, maxLng, intoSet) {
+function mergeUserIdsFromSnapshot(snapshot, intoSet) {
   for (const doc of snapshot.docs) {
-    const loi = doc.data();
-    const loiLng = loi.longitude;
-    if (typeof loiLng !== "number" || !Number.isFinite(loiLng)) {
-      continue;
-    }
-    if (loiLng < minLng || loiLng > maxLng) {
-      continue;
-    }
     const parent = doc.ref.parent;
     const userRef = parent && parent.parent;
     const uid = userRef && userRef.id;
@@ -193,6 +185,6 @@ function buildNotificationTitle(spotData) {
 module.exports = {
   fanOutNearbyNewSpotNotifications,
   shouldFanOutNearbyNewSpotNotifications,
-  mergeLngFilteredUserIdsFromSnapshot,
+  mergeUserIdsFromSnapshot,
   buildNotificationTitle,
 };
