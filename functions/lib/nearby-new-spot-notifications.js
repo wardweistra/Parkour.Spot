@@ -15,6 +15,27 @@ const BATCH_SIZE = 500;
 const PREFIX = "New spot nearby: ";
 
 /**
+ * Creator label from spot doc (`createdByName`, denormalized at write time).
+ * @param {object} spotData
+ * @return {string}
+ */
+function creatorDisplayLabel(spotData) {
+  const raw = typeof spotData.createdByName === "string" ?
+    spotData.createdByName.trim() :
+    "";
+  return raw.length > 0 ? raw : "Someone";
+}
+
+/**
+ * @param {object} spotData spot document fields
+ * @return {string}
+ */
+function buildNotificationBody(spotData) {
+  const label = creatorDisplayLabel(spotData);
+  return `${label} added a new parkour spot near one of your saved locations.`;
+}
+
+/**
  * Writes per-user notifications for a newly created spot.
  * @param {object} options
  * @param {object} options.db Firestore instance
@@ -92,8 +113,7 @@ async function fanOutNearbyNewSpotNotifications({db, FieldValue, spotId, spotDat
   }
 
   const title = buildNotificationTitle(spotData);
-  const body =
-    "A new parkour spot was added near one of your saved locations.";
+  const body = buildNotificationBody(spotData);
 
   let batch = db.batch();
   let ops = 0;
@@ -212,4 +232,5 @@ module.exports = {
   shouldFanOutNearbyNewSpotNotifications,
   mergeUserIdsFromSnapshot,
   buildNotificationTitle,
+  buildNotificationBody,
 };

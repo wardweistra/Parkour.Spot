@@ -2,6 +2,7 @@ const {
   shouldFanOutNearbyNewSpotNotifications,
   mergeUserIdsFromSnapshot,
   buildNotificationTitle,
+  buildNotificationBody,
   fanOutNearbyNewSpotNotifications,
 } = require("../lib/nearby-new-spot-notifications");
 
@@ -76,6 +77,20 @@ describe("buildNotificationTitle", () => {
   });
 });
 
+describe("buildNotificationBody", () => {
+  it("uses createdByName when present", () => {
+    expect(buildNotificationBody({createdByName: "Alex"})).toBe(
+        "Alex added a new parkour spot near one of your saved locations.",
+    );
+  });
+
+  it("uses Someone when createdByName is missing", () => {
+    expect(buildNotificationBody({})).toBe(
+        "Someone added a new parkour spot near one of your saved locations.",
+    );
+  });
+});
+
 describe("fanOutNearbyNewSpotNotifications", () => {
   it("skips when shouldFanOut is false", async () => {
     const db = {};
@@ -138,6 +153,7 @@ describe("fanOutNearbyNewSpotNotifications", () => {
         name: "Test",
         latitude: 52.37,
         longitude: 4.89,
+        createdByName: "Alex",
       },
     });
 
@@ -146,6 +162,9 @@ describe("fanOutNearbyNewSpotNotifications", () => {
     expect(written[0].data.deeplinkKind).toBe("spot");
     expect(written[0].data.deeplinkId).toBe("spotA");
     expect(written[0].data.read).toBe(false);
+    expect(written[0].data.body).toBe(
+        "Alex added a new parkour spot near one of your saved locations.",
+    );
   });
 
   it("notifies users when flag is missing (default on)", async () => {

@@ -3,6 +3,7 @@ const {
   hasValidSpotCoordinates,
   mergeUserIdsFromSnapshot,
   buildNotificationTitle,
+  buildNotificationBody,
   fanOutNearbyCheckInNotifications,
 } = require("../lib/nearby-check-in-notifications");
 
@@ -77,18 +78,33 @@ describe("mergeUserIdsFromSnapshot", () => {
 });
 
 describe("buildNotificationTitle", () => {
-  it("prefers check-in spotName", () => {
+  it("prefers check-in spotName and falls back to Someone without displayName", () => {
     expect(buildNotificationTitle(
         {spotName: "Session Spot"},
         {name: "Fallback Spot"},
-    )).toMatch(/^Check-in nearby: Session Spot$/);
+    )).toBe("Someone is training now at Session Spot");
+  });
+
+  it("includes trainer displayName when present", () => {
+    expect(buildNotificationTitle(
+        {displayName: "Alex", spotName: "Session Spot"},
+        {name: "Fallback Spot"},
+    )).toBe("Alex is training now at Session Spot");
   });
 
   it("uses Untitled spot when all names are empty", () => {
     expect(buildNotificationTitle(
         {spotName: "  "},
         {name: " "},
-    )).toMatch(/^Check-in nearby: Untitled spot$/);
+    )).toBe("Someone is training now at Untitled spot");
+  });
+});
+
+describe("buildNotificationBody", () => {
+  it("does not repeat the trainer name (title-only)", () => {
+    expect(buildNotificationBody()).toBe(
+        "They've just checked in to this spot, which is within about 5 km of one of your saved locations.",
+    );
   });
 });
 
@@ -168,6 +184,7 @@ describe("fanOutNearbyCheckInNotifications", () => {
         userId: "u2",
         spotId: "spotA",
         spotName: "Session Spot",
+        displayName: "Alex",
         isPrivate: false,
       },
     });
@@ -177,6 +194,12 @@ describe("fanOutNearbyCheckInNotifications", () => {
     expect(written[0].data.deeplinkKind).toBe("spot");
     expect(written[0].data.deeplinkId).toBe("spotA");
     expect(written[0].data.read).toBe(false);
+    expect(written[0].data.title).toBe(
+        "Alex is training now at Session Spot",
+    );
+    expect(written[0].data.body).toBe(
+        "They've just checked in to this spot, which is within about 5 km of one of your saved locations.",
+    );
   });
 
   it("notifies users when flag is missing (default on)", async () => {

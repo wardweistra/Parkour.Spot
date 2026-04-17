@@ -12,7 +12,34 @@ const GET_ALL_CHUNK = 10;
 const MAX_TITLE_LEN = 200;
 const BATCH_SIZE = 500;
 
-const PREFIX = "Check-in nearby: ";
+const TRAINING_AT_MIDDLE = " is training now at ";
+
+/**
+ * @param {string} str
+ * @param {number} max
+ * @return {string}
+ */
+function clipToMaxLen(str, max) {
+  if (str.length <= max) {
+    return str;
+  }
+  if (max <= 1) {
+    return "…";
+  }
+  return str.slice(0, max - 1).trimEnd() + "…";
+}
+
+/**
+ * Display name from check-in doc (denormalized at write time). Empty -> "Someone".
+ * @param {object} checkInData
+ * @return {string}
+ */
+function trainerDisplayLabel(checkInData) {
+  const raw = typeof checkInData.displayName === "string" ?
+    checkInData.displayName.trim() :
+    "";
+  return raw.length > 0 ? raw : "Someone";
+}
 
 /**
  * Writes per-user notifications for a newly created public check-in.
@@ -114,8 +141,7 @@ async function fanOutNearbyCheckInNotifications({
   }
 
   const title = buildNotificationTitle(checkInData, spotData);
-  const body =
-    "Someone checked in near one of your saved locations.";
+  const body = buildNotificationBody();
 
   let batch = db.batch();
   let ops = 0;
@@ -228,17 +254,37 @@ async function filterUserIdsWithNotifyFlag(db, userIds) {
  * @return {string}
  */
 function buildNotificationTitle(checkInData, spotData) {
+  const trainerName = trainerDisplayLabel(checkInData);
   const checkInSpotName = typeof checkInData.spotName === "string" ?
     checkInData.spotName.trim() :
     "";
   const spotName = typeof spotData.name === "string" ? spotData.name.trim() : "";
-  const namePart = checkInSpotName || spotName || "Untitled spot";
-  const maxNameLen = Math.max(0, MAX_TITLE_LEN - PREFIX.length);
-  const clipped = namePart.length > maxNameLen ?
-    namePart.slice(0, maxNameLen - 1).trimEnd() + "…" :
-    namePart;
-  const title = PREFIX + clipped;
-  return title.length <= MAX_TITLE_LEN ? title : title.slice(0, MAX_TITLE_LEN);
+  const spotPart = checkInSpotName || spotName || "Untitled spot";
+  const mid = TRAINING_AT_MIDDLE;
+
+  for (let nameLen = trainerName.length; nameLen >= 1; nameLen--) {
+    const nameShown = nameLen >= trainerName.length ?
+      trainerName :
+      clipToMaxLen(trainerName, nameLen);
+    const roomForSpot = MAX_TITLE_LEN - nameShown.length - mid.length;
+    if (roomForSpot < 1) {
+      continue;
+    }
+    const spotShown = clipToMaxLen(spotPart, roomForSpot);
+    const title = nameShown + mid + spotShown;
+    if (title.length <= MAX_TITLE_LEN) {
+      return title;
+    }
+  }
+  return (trainerName + mid + spotPart).slice(0, MAX_TITLE_LEN);
+}
+
+/**
+ * Fixed copy; the trainer name appears only in {@link buildNotificationTitle}.
+ * @return {string}
+ */
+function buildNotificationBody() {
+  return "They've just checked in to this spot, which is within about 5 km of one of your saved locations.";
 }
 
 module.exports = {
@@ -247,4 +293,5 @@ module.exports = {
   hasValidSpotCoordinates,
   mergeUserIdsFromSnapshot,
   buildNotificationTitle,
+  buildNotificationBody,
 };
