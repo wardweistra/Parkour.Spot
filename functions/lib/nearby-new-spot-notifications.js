@@ -9,30 +9,24 @@ const {calculateBounds} = require("./geo");
 const COLLECTION_GROUP = "locationsOfInterest";
 const QUERY_PAGE_SIZE = 300;
 const GET_ALL_CHUNK = 10;
-const MAX_TITLE_LEN = 200;
 const BATCH_SIZE = 500;
 
-const PREFIX = "New spot nearby: ";
+/** @type {string} Stable id for client-side localization */
+const NOTIFICATION_KIND_NEARBY_NEW_SPOT = "nearby_new_spot";
 
 /**
- * Creator label from spot doc (`createdByName`, denormalized at write time).
+ * Raw names for localized templates (empty strings → client uses l10n fallbacks).
  * @param {object} spotData
- * @return {string}
+ * @return {{actorName: string, spotName: string}}
  */
-function creatorDisplayLabel(spotData) {
-  const raw = typeof spotData.createdByName === "string" ?
+function buildTemplateArgs(spotData) {
+  const actorName = typeof spotData.createdByName === "string" ?
     spotData.createdByName.trim() :
     "";
-  return raw.length > 0 ? raw : "Someone";
-}
-
-/**
- * @param {object} spotData spot document fields
- * @return {string}
- */
-function buildNotificationBody(spotData) {
-  const label = creatorDisplayLabel(spotData);
-  return `${label} added a new parkour spot near one of your saved locations.`;
+  const spotName = typeof spotData.name === "string" ?
+    spotData.name.trim() :
+    "";
+  return {actorName, spotName};
 }
 
 /**
@@ -112,16 +106,15 @@ async function fanOutNearbyNewSpotNotifications({db, FieldValue, spotId, spotDat
     return {notified: 0};
   }
 
-  const title = buildNotificationTitle(spotData);
-  const body = buildNotificationBody(spotData);
+  const templateArgs = buildTemplateArgs(spotData);
 
   let batch = db.batch();
   let ops = 0;
   for (const uid of usersToNotify) {
     const ref = db.collection("users").doc(uid).collection("notifications").doc();
     batch.set(ref, {
-      title,
-      body,
+      notificationKind: NOTIFICATION_KIND_NEARBY_NEW_SPOT,
+      templateArgs,
       deeplinkKind: "spot",
       deeplinkId: spotId,
       createdAt: FieldValue.serverTimestamp(),
@@ -212,25 +205,10 @@ async function filterUserIdsWithNotifyFlag(db, userIds) {
   return out;
 }
 
-/**
- * @param {object} spotData spot document fields
- * @return {string}
- */
-function buildNotificationTitle(spotData) {
-  const raw = typeof spotData.name === "string" ? spotData.name.trim() : "";
-  const namePart = raw.length > 0 ? raw : "Untitled spot";
-  const maxNameLen = Math.max(0, MAX_TITLE_LEN - PREFIX.length);
-  const clipped = namePart.length > maxNameLen ?
-    namePart.slice(0, maxNameLen - 1).trimEnd() + "…" :
-    namePart;
-  const title = PREFIX + clipped;
-  return title.length <= MAX_TITLE_LEN ? title : title.slice(0, MAX_TITLE_LEN);
-}
-
 module.exports = {
   fanOutNearbyNewSpotNotifications,
   shouldFanOutNearbyNewSpotNotifications,
   mergeUserIdsFromSnapshot,
-  buildNotificationTitle,
-  buildNotificationBody,
+  buildTemplateArgs,
+  NOTIFICATION_KIND_NEARBY_NEW_SPOT,
 };

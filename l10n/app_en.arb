@@ -105,6 +105,48 @@
       }
     }
   },
+  "notificationsActorSomeone": "Someone",
+  "@notificationsActorSomeone": {
+    "description": "Fallback when a notification has no person display name"
+  },
+  "notificationsSpotUntitled": "Untitled spot",
+  "@notificationsSpotUntitled": {
+    "description": "Fallback spot name in notifications when the spot title is empty"
+  },
+  "notificationNearbyNewSpotTitle": "New spot nearby: {spotName}",
+  "@notificationNearbyNewSpotTitle": {
+    "description": "In-app notification title when a new spot was added near a saved location",
+    "placeholders": {
+      "spotName": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationNearbyNewSpotBody": "{actorName} added a new parkour spot near one of your saved locations.",
+  "@notificationNearbyNewSpotBody": {
+    "description": "In-app notification body for nearby new spot",
+    "placeholders": {
+      "actorName": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationNearbyCheckInTitle": "{actorName} is training now at {spotName}",
+  "@notificationNearbyCheckInTitle": {
+    "description": "In-app notification title when someone checked in at a spot nearby",
+    "placeholders": {
+      "actorName": {
+        "type": "String"
+      },
+      "spotName": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationNearbyCheckInBody": "They’ve just checked in to this spot.",
+  "@notificationNearbyCheckInBody": {
+    "description": "In-app notification body for nearby public check-in (actor is in the title)"
+  },
   "profileModeratorSectionTitle": "Moderator",
   "@profileModeratorSectionTitle": {
     "description": "Account tab: moderator section heading"

@@ -11,6 +11,8 @@ class UserNotification {
     required this.title,
     required this.deeplinkKind,
     required this.deeplinkId,
+    this.notificationKind,
+    this.templateArgs,
     this.body,
     this.createdAt,
     this.read = false,
@@ -20,6 +22,10 @@ class UserNotification {
   final String id;
   final String title;
   final String? body;
+  /// Backend stable id for localized inbox copy (e.g. `nearby_new_spot`).
+  final String? notificationKind;
+  /// Parameters for [notificationKind] templates (`actorName`, `spotName`).
+  final Map<String, String>? templateArgs;
   final UserNotificationDeeplinkKind deeplinkKind;
   final String deeplinkId;
   final DateTime? createdAt;
@@ -34,12 +40,26 @@ class UserNotification {
       id: doc.id,
       title: data['title'] as String? ?? '',
       body: data['body'] as String?,
+      notificationKind: data['notificationKind'] as String?,
+      templateArgs: _templateArgsFromFirestore(data['templateArgs']),
       deeplinkKind: _deeplinkKindFromString(data['deeplinkKind'] as String?),
       deeplinkId: data['deeplinkId'] as String? ?? '',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
       read: data['read'] as bool? ?? false,
       readAt: (data['readAt'] as Timestamp?)?.toDate(),
     );
+  }
+
+  static Map<String, String>? _templateArgsFromFirestore(dynamic raw) {
+    if (raw is! Map) return null;
+    final out = <String, String>{};
+    for (final key in const ['actorName', 'spotName']) {
+      final v = raw[key];
+      if (v is String) {
+        out[key] = v;
+      }
+    }
+    return out.isEmpty ? null : out;
   }
 
   static UserNotificationDeeplinkKind _deeplinkKindFromString(String? raw) {

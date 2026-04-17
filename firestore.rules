@@ -133,11 +133,31 @@ service cloud.firestore {
       // In-app notifications inbox (documents written by Admin SDK / Cloud Functions only).
       match /notifications/{notificationId} {
         function notificationStringsOk(data) {
-          return data.title is string &&
-            data.title.size() > 0 &&
-            data.title.size() <= 200 &&
+          return (!('title' in data) ||
+            (data.title is string &&
+              data.title.size() > 0 &&
+              data.title.size() <= 200)) &&
             (!('body' in data) ||
               (data.body is string && data.body.size() <= 2000));
+        }
+        function notificationKindOk(data) {
+          return !('notificationKind' in data) ||
+            (data.notificationKind is string &&
+              data.notificationKind.size() > 0 &&
+              data.notificationKind.size() <= 64 &&
+              data.notificationKind in ['nearby_new_spot', 'nearby_check_in']);
+        }
+        function notificationTemplateArgsOk(data) {
+          return !('templateArgs' in data) || (
+            data.templateArgs is map &&
+            data.templateArgs.size() <= 4 &&
+            (!('actorName' in data.templateArgs) ||
+              (data.templateArgs.actorName is string &&
+                data.templateArgs.actorName.size() <= 200)) &&
+            (!('spotName' in data.templateArgs) ||
+              (data.templateArgs.spotName is string &&
+                data.templateArgs.spotName.size() <= 200))
+          );
         }
         function notificationDeeplinkOk(data) {
           return data.deeplinkKind is string &&
@@ -158,7 +178,14 @@ service cloud.firestore {
             ((!('body' in resource.data) && !('body' in request.resource.data)) ||
               (('body' in resource.data) == ('body' in request.resource.data) &&
                 (!('body' in resource.data) ||
-                  request.resource.data.body == resource.data.body)));
+                  request.resource.data.body == resource.data.body))) &&
+            ((!('notificationKind' in resource.data) &&
+                !('notificationKind' in request.resource.data)) ||
+              (request.resource.data.notificationKind ==
+                resource.data.notificationKind)) &&
+            ((!('templateArgs' in resource.data) &&
+                !('templateArgs' in request.resource.data)) ||
+              (request.resource.data.templateArgs == resource.data.templateArgs));
         }
 
         // List queries must not use field checks the query cannot guarantee for every
@@ -171,6 +198,8 @@ service cloud.firestore {
           notificationImmutableFieldsUnchanged() &&
           notificationReadShape(request.resource.data) &&
           notificationStringsOk(request.resource.data) &&
+          notificationKindOk(request.resource.data) &&
+          notificationTemplateArgsOk(request.resource.data) &&
           notificationDeeplinkOk(request.resource.data);
       }
     }

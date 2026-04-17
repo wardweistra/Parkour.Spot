@@ -9,36 +9,29 @@ const {calculateBounds} = require("./geo");
 const COLLECTION_GROUP = "locationsOfInterest";
 const QUERY_PAGE_SIZE = 300;
 const GET_ALL_CHUNK = 10;
-const MAX_TITLE_LEN = 200;
 const BATCH_SIZE = 500;
 
-const TRAINING_AT_MIDDLE = " is training now at ";
+/** @type {string} Stable id for client-side localization */
+const NOTIFICATION_KIND_NEARBY_CHECK_IN = "nearby_check_in";
 
 /**
- * @param {string} str
- * @param {number} max
- * @return {string}
- */
-function clipToMaxLen(str, max) {
-  if (str.length <= max) {
-    return str;
-  }
-  if (max <= 1) {
-    return "…";
-  }
-  return str.slice(0, max - 1).trimEnd() + "…";
-}
-
-/**
- * Display name from check-in doc (denormalized at write time). Empty -> "Someone".
+ * Raw names for localized templates (empty strings → client uses l10n fallbacks).
  * @param {object} checkInData
- * @return {string}
+ * @param {object} spotData
+ * @return {{actorName: string, spotName: string}}
  */
-function trainerDisplayLabel(checkInData) {
-  const raw = typeof checkInData.displayName === "string" ?
+function buildTemplateArgs(checkInData, spotData) {
+  const actorName = typeof checkInData.displayName === "string" ?
     checkInData.displayName.trim() :
     "";
-  return raw.length > 0 ? raw : "Someone";
+  const checkInSpotName = typeof checkInData.spotName === "string" ?
+    checkInData.spotName.trim() :
+    "";
+  const spotNameFromSpot = typeof spotData.name === "string" ?
+    spotData.name.trim() :
+    "";
+  const spotName = checkInSpotName || spotNameFromSpot || "";
+  return {actorName, spotName};
 }
 
 /**
@@ -140,16 +133,15 @@ async function fanOutNearbyCheckInNotifications({
     return {notified: 0};
   }
 
-  const title = buildNotificationTitle(checkInData, spotData);
-  const body = buildNotificationBody();
+  const templateArgs = buildTemplateArgs(checkInData, spotData);
 
   let batch = db.batch();
   let ops = 0;
   for (const uid of usersToNotify) {
     const ref = db.collection("users").doc(uid).collection("notifications").doc();
     batch.set(ref, {
-      title,
-      body,
+      notificationKind: NOTIFICATION_KIND_NEARBY_CHECK_IN,
+      templateArgs,
       deeplinkKind: "spot",
       deeplinkId: spotId,
       createdAt: FieldValue.serverTimestamp(),
@@ -248,50 +240,11 @@ async function filterUserIdsWithNotifyFlag(db, userIds) {
   return out;
 }
 
-/**
- * @param {object} checkInData check-in fields
- * @param {object} spotData spot fields
- * @return {string}
- */
-function buildNotificationTitle(checkInData, spotData) {
-  const trainerName = trainerDisplayLabel(checkInData);
-  const checkInSpotName = typeof checkInData.spotName === "string" ?
-    checkInData.spotName.trim() :
-    "";
-  const spotName = typeof spotData.name === "string" ? spotData.name.trim() : "";
-  const spotPart = checkInSpotName || spotName || "Untitled spot";
-  const mid = TRAINING_AT_MIDDLE;
-
-  for (let nameLen = trainerName.length; nameLen >= 1; nameLen--) {
-    const nameShown = nameLen >= trainerName.length ?
-      trainerName :
-      clipToMaxLen(trainerName, nameLen);
-    const roomForSpot = MAX_TITLE_LEN - nameShown.length - mid.length;
-    if (roomForSpot < 1) {
-      continue;
-    }
-    const spotShown = clipToMaxLen(spotPart, roomForSpot);
-    const title = nameShown + mid + spotShown;
-    if (title.length <= MAX_TITLE_LEN) {
-      return title;
-    }
-  }
-  return (trainerName + mid + spotPart).slice(0, MAX_TITLE_LEN);
-}
-
-/**
- * Fixed copy; the trainer name appears only in {@link buildNotificationTitle}.
- * @return {string}
- */
-function buildNotificationBody() {
-  return "They've just checked in to this spot.";
-}
-
 module.exports = {
   fanOutNearbyCheckInNotifications,
   shouldFanOutNearbyCheckInNotifications,
   hasValidSpotCoordinates,
   mergeUserIdsFromSnapshot,
-  buildNotificationTitle,
-  buildNotificationBody,
+  buildTemplateArgs,
+  NOTIFICATION_KIND_NEARBY_CHECK_IN,
 };

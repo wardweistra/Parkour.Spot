@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/user_notification.dart';
 import '../../services/user_notification_service.dart';
+import '../../utils/user_notification_localization.dart';
 import '../../widgets/page_scaffold.dart';
 
 class NotificationsScreen extends StatelessWidget {
@@ -174,6 +175,7 @@ class _NotificationListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final copy = localizedUserNotificationCopy(item, l10n);
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final isUnread = !item.read;
@@ -212,15 +214,15 @@ class _NotificationListTile extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        item.title,
+                        copy.title,
                         style: titleStyle,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      if (item.body != null && item.body!.isNotEmpty) ...[
+                      if (copy.body != null && copy.body!.isNotEmpty) ...[
                         const SizedBox(height: 4),
                         Text(
-                          item.body!,
+                          copy.body!,
                           style: textTheme.bodyMedium?.copyWith(
                             color: scheme.onSurface.withValues(
                               alpha: isUnread ? 0.8 : 0.62,
@@ -261,7 +263,7 @@ class _NotificationListTile extends StatelessWidget {
     return MergeSemantics(
       child: Semantics(
         button: true,
-        label: l10n.notificationsOpenSemantic(item.title),
+        label: l10n.notificationsOpenSemantic(copy.title),
         child: tile,
       ),
     );

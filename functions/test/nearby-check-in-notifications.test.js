@@ -2,9 +2,9 @@ const {
   shouldFanOutNearbyCheckInNotifications,
   hasValidSpotCoordinates,
   mergeUserIdsFromSnapshot,
-  buildNotificationTitle,
-  buildNotificationBody,
+  buildTemplateArgs,
   fanOutNearbyCheckInNotifications,
+  NOTIFICATION_KIND_NEARBY_CHECK_IN,
 } = require("../lib/nearby-check-in-notifications");
 
 function mockDoc(userId, lng, lat = 52.37) {
@@ -77,34 +77,19 @@ describe("mergeUserIdsFromSnapshot", () => {
   });
 });
 
-describe("buildNotificationTitle", () => {
-  it("prefers check-in spotName and falls back to Someone without displayName", () => {
-    expect(buildNotificationTitle(
-        {spotName: "Session Spot"},
-        {name: "Fallback Spot"},
-    )).toBe("Someone is training now at Session Spot");
+describe("buildTemplateArgs", () => {
+  it("prefers check-in spotName over spot doc name", () => {
+    expect(buildTemplateArgs(
+        {displayName: " Alex ", spotName: " Session "},
+        {name: "Fallback"},
+    )).toEqual({actorName: "Alex", spotName: "Session"});
   });
 
-  it("includes trainer displayName when present", () => {
-    expect(buildNotificationTitle(
-        {displayName: "Alex", spotName: "Session Spot"},
-        {name: "Fallback Spot"},
-    )).toBe("Alex is training now at Session Spot");
-  });
-
-  it("uses Untitled spot when all names are empty", () => {
-    expect(buildNotificationTitle(
-        {spotName: "  "},
-        {name: " "},
-    )).toBe("Someone is training now at Untitled spot");
-  });
-});
-
-describe("buildNotificationBody", () => {
-  it("does not repeat the trainer name (title-only)", () => {
-    expect(buildNotificationBody()).toBe(
-        "They've just checked in to this spot.",
-    );
+  it("falls back to spot doc name when check-in spotName empty", () => {
+    expect(buildTemplateArgs(
+        {displayName: "", spotName: "  "},
+        {name: " Wall "},
+    )).toEqual({actorName: "", spotName: "Wall"});
   });
 });
 
@@ -191,15 +176,18 @@ describe("fanOutNearbyCheckInNotifications", () => {
 
     expect(r.notified).toBe(1);
     expect(written.length).toBe(1);
+    expect(written[0].data.notificationKind).toBe(
+        NOTIFICATION_KIND_NEARBY_CHECK_IN,
+    );
+    expect(written[0].data.templateArgs).toEqual({
+      actorName: "Alex",
+      spotName: "Session Spot",
+    });
     expect(written[0].data.deeplinkKind).toBe("spot");
     expect(written[0].data.deeplinkId).toBe("spotA");
     expect(written[0].data.read).toBe(false);
-    expect(written[0].data.title).toBe(
-        "Alex is training now at Session Spot",
-    );
-    expect(written[0].data.body).toBe(
-        "They've just checked in to this spot.",
-    );
+    expect(written[0].data.title).toBeUndefined();
+    expect(written[0].data.body).toBeUndefined();
   });
 
   it("notifies users when flag is missing (default on)", async () => {

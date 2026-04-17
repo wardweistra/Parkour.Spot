@@ -1,9 +1,9 @@
 const {
   shouldFanOutNearbyNewSpotNotifications,
   mergeUserIdsFromSnapshot,
-  buildNotificationTitle,
-  buildNotificationBody,
+  buildTemplateArgs,
   fanOutNearbyNewSpotNotifications,
+  NOTIFICATION_KIND_NEARBY_NEW_SPOT,
 } = require("../lib/nearby-new-spot-notifications");
 
 function mockDoc(userId, lng, lat = 52.37) {
@@ -65,29 +65,13 @@ describe("mergeUserIdsFromSnapshot", () => {
   });
 });
 
-describe("buildNotificationTitle", () => {
-  it("uses Untitled spot when name empty", () => {
-    expect(buildNotificationTitle({name: "  "})).toMatch(/^New spot nearby: Untitled spot$/);
-  });
-  it("respects max length", () => {
-    const long = "x".repeat(300);
-    const t = buildNotificationTitle({name: long});
-    expect(t.length).toBeLessThanOrEqual(200);
-    expect(t.startsWith("New spot nearby:")).toBe(true);
-  });
-});
-
-describe("buildNotificationBody", () => {
-  it("uses createdByName when present", () => {
-    expect(buildNotificationBody({createdByName: "Alex"})).toBe(
-        "Alex added a new parkour spot near one of your saved locations.",
-    );
-  });
-
-  it("uses Someone when createdByName is missing", () => {
-    expect(buildNotificationBody({})).toBe(
-        "Someone added a new parkour spot near one of your saved locations.",
-    );
+describe("buildTemplateArgs", () => {
+  it("returns trimmed names or empty strings for client-side l10n", () => {
+    expect(buildTemplateArgs({
+      createdByName: " Alex ",
+      name: " Wall ",
+    })).toEqual({actorName: "Alex", spotName: "Wall"});
+    expect(buildTemplateArgs({})).toEqual({actorName: "", spotName: ""});
   });
 });
 
@@ -159,12 +143,18 @@ describe("fanOutNearbyNewSpotNotifications", () => {
 
     expect(r.notified).toBe(1);
     expect(written.length).toBe(1);
+    expect(written[0].data.notificationKind).toBe(
+        NOTIFICATION_KIND_NEARBY_NEW_SPOT,
+    );
+    expect(written[0].data.templateArgs).toEqual({
+      actorName: "Alex",
+      spotName: "Test",
+    });
     expect(written[0].data.deeplinkKind).toBe("spot");
     expect(written[0].data.deeplinkId).toBe("spotA");
     expect(written[0].data.read).toBe(false);
-    expect(written[0].data.body).toBe(
-        "Alex added a new parkour spot near one of your saved locations.",
-    );
+    expect(written[0].data.title).toBeUndefined();
+    expect(written[0].data.body).toBeUndefined();
   });
 
   it("notifies users when flag is missing (default on)", async () => {

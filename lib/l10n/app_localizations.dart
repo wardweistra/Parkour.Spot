@@ -256,6 +256,42 @@ abstract class AppLocalizations {
   /// **'Open notification: {title}'**
   String notificationsOpenSemantic(String title);
 
+  /// Fallback when a notification has no person display name
+  ///
+  /// In en, this message translates to:
+  /// **'Someone'**
+  String get notificationsActorSomeone;
+
+  /// Fallback spot name in notifications when the spot title is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled spot'**
+  String get notificationsSpotUntitled;
+
+  /// In-app notification title when a new spot was added near a saved location
+  ///
+  /// In en, this message translates to:
+  /// **'New spot nearby: {spotName}'**
+  String notificationNearbyNewSpotTitle(String spotName);
+
+  /// In-app notification body for nearby new spot
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} added a new parkour spot near one of your saved locations.'**
+  String notificationNearbyNewSpotBody(String actorName);
+
+  /// In-app notification title when someone checked in at a spot nearby
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} is training now at {spotName}'**
+  String notificationNearbyCheckInTitle(String actorName, String spotName);
+
+  /// In-app notification body for nearby public check-in (actor is in the title)
+  ///
+  /// In en, this message translates to:
+  /// **'They’ve just checked in to this spot.'**
+  String get notificationNearbyCheckInBody;
+
   /// Account tab: moderator section heading
   ///
   /// In en, this message translates to:

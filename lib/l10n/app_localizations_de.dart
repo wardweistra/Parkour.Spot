@@ -93,6 +93,31 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get notificationsActorSomeone => 'Jemand';
+
+  @override
+  String get notificationsSpotUntitled => 'Unbenannter Spot';
+
+  @override
+  String notificationNearbyNewSpotTitle(String spotName) {
+    return 'Neuer Spot in der Nähe: $spotName';
+  }
+
+  @override
+  String notificationNearbyNewSpotBody(String actorName) {
+    return '$actorName hat einen neuen Parkour-Spot in der Nähe eines deiner gespeicherten Orte hinzugefügt.';
+  }
+
+  @override
+  String notificationNearbyCheckInTitle(String actorName, String spotName) {
+    return '$actorName trainiert gerade bei $spotName';
+  }
+
+  @override
+  String get notificationNearbyCheckInBody =>
+      'Gerade an diesem Spot eingecheckt.';
+
+  @override
   String get profileModeratorSectionTitle => 'Moderation';
 
   @override
