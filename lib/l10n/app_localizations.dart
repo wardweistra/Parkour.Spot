@@ -352,6 +352,18 @@ abstract class AppLocalizations {
   /// **'Get an in-app notification when someone adds a spot within about 5 km of an active saved place or your last known location.'**
   String get profileLocationAlertsNotifyNewSpotsSubtitle;
 
+  /// Account settings: toggle for in-app notifications when someone checks in near an enabled location of interest
+  ///
+  /// In en, this message translates to:
+  /// **'Notify me about nearby check-ins'**
+  String get profileLocationAlertsNotifyNearbyCheckInsTitle;
+
+  /// Account settings: explains nearby check-in notification opt-in and range
+  ///
+  /// In en, this message translates to:
+  /// **'Get an in-app notification when someone checks in at a spot within about 5 km of an active saved place or your last known location.'**
+  String get profileLocationAlertsNotifyNearbyCheckInsSubtitle;
+
   /// Account settings: saved locations subsection title
   ///
   /// In en, this message translates to:

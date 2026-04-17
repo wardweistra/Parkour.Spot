@@ -18,6 +18,7 @@ class User {
   final Map<String, bool>? featureAccess;
   final bool shareLastKnownLocationForAlerts;
   final bool notifyNewSpotsNearby;
+  final bool notifyCheckInsNearby;
 
   User({
     required this.id,
@@ -39,6 +40,7 @@ class User {
     this.featureAccess,
     this.shareLastKnownLocationForAlerts = true,
     this.notifyNewSpotsNearby = true,
+    this.notifyCheckInsNearby = true,
   });
 
   factory User.fromMap(Map<String, dynamic> map) {
@@ -75,6 +77,9 @@ class User {
       notifyNewSpotsNearby: map['notifyNewSpotsNearby'] is bool
           ? map['notifyNewSpotsNearby'] as bool
           : true,
+      notifyCheckInsNearby: map['notifyCheckInsNearby'] is bool
+          ? map['notifyCheckInsNearby'] as bool
+          : true,
     );
   }
 
@@ -99,6 +104,7 @@ class User {
       'featureAccess': featureAccess,
       'shareLastKnownLocationForAlerts': shareLastKnownLocationForAlerts,
       'notifyNewSpotsNearby': notifyNewSpotsNearby,
+      'notifyCheckInsNearby': notifyCheckInsNearby,
     };
   }
 
@@ -124,6 +130,7 @@ class User {
     Map<String, bool>? featureAccess,
     bool? shareLastKnownLocationForAlerts,
     bool? notifyNewSpotsNearby,
+    bool? notifyCheckInsNearby,
   }) {
     return User(
       id: id ?? this.id,
@@ -150,6 +157,7 @@ class User {
           this.shareLastKnownLocationForAlerts,
       notifyNewSpotsNearby:
           notifyNewSpotsNearby ?? this.notifyNewSpotsNearby,
+      notifyCheckInsNearby: notifyCheckInsNearby ?? this.notifyCheckInsNearby,
     );
   }
 

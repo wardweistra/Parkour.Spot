@@ -146,6 +146,14 @@ class AppLocalizationsFr extends AppLocalizations {
       'Recevez une notification in-app lorsqu’un spot est ajouté à environ 5 km d’un lieu enregistré actif ou de votre dernière position connue.';
 
   @override
+  String get profileLocationAlertsNotifyNearbyCheckInsTitle =>
+      'Me prévenir des check-ins à proximité';
+
+  @override
+  String get profileLocationAlertsNotifyNearbyCheckInsSubtitle =>
+      'Recevez une notification in-app lorsque quelqu’un fait un check-in sur un spot à environ 5 km d’un lieu enregistré actif ou de votre dernière position connue.';
+
+  @override
   String get profileLocationAlertsSavedLocationsTitle => 'Mes lieux d’intérêt';
 
   @override

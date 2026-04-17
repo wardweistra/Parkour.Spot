@@ -625,6 +625,8 @@
   "profileLocationAlertsShareLastKnownSubtitle": "Guarda la última ubicación conocida de tu dispositivo en la nube para que coincidan las alertas cercanas.",
   "profileLocationAlertsNotifyNewSpotsTitle": "Avisarme sobre spots nuevos cerca",
   "profileLocationAlertsNotifyNewSpotsSubtitle": "Recibe una notificación en la app cuando alguien añade un spot a unos 5 km de un lugar guardado activo o de tu última ubicación conocida.",
+  "profileLocationAlertsNotifyNearbyCheckInsTitle": "Avisarme sobre check-ins cercanos",
+  "profileLocationAlertsNotifyNearbyCheckInsSubtitle": "Recibe una notificación en la app cuando alguien haga check-in en un spot a unos 5 km de un lugar guardado activo o de tu última ubicación conocida.",
   "profileLocationAlertsSavedLocationsTitle": "Mis lugares de interés",
   "profileLocationAlertsAddLocationButton": "Añadir",
   "profileLocationAlertsEmptyState": "Aún no hay lugares guardados. Añade sitios como Casa o Trabajo.",

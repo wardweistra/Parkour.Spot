@@ -391,6 +391,8 @@ class AccountSettingsScreen extends StatelessWidget {
         authService.userProfile?.shareLastKnownLocationForAlerts == true;
     final notifyNewSpotsNearby =
         authService.userProfile?.notifyNewSpotsNearby == true;
+    final notifyCheckInsNearby =
+        authService.userProfile?.notifyCheckInsNearby == true;
 
     return Card(
       child: Padding(
@@ -416,26 +418,52 @@ class AccountSettingsScreen extends StatelessWidget {
                 final canOptInNewSpotAlerts =
                     hasActiveLocation || notifyNewSpotsNearby;
 
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(
-                    Icons.fiber_new_outlined,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  title: Text(l10n.profileLocationAlertsNotifyNewSpotsTitle),
-                  subtitle: Text(
-                    l10n.profileLocationAlertsNotifyNewSpotsSubtitle,
-                  ),
-                  trailing: Switch(
-                    value: notifyNewSpotsNearby,
-                    onChanged: canOptInNewSpotAlerts
-                        ? (enabled) async {
-                            await authService.updateNotifyNewSpotsNearby(
-                              enabled,
-                            );
-                          }
-                        : null,
-                  ),
+                return Column(
+                  children: [
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(
+                        Icons.fiber_new_outlined,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      title: Text(l10n.profileLocationAlertsNotifyNewSpotsTitle),
+                      subtitle: Text(
+                        l10n.profileLocationAlertsNotifyNewSpotsSubtitle,
+                      ),
+                      trailing: Switch(
+                        value: notifyNewSpotsNearby,
+                        onChanged: canOptInNewSpotAlerts
+                            ? (enabled) async {
+                                await authService.updateNotifyNewSpotsNearby(
+                                  enabled,
+                                );
+                              }
+                            : null,
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(
+                        Icons.how_to_reg_outlined,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      title: Text(l10n.profileLocationAlertsNotifyNearbyCheckInsTitle),
+                      subtitle: Text(
+                        l10n.profileLocationAlertsNotifyNearbyCheckInsSubtitle,
+                      ),
+                      trailing: Switch(
+                        value: notifyCheckInsNearby,
+                        onChanged: canOptInNewSpotAlerts
+                            ? (enabled) async {
+                                await authService.updateNotifyCheckInsNearby(
+                                  enabled,
+                                );
+                              }
+                            : null,
+                      ),
+                    ),
+                  ],
                 );
               },
             ),

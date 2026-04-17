@@ -60,6 +60,9 @@ const {
 const {
   fanOutNearbyNewSpotNotifications,
 } = require("./lib/nearby-new-spot-notifications");
+const {
+  fanOutNearbyCheckInNotifications,
+} = require("./lib/nearby-check-in-notifications");
 // Nearby notification fan-out will use collectionGroup("locationsOfInterest")
 // and must dedupe matches by userId because a user can match via multiple
 // anchors (e.g. lastKnown + home/work).
@@ -1185,6 +1188,24 @@ exports.onSpotCreated = onDocumentCreated(
         await fanOutNearbyNewSpotNotifications({db, FieldValue, spotId, spotData});
       } catch (e) {
         console.error("onSpotCreated nearby notifications error", e);
+      }
+    },
+);
+
+exports.onSpotCheckInCreated = onDocumentCreated(
+    {document: "spotCheckIns/{checkInId}", region: "europe-west1"},
+    async (event) => {
+      const checkInId = event.params.checkInId;
+      const checkInData = event.data.data();
+      try {
+        await fanOutNearbyCheckInNotifications({
+          db,
+          FieldValue,
+          checkInId,
+          checkInData,
+        });
+      } catch (e) {
+        console.error("onSpotCheckInCreated nearby notifications error", e);
       }
     },
 );

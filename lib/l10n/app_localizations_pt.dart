@@ -147,6 +147,14 @@ class AppLocalizationsPt extends AppLocalizations {
       'Receba uma notificação na app quando alguém adicionar um spot a cerca de 5 km de um local guardado ativo ou da sua última localização conhecida.';
 
   @override
+  String get profileLocationAlertsNotifyNearbyCheckInsTitle =>
+      'Notificar sobre check-ins nas proximidades';
+
+  @override
+  String get profileLocationAlertsNotifyNearbyCheckInsSubtitle =>
+      'Receba uma notificação na app quando alguém fizer check-in num spot a cerca de 5 km de um local guardado ativo ou da sua última localização conhecida.';
+
+  @override
   String get profileLocationAlertsSavedLocationsTitle =>
       'Os meus locais de interesse';
 

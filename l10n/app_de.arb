@@ -625,6 +625,8 @@
   "profileLocationAlertsShareLastKnownSubtitle": "Speichere den letzten bekannten Standort deines Geräts in der Cloud, um passende Benachrichtigungen in der Nähe zu erhalten.",
   "profileLocationAlertsNotifyNewSpotsTitle": "Benachrichtigung über neue Spots in der Nähe",
   "profileLocationAlertsNotifyNewSpotsSubtitle": "Erhalte eine In-App-Benachrichtigung, wenn jemand einen Spot in etwa 5 km von einem aktiven gespeicherten Ort oder deinem letzten bekannten Standort hinzufügt.",
+  "profileLocationAlertsNotifyNearbyCheckInsTitle": "Benachrichtigung über Check-ins in der Nähe",
+  "profileLocationAlertsNotifyNearbyCheckInsSubtitle": "Erhalte eine In-App-Benachrichtigung, wenn jemand an einem Spot in etwa 5 km von einem aktiven gespeicherten Ort oder deinem letzten bekannten Standort eincheckt.",
   "profileLocationAlertsSavedLocationsTitle": "Meine Orte von Interesse",
   "profileLocationAlertsAddLocationButton": "Hinzufügen",
   "profileLocationAlertsEmptyState": "Noch keine gespeicherten Orte. Füge z. B. Zuhause oder Arbeit hinzu.",

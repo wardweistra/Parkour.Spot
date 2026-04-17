@@ -169,6 +169,14 @@
   "@profileLocationAlertsNotifyNewSpotsSubtitle": {
     "description": "Account settings: explains new spot notification opt-in and range"
   },
+  "profileLocationAlertsNotifyNearbyCheckInsTitle": "Notify me about nearby check-ins",
+  "@profileLocationAlertsNotifyNearbyCheckInsTitle": {
+    "description": "Account settings: toggle for in-app notifications when someone checks in near an enabled location of interest"
+  },
+  "profileLocationAlertsNotifyNearbyCheckInsSubtitle": "Get an in-app notification when someone checks in at a spot within about 5 km of an active saved place or your last known location.",
+  "@profileLocationAlertsNotifyNearbyCheckInsSubtitle": {
+    "description": "Account settings: explains nearby check-in notification opt-in and range"
+  },
   "profileLocationAlertsSavedLocationsTitle": "Locations of interest",
   "@profileLocationAlertsSavedLocationsTitle": {
     "description": "Account settings: saved locations subsection title"

@@ -144,6 +144,14 @@ class AppLocalizationsNl extends AppLocalizations {
       'Ontvang een in-app melding wanneer iemand een spot toevoegt binnen ongeveer 5 km van een actieve opgeslagen plek of je laatst bekende locatie.';
 
   @override
+  String get profileLocationAlertsNotifyNearbyCheckInsTitle =>
+      'Melding bij check-ins in de buurt';
+
+  @override
+  String get profileLocationAlertsNotifyNearbyCheckInsSubtitle =>
+      'Ontvang een in-app melding wanneer iemand incheckt op een spot binnen ongeveer 5 km van een actieve opgeslagen plek of je laatst bekende locatie.';
+
+  @override
   String get profileLocationAlertsSavedLocationsTitle =>
       'Mijn locaties van interesse';
 
