@@ -103,7 +103,7 @@ describe("buildNotificationTitle", () => {
 describe("buildNotificationBody", () => {
   it("does not repeat the trainer name (title-only)", () => {
     expect(buildNotificationBody()).toBe(
-        "They've just checked in to this spot, which is within about 5 km of one of your saved locations.",
+        "They've just checked in to this spot.",
     );
   });
 });
@@ -198,7 +198,7 @@ describe("fanOutNearbyCheckInNotifications", () => {
         "Alex is training now at Session Spot",
     );
     expect(written[0].data.body).toBe(
-        "They've just checked in to this spot, which is within about 5 km of one of your saved locations.",
+        "They've just checked in to this spot.",
     );
   });
 

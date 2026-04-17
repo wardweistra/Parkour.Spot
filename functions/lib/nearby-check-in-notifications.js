@@ -284,7 +284,7 @@ function buildNotificationTitle(checkInData, spotData) {
  * @return {string}
  */
 function buildNotificationBody() {
-  return "They've just checked in to this spot, which is within about 5 km of one of your saved locations.";
+  return "They've just checked in to this spot.";
 }
 
 module.exports = {
