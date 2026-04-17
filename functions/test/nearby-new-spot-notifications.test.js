@@ -147,4 +147,116 @@ describe("fanOutNearbyNewSpotNotifications", () => {
     expect(written[0].data.deeplinkId).toBe("spotA");
     expect(written[0].data.read).toBe(false);
   });
+
+  it("notifies users when flag is missing (default on)", async () => {
+    const written = [];
+    const locSnap = {
+      empty: false,
+      size: 1,
+      docs: [mockDoc("u1", 4.89, 52.37)],
+    };
+    const queryChain = {
+      where: jest.fn(() => queryChain),
+      limit: jest.fn(() => queryChain),
+      startAfter: jest.fn(() => queryChain),
+      get: jest.fn(async () => locSnap),
+    };
+    const db = {
+      collectionGroup: jest.fn(() => queryChain),
+      getAll: jest.fn(async () => [{
+        exists: true,
+        data: () => ({}),
+      }]),
+      batch: jest.fn(() => {
+        const ops = {commit: jest.fn(async () => {})};
+        ops.set = jest.fn((ref, data) => {
+          written.push({ref, data});
+        });
+        return ops;
+      }),
+      collection: jest.fn((name) => {
+        if (name === "users") {
+          return {
+            doc: jest.fn((uid) => ({
+              collection: jest.fn(() => ({
+                doc: jest.fn(() => ({path: `users/${uid}/notifications/x`})),
+              })),
+            })),
+          };
+        }
+        return {};
+      }),
+    };
+
+    const FieldValue = {serverTimestamp: () => ({_ts: true})};
+    const r = await fanOutNearbyNewSpotNotifications({
+      db,
+      FieldValue,
+      spotId: "spotA",
+      spotData: {
+        name: "Test",
+        latitude: 52.37,
+        longitude: 4.89,
+      },
+    });
+
+    expect(r.notified).toBe(1);
+    expect(written.length).toBe(1);
+  });
+
+  it("does not notify users when flag is explicitly false", async () => {
+    const written = [];
+    const locSnap = {
+      empty: false,
+      size: 1,
+      docs: [mockDoc("u1", 4.89, 52.37)],
+    };
+    const queryChain = {
+      where: jest.fn(() => queryChain),
+      limit: jest.fn(() => queryChain),
+      startAfter: jest.fn(() => queryChain),
+      get: jest.fn(async () => locSnap),
+    };
+    const db = {
+      collectionGroup: jest.fn(() => queryChain),
+      getAll: jest.fn(async () => [{
+        exists: true,
+        data: () => ({notifyNewSpotsNearby: false}),
+      }]),
+      batch: jest.fn(() => {
+        const ops = {commit: jest.fn(async () => {})};
+        ops.set = jest.fn((ref, data) => {
+          written.push({ref, data});
+        });
+        return ops;
+      }),
+      collection: jest.fn((name) => {
+        if (name === "users") {
+          return {
+            doc: jest.fn((uid) => ({
+              collection: jest.fn(() => ({
+                doc: jest.fn(() => ({path: `users/${uid}/notifications/x`})),
+              })),
+            })),
+          };
+        }
+        return {};
+      }),
+    };
+
+    const FieldValue = {serverTimestamp: () => ({_ts: true})};
+    const r = await fanOutNearbyNewSpotNotifications({
+      db,
+      FieldValue,
+      spotId: "spotA",
+      spotData: {
+        name: "Test",
+        latitude: 52.37,
+        longitude: 4.89,
+      },
+    });
+
+    expect(r.notified).toBe(0);
+    expect(written.length).toBe(0);
+  });
 });

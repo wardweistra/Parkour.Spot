@@ -25,14 +25,31 @@ const PREFIX = "New spot nearby: ";
  */
 async function fanOutNearbyNewSpotNotifications({db, FieldValue, spotId, spotData}) {
   if (!shouldFanOutNearbyNewSpotNotifications(spotData)) {
+    console.log("Nearby new-spot notifications skipped:", {
+      spotId,
+      reason: "spot not eligible (hidden/import/invalid coords)",
+    });
     return {skipped: true};
   }
 
   const lat = spotData.latitude;
   const lng = spotData.longitude;
   const {minLat, maxLat, minLng, maxLng} = calculateBounds(lat, lng, 5000);
+  console.log("Spot created, checking nearby locationsOfInterest:", {
+    spotId,
+    latitude: lat,
+    longitude: lng,
+  });
+  console.log("Finding locationsOfInterest within boundary box:", {
+    spotId,
+    minLat,
+    maxLat,
+    minLng,
+    maxLng,
+  });
 
   const candidateUserIds = new Set();
+  let matchedLocationCount = 0;
   let lastDoc = null;
   for (;;) {
     let q = db.collectionGroup(COLLECTION_GROUP)
@@ -49,6 +66,7 @@ async function fanOutNearbyNewSpotNotifications({db, FieldValue, spotId, spotDat
     if (snap.empty) {
       break;
     }
+    matchedLocationCount += snap.size;
     mergeUserIdsFromSnapshot(snap, candidateUserIds);
     if (snap.size < QUERY_PAGE_SIZE) {
       break;
@@ -62,6 +80,13 @@ async function fanOutNearbyNewSpotNotifications({db, FieldValue, spotId, spotDat
   }
 
   const usersToNotify = await filterUserIdsWithNotifyFlag(db, [...candidateUserIds]);
+  console.log("Found locationsOfInterest and resolved notification audience:", {
+    spotId,
+    locationsOfInterestCount: matchedLocationCount,
+    candidateUserCount: candidateUserIds.size,
+    usersToNotifyCount: usersToNotify.length,
+    usersToNotify,
+  });
   if (usersToNotify.length === 0) {
     return {notified: 0};
   }
@@ -159,7 +184,7 @@ async function filterUserIdsWithNotifyFlag(db, userIds) {
         continue;
       }
       const data = doc.data();
-      if (data && data.notifyNewSpotsNearby === true) {
+      if (data && data.notifyNewSpotsNearby !== false) {
         out.push(chunk[j]);
       }
     }
