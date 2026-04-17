@@ -72,6 +72,11 @@ class AuthService extends ChangeNotifier {
 
   void _onAuthStateChanged(User? user) {
     if (user != null) {
+      // Clear stale profile immediately when auth user changes so consumers
+      // don't read preferences from a previous account during load.
+      if (_userProfile?.id != user.uid) {
+        _userProfile = null;
+      }
       _isLoading =
           true; // Stay loading until profile is fetched (fixes refresh on admin routes)
       _loadUserProfile(user.uid);
@@ -96,7 +101,22 @@ class AuthService extends ChangeNotifier {
           return completer.future;
         }
       } else {
-        return;
+        // Another UID is loading. Wait for it to settle, then continue loading
+        // this UID instead of silently dropping the request.
+        final loadingUid = _loadingProfileUid;
+        final inFlightCompleter = loadingUid == null
+            ? null
+            : _profileLoadCompleters[loadingUid];
+        if (inFlightCompleter != null) {
+          try {
+            await inFlightCompleter.future;
+          } catch (_) {
+            // Ignore and continue; we still need to load the requested UID.
+          }
+        }
+        if (_userProfile?.id == uid && !_isLoadingProfile) {
+          return;
+        }
       }
     }
 
