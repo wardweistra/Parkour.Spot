@@ -125,6 +125,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileLocationAlertsTitle => 'Standort-Benachrichtigungen';
 
   @override
+  String get profileNotificationSettingsTitle =>
+      'Benachrichtigungseinstellungen';
+
+  @override
   String get profileLocationAlertsDescription =>
       'Lege fest, welche Standorte für Benachrichtigungen in der Nähe verwendet werden – z. B. für Check-ins, neue Spots und künftige Events.';
 
@@ -135,6 +139,14 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get profileLocationAlertsShareLastKnownSubtitle =>
       'Speichere den letzten bekannten Standort deines Geräts in der Cloud, um passende Benachrichtigungen in der Nähe zu erhalten.';
+
+  @override
+  String get profileLocationAlertsNotifyNewSpotsTitle =>
+      'Benachrichtigung über neue Spots in der Nähe';
+
+  @override
+  String get profileLocationAlertsNotifyNewSpotsSubtitle =>
+      'Erhalte eine In-App-Benachrichtigung, wenn jemand einen Spot in etwa 5 km von einem aktiven gespeicherten Ort oder deinem letzten bekannten Standort hinzufügt.';
 
   @override
   String get profileLocationAlertsSavedLocationsTitle =>

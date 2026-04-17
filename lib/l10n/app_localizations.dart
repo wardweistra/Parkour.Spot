@@ -316,6 +316,12 @@ abstract class AppLocalizations {
   /// **'Location alerts'**
   String get profileLocationAlertsTitle;
 
+  /// Account settings: notification settings section title
+  ///
+  /// In en, this message translates to:
+  /// **'Notification settings'**
+  String get profileNotificationSettingsTitle;
+
   /// Account settings: location alerts section description
   ///
   /// In en, this message translates to:
@@ -334,10 +340,22 @@ abstract class AppLocalizations {
   /// **'Store your device\'s last known location in the cloud to match nearby alerts.'**
   String get profileLocationAlertsShareLastKnownSubtitle;
 
+  /// Account settings: toggle for in-app notifications when a new spot is added near an enabled location of interest
+  ///
+  /// In en, this message translates to:
+  /// **'Notify me about new spots nearby'**
+  String get profileLocationAlertsNotifyNewSpotsTitle;
+
+  /// Account settings: explains new spot notification opt-in and range
+  ///
+  /// In en, this message translates to:
+  /// **'Get an in-app notification when someone adds a spot within about 5 km of an active saved place or your last known location.'**
+  String get profileLocationAlertsNotifyNewSpotsSubtitle;
+
   /// Account settings: saved locations subsection title
   ///
   /// In en, this message translates to:
-  /// **'My locations of interest'**
+  /// **'Locations of interest'**
   String get profileLocationAlertsSavedLocationsTitle;
 
   /// Account settings: button label for adding a saved location

@@ -57,6 +57,9 @@ const {
   calculateDistance,
   calculateBounds,
 } = require("./lib/geo");
+const {
+  fanOutNearbyNewSpotNotifications,
+} = require("./lib/nearby-new-spot-notifications");
 // Nearby notification fan-out will use collectionGroup("locationsOfInterest")
 // and must dedupe matches by userId because a user can match via multiple
 // anchors (e.g. lastKnown + home/work).
@@ -1169,14 +1172,20 @@ exports.onSpotCreated = onDocumentCreated(
       const spotData = event.data.data();
       const name = typeof spotData?.name === "string" ? spotData.name : "";
       const words = buildSpotSearchWords(name);
-      if (words.length === 0) return;
-      const batch = db.batch();
-      for (const term of words) {
-        const ref = db.collection("spotSearchTerms").doc(spotSearchTermDocId(spotId, term));
-        batch.set(ref, {term, spotId});
+      if (words.length > 0) {
+        const batch = db.batch();
+        for (const term of words) {
+          const ref = db.collection("spotSearchTerms").doc(spotSearchTermDocId(spotId, term));
+          batch.set(ref, {term, spotId});
+        }
+        await batch.commit();
+        console.log("Indexed spot search terms:", {spotId, name: name.slice(0, 40), wordCount: words.length});
       }
-      await batch.commit();
-      console.log("Indexed spot search terms:", {spotId, name: name.slice(0, 40), wordCount: words.length});
+      try {
+        await fanOutNearbyNewSpotNotifications({db, FieldValue, spotId, spotData});
+      } catch (e) {
+        console.error("onSpotCreated nearby notifications error", e);
+      }
     },
 );
 

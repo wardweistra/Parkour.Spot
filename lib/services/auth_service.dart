@@ -726,6 +726,33 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  /// Opt in or out of in-app notifications when a new spot is added near an
+  /// enabled location of interest.
+  Future<bool> updateNotifyNewSpotsNearby(bool enabled) async {
+    if (_auth.currentUser == null || _userProfile == null) {
+      debugPrint(
+        'Cannot update new-spot notification preference: user not authenticated or profile not loaded',
+      );
+      return false;
+    }
+
+    try {
+      final userId = _auth.currentUser!.uid;
+      await _firestore.collection('users').doc(userId).update({
+        'notifyNewSpotsNearby': enabled,
+      });
+
+      _userProfile = _userProfile!.copyWith(
+        notifyNewSpotsNearby: enabled,
+      );
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Error updating new-spot notification preference: $e');
+      return false;
+    }
+  }
+
   /// Update spot tracking lists in local profile (called by SpotTrackingService after Firestore update)
   void updateUserSpotTracking({
     required List<String> wantToVisit,

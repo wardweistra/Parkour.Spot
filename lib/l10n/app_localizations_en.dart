@@ -122,6 +122,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileLocationAlertsTitle => 'Location alerts';
 
   @override
+  String get profileNotificationSettingsTitle => 'Notification settings';
+
+  @override
   String get profileLocationAlertsDescription =>
       'Control which locations are used for nearby alerts, including check-ins, new spots, and future events.';
 
@@ -134,8 +137,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Store your device\'s last known location in the cloud to match nearby alerts.';
 
   @override
+  String get profileLocationAlertsNotifyNewSpotsTitle =>
+      'Notify me about new spots nearby';
+
+  @override
+  String get profileLocationAlertsNotifyNewSpotsSubtitle =>
+      'Get an in-app notification when someone adds a spot within about 5 km of an active saved place or your last known location.';
+
+  @override
   String get profileLocationAlertsSavedLocationsTitle =>
-      'My locations of interest';
+      'Locations of interest';
 
   @override
   String get profileLocationAlertsAddLocationButton => 'Add';

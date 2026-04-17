@@ -34,6 +34,8 @@ class AccountSettingsScreen extends StatelessWidget {
               _buildLanguageCard(context),
               const SizedBox(height: 16),
               _buildLocationAlertsCard(context, authService),
+              const SizedBox(height: 16),
+              _buildNotificationSettingsCard(context, authService),
             ],
           );
         },
@@ -159,9 +161,19 @@ class AccountSettingsScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              l10n.profileLocationAlertsTitle,
-              style: Theme.of(context).textTheme.titleLarge,
+            Row(
+              children: [
+                Text(
+                  l10n.profileLocationAlertsSavedLocationsTitle,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: () => _showLocationEditorDialog(context),
+                  icon: const Icon(Icons.add),
+                  label: Text(l10n.profileLocationAlertsAddLocationButton),
+                ),
+              ],
             ),
             const SizedBox(height: 6),
             Text(
@@ -173,20 +185,6 @@ class AccountSettingsScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Text(
-                  l10n.profileLocationAlertsSavedLocationsTitle,
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-                const Spacer(),
-                TextButton.icon(
-                  onPressed: () => _showLocationEditorDialog(context),
-                  icon: const Icon(Icons.add),
-                  label: Text(l10n.profileLocationAlertsAddLocationButton),
-                ),
-              ],
-            ),
             StreamBuilder<List<LocationOfInterest>>(
               stream: locationsService.watchLocations(),
               builder: (context, snapshot) {
@@ -371,6 +369,73 @@ class AccountSettingsScreen extends StatelessWidget {
                       ),
                     ],
                   ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotificationSettingsCard(
+    BuildContext context,
+    AuthService authService,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    final locationsService = Provider.of<UserLocationsOfInterestService>(
+      context,
+      listen: false,
+    );
+    final shareLastKnown =
+        authService.userProfile?.shareLastKnownLocationForAlerts == true;
+    final notifyNewSpotsNearby =
+        authService.userProfile?.notifyNewSpotsNearby == true;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.profileNotificationSettingsTitle,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 12),
+            StreamBuilder<List<LocationOfInterest>>(
+              stream: locationsService.watchLocations(),
+              builder: (context, snapshot) {
+                final locations = snapshot.data ?? const <LocationOfInterest>[];
+                final saved = locations
+                    .where((loc) => !loc.isLastKnown)
+                    .toList(growable: false);
+                final noActiveSaved =
+                    saved.isEmpty || saved.every((loc) => !loc.enabled);
+                final hasActiveLocation = shareLastKnown || !noActiveSaved;
+                final canOptInNewSpotAlerts =
+                    hasActiveLocation || notifyNewSpotsNearby;
+
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    Icons.fiber_new_outlined,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  title: Text(l10n.profileLocationAlertsNotifyNewSpotsTitle),
+                  subtitle: Text(
+                    l10n.profileLocationAlertsNotifyNewSpotsSubtitle,
+                  ),
+                  trailing: Switch(
+                    value: notifyNewSpotsNearby,
+                    onChanged: canOptInNewSpotAlerts
+                        ? (enabled) async {
+                            await authService.updateNotifyNewSpotsNearby(
+                              enabled,
+                            );
+                          }
+                        : null,
+                  ),
                 );
               },
             ),

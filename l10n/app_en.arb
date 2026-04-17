@@ -145,6 +145,10 @@
   "@profileLocationAlertsTitle": {
     "description": "Account settings: location alerts section title"
   },
+  "profileNotificationSettingsTitle": "Notification settings",
+  "@profileNotificationSettingsTitle": {
+    "description": "Account settings: notification settings section title"
+  },
   "profileLocationAlertsDescription": "Control which locations are used for nearby alerts, including check-ins, new spots, and future events.",
   "@profileLocationAlertsDescription": {
     "description": "Account settings: location alerts section description"
@@ -157,7 +161,15 @@
   "@profileLocationAlertsShareLastKnownSubtitle": {
     "description": "Account settings: toggle subtitle for using last known location in alerts"
   },
-  "profileLocationAlertsSavedLocationsTitle": "My locations of interest",
+  "profileLocationAlertsNotifyNewSpotsTitle": "Notify me about new spots nearby",
+  "@profileLocationAlertsNotifyNewSpotsTitle": {
+    "description": "Account settings: toggle for in-app notifications when a new spot is added near an enabled location of interest"
+  },
+  "profileLocationAlertsNotifyNewSpotsSubtitle": "Get an in-app notification when someone adds a spot within about 5 km of an active saved place or your last known location.",
+  "@profileLocationAlertsNotifyNewSpotsSubtitle": {
+    "description": "Account settings: explains new spot notification opt-in and range"
+  },
+  "profileLocationAlertsSavedLocationsTitle": "Locations of interest",
   "@profileLocationAlertsSavedLocationsTitle": {
     "description": "Account settings: saved locations subsection title"
   },
