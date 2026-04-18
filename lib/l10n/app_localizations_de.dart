@@ -1127,6 +1127,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get spotDetailQuickActionShare => 'Teilen';
 
   @override
+  String get spotDetailQuickActionRate => 'Bewerten';
+
+  @override
+  String get spotDetailRatingTooltip => 'Community-Bewertung und deine Sterne';
+
+  @override
   String get spotDetailPresenceHereNow => 'Gerade hier';
 
   @override
@@ -1207,6 +1213,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get spotDetailRateThisSpot => 'Diesen Spot bewerten';
+
+  @override
+  String get spotDetailHeaderNoRatingsYet => 'Noch keine Bewertungen';
 
   @override
   String get spotDetailCouldNotLoadProfile =>

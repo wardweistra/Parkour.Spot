@@ -19,7 +19,6 @@ import '../../services/search_state_service.dart';
 import '../../widgets/source_details_dialog.dart';
 import '../../widgets/spot_selection_dialog.dart';
 import '../../widgets/moderator_action_fields.dart';
-import '../../widgets/custom_button.dart';
 import '../../widgets/location_info_box.dart';
 import '../../constants/spot_attributes.dart';
 import '../../constants/spot_detail_ui.dart';
@@ -384,7 +383,11 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   void didUpdateWidget(SpotDetailScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.spot.id != widget.spot.id) {
+      _userRating = 0;
+      _previousRating = 0;
+      _hasRated = false;
       if (widget.spot.id != null) {
+        _loadRatingStats();
         _jumpflixVideosFuture = Provider.of<JumpflixService>(
           context,
           listen: false,
@@ -789,6 +792,206 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     if (_spot.id != null) {
       context.go('/explore?locateSpotId=${_spot.id}');
     }
+  }
+
+  String _spotRatingRedirectUrl() {
+    try {
+      final routerState = GoRouterState.of(context);
+      return routerState.uri.toString();
+    } catch (e) {
+      if (widget.spot.id != null &&
+          widget.spot.countryCode != null &&
+          widget.spot.city != null) {
+        return '/${widget.spot.countryCode!.toLowerCase()}/${Uri.encodeComponent(widget.spot.city!.toLowerCase().replaceAll(' ', '-'))}/${widget.spot.id}';
+      }
+      return '/explore';
+    }
+  }
+
+  String _ratingSheetCommunitySummaryString() {
+    if (_isLoadingRatingStats) {
+      return _l10n.spotDetailLoading;
+    }
+    final stats = _cachedRatingStats;
+    final count = stats != null ? stats['ratingCount'] as int : 0;
+    if (count > 0 && stats != null) {
+      final avg = (stats['averageRating'] as num).toDouble();
+      return '${avg.toStringAsFixed(1)} ★ ($count)';
+    }
+    return _l10n.spotDetailHeaderNoRatingsYet;
+  }
+
+  void _showSpotRatingSheet() {
+    if (_spot.id == null) return;
+    final redirectUrl = _spotRatingRedirectUrl();
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        final bottomInset = MediaQuery.viewInsetsOf(sheetContext).bottom;
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(24, 8, 24, 24 + bottomInset),
+            child: Consumer<AuthService>(
+              builder: (context, auth, _) {
+                if (auth.isLoading) {
+                  return const SizedBox(
+                    height: 160,
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                if (!auth.isAuthenticated) {
+                  return SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _l10n.spotDetailRateThisSpot,
+                          style: theme.textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          _ratingSheetCommunitySummaryString(),
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: cs.onSurface.withValues(alpha: 0.85),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          _l10n.spotDetailSignInToRateSubtitle,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: cs.onSurface.withValues(alpha: 0.75),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        FilledButton(
+                          onPressed: () {
+                            Navigator.pop(sheetContext);
+                            context.go(
+                              '/login?redirectTo=${Uri.encodeComponent(redirectUrl)}',
+                            );
+                          },
+                          child: Text(_l10n.spotDetailSignInButton),
+                        ),
+                        const SizedBox(height: 8),
+                        OutlinedButton(
+                          onPressed: () {
+                            Navigator.pop(sheetContext);
+                            context.go(
+                              '/login?mode=signup&redirectTo=${Uri.encodeComponent(redirectUrl)}',
+                            );
+                          },
+                          child: Text(_l10n.spotDetailCreateAccountButton),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                if (auth.userProfile == null) {
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        _l10n.spotDetailCouldNotLoadProfile,
+                        style: theme.textTheme.bodyLarge,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _l10n.spotDetailRefreshPageToRate,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: cs.onSurface.withValues(alpha: 0.7),
+                        ),
+                      ),
+                    ],
+                  );
+                }
+                return _SpotRatingUserRatingLoader(
+                  loadUserRating: _loadUserRatingFuture,
+                  builder: (ctx) {
+                    return StatefulBuilder(
+                      builder: (context, setModalState) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _l10n.spotDetailRateThisSpot,
+                              style: theme.textTheme.titleLarge,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              _ratingSheetCommunitySummaryString(),
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: cs.onSurface.withValues(alpha: 0.85),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: List.generate(5, (index) {
+                                final filled = index < _userRating;
+                                return IconButton(
+                                  onPressed: () {
+                                    _submitRatingDirectly(
+                                      index + 1.0,
+                                      refreshModal: () =>
+                                          setModalState(() {}),
+                                    );
+                                  },
+                                  icon: Icon(
+                                    filled ? Icons.star : Icons.star_border,
+                                    color: Colors.amber,
+                                    size: 40,
+                                  ),
+                                  tooltip: '${index + 1}',
+                                );
+                              }),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _spotDetailRatingQuickChip() {
+    if (_isLoadingRatingStats) {
+      return SpotDetailQuickActionChip(
+        icon: Icons.star_outline,
+        iconColor: Colors.amber.withValues(alpha: 0.85),
+        label: _l10n.spotDetailQuickActionRate,
+        showSpinner: true,
+      );
+    }
+    final stats = _cachedRatingStats;
+    final count = stats != null ? stats['ratingCount'] as int : 0;
+    if (count > 0 && stats != null) {
+      final avg = (stats['averageRating'] as num).toDouble();
+      return SpotDetailQuickActionChip(
+        icon: Icons.star,
+        iconColor: Colors.amber,
+        label: '${avg.toStringAsFixed(1)} ($count)',
+        showSpinner: false,
+      );
+    }
+    return SpotDetailQuickActionChip(
+      icon: Icons.star_border,
+      iconColor: Colors.amber.withValues(alpha: 0.85),
+      label: _l10n.spotDetailQuickActionRate,
+      showSpinner: false,
+    );
   }
 
   void _openInMaps() async {
@@ -1775,61 +1978,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Title and Rating
-                        Row(
-                          children: [
-                            Expanded(
-                              child: SelectableText(
-                                _spot.name,
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.headlineMedium,
-                              ),
-                            ),
-                            // Rating display using cached data
-                            _isLoadingRatingStats
-                                ? const SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : _cachedRatingStats != null &&
-                                      _cachedRatingStats!['ratingCount'] > 0
-                                ? Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.star,
-                                        color: Colors.amber,
-                                        size: 24,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        _cachedRatingStats!['averageRating']
-                                            .toStringAsFixed(1),
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.titleLarge,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        '(${_cachedRatingStats!['ratingCount']})',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodyMedium
-                                            ?.copyWith(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurface
-                                                  .withValues(alpha: 0.7),
-                                            ),
-                                      ),
-                                    ],
-                                  )
-                                : const SizedBox.shrink(),
-                          ],
+                        SelectableText(
+                          _spot.name,
+                          style: Theme.of(context).textTheme.headlineMedium,
                         ),
 
                         const SizedBox(height: 8),
@@ -1878,6 +2029,28 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                             label: _l10n
                                                 .spotDetailQuickActionShare,
                                           ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Tooltip(
+                                    message: _l10n.spotDetailRatingTooltip,
+                                    child: Semantics(
+                                      button: true,
+                                      label: _l10n.spotDetailRatingTooltip,
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        borderRadius: BorderRadius.circular(
+                                          SpotDetailUi.surfaceRadius,
+                                        ),
+                                        clipBehavior: Clip.antiAlias,
+                                        child: InkWell(
+                                          borderRadius: BorderRadius.circular(
+                                            SpotDetailUi.surfaceRadius,
+                                          ),
+                                          onTap: _showSpotRatingSheet,
+                                          child: _spotDetailRatingQuickChip(),
                                         ),
                                       ),
                                     ),
@@ -2826,372 +2999,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
                         const SizedBox(height: 24),
 
-                        // Rating Section
-                        Consumer<AuthService>(
-                          builder: (context, authService, child) {
-                            // Wait for auth state to be restored before showing rating section
-                            if (authService.isLoading) {
-                              // Show subtle loading indicator while auth state is being restored
-                              return SizedBox(
-                                height: 80,
-                                child: Center(
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                Theme.of(
-                                                  context,
-                                                ).colorScheme.primary,
-                                              ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Text(
-                                        AppLocalizations.of(
-                                          context,
-                                        )!.spotDetailLoading,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodyMedium
-                                            ?.copyWith(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurface
-                                                  .withValues(alpha: 0.7),
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            }
-
-                            if (authService.isAuthenticated &&
-                                authService.userProfile != null) {
-                              // Load user rating when auth state is confirmed
-                              if (_userRating == 0 && !_hasRated) {
-                                // Use FutureBuilder to load user rating asynchronously
-                                return FutureBuilder<double?>(
-                                  future: _loadUserRatingFuture(),
-                                  builder: (context, snapshot) {
-                                    if (snapshot.connectionState ==
-                                        ConnectionState.waiting) {
-                                      return SizedBox(
-                                        height: 80,
-                                        child: Center(
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              SizedBox(
-                                                width: 16,
-                                                height: 16,
-                                                child: CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                  valueColor:
-                                                      AlwaysStoppedAnimation<
-                                                        Color
-                                                      >(
-                                                        Theme.of(
-                                                          context,
-                                                        ).colorScheme.primary,
-                                                      ),
-                                                ),
-                                              ),
-                                              const SizedBox(width: 12),
-                                              Text(
-                                                AppLocalizations.of(
-                                                  context,
-                                                )!.spotDetailLoadingYourRating,
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .bodyMedium
-                                                    ?.copyWith(
-                                                      color: Theme.of(context)
-                                                          .colorScheme
-                                                          .onSurface
-                                                          .withValues(
-                                                            alpha: 0.7,
-                                                          ),
-                                                    ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      );
-                                    }
-
-                                    // Rating widget
-                                    return Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          AppLocalizations.of(
-                                            context,
-                                          )!.spotDetailRateThisSpot,
-                                          style: Theme.of(
-                                            context,
-                                          ).textTheme.titleMedium,
-                                        ),
-                                        const SizedBox(height: 16),
-                                        Row(
-                                          children: [
-                                            ...List.generate(5, (index) {
-                                              return GestureDetector(
-                                                onTap: () =>
-                                                    _submitRatingDirectly(
-                                                      index + 1.0,
-                                                    ),
-                                                child: Icon(
-                                                  index < _userRating
-                                                      ? Icons.star
-                                                      : Icons.star_border,
-                                                  color: Colors.amber,
-                                                  size: 32,
-                                                ),
-                                              );
-                                            }),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 24),
-                                      ],
-                                    );
-                                  },
-                                );
-                              }
-
-                              // Show rating widget if user rating is already loaded
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    AppLocalizations.of(
-                                      context,
-                                    )!.spotDetailRateThisSpot,
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.titleMedium,
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Row(
-                                    children: [
-                                      ...List.generate(5, (index) {
-                                        return GestureDetector(
-                                          onTap: () => _submitRatingDirectly(
-                                            index + 1.0,
-                                          ),
-                                          child: Icon(
-                                            index < _userRating
-                                                ? Icons.star
-                                                : Icons.star_border,
-                                            color: Colors.amber,
-                                            size: 32,
-                                          ),
-                                        );
-                                      }),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 24),
-                                ],
-                              );
-                            } else if (authService.isAuthenticated) {
-                              // Authenticated but profile not loaded (load failed)
-                              return SizedBox(
-                                height: 80,
-                                child: Center(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        AppLocalizations.of(
-                                          context,
-                                        )!.spotDetailCouldNotLoadProfile,
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.bodyMedium,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        AppLocalizations.of(
-                                          context,
-                                        )!.spotDetailRefreshPageToRate,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.copyWith(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurface
-                                                  .withValues(alpha: 0.7),
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            } else {
-                              // Show login prompt for unauthenticated users
-                              // Get current location for redirect, or construct spot URL
-                              String redirectUrl;
-                              try {
-                                final routerState = GoRouterState.of(context);
-                                redirectUrl = routerState.uri.toString();
-                              } catch (e) {
-                                // Fallback: construct URL from spot data
-                                if (widget.spot.id != null &&
-                                    widget.spot.countryCode != null &&
-                                    widget.spot.city != null) {
-                                  redirectUrl =
-                                      '/${widget.spot.countryCode!.toLowerCase()}/${Uri.encodeComponent(widget.spot.city!.toLowerCase().replaceAll(' ', '-'))}/${widget.spot.id}';
-                                } else {
-                                  redirectUrl = '/explore';
-                                }
-                              }
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Card(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(24.0),
-                                      child: Column(
-                                        children: [
-                                          Icon(
-                                            Icons.star_outline,
-                                            size: 48,
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .primary
-                                                .withValues(alpha: 0.6),
-                                          ),
-                                          const SizedBox(height: 16),
-                                          Text(
-                                            AppLocalizations.of(
-                                              context,
-                                            )!.spotDetailSignInToRateTitle,
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.titleMedium,
-                                            textAlign: TextAlign.center,
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Text(
-                                            AppLocalizations.of(
-                                              context,
-                                            )!.spotDetailSignInToRateSubtitle,
-                                            textAlign: TextAlign.center,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodyMedium
-                                                ?.copyWith(
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .onSurface
-                                                      .withValues(alpha: 0.7),
-                                                ),
-                                          ),
-                                          const SizedBox(height: 16),
-                                          Center(
-                                            child: ConstrainedBox(
-                                              constraints: const BoxConstraints(
-                                                maxWidth: 400,
-                                              ),
-                                              child: CustomButton(
-                                                onPressed: () {
-                                                  context.go(
-                                                    '/login?redirectTo=${Uri.encodeComponent(redirectUrl)}',
-                                                  );
-                                                },
-                                                text: AppLocalizations.of(
-                                                  context,
-                                                )!.spotDetailSignInButton,
-                                                width: double.infinity,
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(height: 16),
-                                          // OR divider
-                                          Row(
-                                            children: [
-                                              Expanded(
-                                                child: Divider(
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .outline
-                                                      .withValues(alpha: 0.3),
-                                                ),
-                                              ),
-                                              Padding(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 16,
-                                                    ),
-                                                child: Text(
-                                                  AppLocalizations.of(
-                                                    context,
-                                                  )!.profileOrDivider,
-                                                  style: Theme.of(context)
-                                                      .textTheme
-                                                      .bodySmall
-                                                      ?.copyWith(
-                                                        color: Theme.of(context)
-                                                            .colorScheme
-                                                            .onSurface
-                                                            .withValues(
-                                                              alpha: 0.6,
-                                                            ),
-                                                      ),
-                                                ),
-                                              ),
-                                              Expanded(
-                                                child: Divider(
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .outline
-                                                      .withValues(alpha: 0.3),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 16),
-                                          Center(
-                                            child: ConstrainedBox(
-                                              constraints: const BoxConstraints(
-                                                maxWidth: 400,
-                                              ),
-                                              child: CustomButton(
-                                                onPressed: () {
-                                                  context.go(
-                                                    '/login?mode=signup&redirectTo=${Uri.encodeComponent(redirectUrl)}',
-                                                  );
-                                                },
-                                                text: AppLocalizations.of(
-                                                  context,
-                                                )!.spotDetailCreateAccountButton,
-                                                width: double.infinity,
-                                                isOutlined: true,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 24),
-                                ],
-                              );
-                            }
-                          },
-                        ),
-
-                        const SizedBox(height: 24),
-
                         // Location Section - Small map widget (web-safe placeholder on web)
                         Container(
                           height: 200,
@@ -3890,7 +3697,11 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   }
 
   /// Submits a rating directly when a star is clicked (only if different from previous rating)
-  Future<void> _submitRatingDirectly(double rating) async {
+  Future<void> _submitRatingDirectly(
+    double rating, {
+    VoidCallback? refreshModal,
+  }) async {
+    void bumpModal() => refreshModal?.call();
     try {
       final authService = Provider.of<AuthService>(context, listen: false);
       if (authService.userProfile == null) {
@@ -3909,6 +3720,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         setState(() {
           _userRating = rating;
         });
+        bumpModal();
         return;
       }
 
@@ -3922,6 +3734,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         _hasRated = true;
         _previousRating = rating;
       });
+      bumpModal();
 
       final spotService = Provider.of<SpotService>(context, listen: false);
       final success = await spotService.rateSpot(
@@ -3945,11 +3758,13 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           currentRatingCount,
           currentAverageRating,
         );
+        bumpModal();
       } else if (mounted) {
         // Revert UI changes if submission failed
         setState(() {
           _userRating = _previousRating;
         });
+        bumpModal();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(_l10n.spotDetailRatingSubmitFailed),
@@ -3963,6 +3778,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         setState(() {
           _userRating = _previousRating;
         });
+        bumpModal();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(_l10n.spotDetailRatingSubmitError('$e')),
@@ -8518,6 +8334,46 @@ class _FullScreenPhotoViewerState extends State<_FullScreenPhotoViewer> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _SpotRatingUserRatingLoader extends StatefulWidget {
+  const _SpotRatingUserRatingLoader({
+    required this.loadUserRating,
+    required this.builder,
+  });
+
+  final Future<double?> Function() loadUserRating;
+  final Widget Function(BuildContext context) builder;
+
+  @override
+  State<_SpotRatingUserRatingLoader> createState() =>
+      _SpotRatingUserRatingLoaderState();
+}
+
+class _SpotRatingUserRatingLoaderState extends State<_SpotRatingUserRatingLoader> {
+  late final Future<double?> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = widget.loadUserRating();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<double?>(
+      future: _future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 32),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        return widget.builder(context);
+      },
     );
   }
 }

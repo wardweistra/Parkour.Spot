@@ -1940,6 +1940,18 @@ abstract class AppLocalizations {
   /// **'Share'**
   String get spotDetailQuickActionShare;
 
+  /// No description provided for @spotDetailQuickActionRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate'**
+  String get spotDetailQuickActionRate;
+
+  /// No description provided for @spotDetailRatingTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Community rating and your stars'**
+  String get spotDetailRatingTooltip;
+
   /// No description provided for @spotDetailPresenceHereNow.
   ///
   /// In en, this message translates to:
@@ -2083,6 +2095,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Rate this spot'**
   String get spotDetailRateThisSpot;
+
+  /// No description provided for @spotDetailHeaderNoRatingsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No ratings yet'**
+  String get spotDetailHeaderNoRatingsYet;
 
   /// No description provided for @spotDetailCouldNotLoadProfile.
   ///

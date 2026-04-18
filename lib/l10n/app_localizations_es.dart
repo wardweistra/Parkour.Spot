@@ -1121,6 +1121,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get spotDetailQuickActionShare => 'Compartir';
 
   @override
+  String get spotDetailQuickActionRate => 'Valorar';
+
+  @override
+  String get spotDetailRatingTooltip =>
+      'Valoración de la comunidad y tus estrellas';
+
+  @override
   String get spotDetailPresenceHereNow => 'Aquí ahora';
 
   @override
@@ -1200,6 +1207,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get spotDetailRateThisSpot => 'Valora este spot';
+
+  @override
+  String get spotDetailHeaderNoRatingsYet => 'Sin valoraciones aún';
 
   @override
   String get spotDetailCouldNotLoadProfile => 'No se pudo cargar tu perfil.';
