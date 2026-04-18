@@ -51,10 +51,7 @@ class UserNotificationService extends ChangeNotifier {
     }
     _error = null;
     try {
-      await collection.doc(notificationId).update({
-        'read': true,
-        'readAt': FieldValue.serverTimestamp(),
-      });
+      await collection.doc(notificationId).update({'read': true});
     } catch (e, st) {
       debugPrint('UserNotificationService.markAsRead: $e\n$st');
       _error = e.toString();

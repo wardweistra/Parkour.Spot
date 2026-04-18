@@ -16,7 +16,6 @@ class UserNotification {
     this.body,
     this.createdAt,
     this.read = false,
-    this.readAt,
   });
 
   final String id;
@@ -30,7 +29,6 @@ class UserNotification {
   final String deeplinkId;
   final DateTime? createdAt;
   final bool read;
-  final DateTime? readAt;
 
   factory UserNotification.fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> doc,
@@ -46,7 +44,6 @@ class UserNotification {
       deeplinkId: data['deeplinkId'] as String? ?? '',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
       read: data['read'] as bool? ?? false,
-      readAt: (data['readAt'] as Timestamp?)?.toDate(),
     );
   }
 
