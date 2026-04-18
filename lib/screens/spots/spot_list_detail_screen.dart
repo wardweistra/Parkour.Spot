@@ -21,7 +21,9 @@ import '../../utils/map_bounds_utils.dart';
 import '../../services/url_service.dart';
 import '../../services/web_share_service.dart';
 import '../../services/user_profile_service.dart';
+import '../../constants/spot_detail_ui.dart';
 import '../../widgets/page_scaffold.dart';
+import '../../widgets/spot_detail_quick_action_chip.dart';
 import '../../widgets/spot_list_save_button.dart';
 import 'package:flutter/services.dart';
 import 'spot_list_advanced_organization_screen.dart';
@@ -1103,8 +1105,8 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
               child: PopupMenuButton<_ListManageMenuAction>(
                 position: PopupMenuPosition.under,
                 tooltip: _l10n.spotListDetailEditListTooltip,
-                borderRadius: BorderRadius.circular(22),
-                splashRadius: 22,
+                borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
+                splashRadius: 20,
                 onSelected: _onListManageMenuSelected,
                 itemBuilder: (menuContext) {
                   final theme = Theme.of(menuContext);
@@ -1167,25 +1169,12 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                     ),
                   ];
                 },
-                child: SizedBox(
-                  width: 44,
-                  height: 44,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .surfaceContainerHighest
-                          .withValues(alpha: 0.6),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.edit_outlined,
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.6),
-                      size: 24,
-                    ),
-                  ),
+                child: SpotDetailQuickActionChip(
+                  icon: Icons.edit_outlined,
+                  iconColor: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.75),
+                  label: _l10n.spotDetailQuickActionEdit,
                 ),
               ),
             ),
@@ -1196,24 +1185,22 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
             padding: const EdgeInsets.only(bottom: 16),
             child: Tooltip(
               message: _l10n.spotDetailShareTooltip,
-              child: Material(
-                color: Theme.of(
-                  context,
-                ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
-                shape: const CircleBorder(),
-                clipBehavior: Clip.antiAlias,
-                child: InkWell(
-                  onTap: _copyListToClipboard,
-                  customBorder: const CircleBorder(),
-                  child: SizedBox(
-                    width: 44,
-                    height: 44,
-                    child: Icon(
-                      Icons.share,
-                      color: Theme.of(
+              child: Semantics(
+                button: true,
+                label: _l10n.spotDetailShareTooltip,
+                child: Material(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
+                    onTap: _copyListToClipboard,
+                    child: SpotDetailQuickActionChip(
+                      icon: Icons.share_outlined,
+                      iconColor: Theme.of(
                         context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.6),
-                      size: 24,
+                      ).colorScheme.onSurface.withValues(alpha: 0.75),
+                      label: _l10n.spotDetailQuickActionShare,
                     ),
                   ),
                 ),
@@ -1232,9 +1219,12 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
 
         return Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: children,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: children,
+            ),
           ),
         );
       },
