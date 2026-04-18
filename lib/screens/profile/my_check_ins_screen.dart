@@ -336,7 +336,14 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
     }
     if (_plans.isNotEmpty) {
       rows.add(_CheckInListSectionTitle(_l10n.myCheckInsUpcomingPlansTitle));
+      DateTime? planHeaderDay;
       for (final p in _plans) {
+        final local = p.plannedStartAt.toLocal();
+        final day = DateTime(local.year, local.month, local.day);
+        if (planHeaderDay != day) {
+          rows.add(_CheckInListDateHeader(day));
+          planHeaderDay = day;
+        }
         rows.add(_CheckInListPlanTile(p));
       }
     }

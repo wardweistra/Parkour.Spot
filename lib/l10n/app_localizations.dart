@@ -4136,13 +4136,13 @@ abstract class AppLocalizations {
   /// Row title to open check-in history
   ///
   /// In en, this message translates to:
-  /// **'My check-ins'**
+  /// **'My training activity'**
   String get publicProfileMyCheckIns;
 
   /// Subtitle for check-in history row
   ///
   /// In en, this message translates to:
-  /// **'Your recorded history of visits to spots'**
+  /// **'Upcoming training plans and your check-in history'**
   String get publicProfileMyCheckInsSubtitle;
 
   /// Prompt shown on my check-ins page when signed out

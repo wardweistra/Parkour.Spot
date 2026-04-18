@@ -2414,11 +2414,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get publicProfileBeenTo => 'Been to';
 
   @override
-  String get publicProfileMyCheckIns => 'My check-ins';
+  String get publicProfileMyCheckIns => 'My training activity';
 
   @override
   String get publicProfileMyCheckInsSubtitle =>
-      'Your recorded history of visits to spots';
+      'Upcoming training plans and your check-in history';
 
   @override
   String get myCheckInsSignInPrompt =>

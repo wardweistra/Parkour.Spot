@@ -2088,11 +2088,11 @@
   "@publicProfileBeenTo": {
     "description": "Tracking list title"
   },
-  "publicProfileMyCheckIns": "My check-ins",
+  "publicProfileMyCheckIns": "My training activity",
   "@publicProfileMyCheckIns": {
     "description": "Row title to open check-in history"
   },
-  "publicProfileMyCheckInsSubtitle": "Your recorded history of visits to spots",
+  "publicProfileMyCheckInsSubtitle": "Upcoming training plans and your check-in history",
   "@publicProfileMyCheckInsSubtitle": {
     "description": "Subtitle for check-in history row"
   },

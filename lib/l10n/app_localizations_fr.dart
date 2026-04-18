@@ -2458,11 +2458,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get publicProfileBeenTo => 'Déjà visité';
 
   @override
-  String get publicProfileMyCheckIns => 'Mes check-ins';
+  String get publicProfileMyCheckIns => 'Mon activité d\'entraînement';
 
   @override
   String get publicProfileMyCheckInsSubtitle =>
-      'Votre historique enregistré des visites de spots';
+      'Vos plans à venir et votre historique de check-ins';
 
   @override
   String get myCheckInsSignInPrompt =>

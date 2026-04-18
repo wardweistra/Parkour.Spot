@@ -2448,11 +2448,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get publicProfileBeenTo => 'Já visitados';
 
   @override
-  String get publicProfileMyCheckIns => 'Os meus check-ins';
+  String get publicProfileMyCheckIns => 'A minha atividade de treino';
 
   @override
   String get publicProfileMyCheckInsSubtitle =>
-      'O teu histórico registado de visitas a spots';
+      'Os teus próximos planos e o teu histórico de check-ins';
 
   @override
   String get myCheckInsSignInPrompt =>

@@ -2431,11 +2431,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get publicProfileBeenTo => 'Geweest';
 
   @override
-  String get publicProfileMyCheckIns => 'Mijn check-ins';
+  String get publicProfileMyCheckIns => 'Mijn trainingsactiviteit';
 
   @override
   String get publicProfileMyCheckInsSubtitle =>
-      'Je geregistreerde geschiedenis van bezoeken aan spots';
+      'Je komende plannen en je check-inhistorie';
 
   @override
   String get myCheckInsSignInPrompt =>
