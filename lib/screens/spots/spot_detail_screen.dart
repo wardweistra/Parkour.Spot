@@ -979,10 +979,32 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     final count = stats != null ? stats['ratingCount'] as int : 0;
     if (count > 0 && stats != null) {
       final avg = (stats['averageRating'] as num).toDouble();
+      final theme = Theme.of(context);
+      final baseLabel = theme.textTheme.labelLarge;
+      final cs = theme.colorScheme;
       return SpotDetailQuickActionChip(
         icon: Icons.star,
         iconColor: Colors.amber,
-        label: '${avg.toStringAsFixed(1)} ($count)',
+        label: '',
+        labelWidget: Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(
+                text: avg.toStringAsFixed(1),
+                style: baseLabel,
+              ),
+              TextSpan(
+                text: ' ($count)',
+                style: baseLabel?.copyWith(
+                  fontWeight: FontWeight.w400,
+                  color: cs.onSurface.withValues(alpha: 0.65),
+                ),
+              ),
+            ],
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         showSpinner: false,
       );
     }

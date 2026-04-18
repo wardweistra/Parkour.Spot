@@ -8,6 +8,8 @@ class SpotDetailQuickActionChip extends StatelessWidget {
   final IconData icon;
   final Color? iconColor;
   final String label;
+  /// When non-null, shown instead of [label] (e.g. mixed text styles).
+  final Widget? labelWidget;
   final bool showSpinner;
 
   const SpotDetailQuickActionChip({
@@ -15,6 +17,7 @@ class SpotDetailQuickActionChip extends StatelessWidget {
     required this.icon,
     required this.iconColor,
     required this.label,
+    this.labelWidget,
     this.showSpinner = false,
   });
 
@@ -48,12 +51,19 @@ class SpotDetailQuickActionChip extends StatelessWidget {
             else
               Icon(icon, size: 20, color: iconColor),
             const SizedBox(width: 8),
-            Text(
-              label,
-              style: theme.textTheme.labelLarge,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+            labelWidget != null
+                ? DefaultTextStyle(
+                    style: theme.textTheme.labelLarge!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    child: labelWidget!,
+                  )
+                : Text(
+                    label,
+                    style: theme.textTheme.labelLarge,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
           ],
         ),
       ),
