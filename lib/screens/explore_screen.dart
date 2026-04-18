@@ -7,6 +7,7 @@ import 'package:web/web.dart' as web;
 import '../l10n/app_localizations.dart';
 import '../services/auth_service.dart';
 import '../services/mobile_detection_service.dart';
+import '../services/user_notification_service.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/pwa_install_prompt.dart';
 import 'spots/search_screen.dart';
@@ -517,6 +518,22 @@ class _ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
+  /// Account tab icon with an unread dot when any notification is unread (Firestore stream).
+  ///
+  /// Uses [Badge] with a null [Badge.label] (small circle). Do not set
+  /// [Badge.isLabelVisible] to false — that flag hides the entire badge and
+  /// only shows the child icon.
+  Widget _accountBottomNavIcon(BuildContext context, int unreadCount) {
+    const icon = Icon(Icons.person);
+    if (unreadCount <= 0) return icon;
+    final scheme = Theme.of(context).colorScheme;
+    return Badge(
+      smallSize: 8,
+      backgroundColor: scheme.error,
+      child: icon,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -549,28 +566,41 @@ class _ExploreScreenState extends State<ExploreScreen> {
         children: [
           const PwaInstallPrompt(),
           SafeArea(
-            child: BottomNavigationBar(
-              type: BottomNavigationBarType.fixed,
-              currentIndex: _currentIndex,
-              onTap: _onTabTapped,
-              selectedItemColor: Theme.of(context).colorScheme.primary,
-              unselectedItemColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-              backgroundColor: Theme.of(context).colorScheme.surface,
-              elevation: 8,
-              items: [
-                BottomNavigationBarItem(
-                  icon: const Icon(Icons.explore),
-                  label: AppLocalizations.of(context)!.tabExplore,
-                ),
-                BottomNavigationBarItem(
-                  icon: const Icon(Icons.add_location),
-                  label: AppLocalizations.of(context)!.tabAddSpot,
-                ),
-                BottomNavigationBarItem(
-                  icon: const Icon(Icons.person),
-                  label: AppLocalizations.of(context)!.tabAccount,
-                ),
-              ],
+            child: StreamBuilder<int>(
+              stream: Provider.of<UserNotificationService>(
+                context,
+                listen: false,
+              ).watchUnreadCount(),
+              builder: (context, snapshot) {
+                final unread = snapshot.data ?? 0;
+                final l10n = AppLocalizations.of(context)!;
+                return BottomNavigationBar(
+                  type: BottomNavigationBarType.fixed,
+                  currentIndex: _currentIndex,
+                  onTap: _onTabTapped,
+                  selectedItemColor: Theme.of(context).colorScheme.primary,
+                  unselectedItemColor: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.6),
+                  backgroundColor: Theme.of(context).colorScheme.surface,
+                  elevation: 8,
+                  items: [
+                    BottomNavigationBarItem(
+                      icon: const Icon(Icons.explore),
+                      label: l10n.tabExplore,
+                    ),
+                    BottomNavigationBarItem(
+                      icon: const Icon(Icons.add_location),
+                      label: l10n.tabAddSpot,
+                    ),
+                    BottomNavigationBarItem(
+                      icon: _accountBottomNavIcon(context, unread),
+                      label: l10n.tabAccount,
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ],
