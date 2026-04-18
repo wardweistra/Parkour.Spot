@@ -2141,6 +2141,120 @@ abstract class AppLocalizations {
   /// **'Change your arrival and end times, who can see this check-in, and your note.'**
   String get spotCheckInDialogIntroEdit;
 
+  /// Title for visibility switch on check-in dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Share publicly'**
+  String get spotCheckInDialogSharePublic;
+
+  /// Subtitle explaining private check-in on check-in dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off to keep this check-in visible only to you.'**
+  String get spotCheckInDialogShareSub;
+
+  /// No description provided for @spotCheckInDialogLabelArrived.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrived'**
+  String get spotCheckInDialogLabelArrived;
+
+  /// No description provided for @spotCheckInDialogLabelHereUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Here until'**
+  String get spotCheckInDialogLabelHereUntil;
+
+  /// No description provided for @spotCheckInDialogLabelUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Until'**
+  String get spotCheckInDialogLabelUntil;
+
+  /// No description provided for @spotCheckInDialogStillHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Still here'**
+  String get spotCheckInDialogStillHere;
+
+  /// No description provided for @spotCheckInDialogEndNow.
+  ///
+  /// In en, this message translates to:
+  /// **'End now'**
+  String get spotCheckInDialogEndNow;
+
+  /// No description provided for @spotCheckInDialogCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get spotCheckInDialogCancel;
+
+  /// No description provided for @spotCheckInDialogSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get spotCheckInDialogSave;
+
+  /// No description provided for @spotCheckInDialogDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get spotCheckInDialogDelete;
+
+  /// No description provided for @spotCheckInDialogConfirmDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete check-in?'**
+  String get spotCheckInDialogConfirmDeleteTitle;
+
+  /// No description provided for @spotCheckInDialogConfirmDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Deletes this visit from your history. It doesn’t remove the spot from your Been to list.'**
+  String get spotCheckInDialogConfirmDeleteBody;
+
+  /// No description provided for @spotCheckInDialogExtendBannerText.
+  ///
+  /// In en, this message translates to:
+  /// **'You have a recently expired check-in here.'**
+  String get spotCheckInDialogExtendBannerText;
+
+  /// No description provided for @spotCheckInDialogExtendInstead.
+  ///
+  /// In en, this message translates to:
+  /// **'Extend that check-in instead'**
+  String get spotCheckInDialogExtendInstead;
+
+  /// Warning when user has an active check-in at a named spot
+  ///
+  /// In en, this message translates to:
+  /// **'You’re currently checked in at {spotName}. Checking in here will end that check-in.'**
+  String spotCheckInDialogActiveElsewhereAtNamed(String spotName);
+
+  /// No description provided for @spotCheckInDialogActiveElsewhereUnnamed.
+  ///
+  /// In en, this message translates to:
+  /// **'You’re checked in at another spot. Checking in here will end that check-in.'**
+  String get spotCheckInDialogActiveElsewhereUnnamed;
+
+  /// No description provided for @spotCheckInDialogActiveElsewhereMultiple.
+  ///
+  /// In en, this message translates to:
+  /// **'You have active check-ins at other spots. Checking in here will end those check-ins.'**
+  String get spotCheckInDialogActiveElsewhereMultiple;
+
+  /// No description provided for @spotCheckInDialogNudgeEarlier.
+  ///
+  /// In en, this message translates to:
+  /// **'15 minutes earlier'**
+  String get spotCheckInDialogNudgeEarlier;
+
+  /// No description provided for @spotCheckInDialogNudgeLater.
+  ///
+  /// In en, this message translates to:
+  /// **'15 minutes later'**
+  String get spotCheckInDialogNudgeLater;
+
   /// Shared label for optional note field on check-in and training-plan dialogs
   ///
   /// In en, this message translates to:
@@ -4034,7 +4148,7 @@ abstract class AppLocalizations {
   /// Prompt shown on my check-ins page when signed out
   ///
   /// In en, this message translates to:
-  /// **'Sign in to view your check-ins'**
+  /// **'Sign in to view your check-ins and training plans'**
   String get myCheckInsSignInPrompt;
 
   /// Button label to load more check-ins
@@ -4046,20 +4160,44 @@ abstract class AppLocalizations {
   /// Empty state title on my check-ins page
   ///
   /// In en, this message translates to:
-  /// **'No check-ins yet'**
+  /// **'No visits or plans yet'**
   String get myCheckInsEmptyTitle;
 
   /// Empty state helper text on my check-ins page
   ///
   /// In en, this message translates to:
-  /// **'Open a spot and tap Check in to record a visit. Until the end time you set, others can see you as “here now” on that spot unless you keep the check-in private.'**
+  /// **'Open a spot to check in or plan training. Until the end time you set, others can see you as “here now” on that spot unless you keep it private.'**
   String get myCheckInsEmptyDescription;
 
   /// Introductory text at the top of my check-ins page
   ///
   /// In en, this message translates to:
-  /// **'A check-in records that you visited a spot, when you arrived, and until when you expect to be there. Public check-ins can show you in “who’s here now” on that spot until that end time; private check-ins stay visible only to you.'**
+  /// **'Training plans list upcoming sessions you scheduled at spots. A check-in records a visit—when you arrived and until when you expect to leave. Public entries can show you on a spot until the end time you set; private ones stay visible only to you.'**
   String get myCheckInsIntro;
+
+  /// Section heading for planned training on my check-ins page
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming training'**
+  String get myCheckInsUpcomingPlansTitle;
+
+  /// Section heading for past check-ins when plans are also shown
+  ///
+  /// In en, this message translates to:
+  /// **'Check-ins'**
+  String get myCheckInsPastCheckInsTitle;
+
+  /// Shown when the user has training plans but no check-in history
+  ///
+  /// In en, this message translates to:
+  /// **'No check-ins recorded yet.'**
+  String get myCheckInsNoCheckInsYet;
+
+  /// Error when the check-in list failed to load but other content may show
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load check-ins.'**
+  String get myCheckInsCheckInsLoadFailed;
 
   /// Fallback spot name in check-in history tile
   ///

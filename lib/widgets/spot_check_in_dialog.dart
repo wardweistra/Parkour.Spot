@@ -93,17 +93,17 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
 
   bool get _isEdit => widget.existingCheckIn != null;
 
-  String _activeElsewhereNotice() {
+  String _activeElsewhereNotice(AppLocalizations l10n) {
     final others = widget.activeElsewhere;
     if (others.isEmpty) return '';
     if (others.length == 1) {
       final name = others.single.spotName?.trim();
       if (name != null && name.isNotEmpty) {
-        return 'You’re currently checked in at $name. Checking in here will end that check-in.';
+        return l10n.spotCheckInDialogActiveElsewhereAtNamed(name);
       }
-      return 'You’re checked in at another spot. Checking in here will end that check-in.';
+      return l10n.spotCheckInDialogActiveElsewhereUnnamed;
     }
-    return 'You have active check-ins at other spots. Checking in here will end those check-ins.';
+    return l10n.spotCheckInDialogActiveElsewhereMultiple;
   }
 
   /// Currently within [checkedInAt, expectedEndAt] (same rule as [SpotCheckIn.isActiveAt]).
@@ -152,23 +152,26 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
     final theme = Theme.of(context);
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete check-in?'),
-        content: Text(
-          'Remove this visit record from your history. This does not remove the spot from your “Been to” list.',
-          style: theme.textTheme.bodyMedium,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+      builder: (ctx) {
+        final dL10n = AppLocalizations.of(ctx)!;
+        return AlertDialog(
+          title: Text(dL10n.spotCheckInDialogConfirmDeleteTitle),
+          content: Text(
+            dL10n.spotCheckInDialogConfirmDeleteBody,
+            style: theme.textTheme.bodyMedium,
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(dL10n.spotCheckInDialogCancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(dL10n.spotCheckInDialogDelete),
+            ),
+          ],
+        );
+      },
     );
     if (ok == true && mounted) {
       Navigator.of(context).pop(SpotCheckInDialogDeleted());
@@ -361,7 +364,7 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Text(
-                              'You have a recently expired check-in here.',
+                              l10n.spotCheckInDialogExtendBannerText,
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: cs.onSurface,
                                 height: 1.35,
@@ -380,7 +383,7 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
                                   minimumSize: Size.zero,
                                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                 ),
-                                child: const Text('Extend that check-in instead'),
+                                child: Text(l10n.spotCheckInDialogExtendInstead),
                               ),
                             ),
                           ],
@@ -411,7 +414,7 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          _activeElsewhereNotice(),
+                          _activeElsewhereNotice(l10n),
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: cs.onSurface,
                             height: 1.35,
@@ -427,10 +430,8 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               dense: true,
-              title: const Text('Share publicly'),
-              subtitle: const Text(
-                'Turn off to only log this for yourself.',
-              ),
+              title: Text(l10n.spotCheckInDialogSharePublic),
+              subtitle: Text(l10n.spotCheckInDialogShareSub),
               value: _sharePublicly,
               onChanged: (v) => setState(() => _sharePublicly = v),
             ),
@@ -439,7 +440,8 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
               _timeNudgeRow(
                 theme: theme,
                 cs: cs,
-                label: 'Arrived',
+                l10n: l10n,
+                label: l10n.spotCheckInDialogLabelArrived,
                 valueStr: DateFormat(
                   'MMM d, y • h:mm a',
                 ).format(_checkedInAt.toLocal()),
@@ -453,7 +455,10 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
             _timeNudgeRow(
               theme: theme,
               cs: cs,
-              label: _isEdit ? 'Until' : 'Here until',
+              l10n: l10n,
+              label: _isEdit
+                  ? l10n.spotCheckInDialogLabelUntil
+                  : l10n.spotCheckInDialogLabelHereUntil,
               valueStr: untilStr,
               canSub: canSubEnd,
               canAdd: canAddEnd,
@@ -466,7 +471,7 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
                 OutlinedButton.icon(
                   onPressed: _stillHere,
                   icon: const Icon(Icons.schedule_outlined),
-                  label: const Text('Still here'),
+                  label: Text(l10n.spotCheckInDialogStillHere),
                 ),
                 if (_isActiveCheckIn) const SizedBox(height: 8),
               ],
@@ -474,7 +479,7 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
                 OutlinedButton.icon(
                   onPressed: _endNowAndSave,
                   icon: const Icon(Icons.stop_circle_outlined),
-                  label: const Text('End now'),
+                  label: Text(l10n.spotCheckInDialogEndNow),
                 ),
             ],
             const SizedBox(height: 20),
@@ -503,14 +508,14 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
               TextButton(
                 onPressed: _confirmDelete,
                 style: TextButton.styleFrom(foregroundColor: err),
-                child: const Text('Delete'),
+                child: Text(l10n.spotCheckInDialogDelete),
               ),
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Cancel'),
+                  child: Text(l10n.spotCheckInDialogCancel),
                 ),
                 const SizedBox(width: 8),
                 FilledButton.icon(
@@ -518,7 +523,11 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
                   icon: Icon(
                     _isEdit ? Icons.save_outlined : Icons.place_outlined,
                   ),
-                  label: Text(_isEdit ? 'Save' : 'Check in'),
+                  label: Text(
+                    _isEdit
+                        ? l10n.spotCheckInDialogSave
+                        : l10n.spotCheckInDialogTitle,
+                  ),
                 ),
               ],
             ),
@@ -541,6 +550,7 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
   Widget _timeNudgeRow({
     required ThemeData theme,
     required ColorScheme cs,
+    required AppLocalizations l10n,
     required String label,
     required String valueStr,
     required bool canSub,
@@ -552,7 +562,7 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         IconButton.filledTonal(
-          tooltip: '15 minutes earlier',
+          tooltip: l10n.spotCheckInDialogNudgeEarlier,
           onPressed: canSub ? onSub : null,
           icon: const Icon(Icons.remove),
         ),
@@ -585,7 +595,7 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
           ),
         ),
         IconButton.filledTonal(
-          tooltip: '15 minutes later',
+          tooltip: l10n.spotCheckInDialogNudgeLater,
           onPressed: canAdd ? onAdd : null,
           icon: const Icon(Icons.add),
         ),

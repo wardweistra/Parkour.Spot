@@ -1241,6 +1241,70 @@ class AppLocalizationsNl extends AppLocalizations {
       'Pas aankomst- en eindtijd, zichtbaarheid en je notitie aan.';
 
   @override
+  String get spotCheckInDialogSharePublic => 'Openbaar delen';
+
+  @override
+  String get spotCheckInDialogShareSub =>
+      'Zet uit zodat alleen jij deze check-in ziet.';
+
+  @override
+  String get spotCheckInDialogLabelArrived => 'Aangekomen';
+
+  @override
+  String get spotCheckInDialogLabelHereUntil => 'Hier tot';
+
+  @override
+  String get spotCheckInDialogLabelUntil => 'Tot';
+
+  @override
+  String get spotCheckInDialogStillHere => 'Nog hier';
+
+  @override
+  String get spotCheckInDialogEndNow => 'Nu beëindigen';
+
+  @override
+  String get spotCheckInDialogCancel => 'Annuleren';
+
+  @override
+  String get spotCheckInDialogSave => 'Opslaan';
+
+  @override
+  String get spotCheckInDialogDelete => 'Verwijderen';
+
+  @override
+  String get spotCheckInDialogConfirmDeleteTitle => 'Check-in verwijderen?';
+
+  @override
+  String get spotCheckInDialogConfirmDeleteBody =>
+      'Verwijdert dit bezoek uit je geschiedenis. De spot blijft op je lijst ‘Geweest’ staan.';
+
+  @override
+  String get spotCheckInDialogExtendBannerText =>
+      'Je hebt hier onlangs een verlopen check-in.';
+
+  @override
+  String get spotCheckInDialogExtendInstead => 'Die check-in verlengen';
+
+  @override
+  String spotCheckInDialogActiveElsewhereAtNamed(String spotName) {
+    return 'Je bent nu ingecheckt bij $spotName. Inchecken hier beëindigt die check-in.';
+  }
+
+  @override
+  String get spotCheckInDialogActiveElsewhereUnnamed =>
+      'Je bent op een andere plek ingecheckt. Inchecken hier beëindigt die check-in.';
+
+  @override
+  String get spotCheckInDialogActiveElsewhereMultiple =>
+      'Je hebt actieve check-ins op andere plekken. Inchecken hier beëindigt die check-ins.';
+
+  @override
+  String get spotCheckInDialogNudgeEarlier => '15 minuten eerder';
+
+  @override
+  String get spotCheckInDialogNudgeLater => '15 minuten later';
+
+  @override
   String get spotDetailSessionNoteLabel => 'Notitie (optioneel)';
 
   @override
@@ -1261,7 +1325,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get spotTrainingPlanDialogShareSub =>
-      'Zet uit om alleen jij het plan ziet.';
+      'Zet uit zodat alleen jij dit plan ziet.';
 
   @override
   String get spotTrainingPlanDialogStartLabel => 'Start';
@@ -2374,21 +2438,35 @@ class AppLocalizationsNl extends AppLocalizations {
       'Je geregistreerde geschiedenis van bezoeken aan spots';
 
   @override
-  String get myCheckInsSignInPrompt => 'Log in om je check-ins te bekijken';
+  String get myCheckInsSignInPrompt =>
+      'Log in om je check-ins en trainingsplannen te bekijken';
 
   @override
   String get myCheckInsLoadMore => 'Meer laden';
 
   @override
-  String get myCheckInsEmptyTitle => 'Nog geen check-ins';
+  String get myCheckInsEmptyTitle => 'Nog geen bezoeken of plannen';
 
   @override
   String get myCheckInsEmptyDescription =>
-      'Open een spot en tik op Check in om een bezoek vast te leggen. Tot de door jou ingestelde eindtijd kunnen anderen je op die spot als ‘nu hier’ zien, tenzij je de check-in privé houdt.';
+      'Open een spot om in te checken of training te plannen. Tot de door jou ingestelde eindtijd kunnen anderen je op die spot als ‘nu hier’ zien, tenzij je het privé houdt.';
 
   @override
   String get myCheckInsIntro =>
-      'Een check-in legt vast dat je een spot hebt bezocht, wanneer je aankwam en tot wanneer je verwacht daar te zijn. Openbare check-ins kunnen je tot die eindtijd tonen in ‘wie is hier nu’ op die spot; privé check-ins zijn alleen voor jou zichtbaar.';
+      'Trainingsplannen tonen aankomende sessies die je op spots hebt gepland. Een check-in legt een bezoek vast — wanneer je aankwam en tot wanneer je verwacht te blijven. Openbare items kunnen je op een spot tonen tot je eindtijd; privé-items zijn alleen voor jou zichtbaar.';
+
+  @override
+  String get myCheckInsUpcomingPlansTitle => 'Geplande training';
+
+  @override
+  String get myCheckInsPastCheckInsTitle => 'Check-ins';
+
+  @override
+  String get myCheckInsNoCheckInsYet => 'Nog geen check-ins vastgelegd.';
+
+  @override
+  String get myCheckInsCheckInsLoadFailed =>
+      'Check-ins konden niet worden geladen.';
 
   @override
   String get myCheckInsSpotFallback => 'Spot';

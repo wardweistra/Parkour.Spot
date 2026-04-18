@@ -1248,6 +1248,70 @@ class AppLocalizationsPt extends AppLocalizations {
       'Altera chegada e fim, quem pode ver o check-in e a tua nota.';
 
   @override
+  String get spotCheckInDialogSharePublic => 'Partilhar publicamente';
+
+  @override
+  String get spotCheckInDialogShareSub =>
+      'Desliga para só tu veres este check-in.';
+
+  @override
+  String get spotCheckInDialogLabelArrived => 'Chegada';
+
+  @override
+  String get spotCheckInDialogLabelHereUntil => 'Aqui até';
+
+  @override
+  String get spotCheckInDialogLabelUntil => 'Até';
+
+  @override
+  String get spotCheckInDialogStillHere => 'Ainda aqui';
+
+  @override
+  String get spotCheckInDialogEndNow => 'Terminar agora';
+
+  @override
+  String get spotCheckInDialogCancel => 'Cancelar';
+
+  @override
+  String get spotCheckInDialogSave => 'Guardar';
+
+  @override
+  String get spotCheckInDialogDelete => 'Eliminar';
+
+  @override
+  String get spotCheckInDialogConfirmDeleteTitle => 'Eliminar check-in?';
+
+  @override
+  String get spotCheckInDialogConfirmDeleteBody =>
+      'Remove esta visita do teu histórico. Não retira o spot da tua lista de sítios visitados.';
+
+  @override
+  String get spotCheckInDialogExtendBannerText =>
+      'Tens um check-in recente expirado aqui.';
+
+  @override
+  String get spotCheckInDialogExtendInstead => 'Prolongar esse check-in';
+
+  @override
+  String spotCheckInDialogActiveElsewhereAtNamed(String spotName) {
+    return 'Estás com check-in em $spotName. Fazer check-in aqui termina esse check-in.';
+  }
+
+  @override
+  String get spotCheckInDialogActiveElsewhereUnnamed =>
+      'Estás com check-in noutro spot. Fazer check-in aqui termina esse check-in.';
+
+  @override
+  String get spotCheckInDialogActiveElsewhereMultiple =>
+      'Tens check-ins ativos noutros spots. Fazer check-in aqui termina esses check-ins.';
+
+  @override
+  String get spotCheckInDialogNudgeEarlier => '15 minutos antes';
+
+  @override
+  String get spotCheckInDialogNudgeLater => '15 minutos depois';
+
+  @override
   String get spotDetailSessionNoteLabel => 'Nota (opcional)';
 
   @override
@@ -2392,21 +2456,34 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get myCheckInsSignInPrompt =>
-      'Inicia sessão para ver os teus check-ins';
+      'Inicia sessão para ver os teus check-ins e planos de treino';
 
   @override
   String get myCheckInsLoadMore => 'Carregar mais';
 
   @override
-  String get myCheckInsEmptyTitle => 'Ainda sem check-ins';
+  String get myCheckInsEmptyTitle => 'Ainda sem visitas nem planos';
 
   @override
   String get myCheckInsEmptyDescription =>
-      'Abre um spot e toca em Check in para registar uma visita. Até à hora de fim que definires, outras pessoas podem ver-te como «aqui agora» nesse spot, a menos que mantenhas o check-in privado.';
+      'Abre um spot para fazer check-in ou planear treino. Até à hora de fim que definires, outras pessoas podem ver-te como «aqui agora» nesse spot, a menos que mantenhas privado.';
 
   @override
   String get myCheckInsIntro =>
-      'Um check-in regista que visitaste um spot, quando chegaste e até quando esperas ficar lá. Check-ins públicos podem mostrar-te no «quem está aqui agora» desse spot até essa hora final; check-ins privados ficam visíveis apenas para ti.';
+      'Os planos de treino mostram as sessões futuras que planeaste em spots. Um check-in regista uma visita — quando chegaste e até quando esperas ficar. As entradas públicas podem mostrar-te num spot até à hora final; as privadas só tu vês.';
+
+  @override
+  String get myCheckInsUpcomingPlansTitle => 'Treino a seguir';
+
+  @override
+  String get myCheckInsPastCheckInsTitle => 'Check-ins';
+
+  @override
+  String get myCheckInsNoCheckInsYet => 'Ainda sem check-ins registados.';
+
+  @override
+  String get myCheckInsCheckInsLoadFailed =>
+      'Não foi possível carregar os check-ins.';
 
   @override
   String get myCheckInsSpotFallback => 'Spot';

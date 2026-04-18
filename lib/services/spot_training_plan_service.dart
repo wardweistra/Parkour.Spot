@@ -155,6 +155,31 @@ class SpotTrainingPlanService extends ChangeNotifier {
     }
   }
 
+  /// All upcoming training plans for the current user, ordered by start time
+  /// (soonest first).
+  Future<List<SpotTrainingPlan>> fetchMyUpcomingPlans() async {
+    final userId = _getCurrentUserId();
+    if (userId == null) return [];
+    final now = DateTime.now();
+    try {
+      final snap = await _col
+          .where('userId', isEqualTo: userId)
+          .where('plannedEndAt', isGreaterThanOrEqualTo: Timestamp.fromDate(now))
+          .orderBy('plannedEndAt', descending: false)
+          .limit(_queryLimit)
+          .get();
+      final list = snap.docs
+          .map(SpotTrainingPlan.fromFirestore)
+          .where((p) => p.isUpcomingAt(now))
+          .toList();
+      list.sort((a, b) => a.plannedStartAt.compareTo(b.plannedStartAt));
+      return list;
+    } catch (e) {
+      debugPrint('fetchMyUpcomingPlans error: $e');
+      return [];
+    }
+  }
+
   /// Latest upcoming plan for the current user at [spotId], if any.
   Future<SpotTrainingPlan?> fetchMyActivePlanAtSpot(String spotId) async {
     final userId = _getCurrentUserId();

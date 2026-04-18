@@ -1252,6 +1252,71 @@ class AppLocalizationsDe extends AppLocalizations {
       'Passe Ankunfts- und Endzeit, Sichtbarkeit und Notiz an.';
 
   @override
+  String get spotCheckInDialogSharePublic => 'Öffentlich teilen';
+
+  @override
+  String get spotCheckInDialogShareSub =>
+      'Ausschalten, damit nur du diesen Check-in siehst.';
+
+  @override
+  String get spotCheckInDialogLabelArrived => 'Ankunft';
+
+  @override
+  String get spotCheckInDialogLabelHereUntil => 'Hier bis';
+
+  @override
+  String get spotCheckInDialogLabelUntil => 'Bis';
+
+  @override
+  String get spotCheckInDialogStillHere => 'Noch hier';
+
+  @override
+  String get spotCheckInDialogEndNow => 'Jetzt beenden';
+
+  @override
+  String get spotCheckInDialogCancel => 'Abbrechen';
+
+  @override
+  String get spotCheckInDialogSave => 'Speichern';
+
+  @override
+  String get spotCheckInDialogDelete => 'Löschen';
+
+  @override
+  String get spotCheckInDialogConfirmDeleteTitle => 'Check-in löschen?';
+
+  @override
+  String get spotCheckInDialogConfirmDeleteBody =>
+      'Entfernt diesen Besuch aus deinem Verlauf. Der Spot bleibt in „War dort“, falls du ihn dort hattest.';
+
+  @override
+  String get spotCheckInDialogExtendBannerText =>
+      'Du hast hier kürzlich einen abgelaufenen Check-in.';
+
+  @override
+  String get spotCheckInDialogExtendInstead =>
+      'Stattdessen diesen Check-in verlängern';
+
+  @override
+  String spotCheckInDialogActiveElsewhereAtNamed(String spotName) {
+    return 'Du bist aktuell bei $spotName eingecheckt. Ein Check-in hier beendet jenen Check-in.';
+  }
+
+  @override
+  String get spotCheckInDialogActiveElsewhereUnnamed =>
+      'Du bist an einem anderen Spot eingecheckt. Ein Check-in hier beendet jenen Check-in.';
+
+  @override
+  String get spotCheckInDialogActiveElsewhereMultiple =>
+      'Du hast an anderen Spots aktive Check-ins. Ein Check-in hier beendet diese Check-ins.';
+
+  @override
+  String get spotCheckInDialogNudgeEarlier => '15 Minuten früher';
+
+  @override
+  String get spotCheckInDialogNudgeLater => '15 Minuten später';
+
+  @override
   String get spotDetailSessionNoteLabel => 'Notiz (optional)';
 
   @override
@@ -2406,21 +2471,34 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get myCheckInsSignInPrompt =>
-      'Melde dich an, um deine Check-ins zu sehen';
+      'Melde dich an, um deine Check-ins und Trainingspläne zu sehen';
 
   @override
   String get myCheckInsLoadMore => 'Mehr laden';
 
   @override
-  String get myCheckInsEmptyTitle => 'Noch keine Check-ins';
+  String get myCheckInsEmptyTitle => 'Noch keine Besuche oder Pläne';
 
   @override
   String get myCheckInsEmptyDescription =>
-      'Öffne einen Spot und tippe auf „Einchecken“, um einen Besuch zu speichern. Bis zur von dir gesetzten Endzeit sehen andere dich dort als „gerade hier“, sofern dein Check-in nicht privat ist.';
+      'Öffne einen Spot, um einzuchecken oder Training zu planen. Bis zur von dir gesetzten Endzeit sehen andere dich dort als „gerade hier“, sofern du es nicht privat hältst.';
 
   @override
   String get myCheckInsIntro =>
-      'Ein Check-in speichert, dass du einen Spot besucht hast, wann du angekommen bist und bis wann du voraussichtlich dort bist. Öffentliche Check-ins können dich bis zu dieser Endzeit bei „Wer ist gerade hier“ anzeigen; private Check-ins sind nur für dich sichtbar.';
+      'Trainingspläne zeigen anstehende Sessions, die du an Spots geplant hast. Ein Check-in speichert einen Besuch – wann du angekommen bist und bis wann du voraussichtlich bleibst. Öffentliche Einträge können dich auf einem Spot bis zu deiner Endzeit zeigen; private sind nur für dich sichtbar.';
+
+  @override
+  String get myCheckInsUpcomingPlansTitle => 'Geplantes Training';
+
+  @override
+  String get myCheckInsPastCheckInsTitle => 'Check-ins';
+
+  @override
+  String get myCheckInsNoCheckInsYet => 'Noch keine Check-ins erfasst.';
+
+  @override
+  String get myCheckInsCheckInsLoadFailed =>
+      'Check-ins konnten nicht geladen werden.';
 
   @override
   String get myCheckInsSpotFallback => 'Spot';

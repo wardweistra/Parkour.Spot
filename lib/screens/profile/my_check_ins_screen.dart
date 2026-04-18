@@ -5,12 +5,15 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/spot_check_in.dart';
+import '../../models/spot_training_plan.dart';
 import '../../l10n/app_localizations.dart';
 import '../../services/auth_service.dart';
 import '../../services/spot_check_in_service.dart';
+import '../../services/spot_training_plan_service.dart';
 import '../../widgets/page_scaffold.dart';
 import '../../widgets/spot_check_in_dialog.dart';
 import '../../widgets/spot_check_in_presence.dart';
+import '../../widgets/spot_training_plan_dialog.dart';
 
 String _formatSessionDuration(Duration d, AppLocalizations l10n) {
   if (d.isNegative) d = Duration.zero;
@@ -51,6 +54,29 @@ String _formatCheckInTimeLineUnderHeader(
   return '${timeFmt.format(start)} — $endFull ($durStr)';
 }
 
+/// Time line for a training plan tile (same shape as check-in session line).
+String _formatPlanTimeLineUnderHeader(
+  SpotTrainingPlan plan,
+  AppLocalizations l10n,
+) {
+  final start = plan.plannedStartAt.toLocal();
+  final end = plan.plannedEndAt.toLocal();
+  final duration = plan.plannedEndAt.difference(plan.plannedStartAt);
+  final durStr = _formatSessionDuration(duration, l10n);
+  final sameDay =
+      start.year == end.year &&
+      start.month == end.month &&
+      start.day == end.day;
+  final timeFmt = DateFormat.jm();
+
+  if (sameDay) {
+    return '${timeFmt.format(start)} — ${timeFmt.format(end)} ($durStr)';
+  }
+
+  final endFull = DateFormat.yMMMd().add_jm().format(end);
+  return '${timeFmt.format(start)} — $endFull ($durStr)';
+}
+
 sealed class _CheckInListRow {}
 
 final class _CheckInListIntro extends _CheckInListRow {}
@@ -67,6 +93,20 @@ final class _CheckInListTile extends _CheckInListRow {
 
 final class _CheckInListLoadMore extends _CheckInListRow {}
 
+final class _CheckInListSectionTitle extends _CheckInListRow {
+  _CheckInListSectionTitle(this.title);
+  final String title;
+}
+
+final class _CheckInListPlanTile extends _CheckInListRow {
+  _CheckInListPlanTile(this.plan);
+  final SpotTrainingPlan plan;
+}
+
+final class _CheckInListCheckInsErrorBanner extends _CheckInListRow {}
+
+final class _CheckInListNoCheckInsHint extends _CheckInListRow {}
+
 /// Full history of the current user's check-ins (newest first), with delete.
 class MyCheckInsScreen extends StatefulWidget {
   const MyCheckInsScreen({super.key});
@@ -79,11 +119,12 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
   AppLocalizations get _l10n => AppLocalizations.of(context)!;
 
   final List<SpotCheckIn> _items = [];
+  final List<SpotTrainingPlan> _plans = [];
   DocumentSnapshot<Map<String, dynamic>>? _lastDoc;
   bool _hasMore = true;
   bool _loading = true;
   bool _loadingMore = false;
-  String? _error;
+  String? _checkInsError;
 
   @override
   void initState() {
@@ -97,30 +138,43 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
       setState(() {
         _loading = false;
         _items.clear();
+        _plans.clear();
         _hasMore = false;
       });
       return;
     }
     setState(() {
       _loading = true;
-      _error = null;
+      _checkInsError = null;
     });
-    final svc = Provider.of<SpotCheckInService>(context, listen: false);
+    final checkInSvc = Provider.of<SpotCheckInService>(context, listen: false);
+    final planSvc = Provider.of<SpotTrainingPlanService>(context, listen: false);
+    final plans = await planSvc.fetchMyUpcomingPlans();
     try {
-      final page = await svc.fetchMyCheckInsPage();
+      final page = await checkInSvc.fetchMyCheckInsPage();
       if (!mounted) return;
       setState(() {
+        _plans
+          ..clear()
+          ..addAll(plans);
         _items
           ..clear()
           ..addAll(page.items);
         _lastDoc = page.lastDocument;
         _hasMore = page.hasMore;
+        _checkInsError = null;
         _loading = false;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = '$e';
+        _plans
+          ..clear()
+          ..addAll(plans);
+        _items.clear();
+        _lastDoc = null;
+        _hasMore = false;
+        _checkInsError = '$e';
         _loading = false;
       });
     }
@@ -141,10 +195,66 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _error = '$e';
-        _loadingMore = false;
-      });
+      setState(() => _loadingMore = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$e')),
+      );
+    }
+  }
+
+  Future<void> _manageTrainingPlan(SpotTrainingPlan p) async {
+    final svc = Provider.of<SpotTrainingPlanService>(context, listen: false);
+    final result = await showSpotTrainingPlanDialog(
+      context,
+      existingPlan: p,
+    );
+    if (result == null || !mounted) return;
+
+    if (result is SpotTrainingPlanDialogDeleted) {
+      final ok = await svc.deletePlan(p.id);
+      if (!mounted) return;
+      if (ok) {
+        setState(() {
+          _plans.removeWhere((x) => x.id == p.id);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_l10n.spotDetailTrainingPlanRemoved)),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              svc.error ?? _l10n.spotDetailTrainingPlanDeleteFailed,
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
+    if (result is! SpotTrainingPlanDialogSaved) return;
+
+    final ok = await svc.upsertPlan(
+      spotId: p.spotId,
+      plannedStartAt: result.plannedStartAt,
+      plannedEndAt: result.plannedEndAt,
+      isPrivate: result.isPrivate,
+      comment: result.comment,
+      spotName: p.spotName,
+    );
+    if (!mounted) return;
+    if (ok) {
+      await _loadInitial();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_l10n.spotDetailTrainingPlanUpdated)),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(svc.error ?? _l10n.spotDetailTrainingPlanFailed),
+        ),
+      );
     }
   }
 
@@ -221,6 +331,18 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
 
   List<_CheckInListRow> _buildCheckInListRows() {
     final rows = <_CheckInListRow>[_CheckInListIntro()];
+    if (_checkInsError != null && _items.isEmpty && _plans.isNotEmpty) {
+      rows.add(_CheckInListCheckInsErrorBanner());
+    }
+    if (_plans.isNotEmpty) {
+      rows.add(_CheckInListSectionTitle(_l10n.myCheckInsUpcomingPlansTitle));
+      for (final p in _plans) {
+        rows.add(_CheckInListPlanTile(p));
+      }
+    }
+    if (_items.isNotEmpty && _plans.isNotEmpty) {
+      rows.add(_CheckInListSectionTitle(_l10n.myCheckInsPastCheckInsTitle));
+    }
     DateTime? prevDay;
     for (final c in _items) {
       final local = c.checkedInAt.toLocal();
@@ -233,6 +355,9 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
     }
     if (_hasMore) {
       rows.add(_CheckInListLoadMore());
+    }
+    if (_items.isEmpty && _plans.isNotEmpty && _checkInsError == null) {
+      rows.add(_CheckInListNoCheckInsHint());
     }
     return rows;
   }
@@ -249,6 +374,86 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
             return Padding(
               padding: const EdgeInsets.only(bottom: 16),
               child: _intro(context),
+            );
+          case _CheckInListCheckInsErrorBanner():
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Card(
+                color: Theme.of(context).colorScheme.errorContainer,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        _l10n.myCheckInsCheckInsLoadFailed,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onErrorContainer,
+                            ),
+                      ),
+                      if (_checkInsError != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          _checkInsError!,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onErrorContainer
+                                    .withValues(alpha: 0.9),
+                              ),
+                        ),
+                      ],
+                      const SizedBox(height: 12),
+                      FilledButton.tonal(
+                        onPressed: _loadInitial,
+                        child: Text(_l10n.profileRetry),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          case _CheckInListSectionTitle(:final title):
+            final prev = i > 0 ? rows[i - 1] : null;
+            final tightTop = prev is _CheckInListIntro ||
+                prev is _CheckInListCheckInsErrorBanner;
+            final theme = Theme.of(context);
+            return Padding(
+              padding: EdgeInsets.only(top: tightTop ? 8 : 20, bottom: 10),
+              child: Text(
+                title,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.85),
+                ),
+              ),
+            );
+          case _CheckInListPlanTile(:final plan):
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _TrainingPlanHistoryTile(
+                plan: plan,
+                onOpenSpot: () => context.push('/spot/${plan.spotId}'),
+                onManage: () => _manageTrainingPlan(plan),
+              ),
+            );
+          case _CheckInListNoCheckInsHint():
+            return Padding(
+              padding: const EdgeInsets.only(top: 8, bottom: 24),
+              child: Center(
+                child: Text(
+                  _l10n.myCheckInsNoCheckInsYet,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.55),
+                      ),
+                ),
+              ),
             );
           case _CheckInListDateHeader(:final day):
             final prevIsIntro = i > 0 && rows[i - 1] is _CheckInListIntro;
@@ -317,7 +522,7 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
           );
         }
 
-        if (_error != null && _items.isEmpty) {
+        if (_checkInsError != null && _items.isEmpty && _plans.isEmpty) {
           return PageScaffold(
             title: _l10n.publicProfileMyCheckIns,
             body: Center(
@@ -327,7 +532,7 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      _error!,
+                      _checkInsError!,
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         color: Theme.of(context).colorScheme.error,
@@ -350,7 +555,7 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
           scrollable: false,
           body: RefreshIndicator(
             onRefresh: _loadInitial,
-            child: _items.isEmpty
+            child: _items.isEmpty && _plans.isEmpty && _checkInsError == null
                 ? ListView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(24),
@@ -508,6 +713,98 @@ class _CheckInHistoryTile extends StatelessWidget {
               ),
               IconButton(
                 tooltip: l10n.spotDetailCheckInFabTooltipEdit,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                icon: Icon(
+                  Icons.edit_outlined,
+                  size: 20,
+                  color: theme.colorScheme.primary,
+                ),
+                onPressed: onManage,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TrainingPlanHistoryTile extends StatelessWidget {
+  const _TrainingPlanHistoryTile({
+    required this.plan,
+    required this.onOpenSpot,
+    required this.onManage,
+  });
+
+  final SpotTrainingPlan plan;
+  final VoidCallback onOpenSpot;
+  final VoidCallback onManage;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final title =
+        (plan.spotName != null && plan.spotName!.trim().isNotEmpty)
+            ? plan.spotName!.trim()
+            : l10n.myCheckInsSpotFallback;
+    final timeRangeStr = _formatPlanTimeLineUnderHeader(plan, l10n);
+    final comment = plan.comment?.trim();
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onOpenSpot,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.event_available_outlined,
+                color: theme.colorScheme.primary,
+                size: 28,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      timeRangeStr,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.65,
+                        ),
+                      ),
+                    ),
+                    if (plan.isPrivate) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        l10n.spotTrainingPlanOnlyYou,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                    if (comment != null && comment.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      CheckInCommentBlock(comment: comment),
+                    ],
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: l10n.spotTrainingPlanEditMine,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                 icon: Icon(
