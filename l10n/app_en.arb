@@ -948,7 +948,7 @@
   "@spotCheckInUnnamedPerson": {
     "description": "Check-in tooltip when display name missing"
   },
-  "spotCheckInTooltipPublic": "{name} is here now at this spot (until {time})",
+  "spotCheckInTooltipPublic": "{name} is here now until {time}",
   "@spotCheckInTooltipPublic": {
     "description": "Avatar tooltip: public check-in",
     "placeholders": {
@@ -957,15 +957,37 @@
       },
       "time": {
         "type": "String",
-        "example": "3:45 PM"
+        "example": "3:45 PM today"
       }
     }
   },
-  "spotCheckInTooltipPrivate": "You're here now at this spot until {time} — only you can see this check-in",
+  "spotCheckInTooltipPrivate": "You're here now until {time} — only you can see this check-in",
   "@spotCheckInTooltipPrivate": {
     "description": "Avatar tooltip: private check-in",
     "placeholders": {
       "time": {
+        "type": "String"
+      }
+    }
+  },
+  "spotTrainingPlanTooltipPublic": "{name} plans to train here {timeRange}",
+  "@spotTrainingPlanTooltipPublic": {
+    "description": "Avatar tooltip: public training plan",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "timeRange": {
+        "type": "String",
+        "example": "2:00 PM today"
+      }
+    }
+  },
+  "spotTrainingPlanTooltipPrivate": "You plan to train here {timeRange} — only you can see this plan",
+  "@spotTrainingPlanTooltipPrivate": {
+    "description": "Avatar tooltip: private training plan",
+    "placeholders": {
+      "timeRange": {
         "type": "String"
       }
     }
@@ -1028,6 +1050,43 @@
   },
   "spotDetailDateToday": "today",
   "spotDetailDateYesterday": "yesterday",
+  "communityDateTomorrow": "tomorrow",
+  "communityActivityTrainSameDay": "From {startTime} until {endTime} {day}",
+  "@communityActivityTrainSameDay": {
+    "description": "Training window on one calendar day for community UI",
+    "placeholders": {
+      "startTime": {
+        "type": "String",
+        "example": "2:00 PM"
+      },
+      "endTime": {
+        "type": "String",
+        "example": "4:00 PM"
+      },
+      "day": {
+        "type": "String",
+        "example": "today"
+      }
+    }
+  },
+  "communityActivityTrainSpan": "From {startTime} {startDay} until {endTime} {endDay}",
+  "@communityActivityTrainSpan": {
+    "description": "Training window spanning two calendar days for community UI",
+    "placeholders": {
+      "startTime": {
+        "type": "String"
+      },
+      "startDay": {
+        "type": "String"
+      },
+      "endTime": {
+        "type": "String"
+      },
+      "endDay": {
+        "type": "String"
+      }
+    }
+  },
   "spotDetailDateDaysAgo": "{count, plural, one{1 day ago} other{{count} days ago}}",
   "@spotDetailDateDaysAgo": {
     "placeholders": {
@@ -1172,15 +1231,100 @@
   "spotDetailQuickActionRate": "Rate",
   "spotDetailPresenceHereNow": "Here now",
   "spotDetailCommunitySectionTitle": "Community",
-  "spotDetailCommunitySectionSubtitle": "See who’s training here and share your session.",
+  "spotDetailCommunitySectionSubtitle": "See who’s training or planning to be here, and share your session.",
   "spotDetailCommunityNobodyHere": "No one’s checked in yet. Check in to let others know you’re here.",
   "spotDetailCommunityNobodyHereShort": "No one’s here yet.",
+  "spotDetailCommunityNobodySocialShort": "No one’s here or planning ahead yet.",
+  "spotDetailCommunityActivityLoadError": "Could not load community activity.",
+  "spotDetailCommunityActivityEmpty": "Nothing to show right now.",
   "spotDetailCommunityViewAll": "View all",
   "spotDetailCommunityCheckInButton": "Check in",
   "spotDetailCommunityEditCheckInButton": "Edit check-in",
   "spotDetailCommunitySignInToCheckInButton": "Sign in to check in",
-  "spotDetailCommunityPlanningVisitButton": "Planning a visit",
-  "spotDetailCommunityPlanningVisitTooltip": "Coming soon — tell the community when you plan to train here.",
+  "spotDetailCommunityPlanningVisitButton": "Plan to train",
+  "spotDetailCommunityPlanningVisitTooltip": "Set when you’ll train here.",
+  "spotDetailCommunityCheckInButtonTooltip": "Show others you’re here now.",
+  "@spotDetailCommunityCheckInButtonTooltip": {
+    "description": "Hover text for Community Check in button (no active check-in)"
+  },
+  "spotDetailCommunityEditCheckInButtonTooltip": "Update your check-in.",
+  "@spotDetailCommunityEditCheckInButtonTooltip": {
+    "description": "Hover text for Community Edit check-in button"
+  },
+  "spotDetailCommunitySignInToCheckInButtonTooltip": "Sign in to check in here.",
+  "@spotDetailCommunitySignInToCheckInButtonTooltip": {
+    "description": "Hover text for Community sign-in-to-check-in button"
+  },
+  "spotDetailCommunityPlanningToTrain": "Planning to train",
+  "spotDetailCommunityNobodyPlanningShort": "No upcoming plans yet.",
+  "spotDetailCommunitySignInToPlanButton": "Sign in to plan a visit",
+  "spotDetailCommunityEditTrainingPlanButton": "Edit plan",
+  "spotCheckInDialogTitle": "Check in",
+  "@spotCheckInDialogTitle": {
+    "description": "Title for new check-in dialog on spot detail"
+  },
+  "spotCheckInDialogTitleEdit": "Edit check-in",
+  "@spotCheckInDialogTitleEdit": {
+    "description": "Title for edit check-in dialog on spot detail"
+  },
+  "spotCheckInDialogIntroNew": "Let others know you’re training here and roughly when you’ll finish. If you share publicly, you show on this spot’s Community strip until that time.",
+  "@spotCheckInDialogIntroNew": {
+    "description": "Intro paragraph for new check-in dialog"
+  },
+  "spotCheckInDialogIntroEdit": "Change your arrival and end times, who can see this check-in, and your note.",
+  "@spotCheckInDialogIntroEdit": {
+    "description": "Intro paragraph for edit check-in dialog"
+  },
+  "spotDetailSessionNoteLabel": "Note (optional)",
+  "@spotDetailSessionNoteLabel": {
+    "description": "Shared label for optional note field on check-in and training-plan dialogs"
+  },
+  "spotDetailSessionNoteHint": "e.g. skills or drills you’re working on",
+  "@spotDetailSessionNoteHint": {
+    "description": "Placeholder hint for optional session note"
+  },
+  "spotTrainingPlanDialogTitle": "Plan to train here",
+  "spotTrainingPlanDialogTitleEdit": "Edit training plan",
+  "spotTrainingPlanDialogBody": "Set when you plan to start and finish. Public plans appear on this spot’s Community strip alongside other people who’ve shared.",
+  "spotTrainingPlanDialogSharePublic": "Share publicly",
+  "spotTrainingPlanDialogShareSub": "Turn off to keep this plan visible only to you.",
+  "spotTrainingPlanDialogStartLabel": "Starts",
+  "spotTrainingPlanDialogEndLabel": "Ends",
+  "spotTrainingPlanDialogSave": "Save",
+  "spotTrainingPlanDialogCancel": "Cancel",
+  "spotTrainingPlanDialogDelete": "Remove plan",
+  "spotTrainingPlanDialogDeleteTitle": "Remove this plan?",
+  "spotTrainingPlanDialogDeleteBody": "You can create a new plan anytime.",
+  "spotTrainingPlanValidationOrder": "End time must be after start time.",
+  "spotTrainingPlanValidationMinDuration": "Window must be at least 15 minutes.",
+  "spotTrainingPlanValidationMaxDuration": "Window cannot be longer than 12 hours.",
+  "spotTrainingPlanValidationStartTooFar": "Start time cannot be more than 30 days away.",
+  "spotTrainingPlanValidationEndNotFuture": "End time must be in the future.",
+  "spotTrainingPlanValidationInvalid": "Invalid time range.",
+  "spotDetailTrainingPlanSaved": "Training plan saved",
+  "spotDetailTrainingPlanUpdated": "Training plan updated",
+  "spotDetailTrainingPlanFailed": "Could not save training plan",
+  "spotDetailTrainingPlanRemoved": "Training plan removed",
+  "spotDetailTrainingPlanDeleteFailed": "Could not remove training plan",
+  "spotTrainingPlanListDialogTitle": "Planning to train",
+  "spotTrainingPlanListDialogSubtitle": "People who shared a public plan for this spot.",
+  "spotTrainingPlanListDialogClose": "Close",
+  "spotTrainingPlanListEmpty": "No public plans yet.",
+  "spotTrainingPlanListLoadError": "Could not load training plans",
+  "spotTrainingPlanEditMine": "Edit plan",
+  "spotTrainingPlanOnlyYou": "Only you",
+  "spotTrainingPlanUnnamedPerson": "Someone",
+  "spotTrainingPlanTimeRange": "{start} – {end}",
+  "@spotTrainingPlanTimeRange": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
   "spotDetailHiddenBanner": "This spot is hidden from public view. It likely no longer exists or doesn’t meet our policies. It will not appear in search results or on the map.",
   "spotDetailSourceRemovedBanner": "This spot is no longer listed in {source}. Details might be outdated, so double-check before visiting.",
   "@spotDetailSourceRemovedBanner": {

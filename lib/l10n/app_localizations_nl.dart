@@ -741,12 +741,22 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String spotCheckInTooltipPublic(String name, String time) {
-    return '$name is nu hier op deze spot (tot $time)';
+    return '$name is nu hier tot $time';
   }
 
   @override
   String spotCheckInTooltipPrivate(String time) {
-    return 'Je bent nu hier op deze spot tot $time — alleen jij ziet deze check-in';
+    return 'Je bent nu hier tot $time — alleen jij ziet deze check-in';
+  }
+
+  @override
+  String spotTrainingPlanTooltipPublic(String name, String timeRange) {
+    return '$name plant hier te trainen $timeRange';
+  }
+
+  @override
+  String spotTrainingPlanTooltipPrivate(String timeRange) {
+    return 'Je plant hier te trainen $timeRange — alleen jij ziet dit plan';
   }
 
   @override
@@ -849,6 +859,28 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get spotDetailDateYesterday => 'gisteren';
+
+  @override
+  String get communityDateTomorrow => 'morgen';
+
+  @override
+  String communityActivityTrainSameDay(
+    String startTime,
+    String endTime,
+    String day,
+  ) {
+    return 'Van $startTime tot $endTime $day';
+  }
+
+  @override
+  String communityActivityTrainSpan(
+    String startTime,
+    String startDay,
+    String endTime,
+    String endDay,
+  ) {
+    return 'Van $startTime $startDay tot $endTime $endDay';
+  }
 
   @override
   String spotDetailDateDaysAgo(int count) {
@@ -1130,7 +1162,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get spotDetailCommunitySectionSubtitle =>
-      'Zie wie hier traint en deel je sessie.';
+      'Zie wie hier traint of komt trainen, en deel je sessie.';
 
   @override
   String get spotDetailCommunityNobodyHere =>
@@ -1138,6 +1170,17 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get spotDetailCommunityNobodyHereShort => 'Nog niemand hier.';
+
+  @override
+  String get spotDetailCommunityNobodySocialShort =>
+      'Nog niemand hier of met een plan.';
+
+  @override
+  String get spotDetailCommunityActivityLoadError =>
+      'Kon activiteit niet laden.';
+
+  @override
+  String get spotDetailCommunityActivityEmpty => 'Niks om te tonen.';
 
   @override
   String get spotDetailCommunityViewAll => 'Alles tonen';
@@ -1153,11 +1196,160 @@ class AppLocalizationsNl extends AppLocalizations {
       'Log in om in te checken';
 
   @override
-  String get spotDetailCommunityPlanningVisitButton => 'Ik plan een bezoek';
+  String get spotDetailCommunityPlanningVisitButton => 'Training plannen';
 
   @override
   String get spotDetailCommunityPlanningVisitTooltip =>
-      'Binnenkort — laat de community weten wanneer je hier wilt trainen.';
+      'Stel in wanneer je hier gaat trainen.';
+
+  @override
+  String get spotDetailCommunityCheckInButtonTooltip =>
+      'Laat anderen zien dat je nu hier bent.';
+
+  @override
+  String get spotDetailCommunityEditCheckInButtonTooltip =>
+      'Je check-in aanpassen.';
+
+  @override
+  String get spotDetailCommunitySignInToCheckInButtonTooltip =>
+      'Log in om in te checken.';
+
+  @override
+  String get spotDetailCommunityPlanningToTrain => 'Plant te trainen';
+
+  @override
+  String get spotDetailCommunityNobodyPlanningShort => 'Nog geen plannen.';
+
+  @override
+  String get spotDetailCommunitySignInToPlanButton => 'Log in om te plannen';
+
+  @override
+  String get spotDetailCommunityEditTrainingPlanButton => 'Plan bewerken';
+
+  @override
+  String get spotCheckInDialogTitle => 'Check in';
+
+  @override
+  String get spotCheckInDialogTitleEdit => 'Check-in bewerken';
+
+  @override
+  String get spotCheckInDialogIntroNew =>
+      'Laat anderen weten dat je hier traint en ongeveer tot wanneer. Bij openbaar delen verschijn je op de community van deze spot tot je eindtijd.';
+
+  @override
+  String get spotCheckInDialogIntroEdit =>
+      'Pas aankomst- en eindtijd, zichtbaarheid en je notitie aan.';
+
+  @override
+  String get spotDetailSessionNoteLabel => 'Notitie (optioneel)';
+
+  @override
+  String get spotDetailSessionNoteHint => 'bijv. skills of oefeningen';
+
+  @override
+  String get spotTrainingPlanDialogTitle => 'Training hier plannen';
+
+  @override
+  String get spotTrainingPlanDialogTitleEdit => 'Trainingsplan bewerken';
+
+  @override
+  String get spotTrainingPlanDialogBody =>
+      'Stel in wanneer je wilt beginnen en eindigen. Openbare plannen verschijnen op de community van deze spot naast anderen die delen.';
+
+  @override
+  String get spotTrainingPlanDialogSharePublic => 'Openbaar delen';
+
+  @override
+  String get spotTrainingPlanDialogShareSub =>
+      'Zet uit om alleen jij het plan ziet.';
+
+  @override
+  String get spotTrainingPlanDialogStartLabel => 'Start';
+
+  @override
+  String get spotTrainingPlanDialogEndLabel => 'Einde';
+
+  @override
+  String get spotTrainingPlanDialogSave => 'Opslaan';
+
+  @override
+  String get spotTrainingPlanDialogCancel => 'Annuleren';
+
+  @override
+  String get spotTrainingPlanDialogDelete => 'Plan verwijderen';
+
+  @override
+  String get spotTrainingPlanDialogDeleteTitle => 'Dit plan verwijderen?';
+
+  @override
+  String get spotTrainingPlanDialogDeleteBody =>
+      'Je kunt later altijd een nieuw plan maken.';
+
+  @override
+  String get spotTrainingPlanValidationOrder => 'Einde moet na de start zijn.';
+
+  @override
+  String get spotTrainingPlanValidationMinDuration => 'Minimaal 15 minuten.';
+
+  @override
+  String get spotTrainingPlanValidationMaxDuration => 'Maximaal 12 uur.';
+
+  @override
+  String get spotTrainingPlanValidationStartTooFar =>
+      'Start mag niet meer dan 30 dagen vooruit zijn.';
+
+  @override
+  String get spotTrainingPlanValidationEndNotFuture =>
+      'Einde moet in de toekomst liggen.';
+
+  @override
+  String get spotTrainingPlanValidationInvalid => 'Ongeldig tijdsbereik.';
+
+  @override
+  String get spotDetailTrainingPlanSaved => 'Trainingsplan opgeslagen';
+
+  @override
+  String get spotDetailTrainingPlanUpdated => 'Trainingsplan bijgewerkt';
+
+  @override
+  String get spotDetailTrainingPlanFailed => 'Trainingsplan opslaan mislukt';
+
+  @override
+  String get spotDetailTrainingPlanRemoved => 'Trainingsplan verwijderd';
+
+  @override
+  String get spotDetailTrainingPlanDeleteFailed =>
+      'Trainingsplan verwijderen mislukt';
+
+  @override
+  String get spotTrainingPlanListDialogTitle => 'Plant te trainen';
+
+  @override
+  String get spotTrainingPlanListDialogSubtitle =>
+      'Mensen met een openbaar plan voor deze spot.';
+
+  @override
+  String get spotTrainingPlanListDialogClose => 'Sluiten';
+
+  @override
+  String get spotTrainingPlanListEmpty => 'Nog geen openbare plannen.';
+
+  @override
+  String get spotTrainingPlanListLoadError => 'Kon trainingsplannen niet laden';
+
+  @override
+  String get spotTrainingPlanEditMine => 'Plan bewerken';
+
+  @override
+  String get spotTrainingPlanOnlyYou => 'Alleen jij';
+
+  @override
+  String get spotTrainingPlanUnnamedPerson => 'Iemand';
+
+  @override
+  String spotTrainingPlanTimeRange(String start, String end) {
+    return '$start – $end';
+  }
 
   @override
   String get spotDetailHiddenBanner =>

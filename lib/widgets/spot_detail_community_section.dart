@@ -1,15 +1,19 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/spot_detail_ui.dart';
 import '../l10n/app_localizations.dart';
 import '../models/spot_check_in.dart';
+import '../models/spot_training_plan.dart';
 import '../services/auth_service.dart';
 import '../services/spot_check_in_service.dart';
+import '../services/spot_training_plan_service.dart';
+import '../utils/community_activity_time_formatting.dart';
 import 'spot_check_in_presence.dart';
+import 'spot_detail_community_activity_dialog.dart';
+import 'training_plan_presence.dart';
 
 /// Spot detail: compact community strip — tight when empty (usual case), slightly
 /// richer when people are checked in (social proof).
@@ -19,12 +23,16 @@ class SpotDetailCommunitySection extends StatefulWidget {
     required this.spotId,
     required this.onNewCheckIn,
     required this.onEditCheckIn,
+    required this.onNewTrainingPlan,
+    required this.onEditTrainingPlan,
     required this.onLoginRequired,
   });
 
   final String spotId;
   final Future<void> Function() onNewCheckIn;
   final Future<void> Function(SpotCheckIn existing) onEditCheckIn;
+  final Future<void> Function() onNewTrainingPlan;
+  final Future<void> Function(SpotTrainingPlan existing) onEditTrainingPlan;
   final VoidCallback onLoginRequired;
 
   @override
@@ -40,6 +48,8 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
 
   Stream<List<SpotCheckIn>>? _publicStream;
   Stream<SpotCheckIn?>? _myStream;
+  Stream<List<SpotTrainingPlan>>? _publicPlansStream;
+  Stream<SpotTrainingPlan?>? _myPlanStream;
   Object? _lastUid = _uidUnset;
   String? _cachedSpotId;
 
@@ -49,6 +59,7 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
     if (oldWidget.spotId != widget.spotId) {
       _cachedSpotId = null;
       _publicStream = null;
+      _publicPlansStream = null;
       _lastUid = _uidUnset;
     }
   }
@@ -57,11 +68,13 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
   void didChangeDependencies() {
     super.didChangeDependencies();
     final svc = Provider.of<SpotCheckInService>(context, listen: false);
+    final planSvc = Provider.of<SpotTrainingPlanService>(context, listen: false);
     final auth = Provider.of<AuthService>(context);
     final uid = auth.currentUser?.uid;
     if (_cachedSpotId != widget.spotId) {
       _cachedSpotId = widget.spotId;
       _publicStream = svc.watchPublicCheckIns(widget.spotId);
+      _publicPlansStream = planSvc.watchPublicPlansForSpot(widget.spotId);
       _lastUid = _uidUnset;
     }
     if (uid != _lastUid) {
@@ -69,13 +82,16 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
       _myStream = uid == null
           ? Stream.value(null)
           : svc.watchMyCheckIn(widget.spotId);
+      _myPlanStream = uid == null
+          ? Stream.value(null)
+          : planSvc.watchMyPlanForSpot(widget.spotId);
     }
   }
 
   String _plainTooltipFor(CheckInAvatarEntry entry) {
     final l10n = AppLocalizations.of(context)!;
     final c = entry.checkIn;
-    final until = DateFormat('h:mm a').format(c.expectedEndAt.toLocal());
+    final until = communityFriendlyCheckInUntil(c.expectedEndAt, l10n);
     final comment = c.comment?.trim();
     if (entry.showPrivateBadge) {
       final head = l10n.spotCheckInTooltipPrivate(until);
@@ -95,26 +111,37 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
     return head;
   }
 
+  static const double _kPresenceRingWidth = 2;
+
   Widget _stackedAvatar(
     BuildContext context,
     ThemeData theme,
     CheckInAvatarEntry entry,
     double radius,
   ) {
+    final cs = theme.colorScheme;
     final c = entry.checkIn;
+    final innerR = math.max(4.0, radius - _kPresenceRingWidth);
     final avatar = CircleAvatar(
-      radius: radius,
-      backgroundColor: theme.colorScheme.surfaceContainerHighest,
+      radius: innerR,
+      backgroundColor: cs.surfaceContainerHighest,
       backgroundImage: c.photoURL != null ? NetworkImage(c.photoURL!) : null,
       child: c.photoURL == null
           ? Text(
               (c.displayName?.isNotEmpty == true ? c.displayName![0] : '?')
                   .toUpperCase(),
               style: theme.textTheme.labelSmall?.copyWith(
-                fontSize: math.max(11, radius * 0.85),
+                fontSize: math.max(11, innerR * 0.85),
               ),
             )
           : null,
+    );
+
+    /// Primary ring = “here now” (live check-in).
+    final ringed = CircleAvatar(
+      radius: radius,
+      backgroundColor: cs.primary,
+      child: avatar,
     );
 
     Widget target;
@@ -126,12 +153,12 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
           clipBehavior: Clip.none,
           alignment: Alignment.center,
           children: [
-            avatar,
+            ringed,
             Positioned(
               right: -1,
               bottom: -1,
               child: Material(
-                color: theme.colorScheme.surface,
+                color: cs.surface,
                 elevation: 1,
                 shape: const CircleBorder(),
                 child: Padding(
@@ -139,7 +166,7 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
                   child: Icon(
                     Icons.lock_outline,
                     size: radius * 0.65,
-                    color: theme.colorScheme.primary,
+                    color: cs.primary,
                   ),
                 ),
               ),
@@ -148,7 +175,7 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
         ),
       );
     } else {
-      target = avatar;
+      target = ringed;
     }
 
     return Tooltip(
@@ -199,12 +226,173 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
     );
   }
 
+  String _trainingTooltipFor(TrainingPlanAvatarEntry entry) {
+    final l10n = AppLocalizations.of(context)!;
+    final p = entry.plan;
+    final timeRange = communityFriendlyPlannedTrainingStart(
+      p.plannedStartAt,
+      l10n,
+    );
+    final comment = p.comment?.trim();
+    if (entry.showPrivateBadge) {
+      final head = l10n.spotTrainingPlanTooltipPrivate(timeRange);
+      if (comment != null && comment.isNotEmpty) {
+        return '$head\n$comment';
+      }
+      return head;
+    }
+    final name = p.displayName?.trim();
+    final who = (name != null && name.isNotEmpty)
+        ? name
+        : l10n.spotCheckInUnnamedPerson;
+    final head = l10n.spotTrainingPlanTooltipPublic(who, timeRange);
+    if (comment != null && comment.isNotEmpty) {
+      return '$head\n$comment';
+    }
+    return head;
+  }
+
+  Widget _stackedAvatarTraining(
+    BuildContext context,
+    ThemeData theme,
+    TrainingPlanAvatarEntry entry,
+    double radius,
+  ) {
+    final cs = theme.colorScheme;
+    final planAccent = cs.secondary;
+    final p = entry.plan;
+    final innerR = math.max(4.0, radius - _kPresenceRingWidth);
+    final avatar = CircleAvatar(
+      radius: innerR,
+      backgroundColor: cs.surfaceContainerHighest,
+      backgroundImage: p.photoURL != null ? NetworkImage(p.photoURL!) : null,
+      child: p.photoURL == null
+          ? Text(
+              (p.displayName?.isNotEmpty == true ? p.displayName![0] : '?')
+                  .toUpperCase(),
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontSize: math.max(11, innerR * 0.85),
+              ),
+            )
+          : null,
+    );
+
+    /// Secondary-colored ring = “planning ahead” (not live yet).
+    final ringed = CircleAvatar(
+      radius: radius,
+      backgroundColor: planAccent,
+      child: avatar,
+    );
+
+    Widget target;
+    if (entry.showPrivateBadge) {
+      target = SizedBox(
+        width: radius * 2,
+        height: radius * 2,
+        child: Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.center,
+          children: [
+            ringed,
+            Positioned(
+              right: -1,
+              bottom: -1,
+              child: Material(
+                color: cs.surface,
+                elevation: 1,
+                shape: const CircleBorder(),
+                child: Padding(
+                  padding: const EdgeInsets.all(2),
+                  child: Icon(
+                    Icons.lock_outline,
+                    size: radius * 0.65,
+                    color: planAccent,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    } else {
+      target = ringed;
+    }
+
+    return Tooltip(
+      message: _trainingTooltipFor(entry),
+      child: target,
+    );
+  }
+
+  Widget _avatarStackRowTraining(
+    BuildContext context,
+    ThemeData theme,
+    List<TrainingPlanAvatarEntry> entries,
+  ) {
+    const maxShown = 6;
+    final shown = entries.take(maxShown).toList();
+    final extra = entries.length - shown.length;
+    final extraStyle = theme.textTheme.labelMedium?.copyWith(
+      fontWeight: FontWeight.w600,
+    );
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: shown.isEmpty ? 0 : (shown.length - 1) * _avatarOverlap + _avatarRadius * 2,
+          height: _avatarRadius * 2,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              for (var i = 0; i < shown.length; i++)
+                Positioned(
+                  left: i * _avatarOverlap,
+                  child: _stackedAvatarTraining(
+                    context,
+                    theme,
+                    shown[i],
+                    _avatarRadius,
+                  ),
+                ),
+            ],
+          ),
+        ),
+        if (extra > 0) ...[
+          const SizedBox(width: 6),
+          Text('+$extra', style: extraStyle),
+        ],
+      ],
+    );
+  }
+
   Widget _planningControl({
     required ThemeData theme,
     required AppLocalizations l10n,
     required bool compact,
+    required bool authenticated,
+    required SpotTrainingPlan? myPlan,
   }) {
     final tip = l10n.spotDetailCommunityPlanningVisitTooltip;
+    void onPressed() {
+      if (!authenticated) {
+        widget.onLoginRequired();
+        return;
+      }
+      final m = myPlan;
+      if (m != null) {
+        widget.onEditTrainingPlan(m);
+      } else {
+        widget.onNewTrainingPlan();
+      }
+    }
+
+    final label = !authenticated
+        ? l10n.spotDetailCommunitySignInToPlanButton
+        : (myPlan != null
+            ? l10n.spotDetailCommunityEditTrainingPlanButton
+            : l10n.spotDetailCommunityPlanningVisitButton);
+
     if (compact) {
       return Tooltip(
         message: tip,
@@ -212,11 +400,11 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
           visualDensity: VisualDensity.compact,
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-          onPressed: null,
+          onPressed: onPressed,
           icon: Icon(
             Icons.event_available_outlined,
             size: 22,
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+            color: theme.colorScheme.primary,
           ),
         ),
       );
@@ -224,11 +412,11 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
     return Tooltip(
       message: tip,
       child: OutlinedButton(
-        onPressed: null,
+        onPressed: onPressed,
         style: OutlinedButton.styleFrom(
           visualDensity: VisualDensity.compact,
         ),
-        child: Text(l10n.spotDetailCommunityPlanningVisitButton),
+        child: Text(label),
       ),
     );
   }
@@ -248,37 +436,45 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
     }
 
     if (!authenticated) {
-      return SizedBox(
-        width: double.infinity,
-        child: FilledButton.tonalIcon(
-          onPressed: widget.onLoginRequired,
-          icon: const Icon(Icons.place_outlined, size: 18),
-          label: Text(l10n.spotDetailCommunitySignInToCheckInButton),
-          style: FilledButton.styleFrom(
-            visualDensity: VisualDensity.compact,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      return Tooltip(
+        message: l10n.spotDetailCommunitySignInToCheckInButtonTooltip,
+        child: SizedBox(
+          width: double.infinity,
+          child: FilledButton.tonalIcon(
+            onPressed: widget.onLoginRequired,
+            icon: const Icon(Icons.place_outlined, size: 18),
+            label: Text(l10n.spotDetailCommunitySignInToCheckInButton),
+            style: FilledButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            ),
           ),
         ),
       );
     }
 
     final checkedIn = mine != null;
-    return SizedBox(
-      width: double.infinity,
-      child: FilledButton.tonalIcon(
-        onPressed: onCheckInPressed,
-        icon: Icon(
-          checkedIn ? Icons.edit_location_alt_outlined : Icons.place_outlined,
-          size: 18,
-        ),
-        label: Text(
-          checkedIn
-              ? l10n.spotDetailCommunityEditCheckInButton
-              : l10n.spotDetailCommunityCheckInButton,
-        ),
-        style: FilledButton.styleFrom(
-          visualDensity: VisualDensity.compact,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+    return Tooltip(
+      message: checkedIn
+          ? l10n.spotDetailCommunityEditCheckInButtonTooltip
+          : l10n.spotDetailCommunityCheckInButtonTooltip,
+      child: SizedBox(
+        width: double.infinity,
+        child: FilledButton.tonalIcon(
+          onPressed: onCheckInPressed,
+          icon: Icon(
+            checkedIn ? Icons.edit_location_alt_outlined : Icons.place_outlined,
+            size: 18,
+          ),
+          label: Text(
+            checkedIn
+                ? l10n.spotDetailCommunityEditCheckInButton
+                : l10n.spotDetailCommunityCheckInButton,
+          ),
+          style: FilledButton.styleFrom(
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          ),
         ),
       ),
     );
@@ -292,7 +488,11 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
     final auth = Provider.of<AuthService>(context);
 
     Widget body;
-    if (auth.isLoading || _publicStream == null || _myStream == null) {
+    if (auth.isLoading ||
+        _publicStream == null ||
+        _myStream == null ||
+        _publicPlansStream == null ||
+        _myPlanStream == null) {
       body = SizedBox(
         height: 36,
         child: Align(
@@ -314,138 +514,221 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
           return StreamBuilder<SpotCheckIn?>(
             stream: _myStream,
             builder: (context, mySnap) {
-              final entries =
-                  buildCheckInAvatarEntries(publicSnap.data ?? [], mySnap.data);
-              final hasPeople = entries.isNotEmpty;
-              final mine = mySnap.data;
+              return StreamBuilder<List<SpotTrainingPlan>>(
+                stream: _publicPlansStream,
+                builder: (context, plansPublicSnap) {
+                  return StreamBuilder<SpotTrainingPlan?>(
+                    stream: _myPlanStream,
+                    builder: (context, myPlanSnap) {
+                      final entries = buildCheckInAvatarEntries(
+                        publicSnap.data ?? [],
+                        mySnap.data,
+                      );
+                      final hasPeople = entries.isNotEmpty;
+                      final mine = mySnap.data;
 
-              final presenceBlock = hasPeople
-                  ? Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () =>
-                            showCheckInsListDialog(context, theme, widget.spotId),
-                        borderRadius: BorderRadius.circular(10),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 2),
-                          child: Row(
-                            children: [
-                              _avatarStackRow(context, theme, entries),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  l10n.spotDetailCommunityViewAll,
-                                  style: theme.textTheme.labelLarge?.copyWith(
-                                    color: cs.primary,
-                                    fontWeight: FontWeight.w600,
+                      final planningEntries = buildTrainingPlanAvatarEntries(
+                        plansPublicSnap.data ?? [],
+                        myPlanSnap.data,
+                      );
+                      final hasPlanningPresence = planningEntries.isNotEmpty;
+                      final myPlan = myPlanSnap.data;
+
+                      final unifiedSocialStrip =
+                          !hasPeople && !hasPlanningPresence
+                              ? Text(
+                                  l10n.spotDetailCommunityNobodySocialShort,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    height: 1.3,
+                                    color: cs.onSurface.withValues(alpha: 0.75),
                                   ),
-                                  maxLines: 1,
+                                  maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              Icon(
-                                Icons.chevron_right,
-                                size: 20,
-                                color: cs.primary,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    )
-                  : Text.rich(
-                      TextSpan(
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          height: 1.3,
-                          color: cs.onSurface.withValues(alpha: 0.75),
-                        ),
-                        children: [
-                          TextSpan(
-                            text: l10n.spotDetailPresenceHereNow,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                          TextSpan(
-                            text: ' · ${l10n.spotDetailCommunityNobodyHereShort}',
-                          ),
-                        ],
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    );
-
-              return LayoutBuilder(
-                builder: (context, c) {
-                  final wide = c.maxWidth > 520;
-                  final planning = _planningControl(
-                    theme: theme,
-                    l10n: l10n,
-                    compact: !hasPeople,
-                  );
-
-                  final checkIn = _checkInButton(
-                    l10n: l10n,
-                    authenticated: auth.isAuthenticated,
-                    mine: mine,
-                  );
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            Icons.groups_2_outlined,
-                            size: 20,
-                            color: cs.primary,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  l10n.spotDetailCommunitySectionTitle,
-                                  style: theme.textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                if (hasPeople) ...[
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    l10n.spotDetailCommunitySectionSubtitle,
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: cs.onSurface.withValues(alpha: 0.68),
-                                      height: 1.3,
+                                )
+                              : Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () => showSpotCommunityActivityDialog(
+                                      context,
+                                      theme,
+                                      widget.spotId,
+                                    ),
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 2,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          if (hasPeople) ...[
+                                            Tooltip(
+                                              message:
+                                                  l10n.spotDetailPresenceHereNow,
+                                              child: Icon(
+                                                Icons.place_outlined,
+                                                size: 17,
+                                                color: cs.primary,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 5),
+                                            _avatarStackRow(
+                                              context,
+                                              theme,
+                                              entries,
+                                            ),
+                                          ],
+                                          if (hasPeople &&
+                                              hasPlanningPresence)
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 8,
+                                              ),
+                                              child: Text(
+                                                '·',
+                                                style: theme
+                                                    .textTheme.titleMedium
+                                                    ?.copyWith(
+                                                  color: cs.onSurface
+                                                      .withValues(alpha: 0.35),
+                                                  height: 1,
+                                                ),
+                                              ),
+                                            ),
+                                          if (hasPlanningPresence) ...[
+                                            Tooltip(
+                                              message: l10n
+                                                  .spotDetailCommunityPlanningToTrain,
+                                              child: Icon(
+                                                Icons.event_available_outlined,
+                                                size: 17,
+                                                color: cs.secondary,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 5),
+                                            _avatarStackRowTraining(
+                                              context,
+                                              theme,
+                                              planningEntries,
+                                            ),
+                                          ],
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              l10n.spotDetailCommunityViewAll,
+                                              style: theme.textTheme.labelLarge
+                                                  ?.copyWith(
+                                                color: cs.primary,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          Icon(
+                                            Icons.chevron_right,
+                                            size: 20,
+                                            color: cs.primary,
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
+                                );
+
+                      return LayoutBuilder(
+                        builder: (context, c) {
+                          final wide = c.maxWidth > 520;
+                          final stripEmpty =
+                              !hasPeople && !hasPlanningPresence;
+                          /// Icon-only in the title row when narrow and no avatars;
+                          /// on wide layouts the plan control sits in the button row.
+                          final showTopRightPlanning = stripEmpty && !wide;
+                          final planning = _planningControl(
+                            theme: theme,
+                            l10n: l10n,
+                            compact: stripEmpty && !wide,
+                            authenticated: auth.isAuthenticated,
+                            myPlan: myPlan,
+                          );
+
+                          final checkIn = _checkInButton(
+                            l10n: l10n,
+                            authenticated: auth.isAuthenticated,
+                            mine: mine,
+                          );
+
+                          final anySocialStrip = hasPeople || hasPlanningPresence;
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Icon(
+                                    Icons.groups_2_outlined,
+                                    size: 20,
+                                    color: cs.primary,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          l10n.spotDetailCommunitySectionTitle,
+                                          style: theme.textTheme.titleSmall
+                                              ?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        if (hasPeople ||
+                                            hasPlanningPresence) ...[
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            l10n
+                                                .spotDetailCommunitySectionSubtitle,
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                              color: cs.onSurface.withValues(
+                                                alpha: 0.68,
+                                              ),
+                                              height: 1.3,
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                  if (showTopRightPlanning) planning,
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              unifiedSocialStrip,
+                              const SizedBox(height: 10),
+                              if (wide)
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(child: checkIn),
+                                    const SizedBox(width: 10),
+                                    Expanded(child: planning),
+                                  ],
+                                )
+                              else ...[
+                                checkIn,
+                                if (anySocialStrip) ...[
+                                  const SizedBox(height: 8),
+                                  planning,
                                 ],
                               ],
-                            ),
-                          ),
-                          if (!hasPeople) planning,
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      presenceBlock,
-                      const SizedBox(height: 10),
-                      if (wide && hasPeople)
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(child: checkIn),
-                            const SizedBox(width: 10),
-                            Expanded(child: planning),
-                          ],
-                        )
-                      else ...[
-                        checkIn,
-                        if (hasPeople) ...[
-                          const SizedBox(height: 8),
-                          planning,
-                        ],
-                      ],
-                    ],
+                            ],
+                          );
+                        },
+                      );
+                    },
                   );
                 },
               );

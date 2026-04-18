@@ -1369,14 +1369,26 @@ abstract class AppLocalizations {
   /// Avatar tooltip: public check-in
   ///
   /// In en, this message translates to:
-  /// **'{name} is here now at this spot (until {time})'**
+  /// **'{name} is here now until {time}'**
   String spotCheckInTooltipPublic(String name, String time);
 
   /// Avatar tooltip: private check-in
   ///
   /// In en, this message translates to:
-  /// **'You\'re here now at this spot until {time} — only you can see this check-in'**
+  /// **'You\'re here now until {time} — only you can see this check-in'**
   String spotCheckInTooltipPrivate(String time);
+
+  /// Avatar tooltip: public training plan
+  ///
+  /// In en, this message translates to:
+  /// **'{name} plans to train here {timeRange}'**
+  String spotTrainingPlanTooltipPublic(String name, String timeRange);
+
+  /// Avatar tooltip: private training plan
+  ///
+  /// In en, this message translates to:
+  /// **'You plan to train here {timeRange} — only you can see this plan'**
+  String spotTrainingPlanTooltipPrivate(String timeRange);
 
   /// No description provided for @spotDetailRouteErrorLoading.
   ///
@@ -1557,6 +1569,33 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'yesterday'**
   String get spotDetailDateYesterday;
+
+  /// No description provided for @communityDateTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'tomorrow'**
+  String get communityDateTomorrow;
+
+  /// Training window on one calendar day for community UI
+  ///
+  /// In en, this message translates to:
+  /// **'From {startTime} until {endTime} {day}'**
+  String communityActivityTrainSameDay(
+    String startTime,
+    String endTime,
+    String day,
+  );
+
+  /// Training window spanning two calendar days for community UI
+  ///
+  /// In en, this message translates to:
+  /// **'From {startTime} {startDay} until {endTime} {endDay}'**
+  String communityActivityTrainSpan(
+    String startTime,
+    String startDay,
+    String endTime,
+    String endDay,
+  );
 
   /// No description provided for @spotDetailDateDaysAgo.
   ///
@@ -1967,7 +2006,7 @@ abstract class AppLocalizations {
   /// No description provided for @spotDetailCommunitySectionSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'See who’s training here and share your session.'**
+  /// **'See who’s training or planning to be here, and share your session.'**
   String get spotDetailCommunitySectionSubtitle;
 
   /// No description provided for @spotDetailCommunityNobodyHere.
@@ -1981,6 +2020,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No one’s here yet.'**
   String get spotDetailCommunityNobodyHereShort;
+
+  /// No description provided for @spotDetailCommunityNobodySocialShort.
+  ///
+  /// In en, this message translates to:
+  /// **'No one’s here or planning ahead yet.'**
+  String get spotDetailCommunityNobodySocialShort;
+
+  /// No description provided for @spotDetailCommunityActivityLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load community activity.'**
+  String get spotDetailCommunityActivityLoadError;
+
+  /// No description provided for @spotDetailCommunityActivityEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to show right now.'**
+  String get spotDetailCommunityActivityEmpty;
 
   /// No description provided for @spotDetailCommunityViewAll.
   ///
@@ -2009,14 +2066,284 @@ abstract class AppLocalizations {
   /// No description provided for @spotDetailCommunityPlanningVisitButton.
   ///
   /// In en, this message translates to:
-  /// **'Planning a visit'**
+  /// **'Plan to train'**
   String get spotDetailCommunityPlanningVisitButton;
 
   /// No description provided for @spotDetailCommunityPlanningVisitTooltip.
   ///
   /// In en, this message translates to:
-  /// **'Coming soon — tell the community when you plan to train here.'**
+  /// **'Set when you’ll train here.'**
   String get spotDetailCommunityPlanningVisitTooltip;
+
+  /// Hover text for Community Check in button (no active check-in)
+  ///
+  /// In en, this message translates to:
+  /// **'Show others you’re here now.'**
+  String get spotDetailCommunityCheckInButtonTooltip;
+
+  /// Hover text for Community Edit check-in button
+  ///
+  /// In en, this message translates to:
+  /// **'Update your check-in.'**
+  String get spotDetailCommunityEditCheckInButtonTooltip;
+
+  /// Hover text for Community sign-in-to-check-in button
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to check in here.'**
+  String get spotDetailCommunitySignInToCheckInButtonTooltip;
+
+  /// No description provided for @spotDetailCommunityPlanningToTrain.
+  ///
+  /// In en, this message translates to:
+  /// **'Planning to train'**
+  String get spotDetailCommunityPlanningToTrain;
+
+  /// No description provided for @spotDetailCommunityNobodyPlanningShort.
+  ///
+  /// In en, this message translates to:
+  /// **'No upcoming plans yet.'**
+  String get spotDetailCommunityNobodyPlanningShort;
+
+  /// No description provided for @spotDetailCommunitySignInToPlanButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to plan a visit'**
+  String get spotDetailCommunitySignInToPlanButton;
+
+  /// No description provided for @spotDetailCommunityEditTrainingPlanButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit plan'**
+  String get spotDetailCommunityEditTrainingPlanButton;
+
+  /// Title for new check-in dialog on spot detail
+  ///
+  /// In en, this message translates to:
+  /// **'Check in'**
+  String get spotCheckInDialogTitle;
+
+  /// Title for edit check-in dialog on spot detail
+  ///
+  /// In en, this message translates to:
+  /// **'Edit check-in'**
+  String get spotCheckInDialogTitleEdit;
+
+  /// Intro paragraph for new check-in dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Let others know you’re training here and roughly when you’ll finish. If you share publicly, you show on this spot’s Community strip until that time.'**
+  String get spotCheckInDialogIntroNew;
+
+  /// Intro paragraph for edit check-in dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Change your arrival and end times, who can see this check-in, and your note.'**
+  String get spotCheckInDialogIntroEdit;
+
+  /// Shared label for optional note field on check-in and training-plan dialogs
+  ///
+  /// In en, this message translates to:
+  /// **'Note (optional)'**
+  String get spotDetailSessionNoteLabel;
+
+  /// Placeholder hint for optional session note
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. skills or drills you’re working on'**
+  String get spotDetailSessionNoteHint;
+
+  /// No description provided for @spotTrainingPlanDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan to train here'**
+  String get spotTrainingPlanDialogTitle;
+
+  /// No description provided for @spotTrainingPlanDialogTitleEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit training plan'**
+  String get spotTrainingPlanDialogTitleEdit;
+
+  /// No description provided for @spotTrainingPlanDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Set when you plan to start and finish. Public plans appear on this spot’s Community strip alongside other people who’ve shared.'**
+  String get spotTrainingPlanDialogBody;
+
+  /// No description provided for @spotTrainingPlanDialogSharePublic.
+  ///
+  /// In en, this message translates to:
+  /// **'Share publicly'**
+  String get spotTrainingPlanDialogSharePublic;
+
+  /// No description provided for @spotTrainingPlanDialogShareSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off to keep this plan visible only to you.'**
+  String get spotTrainingPlanDialogShareSub;
+
+  /// No description provided for @spotTrainingPlanDialogStartLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Starts'**
+  String get spotTrainingPlanDialogStartLabel;
+
+  /// No description provided for @spotTrainingPlanDialogEndLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Ends'**
+  String get spotTrainingPlanDialogEndLabel;
+
+  /// No description provided for @spotTrainingPlanDialogSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get spotTrainingPlanDialogSave;
+
+  /// No description provided for @spotTrainingPlanDialogCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get spotTrainingPlanDialogCancel;
+
+  /// No description provided for @spotTrainingPlanDialogDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove plan'**
+  String get spotTrainingPlanDialogDelete;
+
+  /// No description provided for @spotTrainingPlanDialogDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this plan?'**
+  String get spotTrainingPlanDialogDeleteTitle;
+
+  /// No description provided for @spotTrainingPlanDialogDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You can create a new plan anytime.'**
+  String get spotTrainingPlanDialogDeleteBody;
+
+  /// No description provided for @spotTrainingPlanValidationOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'End time must be after start time.'**
+  String get spotTrainingPlanValidationOrder;
+
+  /// No description provided for @spotTrainingPlanValidationMinDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Window must be at least 15 minutes.'**
+  String get spotTrainingPlanValidationMinDuration;
+
+  /// No description provided for @spotTrainingPlanValidationMaxDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Window cannot be longer than 12 hours.'**
+  String get spotTrainingPlanValidationMaxDuration;
+
+  /// No description provided for @spotTrainingPlanValidationStartTooFar.
+  ///
+  /// In en, this message translates to:
+  /// **'Start time cannot be more than 30 days away.'**
+  String get spotTrainingPlanValidationStartTooFar;
+
+  /// No description provided for @spotTrainingPlanValidationEndNotFuture.
+  ///
+  /// In en, this message translates to:
+  /// **'End time must be in the future.'**
+  String get spotTrainingPlanValidationEndNotFuture;
+
+  /// No description provided for @spotTrainingPlanValidationInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid time range.'**
+  String get spotTrainingPlanValidationInvalid;
+
+  /// No description provided for @spotDetailTrainingPlanSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Training plan saved'**
+  String get spotDetailTrainingPlanSaved;
+
+  /// No description provided for @spotDetailTrainingPlanUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Training plan updated'**
+  String get spotDetailTrainingPlanUpdated;
+
+  /// No description provided for @spotDetailTrainingPlanFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save training plan'**
+  String get spotDetailTrainingPlanFailed;
+
+  /// No description provided for @spotDetailTrainingPlanRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Training plan removed'**
+  String get spotDetailTrainingPlanRemoved;
+
+  /// No description provided for @spotDetailTrainingPlanDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not remove training plan'**
+  String get spotDetailTrainingPlanDeleteFailed;
+
+  /// No description provided for @spotTrainingPlanListDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Planning to train'**
+  String get spotTrainingPlanListDialogTitle;
+
+  /// No description provided for @spotTrainingPlanListDialogSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'People who shared a public plan for this spot.'**
+  String get spotTrainingPlanListDialogSubtitle;
+
+  /// No description provided for @spotTrainingPlanListDialogClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get spotTrainingPlanListDialogClose;
+
+  /// No description provided for @spotTrainingPlanListEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No public plans yet.'**
+  String get spotTrainingPlanListEmpty;
+
+  /// No description provided for @spotTrainingPlanListLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load training plans'**
+  String get spotTrainingPlanListLoadError;
+
+  /// No description provided for @spotTrainingPlanEditMine.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit plan'**
+  String get spotTrainingPlanEditMine;
+
+  /// No description provided for @spotTrainingPlanOnlyYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Only you'**
+  String get spotTrainingPlanOnlyYou;
+
+  /// No description provided for @spotTrainingPlanUnnamedPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone'**
+  String get spotTrainingPlanUnnamedPerson;
+
+  /// No description provided for @spotTrainingPlanTimeRange.
+  ///
+  /// In en, this message translates to:
+  /// **'{start} – {end}'**
+  String spotTrainingPlanTimeRange(String start, String end);
 
   /// No description provided for @spotDetailHiddenBanner.
   ///

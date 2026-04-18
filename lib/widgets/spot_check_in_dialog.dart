@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/spot_check_in.dart';
 import '../utils/check_in_time.dart';
 
@@ -290,6 +291,7 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final now = DateTime.now();
     final canSubStart = _isEdit && _canSubtractStart();
     final canAddStart = _isEdit && _canAddStart();
@@ -303,6 +305,7 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
     final err = cs.error;
 
     return AlertDialog(
+      constraints: const BoxConstraints(maxWidth: 520),
       title: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -314,7 +317,7 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              _isEdit ? 'Edit check-in' : 'Check in',
+              _isEdit ? l10n.spotCheckInDialogTitleEdit : l10n.spotCheckInDialogTitle,
               style: theme.textTheme.titleLarge,
             ),
           ),
@@ -328,8 +331,8 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
           children: [
             Text(
               _isEdit
-                  ? 'Adjust when you arrived, when you left or plan to leave, visibility, and your note.'
-                  : 'Log that you’re training now at this spot.',
+                  ? l10n.spotCheckInDialogIntroEdit
+                  : l10n.spotCheckInDialogIntroNew,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: cs.onSurfaceVariant,
                 height: 1.35,
@@ -477,10 +480,10 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
             const SizedBox(height: 20),
             TextField(
               controller: _commentController,
-              decoration: const InputDecoration(
-                labelText: 'Comment (optional)',
-                hintText: 'e.g. what you plan to work on',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.spotDetailSessionNoteLabel,
+                hintText: l10n.spotDetailSessionNoteHint,
+                border: const OutlineInputBorder(),
                 isDense: true,
               ),
               maxLength: SpotCheckIn.maxCommentLength,

@@ -8,7 +8,9 @@ import 'package:go_router/go_router.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import '../../models/spot.dart';
 import '../../models/spot_check_in.dart';
+import '../../models/spot_training_plan.dart';
 import '../../widgets/spot_check_in_dialog.dart';
+import '../../widgets/spot_training_plan_dialog.dart';
 import '../../services/spot_service.dart';
 import '../../services/spot_report_service.dart';
 import '../../services/auth_service.dart';
@@ -29,6 +31,7 @@ import '../../services/snackbar_service.dart';
 import '../../services/spot_list_service.dart';
 import '../../services/spot_tracking_service.dart';
 import '../../services/spot_check_in_service.dart';
+import '../../services/spot_training_plan_service.dart';
 import '../../services/feature_access_service.dart';
 import '../../models/spot_list.dart';
 import '../../utils/resized_spot_image_provider.dart';
@@ -295,6 +298,86 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       _showSuccessSnack(_l10n.spotDetailCheckInUpdated);
     } else {
       _showErrorSnack(svc.error ?? _l10n.spotDetailCheckInUpdateFailed);
+    }
+  }
+
+  Future<void> _showTrainingPlanDialog() async {
+    final spotId = _spot.id;
+    if (spotId == null) return;
+    final svc = Provider.of<SpotTrainingPlanService>(context, listen: false);
+    final existing = await svc.fetchMyActivePlanAtSpot(spotId);
+    if (!mounted) return;
+    final result = await showSpotTrainingPlanDialog(
+      context,
+      existingPlan: existing,
+    );
+    if (result == null || !mounted) return;
+    if (result is SpotTrainingPlanDialogDeleted) {
+      if (existing != null) {
+        final ok = await svc.deletePlan(existing.id);
+        if (!mounted) return;
+        if (ok) {
+          _showSuccessSnack(_l10n.spotDetailTrainingPlanRemoved);
+        } else {
+          _showErrorSnack(
+            svc.error ?? _l10n.spotDetailTrainingPlanDeleteFailed,
+          );
+        }
+      }
+      return;
+    }
+    if (result is! SpotTrainingPlanDialogSaved) return;
+    final ok = await svc.upsertPlan(
+      spotId: spotId,
+      plannedStartAt: result.plannedStartAt,
+      plannedEndAt: result.plannedEndAt,
+      isPrivate: result.isPrivate,
+      comment: result.comment,
+      spotName: _spot.name,
+    );
+    if (!mounted) return;
+    if (ok) {
+      _showSuccessSnack(
+        existing != null
+            ? _l10n.spotDetailTrainingPlanUpdated
+            : _l10n.spotDetailTrainingPlanSaved,
+      );
+    } else {
+      _showErrorSnack(svc.error ?? _l10n.spotDetailTrainingPlanFailed);
+    }
+  }
+
+  Future<void> _handleEditTrainingPlan(SpotTrainingPlan p) async {
+    final svc = Provider.of<SpotTrainingPlanService>(context, listen: false);
+    final result = await showSpotTrainingPlanDialog(
+      context,
+      existingPlan: p,
+    );
+    if (result == null || !mounted) return;
+    if (result is SpotTrainingPlanDialogDeleted) {
+      final ok = await svc.deletePlan(p.id);
+      if (!mounted) return;
+      if (ok) {
+        _showSuccessSnack(_l10n.spotDetailTrainingPlanRemoved);
+      } else {
+        _showErrorSnack(svc.error ?? _l10n.spotDetailTrainingPlanDeleteFailed);
+      }
+      return;
+    }
+    if (result is! SpotTrainingPlanDialogSaved) return;
+    final ok = await svc.upsertPlan(
+      spotId: p.spotId,
+      plannedStartAt: result.plannedStartAt,
+      plannedEndAt: result.plannedEndAt,
+      isPrivate: result.isPrivate,
+      comment: result.comment,
+      spotName: p.spotName ?? _spot.name,
+    );
+    if (!mounted) return;
+    if (ok) {
+      _showSuccessSnack(_l10n.spotDetailTrainingPlanUpdated);
+    } else {
+      _showErrorSnack(svc.error ?? _l10n.spotDetailTrainingPlanFailed);
     }
   }
 
@@ -2113,6 +2196,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             spotId: _spot.id!,
                             onNewCheckIn: _showCheckInDialog,
                             onEditCheckIn: _handleEditCheckIn,
+                            onNewTrainingPlan: _showTrainingPlanDialog,
+                            onEditTrainingPlan: _handleEditTrainingPlan,
                             onLoginRequired: () => context.go(
                               '/login?redirectTo=${Uri.encodeComponent('/spot/${_spot.id!}')}',
                             ),

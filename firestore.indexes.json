@@ -277,6 +277,33 @@
       ]
     },
     {
+      "collectionGroup": "spotTrainingPlans",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "spotId", "order": "ASCENDING" },
+        { "fieldPath": "isPrivate", "order": "ASCENDING" },
+        { "fieldPath": "plannedEndAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "spotTrainingPlans",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "spotId", "order": "ASCENDING" },
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "plannedEndAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "spotTrainingPlans",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "spotId", "order": "ASCENDING" },
+        { "fieldPath": "plannedEndAt", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "locationsOfInterest",
       "queryScope": "COLLECTION",
       "fields": [

@@ -63,6 +63,60 @@ service cloud.firestore {
       allow update: if request.auth != null && spotCheckInUpdateShape();
       allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
+
+    // Planned training windows at a spot (separate from live check-ins).
+    match /spotTrainingPlans/{planId} {
+      function spotTrainingPlanCommentOk(data) {
+        return !('comment' in data) ||
+          (data.comment is string && data.comment.size() <= 200);
+      }
+      // Window: 15m–12h; start may not be more than 30d in the future.
+      function spotTrainingPlanWindowOk(data) {
+        return data.plannedStartAt is timestamp
+          && data.plannedEndAt is timestamp
+          && data.plannedEndAt > data.plannedStartAt
+          && data.plannedEndAt >= data.plannedStartAt + duration.value(15, 'm')
+          && data.plannedEndAt <= data.plannedStartAt + duration.value(12, 'h')
+          && data.plannedStartAt <= request.time + duration.value(30, 'd');
+      }
+      function spotTrainingPlanCreateShape() {
+        return request.resource.data.userId == request.auth.uid
+          && request.resource.data.spotId is string
+          && request.resource.data.spotId.size() > 0
+          && request.resource.data.isPrivate is bool
+          && request.resource.data.createdAt == request.time
+          && spotTrainingPlanWindowOk(request.resource.data)
+          && request.resource.data.plannedEndAt > request.time
+          && spotTrainingPlanCommentOk(request.resource.data)
+          && (!('spotName' in request.resource.data) ||
+            (request.resource.data.spotName is string &&
+              request.resource.data.spotName.size() <= 500));
+      }
+      function spotTrainingPlanUpdateShape() {
+        return request.auth != null
+          && request.auth.uid == resource.data.userId
+          && request.resource.data.userId == resource.data.userId
+          && request.resource.data.spotId == resource.data.spotId
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.isPrivate is bool
+          && spotTrainingPlanWindowOk(request.resource.data)
+          && ((!('displayName' in resource.data)
+                && !('displayName' in request.resource.data))
+              || request.resource.data.displayName == resource.data.displayName)
+          && ((!('photoURL' in resource.data)
+                && !('photoURL' in request.resource.data))
+              || request.resource.data.photoURL == resource.data.photoURL)
+          && ((!('spotName' in resource.data)
+                && !('spotName' in request.resource.data))
+              || request.resource.data.spotName == resource.data.spotName)
+          && spotTrainingPlanCommentOk(request.resource.data);
+      }
+      allow read: if resource.data.isPrivate == false
+        || (request.auth != null && request.auth.uid == resource.data.userId);
+      allow create: if request.auth != null && spotTrainingPlanCreateShape();
+      allow update: if request.auth != null && spotTrainingPlanUpdateShape();
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
     
     // Users collection - users can only manage their own profile, admins can read/update all
     // Public profiles (isPublicProfile == true) are readable by anyone

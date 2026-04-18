@@ -3,7 +3,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -13,6 +12,7 @@ import '../services/spot_check_in_service.dart';
 import '../services/user_profile_service.dart';
 import 'spot_check_in_dialog.dart';
 import '../l10n/app_localizations.dart';
+import '../utils/community_activity_time_formatting.dart';
 
 /// Where [SpotCheckInPresenceStrip] is shown: detail header (tappable) vs spot card
 /// (tap passes through to the card; tooltips on hover).
@@ -448,7 +448,7 @@ class _SpotCheckInPresenceStripState extends State<SpotCheckInPresenceStrip> {
     final name = c.displayName?.trim();
     final who = (name != null && name.isNotEmpty) ? name : l10n.spotCheckInUnnamedPerson;
     final comment = c.comment?.trim();
-    final until = DateFormat('h:mm a').format(c.expectedEndAt.toLocal());
+    final until = communityFriendlyCheckInUntil(c.expectedEndAt, l10n);
     final headline = l10n.spotCheckInTooltipPublic(who, until);
     final baseStyle = _tooltipBaseTextStyle(context, theme);
     return _checkInTooltipSpanWithOptionalComment(
@@ -467,7 +467,7 @@ class _SpotCheckInPresenceStripState extends State<SpotCheckInPresenceStrip> {
   ) {
     final l10n = AppLocalizations.of(context)!;
     final comment = mine.comment?.trim();
-    final until = DateFormat('h:mm a').format(mine.expectedEndAt.toLocal());
+    final until = communityFriendlyCheckInUntil(mine.expectedEndAt, l10n);
     final headline = l10n.spotCheckInTooltipPrivate(until);
     final baseStyle = _tooltipBaseTextStyle(context, theme);
     return _checkInTooltipSpanWithOptionalComment(
@@ -688,7 +688,8 @@ class CheckInUserCard extends StatelessWidget {
     final isMine = uid != null && uid == c.userId;
     final name = c.displayName?.trim();
     final title = (name != null && name.isNotEmpty) ? name : 'Someone here';
-    final untilStr = DateFormat('h:mm a').format(c.expectedEndAt.toLocal());
+    final l10n = AppLocalizations.of(context)!;
+    final untilStr = communityFriendlyCheckInUntil(c.expectedEndAt, l10n);
     final comment = c.comment?.trim();
 
     return Card(

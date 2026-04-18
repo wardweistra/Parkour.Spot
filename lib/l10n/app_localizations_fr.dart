@@ -750,12 +750,22 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String spotCheckInTooltipPublic(String name, String time) {
-    return '$name est ici sur ce spot (jusqu’à $time)';
+    return '$name est ici maintenant jusqu’à $time';
   }
 
   @override
   String spotCheckInTooltipPrivate(String time) {
-    return 'Vous êtes ici sur ce spot jusqu’à $time — vous seul voyez ce check-in';
+    return 'Vous êtes ici maintenant jusqu’à $time — vous seul voyez ce check-in';
+  }
+
+  @override
+  String spotTrainingPlanTooltipPublic(String name, String timeRange) {
+    return '$name prévoit de s’entraîner ici $timeRange';
+  }
+
+  @override
+  String spotTrainingPlanTooltipPrivate(String timeRange) {
+    return 'Vous prévoyez de vous entraîner ici $timeRange — vous seul voyez ce plan';
   }
 
   @override
@@ -860,6 +870,28 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get spotDetailDateYesterday => 'hier';
+
+  @override
+  String get communityDateTomorrow => 'demain';
+
+  @override
+  String communityActivityTrainSameDay(
+    String startTime,
+    String endTime,
+    String day,
+  ) {
+    return 'De $startTime à $endTime $day';
+  }
+
+  @override
+  String communityActivityTrainSpan(
+    String startTime,
+    String startDay,
+    String endTime,
+    String endDay,
+  ) {
+    return 'De $startTime $startDay à $endTime $endDay';
+  }
 
   @override
   String spotDetailDateDaysAgo(int count) {
@@ -1140,7 +1172,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get spotDetailCommunitySectionSubtitle =>
-      'Voyez qui s’entraîne ici et partagez votre session.';
+      'Voyez qui s’entraîne ou prévoit de s’entraîner ici, et partagez votre séance.';
 
   @override
   String get spotDetailCommunityNobodyHere =>
@@ -1148,6 +1180,18 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get spotDetailCommunityNobodyHereShort => 'Personne pour l’instant.';
+
+  @override
+  String get spotDetailCommunityNobodySocialShort =>
+      'Personne ici ni de passage prévu pour l’instant.';
+
+  @override
+  String get spotDetailCommunityActivityLoadError =>
+      'Impossible de charger l’activité.';
+
+  @override
+  String get spotDetailCommunityActivityEmpty =>
+      'Rien à afficher pour le moment.';
 
   @override
   String get spotDetailCommunityViewAll => 'Tout voir';
@@ -1163,11 +1207,163 @@ class AppLocalizationsFr extends AppLocalizations {
       'Se connecter pour pointer';
 
   @override
-  String get spotDetailCommunityPlanningVisitButton => 'Je prévois une visite';
+  String get spotDetailCommunityPlanningVisitButton => 'Planifier une séance';
 
   @override
   String get spotDetailCommunityPlanningVisitTooltip =>
-      'Bientôt — indiquez à la communauté quand vous prévoyez de vous entraîner ici.';
+      'Indiquez quand vous vous entraînerez ici.';
+
+  @override
+  String get spotDetailCommunityCheckInButtonTooltip =>
+      'Montrez aux autres que vous êtes là maintenant.';
+
+  @override
+  String get spotDetailCommunityEditCheckInButtonTooltip =>
+      'Modifier votre pointage.';
+
+  @override
+  String get spotDetailCommunitySignInToCheckInButtonTooltip =>
+      'Connectez-vous pour pointer.';
+
+  @override
+  String get spotDetailCommunityPlanningToTrain => 'Prévoit de s’entraîner';
+
+  @override
+  String get spotDetailCommunityNobodyPlanningShort => 'Pas encore de plans.';
+
+  @override
+  String get spotDetailCommunitySignInToPlanButton =>
+      'Connectez-vous pour planifier';
+
+  @override
+  String get spotDetailCommunityEditTrainingPlanButton => 'Modifier le plan';
+
+  @override
+  String get spotCheckInDialogTitle => 'Pointer';
+
+  @override
+  String get spotCheckInDialogTitleEdit => 'Modifier le pointage';
+
+  @override
+  String get spotCheckInDialogIntroNew =>
+      'Indiquez que vous vous entraînez ici et environ jusqu’à quand. Si vous partagez publiquement, vous apparaissez sur la communauté de ce spot jusqu’à l’heure de fin.';
+
+  @override
+  String get spotCheckInDialogIntroEdit =>
+      'Modifiez les heures d’arrivée et de fin, la visibilité et votre note.';
+
+  @override
+  String get spotDetailSessionNoteLabel => 'Note (facultatif)';
+
+  @override
+  String get spotDetailSessionNoteHint => 'ex. figures ou objectifs de séance';
+
+  @override
+  String get spotTrainingPlanDialogTitle => 'Planifier une séance ici';
+
+  @override
+  String get spotTrainingPlanDialogTitleEdit =>
+      'Modifier le plan d’entraînement';
+
+  @override
+  String get spotTrainingPlanDialogBody =>
+      'Indiquez le début et la fin prévus. Les plans publics apparaissent sur la communauté de ce spot avec les autres personnes qui partagent.';
+
+  @override
+  String get spotTrainingPlanDialogSharePublic => 'Partager publiquement';
+
+  @override
+  String get spotTrainingPlanDialogShareSub =>
+      'Désactivez pour que vous seul·e voyiez le plan.';
+
+  @override
+  String get spotTrainingPlanDialogStartLabel => 'Début';
+
+  @override
+  String get spotTrainingPlanDialogEndLabel => 'Fin';
+
+  @override
+  String get spotTrainingPlanDialogSave => 'Enregistrer';
+
+  @override
+  String get spotTrainingPlanDialogCancel => 'Annuler';
+
+  @override
+  String get spotTrainingPlanDialogDelete => 'Retirer le plan';
+
+  @override
+  String get spotTrainingPlanDialogDeleteTitle => 'Retirer ce plan ?';
+
+  @override
+  String get spotTrainingPlanDialogDeleteBody =>
+      'Vous pourrez en créer un nouveau à tout moment.';
+
+  @override
+  String get spotTrainingPlanValidationOrder =>
+      'La fin doit être après le début.';
+
+  @override
+  String get spotTrainingPlanValidationMinDuration => 'Au moins 15 minutes.';
+
+  @override
+  String get spotTrainingPlanValidationMaxDuration => 'Au plus 12 heures.';
+
+  @override
+  String get spotTrainingPlanValidationStartTooFar =>
+      'Le début ne peut pas dépasser 30 jours.';
+
+  @override
+  String get spotTrainingPlanValidationEndNotFuture =>
+      'La fin doit être dans le futur.';
+
+  @override
+  String get spotTrainingPlanValidationInvalid => 'Plage horaire invalide.';
+
+  @override
+  String get spotDetailTrainingPlanSaved => 'Plan d’entraînement enregistré';
+
+  @override
+  String get spotDetailTrainingPlanUpdated => 'Plan d’entraînement mis à jour';
+
+  @override
+  String get spotDetailTrainingPlanFailed => 'Impossible d’enregistrer le plan';
+
+  @override
+  String get spotDetailTrainingPlanRemoved => 'Plan d’entraînement supprimé';
+
+  @override
+  String get spotDetailTrainingPlanDeleteFailed =>
+      'Impossible de supprimer le plan';
+
+  @override
+  String get spotTrainingPlanListDialogTitle => 'Prévoit de s’entraîner';
+
+  @override
+  String get spotTrainingPlanListDialogSubtitle =>
+      'Personnes ayant un plan public pour ce spot.';
+
+  @override
+  String get spotTrainingPlanListDialogClose => 'Fermer';
+
+  @override
+  String get spotTrainingPlanListEmpty => 'Pas encore de plans publics.';
+
+  @override
+  String get spotTrainingPlanListLoadError => 'Impossible de charger les plans';
+
+  @override
+  String get spotTrainingPlanEditMine => 'Modifier le plan';
+
+  @override
+  String get spotTrainingPlanOnlyYou => 'Seulement vous';
+
+  @override
+  String get spotTrainingPlanUnnamedPerson => 'Quelqu’un';
+
+  @override
+  String spotTrainingPlanTimeRange(String start, String end) {
+    return '$start – $end';
+  }
 
   @override
   String get spotDetailHiddenBanner =>
