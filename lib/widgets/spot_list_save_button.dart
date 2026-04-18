@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../constants/spot_detail_ui.dart';
 import '../l10n/app_localizations.dart';
 import '../services/auth_service.dart';
 import '../services/saved_spot_list_service.dart';
 import '../services/snackbar_service.dart';
+import 'spot_detail_quick_action_chip.dart';
 
 enum _SpotListSaveAction { login, save, unsave, viewSaved }
 
-/// Matches spot detail [Save] control: 44×44 circular bookmark + popup menu.
+/// Matches spot detail Save control: outlined chip (icon + label) + popup menu.
 class SpotListSaveButton extends StatelessWidget {
   final String listId;
 
@@ -30,27 +32,11 @@ class SpotListSaveButton extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 16),
             child: Align(
               alignment: Alignment.centerLeft,
-              child: SizedBox(
-                width: 44,
-                height: 44,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest.withValues(
-                      alpha: 0.6,
-                    ),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: colorScheme.primary,
-                      ),
-                    ),
-                  ),
-                ),
+              child: SpotDetailQuickActionChip(
+                icon: Icons.bookmark_border,
+                iconColor: colorScheme.onSurface.withValues(alpha: 0.38),
+                label: l10n.spotDetailLoading,
+                showSpinner: true,
               ),
             ),
           );
@@ -64,8 +50,8 @@ class SpotListSaveButton extends StatelessWidget {
               child: PopupMenuButton<_SpotListSaveAction>(
                 tooltip: l10n.spotListSaveTooltipSaveList,
                 position: PopupMenuPosition.under,
-                borderRadius: BorderRadius.circular(22),
-                splashRadius: 22,
+                borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
+                splashRadius: 20,
                 onSelected: (action) {
                   if (action == _SpotListSaveAction.login && context.mounted) {
                     context.go(_loginRedirect);
@@ -116,22 +102,10 @@ class SpotListSaveButton extends StatelessWidget {
                     ),
                   ];
                 },
-                child: SizedBox(
-                  width: 44,
-                  height: 44,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest.withValues(
-                        alpha: 0.6,
-                      ),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.bookmark_border,
-                      color: colorScheme.onSurface.withValues(alpha: 0.6),
-                      size: 24,
-                    ),
-                  ),
+                child: SpotDetailQuickActionChip(
+                  icon: Icons.bookmark_border,
+                  iconColor: colorScheme.onSurface.withValues(alpha: 0.75),
+                  label: l10n.spotDetailQuickActionSave,
                 ),
               ),
             ),
@@ -148,18 +122,22 @@ class SpotListSaveButton extends StatelessWidget {
             IconData icon;
             Color? iconColor;
             String tooltip;
+            String chipLabel;
             if (isBusy) {
               icon = Icons.bookmark_border;
               iconColor = colorScheme.onSurface.withValues(alpha: 0.38);
               tooltip = l10n.spotDetailSaveTooltipUpdating;
+              chipLabel = l10n.spotDetailSaveTooltipUpdating;
             } else if (isSaved) {
               icon = Icons.bookmark;
               iconColor = colorScheme.primary;
               tooltip = l10n.spotListSaveTooltipSavedList;
+              chipLabel = l10n.spotListSaveTooltipSavedList;
             } else {
               icon = Icons.bookmark_border;
               iconColor = colorScheme.onSurface.withValues(alpha: 0.6);
               tooltip = l10n.spotListSaveTooltipSaveList;
+              chipLabel = l10n.spotDetailQuickActionSave;
             }
 
             Future<void> handleAction(_SpotListSaveAction action) async {
@@ -217,8 +195,8 @@ class SpotListSaveButton extends StatelessWidget {
                   enabled: !isBusy,
                   tooltip: tooltip,
                   position: PopupMenuPosition.under,
-                  borderRadius: BorderRadius.circular(22),
-                  splashRadius: 22,
+                  borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
+                  splashRadius: 20,
                   onSelected: handleAction,
                   itemBuilder: (menuContext) {
                     final menuTheme = Theme.of(menuContext);
@@ -286,29 +264,11 @@ class SpotListSaveButton extends StatelessWidget {
                       ),
                     ];
                   },
-                  child: SizedBox(
-                    width: 44,
-                    height: 44,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerHighest.withValues(
-                          alpha: 0.6,
-                        ),
-                        shape: BoxShape.circle,
-                      ),
-                      child: isBusy
-                          ? Center(
-                              child: SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: colorScheme.primary,
-                                ),
-                              ),
-                            )
-                          : Icon(icon, color: iconColor, size: 24),
-                    ),
+                  child: SpotDetailQuickActionChip(
+                    icon: icon,
+                    iconColor: iconColor,
+                    label: chipLabel,
+                    showSpinner: isBusy,
                   ),
                 ),
               ),

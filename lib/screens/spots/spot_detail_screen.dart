@@ -35,6 +35,7 @@ import '../../models/spot_list.dart';
 import '../../utils/resized_spot_image_provider.dart';
 import '../../widgets/resized_spot_image.dart';
 import '../../widgets/spot_detail_community_section.dart';
+import '../../widgets/spot_detail_quick_action_chip.dart';
 import '../../utils/image_preparation.dart';
 import '../../services/user_profile_service.dart';
 import '../../services/jumpflix_service.dart';
@@ -827,8 +828,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         if (authService.isLoading) {
           return Padding(
             padding: EdgeInsets.only(bottom: bottom),
-            child: _spotDetailLabeledQuickActionContent(
-              context: context,
+            child: SpotDetailQuickActionChip(
               icon: Icons.edit_outlined,
               iconColor: Theme.of(
                 context,
@@ -1347,8 +1347,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
         return items;
       },
-      child: _spotDetailLabeledQuickActionContent(
-        context: context,
+      child: SpotDetailQuickActionChip(
         icon: Icons.edit_outlined,
         iconColor: Theme.of(
           context,
@@ -1878,17 +1877,15 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                             SpotDetailUi.surfaceRadius,
                                           ),
                                           onTap: _copySpotToClipboard,
-                                          child:
-                                              _spotDetailLabeledQuickActionContent(
-                                                context: context,
-                                                icon: Icons.share_outlined,
-                                                iconColor: Theme.of(context)
-                                                    .colorScheme
-                                                    .onSurface
-                                                    .withValues(alpha: 0.75),
-                                                label: _l10n
-                                                    .spotDetailQuickActionShare,
-                                              ),
+                                          child: SpotDetailQuickActionChip(
+                                            icon: Icons.share_outlined,
+                                            iconColor: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withValues(alpha: 0.75),
+                                            label: _l10n
+                                                .spotDetailQuickActionShare,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -7429,55 +7426,6 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
   }
 }
 
-/// Labeled chip for spot detail quick actions (wide layouts). Same shell for
-/// Save, Edit, and Share so the strip reads as one control family.
-Widget _spotDetailLabeledQuickActionContent({
-  required BuildContext context,
-  required IconData icon,
-  required Color? iconColor,
-  required String label,
-  bool showSpinner = false,
-}) {
-  final theme = Theme.of(context);
-  final cs = theme.colorScheme;
-  return ConstrainedBox(
-    constraints: const BoxConstraints(minHeight: 40),
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withValues(alpha: 0.45),
-        borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
-        border: SpotDetailUi.outlineBorder(cs),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (showSpinner)
-            SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: cs.primary,
-              ),
-            )
-          else
-            Icon(icon, size: 20, color: iconColor),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: theme.textTheme.labelLarge,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
 class _SpotSaveMenu extends StatelessWidget {
   final String spotId;
   final VoidCallback onAddToCustomList;
@@ -7506,8 +7454,7 @@ class _SpotSaveMenu extends StatelessWidget {
             padding: EdgeInsets.only(bottom: bottomInset),
             child: Align(
               alignment: Alignment.centerLeft,
-              child: _spotDetailLabeledQuickActionContent(
-                context: context,
+              child: SpotDetailQuickActionChip(
                 icon: Icons.bookmark_border,
                 iconColor: colorScheme.onSurface.withValues(alpha: 0.38),
                 label: l10n.spotDetailLoading,
@@ -7576,8 +7523,7 @@ class _SpotSaveMenu extends StatelessWidget {
                 ),
               ];
             },
-            child: _spotDetailLabeledQuickActionContent(
-              context: context,
+            child: SpotDetailQuickActionChip(
               icon: Icons.bookmark_border,
               iconColor: colorScheme.onSurface.withValues(alpha: 0.75),
               label: l10n.spotDetailQuickActionSave,
@@ -7820,8 +7766,7 @@ class _SpotSaveMenu extends StatelessWidget {
                   ],
                 ];
               },
-              child: _spotDetailLabeledQuickActionContent(
-                context: context,
+              child: SpotDetailQuickActionChip(
                 icon: icon,
                 iconColor: iconColor,
                 label: saveLabel,
