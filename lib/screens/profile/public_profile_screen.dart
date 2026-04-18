@@ -11,6 +11,7 @@ import '../../services/auth_service.dart';
 import '../../services/profile_picture_service.dart';
 import '../../services/url_service.dart';
 import '../../services/web_share_service.dart';
+import '../../services/snackbar_service.dart';
 import '../../models/user.dart' as app_user;
 import '../../models/spot_list.dart';
 import '../../services/spot_list_service.dart';
@@ -1749,15 +1750,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 
       await Clipboard.setData(ClipboardData(text: text));
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_l10n.publicProfileProfileCopiedToClipboard),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
+      SnackbarService.showClipboardCopied(
+        _l10n.publicProfileProfileCopiedToClipboard,
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

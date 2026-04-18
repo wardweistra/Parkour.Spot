@@ -828,15 +828,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
 
       await Clipboard.setData(ClipboardData(text: text));
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_l10n.spotListDetailCopiedToClipboard),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
+      SnackbarService.showClipboardCopied(_l10n.spotListDetailCopiedToClipboard);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -7,6 +7,7 @@ import '../models/spot.dart';
 import '../services/mobile_detection_service.dart';
 import '../services/url_service.dart';
 import '../services/web_share_service.dart';
+import '../services/snackbar_service.dart';
 import '../l10n/app_localizations.dart';
 import 'resized_spot_image.dart';
 import 'spot_check_in_presence.dart';
@@ -1018,16 +1019,8 @@ class _SpotCardState extends State<SpotCard> {
       }
 
       await Clipboard.setData(ClipboardData(text: text));
-      
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context)!.spotCardCopiedToClipboard),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
+
+      SnackbarService.showClipboardCopied(l10n.spotCardCopiedToClipboard);
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

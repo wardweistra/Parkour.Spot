@@ -2,30 +2,43 @@ import 'package:flutter/foundation.dart';
 import 'package:web/web.dart' as web;
 
 class MobileDetectionService {
+  /// Mobile / tablet browser user agent (web only).
+  ///
+  /// Use for APIs like Web Share where touch PCs or short windows should still
+  /// behave like desktop (clipboard + in-app feedback).
+  static bool get isMobileUserAgent {
+    if (!kIsWeb) return false;
+    try {
+      final userAgent = web.window.navigator.userAgent.toLowerCase();
+      return userAgent.contains('mobile') ||
+          userAgent.contains('android') ||
+          userAgent.contains('iphone') ||
+          userAgent.contains('ipad') ||
+          userAgent.contains('windows phone');
+    } catch (e) {
+      debugPrint('Error detecting mobile user agent: $e');
+      return false;
+    }
+  }
+
   /// Detects if the current device is mobile based on user agent and screen size
   /// This works specifically for web platforms
   static bool get isMobileDevice {
     if (!kIsWeb) return false;
-    
+
     try {
-      // Check user agent for mobile devices
-      final userAgent = web.window.navigator.userAgent.toLowerCase();
-      final isMobileUserAgent = userAgent.contains('mobile') || 
-                               userAgent.contains('android') || 
-                               userAgent.contains('iphone') || 
-                               userAgent.contains('ipad') ||
-                               userAgent.contains('windows phone');
-      
+      if (isMobileUserAgent) return true;
+
       // Check screen size (mobile devices typically have smaller screens)
       final screenWidth = web.window.screen.width;
       final screenHeight = web.window.screen.height;
       final isSmallScreen = screenWidth < 768 || screenHeight < 768;
-      
+
       // Check if device supports touch (most mobile devices do)
       final hasTouchSupport = web.window.navigator.maxTouchPoints > 0;
-      
-      // Consider it mobile if it has mobile user agent OR small screen with touch support
-      return isMobileUserAgent || (isSmallScreen && hasTouchSupport);
+
+      // Touch laptop or short window: still treat as mobile for layout / keyboard, etc.
+      return isSmallScreen && hasTouchSupport;
     } catch (e) {
       // Fallback: if we can't detect, assume it's not mobile
       debugPrint('Error detecting mobile device: $e');
