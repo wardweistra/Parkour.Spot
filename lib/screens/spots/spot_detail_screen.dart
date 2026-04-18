@@ -1994,14 +1994,36 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
+                                  _spotDetailAuthQuickActionControl(
+                                    stripBottomPadding: true,
+                                  ),
+                                  const SizedBox(width: 8),
                                   _SpotSaveMenu(
                                     spotId: _spot.id!,
                                     onAddToCustomList: _showAddToListDialog,
                                     stripBottomPadding: true,
                                   ),
                                   const SizedBox(width: 8),
-                                  _spotDetailAuthQuickActionControl(
-                                    stripBottomPadding: true,
+                                  Tooltip(
+                                    message: _l10n.spotDetailRatingTooltip,
+                                    child: Semantics(
+                                      button: true,
+                                      label: _l10n.spotDetailRatingTooltip,
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        borderRadius: BorderRadius.circular(
+                                          SpotDetailUi.surfaceRadius,
+                                        ),
+                                        clipBehavior: Clip.antiAlias,
+                                        child: InkWell(
+                                          borderRadius: BorderRadius.circular(
+                                            SpotDetailUi.surfaceRadius,
+                                          ),
+                                          onTap: _showSpotRatingSheet,
+                                          child: _spotDetailRatingQuickChip(),
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                   const SizedBox(width: 8),
                                   Tooltip(
@@ -2029,28 +2051,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                             label: _l10n
                                                 .spotDetailQuickActionShare,
                                           ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Tooltip(
-                                    message: _l10n.spotDetailRatingTooltip,
-                                    child: Semantics(
-                                      button: true,
-                                      label: _l10n.spotDetailRatingTooltip,
-                                      child: Material(
-                                        color: Colors.transparent,
-                                        borderRadius: BorderRadius.circular(
-                                          SpotDetailUi.surfaceRadius,
-                                        ),
-                                        clipBehavior: Clip.antiAlias,
-                                        child: InkWell(
-                                          borderRadius: BorderRadius.circular(
-                                            SpotDetailUi.surfaceRadius,
-                                          ),
-                                          onTap: _showSpotRatingSheet,
-                                          child: _spotDetailRatingQuickChip(),
                                         ),
                                       ),
                                     ),
