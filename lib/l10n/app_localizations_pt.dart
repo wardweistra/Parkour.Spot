@@ -1113,6 +1113,15 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailShareTooltip => 'Partilhar';
 
   @override
+  String get spotDetailQuickActionSave => 'Guardar';
+
+  @override
+  String get spotDetailQuickActionEdit => 'Editar';
+
+  @override
+  String get spotDetailQuickActionShare => 'Partilhar';
+
+  @override
   String get spotDetailPresenceHereNow => 'Aqui agora';
 
   @override

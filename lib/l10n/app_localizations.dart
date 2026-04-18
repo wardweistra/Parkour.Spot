@@ -1922,6 +1922,24 @@ abstract class AppLocalizations {
   /// **'Share'**
   String get spotDetailShareTooltip;
 
+  /// No description provided for @spotDetailQuickActionSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get spotDetailQuickActionSave;
+
+  /// No description provided for @spotDetailQuickActionEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get spotDetailQuickActionEdit;
+
+  /// No description provided for @spotDetailQuickActionShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get spotDetailQuickActionShare;
+
   /// No description provided for @spotDetailPresenceHereNow.
   ///
   /// In en, this message translates to:

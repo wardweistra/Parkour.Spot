@@ -22,6 +22,7 @@ import '../../widgets/moderator_action_fields.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/location_info_box.dart';
 import '../../constants/spot_attributes.dart';
+import '../../constants/spot_detail_ui.dart';
 import '../../services/geocoding_service.dart';
 import '../../widgets/spot_form/attributes_section.dart';
 import 'location_picker_screen.dart';
@@ -819,17 +820,45 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     }
   }
 
-  PopupMenuButton<_SpotMenuAction> _buildSpotActionsPopupMenu({
+  Widget _spotDetailAuthQuickActionControl({required bool stripBottomPadding}) {
+    final bottom = stripBottomPadding ? 0.0 : 12.0;
+    return Consumer<AuthService>(
+      builder: (context, authService, _) {
+        if (authService.isLoading) {
+          return Padding(
+            padding: EdgeInsets.only(bottom: bottom),
+            child: _spotDetailLabeledQuickActionContent(
+              context: context,
+              icon: Icons.edit_outlined,
+              iconColor: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.38),
+              label: _l10n.spotDetailLoading,
+              showSpinner: true,
+            ),
+          );
+        }
+        return Padding(
+          padding: EdgeInsets.only(bottom: bottom),
+          child: _buildSpotActionsPopupMenu(
+            authService: authService,
+            tooltip: _l10n.spotDetailEditReportTooltip,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSpotActionsPopupMenu({
     required AuthService authService,
-    required Widget child,
     String? tooltip,
   }) {
-    return PopupMenuButton<_SpotMenuAction>(
+    final menuTooltip = tooltip ?? _l10n.spotDetailMoreActionsTooltip;
+    final popup = PopupMenuButton<_SpotMenuAction>(
       position: PopupMenuPosition.under,
-      tooltip: tooltip ?? _l10n.spotDetailMoreActionsTooltip,
-      // Match circular 44×44 tap targets (InkWell defaults to square highlight).
-      borderRadius: BorderRadius.circular(22),
-      splashRadius: 22,
+      tooltip: menuTooltip,
+      borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
+      splashRadius: 20,
       onSelected: _onMenuActionSelected,
       itemBuilder: (menuContext) {
         final l10n = AppLocalizations.of(menuContext)!;
@@ -1318,8 +1347,16 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
         return items;
       },
-      child: child,
+      child: _spotDetailLabeledQuickActionContent(
+        context: context,
+        icon: Icons.edit_outlined,
+        iconColor: Theme.of(
+          context,
+        ).colorScheme.onSurface.withValues(alpha: 0.75),
+        label: _l10n.spotDetailQuickActionEdit,
+      ),
     );
+    return popup;
   }
 
   void _onMenuActionSelected(_SpotMenuAction action) async {
@@ -1808,115 +1845,57 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
                         // Save: want to visit / been here + optional custom list (guests see login CTA)
                         if (_spot.id != null) ...[
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _SpotSaveMenu(
-                                spotId: _spot.id!,
-                                onAddToCustomList: _showAddToListDialog,
-                              ),
-                              const SizedBox(width: 8),
-                              Consumer<AuthService>(
-                                builder: (context, authService, _) {
-                                  if (authService.isLoading) {
-                                    return Padding(
-                                      padding: const EdgeInsets.only(
-                                        bottom: 16,
-                                      ),
-                                      child: SizedBox(
-                                        width: 44,
-                                        height: 44,
-                                        child: DecoratedBox(
-                                          decoration: BoxDecoration(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .surfaceContainerHighest
-                                                .withValues(alpha: 0.6),
-                                            shape: BoxShape.circle,
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  _SpotSaveMenu(
+                                    spotId: _spot.id!,
+                                    onAddToCustomList: _showAddToListDialog,
+                                    stripBottomPadding: true,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  _spotDetailAuthQuickActionControl(
+                                    stripBottomPadding: true,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Tooltip(
+                                    message: _l10n.spotDetailShareTooltip,
+                                    child: Semantics(
+                                      button: true,
+                                      label: _l10n.spotDetailShareTooltip,
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        borderRadius: BorderRadius.circular(
+                                          SpotDetailUi.surfaceRadius,
+                                        ),
+                                        clipBehavior: Clip.antiAlias,
+                                        child: InkWell(
+                                          borderRadius: BorderRadius.circular(
+                                            SpotDetailUi.surfaceRadius,
                                           ),
-                                          child: Center(
-                                            child: SizedBox(
-                                              width: 22,
-                                              height: 22,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                color: Theme.of(
-                                                  context,
-                                                ).colorScheme.primary,
+                                          onTap: _copySpotToClipboard,
+                                          child:
+                                              _spotDetailLabeledQuickActionContent(
+                                                context: context,
+                                                icon: Icons.share_outlined,
+                                                iconColor: Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurface
+                                                    .withValues(alpha: 0.75),
+                                                label: _l10n
+                                                    .spotDetailQuickActionShare,
                                               ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                  return Padding(
-                                    padding: const EdgeInsets.only(
-                                      bottom: 16,
-                                    ),
-                                    child: _buildSpotActionsPopupMenu(
-                                      authService: authService,
-                                      tooltip: _l10n
-                                          .spotDetailEditReportTooltip,
-                                      child: SizedBox(
-                                        width: 44,
-                                        height: 44,
-                                        child: DecoratedBox(
-                                          decoration: BoxDecoration(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .surfaceContainerHighest
-                                                .withValues(alpha: 0.6),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Icon(
-                                            Icons.edit_outlined,
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurface
-                                                .withValues(alpha: 0.6),
-                                            size: 24,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                              const SizedBox(width: 8),
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                  bottom: 16,
-                                ),
-                                child: Tooltip(
-                                  message: _l10n.spotDetailShareTooltip,
-                                  child: Material(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .surfaceContainerHighest
-                                        .withValues(alpha: 0.6),
-                                    shape: const CircleBorder(),
-                                    clipBehavior: Clip.antiAlias,
-                                    child: InkWell(
-                                      onTap: _copySpotToClipboard,
-                                      customBorder: const CircleBorder(),
-                                      child: SizedBox(
-                                        width: 44,
-                                        height: 44,
-                                        child: Icon(
-                                          Icons.share,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface
-                                              .withValues(alpha: 0.6),
-                                          size: 24,
                                         ),
                                       ),
                                     ),
                                   ),
-                                ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
                           SpotDetailCommunitySection(
                             spotId: _spot.id!,
@@ -7450,11 +7429,67 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
   }
 }
 
+/// Labeled chip for spot detail quick actions (wide layouts). Same shell for
+/// Save, Edit, and Share so the strip reads as one control family.
+Widget _spotDetailLabeledQuickActionContent({
+  required BuildContext context,
+  required IconData icon,
+  required Color? iconColor,
+  required String label,
+  bool showSpinner = false,
+}) {
+  final theme = Theme.of(context);
+  final cs = theme.colorScheme;
+  return ConstrainedBox(
+    constraints: const BoxConstraints(minHeight: 40),
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
+        border: SpotDetailUi.outlineBorder(cs),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (showSpinner)
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: cs.primary,
+              ),
+            )
+          else
+            Icon(icon, size: 20, color: iconColor),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: theme.textTheme.labelLarge,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 class _SpotSaveMenu extends StatelessWidget {
   final String spotId;
   final VoidCallback onAddToCustomList;
 
-  const _SpotSaveMenu({required this.spotId, required this.onAddToCustomList});
+  /// When true, omit bottom padding (e.g. embedded in a horizontal strip).
+  final bool stripBottomPadding;
+
+  const _SpotSaveMenu({
+    required this.spotId,
+    required this.onAddToCustomList,
+    this.stripBottomPadding = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -7464,32 +7499,19 @@ class _SpotSaveMenu extends StatelessWidget {
         final theme = Theme.of(context);
         final colorScheme = theme.colorScheme;
 
+        final bottomInset = stripBottomPadding ? 0.0 : 12.0;
+
         if (authService.isLoading) {
           return Padding(
-            padding: const EdgeInsets.only(bottom: 16),
+            padding: EdgeInsets.only(bottom: bottomInset),
             child: Align(
               alignment: Alignment.centerLeft,
-              child: SizedBox(
-                width: 44,
-                height: 44,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest.withValues(
-                      alpha: 0.6,
-                    ),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: colorScheme.primary,
-                      ),
-                    ),
-                  ),
-                ),
+              child: _spotDetailLabeledQuickActionContent(
+                context: context,
+                icon: Icons.bookmark_border,
+                iconColor: colorScheme.onSurface.withValues(alpha: 0.38),
+                label: l10n.spotDetailLoading,
+                showSpinner: true,
               ),
             ),
           );
@@ -7498,85 +7520,72 @@ class _SpotSaveMenu extends StatelessWidget {
         if (!authService.isAuthenticated) {
           final loginRedirect =
               '/login?redirectTo=${Uri.encodeComponent('/spot/$spotId')}';
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: PopupMenuButton<_SpotSaveMenuAction>(
-                tooltip: l10n.spotDetailSaveMenuTooltip,
-                position: PopupMenuPosition.under,
-                borderRadius: BorderRadius.circular(22),
-                splashRadius: 22,
-                onSelected: (action) {
-                  if (action == _SpotSaveMenuAction.login && context.mounted) {
-                    context.go(loginRedirect);
-                  }
-                },
-                itemBuilder: (menuContext) {
-                  final menuTheme = Theme.of(menuContext);
-                  final menuL10n = AppLocalizations.of(menuContext)!;
-                  return <PopupMenuEntry<_SpotSaveMenuAction>>[
-                    PopupMenuItem<_SpotSaveMenuAction>(
-                      value: _SpotSaveMenuAction.login,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
+          final guestMenu = PopupMenuButton<_SpotSaveMenuAction>(
+            tooltip: l10n.spotDetailSaveMenuTooltip,
+            position: PopupMenuPosition.under,
+            borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
+            splashRadius: 20,
+            onSelected: (action) {
+              if (action == _SpotSaveMenuAction.login && context.mounted) {
+                context.go(loginRedirect);
+              }
+            },
+            itemBuilder: (menuContext) {
+              final menuTheme = Theme.of(menuContext);
+              final menuL10n = AppLocalizations.of(menuContext)!;
+              return <PopupMenuEntry<_SpotSaveMenuAction>>[
+                PopupMenuItem<_SpotSaveMenuAction>(
+                  value: _SpotSaveMenuAction.login,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        menuL10n.spotDetailSaveMenuSignInTitle,
+                        style: menuTheme.textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        menuL10n.spotDetailSaveMenuSignInBody,
+                        style: menuTheme.textTheme.bodySmall?.copyWith(
+                          color: menuTheme.colorScheme.onSurface.withValues(
+                            alpha: 0.85,
+                          ),
+                          height: 1.35,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
                         children: [
-                          Text(
-                            menuL10n.spotDetailSaveMenuSignInTitle,
-                            style: menuTheme.textTheme.titleSmall,
+                          Icon(
+                            Icons.login,
+                            size: 20,
+                            color: menuTheme.colorScheme.primary,
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(width: 8),
                           Text(
-                            menuL10n.spotDetailSaveMenuSignInBody,
-                            style: menuTheme.textTheme.bodySmall?.copyWith(
-                              color: menuTheme.colorScheme.onSurface.withValues(
-                                alpha: 0.85,
-                              ),
-                              height: 1.35,
+                            menuL10n.spotDetailSaveMenuLogInOrCreate,
+                            style: menuTheme.textTheme.labelLarge?.copyWith(
+                              color: menuTheme.colorScheme.primary,
                             ),
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.login,
-                                size: 20,
-                                color: menuTheme.colorScheme.primary,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                menuL10n.spotDetailSaveMenuLogInOrCreate,
-                                style: menuTheme.textTheme.labelLarge?.copyWith(
-                                  color: menuTheme.colorScheme.primary,
-                                ),
-                              ),
-                            ],
                           ),
                         ],
                       ),
-                    ),
-                  ];
-                },
-                child: SizedBox(
-                  width: 44,
-                  height: 44,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest.withValues(
-                        alpha: 0.6,
-                      ),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.bookmark_border,
-                      color: colorScheme.onSurface.withValues(alpha: 0.6),
-                      size: 24,
-                    ),
+                    ],
                   ),
                 ),
-              ),
+              ];
+            },
+            child: _spotDetailLabeledQuickActionContent(
+              context: context,
+              icon: Icons.bookmark_border,
+              iconColor: colorScheme.onSurface.withValues(alpha: 0.75),
+              label: l10n.spotDetailQuickActionSave,
             ),
+          );
+          return Padding(
+            padding: EdgeInsets.only(bottom: bottomInset),
+            child: Align(alignment: Alignment.centerLeft, child: guestMenu),
           );
         }
 
@@ -7613,6 +7622,14 @@ class _SpotSaveMenu extends StatelessWidget {
               iconColor = colorScheme.onSurface.withValues(alpha: 0.6);
               tooltip = l10n.spotDetailSaveTooltipGeneric;
             }
+
+            final saveLabel = isUpdating
+                ? l10n.spotDetailSaveTooltipUpdating
+                : inWantToVisit
+                ? l10n.spotDetailWantToVisit
+                : inVisited
+                ? l10n.spotDetailBeenHere
+                : l10n.spotDetailQuickActionSave;
 
             Future<void> handleAction(_SpotSaveMenuAction action) async {
               bool success = false;
@@ -7674,168 +7691,146 @@ class _SpotSaveMenu extends StatelessWidget {
               }
             }
 
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: PopupMenuButton<_SpotSaveMenuAction>(
-                  enabled: !isUpdating,
-                  tooltip: tooltip,
-                  position: PopupMenuPosition.under,
-                  borderRadius: BorderRadius.circular(22),
-                  splashRadius: 22,
-                  onSelected: (action) => handleAction(action),
-                  itemBuilder: (menuContext) {
-                    final menuTheme = Theme.of(menuContext);
-                    final menuL10n = AppLocalizations.of(menuContext)!;
-                    final primary = menuTheme.colorScheme.primary;
-                    return <PopupMenuEntry<_SpotSaveMenuAction>>[
-                      PopupMenuItem<_SpotSaveMenuAction>(
-                        value: _SpotSaveMenuAction.toggleWantToVisit,
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        child: Row(
-                          children: [
-                            SizedBox(
-                              width: 24,
-                              child: inWantToVisit
-                                  ? Icon(Icons.check, size: 20, color: primary)
-                                  : null,
-                            ),
-                            Expanded(
-                              child: Text(
-                                menuL10n.spotDetailWantToVisit,
-                                style: menuTheme.textTheme.bodyMedium,
-                              ),
-                            ),
-                            IconButton(
-                              tooltip: menuL10n.spotDetailViewFullListTooltip,
-                              icon: Icon(
-                                Icons.list_alt_outlined,
-                                size: 20,
-                                color: primary,
-                              ),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(
-                                minWidth: 40,
-                                minHeight: 40,
-                              ),
-                              onPressed: () {
-                                Navigator.pop(
-                                  menuContext,
-                                  _SpotSaveMenuAction.openWantToVisitList,
-                                );
-                              },
-                            ),
-                          ],
+            final saveMenu = PopupMenuButton<_SpotSaveMenuAction>(
+              enabled: !isUpdating,
+              tooltip: tooltip,
+              position: PopupMenuPosition.under,
+              borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
+              splashRadius: 20,
+              onSelected: (action) => handleAction(action),
+              itemBuilder: (menuContext) {
+                final menuTheme = Theme.of(menuContext);
+                final menuL10n = AppLocalizations.of(menuContext)!;
+                final primary = menuTheme.colorScheme.primary;
+                return <PopupMenuEntry<_SpotSaveMenuAction>>[
+                  PopupMenuItem<_SpotSaveMenuAction>(
+                    value: _SpotSaveMenuAction.toggleWantToVisit,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 24,
+                          child: inWantToVisit
+                              ? Icon(Icons.check, size: 20, color: primary)
+                              : null,
                         ),
-                      ),
-                      PopupMenuItem<_SpotSaveMenuAction>(
-                        value: _SpotSaveMenuAction.toggleVisited,
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        child: Row(
-                          children: [
-                            SizedBox(
-                              width: 24,
-                              child: inVisited
-                                  ? Icon(Icons.check, size: 20, color: primary)
-                                  : null,
-                            ),
-                            Expanded(
-                              child: Text(
-                                menuL10n.spotDetailBeenHere,
-                                style: menuTheme.textTheme.bodyMedium,
-                              ),
-                            ),
-                            IconButton(
-                              tooltip: menuL10n.spotDetailViewFullListTooltip,
-                              icon: Icon(
-                                Icons.list_alt_outlined,
-                                size: 20,
-                                color: primary,
-                              ),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(
-                                minWidth: 40,
-                                minHeight: 40,
-                              ),
-                              onPressed: () {
-                                Navigator.pop(
-                                  menuContext,
-                                  _SpotSaveMenuAction.openVisitedList,
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (hasSpotListAccess) ...[
-                        const PopupMenuDivider(),
-                        PopupMenuItem<_SpotSaveMenuAction>(
-                          value: _SpotSaveMenuAction.addToCustomList,
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.playlist_add,
-                                size: 20,
-                                color: menuTheme.colorScheme.primary,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      menuL10n.spotDetailAddToCustomList,
-                                      style: menuTheme.textTheme.bodyMedium,
-                                    ),
-                                    Text(
-                                      menuL10n
-                                          .spotDetailAddToCustomListSubtitle,
-                                      style: menuTheme.textTheme.bodySmall
-                                          ?.copyWith(
-                                            color: menuTheme
-                                                .colorScheme
-                                                .onSurface
-                                                .withValues(alpha: 0.6),
-                                            fontSize: 11,
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
+                        Expanded(
+                          child: Text(
+                            menuL10n.spotDetailWantToVisit,
+                            style: menuTheme.textTheme.bodyMedium,
                           ),
                         ),
-                      ],
-                    ];
-                  },
-                  child: SizedBox(
-                    width: 44,
-                    height: 44,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerHighest.withValues(
-                          alpha: 0.6,
+                        IconButton(
+                          tooltip: menuL10n.spotDetailViewFullListTooltip,
+                          icon: Icon(
+                            Icons.list_alt_outlined,
+                            size: 20,
+                            color: primary,
+                          ),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 40,
+                            minHeight: 40,
+                          ),
+                          onPressed: () {
+                            Navigator.pop(
+                              menuContext,
+                              _SpotSaveMenuAction.openWantToVisitList,
+                            );
+                          },
                         ),
-                        shape: BoxShape.circle,
-                      ),
-                      child: isUpdating
-                          ? Center(
-                              child: SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: colorScheme.primary,
-                                ),
-                              ),
-                            )
-                          : Icon(icon, color: iconColor, size: 24),
+                      ],
                     ),
                   ),
-                ),
+                  PopupMenuItem<_SpotSaveMenuAction>(
+                    value: _SpotSaveMenuAction.toggleVisited,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 24,
+                          child: inVisited
+                              ? Icon(Icons.check, size: 20, color: primary)
+                              : null,
+                        ),
+                        Expanded(
+                          child: Text(
+                            menuL10n.spotDetailBeenHere,
+                            style: menuTheme.textTheme.bodyMedium,
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: menuL10n.spotDetailViewFullListTooltip,
+                          icon: Icon(
+                            Icons.list_alt_outlined,
+                            size: 20,
+                            color: primary,
+                          ),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 40,
+                            minHeight: 40,
+                          ),
+                          onPressed: () {
+                            Navigator.pop(
+                              menuContext,
+                              _SpotSaveMenuAction.openVisitedList,
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (hasSpotListAccess) ...[
+                    const PopupMenuDivider(),
+                    PopupMenuItem<_SpotSaveMenuAction>(
+                      value: _SpotSaveMenuAction.addToCustomList,
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.playlist_add,
+                            size: 20,
+                            color: menuTheme.colorScheme.primary,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  menuL10n.spotDetailAddToCustomList,
+                                  style: menuTheme.textTheme.bodyMedium,
+                                ),
+                                Text(
+                                  menuL10n.spotDetailAddToCustomListSubtitle,
+                                  style: menuTheme.textTheme.bodySmall
+                                      ?.copyWith(
+                                        color: menuTheme.colorScheme.onSurface
+                                            .withValues(alpha: 0.6),
+                                        fontSize: 11,
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ];
+              },
+              child: _spotDetailLabeledQuickActionContent(
+                context: context,
+                icon: icon,
+                iconColor: iconColor,
+                label: saveLabel,
+                showSpinner: isUpdating,
               ),
+            );
+            return Padding(
+              padding: EdgeInsets.only(bottom: bottomInset),
+              child: Align(alignment: Alignment.centerLeft, child: saveMenu),
             );
           },
         );

@@ -1107,6 +1107,15 @@ class AppLocalizationsNl extends AppLocalizations {
   String get spotDetailShareTooltip => 'Delen';
 
   @override
+  String get spotDetailQuickActionSave => 'Opslaan';
+
+  @override
+  String get spotDetailQuickActionEdit => 'Bewerken';
+
+  @override
+  String get spotDetailQuickActionShare => 'Delen';
+
+  @override
   String get spotDetailPresenceHereNow => 'Nu hier';
 
   @override

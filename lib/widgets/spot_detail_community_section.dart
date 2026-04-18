@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../constants/spot_detail_ui.dart';
 import '../l10n/app_localizations.dart';
 import '../models/spot_check_in.dart';
 import '../services/auth_service.dart';
@@ -457,10 +458,8 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: cs.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: cs.outline.withValues(alpha: 0.26),
-          ),
+          borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
+          border: SpotDetailUi.outlineBorder(cs),
         ),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
