@@ -313,7 +313,8 @@
     },
     {
       "collectionGroup": "locationsOfInterest",
-      "queryScope": "COLLECTION",
+      "queryScope": "COLLECTION_GROUP",
+      "density": "SPARSE_ALL",
       "fields": [
         { "fieldPath": "enabled", "order": "ASCENDING" },
         { "fieldPath": "latitude", "order": "ASCENDING" },
@@ -323,6 +324,17 @@
     {
       "collectionGroup": "locationsOfInterest",
       "queryScope": "COLLECTION",
+      "density": "SPARSE_ALL",
+      "fields": [
+        { "fieldPath": "enabled", "order": "ASCENDING" },
+        { "fieldPath": "latitude", "order": "ASCENDING" },
+        { "fieldPath": "longitude", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "locationsOfInterest",
+      "queryScope": "COLLECTION",
+      "density": "SPARSE_ALL",
       "fields": [
         { "fieldPath": "enabled", "order": "ASCENDING" },
         { "fieldPath": "kind", "order": "ASCENDING" },
