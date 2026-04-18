@@ -637,8 +637,9 @@ class SearchScreenState extends State<SearchScreen>
     if (!force) {
       if (syncService.sourceSummaries.isNotEmpty) return;
       if (_hasRequestedSyncSourcesForFilters &&
-          syncService.summariesError == null)
+          syncService.summariesError == null) {
         return;
+      }
     }
 
     _hasRequestedSyncSourcesForFilters = true;
@@ -1308,8 +1309,9 @@ class SearchScreenState extends State<SearchScreen>
             // Defer spot reload so the tab switch paints immediately
             if (_mapController != null) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted && _mapController != null)
+                if (mounted && _mapController != null) {
                   _loadSpotsForCurrentView();
+                }
               });
             }
           },
@@ -3002,8 +3004,9 @@ class SearchScreenState extends State<SearchScreen>
                             () async {
                               if (_mapController == null ||
                                   _longPressStartPosition == null ||
-                                  !mounted)
+                                  !mounted) {
                                 return;
+                              }
 
                               // Mark as handled IMMEDIATELY before any async operations
                               // This prevents onPointerUp from clearing it
