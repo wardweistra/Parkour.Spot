@@ -1038,8 +1038,12 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     }
   }
 
-  Widget _spotDetailAuthQuickActionControl({required bool stripBottomPadding}) {
+  Widget _spotDetailAuthQuickActionControl({
+    required bool stripBottomPadding,
+    required bool compactQuickActions,
+  }) {
     final bottom = stripBottomPadding ? 0.0 : 12.0;
+    final showChipLabel = !compactQuickActions;
     return Consumer<AuthService>(
       builder: (context, authService, _) {
         if (authService.isLoading) {
@@ -1052,6 +1056,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
               ).colorScheme.onSurface.withValues(alpha: 0.38),
               label: _l10n.spotDetailLoading,
               showSpinner: true,
+              showLabel: showChipLabel,
             ),
           );
         }
@@ -1060,6 +1065,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           child: _buildSpotActionsPopupMenu(
             authService: authService,
             tooltip: _l10n.spotDetailEditReportTooltip,
+            compactQuickActions: compactQuickActions,
           ),
         );
       },
@@ -1069,6 +1075,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   Widget _buildSpotActionsPopupMenu({
     required AuthService authService,
     String? tooltip,
+    required bool compactQuickActions,
   }) {
     final menuTooltip = tooltip ?? _l10n.spotDetailMoreActionsTooltip;
     final popup = PopupMenuButton<_SpotMenuAction>(
@@ -1570,6 +1577,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           context,
         ).colorScheme.onSurface.withValues(alpha: 0.75),
         label: _l10n.spotDetailQuickActionEdit,
+        showLabel: !compactQuickActions,
       ),
     );
     return popup;
@@ -2011,74 +2019,94 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         if (_spot.id != null) ...[
                           Padding(
                             padding: const EdgeInsets.only(bottom: 12),
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  _spotDetailAuthQuickActionControl(
-                                    stripBottomPadding: true,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  _SpotSaveMenu(
-                                    spotId: _spot.id!,
-                                    onAddToCustomList: _showAddToListDialog,
-                                    stripBottomPadding: true,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Tooltip(
-                                    message: _l10n.spotDetailRatingTooltip,
-                                    child: Semantics(
-                                      button: true,
-                                      label: _l10n.spotDetailRatingTooltip,
-                                      child: Material(
-                                        color: Colors.transparent,
-                                        borderRadius: BorderRadius.circular(
-                                          SpotDetailUi.surfaceRadius,
-                                        ),
-                                        clipBehavior: Clip.antiAlias,
-                                        child: InkWell(
-                                          borderRadius: BorderRadius.circular(
-                                            SpotDetailUi.surfaceRadius,
-                                          ),
-                                          onTap: _showSpotRatingSheet,
-                                          child: _spotDetailRatingQuickChip(),
-                                        ),
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final compactQuickActions =
+                                    constraints.maxWidth <
+                                        SpotDetailUi
+                                            .quickActionsCompactLayoutMaxWidth;
+                                return SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      _spotDetailAuthQuickActionControl(
+                                        stripBottomPadding: true,
+                                        compactQuickActions:
+                                            compactQuickActions,
                                       ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Tooltip(
-                                    message: _l10n.spotDetailShareTooltip,
-                                    child: Semantics(
-                                      button: true,
-                                      label: _l10n.spotDetailShareTooltip,
-                                      child: Material(
-                                        color: Colors.transparent,
-                                        borderRadius: BorderRadius.circular(
-                                          SpotDetailUi.surfaceRadius,
-                                        ),
-                                        clipBehavior: Clip.antiAlias,
-                                        child: InkWell(
-                                          borderRadius: BorderRadius.circular(
-                                            SpotDetailUi.surfaceRadius,
-                                          ),
-                                          onTap: _copySpotToClipboard,
-                                          child: SpotDetailQuickActionChip(
-                                            icon: Icons.share_outlined,
-                                            iconColor: Theme.of(context)
-                                                .colorScheme
-                                                .onSurface
-                                                .withValues(alpha: 0.75),
-                                            label: _l10n
-                                                .spotDetailQuickActionShare,
+                                      const SizedBox(width: 8),
+                                      _SpotSaveMenu(
+                                        spotId: _spot.id!,
+                                        onAddToCustomList:
+                                            _showAddToListDialog,
+                                        stripBottomPadding: true,
+                                        compactQuickActions:
+                                            compactQuickActions,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Tooltip(
+                                        message:
+                                            _l10n.spotDetailRatingTooltip,
+                                        child: Semantics(
+                                          button: true,
+                                          label: _l10n.spotDetailRatingTooltip,
+                                          child: Material(
+                                            color: Colors.transparent,
+                                            borderRadius:
+                                                BorderRadius.circular(
+                                              SpotDetailUi.surfaceRadius,
+                                            ),
+                                            clipBehavior: Clip.antiAlias,
+                                            child: InkWell(
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                SpotDetailUi.surfaceRadius,
+                                              ),
+                                              onTap: _showSpotRatingSheet,
+                                              child:
+                                                  _spotDetailRatingQuickChip(),
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
+                                      const SizedBox(width: 8),
+                                      Tooltip(
+                                        message: _l10n.spotDetailShareTooltip,
+                                        child: Semantics(
+                                          button: true,
+                                          label: _l10n.spotDetailShareTooltip,
+                                          child: Material(
+                                            color: Colors.transparent,
+                                            borderRadius:
+                                                BorderRadius.circular(
+                                              SpotDetailUi.surfaceRadius,
+                                            ),
+                                            clipBehavior: Clip.antiAlias,
+                                            child: InkWell(
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                SpotDetailUi.surfaceRadius,
+                                              ),
+                                              onTap: _copySpotToClipboard,
+                                              child: SpotDetailQuickActionChip(
+                                                icon: Icons.share_outlined,
+                                                iconColor: Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurface
+                                                    .withValues(alpha: 0.75),
+                                                label: _l10n
+                                                    .spotDetailQuickActionShare,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
+                                );
+                              },
                             ),
                           ),
                           SpotDetailCommunitySection(
@@ -7263,14 +7291,20 @@ class _SpotSaveMenu extends StatelessWidget {
   /// When true, omit bottom padding (e.g. embedded in a horizontal strip).
   final bool stripBottomPadding;
 
-  const _SpotSaveMenu({
+  /// Icon-only chips when the action row is below [SpotDetailUi.quickActionsCompactLayoutMaxWidth].
+  final bool compactQuickActions;
+
+  // ignore: prefer_const_constructors_in_immutables
+  _SpotSaveMenu({
     required this.spotId,
     required this.onAddToCustomList,
     this.stripBottomPadding = false,
+    required this.compactQuickActions,
   });
 
   @override
   Widget build(BuildContext context) {
+    final showChipLabel = !compactQuickActions;
     return Consumer<AuthService>(
       builder: (context, authService, _) {
         final l10n = AppLocalizations.of(context)!;
@@ -7289,6 +7323,7 @@ class _SpotSaveMenu extends StatelessWidget {
                 iconColor: colorScheme.onSurface.withValues(alpha: 0.38),
                 label: l10n.spotDetailLoading,
                 showSpinner: true,
+                showLabel: showChipLabel,
               ),
             ),
           );
@@ -7357,6 +7392,7 @@ class _SpotSaveMenu extends StatelessWidget {
               icon: Icons.bookmark_border,
               iconColor: colorScheme.onSurface.withValues(alpha: 0.75),
               label: l10n.spotDetailQuickActionSave,
+              showLabel: showChipLabel,
             ),
           );
           return Padding(
@@ -7601,6 +7637,7 @@ class _SpotSaveMenu extends StatelessWidget {
                 iconColor: iconColor,
                 label: saveLabel,
                 showSpinner: isUpdating,
+                showLabel: showChipLabel,
               ),
             );
             return Padding(
