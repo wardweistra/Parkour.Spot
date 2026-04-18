@@ -112,6 +112,18 @@
   "@notificationsMarkAsReadFailed": {
     "description": "Snack bar when single mark-as-read fails"
   },
+  "notificationsMarkAsUnreadFailed": "Couldn’t mark as unread. Try again.",
+  "@notificationsMarkAsUnreadFailed": {
+    "description": "Snack bar when mark-as-unread fails"
+  },
+  "notificationsMarkAsUnreadHint": "Long-press to mark as unread",
+  "@notificationsMarkAsUnreadHint": {
+    "description": "Semantics hint on read notification rows"
+  },
+  "notificationsMarkAsReadHint": "Long-press to mark as read",
+  "@notificationsMarkAsReadHint": {
+    "description": "Semantics hint on unread notification rows"
+  },
   "notificationsShowAll": "Show all",
   "@notificationsShowAll": {
     "description": "Tooltip: disable unread-only filter"

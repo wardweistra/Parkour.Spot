@@ -101,6 +101,17 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible de marquer comme lu. Réessayez.';
 
   @override
+  String get notificationsMarkAsUnreadFailed =>
+      'Impossible de marquer comme non lu. Réessayez.';
+
+  @override
+  String get notificationsMarkAsUnreadHint =>
+      'Appui long pour marquer comme non lu';
+
+  @override
+  String get notificationsMarkAsReadHint => 'Appui long pour marquer comme lu';
+
+  @override
   String get notificationsShowAll => 'Tout afficher';
 
   @override

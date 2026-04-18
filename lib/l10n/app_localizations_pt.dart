@@ -101,6 +101,18 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não foi possível marcar como lida. Tenta novamente.';
 
   @override
+  String get notificationsMarkAsUnreadFailed =>
+      'Não foi possível marcar como não lida. Tenta novamente.';
+
+  @override
+  String get notificationsMarkAsUnreadHint =>
+      'Mantém premido para marcar como não lida';
+
+  @override
+  String get notificationsMarkAsReadHint =>
+      'Mantém premido para marcar como lida';
+
+  @override
   String get notificationsShowAll => 'Mostrar todas';
 
   @override

@@ -274,6 +274,24 @@ abstract class AppLocalizations {
   /// **'Couldn’t mark as read. Try again.'**
   String get notificationsMarkAsReadFailed;
 
+  /// Snack bar when mark-as-unread fails
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t mark as unread. Try again.'**
+  String get notificationsMarkAsUnreadFailed;
+
+  /// Semantics hint on read notification rows
+  ///
+  /// In en, this message translates to:
+  /// **'Long-press to mark as unread'**
+  String get notificationsMarkAsUnreadHint;
+
+  /// Semantics hint on unread notification rows
+  ///
+  /// In en, this message translates to:
+  /// **'Long-press to mark as read'**
+  String get notificationsMarkAsReadHint;
+
   /// Tooltip: disable unread-only filter
   ///
   /// In en, this message translates to:

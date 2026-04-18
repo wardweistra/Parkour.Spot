@@ -169,19 +169,19 @@ service cloud.firestore {
         function notificationReadShape(data) {
           return !('read' in data) || data.read is bool;
         }
-        function notificationMarkReadPatchOnly() {
+        function notificationReadStatusPatchOnly() {
           return request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly(['read']);
         }
 
         // List queries must not use field checks the query cannot guarantee for every
         // matching document (see Firestore "rules are not filters"). Clients cannot
-        // create docs here; only validate shape on update (mark-read).
+        // create docs here; only validate shape on update (toggle read / unread).
         allow read: if request.auth != null && request.auth.uid == userId;
         allow create, delete: if false;
         allow update: if request.auth != null && request.auth.uid == userId &&
-          request.resource.data.read == true &&
-          notificationMarkReadPatchOnly() &&
+          request.resource.data.read is bool &&
+          notificationReadStatusPatchOnly() &&
           notificationReadShape(request.resource.data) &&
           notificationStringsOk(request.resource.data) &&
           notificationKindOk(request.resource.data) &&

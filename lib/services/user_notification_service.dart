@@ -61,6 +61,24 @@ class UserNotificationService extends ChangeNotifier {
     }
   }
 
+  Future<bool> markAsUnread(String notificationId) async {
+    final uid = _uid;
+    final collection = _notificationsCollection;
+    if (uid == null || collection == null) {
+      return false;
+    }
+    _error = null;
+    try {
+      await collection.doc(notificationId).update({'read': false});
+      return true;
+    } catch (e, st) {
+      debugPrint('UserNotificationService.markAsUnread: $e\n$st');
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
   /// Marks every notification in the inbox as read (batched; handles >500 docs).
   Future<bool> markAllAsRead() async {
     final collection = _notificationsCollection;

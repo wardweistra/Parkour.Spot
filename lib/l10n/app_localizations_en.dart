@@ -101,6 +101,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Couldn’t mark as read. Try again.';
 
   @override
+  String get notificationsMarkAsUnreadFailed =>
+      'Couldn’t mark as unread. Try again.';
+
+  @override
+  String get notificationsMarkAsUnreadHint => 'Long-press to mark as unread';
+
+  @override
+  String get notificationsMarkAsReadHint => 'Long-press to mark as read';
+
+  @override
   String get notificationsShowAll => 'Show all';
 
   @override

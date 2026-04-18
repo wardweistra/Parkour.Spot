@@ -101,6 +101,18 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se pudo marcar como leída. Inténtalo de nuevo.';
 
   @override
+  String get notificationsMarkAsUnreadFailed =>
+      'No se pudo marcar como no leída. Inténtalo de nuevo.';
+
+  @override
+  String get notificationsMarkAsUnreadHint =>
+      'Mantén pulsado para marcar como no leída';
+
+  @override
+  String get notificationsMarkAsReadHint =>
+      'Mantén pulsado para marcar como leída';
+
+  @override
   String get notificationsShowAll => 'Mostrar todas';
 
   @override

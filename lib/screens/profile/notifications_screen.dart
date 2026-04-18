@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -266,6 +268,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               item: item,
               timeLabel: _formatTimestamp(context, item.createdAt, l10n),
               onOpen: () => _openNotification(context, item),
+              onLongPress: item.read
+                  ? () => unawaited(_markNotificationUnread(context, item))
+                  : () => unawaited(_markNotificationReadOnly(context, item)),
             );
           },
         ),
@@ -281,6 +286,40 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (at == null) return l10n.notificationsTimeUnknown;
     final locale = Localizations.localeOf(context).toString();
     return DateFormat.yMMMd(locale).add_jm().format(at.toLocal());
+  }
+
+  Future<void> _markNotificationUnread(
+    BuildContext context,
+    UserNotification item,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    final ok =
+        await context.read<UserNotificationService>().markAsUnread(item.id);
+    if (!context.mounted) return;
+    if (!ok) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.notificationsMarkAsUnreadFailed)),
+      );
+    }
+  }
+
+  /// Long-press on unread row: mark read without opening the deeplink.
+  Future<void> _markNotificationReadOnly(
+    BuildContext context,
+    UserNotification item,
+  ) async {
+    if (item.read) return;
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    final ok =
+        await context.read<UserNotificationService>().markAsRead(item.id);
+    if (!context.mounted) return;
+    if (!ok) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.notificationsMarkAsReadFailed)),
+      );
+    }
   }
 
   Future<void> _openNotification(
@@ -398,11 +437,14 @@ class _NotificationListTile extends StatelessWidget {
     required this.item,
     required this.timeLabel,
     required this.onOpen,
+    required this.onLongPress,
   });
 
   final UserNotification item;
   final String timeLabel;
   final VoidCallback onOpen;
+  /// Read row → mark unread; unread row → mark read (no navigation).
+  final VoidCallback onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -433,6 +475,7 @@ class _NotificationListTile extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onOpen,
+        onLongPress: onLongPress,
         borderRadius: _kNotificationRowRadius,
         hoverColor: scheme.onSurface.withValues(alpha: hoverAlpha),
         focusColor: scheme.primary.withValues(alpha: focusAlpha),
@@ -513,6 +556,9 @@ class _NotificationListTile extends StatelessWidget {
       child: Semantics(
         button: true,
         label: l10n.notificationsOpenSemantic(copy.title),
+        hint: item.read
+            ? l10n.notificationsMarkAsUnreadHint
+            : l10n.notificationsMarkAsReadHint,
         child: tile,
       ),
     );

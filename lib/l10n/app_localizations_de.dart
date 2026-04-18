@@ -103,6 +103,18 @@ class AppLocalizationsDe extends AppLocalizations {
       'Konnte nicht als gelesen markieren. Bitte erneut versuchen.';
 
   @override
+  String get notificationsMarkAsUnreadFailed =>
+      'Konnte nicht als ungelesen markieren. Bitte erneut versuchen.';
+
+  @override
+  String get notificationsMarkAsUnreadHint =>
+      'Lange drücken, um als ungelesen zu markieren';
+
+  @override
+  String get notificationsMarkAsReadHint =>
+      'Lange drücken, um als gelesen zu markieren';
+
+  @override
   String get notificationsShowAll => 'Alle anzeigen';
 
   @override
