@@ -1320,6 +1320,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       body: SingleChildScrollView(
         controller: _scrollController,
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Map showing all spots
             if (_spots.isNotEmpty) _buildMap(),
