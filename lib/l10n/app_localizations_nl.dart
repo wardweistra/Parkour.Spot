@@ -72,14 +72,46 @@ class AppLocalizationsNl extends AppLocalizations {
       'Nieuwe spots in de buurt, trainen en andere updates voor jou';
 
   @override
-  String get notificationsEmptyTitle => 'Nog geen meldingen';
+  String get notificationsEmptyTitle => 'Hier is het nog stil';
 
   @override
   String get notificationsEmptyBody =>
-      'Als er iets gebeurt dat jou aangaat, zie je het hier.';
+      'Als iemand een spot in de buurt toevoegt of incheckt waar jij traint, zie je het hier.';
 
   @override
-  String get notificationsLoadError => 'Meldingen konden niet worden geladen.';
+  String get notificationsLoadError =>
+      'We konden je meldingen niet laden. Controleer je verbinding en probeer het opnieuw.';
+
+  @override
+  String get notificationsRetry => 'Opnieuw proberen';
+
+  @override
+  String get notificationsOpenFailedSnackbar =>
+      'Deze melding kon niet worden geopend. Probeer het later opnieuw.';
+
+  @override
+  String get notificationsMarkAllRead => 'Alles als gelezen markeren';
+
+  @override
+  String get notificationsMarkAllReadFailed =>
+      'Kon niet alles als gelezen markeren. Probeer het opnieuw.';
+
+  @override
+  String get notificationsMarkAsReadFailed =>
+      'Kon niet als gelezen markeren. Probeer het opnieuw.';
+
+  @override
+  String get notificationsShowAll => 'Alles tonen';
+
+  @override
+  String get notificationsUnreadOnly => 'Alleen ongelezen';
+
+  @override
+  String get notificationsEmptyFilteredTitle => 'Je bent bij';
+
+  @override
+  String get notificationsEmptyFilteredBody =>
+      'Geen ongelezen meldingen op dit moment.';
 
   @override
   String get notificationsTimeUnknown => 'Recent';

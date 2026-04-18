@@ -80,17 +80,53 @@
   "@notificationsSubtitle": {
     "description": "Account tab: hint that notifications reflect nearby map/community activity"
   },
-  "notificationsEmptyTitle": "No notifications yet",
+  "notificationsEmptyTitle": "All quiet for now",
   "@notificationsEmptyTitle": {
     "description": "Notifications inbox empty state heading"
   },
-  "notificationsEmptyBody": "When something happens that concerns you, it will show up here.",
+  "notificationsEmptyBody": "When someone adds a spot nearby or checks in where you train, it’ll show up here.",
   "@notificationsEmptyBody": {
     "description": "Notifications inbox empty state supporting text"
   },
-  "notificationsLoadError": "Couldn’t load notifications.",
+  "notificationsLoadError": "We couldn’t load your notifications. Check your connection and try again.",
   "@notificationsLoadError": {
     "description": "Notifications inbox error message"
+  },
+  "notificationsRetry": "Try again",
+  "@notificationsRetry": {
+    "description": "Notifications inbox: retry after load error"
+  },
+  "notificationsOpenFailedSnackbar": "This notification couldn’t be opened. Please try again later.",
+  "@notificationsOpenFailedSnackbar": {
+    "description": "Shown when a notification row has no valid link target"
+  },
+  "notificationsMarkAllRead": "Mark all as read",
+  "@notificationsMarkAllRead": {
+    "description": "App bar: mark every notification read"
+  },
+  "notificationsMarkAllReadFailed": "Couldn’t mark all as read. Try again.",
+  "@notificationsMarkAllReadFailed": {
+    "description": "Snack bar when batch mark-as-read fails"
+  },
+  "notificationsMarkAsReadFailed": "Couldn’t mark as read. Try again.",
+  "@notificationsMarkAsReadFailed": {
+    "description": "Snack bar when single mark-as-read fails"
+  },
+  "notificationsShowAll": "Show all",
+  "@notificationsShowAll": {
+    "description": "Tooltip: disable unread-only filter"
+  },
+  "notificationsUnreadOnly": "Unread only",
+  "@notificationsUnreadOnly": {
+    "description": "Tooltip: show only unread notifications"
+  },
+  "notificationsEmptyFilteredTitle": "You’re all caught up",
+  "@notificationsEmptyFilteredTitle": {
+    "description": "Empty state when unread filter is on but there are no unread items"
+  },
+  "notificationsEmptyFilteredBody": "No unread notifications right now.",
+  "@notificationsEmptyFilteredBody": {
+    "description": "Supporting text for filtered empty inbox"
   },
   "notificationsTimeUnknown": "Recently",
   "@notificationsTimeUnknown": {

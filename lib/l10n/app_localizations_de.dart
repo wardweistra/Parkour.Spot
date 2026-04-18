@@ -74,15 +74,46 @@ class AppLocalizationsDe extends AppLocalizations {
       'Neue Spots in der Nähe, Training und andere Updates für dich';
 
   @override
-  String get notificationsEmptyTitle => 'Noch keine Benachrichtigungen';
+  String get notificationsEmptyTitle => 'Hier ist noch nichts los';
 
   @override
   String get notificationsEmptyBody =>
-      'Wenn etwas Wichtiges passiert, erscheint es hier.';
+      'Wenn in der Nähe ein neuer Spot dazukommt oder jemand dort eincheckt, wo du trainierst, siehst du es hier.';
 
   @override
   String get notificationsLoadError =>
-      'Benachrichtigungen konnten nicht geladen werden.';
+      'Benachrichtigungen konnten nicht geladen werden. Prüfe deine Verbindung und versuche es erneut.';
+
+  @override
+  String get notificationsRetry => 'Erneut versuchen';
+
+  @override
+  String get notificationsOpenFailedSnackbar =>
+      'Diese Benachrichtigung konnte nicht geöffnet werden. Bitte später erneut versuchen.';
+
+  @override
+  String get notificationsMarkAllRead => 'Alle als gelesen markieren';
+
+  @override
+  String get notificationsMarkAllReadFailed =>
+      'Alle konnten nicht als gelesen markiert werden. Bitte erneut versuchen.';
+
+  @override
+  String get notificationsMarkAsReadFailed =>
+      'Konnte nicht als gelesen markieren. Bitte erneut versuchen.';
+
+  @override
+  String get notificationsShowAll => 'Alle anzeigen';
+
+  @override
+  String get notificationsUnreadOnly => 'Nur ungelesen';
+
+  @override
+  String get notificationsEmptyFilteredTitle => 'Alles gelesen';
+
+  @override
+  String get notificationsEmptyFilteredBody =>
+      'Zurzeit keine ungelesenen Benachrichtigungen.';
 
   @override
   String get notificationsTimeUnknown => 'Kürzlich';

@@ -43,19 +43,53 @@ class UserNotificationService extends ChangeNotifier {
     );
   }
 
-  Future<void> markAsRead(String notificationId) async {
+  Future<bool> markAsRead(String notificationId) async {
     final uid = _uid;
     final collection = _notificationsCollection;
     if (uid == null || collection == null) {
-      return;
+      return false;
     }
     _error = null;
     try {
       await collection.doc(notificationId).update({'read': true});
+      return true;
     } catch (e, st) {
       debugPrint('UserNotificationService.markAsRead: $e\n$st');
       _error = e.toString();
       notifyListeners();
+      return false;
+    }
+  }
+
+  /// Marks every notification in the inbox as read (batched; handles >500 docs).
+  Future<bool> markAllAsRead() async {
+    final collection = _notificationsCollection;
+    if (collection == null) {
+      return false;
+    }
+    _error = null;
+    try {
+      final snapshot = await collection.where('read', isEqualTo: false).get();
+      if (snapshot.docs.isEmpty) {
+        return true;
+      }
+      const chunk = 500;
+      for (var i = 0; i < snapshot.docs.length; i += chunk) {
+        final batch = _firestore.batch();
+        final end = (i + chunk > snapshot.docs.length)
+            ? snapshot.docs.length
+            : i + chunk;
+        for (var j = i; j < end; j++) {
+          batch.update(snapshot.docs[j].reference, {'read': true});
+        }
+        await batch.commit();
+      }
+      return true;
+    } catch (e, st) {
+      debugPrint('UserNotificationService.markAllAsRead: $e\n$st');
+      _error = e.toString();
+      notifyListeners();
+      return false;
     }
   }
 }

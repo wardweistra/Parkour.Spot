@@ -229,20 +229,74 @@ abstract class AppLocalizations {
   /// Notifications inbox empty state heading
   ///
   /// In en, this message translates to:
-  /// **'No notifications yet'**
+  /// **'All quiet for now'**
   String get notificationsEmptyTitle;
 
   /// Notifications inbox empty state supporting text
   ///
   /// In en, this message translates to:
-  /// **'When something happens that concerns you, it will show up here.'**
+  /// **'When someone adds a spot nearby or checks in where you train, it’ll show up here.'**
   String get notificationsEmptyBody;
 
   /// Notifications inbox error message
   ///
   /// In en, this message translates to:
-  /// **'Couldn’t load notifications.'**
+  /// **'We couldn’t load your notifications. Check your connection and try again.'**
   String get notificationsLoadError;
+
+  /// Notifications inbox: retry after load error
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get notificationsRetry;
+
+  /// Shown when a notification row has no valid link target
+  ///
+  /// In en, this message translates to:
+  /// **'This notification couldn’t be opened. Please try again later.'**
+  String get notificationsOpenFailedSnackbar;
+
+  /// App bar: mark every notification read
+  ///
+  /// In en, this message translates to:
+  /// **'Mark all as read'**
+  String get notificationsMarkAllRead;
+
+  /// Snack bar when batch mark-as-read fails
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t mark all as read. Try again.'**
+  String get notificationsMarkAllReadFailed;
+
+  /// Snack bar when single mark-as-read fails
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t mark as read. Try again.'**
+  String get notificationsMarkAsReadFailed;
+
+  /// Tooltip: disable unread-only filter
+  ///
+  /// In en, this message translates to:
+  /// **'Show all'**
+  String get notificationsShowAll;
+
+  /// Tooltip: show only unread notifications
+  ///
+  /// In en, this message translates to:
+  /// **'Unread only'**
+  String get notificationsUnreadOnly;
+
+  /// Empty state when unread filter is on but there are no unread items
+  ///
+  /// In en, this message translates to:
+  /// **'You’re all caught up'**
+  String get notificationsEmptyFilteredTitle;
+
+  /// Supporting text for filtered empty inbox
+  ///
+  /// In en, this message translates to:
+  /// **'No unread notifications right now.'**
+  String get notificationsEmptyFilteredBody;
 
   /// Fallback timestamp when createdAt is missing
   ///
