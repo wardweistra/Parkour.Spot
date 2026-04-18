@@ -79,6 +79,16 @@ class AdminHomeScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Card(
               child: ListTile(
+                leading: const Icon(Icons.notifications_outlined),
+                title: const Text('All notifications'),
+                subtitle: const Text('Browse every in-app notification across users (newest first)'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () => context.push('/admin/notifications'),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Card(
+              child: ListTile(
                 leading: const Icon(Icons.analytics),
                 title: const Text('User Activity Metrics'),
                 subtitle: const Text('Calculate and sync DAU/WAU/MAU metrics to Google Sheets'),
