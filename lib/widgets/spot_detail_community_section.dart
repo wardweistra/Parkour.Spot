@@ -35,10 +35,12 @@ class SpotDetailCommunitySection extends StatefulWidget {
 class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection> {
   static const double _avatarRadius = 20;
   static const double _avatarOverlap = _avatarRadius * (23.0 / 20.0);
+  /// Distinct from [null] uid so signed-out users still refresh `_myStream` after spot changes.
+  static const Object _uidUnset = Object();
 
   Stream<List<SpotCheckIn>>? _publicStream;
   Stream<SpotCheckIn?>? _myStream;
-  String? _lastUid;
+  Object? _lastUid = _uidUnset;
   String? _cachedSpotId;
 
   @override
@@ -47,7 +49,7 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
     if (oldWidget.spotId != widget.spotId) {
       _cachedSpotId = null;
       _publicStream = null;
-      _lastUid = null;
+      _lastUid = _uidUnset;
     }
   }
 
@@ -60,7 +62,7 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
     if (_cachedSpotId != widget.spotId) {
       _cachedSpotId = widget.spotId;
       _publicStream = svc.watchPublicCheckIns(widget.spotId);
-      _lastUid = null;
+      _lastUid = _uidUnset;
     }
     if (uid != _lastUid) {
       _lastUid = uid;
