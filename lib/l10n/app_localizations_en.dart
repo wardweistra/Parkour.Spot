@@ -1102,6 +1102,39 @@ class AppLocalizationsEn extends AppLocalizations {
   String get spotDetailPresenceHereNow => 'Here now';
 
   @override
+  String get spotDetailCommunitySectionTitle => 'Community';
+
+  @override
+  String get spotDetailCommunitySectionSubtitle =>
+      'See who’s training here and share your session.';
+
+  @override
+  String get spotDetailCommunityNobodyHere =>
+      'No one’s checked in yet. Check in to let others know you’re here.';
+
+  @override
+  String get spotDetailCommunityNobodyHereShort => 'No one’s here yet.';
+
+  @override
+  String get spotDetailCommunityViewAll => 'View all';
+
+  @override
+  String get spotDetailCommunityCheckInButton => 'Check in';
+
+  @override
+  String get spotDetailCommunityEditCheckInButton => 'Edit check-in';
+
+  @override
+  String get spotDetailCommunitySignInToCheckInButton => 'Sign in to check in';
+
+  @override
+  String get spotDetailCommunityPlanningVisitButton => 'Planning a visit';
+
+  @override
+  String get spotDetailCommunityPlanningVisitTooltip =>
+      'Coming soon — tell the community when you plan to train here.';
+
+  @override
   String get spotDetailHiddenBanner =>
       'This spot is hidden from public view. It likely no longer exists or doesn’t meet our policies. It will not appear in search results or on the map.';
 

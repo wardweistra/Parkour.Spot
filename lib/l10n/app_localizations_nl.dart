@@ -1110,6 +1110,40 @@ class AppLocalizationsNl extends AppLocalizations {
   String get spotDetailPresenceHereNow => 'Nu hier';
 
   @override
+  String get spotDetailCommunitySectionTitle => 'Community';
+
+  @override
+  String get spotDetailCommunitySectionSubtitle =>
+      'Zie wie hier traint en deel je sessie.';
+
+  @override
+  String get spotDetailCommunityNobodyHere =>
+      'Nog niemand ingecheckt. Check in zodat anderen weten dat je er bent.';
+
+  @override
+  String get spotDetailCommunityNobodyHereShort => 'Nog niemand hier.';
+
+  @override
+  String get spotDetailCommunityViewAll => 'Alles tonen';
+
+  @override
+  String get spotDetailCommunityCheckInButton => 'Check in';
+
+  @override
+  String get spotDetailCommunityEditCheckInButton => 'Check-in bewerken';
+
+  @override
+  String get spotDetailCommunitySignInToCheckInButton =>
+      'Log in om in te checken';
+
+  @override
+  String get spotDetailCommunityPlanningVisitButton => 'Ik plan een bezoek';
+
+  @override
+  String get spotDetailCommunityPlanningVisitTooltip =>
+      'Binnenkort — laat de community weten wanneer je hier wilt trainen.';
+
+  @override
   String get spotDetailHiddenBanner =>
       'Deze spot is verborgen voor het publiek. Hij bestaat waarschijnlijk niet meer of voldoet niet aan ons beleid. Hij verschijnt niet in zoekresultaten of op de kaart.';
 

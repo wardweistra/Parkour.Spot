@@ -1928,6 +1928,66 @@ abstract class AppLocalizations {
   /// **'Here now'**
   String get spotDetailPresenceHereNow;
 
+  /// No description provided for @spotDetailCommunitySectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Community'**
+  String get spotDetailCommunitySectionTitle;
+
+  /// No description provided for @spotDetailCommunitySectionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'See who’s training here and share your session.'**
+  String get spotDetailCommunitySectionSubtitle;
+
+  /// No description provided for @spotDetailCommunityNobodyHere.
+  ///
+  /// In en, this message translates to:
+  /// **'No one’s checked in yet. Check in to let others know you’re here.'**
+  String get spotDetailCommunityNobodyHere;
+
+  /// No description provided for @spotDetailCommunityNobodyHereShort.
+  ///
+  /// In en, this message translates to:
+  /// **'No one’s here yet.'**
+  String get spotDetailCommunityNobodyHereShort;
+
+  /// No description provided for @spotDetailCommunityViewAll.
+  ///
+  /// In en, this message translates to:
+  /// **'View all'**
+  String get spotDetailCommunityViewAll;
+
+  /// No description provided for @spotDetailCommunityCheckInButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Check in'**
+  String get spotDetailCommunityCheckInButton;
+
+  /// No description provided for @spotDetailCommunityEditCheckInButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit check-in'**
+  String get spotDetailCommunityEditCheckInButton;
+
+  /// No description provided for @spotDetailCommunitySignInToCheckInButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to check in'**
+  String get spotDetailCommunitySignInToCheckInButton;
+
+  /// No description provided for @spotDetailCommunityPlanningVisitButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Planning a visit'**
+  String get spotDetailCommunityPlanningVisitButton;
+
+  /// No description provided for @spotDetailCommunityPlanningVisitTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Coming soon — tell the community when you plan to train here.'**
+  String get spotDetailCommunityPlanningVisitTooltip;
+
   /// No description provided for @spotDetailHiddenBanner.
   ///
   /// In en, this message translates to:

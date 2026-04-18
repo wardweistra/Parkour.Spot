@@ -33,7 +33,7 @@ import '../../services/feature_access_service.dart';
 import '../../models/spot_list.dart';
 import '../../utils/resized_spot_image_provider.dart';
 import '../../widgets/resized_spot_image.dart';
-import '../../widgets/spot_check_in_presence.dart';
+import '../../widgets/spot_detail_community_section.dart';
 import '../../utils/image_preparation.dart';
 import '../../services/user_profile_service.dart';
 import '../../services/jumpflix_service.dart';
@@ -1807,149 +1807,126 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         const SizedBox(height: 8),
 
                         // Save: want to visit / been here + optional custom list (guests see login CTA)
-                        if (_spot.id != null)
+                        if (_spot.id != null) ...[
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    _SpotSaveMenu(
-                                      spotId: _spot.id!,
-                                      onAddToCustomList: _showAddToListDialog,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Consumer<AuthService>(
-                                      builder: (context, authService, _) {
-                                        if (authService.isLoading) {
-                                          return Padding(
-                                            padding: const EdgeInsets.only(
-                                              bottom: 16,
-                                            ),
-                                            child: SizedBox(
-                                              width: 44,
-                                              height: 44,
-                                              child: DecoratedBox(
-                                                decoration: BoxDecoration(
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .surfaceContainerHighest
-                                                      .withValues(alpha: 0.6),
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: Center(
-                                                  child: SizedBox(
-                                                    width: 22,
-                                                    height: 22,
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                          strokeWidth: 2,
-                                                          color: Theme.of(
-                                                            context,
-                                                          ).colorScheme.primary,
-                                                        ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          );
-                                        }
-                                        return Padding(
-                                          padding: const EdgeInsets.only(
-                                            bottom: 16,
-                                          ),
-                                          child: _buildSpotActionsPopupMenu(
-                                            authService: authService,
-                                            tooltip: _l10n
-                                                .spotDetailEditReportTooltip,
-                                            child: SizedBox(
-                                              width: 44,
-                                              height: 44,
-                                              child: DecoratedBox(
-                                                decoration: BoxDecoration(
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .surfaceContainerHighest
-                                                      .withValues(alpha: 0.6),
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: Icon(
-                                                  Icons.edit_outlined,
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .onSurface
-                                                      .withValues(alpha: 0.6),
-                                                  size: 24,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Padding(
+                              _SpotSaveMenu(
+                                spotId: _spot.id!,
+                                onAddToCustomList: _showAddToListDialog,
+                              ),
+                              const SizedBox(width: 8),
+                              Consumer<AuthService>(
+                                builder: (context, authService, _) {
+                                  if (authService.isLoading) {
+                                    return Padding(
                                       padding: const EdgeInsets.only(
                                         bottom: 16,
                                       ),
-                                      child: Tooltip(
-                                        message: _l10n.spotDetailShareTooltip,
-                                        child: Material(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .surfaceContainerHighest
-                                              .withValues(alpha: 0.6),
-                                          shape: const CircleBorder(),
-                                          clipBehavior: Clip.antiAlias,
-                                          child: InkWell(
-                                            onTap: _copySpotToClipboard,
-                                            customBorder: const CircleBorder(),
+                                      child: SizedBox(
+                                        width: 44,
+                                        height: 44,
+                                        child: DecoratedBox(
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .surfaceContainerHighest
+                                                .withValues(alpha: 0.6),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Center(
                                             child: SizedBox(
-                                              width: 44,
-                                              height: 44,
-                                              child: Icon(
-                                                Icons.share,
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .onSurface
-                                                    .withValues(alpha: 0.6),
-                                                size: 24,
+                                              width: 22,
+                                              height: 22,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.primary,
                                               ),
                                             ),
                                           ),
                                         ),
                                       ),
+                                    );
+                                  }
+                                  return Padding(
+                                    padding: const EdgeInsets.only(
+                                      bottom: 16,
                                     ),
-                                    const SizedBox(width: 8),
-                                    Consumer<AuthService>(
-                                      builder: (context, authService, _) {
-                                        final loginRedirect =
-                                            '/login?redirectTo=${Uri.encodeComponent('/spot/${_spot.id!}')}';
-                                        return _SpotDetailCheckInFab(
-                                          spotId: _spot.id!,
-                                          isAuthenticated:
-                                              authService.isAuthenticated,
-                                          isLoadingAuth: authService.isLoading,
-                                          onNewCheckIn: _showCheckInDialog,
-                                          onEditCheckIn: _handleEditCheckIn,
-                                          onLoginRequired: () =>
-                                              context.go(loginRedirect),
-                                        );
-                                      },
+                                    child: _buildSpotActionsPopupMenu(
+                                      authService: authService,
+                                      tooltip: _l10n
+                                          .spotDetailEditReportTooltip,
+                                      child: SizedBox(
+                                        width: 44,
+                                        height: 44,
+                                        child: DecoratedBox(
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .surfaceContainerHighest
+                                                .withValues(alpha: 0.6),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            Icons.edit_outlined,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withValues(alpha: 0.6),
+                                            size: 24,
+                                          ),
+                                        ),
+                                      ),
                                     ),
-                                  ],
-                                ),
+                                  );
+                                },
                               ),
                               const SizedBox(width: 8),
-                              SpotCheckInPresenceStrip(
-                                spotId: _spot.id!,
-                                variant: SpotCheckInPresenceVariant.detail,
-                                detailLeadingLabel:
-                                    _l10n.spotDetailPresenceHereNow,
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  bottom: 16,
+                                ),
+                                child: Tooltip(
+                                  message: _l10n.spotDetailShareTooltip,
+                                  child: Material(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .surfaceContainerHighest
+                                        .withValues(alpha: 0.6),
+                                    shape: const CircleBorder(),
+                                    clipBehavior: Clip.antiAlias,
+                                    child: InkWell(
+                                      onTap: _copySpotToClipboard,
+                                      customBorder: const CircleBorder(),
+                                      child: SizedBox(
+                                        width: 44,
+                                        height: 44,
+                                        child: Icon(
+                                          Icons.share,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface
+                                              .withValues(alpha: 0.6),
+                                          size: 24,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               ),
                             ],
                           ),
+                          SpotDetailCommunitySection(
+                            spotId: _spot.id!,
+                            onNewCheckIn: _showCheckInDialog,
+                            onEditCheckIn: _handleEditCheckIn,
+                            onLoginRequired: () => context.go(
+                              '/login?redirectTo=${Uri.encodeComponent('/spot/${_spot.id!}')}',
+                            ),
+                          ),
+                        ],
 
                         // Hidden spot banner
                         if (_spot.hidden || widget.spot.spotSourceRemoved)
@@ -5179,166 +5156,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
               child: Text(_l10n.spotDetailClose),
             ),
           ],
-        );
-      },
-    );
-  }
-}
-
-/// Check-in FAB: reflects active check-in via [SpotCheckInService.watchMyCheckIn].
-class _SpotDetailCheckInFab extends StatefulWidget {
-  const _SpotDetailCheckInFab({
-    required this.spotId,
-    required this.isAuthenticated,
-    required this.isLoadingAuth,
-    required this.onNewCheckIn,
-    required this.onEditCheckIn,
-    required this.onLoginRequired,
-  });
-
-  final String spotId;
-  final bool isAuthenticated;
-  final bool isLoadingAuth;
-  final Future<void> Function() onNewCheckIn;
-  final Future<void> Function(SpotCheckIn existing) onEditCheckIn;
-  final VoidCallback onLoginRequired;
-
-  @override
-  State<_SpotDetailCheckInFab> createState() => _SpotDetailCheckInFabState();
-}
-
-class _SpotDetailCheckInFabState extends State<_SpotDetailCheckInFab> {
-  Stream<SpotCheckIn?>? _myStream;
-  String? _cachedSpotId;
-  String? _lastUid;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final svc = Provider.of<SpotCheckInService>(context, listen: false);
-    final auth = Provider.of<AuthService>(context);
-    final uid = auth.currentUser?.uid;
-    if (_cachedSpotId != widget.spotId) {
-      _cachedSpotId = widget.spotId;
-      _lastUid = null;
-    }
-    if (uid != _lastUid) {
-      _lastUid = uid;
-      _myStream = uid == null
-          ? Stream.value(null)
-          : svc.watchMyCheckIn(widget.spotId);
-    }
-  }
-
-  @override
-  void didUpdateWidget(covariant _SpotDetailCheckInFab oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.spotId != widget.spotId) {
-      _cachedSpotId = null;
-      _lastUid = null;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final colorScheme = Theme.of(context).colorScheme;
-    if (widget.isLoadingAuth) {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: SizedBox(
-          width: 44,
-          height: 44,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: colorScheme.primary,
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    if (!widget.isAuthenticated) {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: Tooltip(
-          message: l10n.spotDetailCheckInFabTooltipSignIn,
-          child: Material(
-            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
-            shape: const CircleBorder(),
-            clipBehavior: Clip.antiAlias,
-            child: InkWell(
-              onTap: widget.onLoginRequired,
-              customBorder: const CircleBorder(),
-              child: SizedBox(
-                width: 44,
-                height: 44,
-                child: Icon(
-                  Icons.place_outlined,
-                  color: colorScheme.onSurface.withValues(alpha: 0.6),
-                  size: 24,
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    if (_myStream == null) {
-      return const SizedBox(width: 44, height: 44);
-    }
-
-    return StreamBuilder<SpotCheckIn?>(
-      stream: _myStream,
-      builder: (context, snapshot) {
-        final mine = snapshot.data;
-        final checkedIn = mine != null;
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: Tooltip(
-            message: checkedIn
-                ? l10n.spotDetailCheckInFabTooltipEdit
-                : l10n.spotDetailCheckInFabTooltipCheckIn,
-            child: Material(
-              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
-              shape: const CircleBorder(),
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                onTap: () {
-                  final m = mine;
-                  if (m != null) {
-                    widget.onEditCheckIn(m);
-                  } else {
-                    widget.onNewCheckIn();
-                  }
-                },
-                customBorder: const CircleBorder(),
-                child: SizedBox(
-                  width: 44,
-                  height: 44,
-                  child: Icon(
-                    checkedIn ? Icons.place : Icons.place_outlined,
-                    color: checkedIn
-                        ? colorScheme.primary
-                        : colorScheme.onSurface.withValues(alpha: 0.6),
-                    size: 24,
-                  ),
-                ),
-              ),
-            ),
-          ),
         );
       },
     );
