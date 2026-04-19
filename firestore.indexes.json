@@ -272,6 +272,15 @@
       "collectionGroup": "spotCheckIns",
       "queryScope": "COLLECTION",
       "fields": [
+        { "fieldPath": "spotId", "order": "ASCENDING" },
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "expectedEndAt", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "spotCheckIns",
+      "queryScope": "COLLECTION",
+      "fields": [
         { "fieldPath": "userId", "order": "ASCENDING" },
         { "fieldPath": "expectedEndAt", "order": "DESCENDING" }
       ]
