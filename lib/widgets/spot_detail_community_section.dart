@@ -369,7 +369,6 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
   Widget _planningControl({
     required ThemeData theme,
     required AppLocalizations l10n,
-    required bool compact,
     required bool authenticated,
     required SpotTrainingPlan? myPlan,
   }) {
@@ -393,30 +392,28 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
             ? l10n.spotDetailCommunityEditTrainingPlanButton
             : l10n.spotDetailCommunityPlanningVisitButton);
 
-    if (compact) {
-      return Tooltip(
-        message: tip,
-        child: IconButton(
-          visualDensity: VisualDensity.compact,
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-          onPressed: onPressed,
-          icon: Icon(
-            Icons.event_available_outlined,
-            size: 22,
-            color: theme.colorScheme.primary,
-          ),
-        ),
-      );
+    final IconData planIcon;
+    if (!authenticated) {
+      planIcon = Icons.event_available_outlined;
+    } else if (myPlan != null) {
+      planIcon = Icons.edit_calendar_outlined;
+    } else {
+      planIcon = Icons.event_available_outlined;
     }
+
     return Tooltip(
       message: tip,
-      child: OutlinedButton(
-        onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          visualDensity: VisualDensity.compact,
+      child: SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: onPressed,
+          icon: Icon(planIcon, size: 18),
+          label: Text(label),
+          style: OutlinedButton.styleFrom(
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          ),
         ),
-        child: Text(label),
       ),
     );
   }
@@ -639,15 +636,9 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
                       return LayoutBuilder(
                         builder: (context, c) {
                           final wide = c.maxWidth > 520;
-                          final stripEmpty =
-                              !hasPeople && !hasPlanningPresence;
-                          /// Icon-only in the title row when narrow and no avatars;
-                          /// on wide layouts the plan control sits in the button row.
-                          final showTopRightPlanning = stripEmpty && !wide;
                           final planning = _planningControl(
                             theme: theme,
                             l10n: l10n,
-                            compact: stripEmpty && !wide,
                             authenticated: auth.isAuthenticated,
                             myPlan: myPlan,
                           );
@@ -657,8 +648,6 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
                             authenticated: auth.isAuthenticated,
                             mine: mine,
                           );
-
-                          final anySocialStrip = hasPeople || hasPlanningPresence;
 
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -702,7 +691,6 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
                                       ],
                                     ),
                                   ),
-                                  if (showTopRightPlanning) planning,
                                 ],
                               ),
                               const SizedBox(height: 8),
@@ -719,10 +707,8 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
                                 )
                               else ...[
                                 checkIn,
-                                if (anySocialStrip) ...[
-                                  const SizedBox(height: 8),
-                                  planning,
-                                ],
+                                const SizedBox(height: 8),
+                                planning,
                               ],
                             ],
                           );
