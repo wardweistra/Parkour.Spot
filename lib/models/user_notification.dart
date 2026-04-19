@@ -47,6 +47,26 @@ class UserNotification {
     );
   }
 
+  /// Payload from [listInAppNotificationsForAdmin] callable (plain JSON maps).
+  factory UserNotification.fromAdminCallable(String id, Map<String, dynamic> data) {
+    return UserNotification(
+      id: id,
+      title: data['title'] as String? ?? '',
+      body: data['body'] as String?,
+      notificationKind: data['notificationKind'] as String?,
+      templateArgs: _templateArgsFromFirestore(data['templateArgs']),
+      deeplinkKind: _deeplinkKindFromString(data['deeplinkKind'] as String?),
+      deeplinkId: data['deeplinkId'] as String? ?? '',
+      createdAt: data['createdAtMillis'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(
+              (data['createdAtMillis'] as num).toInt(),
+              isUtc: true,
+            )
+          : null,
+      read: data['read'] as bool? ?? false,
+    );
+  }
+
   static Map<String, String>? _templateArgsFromFirestore(dynamic raw) {
     if (raw is! Map) return null;
     final out = <String, String>{};

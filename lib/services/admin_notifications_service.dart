@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
 import '../models/user_notification.dart';
@@ -17,18 +19,28 @@ class AdminNotificationEntry {
   final DocumentReference<Map<String, dynamic>> documentReference;
 }
 
-/// Paginated collection-group query over all users' notification inboxes (admin only).
+/// Paginated list of all users' in-app notifications (admin only).
+///
+/// Uses the [listInAppNotificationsForAdmin] HTTPS callable (Admin SDK). Client-side
+/// `collectionGroup('notifications')` is unreliable: that query spans every
+/// subcollection named `notifications` in the project; any path without a matching
+/// rule denies the entire query.
 class AdminNotificationsService extends ChangeNotifier {
   AdminNotificationsService({FirebaseFirestore? firestore})
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
+  final FirebaseFunctions _functions =
+      FirebaseFunctions.instanceFor(region: 'europe-west1');
 
   final List<AdminNotificationEntry> _entries = <AdminNotificationEntry>[];
   bool _isLoading = false;
   bool _isLoadingMore = false;
   String? _error;
-  QueryDocumentSnapshot<Map<String, dynamic>>? _lastDocument;
+  String? _lastDiagnostics;
+
+  /// Document path for `startAfter` on the next page (from last server response).
+  String? _nextPageCursorPath;
   bool _hasMore = true;
 
   static const int _defaultPageSize = 50;
@@ -44,6 +56,9 @@ class AdminNotificationsService extends ChangeNotifier {
 
   String? get error => _error;
 
+  /// Populated when a load fails.
+  String? get lastDiagnostics => _lastDiagnostics;
+
   /// Loads the first page (newest [createdAt] first).
   Future<void> fetchInitial({bool forceRefresh = false, int pageSize = _defaultPageSize}) async {
     if (_isLoading && !forceRefresh) {
@@ -53,24 +68,25 @@ class AdminNotificationsService extends ChangeNotifier {
     _isLoading = true;
     _isLoadingMore = false;
     _error = null;
+    _lastDiagnostics = null;
     if (forceRefresh) {
       _entries.clear();
-      _lastDocument = null;
+      _nextPageCursorPath = null;
       _hasMore = true;
     }
     notifyListeners();
 
     try {
-      final snapshot = await _firestore
-          .collectionGroup('notifications')
-          .orderBy('createdAt', descending: true)
-          .limit(pageSize)
-          .get();
-
-      _applyPage(snapshot, pageSize, replaceExisting: true);
+      final data = await _callListInAppNotifications(
+        pageSize: pageSize,
+        cursorDocPath: null,
+      );
+      _applyCallablePage(data, replaceExisting: true);
     } catch (e, stackTrace) {
       _error = 'Failed to load notifications';
+      _lastDiagnostics = await _collectAdminFirestoreDiagnostics();
       debugPrint('AdminNotificationsService.fetchInitial error: $e');
+      debugPrint(_lastDiagnostics ?? '(no diagnostics)');
       debugPrint('$stackTrace');
     } finally {
       _isLoading = false;
@@ -78,28 +94,28 @@ class AdminNotificationsService extends ChangeNotifier {
     }
   }
 
-  /// Appends the next page using the Firestore cursor.
+  /// Appends the next page using the server cursor.
   Future<void> loadMore({int pageSize = _defaultPageSize}) async {
-    if (!_hasMore || _isLoading || _isLoadingMore || _lastDocument == null) {
+    if (!_hasMore || _isLoading || _isLoadingMore || _nextPageCursorPath == null) {
       return;
     }
 
     _isLoadingMore = true;
     _error = null;
+    _lastDiagnostics = null;
     notifyListeners();
 
     try {
-      final snapshot = await _firestore
-          .collectionGroup('notifications')
-          .orderBy('createdAt', descending: true)
-          .startAfterDocument(_lastDocument!)
-          .limit(pageSize)
-          .get();
-
-      _applyPage(snapshot, pageSize, replaceExisting: false);
+      final data = await _callListInAppNotifications(
+        pageSize: pageSize,
+        cursorDocPath: _nextPageCursorPath,
+      );
+      _applyCallablePage(data, replaceExisting: false);
     } catch (e, stackTrace) {
       _error = 'Failed to load more notifications';
+      _lastDiagnostics = await _collectAdminFirestoreDiagnostics();
       debugPrint('AdminNotificationsService.loadMore error: $e');
+      debugPrint(_lastDiagnostics ?? '(no diagnostics)');
       debugPrint('$stackTrace');
     } finally {
       _isLoadingMore = false;
@@ -107,36 +123,66 @@ class AdminNotificationsService extends ChangeNotifier {
     }
   }
 
-  void _applyPage(
-    QuerySnapshot<Map<String, dynamic>> snapshot,
-    int pageSize, {
+  Future<Map<String, dynamic>> _callListInAppNotifications({
+    required int pageSize,
+    required String? cursorDocPath,
+  }) async {
+    final callable = _functions.httpsCallable('listInAppNotificationsForAdmin');
+    final payload = <String, dynamic>{
+      'pageSize': pageSize,
+      if (cursorDocPath != null) 'cursor': <String, dynamic>{'docPath': cursorDocPath},
+    };
+    final result = await callable.call(payload);
+    final raw = result.data;
+    if (raw is! Map) {
+      throw StateError('listInAppNotificationsForAdmin: expected map response');
+    }
+    return Map<String, dynamic>.from(raw);
+  }
+
+  void _applyCallablePage(
+    Map<String, dynamic> data, {
     required bool replaceExisting,
   }) {
-    final docs = snapshot.docs;
+    final rawList = data['notifications'];
+    if (rawList is! List) {
+      throw StateError('listInAppNotificationsForAdmin: missing notifications list');
+    }
+
     if (replaceExisting) {
       _entries.clear();
     }
 
-    for (final doc in docs) {
-      final userRef = doc.reference.parent.parent;
-      final recipientUserId = userRef?.id ?? '';
+    for (final item in rawList) {
+      if (item is! Map) continue;
+      final m = Map<String, dynamic>.from(item);
+      final path = m['path'] as String?;
+      if (path == null || path.isEmpty) continue;
+      final recipientUserId = m['recipientUserId'] as String? ?? '';
+      final payload = m['data'];
+      final dataMap =
+          payload is Map ? Map<String, dynamic>.from(payload) : <String, dynamic>{};
+      final id = path.split('/').last;
       _entries.add(
         AdminNotificationEntry(
           recipientUserId: recipientUserId,
-          notification: UserNotification.fromFirestore(doc),
-          documentReference: doc.reference,
+          notification: UserNotification.fromAdminCallable(id, dataMap),
+          documentReference: _firestore.doc(path),
         ),
       );
     }
 
-    if (replaceExisting) {
-      _lastDocument = docs.isNotEmpty ? docs.last : null;
-      _hasMore = docs.length >= pageSize;
-    } else if (docs.isEmpty) {
-      _hasMore = false;
+    final hasMore = data['hasMore'] == true;
+    _hasMore = hasMore;
+    final next = data['nextCursor'];
+    if (next is Map && next['docPath'] is String) {
+      _nextPageCursorPath = next['docPath'] as String;
     } else {
-      _lastDocument = docs.last;
-      _hasMore = docs.length >= pageSize;
+      _nextPageCursorPath = null;
+    }
+
+    if (!hasMore) {
+      _nextPageCursorPath = null;
     }
   }
 
@@ -154,5 +200,37 @@ class AdminNotificationsService extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  Future<String> _collectAdminFirestoreDiagnostics() async {
+    final b = StringBuffer();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      b.writeln('FirebaseAuth.currentUser: null (signed out)');
+      return b.toString();
+    }
+    b.writeln('FirebaseAuth.currentUser.uid: ${user.uid}');
+    try {
+      final tr = await user.getIdTokenResult(true);
+      b.writeln('claim admin: ${tr.claims?['admin']}');
+    } catch (e) {
+      b.writeln('getIdTokenResult(true): $e');
+    }
+    try {
+      final doc = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .get(const GetOptions(source: Source.server));
+      b.writeln('Firestore users/{uid}.isAdmin: ${doc.data()?['isAdmin']}');
+    } catch (e) {
+      b.writeln('Firestore users/{uid} get: $e');
+    }
+    b.writeln(
+      'Listing uses HTTPS callable listInAppNotificationsForAdmin (Admin SDK). '
+      'If this fails, check Functions logs / deployment. '
+      'Client collectionGroup("notifications") often fails when any extra '
+      'notifications subcollection exists outside users/{{uid}}.',
+    );
+    return b.toString();
   }
 }

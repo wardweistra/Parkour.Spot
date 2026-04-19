@@ -1,9 +1,17 @@
 rules_version = '2';
 service cloud.firestore {
+  // Must use database id `(default)` here: `{database}` is only in scope inside
+  // `match /databases/{database}/documents`, not in top-level functions (CLI warns
+  // "Invalid variable name: database" and admin checks can fail).
+  // Align with Cloud Functions `ensureAdmin`: custom claim `admin` OR Firestore flag.
   function requestingUserIsAdmin() {
-    return request.auth != null &&
-      exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    return request.auth != null && (
+      request.auth.token.admin == true ||
+      (
+        exists(/databases/(default)/documents/users/$(request.auth.uid)) &&
+        get(/databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin == true
+      )
+    );
   }
 
   match /databases/{database}/documents {

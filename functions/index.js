@@ -8099,6 +8099,94 @@ exports.getApiClients = onCall({region: "europe-west1"}, async (request) => {
   }
 });
 
+/**
+ * Admin: list in-app notification docs across all users (collection group).
+ * Implemented server-side because client collection-group queries match every
+ * subcollection named "notifications" in the project; stray paths without rules
+ * cause permission-denied for the whole query. Admin SDK bypasses rules.
+ */
+exports.listInAppNotificationsForAdmin = onCall(
+    {region: "europe-west1"},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const rawSize = Number(request.data?.pageSize);
+        const pageSize = Math.min(
+            Math.max(Number.isFinite(rawSize) ? rawSize : 50, 1),
+            100,
+        );
+        const cursor = request.data?.cursor;
+        const docPath =
+          cursor && typeof cursor.docPath === "string" ? cursor.docPath : null;
+
+        let query = db.collectionGroup("notifications")
+            .orderBy("createdAt", "desc")
+            .limit(pageSize + 1);
+
+        if (docPath) {
+          const cursorDoc = await db.doc(docPath).get();
+          if (cursorDoc.exists) {
+            query = query.startAfter(cursorDoc);
+          }
+        }
+
+        const snap = await query.get();
+        const hasMore = snap.docs.length > pageSize;
+        const pageDocs = hasMore ? snap.docs.slice(0, pageSize) : snap.docs;
+
+        const notifications = pageDocs.map((d) => {
+          const parent = d.ref.parent.parent;
+          return {
+            path: d.ref.path,
+            recipientUserId: parent ? parent.id : "",
+            data: serializeInAppNotificationForAdminClient(d.data()),
+          };
+        });
+
+        const nextCursor =
+          hasMore && pageDocs.length > 0 ?
+            {docPath: pageDocs[pageDocs.length - 1].ref.path} :
+            null;
+
+        return {notifications, hasMore, nextCursor};
+      } catch (error) {
+        console.error("listInAppNotificationsForAdmin error:", error);
+        const hint =
+          error && String(error.message || "").includes("FAILED_PRECONDITION") ?
+            " If this is the first deploy, create a Firestore index for " +
+            "collection group `notifications` on `createdAt` DESC " +
+            "(see firestore.indexes.json fieldOverrides)." :
+            "";
+        throw new Error(`Failed to list notifications: ${error.message}${hint}`);
+      }
+    },
+);
+
+/**
+ * @param {FirebaseFirestore.DocumentData|undefined} data
+ * @return {Object}
+ */
+function serializeInAppNotificationForAdminClient(data) {
+  if (!data) {
+    return {};
+  }
+  const createdAt = data.createdAt;
+  let createdAtMillis = null;
+  if (createdAt && typeof createdAt.toMillis === "function") {
+    createdAtMillis = createdAt.toMillis();
+  }
+  return {
+    title: data.title,
+    body: data.body,
+    notificationKind: data.notificationKind,
+    templateArgs: data.templateArgs || null,
+    deeplinkKind: data.deeplinkKind,
+    deeplinkId: data.deeplinkId,
+    read: data.read === true,
+    createdAtMillis,
+  };
+}
+
 exports.createApiClient = onCall({region: "europe-west1"}, async (request) => {
   try {
     await ensureAdmin(request);

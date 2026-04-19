@@ -16,15 +16,35 @@ class AdminNotificationsScreen extends StatefulWidget {
 }
 
 class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
+  late final AuthService _authService;
+
+  /// Avoid firing [AdminNotificationsService.fetchInitial] before we know the user
+  /// is an admin (and before profile is loaded). Unconditional fetch caused
+  /// permission-denied for non-admins and during auth/profile bootstrap.
+  bool _scheduledInitialFetch = false;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final service = context.read<AdminNotificationsService>();
-      if (service.entries.isEmpty && !service.isLoading) {
-        service.fetchInitial();
-      }
-    });
+    _authService = context.read<AuthService>();
+    _authService.addListener(_tryFetchForAdmin);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _tryFetchForAdmin());
+  }
+
+  @override
+  void dispose() {
+    _authService.removeListener(_tryFetchForAdmin);
+    super.dispose();
+  }
+
+  void _tryFetchForAdmin() {
+    if (!mounted) return;
+    if (!_authService.isAdmin || !_authService.isProfileReady) return;
+    if (_scheduledInitialFetch) return;
+    final service = context.read<AdminNotificationsService>();
+    if (service.entries.isNotEmpty || service.isLoading) return;
+    _scheduledInitialFetch = true;
+    service.fetchInitial();
   }
 
   @override
@@ -88,6 +108,31 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
                     const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
                     const SizedBox(height: 12),
                     Text(service.error!, textAlign: TextAlign.center),
+                    if (service.lastDiagnostics != null) ...[
+                      const SizedBox(height: 16),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Diagnostics (also printed to console):',
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 280),
+                        child: Scrollbar(
+                          child: SingleChildScrollView(
+                            child: SelectableText(
+                              service.lastDiagnostics!,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    fontFamily: 'monospace',
+                                    height: 1.35,
+                                  ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 16),
                     FilledButton.icon(
                       onPressed: () => service.fetchInitial(forceRefresh: true),
