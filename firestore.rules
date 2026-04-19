@@ -1,5 +1,11 @@
 rules_version = '2';
 service cloud.firestore {
+  function requestingUserIsAdmin() {
+    return request.auth != null &&
+      exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+  }
+
   match /databases/{database}/documents {
     // Spots collection - all spots are public, authenticated users can create, admins/moderators can edit, only admins can delete any spot
     match /spots/{spotId} {
@@ -231,8 +237,10 @@ service cloud.firestore {
         // List queries must not use field checks the query cannot guarantee for every
         // matching document (see Firestore "rules are not filters"). Clients cannot
         // create docs here; only validate shape on update (toggle read / unread).
-        allow read: if request.auth != null && request.auth.uid == userId;
-        allow create, delete: if false;
+        allow read: if request.auth != null &&
+          (request.auth.uid == userId || requestingUserIsAdmin());
+        allow create: if false;
+        allow delete: if requestingUserIsAdmin();
         allow update: if request.auth != null && request.auth.uid == userId &&
           request.resource.data.read is bool &&
           notificationReadStatusPatchOnly() &&
