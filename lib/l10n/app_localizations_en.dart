@@ -69,14 +69,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notificationsSubtitle =>
-      'New spots nearby, people training, and other updates for you';
+      'New spots nearby, training plans, check-ins, and other updates for you';
 
   @override
   String get notificationsEmptyTitle => 'All quiet for now';
 
   @override
   String get notificationsEmptyBody =>
-      'When someone adds a spot nearby or checks in where you train, it’ll show up here.';
+      'When someone adds a spot nearby, plans training where you train, or checks in nearby, it’ll show up here.';
 
   @override
   String get notificationsLoadError =>
@@ -157,6 +157,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'They’ve just checked in to this spot.';
 
   @override
+  String notificationNearbyTrainingPlanTitle(
+    String actorName,
+    String spotName,
+  ) {
+    return '$actorName planned training at $spotName';
+  }
+
+  @override
+  String get notificationNearbyTrainingPlanBody =>
+      'They shared a public training window near one of your saved locations.';
+
+  @override
   String get profileModeratorSectionTitle => 'Moderator';
 
   @override
@@ -193,7 +205,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileLocationAlertsDescription =>
-      'Control which locations are used for nearby alerts, including check-ins, new spots, and future events.';
+      'Control which locations are used for nearby alerts, including check-ins, new spots, training plans, and future events.';
 
   @override
   String get profileLocationAlertsShareLastKnownTitle =>
@@ -218,6 +230,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get profileLocationAlertsNotifyNearbyCheckInsSubtitle =>
       'Get an in-app notification when someone checks in at a spot within about 5 km of an active saved place or your last known location.';
+
+  @override
+  String get profileLocationAlertsNotifyTrainingPlansTitle =>
+      'Notify me about nearby training plans';
+
+  @override
+  String get profileLocationAlertsNotifyTrainingPlansSubtitle =>
+      'Get an in-app notification when someone shares a public training plan at a spot within about 5 km of an active saved place or your last known location.';
 
   @override
   String get profileLocationAlertsSavedLocationsTitle =>

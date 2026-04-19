@@ -63,6 +63,9 @@ const {
 const {
   fanOutNearbyCheckInNotifications,
 } = require("./lib/nearby-check-in-notifications");
+const {
+  fanOutNearbyTrainingPlanNotifications,
+} = require("./lib/nearby-training-plan-notifications");
 // Nearby notification fan-out will use collectionGroup("locationsOfInterest")
 // and must dedupe matches by userId because a user can match via multiple
 // anchors (e.g. lastKnown + home/work).
@@ -1206,6 +1209,24 @@ exports.onSpotCheckInCreated = onDocumentCreated(
         });
       } catch (e) {
         console.error("onSpotCheckInCreated nearby notifications error", e);
+      }
+    },
+);
+
+exports.onSpotTrainingPlanCreated = onDocumentCreated(
+    {document: "spotTrainingPlans/{planId}", region: "europe-west1"},
+    async (event) => {
+      const planId = event.params.planId;
+      const planData = event.data.data();
+      try {
+        await fanOutNearbyTrainingPlanNotifications({
+          db,
+          FieldValue,
+          planId,
+          planData,
+        });
+      } catch (e) {
+        console.error("onSpotTrainingPlanCreated nearby notifications error", e);
       }
     },
 );

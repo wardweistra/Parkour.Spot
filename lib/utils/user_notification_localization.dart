@@ -62,6 +62,14 @@ UserNotificationCopy localizedUserNotificationCopy(
         ),
         body: l10n.notificationNearbyCheckInBody,
       );
+    case 'nearby_training_plan':
+      return UserNotificationCopy(
+        title: l10n.notificationNearbyTrainingPlanTitle(
+          actorLabel(args['actorName']),
+          spotLabel(args['spotName']),
+        ),
+        body: l10n.notificationNearbyTrainingPlanBody,
+      );
     default:
       return UserNotificationCopy(
         title: notification.title,

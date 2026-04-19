@@ -69,14 +69,14 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get notificationsSubtitle =>
-      'Nouveaux spots à proximité, entraînements et autres nouvelles pour vous';
+      'Nouveaux spots à proximité, séances planifiées, check-ins et autres nouvelles pour vous';
 
   @override
   String get notificationsEmptyTitle => 'Tout est calme pour l’instant';
 
   @override
   String get notificationsEmptyBody =>
-      'Quand quelqu’un ajoute un spot à proximité ou se déclare sur un lieu où vous vous entraînez, vous le verrez ici.';
+      'Quand quelqu’un ajoute un spot à proximité, planifie une séance où vous vous entraînez ou fait un check-in à proximité, vous le verrez ici.';
 
   @override
   String get notificationsLoadError =>
@@ -158,6 +158,18 @@ class AppLocalizationsFr extends AppLocalizations {
       'Vient de s’enregistrer sur ce spot.';
 
   @override
+  String notificationNearbyTrainingPlanTitle(
+    String actorName,
+    String spotName,
+  ) {
+    return '$actorName a planifié un entraînement à $spotName';
+  }
+
+  @override
+  String get notificationNearbyTrainingPlanBody =>
+      'Une fenêtre d’entraînement publique a été partagée près de l’un de vos lieux enregistrés.';
+
+  @override
   String get profileModeratorSectionTitle => 'Modération';
 
   @override
@@ -194,7 +206,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get profileLocationAlertsDescription =>
-      'Choisissez les lieux utilisés pour les alertes à proximité, y compris les enregistrements, les nouveaux spots et les futurs événements.';
+      'Choisissez les lieux utilisés pour les alertes à proximité, y compris les enregistrements, les nouveaux spots, les séances planifiées et les futurs événements.';
 
   @override
   String get profileLocationAlertsShareLastKnownTitle =>
@@ -219,6 +231,14 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get profileLocationAlertsNotifyNearbyCheckInsSubtitle =>
       'Recevez une notification in-app lorsque quelqu’un fait un check-in sur un spot à environ 5 km d’un lieu enregistré actif ou de votre dernière position connue.';
+
+  @override
+  String get profileLocationAlertsNotifyTrainingPlansTitle =>
+      'Me prévenir des séances planifiées à proximité';
+
+  @override
+  String get profileLocationAlertsNotifyTrainingPlansSubtitle =>
+      'Recevez une notification in-app lorsque quelqu’un partage une fenêtre d’entraînement publique sur un spot à environ 5 km d’un lieu enregistré actif ou de votre dernière position connue.';
 
   @override
   String get profileLocationAlertsSavedLocationsTitle => 'Mes lieux d’intérêt';
