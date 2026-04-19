@@ -312,6 +312,14 @@
       ]
     },
     {
+      "collectionGroup": "spotTrainingPlans",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "plannedStartAt", "order": "ASCENDING" },
+        { "fieldPath": "plannedEndAt", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "locationsOfInterest",
       "queryScope": "COLLECTION_GROUP",
       "density": "SPARSE_ALL",

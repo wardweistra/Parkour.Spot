@@ -63,6 +63,9 @@ const {
 const {
   fanOutNearbyCheckInNotifications,
 } = require("./lib/nearby-check-in-notifications");
+const {
+  runTrainingPlanCheckInReminders,
+} = require("./lib/training-plan-check-in-reminders");
 // Nearby notification fan-out will use collectionGroup("locationsOfInterest")
 // and must dedupe matches by userId because a user can match via multiple
 // anchors (e.g. lastKnown + home/work).
@@ -1206,6 +1209,50 @@ exports.onSpotCheckInCreated = onDocumentCreated(
         });
       } catch (e) {
         console.error("onSpotCheckInCreated nearby notifications error", e);
+      }
+    },
+);
+
+exports.onSpotTrainingPlanUpdated = onDocumentUpdated(
+    {document: "spotTrainingPlans/{planId}", region: "europe-west1"},
+    async (event) => {
+      const before = event.data.before.data();
+      const after = event.data.after.data();
+      const bs = before?.plannedStartAt;
+      const as = after?.plannedStartAt;
+      const be = before?.plannedEndAt;
+      const ae = after?.plannedEndAt;
+      if (!bs || !as || !be || !ae) {
+        return;
+      }
+      if (bs.toMillis() === as.toMillis() && be.toMillis() === ae.toMillis()) {
+        return;
+      }
+      try {
+        await event.data.after.ref.update({
+          planReminderSentAt: FieldValue.delete(),
+        });
+      } catch (e) {
+        console.error(
+            "onSpotTrainingPlanUpdated clear planReminderSentAt error",
+            e,
+        );
+      }
+    },
+);
+
+exports.runTrainingPlanCheckInRemindersScheduled = onSchedule(
+    {
+      schedule: "every 5 minutes",
+      region: "europe-west1",
+      timeoutSeconds: 300,
+    },
+    async () => {
+      try {
+        const result = await runTrainingPlanCheckInReminders({db, FieldValue});
+        console.log("Training plan check-in reminders:", result);
+      } catch (e) {
+        console.error("runTrainingPlanCheckInReminders error", e);
       }
     },
 );

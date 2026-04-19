@@ -195,6 +195,19 @@
   "@notificationNearbyCheckInBody": {
     "description": "In-app notification body for nearby public check-in (actor is in the title)"
   },
+  "notificationTrainingPlanCheckInReminderTitle": "Time to check in at {spotName}",
+  "@notificationTrainingPlanCheckInReminderTitle": {
+    "description": "In-app notification when the user’s planned training window has started but they have not checked in",
+    "placeholders": {
+      "spotName": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationTrainingPlanCheckInReminderBody": "Your planned session has started. Tap to check in.",
+  "@notificationTrainingPlanCheckInReminderBody": {
+    "description": "In-app notification body for training plan check-in reminder"
+  },
   "profileModeratorSectionTitle": "Moderator",
   "@profileModeratorSectionTitle": {
     "description": "Account tab: moderator section heading"
@@ -266,6 +279,14 @@
   "profileLocationAlertsNotifyNearbyCheckInsSubtitle": "Get an in-app notification when someone checks in at a spot within about 5 km of an active saved place or your last known location.",
   "@profileLocationAlertsNotifyNearbyCheckInsSubtitle": {
     "description": "Account settings: explains nearby check-in notification opt-in and range"
+  },
+  "profileTrainingPlanCheckInReminderTitle": "Remind me to check in for planned sessions",
+  "@profileTrainingPlanCheckInReminderTitle": {
+    "description": "Account settings: toggle for reminders when a planned training window starts"
+  },
+  "profileTrainingPlanCheckInReminderSubtitle": "Get an in-app reminder when your planned session has started and you haven’t checked in at that spot yet.",
+  "@profileTrainingPlanCheckInReminderSubtitle": {
+    "description": "Account settings: explains training plan check-in reminder opt-in"
   },
   "profileLocationAlertsSavedLocationsTitle": "Locations of interest",
   "@profileLocationAlertsSavedLocationsTitle": {

@@ -61,6 +61,21 @@ void main() {
       expect(copy.body, en.notificationNearbyCheckInBody);
     });
 
+    test('localizes training_plan_check_in_reminder with spot name', () {
+      final n = UserNotification(
+        id: '1',
+        title: 'English title',
+        body: 'English body',
+        notificationKind: 'training_plan_check_in_reminder',
+        templateArgs: const {'spotName': 'North Wall'},
+        deeplinkKind: UserNotificationDeeplinkKind.spot,
+        deeplinkId: 's1',
+      );
+      final copy = localizedUserNotificationCopy(n, en);
+      expect(copy.title, 'Time to check in at North Wall');
+      expect(copy.body, en.notificationTrainingPlanCheckInReminderBody);
+    });
+
     test('unknown notificationKind falls back to stored strings', () {
       final n = UserNotification(
         id: '1',
