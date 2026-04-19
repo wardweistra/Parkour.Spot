@@ -159,6 +159,15 @@ class AppLocalizationsEs extends AppLocalizations {
       'Acaba de hacer check-in en este spot.';
 
   @override
+  String notificationTrainingPlanCheckInReminderTitle(String spotName) {
+    return 'Hora de hacer check-in en $spotName';
+  }
+
+  @override
+  String get notificationTrainingPlanCheckInReminderBody =>
+      'Tu sesión planificada ya ha empezado. Toca para hacer check-in.';
+
+  @override
   String get profileModeratorSectionTitle => 'Moderador';
 
   @override
@@ -221,6 +230,14 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get profileLocationAlertsNotifyNearbyCheckInsSubtitle =>
       'Recibe una notificación en la app cuando alguien haga check-in en un spot a unos 5 km de un lugar guardado activo o de tu última ubicación conocida.';
+
+  @override
+  String get profileTrainingPlanCheckInReminderTitle =>
+      'Recordarme hacer check-in en las sesiones planificadas';
+
+  @override
+  String get profileTrainingPlanCheckInReminderSubtitle =>
+      'Recibe un recordatorio en la app cuando tu sesión planificada haya empezado y aún no hayas hecho check-in en ese spot.';
 
   @override
   String get profileLocationAlertsSavedLocationsTitle =>

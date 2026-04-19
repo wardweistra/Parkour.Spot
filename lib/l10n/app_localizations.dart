@@ -364,6 +364,18 @@ abstract class AppLocalizations {
   /// **'They’ve just checked in to this spot.'**
   String get notificationNearbyCheckInBody;
 
+  /// In-app notification when the user’s planned training window has started but they have not checked in
+  ///
+  /// In en, this message translates to:
+  /// **'Time to check in at {spotName}'**
+  String notificationTrainingPlanCheckInReminderTitle(String spotName);
+
+  /// In-app notification body for training plan check-in reminder
+  ///
+  /// In en, this message translates to:
+  /// **'Your planned session has started. Tap to check in.'**
+  String get notificationTrainingPlanCheckInReminderBody;
+
   /// Account tab: moderator section heading
   ///
   /// In en, this message translates to:
@@ -471,6 +483,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Get an in-app notification when someone checks in at a spot within about 5 km of an active saved place or your last known location.'**
   String get profileLocationAlertsNotifyNearbyCheckInsSubtitle;
+
+  /// Account settings: toggle for reminders when a planned training window starts
+  ///
+  /// In en, this message translates to:
+  /// **'Remind me to check in for planned sessions'**
+  String get profileTrainingPlanCheckInReminderTitle;
+
+  /// Account settings: explains training plan check-in reminder opt-in
+  ///
+  /// In en, this message translates to:
+  /// **'Get an in-app reminder when your planned session has started and you haven’t checked in at that spot yet.'**
+  String get profileTrainingPlanCheckInReminderSubtitle;
 
   /// Account settings: saved locations subsection title
   ///

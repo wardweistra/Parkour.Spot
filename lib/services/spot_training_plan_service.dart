@@ -123,6 +123,7 @@ class SpotTrainingPlanService extends ChangeNotifier {
         if (commentOut == null) {
           update['comment'] = FieldValue.delete();
         }
+        update['planReminderSentAt'] = FieldValue.delete();
         await existing.docs.single.reference.update(update);
       }
 

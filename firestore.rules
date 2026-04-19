@@ -101,10 +101,17 @@ service cloud.firestore {
           && request.resource.data.createdAt == request.time
           && spotTrainingPlanWindowOk(request.resource.data)
           && request.resource.data.plannedEndAt > request.time
+          && !('planReminderSentAt' in request.resource.data)
           && spotTrainingPlanCommentOk(request.resource.data)
           && (!('spotName' in request.resource.data) ||
             (request.resource.data.spotName is string &&
               request.resource.data.spotName.size() <= 500));
+      }
+      // Set only by Cloud Functions; clients may delete when rescheduling.
+      function spotTrainingPlanPlanReminderSentAtOk() {
+        return !('planReminderSentAt' in request.resource.data) ||
+          (('planReminderSentAt' in resource.data) &&
+            request.resource.data.planReminderSentAt == resource.data.planReminderSentAt);
       }
       function spotTrainingPlanUpdateShape() {
         return request.auth != null
@@ -114,6 +121,7 @@ service cloud.firestore {
           && request.resource.data.createdAt == resource.data.createdAt
           && request.resource.data.isPrivate is bool
           && spotTrainingPlanWindowOk(request.resource.data)
+          && spotTrainingPlanPlanReminderSentAtOk()
           && ((!('displayName' in resource.data)
                 && !('displayName' in request.resource.data))
               || request.resource.data.displayName == resource.data.displayName)
@@ -213,7 +221,7 @@ service cloud.firestore {
             (data.notificationKind is string &&
               data.notificationKind.size() > 0 &&
               data.notificationKind.size() <= 64 &&
-              data.notificationKind in ['nearby_new_spot', 'nearby_check_in']);
+              data.notificationKind in ['nearby_new_spot', 'nearby_check_in', 'training_plan_check_in_reminder']);
         }
         function notificationTemplateArgsOk(data) {
           return !('templateArgs' in data) || (
