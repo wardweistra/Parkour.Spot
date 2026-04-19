@@ -1,1 +1,6 @@
-{}
+{
+  "nl": [
+    "spotTrainingPlanTooltipPublicUntil",
+    "spotTrainingPlanTooltipPrivateUntil"
+  ]
+}

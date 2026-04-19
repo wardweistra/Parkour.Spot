@@ -395,6 +395,8 @@ class AccountSettingsScreen extends StatelessWidget {
         authService.userProfile?.notifyCheckInsNearby == true;
     final notifyTrainingPlansNearby =
         authService.userProfile?.notifyTrainingPlansNearby == true;
+    final notifyTrainingPlanCheckInReminders =
+        authService.userProfile?.notifyTrainingPlanCheckInReminders == true;
 
     return Card(
       child: Padding(
@@ -486,6 +488,29 @@ class AccountSettingsScreen extends StatelessWidget {
                                     .updateNotifyTrainingPlansNearby(enabled);
                               }
                             : null,
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(
+                        Icons.alarm_on_outlined,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      title: Text(
+                        l10n.profileTrainingPlanCheckInReminderTitle,
+                      ),
+                      subtitle: Text(
+                        l10n.profileTrainingPlanCheckInReminderSubtitle,
+                      ),
+                      trailing: Switch(
+                        value: notifyTrainingPlanCheckInReminders,
+                        onChanged: (enabled) async {
+                          await authService
+                              .updateNotifyTrainingPlanCheckInReminders(
+                            enabled,
+                          );
+                        },
                       ),
                     ),
                   ],

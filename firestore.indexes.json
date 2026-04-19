@@ -272,6 +272,15 @@
       "collectionGroup": "spotCheckIns",
       "queryScope": "COLLECTION",
       "fields": [
+        { "fieldPath": "spotId", "order": "ASCENDING" },
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "expectedEndAt", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "spotCheckIns",
+      "queryScope": "COLLECTION",
+      "fields": [
         { "fieldPath": "userId", "order": "ASCENDING" },
         { "fieldPath": "expectedEndAt", "order": "DESCENDING" }
       ]
@@ -308,6 +317,14 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "plannedEndAt", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "spotTrainingPlans",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "plannedStartAt", "order": "ASCENDING" },
         { "fieldPath": "plannedEndAt", "order": "ASCENDING" }
       ]
     },

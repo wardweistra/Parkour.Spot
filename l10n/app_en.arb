@@ -211,6 +211,19 @@
   "@notificationNearbyTrainingPlanBody": {
     "description": "In-app notification body for nearby public training plan (names are in the title)"
   },
+  "notificationTrainingPlanCheckInReminderTitle": "Time to check in at {spotName}",
+  "@notificationTrainingPlanCheckInReminderTitle": {
+    "description": "In-app notification when the user's planned training window has started but they have not checked in",
+    "placeholders": {
+      "spotName": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationTrainingPlanCheckInReminderBody": "Your planned session has started. Tap to check in.",
+  "@notificationTrainingPlanCheckInReminderBody": {
+    "description": "In-app notification body for training plan check-in reminder"
+  },
   "profileModeratorSectionTitle": "Moderator",
   "@profileModeratorSectionTitle": {
     "description": "Account tab: moderator section heading"
@@ -290,6 +303,14 @@
   "profileLocationAlertsNotifyTrainingPlansSubtitle": "Get an in-app notification when someone shares a public training plan at a spot within about 5 km of an active saved place or your last known location.",
   "@profileLocationAlertsNotifyTrainingPlansSubtitle": {
     "description": "Account settings: explains nearby training-plan notification opt-in and range"
+  },
+  "profileTrainingPlanCheckInReminderTitle": "Remind me to check in for planned sessions",
+  "@profileTrainingPlanCheckInReminderTitle": {
+    "description": "Account settings: toggle for reminders when a planned training window starts"
+  },
+  "profileTrainingPlanCheckInReminderSubtitle": "Get an in-app reminder when your planned session has started and you haven’t checked in at that spot yet.",
+  "@profileTrainingPlanCheckInReminderSubtitle": {
+    "description": "Account settings: explains training plan check-in reminder opt-in"
   },
   "profileLocationAlertsSavedLocationsTitle": "Locations of interest",
   "@profileLocationAlertsSavedLocationsTitle": {
@@ -1012,6 +1033,28 @@
     "description": "Avatar tooltip: private training plan",
     "placeholders": {
       "timeRange": {
+        "type": "String"
+      }
+    }
+  },
+  "spotTrainingPlanTooltipPublicUntil": "{name} plans to train here until {untilTime}",
+  "@spotTrainingPlanTooltipPublicUntil": {
+    "description": "Avatar tooltip: public training plan during its scheduled window (start time has passed)",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "untilTime": {
+        "type": "String",
+        "example": "4:00 PM today"
+      }
+    }
+  },
+  "spotTrainingPlanTooltipPrivateUntil": "You plan to train here until {untilTime} — only you can see this plan",
+  "@spotTrainingPlanTooltipPrivateUntil": {
+    "description": "Avatar tooltip: private training plan during its scheduled window",
+    "placeholders": {
+      "untilTime": {
         "type": "String"
       }
     }

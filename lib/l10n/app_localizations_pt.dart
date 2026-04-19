@@ -171,6 +171,15 @@ class AppLocalizationsPt extends AppLocalizations {
       'Partilharam uma janela de treino pública perto de uma das suas localizações guardadas.';
 
   @override
+  String notificationTrainingPlanCheckInReminderTitle(String spotName) {
+    return 'Hora de fazer check-in em $spotName';
+  }
+
+  @override
+  String get notificationTrainingPlanCheckInReminderBody =>
+      'O teu treino planeado já começou. Toca para fazer check-in.';
+
+  @override
   String get profileModeratorSectionTitle => 'Moderador';
 
   @override
@@ -241,6 +250,14 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get profileLocationAlertsNotifyTrainingPlansSubtitle =>
       'Receba uma notificação na app quando alguém partilhar um plano de treino público num spot a cerca de 5 km de um local guardado ativo ou da sua última localização conhecida.';
+
+  @override
+  String get profileTrainingPlanCheckInReminderTitle =>
+      'Lembrar-me de fazer check-in nas sessões planeadas';
+
+  @override
+  String get profileTrainingPlanCheckInReminderSubtitle =>
+      'Recebe um lembrete na app quando a tua sessão planeada já começou e ainda não fizeste check-in nesse spot.';
 
   @override
   String get profileLocationAlertsSavedLocationsTitle =>
@@ -781,6 +798,16 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String spotTrainingPlanTooltipPrivate(String timeRange) {
     return 'Planeias treinar aqui $timeRange — só tu vês este plano';
+  }
+
+  @override
+  String spotTrainingPlanTooltipPublicUntil(String name, String untilTime) {
+    return '$name planeia treinar aqui até $untilTime';
+  }
+
+  @override
+  String spotTrainingPlanTooltipPrivateUntil(String untilTime) {
+    return 'Planeias treinar aqui até $untilTime — só tu vês este plano';
   }
 
   @override

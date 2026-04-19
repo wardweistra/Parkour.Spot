@@ -70,6 +70,13 @@ UserNotificationCopy localizedUserNotificationCopy(
         ),
         body: l10n.notificationNearbyTrainingPlanBody,
       );
+    case 'training_plan_check_in_reminder':
+      return UserNotificationCopy(
+        title: l10n.notificationTrainingPlanCheckInReminderTitle(
+          spotLabel(args['spotName']),
+        ),
+        body: l10n.notificationTrainingPlanCheckInReminderBody,
+      );
     default:
       return UserNotificationCopy(
         title: notification.title,

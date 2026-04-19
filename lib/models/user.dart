@@ -20,6 +20,7 @@ class User {
   final bool notifyNewSpotsNearby;
   final bool notifyCheckInsNearby;
   final bool notifyTrainingPlansNearby;
+  final bool notifyTrainingPlanCheckInReminders;
 
   User({
     required this.id,
@@ -43,6 +44,7 @@ class User {
     this.notifyNewSpotsNearby = true,
     this.notifyCheckInsNearby = true,
     this.notifyTrainingPlansNearby = true,
+    this.notifyTrainingPlanCheckInReminders = true,
   });
 
   factory User.fromMap(Map<String, dynamic> map) {
@@ -85,6 +87,10 @@ class User {
       notifyTrainingPlansNearby: map['notifyTrainingPlansNearby'] is bool
           ? map['notifyTrainingPlansNearby'] as bool
           : true,
+      notifyTrainingPlanCheckInReminders:
+          map['notifyTrainingPlanCheckInReminders'] is bool
+              ? map['notifyTrainingPlanCheckInReminders'] as bool
+              : true,
     );
   }
 
@@ -111,6 +117,7 @@ class User {
       'notifyNewSpotsNearby': notifyNewSpotsNearby,
       'notifyCheckInsNearby': notifyCheckInsNearby,
       'notifyTrainingPlansNearby': notifyTrainingPlansNearby,
+      'notifyTrainingPlanCheckInReminders': notifyTrainingPlanCheckInReminders,
     };
   }
 
@@ -138,6 +145,7 @@ class User {
     bool? notifyNewSpotsNearby,
     bool? notifyCheckInsNearby,
     bool? notifyTrainingPlansNearby,
+    bool? notifyTrainingPlanCheckInReminders,
   }) {
     return User(
       id: id ?? this.id,
@@ -167,6 +175,9 @@ class User {
       notifyCheckInsNearby: notifyCheckInsNearby ?? this.notifyCheckInsNearby,
       notifyTrainingPlansNearby:
           notifyTrainingPlansNearby ?? this.notifyTrainingPlansNearby,
+      notifyTrainingPlanCheckInReminders:
+          notifyTrainingPlanCheckInReminders ??
+          this.notifyTrainingPlanCheckInReminders,
     );
   }
 

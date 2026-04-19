@@ -170,6 +170,15 @@ class AppLocalizationsNl extends AppLocalizations {
       'Ze deelden een openbaar trainingsvenster nabij een van je opgeslagen locaties.';
 
   @override
+  String notificationTrainingPlanCheckInReminderTitle(String spotName) {
+    return 'Tijd om in te checken bij $spotName';
+  }
+
+  @override
+  String get notificationTrainingPlanCheckInReminderBody =>
+      'Je geplande sessie is begonnen. Tik om in te checken.';
+
+  @override
   String get profileModeratorSectionTitle => 'Moderator';
 
   @override
@@ -238,6 +247,14 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get profileLocationAlertsNotifyTrainingPlansSubtitle =>
       'Ontvang een in-app melding wanneer iemand een openbaar trainingsvenster deelt op een spot binnen ongeveer 5 km van een actieve opgeslagen plek of je laatst bekende locatie.';
+
+  @override
+  String get profileTrainingPlanCheckInReminderTitle =>
+      'Herinner me om in te checken voor geplande sessies';
+
+  @override
+  String get profileTrainingPlanCheckInReminderSubtitle =>
+      'Ontvang een in-app herinnering wanneer je geplande sessie is begonnen en je nog niet bent ingecheckt op die spot.';
 
   @override
   String get profileLocationAlertsSavedLocationsTitle =>
@@ -777,6 +794,16 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String spotTrainingPlanTooltipPrivate(String timeRange) {
     return 'Je plant hier te trainen $timeRange — alleen jij ziet dit plan';
+  }
+
+  @override
+  String spotTrainingPlanTooltipPublicUntil(String name, String untilTime) {
+    return '$name plans to train here until $untilTime';
+  }
+
+  @override
+  String spotTrainingPlanTooltipPrivateUntil(String untilTime) {
+    return 'You plan to train here until $untilTime — only you can see this plan';
   }
 
   @override

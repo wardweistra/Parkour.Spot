@@ -229,23 +229,39 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
   String _trainingTooltipFor(TrainingPlanAvatarEntry entry) {
     final l10n = AppLocalizations.of(context)!;
     final p = entry.plan;
-    final timeRange = communityFriendlyPlannedTrainingStart(
-      p.plannedStartAt,
-      l10n,
-    );
-    final comment = p.comment?.trim();
-    if (entry.showPrivateBadge) {
-      final head = l10n.spotTrainingPlanTooltipPrivate(timeRange);
-      if (comment != null && comment.isNotEmpty) {
-        return '$head\n$comment';
+    final now = DateTime.now();
+    final inActiveWindow = now.toUtc().isAfter(p.plannedStartAt.toUtc()) &&
+        p.plannedEndAt.toUtc().isAfter(now.toUtc());
+
+    final String head;
+    if (inActiveWindow) {
+      final untilTime = communityFriendlyCheckInUntil(p.plannedEndAt, l10n);
+      if (entry.showPrivateBadge) {
+        head = l10n.spotTrainingPlanTooltipPrivateUntil(untilTime);
+      } else {
+        final name = p.displayName?.trim();
+        final who = (name != null && name.isNotEmpty)
+            ? name
+            : l10n.spotCheckInUnnamedPerson;
+        head = l10n.spotTrainingPlanTooltipPublicUntil(who, untilTime);
       }
-      return head;
+    } else {
+      final timeRange = communityFriendlyPlannedTrainingStart(
+        p.plannedStartAt,
+        l10n,
+      );
+      if (entry.showPrivateBadge) {
+        head = l10n.spotTrainingPlanTooltipPrivate(timeRange);
+      } else {
+        final name = p.displayName?.trim();
+        final who = (name != null && name.isNotEmpty)
+            ? name
+            : l10n.spotCheckInUnnamedPerson;
+        head = l10n.spotTrainingPlanTooltipPublic(who, timeRange);
+      }
     }
-    final name = p.displayName?.trim();
-    final who = (name != null && name.isNotEmpty)
-        ? name
-        : l10n.spotCheckInUnnamedPerson;
-    final head = l10n.spotTrainingPlanTooltipPublic(who, timeRange);
+
+    final comment = p.comment?.trim();
     if (comment != null && comment.isNotEmpty) {
       return '$head\n$comment';
     }
