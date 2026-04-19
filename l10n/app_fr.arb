@@ -186,6 +186,8 @@
   "spotCheckInTooltipPrivate": "Vous êtes ici maintenant jusqu’à {time} — vous seul voyez ce check-in",
   "spotTrainingPlanTooltipPublic": "{name} prévoit de s’entraîner ici {timeRange}",
   "spotTrainingPlanTooltipPrivate": "Vous prévoyez de vous entraîner ici {timeRange} — vous seul voyez ce plan",
+  "spotTrainingPlanTooltipPublicUntil": "{name} prévoit de s’entraîner ici jusqu’à {untilTime}",
+  "spotTrainingPlanTooltipPrivateUntil": "Vous prévoyez de vous entraîner ici jusqu’à {untilTime} — vous seul voyez ce plan",
   "spotDetailRouteErrorLoading": "Erreur lors du chargement du spot",
   "spotDetailRouteTryAgainLater": "Réessayez plus tard",
   "spotDetailRouteNotFound": "Spot introuvable",

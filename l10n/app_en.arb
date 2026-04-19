@@ -992,6 +992,28 @@
       }
     }
   },
+  "spotTrainingPlanTooltipPublicUntil": "{name} plans to train here until {untilTime}",
+  "@spotTrainingPlanTooltipPublicUntil": {
+    "description": "Avatar tooltip: public training plan during its scheduled window (start time has passed)",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "untilTime": {
+        "type": "String",
+        "example": "4:00 PM today"
+      }
+    }
+  },
+  "spotTrainingPlanTooltipPrivateUntil": "You plan to train here until {untilTime} — only you can see this plan",
+  "@spotTrainingPlanTooltipPrivateUntil": {
+    "description": "Avatar tooltip: private training plan during its scheduled window",
+    "placeholders": {
+      "untilTime": {
+        "type": "String"
+      }
+    }
+  },
   "spotDetailRouteErrorLoading": "Error loading spot",
   "spotDetailRouteTryAgainLater": "Please try again later",
   "spotDetailRouteNotFound": "Spot not found",

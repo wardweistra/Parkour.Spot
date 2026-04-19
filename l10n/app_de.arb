@@ -186,6 +186,8 @@
   "spotCheckInTooltipPrivate": "Du bist gerade hier bis {time} — nur du siehst diesen Check-in",
   "spotTrainingPlanTooltipPublic": "{name} plant, hier zu trainieren {timeRange}",
   "spotTrainingPlanTooltipPrivate": "Du planst, hier zu trainieren {timeRange} — nur du siehst diesen Plan",
+  "spotTrainingPlanTooltipPublicUntil": "{name} plant, hier bis {untilTime} zu trainieren",
+  "spotTrainingPlanTooltipPrivateUntil": "Du planst, hier bis {untilTime} zu trainieren — nur du siehst diesen Plan",
   "spotDetailRouteErrorLoading": "Fehler beim Laden des Spots",
   "spotDetailRouteTryAgainLater": "Bitte versuche es später erneut",
   "spotDetailRouteNotFound": "Spot nicht gefunden",

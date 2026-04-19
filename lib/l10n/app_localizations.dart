@@ -1390,6 +1390,18 @@ abstract class AppLocalizations {
   /// **'You plan to train here {timeRange} — only you can see this plan'**
   String spotTrainingPlanTooltipPrivate(String timeRange);
 
+  /// Avatar tooltip: public training plan during its scheduled window (start time has passed)
+  ///
+  /// In en, this message translates to:
+  /// **'{name} plans to train here until {untilTime}'**
+  String spotTrainingPlanTooltipPublicUntil(String name, String untilTime);
+
+  /// Avatar tooltip: private training plan during its scheduled window
+  ///
+  /// In en, this message translates to:
+  /// **'You plan to train here until {untilTime} — only you can see this plan'**
+  String spotTrainingPlanTooltipPrivateUntil(String untilTime);
+
   /// No description provided for @spotDetailRouteErrorLoading.
   ///
   /// In en, this message translates to:

@@ -765,6 +765,16 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String spotTrainingPlanTooltipPublicUntil(String name, String untilTime) {
+    return '$name planea entrenar aquí hasta $untilTime';
+  }
+
+  @override
+  String spotTrainingPlanTooltipPrivateUntil(String untilTime) {
+    return 'Planeas entrenar aquí hasta $untilTime — solo tú ves este plan';
+  }
+
+  @override
   String get spotDetailRouteErrorLoading => 'Error al cargar el spot';
 
   @override
