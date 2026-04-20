@@ -19,6 +19,7 @@ class User {
   final bool shareLastKnownLocationForAlerts;
   final bool notifyNewSpotsNearby;
   final bool notifyCheckInsNearby;
+  final bool notifyTrainingPlansNearby;
   final bool notifyTrainingPlanCheckInReminders;
 
   User({
@@ -42,6 +43,7 @@ class User {
     this.shareLastKnownLocationForAlerts = true,
     this.notifyNewSpotsNearby = true,
     this.notifyCheckInsNearby = true,
+    this.notifyTrainingPlansNearby = true,
     this.notifyTrainingPlanCheckInReminders = true,
   });
 
@@ -82,6 +84,9 @@ class User {
       notifyCheckInsNearby: map['notifyCheckInsNearby'] is bool
           ? map['notifyCheckInsNearby'] as bool
           : true,
+      notifyTrainingPlansNearby: map['notifyTrainingPlansNearby'] is bool
+          ? map['notifyTrainingPlansNearby'] as bool
+          : true,
       notifyTrainingPlanCheckInReminders:
           map['notifyTrainingPlanCheckInReminders'] is bool
               ? map['notifyTrainingPlanCheckInReminders'] as bool
@@ -111,6 +116,7 @@ class User {
       'shareLastKnownLocationForAlerts': shareLastKnownLocationForAlerts,
       'notifyNewSpotsNearby': notifyNewSpotsNearby,
       'notifyCheckInsNearby': notifyCheckInsNearby,
+      'notifyTrainingPlansNearby': notifyTrainingPlansNearby,
       'notifyTrainingPlanCheckInReminders': notifyTrainingPlanCheckInReminders,
     };
   }
@@ -138,6 +144,7 @@ class User {
     bool? shareLastKnownLocationForAlerts,
     bool? notifyNewSpotsNearby,
     bool? notifyCheckInsNearby,
+    bool? notifyTrainingPlansNearby,
     bool? notifyTrainingPlanCheckInReminders,
   }) {
     return User(
@@ -166,6 +173,8 @@ class User {
       notifyNewSpotsNearby:
           notifyNewSpotsNearby ?? this.notifyNewSpotsNearby,
       notifyCheckInsNearby: notifyCheckInsNearby ?? this.notifyCheckInsNearby,
+      notifyTrainingPlansNearby:
+          notifyTrainingPlansNearby ?? this.notifyTrainingPlansNearby,
       notifyTrainingPlanCheckInReminders:
           notifyTrainingPlanCheckInReminders ??
           this.notifyTrainingPlanCheckInReminders,

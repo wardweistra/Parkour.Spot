@@ -43,6 +43,24 @@ void main() {
       expect(copyNl.title, 'Nieuwe spot in de buurt: Spot zonder naam');
     });
 
+    test('localizes nearby_training_plan with names from templateArgs', () {
+      final n = UserNotification(
+        id: '1',
+        title: 'English title',
+        body: 'English body',
+        notificationKind: 'nearby_training_plan',
+        templateArgs: const {
+          'actorName': 'Sam',
+          'spotName': 'Wall',
+        },
+        deeplinkKind: UserNotificationDeeplinkKind.spot,
+        deeplinkId: 's1',
+      );
+      final copy = localizedUserNotificationCopy(n, en);
+      expect(copy.title, 'Sam planned training at Wall');
+      expect(copy.body, en.notificationNearbyTrainingPlanBody);
+    });
+
     test('localizes nearby_check_in with names from templateArgs', () {
       final n = UserNotification(
         id: '1',

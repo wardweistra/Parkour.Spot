@@ -223,7 +223,7 @@ abstract class AppLocalizations {
   /// Account tab: hint that notifications reflect nearby map/community activity
   ///
   /// In en, this message translates to:
-  /// **'New spots nearby, people training, and other updates for you'**
+  /// **'New spots nearby, training plans, check-ins, and other updates for you'**
   String get notificationsSubtitle;
 
   /// Notifications inbox empty state heading
@@ -235,7 +235,7 @@ abstract class AppLocalizations {
   /// Notifications inbox empty state supporting text
   ///
   /// In en, this message translates to:
-  /// **'When someone adds a spot nearby or checks in where you train, it’ll show up here.'**
+  /// **'When someone adds a spot nearby, plans training where you train, or checks in nearby, it’ll show up here.'**
   String get notificationsEmptyBody;
 
   /// Notifications inbox error message
@@ -364,7 +364,19 @@ abstract class AppLocalizations {
   /// **'They’ve just checked in to this spot.'**
   String get notificationNearbyCheckInBody;
 
-  /// In-app notification when the user’s planned training window has started but they have not checked in
+  /// In-app notification title when someone created a public training plan at a spot nearby
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} planned training at {spotName}'**
+  String notificationNearbyTrainingPlanTitle(String actorName, String spotName);
+
+  /// In-app notification body for nearby public training plan (names are in the title)
+  ///
+  /// In en, this message translates to:
+  /// **'They shared a public training window near one of your saved locations.'**
+  String get notificationNearbyTrainingPlanBody;
+
+  /// In-app notification when the user's planned training window has started but they have not checked in
   ///
   /// In en, this message translates to:
   /// **'Time to check in at {spotName}'**
@@ -445,7 +457,7 @@ abstract class AppLocalizations {
   /// Account settings: location alerts section description
   ///
   /// In en, this message translates to:
-  /// **'Control which locations are used for nearby alerts, including check-ins, new spots, and future events.'**
+  /// **'Control which locations are used for nearby alerts, including check-ins, new spots, training plans, and future events.'**
   String get profileLocationAlertsDescription;
 
   /// Account settings: toggle title for using last known location in alerts
@@ -483,6 +495,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Get an in-app notification when someone checks in at a spot within about 5 km of an active saved place or your last known location.'**
   String get profileLocationAlertsNotifyNearbyCheckInsSubtitle;
+
+  /// Account settings: toggle for in-app notifications when someone creates a public training plan near an enabled location of interest
+  ///
+  /// In en, this message translates to:
+  /// **'Notify me about nearby training plans'**
+  String get profileLocationAlertsNotifyTrainingPlansTitle;
+
+  /// Account settings: explains nearby training-plan notification opt-in and range
+  ///
+  /// In en, this message translates to:
+  /// **'Get an in-app notification when someone shares a public training plan at a spot within about 5 km of an active saved place or your last known location.'**
+  String get profileLocationAlertsNotifyTrainingPlansSubtitle;
 
   /// Account settings: toggle for reminders when a planned training window starts
   ///
