@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:parkour_spot/models/spot_check_in.dart';
+import 'package:parkour_spot/models/spot_training_plan.dart';
 import 'package:parkour_spot/services/auth_service.dart';
+import 'package:parkour_spot/utils/check_in_time.dart';
 import 'package:parkour_spot/services/spot_tracking_service.dart';
 
 /// One page of the current user's check-in history (newest first).
@@ -44,13 +46,20 @@ class SpotCheckInService extends ChangeNotifier {
   CollectionReference<Map<String, dynamic>> get _spotCheckInsCol =>
       _firestore.collection('spotCheckIns');
 
+  CollectionReference<Map<String, dynamic>> get _spotTrainingPlansCol =>
+      _firestore.collection('spotTrainingPlans');
+
   /// Adds a new check-in record and ensures the spot is on "Been to" and off "Want to visit".
+  ///
+  /// When [consumeTrainingPlanId] is set, deletes that training plan in the same batch
+  /// and stores [convertedFromTrainingPlanId] plus a snapshot of the plan (start/end/comment/createdAt).
   Future<bool> checkIn(
     String spotId, {
     required bool isPrivate,
     required DateTime expectedEndAt,
     String? comment,
     String? spotName,
+    String? consumeTrainingPlanId,
   }) async {
     final userId = _getCurrentUserId();
     if (userId == null) {
@@ -92,6 +101,31 @@ class SpotCheckInService extends ChangeNotifier {
         profile?.displayName ?? _authService.currentUser?.displayName;
     final photoURL = profile?.photoURL ?? _authService.currentUser?.photoURL;
 
+    String? consumeId = consumeTrainingPlanId?.trim();
+    if (consumeId != null && consumeId.isEmpty) consumeId = null;
+
+    SpotTrainingPlan? consumedPlan;
+    if (consumeId != null) {
+      final planSnap = await _spotTrainingPlansCol.doc(consumeId).get();
+      if (!planSnap.exists) {
+        _error = 'Training plan not found';
+        notifyListeners();
+        return false;
+      }
+      final plan = SpotTrainingPlan.fromFirestore(planSnap);
+      if (plan.userId != userId || plan.spotId != spotId) {
+        _error = 'Invalid training plan';
+        notifyListeners();
+        return false;
+      }
+      if (!trainingPlanEligibleForLinkedCheckIn(plan, DateTime.now())) {
+        _error = 'Training plan is no longer valid for check-in';
+        notifyListeners();
+        return false;
+      }
+      consumedPlan = plan;
+    }
+
     try {
       _isLoading = true;
       _error = null;
@@ -105,7 +139,8 @@ class SpotCheckInService extends ChangeNotifier {
         return false;
       }
 
-      await _spotCheckInsCol.add({
+      final newRef = _spotCheckInsCol.doc();
+      final payload = <String, dynamic>{
         'userId': userId,
         'spotId': spotId,
         'checkedInAt': FieldValue.serverTimestamp(),
@@ -116,7 +151,31 @@ class SpotCheckInService extends ChangeNotifier {
         if (photoURL != null) 'photoURL': photoURL,
         if (spotName != null && spotName.trim().isNotEmpty)
           'spotName': spotName.trim(),
-      });
+      };
+      if (consumeId != null && consumedPlan != null) {
+        payload['convertedFromTrainingPlanId'] = consumeId;
+        payload['convertedPlanPlannedStartAt'] =
+            Timestamp.fromDate(consumedPlan.plannedStartAt);
+        payload['convertedPlanPlannedEndAt'] =
+            Timestamp.fromDate(consumedPlan.plannedEndAt);
+        final planComment = consumedPlan.comment?.trim();
+        if (planComment != null && planComment.isNotEmpty) {
+          payload['convertedPlanComment'] = planComment;
+        }
+        final createdAt = consumedPlan.createdAt;
+        if (createdAt != null) {
+          payload['convertedPlanCreatedAt'] = Timestamp.fromDate(createdAt);
+        }
+      }
+
+      if (consumeId != null) {
+        final batch = _firestore.batch();
+        batch.set(newRef, payload);
+        batch.delete(_spotTrainingPlansCol.doc(consumeId));
+        await batch.commit();
+      } else {
+        await newRef.set(payload);
+      }
 
       _isLoading = false;
       notifyListeners();

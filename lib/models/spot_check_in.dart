@@ -13,6 +13,11 @@ class SpotCheckIn {
     this.comment,
     this.displayName,
     this.photoURL,
+    this.convertedFromTrainingPlanId,
+    this.convertedPlanPlannedStartAt,
+    this.convertedPlanPlannedEndAt,
+    this.convertedPlanComment,
+    this.convertedPlanCreatedAt,
   });
 
   /// Firestore document id.
@@ -30,6 +35,15 @@ class SpotCheckIn {
   final String? comment;
   final String? displayName;
   final String? photoURL;
+
+  /// Set when this check-in replaced a training plan document.
+  final String? convertedFromTrainingPlanId;
+
+  /// Snapshot of the plan at conversion (plan doc is deleted after consume).
+  final DateTime? convertedPlanPlannedStartAt;
+  final DateTime? convertedPlanPlannedEndAt;
+  final String? convertedPlanComment;
+  final DateTime? convertedPlanCreatedAt;
 
   static const int maxCommentLength = 200;
 
@@ -69,6 +83,11 @@ class SpotCheckIn {
     } else {
       expectedEndAt = DateTime.fromMillisecondsSinceEpoch(0);
     }
+    DateTime? readOpt(String key) {
+      final t = data[key];
+      if (t is Timestamp) return t.toDate();
+      return null;
+    }
     return SpotCheckIn(
       id: doc.id,
       userId: data['userId'] as String? ?? '',
@@ -80,6 +99,12 @@ class SpotCheckIn {
       comment: data['comment'] as String?,
       displayName: data['displayName'] as String?,
       photoURL: data['photoURL'] as String?,
+      convertedFromTrainingPlanId:
+          data['convertedFromTrainingPlanId'] as String?,
+      convertedPlanPlannedStartAt: readOpt('convertedPlanPlannedStartAt'),
+      convertedPlanPlannedEndAt: readOpt('convertedPlanPlannedEndAt'),
+      convertedPlanComment: data['convertedPlanComment'] as String?,
+      convertedPlanCreatedAt: readOpt('convertedPlanCreatedAt'),
     );
   }
 }

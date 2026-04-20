@@ -32,6 +32,23 @@ service cloud.firestore {
         return !('comment' in data) ||
           (data.comment is string && data.comment.size() <= 200);
       }
+      function spotCheckInConvertedFromPlanOk(data) {
+        return !('convertedFromTrainingPlanId' in data) ||
+          (data.convertedFromTrainingPlanId is string &&
+            data.convertedFromTrainingPlanId.size() > 0 &&
+            data.convertedFromTrainingPlanId.size() <= 128);
+      }
+      function spotCheckInConvertedPlanSnapshotOk(data) {
+        return !('convertedFromTrainingPlanId' in data) || (
+          data.convertedPlanPlannedStartAt is timestamp
+          && data.convertedPlanPlannedEndAt is timestamp
+          && (!('convertedPlanComment' in data) ||
+            (data.convertedPlanComment is string &&
+              data.convertedPlanComment.size() <= 200))
+          && (!('convertedPlanCreatedAt' in data) ||
+            (data.convertedPlanCreatedAt is timestamp))
+        );
+      }
       function spotCheckInCreateShape() {
         return request.resource.data.userId == request.auth.uid
           && request.resource.data.spotId is string
@@ -43,6 +60,8 @@ service cloud.firestore {
           && request.resource.data.expectedEndAt
             <= request.time + duration.value(12, 'h')
           && spotCheckInCommentOk(request.resource.data)
+          && spotCheckInConvertedFromPlanOk(request.resource.data)
+          && spotCheckInConvertedPlanSnapshotOk(request.resource.data)
           && (!('spotName' in request.resource.data) ||
             (request.resource.data.spotName is string &&
               request.resource.data.spotName.size() <= 500));
@@ -68,8 +87,30 @@ service cloud.firestore {
           && ((!('spotName' in resource.data)
                 && !('spotName' in request.resource.data))
               || request.resource.data.spotName == resource.data.spotName)
+          && ((!('convertedFromTrainingPlanId' in resource.data)
+                && !('convertedFromTrainingPlanId' in request.resource.data))
+              || request.resource.data.convertedFromTrainingPlanId
+                == resource.data.convertedFromTrainingPlanId)
+          && ((!('convertedPlanPlannedStartAt' in resource.data)
+                && !('convertedPlanPlannedStartAt' in request.resource.data))
+              || request.resource.data.convertedPlanPlannedStartAt
+                == resource.data.convertedPlanPlannedStartAt)
+          && ((!('convertedPlanPlannedEndAt' in resource.data)
+                && !('convertedPlanPlannedEndAt' in request.resource.data))
+              || request.resource.data.convertedPlanPlannedEndAt
+                == resource.data.convertedPlanPlannedEndAt)
+          && ((!('convertedPlanComment' in resource.data)
+                && !('convertedPlanComment' in request.resource.data))
+              || request.resource.data.convertedPlanComment
+                == resource.data.convertedPlanComment)
+          && ((!('convertedPlanCreatedAt' in resource.data)
+                && !('convertedPlanCreatedAt' in request.resource.data))
+              || request.resource.data.convertedPlanCreatedAt
+                == resource.data.convertedPlanCreatedAt)
           && request.resource.data.isPrivate is bool
-          && spotCheckInCommentOk(request.resource.data);
+          && spotCheckInCommentOk(request.resource.data)
+          && spotCheckInConvertedFromPlanOk(request.resource.data)
+          && spotCheckInConvertedPlanSnapshotOk(request.resource.data);
       }
       allow read: if resource.data.isPrivate == false
         || (request.auth != null && request.auth.uid == resource.data.userId);

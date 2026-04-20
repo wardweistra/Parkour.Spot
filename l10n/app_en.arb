@@ -1376,6 +1376,10 @@
   "spotCheckInDialogActiveElsewhereMultiple": "You have active check-ins at other spots. Checking in here will end those check-ins.",
   "spotCheckInDialogNudgeEarlier": "15 minutes earlier",
   "spotCheckInDialogNudgeLater": "15 minutes later",
+  "spotCheckInDialogTrainingPlanConversionBanner": "Saving replaces your plan with this check-in. Your planned end time is pre-filled below.",
+  "@spotCheckInDialogTrainingPlanConversionBanner": {
+    "description": "Shown when checking in from an eligible training plan; explains the plan will be removed"
+  },
   "spotDetailSessionNoteLabel": "Note (optional)",
   "@spotDetailSessionNoteLabel": {
     "description": "Shared label for optional note field on check-in and training-plan dialogs"
@@ -1386,6 +1390,18 @@
   },
   "spotTrainingPlanDialogTitle": "Plan to train here",
   "spotTrainingPlanDialogTitleEdit": "Edit training plan",
+  "spotTrainingPlanDialogCheckInCtaBody": "Here now? Check in so others know you’ve arrived.",
+  "@spotTrainingPlanDialogCheckInCtaBody": {
+    "description": "Prompt in edit training plan dialog to switch to a live check-in"
+  },
+  "spotTrainingPlanDialogCheckInCtaBodyEarly": "Here already? Check in so others know you’ve arrived.",
+  "@spotTrainingPlanDialogCheckInCtaBodyEarly": {
+    "description": "Edit training plan: prompt to check in before the planned window starts (linked check-in still allowed)"
+  },
+  "spotTrainingPlanDialogCheckInCtaButton": "Check in",
+  "@spotTrainingPlanDialogCheckInCtaButton": {
+    "description": "Button to leave edit plan and open check-in"
+  },
   "spotTrainingPlanDialogBody": "Set when you plan to start and finish. Public plans appear on this spot’s Community strip alongside other people who’ve shared.",
   "spotTrainingPlanDialogSharePublic": "Share publicly",
   "spotTrainingPlanDialogShareSub": "Turn off to keep this plan visible only to you.",

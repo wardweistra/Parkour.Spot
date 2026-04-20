@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/spot_check_in.dart';
+import '../models/spot_training_plan.dart';
 import '../utils/check_in_time.dart';
 
 /// Outcome of [showSpotCheckInDialog] (save, delete, or cancel via null).
@@ -14,6 +15,7 @@ class SpotCheckInDialogSaved extends SpotCheckInDialogOutcome {
     required this.expectedEndAt,
     this.comment,
     this.checkedInAt,
+    this.consumeTrainingPlanId,
   });
   final bool isPrivate;
   final DateTime expectedEndAt;
@@ -21,6 +23,9 @@ class SpotCheckInDialogSaved extends SpotCheckInDialogOutcome {
 
   /// Set when editing an existing check-in (start / arrived time).
   final DateTime? checkedInAt;
+
+  /// When set, the server removes this training plan and links the new check-in to it.
+  final String? consumeTrainingPlanId;
 }
 
 class SpotCheckInDialogDeleted extends SpotCheckInDialogOutcome {
@@ -45,6 +50,9 @@ Future<SpotCheckInDialogOutcome?> showSpotCheckInDialog(
   List<SpotCheckIn> activeElsewhere = const [],
   /// New check-in only: recent session at this spot that can be extended instead of duplicating.
   SpotCheckIn? extendableAtSameSpot,
+
+  /// When set (new check-in only), prefill end from the plan and offer conversion copy.
+  SpotTrainingPlan? linkedTrainingPlan,
 }) {
   return showDialog<SpotCheckInDialogOutcome>(
     context: context,
@@ -53,6 +61,7 @@ Future<SpotCheckInDialogOutcome?> showSpotCheckInDialog(
       stillHereEligible: stillHereEligible,
       activeElsewhere: activeElsewhere,
       extendableAtSameSpot: extendableAtSameSpot,
+      linkedTrainingPlan: linkedTrainingPlan,
     ),
   );
 }
@@ -64,6 +73,7 @@ class SpotCheckInDialog extends StatefulWidget {
     this.stillHereEligible = false,
     this.activeElsewhere = const [],
     this.extendableAtSameSpot,
+    this.linkedTrainingPlan,
   });
 
   /// When set, dialog is in edit mode with these values.
@@ -77,6 +87,9 @@ class SpotCheckInDialog extends StatefulWidget {
 
   /// New check-in only: extend this session instead of creating a duplicate document.
   final SpotCheckIn? extendableAtSameSpot;
+
+  /// New check-in only: prefill end time and show conversion messaging.
+  final SpotTrainingPlan? linkedTrainingPlan;
 
   @override
   State<SpotCheckInDialog> createState() => _SpotCheckInDialogState();
@@ -123,8 +136,23 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
       _reconcileEditSessionBounds();
     } else {
       _sharePublicly = true;
-      _commentController = TextEditingController();
-      _expectedEndAt = defaultExpectedEndAt(DateTime.now());
+      final link = widget.linkedTrainingPlan;
+      final eligible = link != null &&
+          trainingPlanEligibleForLinkedCheckIn(link, DateTime.now());
+      String planCommentPrefill = '';
+      if (eligible) {
+        final plan = link;
+        final raw = plan.comment?.trim();
+        if (raw != null && raw.isNotEmpty) {
+          planCommentPrefill = raw.length <= SpotCheckIn.maxCommentLength
+              ? raw
+              : raw.substring(0, SpotCheckIn.maxCommentLength);
+        }
+        _expectedEndAt = roundToNearest15Minutes(plan.plannedEndAt.toLocal());
+      } else {
+        _expectedEndAt = defaultExpectedEndAt(DateTime.now());
+      }
+      _commentController = TextEditingController(text: planCommentPrefill);
       _checkedInAt = DateTime.now(); // only used when [_isEdit] is true
     }
   }
@@ -181,12 +209,20 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
   void _popSaved({DateTime? expectedEndAt}) {
     final end = expectedEndAt ?? _expectedEndAt;
     final trimmed = _commentController.text.trim();
+    String? consumeId;
+    if (!_isEdit && widget.linkedTrainingPlan != null) {
+      final p = widget.linkedTrainingPlan!;
+      if (trainingPlanEligibleForLinkedCheckIn(p, DateTime.now())) {
+        consumeId = p.id;
+      }
+    }
     Navigator.of(context).pop(
       SpotCheckInDialogSaved(
         isPrivate: !_sharePublicly,
         expectedEndAt: end,
         comment: trimmed.isEmpty ? null : trimmed,
         checkedInAt: _isEdit ? _checkedInAt : null,
+        consumeTrainingPlanId: consumeId,
       ),
     );
   }
@@ -415,6 +451,43 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
                       Expanded(
                         child: Text(
                           _activeElsewhereNotice(l10n),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: cs.onSurface,
+                            height: 1.35,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            if (!_isEdit &&
+                widget.linkedTrainingPlan != null &&
+                trainingPlanEligibleForLinkedCheckIn(
+                  widget.linkedTrainingPlan!,
+                  now,
+                )) ...[
+              const SizedBox(height: 16),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.event_available_outlined,
+                        size: 22,
+                        color: cs.primary,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          l10n.spotCheckInDialogTrainingPlanConversionBanner,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: cs.onSurface,
                             height: 1.35,

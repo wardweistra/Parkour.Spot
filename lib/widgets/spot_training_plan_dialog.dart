@@ -26,6 +26,12 @@ class SpotTrainingPlanDialogDeleted extends SpotTrainingPlanDialogOutcome {
   SpotTrainingPlanDialogDeleted();
 }
 
+/// User chose to open the check-in flow (closes this dialog first).
+class SpotTrainingPlanDialogOpenCheckIn extends SpotTrainingPlanDialogOutcome {
+  SpotTrainingPlanDialogOpenCheckIn(this.plan);
+  final SpotTrainingPlan plan;
+}
+
 Future<SpotTrainingPlanDialogOutcome?> showSpotTrainingPlanDialog(
   BuildContext context, {
   SpotTrainingPlan? existingPlan,
@@ -123,6 +129,24 @@ class _SpotTrainingPlanDialogState extends State<SpotTrainingPlanDialog> {
       default:
         return l10n.spotTrainingPlanValidationInvalid;
     }
+  }
+
+  /// When non-null, show the "open check-in" CTA with this body text.
+  String? _editPlanCheckInCtaBody(AppLocalizations l10n) {
+    if (!_isEdit) return null;
+    final plan = widget.existingPlan;
+    if (plan == null) return null;
+    final now = DateTime.now();
+    if (plan.contains(now)) {
+      return l10n.spotTrainingPlanDialogCheckInCtaBody;
+    }
+    final n = now.toUtc();
+    final startUtc = plan.plannedStartAt.toUtc();
+    if (n.isBefore(startUtc) &&
+        trainingPlanEligibleForLinkedCheckIn(plan, now)) {
+      return l10n.spotTrainingPlanDialogCheckInCtaBodyEarly;
+    }
+    return null;
   }
 
   Future<void> _pickStart() async {
@@ -254,6 +278,7 @@ class _SpotTrainingPlanDialogState extends State<SpotTrainingPlanDialog> {
     final cs = theme.colorScheme;
     final fmt = DateFormat('MMM d, y • h:mm a');
     final err = _validationMessage(l10n);
+    final checkInCtaBody = _editPlanCheckInCtaBody(l10n);
 
     return AlertDialog(
       constraints: const BoxConstraints(maxWidth: 520),
@@ -285,6 +310,43 @@ class _SpotTrainingPlanDialogState extends State<SpotTrainingPlanDialog> {
                 height: 1.35,
               ),
             ),
+            if (checkInCtaBody != null) ...[
+              const SizedBox(height: 16),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        checkInCtaBody,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: cs.onSurface,
+                          height: 1.35,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: FilledButton.tonalIcon(
+                          onPressed: () => Navigator.of(context).pop(
+                            SpotTrainingPlanDialogOpenCheckIn(
+                              widget.existingPlan!,
+                            ),
+                          ),
+                          icon: const Icon(Icons.place_outlined),
+                          label: Text(l10n.spotTrainingPlanDialogCheckInCtaButton),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,

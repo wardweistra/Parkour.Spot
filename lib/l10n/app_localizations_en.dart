@@ -1342,6 +1342,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get spotCheckInDialogNudgeLater => '15 minutes later';
 
   @override
+  String get spotCheckInDialogTrainingPlanConversionBanner =>
+      'Saving replaces your plan with this check-in. Your planned end time is pre-filled below.';
+
+  @override
   String get spotDetailSessionNoteLabel => 'Note (optional)';
 
   @override
@@ -1353,6 +1357,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get spotTrainingPlanDialogTitleEdit => 'Edit training plan';
+
+  @override
+  String get spotTrainingPlanDialogCheckInCtaBody =>
+      'Here now? Check in so others know you’ve arrived.';
+
+  @override
+  String get spotTrainingPlanDialogCheckInCtaBodyEarly =>
+      'Here already? Check in so others know you’ve arrived.';
+
+  @override
+  String get spotTrainingPlanDialogCheckInCtaButton => 'Check in';
 
   @override
   String get spotTrainingPlanDialogBody =>

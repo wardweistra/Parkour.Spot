@@ -4,12 +4,64 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
+import '../models/spot_check_in.dart';
 import '../models/spot_training_plan.dart';
 import '../services/auth_service.dart';
+import '../services/spot_check_in_service.dart';
 import '../services/spot_training_plan_service.dart';
 import '../utils/community_activity_time_formatting.dart';
+import '../utils/spot_check_in_flow.dart';
 import '../widgets/spot_check_in_presence.dart';
+import 'spot_check_in_dialog.dart';
 import 'spot_training_plan_dialog.dart';
+
+Future<void> _editCheckInAfterExtendFromPlanCard(
+  BuildContext context,
+  SpotCheckIn c,
+) async {
+  final svc = Provider.of<SpotCheckInService>(context, listen: false);
+  final l10n = AppLocalizations.of(context)!;
+  final stillHereEligible = await svc.stillHereEligibleForUser(c);
+  if (!context.mounted) return;
+  final result = await showSpotCheckInDialog(
+    context,
+    existingCheckIn: c,
+    stillHereEligible: stillHereEligible,
+  );
+  if (result == null || !context.mounted) return;
+  if (result is SpotCheckInDialogDeleted) {
+    final deleted = await svc.deleteCheckIn(c.id);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          deleted
+              ? l10n.spotDetailCheckInRemoved
+              : (svc.error ?? l10n.spotDetailCheckInDeleteFailed),
+        ),
+      ),
+    );
+    return;
+  }
+  if (result is! SpotCheckInDialogSaved) return;
+  final ok = await svc.updateCheckIn(
+    c.id,
+    checkedInAt: result.checkedInAt!,
+    isPrivate: result.isPrivate,
+    expectedEndAt: result.expectedEndAt,
+    comment: result.comment,
+  );
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        ok
+            ? l10n.spotDetailCheckInUpdated
+            : (svc.error ?? l10n.spotDetailCheckInUpdateFailed),
+      ),
+    ),
+  );
+}
 
 class TrainingPlanAvatarEntry {
   const TrainingPlanAvatarEntry(
@@ -154,6 +206,35 @@ class TrainingPlanUserCard extends StatelessWidget {
                                 existingPlan: p,
                               );
                               if (result == null || !hostContext.mounted) {
+                                return;
+                              }
+                              if (result is SpotTrainingPlanDialogOpenCheckIn) {
+                                final plan = result.plan;
+                                await runSpotCheckInFlow(
+                                  hostContext,
+                                  l10n: AppLocalizations.of(hostContext)!,
+                                  spotId: plan.spotId,
+                                  spotName: plan.spotName ?? '',
+                                  fixedTrainingPlan: plan,
+                                  onExtendInsteadEdit: (c) =>
+                                      _editCheckInAfterExtendFromPlanCard(
+                                        hostContext,
+                                        c,
+                                      ),
+                                  showSuccess: (m) => ScaffoldMessenger.of(
+                                    hostContext,
+                                  ).showSnackBar(
+                                    SnackBar(content: Text(m)),
+                                  ),
+                                  showError: (m) => ScaffoldMessenger.of(
+                                    hostContext,
+                                  ).showSnackBar(
+                                    SnackBar(content: Text(m)),
+                                  ),
+                                  successMessage:
+                                      AppLocalizations.of(hostContext)!
+                                          .spotDetailCheckInSuccess,
+                                );
                                 return;
                               }
                               if (result is SpotTrainingPlanDialogDeleted) {

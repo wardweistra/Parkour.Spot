@@ -2315,6 +2315,12 @@ abstract class AppLocalizations {
   /// **'15 minutes later'**
   String get spotCheckInDialogNudgeLater;
 
+  /// Shown when checking in from an eligible training plan; explains the plan will be removed
+  ///
+  /// In en, this message translates to:
+  /// **'Saving replaces your plan with this check-in. Your planned end time is pre-filled below.'**
+  String get spotCheckInDialogTrainingPlanConversionBanner;
+
   /// Shared label for optional note field on check-in and training-plan dialogs
   ///
   /// In en, this message translates to:
@@ -2338,6 +2344,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Edit training plan'**
   String get spotTrainingPlanDialogTitleEdit;
+
+  /// Prompt in edit training plan dialog to switch to a live check-in
+  ///
+  /// In en, this message translates to:
+  /// **'Here now? Check in so others know you’ve arrived.'**
+  String get spotTrainingPlanDialogCheckInCtaBody;
+
+  /// Edit training plan: prompt to check in before the planned window starts (linked check-in still allowed)
+  ///
+  /// In en, this message translates to:
+  /// **'Here already? Check in so others know you’ve arrived.'**
+  String get spotTrainingPlanDialogCheckInCtaBodyEarly;
+
+  /// Button to leave edit plan and open check-in
+  ///
+  /// In en, this message translates to:
+  /// **'Check in'**
+  String get spotTrainingPlanDialogCheckInCtaButton;
 
   /// No description provided for @spotTrainingPlanDialogBody.
   ///

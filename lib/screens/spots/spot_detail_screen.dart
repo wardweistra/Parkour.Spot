@@ -11,6 +11,7 @@ import '../../models/spot_check_in.dart';
 import '../../models/spot_training_plan.dart';
 import '../../widgets/spot_check_in_dialog.dart';
 import '../../widgets/spot_training_plan_dialog.dart';
+import '../../utils/spot_check_in_flow.dart';
 import '../../services/spot_service.dart';
 import '../../services/spot_report_service.dart';
 import '../../services/auth_service.dart';
@@ -214,52 +215,34 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   Future<void> _showCheckInDialog() async {
     final spotId = _spot.id;
     if (spotId == null) return;
-    final service = Provider.of<SpotCheckInService>(context, listen: false);
-    final results = await Future.wait<Object?>([
-      service.fetchActiveCheckInsElsewhere(spotId),
-      service.fetchExtendableCheckInAtSpot(spotId),
-    ]);
-    if (!mounted) return;
-    final activeElsewhere = results[0] as List<SpotCheckIn>?;
-    final extendableAtSameSpot = results[1] as SpotCheckIn?;
-    if (activeElsewhere == null) {
-      _showErrorSnack(service.error ?? _l10n.spotDetailCheckInVerifyFailed);
-      return;
-    }
-    final result = await showSpotCheckInDialog(
+    await runSpotCheckInFlow(
       context,
-      activeElsewhere: activeElsewhere,
-      extendableAtSameSpot: extendableAtSameSpot,
-    );
-    if (result == null || !mounted) return;
-    if (result is SpotCheckInDialogExtendInstead) {
-      await _handleEditCheckIn(result.checkIn);
-      return;
-    }
-    if (result is! SpotCheckInDialogSaved) return;
-    for (final other in activeElsewhere) {
-      final ended = await service.endCheckInNow(other);
-      if (!mounted) return;
-      if (!ended) {
-        _showErrorSnack(
-          service.error ?? _l10n.spotDetailCheckInEndPreviousFailed,
-        );
-        return;
-      }
-    }
-    final ok = await service.checkIn(
-      spotId,
-      isPrivate: result.isPrivate,
-      expectedEndAt: result.expectedEndAt,
-      comment: result.comment,
+      l10n: _l10n,
+      spotId: spotId,
       spotName: _spot.name,
+      fixedTrainingPlan: null,
+      onExtendInsteadEdit: _handleEditCheckIn,
+      showSuccess: _showSuccessSnack,
+      showError: _showErrorSnack,
+      successMessage: _l10n.spotDetailCheckInSuccess,
     );
-    if (!mounted) return;
-    if (ok) {
-      _showSuccessSnack(_l10n.spotDetailCheckInSuccess);
-    } else {
-      _showErrorSnack(service.error ?? _l10n.spotDetailCheckInFailed);
-    }
+  }
+
+  Future<void> _runCheckInFromTrainingPlan(SpotTrainingPlan plan) async {
+    final spotId = _spot.id;
+    if (spotId == null) return;
+    if (plan.spotId != spotId) return;
+    await runSpotCheckInFlow(
+      context,
+      l10n: _l10n,
+      spotId: spotId,
+      spotName: _spot.name,
+      fixedTrainingPlan: plan,
+      onExtendInsteadEdit: _handleEditCheckIn,
+      showSuccess: _showSuccessSnack,
+      showError: _showErrorSnack,
+      successMessage: _l10n.spotDetailCheckInSuccess,
+    );
   }
 
   Future<void> _handleEditCheckIn(SpotCheckIn c) async {
@@ -312,6 +295,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       existingPlan: existing,
     );
     if (result == null || !mounted) return;
+    if (result is SpotTrainingPlanDialogOpenCheckIn) {
+      await _runCheckInFromTrainingPlan(result.plan);
+      return;
+    }
     if (result is SpotTrainingPlanDialogDeleted) {
       if (existing != null) {
         final ok = await svc.deletePlan(existing.id);
@@ -354,6 +341,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       existingPlan: p,
     );
     if (result == null || !mounted) return;
+    if (result is SpotTrainingPlanDialogOpenCheckIn) {
+      await _runCheckInFromTrainingPlan(result.plan);
+      return;
+    }
     if (result is SpotTrainingPlanDialogDeleted) {
       final ok = await svc.deletePlan(p.id);
       if (!mounted) return;

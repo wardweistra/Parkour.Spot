@@ -14,6 +14,7 @@ class SpotTrainingPlan {
     this.comment,
     this.displayName,
     this.photoURL,
+    this.createdAt,
   });
 
   final String id;
@@ -27,6 +28,9 @@ class SpotTrainingPlan {
   final String? comment;
   final String? displayName;
   final String? photoURL;
+
+  /// When the plan was created (`createdAt` in Firestore), if present.
+  final DateTime? createdAt;
 
   static const int maxCommentLength = 200;
 
@@ -60,6 +64,12 @@ class SpotTrainingPlan {
       return DateTime.fromMillisecondsSinceEpoch(0);
     }
 
+    DateTime? readTsOptional(String key) {
+      final ts = data[key];
+      if (ts is Timestamp) return ts.toDate();
+      return null;
+    }
+
     return SpotTrainingPlan(
       id: doc.id,
       userId: data['userId'] as String? ?? '',
@@ -71,6 +81,7 @@ class SpotTrainingPlan {
       comment: data['comment'] as String?,
       displayName: data['displayName'] as String?,
       photoURL: data['photoURL'] as String?,
+      createdAt: readTsOptional('createdAt'),
     );
   }
 }

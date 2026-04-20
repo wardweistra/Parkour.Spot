@@ -14,6 +14,7 @@ import '../../widgets/page_scaffold.dart';
 import '../../widgets/spot_check_in_dialog.dart';
 import '../../widgets/spot_check_in_presence.dart';
 import '../../widgets/spot_training_plan_dialog.dart';
+import '../../utils/spot_check_in_flow.dart';
 
 String _formatSessionDuration(Duration d, AppLocalizations l10n) {
   if (d.isNegative) d = Duration.zero;
@@ -210,6 +211,27 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
     );
     if (result == null || !mounted) return;
 
+    if (result is SpotTrainingPlanDialogOpenCheckIn) {
+      await runSpotCheckInFlow(
+        context,
+        l10n: _l10n,
+        spotId: result.plan.spotId,
+        spotName: result.plan.spotName ?? '',
+        fixedTrainingPlan: result.plan,
+        onExtendInsteadEdit: _manageCheckIn,
+        showSuccess: (m) => ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(m)),
+        ),
+        showError: (m) => ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(m)),
+        ),
+        successMessage: _l10n.spotDetailCheckInSuccess,
+      );
+      if (!mounted) return;
+      await _loadInitial();
+      return;
+    }
+
     if (result is SpotTrainingPlanDialogDeleted) {
       final ok = await svc.deletePlan(p.id);
       if (!mounted) return;
@@ -314,6 +336,11 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
             comment: result.comment,
             displayName: c.displayName,
             photoURL: c.photoURL,
+            convertedFromTrainingPlanId: c.convertedFromTrainingPlanId,
+            convertedPlanPlannedStartAt: c.convertedPlanPlannedStartAt,
+            convertedPlanPlannedEndAt: c.convertedPlanPlannedEndAt,
+            convertedPlanComment: c.convertedPlanComment,
+            convertedPlanCreatedAt: c.convertedPlanCreatedAt,
           );
         });
       }
