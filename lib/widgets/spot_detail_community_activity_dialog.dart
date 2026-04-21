@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
+import '../models/spot_training_plan.dart';
 import '../services/spot_check_in_service.dart';
 import '../services/spot_training_plan_service.dart';
 import '../utils/community_activity_share.dart';
@@ -51,6 +52,8 @@ void showSpotCommunityActivityDialog(
   String? spotDisplayName,
   String? countryCode,
   String? city,
+  Future<void> Function(SpotTrainingPlan sourcePlan)? onJoinTrainingPlan,
+  VoidCallback? onLoginRequired,
 }) {
   final hostContext = context;
   final shareContext = CommunitySpotShareContext(
@@ -183,6 +186,8 @@ void showSpotCommunityActivityDialog(
                             entry: planEntries[i],
                             hostContext: hostContext,
                             shareContext: shareContext,
+                            onJoinTrainingPlan: onJoinTrainingPlan,
+                            onLoginRequired: onLoginRequired,
                           ),
                         ],
                       ],

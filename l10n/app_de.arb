@@ -375,6 +375,7 @@
   "spotTrainingPlanListEmpty": "Noch keine öffentlichen Pläne.",
   "spotTrainingPlanListLoadError": "Trainingspläne konnten nicht geladen werden",
   "spotTrainingPlanEditMine": "Plan bearbeiten",
+  "spotTrainingPlanJoin": "Mitmachen",
   "spotTrainingPlanOnlyYou": "Nur du",
   "spotTrainingPlanUnnamedPerson": "Jemand",
   "spotTrainingPlanTimeRange": "{start} – {end}",

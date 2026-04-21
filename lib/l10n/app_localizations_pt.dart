@@ -1503,6 +1503,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotTrainingPlanEditMine => 'Editar plano';
 
   @override
+  String get spotTrainingPlanJoin => 'Juntar-se';
+
+  @override
   String get spotTrainingPlanOnlyYou => 'Só tu';
 
   @override

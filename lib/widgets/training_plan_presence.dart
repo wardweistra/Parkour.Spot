@@ -133,18 +133,24 @@ class TrainingPlanUserCard extends StatelessWidget {
     required this.entry,
     required this.hostContext,
     this.shareContext,
+    this.onJoinTrainingPlan,
+    this.onLoginRequired,
   });
 
   final TrainingPlanAvatarEntry entry;
   final BuildContext hostContext;
   final CommunitySpotShareContext? shareContext;
+  final Future<void> Function(SpotTrainingPlan sourcePlan)? onJoinTrainingPlan;
+  final VoidCallback? onLoginRequired;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
     final p = entry.plan;
-    final uid = Provider.of<AuthService>(context, listen: false).currentUser?.uid;
+    final auth = Provider.of<AuthService>(context);
+    final uid = auth.currentUser?.uid;
+    final isAuthenticated = auth.isAuthenticated;
     final isMine = uid != null && uid == p.userId;
     final name = p.displayName?.trim();
     final title = (name != null && name.isNotEmpty) ? name : l10n.spotTrainingPlanUnnamedPerson;
@@ -338,6 +344,55 @@ class TrainingPlanUserCard extends StatelessWidget {
                                   ),
                                 );
                               }
+                            },
+                          ),
+                        if (!isMine && !p.isPrivate)
+                          StreamBuilder<SpotCheckIn?>(
+                            stream: Provider.of<SpotCheckInService>(
+                              context,
+                              listen: false,
+                            ).watchMyCheckIn(p.spotId),
+                            builder: (context, myCheckInSnap) {
+                              return StreamBuilder<SpotTrainingPlan?>(
+                                stream: Provider.of<SpotTrainingPlanService>(
+                                  context,
+                                  listen: false,
+                                ).watchMyPlanForSpot(p.spotId),
+                                builder: (context, myPlanSnap) {
+                                  final hasMyCheckIn = myCheckInSnap.data != null;
+                                  final hasMyPlan = myPlanSnap.data != null;
+                                  final showJoin = !hasMyCheckIn &&
+                                      !hasMyPlan &&
+                                      onJoinTrainingPlan != null;
+                                  if (!showJoin) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  return FilledButton.tonal(
+                                    onPressed: () async {
+                                      if (!isAuthenticated) {
+                                        final onLoginRequired = this.onLoginRequired;
+                                        if (onLoginRequired != null) {
+                                          onLoginRequired();
+                                        }
+                                        return;
+                                      }
+                                      final onJoinTrainingPlan =
+                                          this.onJoinTrainingPlan;
+                                      if (onJoinTrainingPlan == null) return;
+                                      Navigator.of(context).pop();
+                                      await onJoinTrainingPlan(p);
+                                    },
+                                    style: FilledButton.styleFrom(
+                                      visualDensity: VisualDensity.compact,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 0,
+                                      ),
+                                    ),
+                                    child: Text(l10n.spotTrainingPlanJoin),
+                                  );
+                                },
+                              );
                             },
                           ),
                         if (entry.showPrivateBadge) ...[

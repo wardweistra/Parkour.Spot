@@ -2559,6 +2559,12 @@ abstract class AppLocalizations {
   /// **'Edit plan'**
   String get spotTrainingPlanEditMine;
 
+  /// No description provided for @spotTrainingPlanJoin.
+  ///
+  /// In en, this message translates to:
+  /// **'Join'**
+  String get spotTrainingPlanJoin;
+
   /// No description provided for @spotTrainingPlanOnlyYou.
   ///
   /// In en, this message translates to:

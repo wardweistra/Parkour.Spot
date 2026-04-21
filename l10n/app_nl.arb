@@ -404,6 +404,7 @@
   "spotTrainingPlanListEmpty": "Nog geen openbare plannen.",
   "spotTrainingPlanListLoadError": "Kon trainingsplannen niet laden",
   "spotTrainingPlanEditMine": "Plan bewerken",
+  "spotTrainingPlanJoin": "Aansluiten",
   "spotTrainingPlanOnlyYou": "Alleen jij",
   "spotTrainingPlanUnnamedPerson": "Iemand",
   "spotTrainingPlanTimeRange": "{start} – {end}",

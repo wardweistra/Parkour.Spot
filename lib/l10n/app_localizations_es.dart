@@ -1501,6 +1501,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get spotTrainingPlanEditMine => 'Editar plan';
 
   @override
+  String get spotTrainingPlanJoin => 'Unirse';
+
+  @override
   String get spotTrainingPlanOnlyYou => 'Solo tú';
 
   @override

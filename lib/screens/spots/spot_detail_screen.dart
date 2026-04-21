@@ -372,6 +372,39 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     }
   }
 
+  Future<void> _joinTrainingPlanFromCommunity(SpotTrainingPlan sourcePlan) async {
+    final spotId = _spot.id;
+    if (spotId == null) return;
+    final svc = Provider.of<SpotTrainingPlanService>(context, listen: false);
+    final existing = await svc.fetchMyActivePlanAtSpot(spotId);
+    if (existing != null || !mounted) return;
+    final result = await showSpotTrainingPlanDialog(
+      context,
+      initialPlannedStartAt: sourcePlan.plannedStartAt,
+      initialPlannedEndAt: sourcePlan.plannedEndAt,
+    );
+    if (result == null || !mounted) return;
+    if (result is SpotTrainingPlanDialogOpenCheckIn) {
+      await _runCheckInFromTrainingPlan(result.plan);
+      return;
+    }
+    if (result is! SpotTrainingPlanDialogSaved) return;
+    final ok = await svc.upsertPlan(
+      spotId: spotId,
+      plannedStartAt: result.plannedStartAt,
+      plannedEndAt: result.plannedEndAt,
+      isPrivate: result.isPrivate,
+      comment: result.comment,
+      spotName: _spot.name,
+    );
+    if (!mounted) return;
+    if (ok) {
+      _showSuccessSnack(_l10n.spotDetailTrainingPlanSaved);
+    } else {
+      _showErrorSnack(svc.error ?? _l10n.spotDetailTrainingPlanFailed);
+    }
+  }
+
   /// Navigate to user profile, preferring username if available
   Future<void> _navigateToUserProfile(String userId) async {
     try {
@@ -2192,6 +2225,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             onEditCheckIn: _handleEditCheckIn,
                             onNewTrainingPlan: _showTrainingPlanDialog,
                             onEditTrainingPlan: _handleEditTrainingPlan,
+                            onJoinTrainingPlan: _joinTrainingPlanFromCommunity,
                             onLoginRequired: () => context.go(
                               '/login?redirectTo=${Uri.encodeComponent('/spot/${_spot.id!}')}',
                             ),

@@ -1464,6 +1464,7 @@
   "spotTrainingPlanListEmpty": "No public plans yet.",
   "spotTrainingPlanListLoadError": "Could not load training plans",
   "spotTrainingPlanEditMine": "Edit plan",
+  "spotTrainingPlanJoin": "Join",
   "spotTrainingPlanOnlyYou": "Only you",
   "spotTrainingPlanUnnamedPerson": "Someone",
   "spotTrainingPlanTimeRange": "{start} – {end}",

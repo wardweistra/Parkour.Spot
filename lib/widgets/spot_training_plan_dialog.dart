@@ -35,17 +35,30 @@ class SpotTrainingPlanDialogOpenCheckIn extends SpotTrainingPlanDialogOutcome {
 Future<SpotTrainingPlanDialogOutcome?> showSpotTrainingPlanDialog(
   BuildContext context, {
   SpotTrainingPlan? existingPlan,
+  DateTime? initialPlannedStartAt,
+  DateTime? initialPlannedEndAt,
 }) {
   return showDialog<SpotTrainingPlanDialogOutcome>(
     context: context,
-    builder: (context) => SpotTrainingPlanDialog(existingPlan: existingPlan),
+    builder: (context) => SpotTrainingPlanDialog(
+      existingPlan: existingPlan,
+      initialPlannedStartAt: initialPlannedStartAt,
+      initialPlannedEndAt: initialPlannedEndAt,
+    ),
   );
 }
 
 class SpotTrainingPlanDialog extends StatefulWidget {
-  const SpotTrainingPlanDialog({super.key, this.existingPlan});
+  const SpotTrainingPlanDialog({
+    super.key,
+    this.existingPlan,
+    this.initialPlannedStartAt,
+    this.initialPlannedEndAt,
+  });
 
   final SpotTrainingPlan? existingPlan;
+  final DateTime? initialPlannedStartAt;
+  final DateTime? initialPlannedEndAt;
 
   @override
   State<SpotTrainingPlanDialog> createState() => _SpotTrainingPlanDialogState();
@@ -73,9 +86,16 @@ class _SpotTrainingPlanDialogState extends State<SpotTrainingPlanDialog> {
     } else {
       _sharePublicly = true;
       _commentController = TextEditingController();
-      final now = DateTime.now();
-      _start = roundToNearest15Minutes(now.add(const Duration(hours: 1)));
-      _end = roundToNearest15Minutes(_start.add(const Duration(hours: 2)));
+      final initialStart = widget.initialPlannedStartAt?.toLocal();
+      final initialEnd = widget.initialPlannedEndAt?.toLocal();
+      if (initialStart != null && initialEnd != null) {
+        _start = roundToNearest15Minutes(initialStart);
+        _end = roundToNearest15Minutes(initialEnd);
+      } else {
+        final now = DateTime.now();
+        _start = roundToNearest15Minutes(now.add(const Duration(hours: 1)));
+        _end = roundToNearest15Minutes(_start.add(const Duration(hours: 2)));
+      }
       _reconcileBounds();
     }
   }

@@ -1508,6 +1508,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get spotTrainingPlanEditMine => 'Modifier le plan';
 
   @override
+  String get spotTrainingPlanJoin => 'Rejoindre';
+
+  @override
   String get spotTrainingPlanOnlyYou => 'Seulement vous';
 
   @override

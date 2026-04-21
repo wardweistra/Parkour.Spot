@@ -28,6 +28,7 @@ class SpotDetailCommunitySection extends StatefulWidget {
     required this.onEditCheckIn,
     required this.onNewTrainingPlan,
     required this.onEditTrainingPlan,
+    required this.onJoinTrainingPlan,
     required this.onLoginRequired,
   });
 
@@ -40,6 +41,7 @@ class SpotDetailCommunitySection extends StatefulWidget {
   final Future<void> Function(SpotCheckIn existing) onEditCheckIn;
   final Future<void> Function() onNewTrainingPlan;
   final Future<void> Function(SpotTrainingPlan existing) onEditTrainingPlan;
+  final Future<void> Function(SpotTrainingPlan sourcePlan) onJoinTrainingPlan;
   final VoidCallback onLoginRequired;
 
   @override
@@ -575,6 +577,8 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
                                       spotDisplayName: widget.spotDisplayName,
                                       countryCode: widget.countryCode,
                                       city: widget.city,
+                                      onJoinTrainingPlan: widget.onJoinTrainingPlan,
+                                      onLoginRequired: widget.onLoginRequired,
                                     ),
                                     borderRadius: BorderRadius.circular(10),
                                     child: Padding(

@@ -1493,6 +1493,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get spotTrainingPlanEditMine => 'Plan bewerken';
 
   @override
+  String get spotTrainingPlanJoin => 'Aansluiten';
+
+  @override
   String get spotTrainingPlanOnlyYou => 'Alleen jij';
 
   @override

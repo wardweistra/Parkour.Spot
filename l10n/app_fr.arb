@@ -374,6 +374,7 @@
   "spotTrainingPlanListEmpty": "Pas encore de plans publics.",
   "spotTrainingPlanListLoadError": "Impossible de charger les plans",
   "spotTrainingPlanEditMine": "Modifier le plan",
+  "spotTrainingPlanJoin": "Rejoindre",
   "spotTrainingPlanOnlyYou": "Seulement vous",
   "spotTrainingPlanUnnamedPerson": "Quelqu’un",
   "spotTrainingPlanTimeRange": "{start} – {end}",
