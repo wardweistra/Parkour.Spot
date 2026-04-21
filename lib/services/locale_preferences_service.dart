@@ -1,20 +1,37 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:parkour_spot/l10n/app_localizations.dart';
+import 'package:parkour_spot/services/auth_service.dart';
 
-/// Persists optional app UI language override in [SharedPreferences].
-/// When [locale] is null, [MaterialApp] uses normal device locale resolution.
+/// Resolves app UI language from authenticated user profile preferences.
 class LocalePreferencesService extends ChangeNotifier {
-  static const String _key = 'app_locale_language_code_override';
+  LocalePreferencesService(this._authService) {
+    _authService.addListener(_onAuthChanged);
+  }
 
-  String? _languageCode;
+  final AuthService _authService;
 
-  String? get overrideLanguageCode => _languageCode;
+  String? get _profileLanguageCode =>
+      _authService.userProfile?.preferredLanguageCode;
+
+  bool get _isExplicitlySet =>
+      _authService.userProfile?.isLanguageExplicitlySet == true;
+
+  String? get overrideLanguageCode {
+    if (!_isExplicitlySet) return null;
+    return _profileLanguageCode;
+  }
 
   /// Non-null forces that locale; null follows system resolution.
-  Locale? get locale =>
-      _languageCode == null ? null : Locale(_languageCode!);
+  Locale? get locale {
+    final code = _profileLanguageCode;
+    if (code == null || code.isEmpty) return null;
+    final normalized = code.trim().toLowerCase();
+    if (supportedLanguageCodes().contains(normalized)) {
+      return Locale(normalized);
+    }
+    return const Locale('en');
+  }
 
   static List<String> supportedLanguageCodes() {
     return AppLocalizations.supportedLocales
@@ -22,38 +39,25 @@ class LocalePreferencesService extends ChangeNotifier {
         .toList();
   }
 
-  Future<void> loadFromStorage() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final stored = prefs.getString(_key);
-      final supported = supportedLanguageCodes();
-      if (stored != null && supported.contains(stored)) {
-        _languageCode = stored;
-      } else {
-        _languageCode = null;
-        if (stored != null) {
-          await prefs.remove(_key);
-        }
-      }
-      notifyListeners();
-    } catch (e) {
-      debugPrint('LocalePreferencesService.loadFromStorage: $e');
-    }
-  }
+  Future<void> loadFromStorage() async {}
 
   Future<void> setOverride(String languageCode) async {
     if (!supportedLanguageCodes().contains(languageCode)) return;
-    _languageCode = languageCode;
-    notifyListeners();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_key, languageCode);
+    await _authService.updatePreferredLanguageExplicit(languageCode);
   }
 
   Future<void> clearOverride() async {
-    _languageCode = null;
+    await _authService.resetPreferredLanguageToBrowserDefault();
+  }
+
+  void _onAuthChanged() {
     notifyListeners();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_key);
+  }
+
+  @override
+  void dispose() {
+    _authService.removeListener(_onAuthChanged);
+    super.dispose();
   }
 
   /// Autonym labels for the language picker (same in every UI locale).

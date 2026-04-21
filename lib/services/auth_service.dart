@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -144,6 +145,7 @@ class AuthService extends ChangeNotifier {
         _profileLoadError = null;
         final data = doc.data() as Map<String, dynamic>;
         _userProfile = app_user.User.fromMap({'id': uid, ...data});
+        await _seedPreferredLanguageIfMissing(uid, data);
       } else {
         // Guard against overwrite: if Auth user was created long ago, Firestore
         // get() may have returned stale "no doc" (e.g. cache bug). Retry before
@@ -191,6 +193,8 @@ class AuthService extends ChangeNotifier {
           isAdmin: false,
           isModerator: false,
           featureAccess: null,
+          preferredLanguageCode: _browserLanguageCode(),
+          isLanguageExplicitlySet: false,
         );
         await _firestore
             .collection('users')
@@ -460,6 +464,8 @@ class AuthService extends ChangeNotifier {
           lastActiveAt: DateTime.now(),
           isAdmin: false,
           featureAccess: null,
+          preferredLanguageCode: _browserLanguageCode(),
+          isLanguageExplicitlySet: false,
         );
 
         await _firestore.collection('users').doc(user.id).set(user.toMap());
@@ -867,6 +873,74 @@ class AuthService extends ChangeNotifier {
       visited: visited,
     );
     notifyListeners();
+  }
+
+  Future<void> _seedPreferredLanguageIfMissing(
+    String userId,
+    Map<String, dynamic> data,
+  ) async {
+    if (data['preferredLanguageCode'] != null) {
+      return;
+    }
+    final browserLanguage = _browserLanguageCode();
+    await _firestore.collection('users').doc(userId).update({
+      'preferredLanguageCode': browserLanguage,
+      'isLanguageExplicitlySet': false,
+    });
+    _userProfile = _userProfile?.copyWith(
+      preferredLanguageCode: browserLanguage,
+      isLanguageExplicitlySet: false,
+    );
+  }
+
+  String _browserLanguageCode() {
+    final raw = ui.PlatformDispatcher.instance.locale.languageCode.trim();
+    if (raw.isEmpty) return 'en';
+    return raw.toLowerCase();
+  }
+
+  Future<bool> updatePreferredLanguageExplicit(String languageCode) async {
+    if (_auth.currentUser == null || _userProfile == null) return false;
+    final normalized = languageCode.trim().toLowerCase();
+    if (normalized.isEmpty) return false;
+
+    try {
+      final userId = _auth.currentUser!.uid;
+      await _firestore.collection('users').doc(userId).update({
+        'preferredLanguageCode': normalized,
+        'isLanguageExplicitlySet': true,
+      });
+      _userProfile = _userProfile!.copyWith(
+        preferredLanguageCode: normalized,
+        isLanguageExplicitlySet: true,
+      );
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Error updating explicit language preference: $e');
+      return false;
+    }
+  }
+
+  Future<bool> resetPreferredLanguageToBrowserDefault() async {
+    if (_auth.currentUser == null || _userProfile == null) return false;
+    final browserLanguage = _browserLanguageCode();
+    try {
+      final userId = _auth.currentUser!.uid;
+      await _firestore.collection('users').doc(userId).update({
+        'preferredLanguageCode': browserLanguage,
+        'isLanguageExplicitlySet': false,
+      });
+      _userProfile = _userProfile!.copyWith(
+        preferredLanguageCode: browserLanguage,
+        isLanguageExplicitlySet: false,
+      );
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Error resetting language preference to browser default: $e');
+      return false;
+    }
   }
 
   /// Check if a username is available

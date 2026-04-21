@@ -7,7 +7,7 @@
   "profileSettingsSubtitle": "Taal en locaties die je interesseren",
   "profileSettingsLanguageLabel": "Taal",
   "profileSettingsLanguageDescription": "Kies een taal of volg je apparaatinstellingen.",
-  "profileLanguageSystemDefault": "Apparaattaal",
+  "profileLanguageSystemDefault": "Automatisch (Engels als niet ondersteund)",
   "profileLoadErrorDefault": "Profiel laden mislukt.",
   "profileRefreshPage": "Pagina vernieuwen",
   "profileRetry": "Opnieuw proberen",

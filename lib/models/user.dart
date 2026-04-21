@@ -21,6 +21,8 @@ class User {
   final bool notifyCheckInsNearby;
   final bool notifyTrainingPlansNearby;
   final bool notifyTrainingPlanCheckInReminders;
+  final String? preferredLanguageCode;
+  final bool isLanguageExplicitlySet;
 
   User({
     required this.id,
@@ -45,6 +47,8 @@ class User {
     this.notifyCheckInsNearby = true,
     this.notifyTrainingPlansNearby = true,
     this.notifyTrainingPlanCheckInReminders = true,
+    this.preferredLanguageCode,
+    this.isLanguageExplicitlySet = false,
   });
 
   factory User.fromMap(Map<String, dynamic> map) {
@@ -91,6 +95,10 @@ class User {
           map['notifyTrainingPlanCheckInReminders'] is bool
               ? map['notifyTrainingPlanCheckInReminders'] as bool
               : true,
+      preferredLanguageCode: map['preferredLanguageCode'] as String?,
+      isLanguageExplicitlySet: map['isLanguageExplicitlySet'] is bool
+          ? map['isLanguageExplicitlySet'] as bool
+          : false,
     );
   }
 
@@ -118,6 +126,8 @@ class User {
       'notifyCheckInsNearby': notifyCheckInsNearby,
       'notifyTrainingPlansNearby': notifyTrainingPlansNearby,
       'notifyTrainingPlanCheckInReminders': notifyTrainingPlanCheckInReminders,
+      'preferredLanguageCode': preferredLanguageCode,
+      'isLanguageExplicitlySet': isLanguageExplicitlySet,
     };
   }
 
@@ -146,6 +156,8 @@ class User {
     bool? notifyCheckInsNearby,
     bool? notifyTrainingPlansNearby,
     bool? notifyTrainingPlanCheckInReminders,
+    Object? preferredLanguageCode = _omit,
+    bool? isLanguageExplicitlySet,
   }) {
     return User(
       id: id ?? this.id,
@@ -178,6 +190,11 @@ class User {
       notifyTrainingPlanCheckInReminders:
           notifyTrainingPlanCheckInReminders ??
           this.notifyTrainingPlanCheckInReminders,
+      preferredLanguageCode: preferredLanguageCode == _omit
+          ? this.preferredLanguageCode
+          : preferredLanguageCode as String?,
+      isLanguageExplicitlySet:
+          isLanguageExplicitlySet ?? this.isLanguageExplicitlySet,
     );
   }
 

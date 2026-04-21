@@ -7,7 +7,7 @@
   "profileSettingsSubtitle": "Idioma y lugares de tu interés",
   "profileSettingsLanguageLabel": "Idioma",
   "profileSettingsLanguageDescription": "Elige un idioma o usa el de tu dispositivo.",
-  "profileLanguageSystemDefault": "Idioma del dispositivo",
+  "profileLanguageSystemDefault": "Automático (inglés si no es compatible)",
   "profileLoadErrorDefault": "No se pudo cargar el perfil.",
   "profileRefreshPage": "Actualizar página",
   "profileRetry": "Reintentar",

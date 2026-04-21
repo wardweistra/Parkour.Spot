@@ -231,8 +231,14 @@ class ParkourSpotApp extends StatelessWidget {
             return previous ?? UserNotificationService(authService);
           },
         ),
-        ChangeNotifierProvider(
-          create: (_) => LocalePreferencesService()..loadFromStorage(),
+        ChangeNotifierProxyProvider<AuthService, LocalePreferencesService>(
+          create: (context) {
+            final authService = Provider.of<AuthService>(context, listen: false);
+            return LocalePreferencesService(authService)..loadFromStorage();
+          },
+          update: (context, authService, previous) {
+            return previous ?? LocalePreferencesService(authService);
+          },
         ),
       ],
       child: Consumer<LocalePreferencesService>(

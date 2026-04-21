@@ -31,7 +31,8 @@ class AppLocalizationsNl extends AppLocalizations {
       'Kies een taal of volg je apparaatinstellingen.';
 
   @override
-  String get profileLanguageSystemDefault => 'Apparaattaal';
+  String get profileLanguageSystemDefault =>
+      'Automatisch (Engels als niet ondersteund)';
 
   @override
   String get profileLoadErrorDefault => 'Profiel laden mislukt.';

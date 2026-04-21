@@ -151,7 +151,7 @@ abstract class AppLocalizations {
   /// Use OS/browser locale resolution instead of a fixed app language
   ///
   /// In en, this message translates to:
-  /// **'Device language'**
+  /// **'Automatic (English if unsupported)'**
   String get profileLanguageSystemDefault;
 
   /// Account tab: shown when profile could not be loaded

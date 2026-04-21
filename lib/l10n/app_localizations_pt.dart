@@ -31,7 +31,8 @@ class AppLocalizationsPt extends AppLocalizations {
       'Escolha um idioma ou use o do dispositivo.';
 
   @override
-  String get profileLanguageSystemDefault => 'Idioma do dispositivo';
+  String get profileLanguageSystemDefault =>
+      'Automático (inglês se não for compatível)';
 
   @override
   String get profileLoadErrorDefault => 'Não foi possível carregar o perfil.';

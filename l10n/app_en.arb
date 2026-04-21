@@ -28,7 +28,7 @@
   "@profileSettingsLanguageDescription": {
     "description": "Profile settings: short hint for language control"
   },
-  "profileLanguageSystemDefault": "Device language",
+  "profileLanguageSystemDefault": "Automatic (English if unsupported)",
   "@profileLanguageSystemDefault": {
     "description": "Use OS/browser locale resolution instead of a fixed app language"
   },
