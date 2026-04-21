@@ -9,8 +9,9 @@ String formatRelativeDateInDays(
   DateTime? now,
 }) {
   final reference = now ?? DateTime.now();
-  final today = DateTime(reference.year, reference.month, reference.day);
-  final dateOnly = DateTime(date.year, date.month, date.day);
+  // Use UTC civil dates to avoid DST offsets (23/25h days) affecting inDays.
+  final today = DateTime.utc(reference.year, reference.month, reference.day);
+  final dateOnly = DateTime.utc(date.year, date.month, date.day);
   final difference = today.difference(dateOnly).inDays;
 
   if (difference <= 0) {
