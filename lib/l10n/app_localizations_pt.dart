@@ -936,6 +936,32 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get communityShareSpotFallbackName => 'este spot';
+
+  @override
+  String communityShareCheckInNarrative(String spotName, String untilPhrase) {
+    return 'Estou a treinar em $spotName até cerca de $untilPhrase';
+  }
+
+  @override
+  String communityShareTrainingPlanNarrative(
+    String spotName,
+    String relativeDay,
+    String startTime,
+  ) {
+    return 'Planeio treinar em $spotName $relativeDay a partir das $startTime';
+  }
+
+  @override
+  String get communityActivityShareCopiedToClipboard =>
+      'Mensagem copiada para a área de transferência!';
+
+  @override
+  String communityActivityShareFailed(String error) {
+    return 'Não foi possível partilhar: $error';
+  }
+
+  @override
   String spotDetailDateDaysAgo(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

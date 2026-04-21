@@ -12,6 +12,7 @@ import '../services/spot_check_in_service.dart';
 import '../services/user_profile_service.dart';
 import 'spot_check_in_dialog.dart';
 import '../l10n/app_localizations.dart';
+import '../utils/community_activity_share.dart';
 import '../utils/community_activity_time_formatting.dart';
 
 /// Where [SpotCheckInPresenceStrip] is shown: detail header (tappable) vs spot card
@@ -675,10 +676,13 @@ class CheckInUserCard extends StatelessWidget {
     super.key,
     required this.entry,
     required this.hostContext,
+    this.shareContext,
   });
 
   final CheckInAvatarEntry entry;
   final BuildContext hostContext;
+  /// When non-null (Community dialog), the owner can share a narrative + spot link.
+  final CommunitySpotShareContext? shareContext;
 
   @override
   Widget build(BuildContext context) {
@@ -723,6 +727,40 @@ class CheckInUserCard extends StatelessWidget {
                             ),
                           ),
                         ),
+                        if (isMine && shareContext != null)
+                          IconButton(
+                            tooltip: l10n.spotDetailQuickActionShare,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 36,
+                              minHeight: 36,
+                            ),
+                            icon: Icon(
+                              Icons.share_outlined,
+                              size: 20,
+                              color: theme.colorScheme.primary,
+                            ),
+                            onPressed: () async {
+                              final ctx = shareContext!;
+                              final until = communityFriendlyCheckInUntil(
+                                c.expectedEndAt,
+                                l10n,
+                              );
+                              final label = ctx.resolveSpotLabel(
+                                c.spotName,
+                                l10n,
+                              );
+                              final narrative = l10n.communityShareCheckInNarrative(
+                                label,
+                                until,
+                              );
+                              await shareCommunitySpotMessage(
+                                context,
+                                shareContext: ctx,
+                                narrativeLine: narrative,
+                              );
+                            },
+                          ),
                         if (isMine)
                           IconButton(
                             tooltip: 'Edit check-in',

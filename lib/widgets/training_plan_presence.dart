@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
@@ -9,6 +10,7 @@ import '../models/spot_training_plan.dart';
 import '../services/auth_service.dart';
 import '../services/spot_check_in_service.dart';
 import '../services/spot_training_plan_service.dart';
+import '../utils/community_activity_share.dart';
 import '../utils/community_activity_time_formatting.dart';
 import '../utils/spot_check_in_flow.dart';
 import '../widgets/spot_check_in_presence.dart';
@@ -130,10 +132,12 @@ class TrainingPlanUserCard extends StatelessWidget {
     super.key,
     required this.entry,
     required this.hostContext,
+    this.shareContext,
   });
 
   final TrainingPlanAvatarEntry entry;
   final BuildContext hostContext;
+  final CommunitySpotShareContext? shareContext;
 
   @override
   Widget build(BuildContext context) {
@@ -182,6 +186,46 @@ class TrainingPlanUserCard extends StatelessWidget {
                             ),
                           ),
                         ),
+                        if (isMine && shareContext != null)
+                          IconButton(
+                            tooltip: l10n.spotDetailQuickActionShare,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 36,
+                              minHeight: 36,
+                            ),
+                            icon: Icon(
+                              Icons.share_outlined,
+                              size: 20,
+                              color: theme.colorScheme.primary,
+                            ),
+                            onPressed: () async {
+                              final ctx = shareContext!;
+                              final startLocal = p.plannedStartAt.toLocal();
+                              final nowLocal = DateTime.now().toLocal();
+                              final relDay = communityFriendlyDayLabel(
+                                startLocal,
+                                nowLocal,
+                                l10n,
+                              );
+                              final startTime = DateFormat.jm().format(startLocal);
+                              final label = ctx.resolveSpotLabel(
+                                p.spotName,
+                                l10n,
+                              );
+                              final narrative =
+                                  l10n.communityShareTrainingPlanNarrative(
+                                label,
+                                relDay,
+                                startTime,
+                              );
+                              await shareCommunitySpotMessage(
+                                context,
+                                shareContext: ctx,
+                                narrativeLine: narrative,
+                              );
+                            },
+                          ),
                         if (isMine)
                           IconButton(
                             tooltip: l10n.spotTrainingPlanEditMine,

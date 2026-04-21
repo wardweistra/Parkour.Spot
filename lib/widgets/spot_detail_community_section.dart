@@ -21,6 +21,9 @@ class SpotDetailCommunitySection extends StatefulWidget {
   const SpotDetailCommunitySection({
     super.key,
     required this.spotId,
+    this.spotDisplayName,
+    this.countryCode,
+    this.city,
     required this.onNewCheckIn,
     required this.onEditCheckIn,
     required this.onNewTrainingPlan,
@@ -29,6 +32,10 @@ class SpotDetailCommunitySection extends StatefulWidget {
   });
 
   final String spotId;
+  /// For share links in the Community dialog (SEO path when set).
+  final String? spotDisplayName;
+  final String? countryCode;
+  final String? city;
   final Future<void> Function() onNewCheckIn;
   final Future<void> Function(SpotCheckIn existing) onEditCheckIn;
   final Future<void> Function() onNewTrainingPlan;
@@ -565,6 +572,9 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
                                       context,
                                       theme,
                                       widget.spotId,
+                                      spotDisplayName: widget.spotDisplayName,
+                                      countryCode: widget.countryCode,
+                                      city: widget.city,
                                     ),
                                     borderRadius: BorderRadius.circular(10),
                                     child: Padding(

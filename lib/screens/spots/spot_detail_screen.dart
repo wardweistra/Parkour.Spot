@@ -2185,6 +2185,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                           ),
                           SpotDetailCommunitySection(
                             spotId: _spot.id!,
+                            spotDisplayName: _spot.name,
+                            countryCode: _spot.countryCode,
+                            city: _spot.city,
                             onNewCheckIn: _showCheckInDialog,
                             onEditCheckIn: _handleEditCheckIn,
                             onNewTrainingPlan: _showTrainingPlanDialog,

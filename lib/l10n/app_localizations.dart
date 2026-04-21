@@ -1657,6 +1657,40 @@ abstract class AppLocalizations {
     String endDay,
   );
 
+  /// No description provided for @communityShareSpotFallbackName.
+  ///
+  /// In en, this message translates to:
+  /// **'this spot'**
+  String get communityShareSpotFallbackName;
+
+  /// No description provided for @communityShareCheckInNarrative.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'m now training at {spotName} until about {untilPhrase}'**
+  String communityShareCheckInNarrative(String spotName, String untilPhrase);
+
+  /// No description provided for @communityShareTrainingPlanNarrative.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'m planning to train at {spotName} {relativeDay} from {startTime}'**
+  String communityShareTrainingPlanNarrative(
+    String spotName,
+    String relativeDay,
+    String startTime,
+  );
+
+  /// No description provided for @communityActivityShareCopiedToClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Message copied to clipboard!'**
+  String get communityActivityShareCopiedToClipboard;
+
+  /// No description provided for @communityActivityShareFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to share: {error}'**
+  String communityActivityShareFailed(String error);
+
   /// No description provided for @spotDetailDateDaysAgo.
   ///
   /// In en, this message translates to:

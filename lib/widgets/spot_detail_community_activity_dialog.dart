@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../services/spot_check_in_service.dart';
 import '../services/spot_training_plan_service.dart';
+import '../utils/community_activity_share.dart';
 import 'spot_check_in_presence.dart';
 import 'training_plan_presence.dart';
 
@@ -46,9 +47,18 @@ Widget _communityActivitySectionHeader({
 void showSpotCommunityActivityDialog(
   BuildContext context,
   ThemeData theme,
-  String spotId,
-) {
+  String spotId, {
+  String? spotDisplayName,
+  String? countryCode,
+  String? city,
+}) {
   final hostContext = context;
+  final shareContext = CommunitySpotShareContext(
+    spotId: spotId,
+    spotDisplayName: spotDisplayName,
+    countryCode: countryCode,
+    city: city,
+  );
   final checkSvc = Provider.of<SpotCheckInService>(context, listen: false);
   final planSvc = Provider.of<SpotTrainingPlanService>(context, listen: false);
   final checkStream = watchCheckInAvatarEntriesForSpot(checkSvc, spotId);
@@ -153,6 +163,7 @@ void showSpotCommunityActivityDialog(
                             key: ValueKey('c-${checkEntries[i].checkIn.id}'),
                             entry: checkEntries[i],
                             hostContext: hostContext,
+                            shareContext: shareContext,
                           ),
                         ],
                       ],
@@ -171,6 +182,7 @@ void showSpotCommunityActivityDialog(
                             key: ValueKey('p-${planEntries[i].plan.id}'),
                             entry: planEntries[i],
                             hostContext: hostContext,
+                            shareContext: shareContext,
                           ),
                         ],
                       ],

@@ -1154,6 +1154,41 @@
       }
     }
   },
+  "communityShareSpotFallbackName": "this spot",
+  "communityShareCheckInNarrative": "I'm now training at {spotName} until about {untilPhrase}",
+  "@communityShareCheckInNarrative": {
+    "placeholders": {
+      "spotName": {
+        "type": "String"
+      },
+      "untilPhrase": {
+        "type": "String"
+      }
+    }
+  },
+  "communityShareTrainingPlanNarrative": "I'm planning to train at {spotName} {relativeDay} from {startTime}",
+  "@communityShareTrainingPlanNarrative": {
+    "placeholders": {
+      "spotName": {
+        "type": "String"
+      },
+      "relativeDay": {
+        "type": "String"
+      },
+      "startTime": {
+        "type": "String"
+      }
+    }
+  },
+  "communityActivityShareCopiedToClipboard": "Message copied to clipboard!",
+  "communityActivityShareFailed": "Failed to share: {error}",
+  "@communityActivityShareFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "spotDetailDateDaysAgo": "{count, plural, one{1 day ago} other{{count} days ago}}",
   "@spotDetailDateDaysAgo": {
     "placeholders": {
