@@ -23,6 +23,9 @@ done
 
 echo "✅ Environment variables loaded"
 
+echo "📝 Generating web/firebase-messaging-sw.js..."
+node scripts/generate-firebase-messaging-sw.js || exit 1
+
 # Build Flutter app
 echo "📱 Building Flutter app..."
 flutter build web --wasm --debug \

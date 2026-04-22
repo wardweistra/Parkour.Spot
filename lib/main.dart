@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:parkour_spot/l10n/app_localizations.dart';
 import 'package:parkour_spot/utils/web_meta_utils.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -57,6 +59,15 @@ void main() async {
   const useEmulator = bool.fromEnvironment('USE_EMULATOR', defaultValue: false);
   if (useEmulator) {
     await _connectToEmulators();
+  }
+
+  if (kIsWeb) {
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      final n = message.notification;
+      final title = n?.title ?? 'Notification';
+      final body = n?.body;
+      SnackbarService.showFcmForeground(title, body);
+    });
   }
 
   runApp(const ParkourSpotApp());

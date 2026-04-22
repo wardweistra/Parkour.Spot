@@ -30,6 +30,10 @@ fi
 export $(cat .env.emulator | grep -v '^#' | xargs)
 
 echo "✅ Environment variables loaded from .env.emulator"
+
+echo "📝 Generating web/firebase-messaging-sw.js..."
+node scripts/generate-firebase-messaging-sw.js || exit 1
+
 echo ""
 echo "📝 Prerequisites:"
 echo "   1. Firebase emulators must be running in another terminal"

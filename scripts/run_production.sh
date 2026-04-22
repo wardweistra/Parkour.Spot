@@ -24,6 +24,9 @@ done
 
 echo "✅ Environment variables loaded"
 
+echo "📝 Generating web/firebase-messaging-sw.js..."
+node scripts/generate-firebase-messaging-sw.js || exit 1
+
 # Port configuration
 WEB_PORT=8080
 
