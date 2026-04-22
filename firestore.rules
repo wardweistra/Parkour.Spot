@@ -325,7 +325,7 @@ service cloud.firestore {
             (data.notificationKind is string &&
               data.notificationKind.size() > 0 &&
               data.notificationKind.size() <= 64 &&
-              data.notificationKind in ['nearby_new_spot', 'nearby_check_in', 'training_plan_check_in_reminder']);
+              data.notificationKind in ['nearby_new_spot', 'nearby_check_in', 'nearby_training_plan', 'training_plan_check_in_reminder']);
         }
         function notificationTemplateArgsOk(data) {
           return !('templateArgs' in data) || (
