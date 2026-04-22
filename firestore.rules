@@ -275,6 +275,14 @@ service cloud.firestore {
             (!('userAgent' in data) || data.userAgent == null ||
               (data.userAgent is string && data.userAgent.size() <= 600));
         }
+        // Client-reported web context (optional for legacy docs / partial updates).
+        function pushClientContextOk(data) {
+          return (!('isMobileDevice' in data) || data.isMobileDevice is bool) &&
+            (!('isAndroid' in data) || data.isAndroid is bool) &&
+            (!('isIOS' in data) || data.isIOS is bool) &&
+            (!('isRunningAsPWA' in data) || data.isRunningAsPWA is bool) &&
+            (!('isRunningInBrowser' in data) || data.isRunningInBrowser is bool);
+        }
         function pushTimestampsOk(data) {
           return data.createdAt is timestamp &&
             data.updatedAt is timestamp &&
@@ -287,6 +295,7 @@ service cloud.firestore {
             pushInstallationOk(data) &&
             pushTokenOk(data) &&
             pushOptionalStringsOk(data) &&
+            pushClientContextOk(data) &&
             pushTimestampsOk(data);
         }
 

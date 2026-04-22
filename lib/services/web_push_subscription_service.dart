@@ -9,6 +9,7 @@ import 'package:web/web.dart' as web;
 
 import '../config/app_config.dart';
 import 'auth_service.dart';
+import 'mobile_detection_service.dart';
 
 enum WebPushPermissionState { unknown, notDetermined, denied, authorized }
 
@@ -258,6 +259,11 @@ class WebPushSubscriptionService extends ChangeNotifier {
         0,
         userAgent.length.clamp(0, _maxUserAgentLength),
       ),
+      'isMobileDevice': MobileDetectionService.isMobileDevice,
+      'isAndroid': MobileDetectionService.isAndroid,
+      'isIOS': MobileDetectionService.isIOS,
+      'isRunningAsPWA': MobileDetectionService.isRunningAsPWA,
+      'isRunningInBrowser': MobileDetectionService.isRunningInBrowser,
       'updatedAt': now,
       'lastSeenAt': now,
       'createdAt': now,
