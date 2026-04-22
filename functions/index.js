@@ -8298,27 +8298,44 @@ function serializePushSubscriptionForAdmin(docId, data) {
   };
 }
 
+/** Default notification click-through when admin leaves the link blank. */
+const DEFAULT_NOTIFICATION_CLICK_LINK =
+    "https://parkour.spot/profile/notifications";
+
+const MAX_NOTIFICATION_CLICK_LINK_LENGTH = 2048;
+
 /**
- * Base URL for webpush link (admin may run from localhost).
- * @param {*} raw
+ * Normalize and validate admin-provided web push click URL.
+ * @param {string} trimmed non-empty trimmed URL string
  * @return {string}
  */
-function resolveWebAppLinkBase(raw) {
-  const defaultBase = "https://parkour.spot";
-  if (!raw || typeof raw !== "string") {
-    return defaultBase;
+function normalizeAdminNotificationClickLink(trimmed) {
+  if (trimmed.length > MAX_NOTIFICATION_CLICK_LINK_LENGTH) {
+    throw new HttpsError(
+        "invalid-argument",
+        "notification click link is too long",
+    );
   }
-  const u = raw.trim().replace(/\/$/, "");
-  if (u === "https://parkour.spot") {
-    return u;
+  let parsed;
+  try {
+    parsed = new URL(trimmed);
+  } catch (e) {
+    throw new HttpsError(
+        "invalid-argument",
+        "notification click link must be a valid URL",
+    );
   }
-  if (/^http:\/\/localhost:\d+$/.test(u)) {
-    return u;
+  if (parsed.protocol === "https:") {
+    return parsed.toString();
   }
-  if (/^http:\/\/127\.0\.0\.1:\d+$/.test(u)) {
-    return u;
+  if (parsed.protocol === "http:" &&
+      (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1")) {
+    return parsed.toString();
   }
-  return defaultBase;
+  throw new HttpsError(
+      "invalid-argument",
+      "notification click link must use https (or http on localhost only)",
+  );
 }
 
 /**
@@ -8381,7 +8398,7 @@ exports.sendWebPushToUserSubscriptions = onCall(
         const subscriptionIdsRaw = request.data?.subscriptionIds;
         const titleRaw = request.data?.title;
         const bodyRaw = request.data?.body;
-        const webAppBaseUrl = request.data?.webAppBaseUrl;
+        const notificationClickLinkRaw = request.data?.notificationClickLink;
 
         if (!targetUid || typeof targetUid !== "string" ||
             targetUid.length < 1 || targetUid.length > 128) {
@@ -8408,8 +8425,13 @@ exports.sendWebPushToUserSubscriptions = onCall(
 
         const title = titleRaw.trim().slice(0, 200);
         const body = bodyRaw.trim().slice(0, 1000);
-        const linkBase = resolveWebAppLinkBase(webAppBaseUrl);
-        const clickLink = `${linkBase}/profile/notifications`;
+        let clickLink = DEFAULT_NOTIFICATION_CLICK_LINK;
+        if (typeof notificationClickLinkRaw === "string" &&
+            notificationClickLinkRaw.trim().length > 0) {
+          clickLink = normalizeAdminNotificationClickLink(
+              notificationClickLinkRaw.trim(),
+          );
+        }
 
         /** @type {{id: string, token: string}[]} */
         const targets = [];
@@ -8454,7 +8476,7 @@ exports.sendWebPushToUserSubscriptions = onCall(
         const messages = targets.map(({token}) => ({
           token,
           notification: {title, body},
-          data: {clickPath: "/profile/notifications"},
+          data: {openUrl: clickLink},
           webpush: {
             fcmOptions: {
               link: clickLink,

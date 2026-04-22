@@ -25,6 +25,9 @@ class _AdminPushSubscriptionsScreenState
     text: 'Parkour·Spot',
   );
   final TextEditingController _bodyController = TextEditingController();
+  final TextEditingController _linkController = TextEditingController(
+    text: AdminPushSubscriptionsService.defaultNotificationClickLink,
+  );
   final Set<String> _selectedIds = <String>{};
   String _userFilter = '';
 
@@ -44,6 +47,7 @@ class _AdminPushSubscriptionsScreenState
     _uidController.dispose();
     _titleController.dispose();
     _bodyController.dispose();
+    _linkController.dispose();
     super.dispose();
   }
 
@@ -80,6 +84,7 @@ class _AdminPushSubscriptionsScreenState
       subscriptionIds: _selectedIds.toList(growable: false),
       title: _titleController.text,
       body: _bodyController.text,
+      notificationClickLink: _linkController.text,
     );
     if (!context.mounted) return;
     final msg = pushService.error ?? pushService.lastSendSummary ?? 'Done';
@@ -299,6 +304,20 @@ class _AdminPushSubscriptionsScreenState
                   ),
                   minLines: 2,
                   maxLines: 4,
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _linkController,
+                  decoration: InputDecoration(
+                    labelText: 'Open URL when notification is clicked',
+                    hintText: 'https://…',
+                    helperText:
+                        'Clear the field to use ${AdminPushSubscriptionsService.defaultNotificationClickLink}',
+                    border: const OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  keyboardType: TextInputType.url,
+                  autocorrect: false,
                 ),
                 const SizedBox(height: 16),
                 FilledButton.icon(

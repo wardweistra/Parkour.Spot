@@ -1,12 +1,15 @@
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
-import 'package:web/web.dart' as web;
 
 import '../models/admin_push_subscription_summary.dart';
 
 /// Admin-only: load a user's FCM web push subscription docs and send test pushes.
 class AdminPushSubscriptionsService extends ChangeNotifier {
   AdminPushSubscriptionsService();
+
+  /// Default open URL for web push when the admin leaves the link field blank (server).
+  static const defaultNotificationClickLink =
+      'https://parkour.spot/profile/notifications';
 
   final FirebaseFunctions _functions = FirebaseFunctions.instanceFor(
     region: 'europe-west1',
@@ -105,11 +108,15 @@ class AdminPushSubscriptionsService extends ChangeNotifier {
     }
   }
 
-  /// Sends one FCM notification per selected subscription (same title/body).
+  /// Sends one FCM notification per selected subscription (same title/body/link).
+  ///
+  /// [notificationClickLink] full URL; if blank after trim, the server uses
+  /// [defaultNotificationClickLink].
   Future<bool> sendToSubscriptions({
     required List<String> subscriptionIds,
     required String title,
     required String body,
+    required String notificationClickLink,
   }) async {
     final uid = _targetUid;
     if (uid == null || uid.isEmpty) {
@@ -147,7 +154,7 @@ class AdminPushSubscriptionsService extends ChangeNotifier {
         'subscriptionIds': subscriptionIds,
         'title': title,
         'body': body,
-        if (kIsWeb) 'webAppBaseUrl': web.window.location.origin,
+        'notificationClickLink': notificationClickLink.trim(),
       };
       final result = await callable.call(payload);
       final raw = result.data;
