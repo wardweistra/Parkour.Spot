@@ -22,7 +22,6 @@ class WebPushSubscriptionService extends ChangeNotifier {
   static const _platform = 'web';
   static const _maxUserAgentLength = 600;
   static const _maxLocaleLength = 16;
-  static const _logPrefix = '[WebPushSubscriptionService]';
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
@@ -46,7 +45,6 @@ class WebPushSubscriptionService extends ChangeNotifier {
   Future<void> syncAuth(AuthService authService) async {
     final uid = authService.currentUser?.uid;
     if (_uid == uid) return;
-    _logInfo('syncAuth uid: ${_uid ?? 'null'} -> ${uid ?? 'null'}');
     _uid = uid;
     _lastError = null;
     if (_uid == null) {
@@ -61,31 +59,22 @@ class WebPushSubscriptionService extends ChangeNotifier {
   Future<void> refresh() async {
     if (!_isSupported) return;
     await _runBusy(() async {
-      _logInfo('refresh start');
       _lastError = null;
       _installationId = await _getOrCreateInstallationId();
-      _logInfo('refresh installationId=$_installationId');
       _permissionState = await _readPermissionState();
-      _logInfo('refresh permission=${_permissionState.name}');
       if (_uid == null ||
           _permissionState != WebPushPermissionState.authorized) {
         _isSubscribed = false;
-        _logWarn(
-          'refresh skipped (uid=${_uid ?? 'null'}, permission=${_permissionState.name})',
-        );
         return;
       }
       final token = await _getCurrentToken();
       if (token == null || token.isEmpty) {
         _isSubscribed = false;
-        _logWarn('refresh no token available');
         return;
       }
-      _logInfo('refresh token acquired (length=${token.length})');
       await _upsertSubscription(token: token, enabled: true);
       await _disableDuplicateTokenDocs(token: token);
       _isSubscribed = true;
-      _logInfo('refresh subscription active');
     });
   }
 
@@ -93,31 +82,24 @@ class WebPushSubscriptionService extends ChangeNotifier {
     if (!_isSupported || _uid == null) return false;
     var success = false;
     await _runBusy(() async {
-      _logInfo('enableCurrentDevice start');
       _lastError = null;
       _installationId = await _getOrCreateInstallationId();
-      _logInfo('enableCurrentDevice installationId=$_installationId');
       final settings = await _messaging.requestPermission();
       _permissionState = _mapPermission(settings.authorizationStatus);
-      _logInfo('enableCurrentDevice permission=${_permissionState.name}');
       if (_permissionState != WebPushPermissionState.authorized) {
         _isSubscribed = false;
-        _logWarn('enableCurrentDevice permission not authorized');
         return;
       }
       final token = await _getCurrentToken();
       if (token == null || token.isEmpty) {
         _isSubscribed = false;
         _lastError = 'No push token available for this browser.';
-        _logWarn('enableCurrentDevice no token available');
         return;
       }
-      _logInfo('enableCurrentDevice token acquired (length=${token.length})');
       await _upsertSubscription(token: token, enabled: true);
       await _disableDuplicateTokenDocs(token: token);
       _isSubscribed = true;
       success = true;
-      _logInfo('enableCurrentDevice success');
     });
     return success;
   }
@@ -126,21 +108,15 @@ class WebPushSubscriptionService extends ChangeNotifier {
     if (!_isSupported || _uid == null) return false;
     var success = false;
     await _runBusy(() async {
-      _logInfo('disableCurrentDevice start');
       _lastError = null;
       _installationId = await _getOrCreateInstallationId();
       try {
         await _messaging.deleteToken();
-        _logInfo('disableCurrentDevice deleteToken complete');
-      } catch (e) {
-        debugPrint('WebPushSubscriptionService.deleteToken: $e');
-        _logWarn('disableCurrentDevice deleteToken failed: $e');
-      }
+      } catch (_) {}
       await _upsertSubscription(token: null, enabled: false);
       _permissionState = await _readPermissionState();
       _isSubscribed = false;
       success = true;
-      _logInfo('disableCurrentDevice success');
     });
     return success;
   }
@@ -151,9 +127,7 @@ class WebPushSubscriptionService extends ChangeNotifier {
     notifyListeners();
     try {
       await action();
-    } catch (e, st) {
-      debugPrint('WebPushSubscriptionService: $e\n$st');
-      _logError('operation failed: $e', st);
+    } catch (e, _) {
       _lastError = e.toString();
       _isSubscribed = false;
     } finally {
@@ -166,19 +140,12 @@ class WebPushSubscriptionService extends ChangeNotifier {
     final vapidKey = AppConfig.firebaseWebPushVapidKey.trim();
     if (vapidKey.isEmpty) {
       _lastError = 'Missing FIREBASE_WEB_PUSH_VAPID_KEY configuration.';
-      _logError(_lastError!);
       return null;
     }
     try {
-      _logInfo('getToken request start');
-      final token = await _messaging.getToken(vapidKey: vapidKey);
-      _logInfo(
-        'getToken completed (hasToken=${token != null && token.isNotEmpty})',
-      );
-      return token;
+      return await _messaging.getToken(vapidKey: vapidKey);
     } catch (e) {
       _lastError = e.toString();
-      _logError('getToken failed: $e');
       return null;
     }
   }
@@ -236,9 +203,6 @@ class WebPushSubscriptionService extends ChangeNotifier {
     final collection = _subscriptionsCollection();
     final installationId = _installationId;
     if (collection == null || installationId == null) return;
-    _logInfo(
-      'upsertSubscription doc=$installationId enabled=$enabled hasToken=${token != null && token.isNotEmpty}',
-    );
     final now = FieldValue.serverTimestamp();
     final locale = ui.PlatformDispatcher.instance.locale.languageCode
         .trim()
@@ -268,7 +232,6 @@ class WebPushSubscriptionService extends ChangeNotifier {
       'lastSeenAt': now,
       'createdAt': now,
     }, SetOptions(merge: true));
-    _logInfo('upsertSubscription write complete');
   }
 
   Future<void> _disableDuplicateTokenDocs({required String token}) async {
@@ -276,7 +239,6 @@ class WebPushSubscriptionService extends ChangeNotifier {
     final keepId = _installationId;
     if (collection == null || keepId == null) return;
     final dupes = await collection.where('token', isEqualTo: token).get();
-    _logInfo('disableDuplicateTokenDocs matches=${dupes.docs.length}');
     if (dupes.docs.length <= 1) return;
     final now = FieldValue.serverTimestamp();
     final batch = _firestore.batch();
@@ -288,21 +250,5 @@ class WebPushSubscriptionService extends ChangeNotifier {
       }, SetOptions(merge: true));
     }
     await batch.commit();
-    _logInfo('disableDuplicateTokenDocs complete');
-  }
-
-  void _logInfo(String message) {
-    debugPrint('$_logPrefix $message');
-  }
-
-  void _logWarn(String message) {
-    debugPrint('$_logPrefix $message');
-  }
-
-  void _logError(String message, [Object? stackTrace]) {
-    debugPrint('$_logPrefix $message');
-    if (stackTrace != null) {
-      debugPrint('$_logPrefix stack: $stackTrace');
-    }
   }
 }

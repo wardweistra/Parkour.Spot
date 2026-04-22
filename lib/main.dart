@@ -279,36 +279,38 @@ class ParkourSpotApp extends StatelessWidget {
           },
         ),
       ],
-      child: Consumer<LocalePreferencesService>(
-        builder: (context, localePrefs, _) {
-          return MaterialApp.router(
-            onGenerateTitle: (_) => WebMetaUtils.defaultTitle,
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            locale: localePrefs.locale,
-            routerConfig: AppRouter.router,
-            scaffoldMessengerKey: SnackbarService.messengerKey,
-            theme: ThemeData(
-              useMaterial3: true,
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: const Color(0xFF007FA8),
-                brightness: Brightness.light,
+      child: _EagerWebPushInit(
+        child: Consumer<LocalePreferencesService>(
+          builder: (context, localePrefs, _) {
+            return MaterialApp.router(
+              onGenerateTitle: (_) => WebMetaUtils.defaultTitle,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              locale: localePrefs.locale,
+              routerConfig: AppRouter.router,
+              scaffoldMessengerKey: SnackbarService.messengerKey,
+              theme: ThemeData(
+                useMaterial3: true,
+                colorScheme: ColorScheme.fromSeed(
+                  seedColor: const Color(0xFF007FA8),
+                  brightness: Brightness.light,
+                ),
+                textTheme: GoogleFonts.fredokaTextTheme(),
               ),
-              textTheme: GoogleFonts.fredokaTextTheme(),
-            ),
-            darkTheme: ThemeData(
-              useMaterial3: true,
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: const Color(0xFF007FA8),
-                brightness: Brightness.dark,
+              darkTheme: ThemeData(
+                useMaterial3: true,
+                colorScheme: ColorScheme.fromSeed(
+                  seedColor: const Color(0xFF007FA8),
+                  brightness: Brightness.dark,
+                ),
+                textTheme: GoogleFonts.fredokaTextTheme(
+                  ThemeData.dark().textTheme,
+                ),
               ),
-              textTheme: GoogleFonts.fredokaTextTheme(
-                ThemeData.dark().textTheme,
-              ),
-            ),
-            debugShowCheckedModeBanner: false,
-          );
-        },
+              debugShowCheckedModeBanner: false,
+            );
+          },
+        ),
       ),
     );
   }
@@ -351,4 +353,34 @@ class ParkourSpotApp extends StatelessWidget {
 
     return false;
   }
+}
+
+/// Ensures [WebPushSubscriptionService] is built on web after the first frame.
+///
+/// `Provider` is lazy: nothing ran push sync until something read this service
+/// (e.g. Settings). Touching it once here makes startup logs and `refresh()`
+/// run on cold load.
+class _EagerWebPushInit extends StatefulWidget {
+  const _EagerWebPushInit({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_EagerWebPushInit> createState() => _EagerWebPushInitState();
+}
+
+class _EagerWebPushInitState extends State<_EagerWebPushInit> {
+  @override
+  void initState() {
+    super.initState();
+    if (kIsWeb) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        Provider.of<WebPushSubscriptionService>(context, listen: false);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
