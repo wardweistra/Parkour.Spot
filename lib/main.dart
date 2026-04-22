@@ -40,8 +40,44 @@ import 'package:parkour_spot/router/app_router.dart';
 import 'package:parkour_spot/firebase_options.dart';
 import 'package:parkour_spot/config/app_config.dart';
 import 'package:parkour_spot/analytics/web_analytics.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:web/web.dart' as web;
 import 'package:google_fonts/google_fonts.dart';
+
+String? _fcmPayloadString(Object? value) {
+  if (value is String && value.trim().isNotEmpty) return value.trim();
+  return null;
+}
+
+/// Opens the push click URL: in-app route when same host as the web app, else
+/// external browser (or new tab on web).
+Future<void> _openFcmForegroundLink(String url) async {
+  try {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+
+    if (!uri.hasScheme) {
+      if (kIsWeb && url.startsWith('/')) {
+        AppRouter.router.go(url);
+      }
+      return;
+    }
+
+    if (kIsWeb) {
+      final host = web.window.location.hostname;
+      if (uri.host == host) {
+        final path = uri.path.isEmpty ? '/' : uri.path;
+        final q = uri.hasQuery ? '?${uri.query}' : '';
+        AppRouter.router.go('$path$q');
+        return;
+      }
+    }
+
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  } catch (e, st) {
+    debugPrint('open FCM foreground link: $e\n$st');
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -66,7 +102,16 @@ void main() async {
       final n = message.notification;
       final title = n?.title ?? 'Notification';
       final body = n?.body;
-      SnackbarService.showFcmForeground(title, body);
+      final openUrl = _fcmPayloadString(message.data['openUrl']);
+      SnackbarService.showFcmForeground(
+        title,
+        body,
+        onOpenLink: openUrl != null
+            ? () {
+                unawaited(_openFcmForegroundLink(openUrl));
+              }
+            : null,
+      );
     });
   }
 
