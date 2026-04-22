@@ -12,7 +12,7 @@
  * functions
  */
 
-const {onCall, onRequest} = require("firebase-functions/v2/https");
+const {onCall, onRequest, HttpsError} = require("firebase-functions/v2/https");
 const {onSchedule} = require("firebase-functions/v2/scheduler");
 const {
   onDocumentCreated,
@@ -8342,7 +8342,7 @@ exports.listPushSubscriptionsForAdmin = onCall(
         const targetUid = request.data?.targetUid;
         if (!targetUid || typeof targetUid !== "string" ||
             targetUid.length < 1 || targetUid.length > 128) {
-          throw new Error("targetUid is required");
+          throw new HttpsError("invalid-argument", "targetUid is required");
         }
         const snap = await db.collection("users").doc(targetUid)
             .collection("pushSubscriptions")
@@ -8356,8 +8356,14 @@ exports.listPushSubscriptionsForAdmin = onCall(
         return {subscriptions, targetUid};
       } catch (error) {
         console.error("listPushSubscriptionsForAdmin error:", error);
-        throw new Error(
-            `Failed to list push subscriptions: ${error.message}`,
+        if (error instanceof HttpsError) {
+          throw error;
+        }
+        throw new HttpsError(
+            "internal",
+            error && error.message ?
+              `Failed to list push subscriptions: ${error.message}` :
+              "Failed to list push subscriptions",
         );
       }
     },
@@ -8379,19 +8385,25 @@ exports.sendWebPushToUserSubscriptions = onCall(
 
         if (!targetUid || typeof targetUid !== "string" ||
             targetUid.length < 1 || targetUid.length > 128) {
-          throw new Error("targetUid is required");
+          throw new HttpsError("invalid-argument", "targetUid is required");
         }
         if (!Array.isArray(subscriptionIdsRaw) || subscriptionIdsRaw.length === 0) {
-          throw new Error("subscriptionIds must be a non-empty array");
+          throw new HttpsError(
+              "invalid-argument",
+              "subscriptionIds must be a non-empty array",
+          );
         }
         if (subscriptionIdsRaw.length > 20) {
-          throw new Error("At most 20 subscriptions per request");
+          throw new HttpsError(
+              "invalid-argument",
+              "At most 20 subscriptions per request",
+          );
         }
         if (typeof titleRaw !== "string" || titleRaw.trim().length === 0) {
-          throw new Error("title is required");
+          throw new HttpsError("invalid-argument", "title is required");
         }
         if (typeof bodyRaw !== "string" || bodyRaw.trim().length === 0) {
-          throw new Error("body is required");
+          throw new HttpsError("invalid-argument", "body is required");
         }
 
         const title = titleRaw.trim().slice(0, 200);
@@ -8505,7 +8517,15 @@ exports.sendWebPushToUserSubscriptions = onCall(
         };
       } catch (error) {
         console.error("sendWebPushToUserSubscriptions error:", error);
-        throw new Error(`Failed to send web push: ${error.message}`);
+        if (error instanceof HttpsError) {
+          throw error;
+        }
+        throw new HttpsError(
+            "internal",
+            error && error.message ?
+              `Failed to send web push: ${error.message}` :
+              "Failed to send web push",
+        );
       }
     },
 );

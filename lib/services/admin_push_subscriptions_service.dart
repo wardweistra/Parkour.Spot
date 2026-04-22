@@ -85,6 +85,14 @@ class AdminPushSubscriptionsService extends ChangeNotifier {
             ),
           )
           .toList(growable: false);
+    } on FirebaseFunctionsException catch (e, st) {
+      debugPrint(
+        'AdminPushSubscriptionsService.fetchSubscriptionsForTarget: $e\n$st',
+      );
+      _error = (e.message != null && e.message!.trim().isNotEmpty)
+          ? e.message!
+          : 'Request failed (${e.code})';
+      _subscriptions = const <AdminPushSubscriptionSummary>[];
     } catch (e, st) {
       debugPrint(
         'AdminPushSubscriptionsService.fetchSubscriptionsForTarget: $e\n$st',
@@ -111,6 +119,16 @@ class AdminPushSubscriptionsService extends ChangeNotifier {
     }
     if (subscriptionIds.isEmpty) {
       _error = 'Select at least one subscription';
+      notifyListeners();
+      return false;
+    }
+    if (title.trim().isEmpty) {
+      _error = 'Notification title is required';
+      notifyListeners();
+      return false;
+    }
+    if (body.trim().isEmpty) {
+      _error = 'Notification body is required';
       notifyListeners();
       return false;
     }
@@ -157,6 +175,12 @@ class AdminPushSubscriptionsService extends ChangeNotifier {
           '${clickLink != null ? '\nClick link: $clickLink' : ''}'
           '${firstErr != null ? '\nFirst error: $firstErr' : ''}';
       return failureCount == 0 && successCount > 0;
+    } on FirebaseFunctionsException catch (e, st) {
+      debugPrint('AdminPushSubscriptionsService.sendToSubscriptions: $e\n$st');
+      _error = (e.message != null && e.message!.trim().isNotEmpty)
+          ? e.message!
+          : 'Request failed (${e.code})';
+      return false;
     } catch (e, st) {
       debugPrint('AdminPushSubscriptionsService.sendToSubscriptions: $e\n$st');
       _error = e.toString();
