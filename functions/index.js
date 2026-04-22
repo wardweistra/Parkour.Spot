@@ -8322,6 +8322,16 @@ function resolveWebAppLinkBase(raw) {
 }
 
 /**
+ * FCM error codes where the stored registration token is invalid or expired and
+ * should be disabled in Firestore. Omit transient errors (rate limits, etc.).
+ * @see https://firebase.google.com/docs/cloud-messaging/send-message#errors
+ */
+const FCM_UNRECOVERABLE_TOKEN_ERROR_CODES = new Set([
+  "messaging/registration-token-not-registered",
+  "messaging/invalid-registration-token",
+]);
+
+/**
  * Admin: list a user's web push subscription docs (Admin SDK).
  */
 exports.listPushSubscriptionsForAdmin = onCall(
@@ -8441,15 +8451,47 @@ exports.sendWebPushToUserSubscriptions = onCall(
         }));
 
         const batchResponse = await admin.messaging().sendEach(messages);
-        /** @type {{subscriptionId: string, error: string}[]} */
+        /** @type {{subscriptionId: string, error: string, code?: string}[]} */
         const failures = [];
+        /** @type {string[]} */
+        const deactivatedSubscriptionIds = [];
         for (let i = 0; i < batchResponse.responses.length; i++) {
           const r = batchResponse.responses[i];
           if (!r.success) {
+            const err = r.error;
+            const code = err && typeof err.code === "string" ? err.code : "";
+            const message = err ? String(err.message || err) : "unknown";
             failures.push({
               subscriptionId: targets[i].id,
-              error: r.error ? String(r.error.message || r.error) : "unknown",
+              error: message,
+              ...(code ? {code} : {}),
             });
+            if (code && FCM_UNRECOVERABLE_TOKEN_ERROR_CODES.has(code)) {
+              deactivatedSubscriptionIds.push(targets[i].id);
+            }
+          }
+        }
+
+        const deactivatedUnique = [...new Set(deactivatedSubscriptionIds)];
+        if (deactivatedUnique.length > 0) {
+          try {
+            const batch = db.batch();
+            const subsCol = db.collection("users").doc(targetUid)
+                .collection("pushSubscriptions");
+            const now = FieldValue.serverTimestamp();
+            for (const subId of deactivatedUnique) {
+              batch.set(subsCol.doc(subId), {
+                enabled: false,
+                token: null,
+                updatedAt: now,
+              }, {merge: true});
+            }
+            await batch.commit();
+          } catch (cleanupErr) {
+            console.error(
+                "sendWebPushToUserSubscriptions token cleanup error:",
+                cleanupErr,
+            );
           }
         }
 
@@ -8459,6 +8501,7 @@ exports.sendWebPushToUserSubscriptions = onCall(
           skipped,
           failures,
           clickLink,
+          deactivatedSubscriptionIds: deactivatedUnique,
         };
       } catch (error) {
         console.error("sendWebPushToUserSubscriptions error:", error);
