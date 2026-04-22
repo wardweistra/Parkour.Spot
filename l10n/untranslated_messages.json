@@ -1,6 +1,63 @@
 {
+  "de": [
+    "profilePushNotificationsThisDeviceTitle",
+    "profilePushNotificationsUnsupported",
+    "profilePushNotificationsLoading",
+    "profilePushNotificationsPermissionDenied",
+    "profilePushNotificationsPermissionNotDetermined",
+    "profilePushNotificationsEnabled",
+    "profilePushNotificationsPermissionGrantedButOff",
+    "profilePushNotificationsUnknown",
+    "profilePushNotificationsError"
+  ],
+
+  "es": [
+    "profilePushNotificationsThisDeviceTitle",
+    "profilePushNotificationsUnsupported",
+    "profilePushNotificationsLoading",
+    "profilePushNotificationsPermissionDenied",
+    "profilePushNotificationsPermissionNotDetermined",
+    "profilePushNotificationsEnabled",
+    "profilePushNotificationsPermissionGrantedButOff",
+    "profilePushNotificationsUnknown",
+    "profilePushNotificationsError"
+  ],
+
+  "fr": [
+    "profilePushNotificationsThisDeviceTitle",
+    "profilePushNotificationsUnsupported",
+    "profilePushNotificationsLoading",
+    "profilePushNotificationsPermissionDenied",
+    "profilePushNotificationsPermissionNotDetermined",
+    "profilePushNotificationsEnabled",
+    "profilePushNotificationsPermissionGrantedButOff",
+    "profilePushNotificationsUnknown",
+    "profilePushNotificationsError"
+  ],
+
   "nl": [
+    "profilePushNotificationsThisDeviceTitle",
+    "profilePushNotificationsUnsupported",
+    "profilePushNotificationsLoading",
+    "profilePushNotificationsPermissionDenied",
+    "profilePushNotificationsPermissionNotDetermined",
+    "profilePushNotificationsEnabled",
+    "profilePushNotificationsPermissionGrantedButOff",
+    "profilePushNotificationsUnknown",
+    "profilePushNotificationsError",
     "spotTrainingPlanTooltipPublicUntil",
     "spotTrainingPlanTooltipPrivateUntil"
+  ],
+
+  "pt": [
+    "profilePushNotificationsThisDeviceTitle",
+    "profilePushNotificationsUnsupported",
+    "profilePushNotificationsLoading",
+    "profilePushNotificationsPermissionDenied",
+    "profilePushNotificationsPermissionNotDetermined",
+    "profilePushNotificationsEnabled",
+    "profilePushNotificationsPermissionGrantedButOff",
+    "profilePushNotificationsUnknown",
+    "profilePushNotificationsError"
   ]
 }

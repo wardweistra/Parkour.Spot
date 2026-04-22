@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:parkour_spot/l10n/app_localizations.dart';
 import 'package:parkour_spot/utils/web_meta_utils.dart';
@@ -30,6 +32,7 @@ import 'package:parkour_spot/services/user_profile_service.dart';
 import 'package:parkour_spot/services/user_locations_of_interest_service.dart';
 import 'package:parkour_spot/services/user_notification_service.dart';
 import 'package:parkour_spot/services/locale_preferences_service.dart';
+import 'package:parkour_spot/services/web_push_subscription_service.dart';
 import 'package:parkour_spot/router/app_router.dart';
 import 'package:parkour_spot/firebase_options.dart';
 import 'package:parkour_spot/config/app_config.dart';
@@ -207,7 +210,10 @@ class ParkourSpotApp extends StatelessWidget {
           create: (_) => PwaInstallService()..initialize(),
         ),
         ChangeNotifierProvider(create: (_) => UserProfileService()),
-        ChangeNotifierProxyProvider<AuthService, UserLocationsOfInterestService>(
+        ChangeNotifierProxyProvider<
+          AuthService,
+          UserLocationsOfInterestService
+        >(
           create: (context) {
             final authService = Provider.of<AuthService>(
               context,
@@ -231,9 +237,28 @@ class ParkourSpotApp extends StatelessWidget {
             return previous ?? UserNotificationService(authService);
           },
         ),
+        ChangeNotifierProxyProvider<AuthService, WebPushSubscriptionService>(
+          create: (context) {
+            final authService = Provider.of<AuthService>(
+              context,
+              listen: false,
+            );
+            final service = WebPushSubscriptionService();
+            unawaited(service.syncAuth(authService));
+            return service;
+          },
+          update: (context, authService, previous) {
+            final service = previous ?? WebPushSubscriptionService();
+            unawaited(service.syncAuth(authService));
+            return service;
+          },
+        ),
         ChangeNotifierProxyProvider<AuthService, LocalePreferencesService>(
           create: (context) {
-            final authService = Provider.of<AuthService>(context, listen: false);
+            final authService = Provider.of<AuthService>(
+              context,
+              listen: false,
+            );
             return LocalePreferencesService(authService)..loadFromStorage();
           },
           update: (context, authService, previous) {
@@ -264,7 +289,9 @@ class ParkourSpotApp extends StatelessWidget {
                 seedColor: const Color(0xFF007FA8),
                 brightness: Brightness.dark,
               ),
-              textTheme: GoogleFonts.fredokaTextTheme(ThemeData.dark().textTheme),
+              textTheme: GoogleFonts.fredokaTextTheme(
+                ThemeData.dark().textTheme,
+              ),
             ),
             debugShowCheckedModeBanner: false,
           );

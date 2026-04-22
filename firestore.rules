@@ -247,6 +247,60 @@ service cloud.firestore {
         allow delete: if request.auth != null && request.auth.uid == userId;
       }
 
+      // Per-device push subscription records for FCM web delivery.
+      match /pushSubscriptions/{subscriptionId} {
+        function pushPlatformOk(data) {
+          return data.platform is string &&
+            data.platform in ['web'];
+        }
+        function pushPermissionOk(data) {
+          return data.permission is string &&
+            data.permission in ['unknown', 'notDetermined', 'denied', 'authorized'];
+        }
+        function pushInstallationOk(data) {
+          return data.installationId is string &&
+            data.installationId.size() > 0 &&
+            data.installationId.size() <= 128 &&
+            data.installationId == subscriptionId;
+        }
+        function pushTokenOk(data) {
+          return (!('token' in data) || data.token == null ||
+            (data.token is string &&
+              data.token.size() > 0 &&
+              data.token.size() <= 4096));
+        }
+        function pushOptionalStringsOk(data) {
+          return (!('locale' in data) || data.locale == null ||
+            (data.locale is string && data.locale.size() <= 16)) &&
+            (!('userAgent' in data) || data.userAgent == null ||
+              (data.userAgent is string && data.userAgent.size() <= 600));
+        }
+        function pushTimestampsOk(data) {
+          return data.createdAt is timestamp &&
+            data.updatedAt is timestamp &&
+            data.lastSeenAt is timestamp;
+        }
+        function pushShapeOk(data) {
+          return data.enabled is bool &&
+            pushPlatformOk(data) &&
+            pushPermissionOk(data) &&
+            pushInstallationOk(data) &&
+            pushTokenOk(data) &&
+            pushOptionalStringsOk(data) &&
+            pushTimestampsOk(data);
+        }
+
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null &&
+          request.auth.uid == userId &&
+          pushShapeOk(request.resource.data);
+        allow update: if request.auth != null &&
+          request.auth.uid == userId &&
+          pushShapeOk(request.resource.data) &&
+          pushInstallationOk(resource.data);
+        allow delete: if request.auth != null && request.auth.uid == userId;
+      }
+
       // In-app notifications inbox (documents written by Admin SDK / Cloud Functions only).
       match /notifications/{notificationId} {
         function notificationStringsOk(data) {

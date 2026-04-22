@@ -268,6 +268,42 @@
   "@profileNotificationSettingsTitle": {
     "description": "Account settings: notification settings section title"
   },
+  "profilePushNotificationsThisDeviceTitle": "Push notifications on this browser/device",
+  "@profilePushNotificationsThisDeviceTitle": {
+    "description": "Account settings: toggle title for browser-specific push subscription"
+  },
+  "profilePushNotificationsUnsupported": "Push notifications are not supported on this browser.",
+  "@profilePushNotificationsUnsupported": {
+    "description": "Account settings: status text when push API/FCM is unavailable"
+  },
+  "profilePushNotificationsLoading": "Checking push notification status for this device...",
+  "@profilePushNotificationsLoading": {
+    "description": "Account settings: temporary status while push subscription state is loading"
+  },
+  "profilePushNotificationsPermissionDenied": "Push permission is blocked in your browser settings for this site.",
+  "@profilePushNotificationsPermissionDenied": {
+    "description": "Account settings: status text when browser notification permission is denied"
+  },
+  "profilePushNotificationsPermissionNotDetermined": "Turn this on to ask for permission and subscribe this browser.",
+  "@profilePushNotificationsPermissionNotDetermined": {
+    "description": "Account settings: status text before permission has been requested"
+  },
+  "profilePushNotificationsEnabled": "This browser is subscribed and can receive push alerts.",
+  "@profilePushNotificationsEnabled": {
+    "description": "Account settings: status text when current device is subscribed"
+  },
+  "profilePushNotificationsPermissionGrantedButOff": "Permission is granted, but this browser is currently unsubscribed.",
+  "@profilePushNotificationsPermissionGrantedButOff": {
+    "description": "Account settings: status text when permission is granted but no active token/subscription"
+  },
+  "profilePushNotificationsUnknown": "Push status is currently unavailable. Try again shortly.",
+  "@profilePushNotificationsUnknown": {
+    "description": "Account settings: fallback status text for unknown permission/subscription state"
+  },
+  "profilePushNotificationsError": "We couldn't update push notifications on this browser. Please try again.",
+  "@profilePushNotificationsError": {
+    "description": "Account settings: generic error shown under push subscription toggle"
+  },
   "profileLocationAlertsDescription": "Control which locations are used for nearby alerts, including check-ins, new spots, training plans, and future events.",
   "@profileLocationAlertsDescription": {
     "description": "Account settings: location alerts section description"

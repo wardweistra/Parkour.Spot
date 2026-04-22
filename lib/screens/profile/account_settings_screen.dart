@@ -8,6 +8,7 @@ import '../../services/auth_service.dart';
 import '../../services/geocoding_service.dart';
 import '../../services/locale_preferences_service.dart';
 import '../../services/user_locations_of_interest_service.dart';
+import '../../services/web_push_subscription_service.dart';
 import '../../utils/location_permission_utils.dart';
 import '../../widgets/page_scaffold.dart';
 import '../spots/location_picker_screen.dart';
@@ -247,9 +248,7 @@ class AccountSettingsScreen extends StatelessWidget {
                                 location.address!.isNotEmpty
                             ? Text(
                                 location.address!,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
+                                style: Theme.of(context).textTheme.bodySmall
                                     ?.copyWith(
                                       color: Theme.of(context)
                                           .colorScheme
@@ -282,8 +281,7 @@ class AccountSettingsScreen extends StatelessWidget {
                               ),
                             ),
                             IconButton(
-                              tooltip:
-                                  l10n.profileLocationAlertsEditTooltip,
+                              tooltip: l10n.profileLocationAlertsEditTooltip,
                               onPressed: () => _showLocationEditorDialog(
                                 context,
                                 existing: location,
@@ -291,11 +289,9 @@ class AccountSettingsScreen extends StatelessWidget {
                               icon: const Icon(Icons.edit_outlined),
                             ),
                             IconButton(
-                              tooltip:
-                                  l10n.profileLocationAlertsDeleteTooltip,
+                              tooltip: l10n.profileLocationAlertsDeleteTooltip,
                               onPressed: () async {
-                                final shouldDelete =
-                                    await showDialog<bool>(
+                                final shouldDelete = await showDialog<bool>(
                                   context: context,
                                   builder: (dialogContext) {
                                     return AlertDialog(
@@ -305,21 +301,20 @@ class AccountSettingsScreen extends StatelessWidget {
                                       content: Text(
                                         l10n.profileLocationAlertsDeleteMessage(
                                           location.label ??
-                                              l10n
-                                                  .profileLocationAlertsDefaultLabel,
+                                              l10n.profileLocationAlertsDefaultLabel,
                                         ),
                                       ),
                                       actions: [
                                         TextButton(
-                                          onPressed: () =>
-                                              Navigator.of(dialogContext)
-                                                  .pop(false),
+                                          onPressed: () => Navigator.of(
+                                            dialogContext,
+                                          ).pop(false),
                                           child: Text(l10n.profileCancel),
                                         ),
                                         TextButton(
-                                          onPressed: () =>
-                                              Navigator.of(dialogContext)
-                                                  .pop(true),
+                                          onPressed: () => Navigator.of(
+                                            dialogContext,
+                                          ).pop(true),
                                           child: Text(
                                             l10n.profileLocationAlertsDeleteConfirmButton,
                                           ),
@@ -354,9 +349,7 @@ class AccountSettingsScreen extends StatelessWidget {
                           Expanded(
                             child: Text(
                               l10n.profileLocationAlertsNoLocationsEnabledWarning,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
+                              style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(
                                     color: Theme.of(context)
                                         .colorScheme
@@ -397,6 +390,7 @@ class AccountSettingsScreen extends StatelessWidget {
         authService.userProfile?.notifyTrainingPlansNearby == true;
     final notifyTrainingPlanCheckInReminders =
         authService.userProfile?.notifyTrainingPlanCheckInReminders == true;
+    final pushService = context.watch<WebPushSubscriptionService>();
 
     return Card(
       child: Padding(
@@ -427,10 +421,54 @@ class AccountSettingsScreen extends StatelessWidget {
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: Icon(
+                        Icons.notifications_active_outlined,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      title: Text(l10n.profilePushNotificationsThisDeviceTitle),
+                      subtitle: Text(
+                        _buildPushDeviceSubtitle(l10n, pushService),
+                      ),
+                      trailing: Switch(
+                        value: pushService.isSubscribed,
+                        onChanged:
+                            (!pushService.isSupported ||
+                                pushService.isBusy ||
+                                authService.currentUser == null)
+                            ? null
+                            : (enabled) async {
+                                if (enabled) {
+                                  await pushService.enableCurrentDevice();
+                                } else {
+                                  await pushService.disableCurrentDevice();
+                                }
+                              },
+                      ),
+                    ),
+                    if (pushService.lastError != null &&
+                        pushService.lastError!.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8, bottom: 8),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            l10n.profilePushNotificationsError,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(context).colorScheme.error,
+                                ),
+                          ),
+                        ),
+                      ),
+                    const Divider(height: 1),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(
                         Icons.fiber_new_outlined,
                         color: Theme.of(context).colorScheme.primary,
                       ),
-                      title: Text(l10n.profileLocationAlertsNotifyNewSpotsTitle),
+                      title: Text(
+                        l10n.profileLocationAlertsNotifyNewSpotsTitle,
+                      ),
                       subtitle: Text(
                         l10n.profileLocationAlertsNotifyNewSpotsSubtitle,
                       ),
@@ -452,7 +490,9 @@ class AccountSettingsScreen extends StatelessWidget {
                         Icons.how_to_reg_outlined,
                         color: Theme.of(context).colorScheme.primary,
                       ),
-                      title: Text(l10n.profileLocationAlertsNotifyNearbyCheckInsTitle),
+                      title: Text(
+                        l10n.profileLocationAlertsNotifyNearbyCheckInsTitle,
+                      ),
                       subtitle: Text(
                         l10n.profileLocationAlertsNotifyNearbyCheckInsSubtitle,
                       ),
@@ -497,9 +537,7 @@ class AccountSettingsScreen extends StatelessWidget {
                         Icons.alarm_on_outlined,
                         color: Theme.of(context).colorScheme.primary,
                       ),
-                      title: Text(
-                        l10n.profileTrainingPlanCheckInReminderTitle,
-                      ),
+                      title: Text(l10n.profileTrainingPlanCheckInReminderTitle),
                       subtitle: Text(
                         l10n.profileTrainingPlanCheckInReminderSubtitle,
                       ),
@@ -508,8 +546,8 @@ class AccountSettingsScreen extends StatelessWidget {
                         onChanged: (enabled) async {
                           await authService
                               .updateNotifyTrainingPlanCheckInReminders(
-                            enabled,
-                          );
+                                enabled,
+                              );
                         },
                       ),
                     ),
@@ -521,6 +559,30 @@ class AccountSettingsScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _buildPushDeviceSubtitle(
+    AppLocalizations l10n,
+    WebPushSubscriptionService pushService,
+  ) {
+    if (!pushService.isSupported) {
+      return l10n.profilePushNotificationsUnsupported;
+    }
+    if (pushService.isBusy) {
+      return l10n.profilePushNotificationsLoading;
+    }
+    switch (pushService.permissionState) {
+      case WebPushPermissionState.denied:
+        return l10n.profilePushNotificationsPermissionDenied;
+      case WebPushPermissionState.notDetermined:
+        return l10n.profilePushNotificationsPermissionNotDetermined;
+      case WebPushPermissionState.authorized:
+        return pushService.isSubscribed
+            ? l10n.profilePushNotificationsEnabled
+            : l10n.profilePushNotificationsPermissionGrantedButOff;
+      case WebPushPermissionState.unknown:
+        return l10n.profilePushNotificationsUnknown;
+    }
   }
 
   Future<void> _showLocationEditorDialog(
@@ -569,26 +631,24 @@ class AccountSettingsScreen extends StatelessWidget {
                       alignment: Alignment.centerLeft,
                       child: TextButton.icon(
                         onPressed: () async {
-                          final initialLat =
-                              selectedLat ?? existing?.latitude;
-                          final initialLng =
-                              selectedLng ?? existing?.longitude;
+                          final initialLat = selectedLat ?? existing?.latitude;
+                          final initialLng = selectedLng ?? existing?.longitude;
                           final geo = Provider.of<GeocodingService>(
                             dialogContext,
                             listen: false,
                           );
-                          final result = await Navigator.of(dialogContext).push<
-                              LatLng?>(
-                            MaterialPageRoute(
-                              fullscreenDialog: true,
-                              builder: (context) => LocationPickerScreen(
-                                initialLocation: initialLat != null &&
-                                        initialLng != null
-                                    ? LatLng(initialLat, initialLng)
-                                    : null,
-                              ),
-                            ),
-                          );
+                          final result = await Navigator.of(dialogContext)
+                              .push<LatLng?>(
+                                MaterialPageRoute(
+                                  fullscreenDialog: true,
+                                  builder: (context) => LocationPickerScreen(
+                                    initialLocation:
+                                        initialLat != null && initialLng != null
+                                        ? LatLng(initialLat, initialLng)
+                                        : null,
+                                  ),
+                                ),
+                              );
                           if (result != null) {
                             setDialogState(() {
                               selectedLat = result.latitude;
@@ -596,8 +656,8 @@ class AccountSettingsScreen extends StatelessWidget {
                               validationError = null;
                               selectedAddress = null;
                             });
-                            final details =
-                                await geo.geocodeCoordinatesDetailsSilently(
+                            final details = await geo
+                                .geocodeCoordinatesDetailsSilently(
                                   result.latitude,
                                   result.longitude,
                                 );
@@ -622,11 +682,11 @@ class AccountSettingsScreen extends StatelessWidget {
                         child: Text(
                           selectedAddress ??
                               '${selectedLat!.toStringAsFixed(4)}, ${selectedLng!.toStringAsFixed(4)}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withValues(alpha: 0.7),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withValues(alpha: 0.7),
                               ),
                         ),
                       ),

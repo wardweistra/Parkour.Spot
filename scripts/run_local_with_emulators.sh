@@ -21,6 +21,7 @@ FIREBASE_PROJECT_ID=parkourspot-93c90
 FIREBASE_AUTH_DOMAIN=localhost
 FIREBASE_STORAGE_BUCKET=parkourspot-93c90.firebasestorage.app
 FIREBASE_MEASUREMENT_ID=G-XXXXXXXXXX
+FIREBASE_WEB_PUSH_VAPID_KEY=dummy-vapid-key-for-emulator
 EOF
     echo "✅ Created .env.emulator file"
 fi
@@ -49,5 +50,6 @@ flutter run -d web-server --web-port $WEB_PORT \
   --dart-define=FIREBASE_PROJECT_ID="$FIREBASE_PROJECT_ID" \
   --dart-define=FIREBASE_AUTH_DOMAIN="$FIREBASE_AUTH_DOMAIN" \
   --dart-define=FIREBASE_STORAGE_BUCKET="$FIREBASE_STORAGE_BUCKET" \
-  --dart-define=FIREBASE_MEASUREMENT_ID="$FIREBASE_MEASUREMENT_ID"
+  --dart-define=FIREBASE_MEASUREMENT_ID="$FIREBASE_MEASUREMENT_ID" \
+  --dart-define=FIREBASE_WEB_PUSH_VAPID_KEY="$FIREBASE_WEB_PUSH_VAPID_KEY"
 

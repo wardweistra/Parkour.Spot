@@ -454,6 +454,60 @@ abstract class AppLocalizations {
   /// **'Notification settings'**
   String get profileNotificationSettingsTitle;
 
+  /// Account settings: toggle title for browser-specific push subscription
+  ///
+  /// In en, this message translates to:
+  /// **'Push notifications on this browser/device'**
+  String get profilePushNotificationsThisDeviceTitle;
+
+  /// Account settings: status text when push API/FCM is unavailable
+  ///
+  /// In en, this message translates to:
+  /// **'Push notifications are not supported on this browser.'**
+  String get profilePushNotificationsUnsupported;
+
+  /// Account settings: temporary status while push subscription state is loading
+  ///
+  /// In en, this message translates to:
+  /// **'Checking push notification status for this device...'**
+  String get profilePushNotificationsLoading;
+
+  /// Account settings: status text when browser notification permission is denied
+  ///
+  /// In en, this message translates to:
+  /// **'Push permission is blocked in your browser settings for this site.'**
+  String get profilePushNotificationsPermissionDenied;
+
+  /// Account settings: status text before permission has been requested
+  ///
+  /// In en, this message translates to:
+  /// **'Turn this on to ask for permission and subscribe this browser.'**
+  String get profilePushNotificationsPermissionNotDetermined;
+
+  /// Account settings: status text when current device is subscribed
+  ///
+  /// In en, this message translates to:
+  /// **'This browser is subscribed and can receive push alerts.'**
+  String get profilePushNotificationsEnabled;
+
+  /// Account settings: status text when permission is granted but no active token/subscription
+  ///
+  /// In en, this message translates to:
+  /// **'Permission is granted, but this browser is currently unsubscribed.'**
+  String get profilePushNotificationsPermissionGrantedButOff;
+
+  /// Account settings: fallback status text for unknown permission/subscription state
+  ///
+  /// In en, this message translates to:
+  /// **'Push status is currently unavailable. Try again shortly.'**
+  String get profilePushNotificationsUnknown;
+
+  /// Account settings: generic error shown under push subscription toggle
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t update push notifications on this browser. Please try again.'**
+  String get profilePushNotificationsError;
+
   /// Account settings: location alerts section description
   ///
   /// In en, this message translates to:

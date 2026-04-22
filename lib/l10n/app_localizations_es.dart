@@ -217,6 +217,42 @@ class AppLocalizationsEs extends AppLocalizations {
       'Configuración de notificaciones';
 
   @override
+  String get profilePushNotificationsThisDeviceTitle =>
+      'Push notifications on this browser/device';
+
+  @override
+  String get profilePushNotificationsUnsupported =>
+      'Push notifications are not supported on this browser.';
+
+  @override
+  String get profilePushNotificationsLoading =>
+      'Checking push notification status for this device...';
+
+  @override
+  String get profilePushNotificationsPermissionDenied =>
+      'Push permission is blocked in your browser settings for this site.';
+
+  @override
+  String get profilePushNotificationsPermissionNotDetermined =>
+      'Turn this on to ask for permission and subscribe this browser.';
+
+  @override
+  String get profilePushNotificationsEnabled =>
+      'This browser is subscribed and can receive push alerts.';
+
+  @override
+  String get profilePushNotificationsPermissionGrantedButOff =>
+      'Permission is granted, but this browser is currently unsubscribed.';
+
+  @override
+  String get profilePushNotificationsUnknown =>
+      'Push status is currently unavailable. Try again shortly.';
+
+  @override
+  String get profilePushNotificationsError =>
+      'We couldn\'t update push notifications on this browser. Please try again.';
+
+  @override
   String get profileLocationAlertsDescription =>
       'Controla qué ubicaciones se usan para alertas cercanas, como check-ins, spots nuevos, planes de entreno y futuros eventos.';
 
