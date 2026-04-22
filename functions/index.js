@@ -8255,6 +8255,218 @@ function serializeInAppNotificationForAdminClient(data) {
   };
 }
 
+/**
+ * @param {*} ts Firestore Timestamp or undefined
+ * @return {number|null}
+ */
+function firestoreTimestampToMillis(ts) {
+  if (ts && typeof ts.toMillis === "function") {
+    return ts.toMillis();
+  }
+  return null;
+}
+
+/**
+ * Sanitized push subscription for admin UI (no full FCM token).
+ * @param {string} docId
+ * @param {FirebaseFirestore.DocumentData|undefined} data
+ * @return {Object}
+ */
+function serializePushSubscriptionForAdmin(docId, data) {
+  if (!data) {
+    return {id: docId};
+  }
+  const token = typeof data.token === "string" ? data.token : "";
+  const tokenSuffix = token.length >= 8 ? token.slice(-8) : (token.length > 0 ? token : null);
+  return {
+    id: docId,
+    installationId: data.installationId || docId,
+    enabled: data.enabled === true,
+    platform: data.platform || null,
+    permission: data.permission || null,
+    tokenSuffix,
+    userAgent: typeof data.userAgent === "string" ?
+      data.userAgent.slice(0, 300) :
+      null,
+    isMobileDevice: data.isMobileDevice === true,
+    isAndroid: data.isAndroid === true,
+    isIOS: data.isIOS === true,
+    isRunningAsPWA: data.isRunningAsPWA === true,
+    isRunningInBrowser: data.isRunningInBrowser === true,
+    updatedAtMillis: firestoreTimestampToMillis(data.updatedAt),
+    lastSeenAtMillis: firestoreTimestampToMillis(data.lastSeenAt),
+  };
+}
+
+/**
+ * Base URL for webpush link (admin may run from localhost).
+ * @param {*} raw
+ * @return {string}
+ */
+function resolveWebAppLinkBase(raw) {
+  const defaultBase = "https://parkour.spot";
+  if (!raw || typeof raw !== "string") {
+    return defaultBase;
+  }
+  const u = raw.trim().replace(/\/$/, "");
+  if (u === "https://parkour.spot") {
+    return u;
+  }
+  if (/^http:\/\/localhost:\d+$/.test(u)) {
+    return u;
+  }
+  if (/^http:\/\/127\.0\.0\.1:\d+$/.test(u)) {
+    return u;
+  }
+  return defaultBase;
+}
+
+/**
+ * Admin: list a user's web push subscription docs (Admin SDK).
+ */
+exports.listPushSubscriptionsForAdmin = onCall(
+    {region: "europe-west1"},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const targetUid = request.data?.targetUid;
+        if (!targetUid || typeof targetUid !== "string" ||
+            targetUid.length < 1 || targetUid.length > 128) {
+          throw new Error("targetUid is required");
+        }
+        const snap = await db.collection("users").doc(targetUid)
+            .collection("pushSubscriptions")
+            .limit(100)
+            .get();
+        const subscriptions = snap.docs
+            .map((d) => serializePushSubscriptionForAdmin(d.id, d.data()))
+            .sort((a, b) =>
+              (b.updatedAtMillis || 0) - (a.updatedAtMillis || 0),
+            );
+        return {subscriptions, targetUid};
+      } catch (error) {
+        console.error("listPushSubscriptionsForAdmin error:", error);
+        throw new Error(
+            `Failed to list push subscriptions: ${error.message}`,
+        );
+      }
+    },
+);
+
+/**
+ * Admin: send an FCM notification to selected subscription tokens for a user.
+ */
+exports.sendWebPushToUserSubscriptions = onCall(
+    {region: "europe-west1"},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const targetUid = request.data?.targetUid;
+        const subscriptionIdsRaw = request.data?.subscriptionIds;
+        const titleRaw = request.data?.title;
+        const bodyRaw = request.data?.body;
+        const webAppBaseUrl = request.data?.webAppBaseUrl;
+
+        if (!targetUid || typeof targetUid !== "string" ||
+            targetUid.length < 1 || targetUid.length > 128) {
+          throw new Error("targetUid is required");
+        }
+        if (!Array.isArray(subscriptionIdsRaw) || subscriptionIdsRaw.length === 0) {
+          throw new Error("subscriptionIds must be a non-empty array");
+        }
+        if (subscriptionIdsRaw.length > 20) {
+          throw new Error("At most 20 subscriptions per request");
+        }
+        if (typeof titleRaw !== "string" || titleRaw.trim().length === 0) {
+          throw new Error("title is required");
+        }
+        if (typeof bodyRaw !== "string" || bodyRaw.trim().length === 0) {
+          throw new Error("body is required");
+        }
+
+        const title = titleRaw.trim().slice(0, 200);
+        const body = bodyRaw.trim().slice(0, 1000);
+        const linkBase = resolveWebAppLinkBase(webAppBaseUrl);
+        const clickLink = `${linkBase}/profile/notifications`;
+
+        /** @type {{id: string, token: string}[]} */
+        const targets = [];
+        /** @type {{id: string, reason: string}[]} */
+        const skipped = [];
+
+        for (const sid of subscriptionIdsRaw) {
+          if (typeof sid !== "string" || sid.length < 1 || sid.length > 128) {
+            skipped.push({id: String(sid), reason: "invalid_id"});
+            continue;
+          }
+          const doc = await db.collection("users").doc(targetUid)
+              .collection("pushSubscriptions")
+              .doc(sid)
+              .get();
+          if (!doc.exists) {
+            skipped.push({id: sid, reason: "not_found"});
+            continue;
+          }
+          const data = doc.data() || {};
+          if (data.enabled !== true) {
+            skipped.push({id: sid, reason: "disabled"});
+            continue;
+          }
+          const token = data.token;
+          if (typeof token !== "string" || token.length < 10) {
+            skipped.push({id: sid, reason: "no_token"});
+            continue;
+          }
+          targets.push({id: sid, token});
+        }
+
+        if (targets.length === 0) {
+          return {
+            successCount: 0,
+            failureCount: 0,
+            skipped,
+            failures: [],
+          };
+        }
+
+        const messages = targets.map(({token}) => ({
+          token,
+          notification: {title, body},
+          data: {clickPath: "/profile/notifications"},
+          webpush: {
+            fcmOptions: {
+              link: clickLink,
+            },
+          },
+        }));
+
+        const batchResponse = await admin.messaging().sendEach(messages);
+        /** @type {{subscriptionId: string, error: string}[]} */
+        const failures = [];
+        for (let i = 0; i < batchResponse.responses.length; i++) {
+          const r = batchResponse.responses[i];
+          if (!r.success) {
+            failures.push({
+              subscriptionId: targets[i].id,
+              error: r.error ? String(r.error.message || r.error) : "unknown",
+            });
+          }
+        }
+
+        return {
+          successCount: batchResponse.successCount,
+          failureCount: batchResponse.failureCount,
+          skipped,
+          failures,
+          clickLink,
+        };
+      } catch (error) {
+        console.error("sendWebPushToUserSubscriptions error:", error);
+        throw new Error(`Failed to send web push: ${error.message}`);
+      }
+    },
+);
+
 exports.createApiClient = onCall({region: "europe-west1"}, async (request) => {
   try {
     await ensureAdmin(request);

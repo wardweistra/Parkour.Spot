@@ -12,6 +12,7 @@ import '../screens/admin/geocoding_admin_screen.dart';
 import '../screens/admin/spot_management_screen.dart';
 import '../screens/admin/user_management_screen.dart';
 import '../screens/admin/admin_notifications_screen.dart';
+import '../screens/admin/admin_push_subscriptions_screen.dart';
 import '../screens/admin/user_activity_metrics_screen.dart';
 import '../screens/admin/audit_log_viewer_screen.dart';
 import '../screens/admin/duplicate_images_screen.dart';
@@ -219,7 +220,11 @@ class AppRouter {
         final isAuthenticated = authService.isAuthenticated;
 
         // Routes that require authentication
-        final protectedRoutes = ['/spots/add', '/moderator', '/profile/notifications'];
+        final protectedRoutes = [
+          '/spots/add',
+          '/moderator',
+          '/profile/notifications',
+        ];
         if (protectedRoutes.contains(state.matchedLocation) &&
             !isAuthenticated) {
           // Redirect to login with the intended destination
@@ -364,6 +369,10 @@ class AppRouter {
         GoRoute(
           path: '/admin/notifications',
           builder: (context, state) => const AdminNotificationsScreen(),
+        ),
+        GoRoute(
+          path: '/admin/push-subscriptions',
+          builder: (context, state) => const AdminPushSubscriptionsScreen(),
         ),
         GoRoute(
           path: '/admin/user-activity-metrics',
