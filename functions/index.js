@@ -8477,7 +8477,14 @@ exports.sendWebPushToUserSubscriptions = onCall(
           token,
           notification: {title, body},
           data: {openUrl: clickLink},
+          // Explicit webpush notification helps Chrome (incl. Android PWA) deliver
+          // system notifications when the app is backgrounded; top-level
+          // [notification] alone is not always enough for the SW payload.
           webpush: {
+            notification: {
+              title,
+              body,
+            },
             fcmOptions: {
               link: clickLink,
             },

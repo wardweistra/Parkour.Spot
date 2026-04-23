@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:js_interop';
 import 'dart:ui' as ui;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -143,10 +145,35 @@ class WebPushSubscriptionService extends ChangeNotifier {
       return null;
     }
     try {
-      return await _messaging.getToken(vapidKey: vapidKey);
+      await _awaitFirebaseMessagingServiceWorkerReady();
+      return await _messaging
+          .getToken(vapidKey: vapidKey)
+          .timeout(const Duration(seconds: 12));
+    } on TimeoutException {
+      _lastError =
+          'Timed out while checking push registration. Please try again.';
+      return null;
     } catch (e) {
       _lastError = e.toString();
       return null;
+    }
+  }
+
+  /// Ensures the active service worker is ready before [getToken]. Calling
+  /// [getToken] too early (e.g. right after first frame) can associate the FCM
+  /// token with the wrong registration so **foreground** JS still receives
+  /// messages but **background** push (service worker) does not — especially
+  /// on Android PWAs after eager startup sync.
+  Future<void> _awaitFirebaseMessagingServiceWorkerReady() async {
+    if (!kIsWeb) return;
+    try {
+      await web.window.navigator.serviceWorker.ready.toDart.timeout(
+        const Duration(seconds: 6),
+      );
+    } on TimeoutException {
+      // Do not block forever if the SW is still settling.
+    } catch (_) {
+      // Non-fatal; registration may complete during getToken.
     }
   }
 
