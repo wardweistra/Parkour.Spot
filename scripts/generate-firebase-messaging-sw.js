@@ -50,6 +50,11 @@ firebase.initializeApp(${configJson});
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
+  // If payload already includes a Notification payload, Chrome/FCM may display
+  // it automatically in the background. Showing another one here causes duplicates.
+  if (payload && payload.notification) {
+    return;
+  }
   const title = (payload.notification && payload.notification.title) || "Parkour·Spot";
   const body = (payload.notification && payload.notification.body) || "";
   const data = Object.assign({}, payload.data || {});
