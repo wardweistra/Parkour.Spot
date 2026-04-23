@@ -28,6 +28,13 @@ class _AdminPushSubscriptionsScreenState
   final TextEditingController _linkController = TextEditingController(
     text: AdminPushSubscriptionsService.defaultNotificationClickLink,
   );
+  final TextEditingController _iconController = TextEditingController(
+    text: AdminPushSubscriptionsService.defaultNotificationIconUrl,
+  );
+  final TextEditingController _badgeController = TextEditingController(
+    text: AdminPushSubscriptionsService.defaultNotificationBadgeUrl,
+  );
+  final TextEditingController _imageController = TextEditingController();
   final Set<String> _selectedIds = <String>{};
   String _userFilter = '';
 
@@ -48,6 +55,9 @@ class _AdminPushSubscriptionsScreenState
     _titleController.dispose();
     _bodyController.dispose();
     _linkController.dispose();
+    _iconController.dispose();
+    _badgeController.dispose();
+    _imageController.dispose();
     super.dispose();
   }
 
@@ -85,6 +95,9 @@ class _AdminPushSubscriptionsScreenState
       title: _titleController.text,
       body: _bodyController.text,
       notificationClickLink: _linkController.text,
+      notificationIconUrl: _iconController.text,
+      notificationBadgeUrl: _badgeController.text,
+      notificationImageUrl: _imageController.text,
     );
     if (!context.mounted) return;
     final msg = pushService.error ?? pushService.lastSendSummary ?? 'Done';
@@ -314,6 +327,47 @@ class _AdminPushSubscriptionsScreenState
                     helperText:
                         'Clear the field to use ${AdminPushSubscriptionsService.defaultNotificationClickLink}',
                     border: const OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  keyboardType: TextInputType.url,
+                  autocorrect: false,
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _iconController,
+                  decoration: InputDecoration(
+                    labelText: 'Notification icon URL',
+                    hintText: 'https://…/icon.png',
+                    helperText:
+                        'Clear to use ${AdminPushSubscriptionsService.defaultNotificationIconUrl}',
+                    border: const OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  keyboardType: TextInputType.url,
+                  autocorrect: false,
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _badgeController,
+                  decoration: InputDecoration(
+                    labelText: 'Notification badge URL',
+                    hintText: 'https://…/badge.png',
+                    helperText:
+                        'Clear to use ${AdminPushSubscriptionsService.defaultNotificationBadgeUrl}',
+                    border: const OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  keyboardType: TextInputType.url,
+                  autocorrect: false,
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _imageController,
+                  decoration: const InputDecoration(
+                    labelText: 'Notification image URL (optional)',
+                    hintText: 'https://…/preview.jpg',
+                    helperText: 'Large preview image on supported devices',
+                    border: OutlineInputBorder(),
                     isDense: true,
                   ),
                   keyboardType: TextInputType.url,

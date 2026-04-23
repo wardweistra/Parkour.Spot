@@ -8301,8 +8301,11 @@ function serializePushSubscriptionForAdmin(docId, data) {
 /** Default notification click-through when admin leaves the link blank. */
 const DEFAULT_NOTIFICATION_CLICK_LINK =
     "https://parkour.spot/profile/notifications";
+const DEFAULT_NOTIFICATION_ICON_URL = "https://parkour.spot/icons/Icon-192.png";
+const DEFAULT_NOTIFICATION_BADGE_URL = "https://parkour.spot/icons/ParkourSpot-badge.png";
 
 const MAX_NOTIFICATION_CLICK_LINK_LENGTH = 2048;
+const MAX_NOTIFICATION_MEDIA_URL_LENGTH = 2048;
 
 /**
  * Normalize and validate admin-provided web push click URL.
@@ -8335,6 +8338,49 @@ function normalizeAdminNotificationClickLink(trimmed) {
   throw new HttpsError(
       "invalid-argument",
       "notification click link must use https (or http on localhost only)",
+  );
+}
+
+/**
+ * Normalize optional media URL fields for web push notification rendering.
+ * Empty strings are treated as absent.
+ * @param {*} raw
+ * @param {string} fieldName
+ * @return {string|undefined}
+ */
+function normalizeOptionalNotificationMediaUrl(raw, fieldName) {
+  if (typeof raw !== "string") {
+    return undefined;
+  }
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  if (trimmed.length > MAX_NOTIFICATION_MEDIA_URL_LENGTH) {
+    throw new HttpsError(
+        "invalid-argument",
+        `${fieldName} is too long`,
+    );
+  }
+  let parsed;
+  try {
+    parsed = new URL(trimmed);
+  } catch (e) {
+    throw new HttpsError(
+        "invalid-argument",
+        `${fieldName} must be a valid URL`,
+    );
+  }
+  if (parsed.protocol === "https:") {
+    return parsed.toString();
+  }
+  if (parsed.protocol === "http:" &&
+      (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1")) {
+    return parsed.toString();
+  }
+  throw new HttpsError(
+      "invalid-argument",
+      `${fieldName} must use https (or http on localhost only)`,
   );
 }
 
@@ -8399,6 +8445,9 @@ exports.sendWebPushToUserSubscriptions = onCall(
         const titleRaw = request.data?.title;
         const bodyRaw = request.data?.body;
         const notificationClickLinkRaw = request.data?.notificationClickLink;
+        const notificationIconUrlRaw = request.data?.notificationIconUrl;
+        const notificationBadgeUrlRaw = request.data?.notificationBadgeUrl;
+        const notificationImageUrlRaw = request.data?.notificationImageUrl;
 
         if (!targetUid || typeof targetUid !== "string" ||
             targetUid.length < 1 || targetUid.length > 128) {
@@ -8432,6 +8481,20 @@ exports.sendWebPushToUserSubscriptions = onCall(
               notificationClickLinkRaw.trim(),
           );
         }
+        const iconUrl =
+            normalizeOptionalNotificationMediaUrl(
+                notificationIconUrlRaw,
+                "notification icon URL",
+            ) || DEFAULT_NOTIFICATION_ICON_URL;
+        const badgeUrl =
+            normalizeOptionalNotificationMediaUrl(
+                notificationBadgeUrlRaw,
+                "notification badge URL",
+            ) || DEFAULT_NOTIFICATION_BADGE_URL;
+        const imageUrl = normalizeOptionalNotificationMediaUrl(
+            notificationImageUrlRaw,
+            "notification image URL",
+        );
 
         /** @type {{id: string, token: string}[]} */
         const targets = [];
@@ -8484,6 +8547,9 @@ exports.sendWebPushToUserSubscriptions = onCall(
             notification: {
               title,
               body,
+              icon: iconUrl,
+              badge: badgeUrl,
+              ...(imageUrl ? {image: imageUrl} : {}),
             },
             fcmOptions: {
               link: clickLink,
@@ -8542,6 +8608,9 @@ exports.sendWebPushToUserSubscriptions = onCall(
           skipped,
           failures,
           clickLink,
+          iconUrl,
+          badgeUrl,
+          ...(imageUrl ? {imageUrl} : {}),
           deactivatedSubscriptionIds: deactivatedUnique,
         };
       } catch (error) {

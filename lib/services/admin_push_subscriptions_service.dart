@@ -10,6 +10,10 @@ class AdminPushSubscriptionsService extends ChangeNotifier {
   /// Default open URL for web push when the admin leaves the link field blank (server).
   static const defaultNotificationClickLink =
       'https://parkour.spot/profile/notifications';
+  static const defaultNotificationIconUrl =
+      'https://parkour.spot/icons/Icon-192.png';
+  static const defaultNotificationBadgeUrl =
+      'https://parkour.spot/icons/ParkourSpot-badge.png';
 
   final FirebaseFunctions _functions = FirebaseFunctions.instanceFor(
     region: 'europe-west1',
@@ -117,6 +121,9 @@ class AdminPushSubscriptionsService extends ChangeNotifier {
     required String title,
     required String body,
     required String notificationClickLink,
+    required String notificationIconUrl,
+    required String notificationBadgeUrl,
+    required String notificationImageUrl,
   }) async {
     final uid = _targetUid;
     if (uid == null || uid.isEmpty) {
@@ -155,6 +162,9 @@ class AdminPushSubscriptionsService extends ChangeNotifier {
         'title': title,
         'body': body,
         'notificationClickLink': notificationClickLink.trim(),
+        'notificationIconUrl': notificationIconUrl.trim(),
+        'notificationBadgeUrl': notificationBadgeUrl.trim(),
+        'notificationImageUrl': notificationImageUrl.trim(),
       };
       final result = await callable.call(payload);
       final raw = result.data;
@@ -169,6 +179,9 @@ class AdminPushSubscriptionsService extends ChangeNotifier {
       final skipped = map['skipped'];
       final failures = map['failures'];
       final clickLink = map['clickLink'] as String?;
+      final iconUrl = map['iconUrl'] as String?;
+      final badgeUrl = map['badgeUrl'] as String?;
+      final imageUrl = map['imageUrl'] as String?;
       final skippedN = skipped is List ? skipped.length : 0;
       String? firstErr;
       if (failures is List && failures.isNotEmpty) {
@@ -180,6 +193,9 @@ class AdminPushSubscriptionsService extends ChangeNotifier {
       _lastSendSummary =
           'Sent: $successCount, failed: $failureCount, skipped: $skippedN'
           '${clickLink != null ? '\nClick link: $clickLink' : ''}'
+          '${iconUrl != null ? '\nIcon: $iconUrl' : ''}'
+          '${badgeUrl != null ? '\nBadge: $badgeUrl' : ''}'
+          '${imageUrl != null ? '\nImage: $imageUrl' : ''}'
           '${firstErr != null ? '\nFirst error: $firstErr' : ''}';
       return failureCount == 0 && successCount > 0;
     } on FirebaseFunctionsException catch (e, st) {
