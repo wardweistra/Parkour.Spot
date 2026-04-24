@@ -61,7 +61,7 @@ const {
   fanOutNearbyNewSpotNotifications,
 } = require("./lib/nearby-new-spot-notifications");
 const {
-  markCreateNativeOriginalSpots,
+  markRetroactiveCreateNativeFlags,
 } = require("./lib/retroactive-create-native-flag");
 const {
   fanOutNearbyCheckInNotifications,
@@ -1109,7 +1109,10 @@ exports.markCreateNativeDuplicateTargets = onCall(
     async (request) => {
       try {
         await ensureAdmin(request);
-        const result = await markCreateNativeOriginalSpots({db, FieldValue});
+        const result = await markRetroactiveCreateNativeFlags({
+          db,
+          FieldValue,
+        });
         return {success: true, ...result};
       } catch (error) {
         console.error("markCreateNativeDuplicateTargets error", error);
