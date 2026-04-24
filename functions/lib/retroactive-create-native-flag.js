@@ -1,5 +1,4 @@
 const GET_ALL_CHUNK = 200;
-const BATCH_SIZE = 500;
 
 /**
  * Marks native original spots as created via Create Native when any duplicate
@@ -10,11 +9,13 @@ const BATCH_SIZE = 500;
  * @return {Promise<object>}
  */
 async function markRetroactiveCreateNativeFlags({db, FieldValue}) {
-  const duplicatesSnap = await db
+  let duplicatesQuery = db
       .collection("spots")
-      .where("duplicateOf", "!=", null)
-      .select("duplicateOf")
-      .get();
+      .where("duplicateOf", "!=", null);
+  if (typeof duplicatesQuery.select === "function") {
+    duplicatesQuery = duplicatesQuery.select("duplicateOf");
+  }
+  const duplicatesSnap = await duplicatesQuery.get();
 
   const targetIds = new Set();
   for (const doc of duplicatesSnap.docs) {
@@ -26,77 +27,77 @@ async function markRetroactiveCreateNativeFlags({db, FieldValue}) {
 
   if (targetIds.size === 0) {
     return {
-      candidateCount: 0,
-      existingTargetCount: 0,
-      updatedCount: 0,
-      alreadyMarkedCount: 0,
-      skippedNonNativeCount: 0,
-      missingTargetCount: 0,
+      duplicateTargetsFound: 0,
+      processed: 0,
+      marked: 0,
+      skippedAlreadyMarked: 0,
+      skippedImported: 0,
+      skippedMissing: 0,
+      failed: 0,
+      failedSpotIds: [],
     };
   }
 
   const targetIdList = Array.from(targetIds);
-  let existingTargetCount = 0;
-  let updatedCount = 0;
-  let alreadyMarkedCount = 0;
-  let skippedNonNativeCount = 0;
-  let missingTargetCount = 0;
+  let processed = 0;
+  let marked = 0;
+  let skippedAlreadyMarked = 0;
+  let skippedImported = 0;
+  let skippedMissing = 0;
+  let failed = 0;
+  const failedSpotIds = [];
 
-  let batch = db.batch();
-  let ops = 0;
   for (let i = 0; i < targetIdList.length; i += GET_ALL_CHUNK) {
     const chunk = targetIdList.slice(i, i + GET_ALL_CHUNK);
     const refs = chunk.map((spotId) => db.collection("spots").doc(spotId));
-    const docs = await db.getAll(...refs);
+    const docs = typeof db.getAll === "function" ?
+      await db.getAll(...refs) :
+      await Promise.all(refs.map((ref) => ref.get()));
 
     for (let j = 0; j < docs.length; j++) {
       const spotDoc = docs[j];
       if (!spotDoc.exists) {
-        missingTargetCount++;
+        skippedMissing++;
         continue;
       }
 
-      existingTargetCount++;
+      processed++;
       const data = spotDoc.data() || {};
       const rawSpotSource = data.spotSource;
       const isNative = rawSpotSource == null ||
           String(rawSpotSource).trim() === "";
       if (!isNative) {
-        skippedNonNativeCount++;
+        skippedImported++;
         continue;
       }
 
       if (data.createdFromCreateNative === true) {
-        alreadyMarkedCount++;
+        skippedAlreadyMarked++;
         continue;
       }
 
-      batch.update(spotDoc.ref, {
-        createdFromCreateNative: true,
-        updatedAt: FieldValue.serverTimestamp(),
-      });
-      updatedCount++;
-      ops++;
-
-      if (ops >= BATCH_SIZE) {
-        await batch.commit();
-        batch = db.batch();
-        ops = 0;
+      try {
+        await spotDoc.ref.update({
+          createdFromCreateNative: true,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+        marked++;
+      } catch (error) {
+        failed++;
+        failedSpotIds.push(spotDoc.id);
       }
     }
   }
 
-  if (ops > 0) {
-    await batch.commit();
-  }
-
   return {
-    candidateCount: targetIds.size,
-    existingTargetCount,
-    updatedCount,
-    alreadyMarkedCount,
-    skippedNonNativeCount,
-    missingTargetCount,
+    duplicateTargetsFound: targetIds.size,
+    processed,
+    marked,
+    skippedAlreadyMarked,
+    skippedImported,
+    skippedMissing,
+    failed,
+    failedSpotIds,
   };
 }
 
