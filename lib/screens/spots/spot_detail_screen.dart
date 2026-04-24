@@ -336,10 +336,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
   Future<void> _handleEditTrainingPlan(SpotTrainingPlan p) async {
     final svc = Provider.of<SpotTrainingPlanService>(context, listen: false);
-    final result = await showSpotTrainingPlanDialog(
-      context,
-      existingPlan: p,
-    );
+    final result = await showSpotTrainingPlanDialog(context, existingPlan: p);
     if (result == null || !mounted) return;
     if (result is SpotTrainingPlanDialogOpenCheckIn) {
       await _runCheckInFromTrainingPlan(result.plan);
@@ -372,7 +369,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     }
   }
 
-  Future<void> _joinTrainingPlanFromCommunity(SpotTrainingPlan sourcePlan) async {
+  Future<void> _joinTrainingPlanFromCommunity(
+    SpotTrainingPlan sourcePlan,
+  ) async {
     final spotId = _spot.id;
     if (spotId == null) return;
     final svc = Provider.of<SpotTrainingPlanService>(context, listen: false);
@@ -619,6 +618,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     final textStyle = theme.textTheme.bodyLarge?.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
     );
+    final bool hideCreatorAttribution = _spot.createdFromCreateNative;
     bool hasPreviousContent = false;
 
     // Check if there will be an updated date part (to determine if we should use commas)
@@ -629,7 +629,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         (_spot.updatedAt != null && _spot.createdAt == null);
 
     // Created by
-    if (_spot.createdBy != null || _spot.createdByName != null) {
+    if (!hideCreatorAttribution &&
+        (_spot.createdBy != null || _spot.createdByName != null)) {
       final createdBy = _spot.createdByName ?? _spot.createdBy ?? '';
       final createdById = _spot.createdBy;
 
@@ -712,8 +713,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     // Contributors (filter out the createdBy user)
     bool hasContributors = false;
     if (_spot.contributors != null && _spot.contributors!.isNotEmpty) {
-      final createdByName = _spot.createdByName;
-      final createdBy = _spot.createdBy;
+      final createdByName = hideCreatorAttribution ? null : _spot.createdByName;
+      final createdBy = hideCreatorAttribution ? null : _spot.createdBy;
 
       // Filter out contributors that match the createdBy user
       final filteredContributors = _spot.contributors!.where((c) {
@@ -1046,8 +1047,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                   onPressed: () {
                                     _submitRatingDirectly(
                                       index + 1.0,
-                                      refreshModal: () =>
-                                          setModalState(() {}),
+                                      refreshModal: () => setModalState(() {}),
                                     );
                                   },
                                   icon: Icon(
@@ -1096,10 +1096,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         labelWidget: Text.rich(
           TextSpan(
             children: [
-              TextSpan(
-                text: avg.toStringAsFixed(1),
-                style: baseLabel,
-              ),
+              TextSpan(text: avg.toStringAsFixed(1), style: baseLabel),
               TextSpan(
                 text: ' ($count)',
                 style: baseLabel?.copyWith(
@@ -2130,8 +2127,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                               builder: (context, constraints) {
                                 final compactQuickActions =
                                     constraints.maxWidth <
-                                        SpotDetailUi
-                                            .quickActionsCompactLayoutMaxWidth;
+                                    SpotDetailUi
+                                        .quickActionsCompactLayoutMaxWidth;
                                 return SingleChildScrollView(
                                   scrollDirection: Axis.horizontal,
                                   child: Row(
@@ -2146,31 +2143,28 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                       const SizedBox(width: 8),
                                       _SpotSaveMenu(
                                         spotId: _spot.id!,
-                                        onAddToCustomList:
-                                            _showAddToListDialog,
+                                        onAddToCustomList: _showAddToListDialog,
                                         stripBottomPadding: true,
                                         compactQuickActions:
                                             compactQuickActions,
                                       ),
                                       const SizedBox(width: 8),
                                       Tooltip(
-                                        message:
-                                            _l10n.spotDetailRatingTooltip,
+                                        message: _l10n.spotDetailRatingTooltip,
                                         child: Semantics(
                                           button: true,
                                           label: _l10n.spotDetailRatingTooltip,
                                           child: Material(
                                             color: Colors.transparent,
-                                            borderRadius:
-                                                BorderRadius.circular(
+                                            borderRadius: BorderRadius.circular(
                                               SpotDetailUi.surfaceRadius,
                                             ),
                                             clipBehavior: Clip.antiAlias,
                                             child: InkWell(
                                               borderRadius:
                                                   BorderRadius.circular(
-                                                SpotDetailUi.surfaceRadius,
-                                              ),
+                                                    SpotDetailUi.surfaceRadius,
+                                                  ),
                                               onTap: _showSpotRatingSheet,
                                               child:
                                                   _spotDetailRatingQuickChip(),
@@ -2186,16 +2180,15 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                           label: _l10n.spotDetailShareTooltip,
                                           child: Material(
                                             color: Colors.transparent,
-                                            borderRadius:
-                                                BorderRadius.circular(
+                                            borderRadius: BorderRadius.circular(
                                               SpotDetailUi.surfaceRadius,
                                             ),
                                             clipBehavior: Clip.antiAlias,
                                             child: InkWell(
                                               borderRadius:
                                                   BorderRadius.circular(
-                                                SpotDetailUi.surfaceRadius,
-                                              ),
+                                                    SpotDetailUi.surfaceRadius,
+                                                  ),
                                               onTap: _copySpotToClipboard,
                                               child: SpotDetailQuickActionChip(
                                                 icon: Icons.share_outlined,
@@ -2623,8 +2616,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         ),
 
                         // Merged Created by / Source / Contributors section
-                        if (_spot.createdBy != null ||
-                            _spot.createdByName != null ||
+                        if ((!_spot.createdFromCreateNative &&
+                                (_spot.createdBy != null ||
+                                    _spot.createdByName != null)) ||
                             _spot.spotSource != null ||
                             (_spot.contributors != null &&
                                 _spot.contributors!.isNotEmpty)) ...[
@@ -8524,7 +8518,8 @@ class _SpotRatingUserRatingLoader extends StatefulWidget {
       _SpotRatingUserRatingLoaderState();
 }
 
-class _SpotRatingUserRatingLoaderState extends State<_SpotRatingUserRatingLoader> {
+class _SpotRatingUserRatingLoaderState
+    extends State<_SpotRatingUserRatingLoader> {
   late final Future<double?> _future;
 
   @override

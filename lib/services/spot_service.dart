@@ -15,7 +15,7 @@ class SpotService extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final AuditLogService _auditLogService = AuditLogService();
-  
+
   bool _isLoading = false;
   String? _error;
 
@@ -70,7 +70,11 @@ class SpotService extends ChangeNotifier {
   }
 
   // Create a native spot from an existing spot (copies name, description, location, photos, youtube link)
-  Future<String?> createNativeSpotFromExisting(Spot sourceSpot, String createdBy, String createdByName) async {
+  Future<String?> createNativeSpotFromExisting(
+    Spot sourceSpot,
+    String createdBy,
+    String createdByName,
+  ) async {
     try {
       _isLoading = true;
       notifyListeners();
@@ -100,11 +104,14 @@ class SpotService extends ChangeNotifier {
         goodFor: sourceSpot.goodFor,
         duplicateOf: null, // New native spot, not a duplicate
         hidden: false, // New spot, not hidden
+        createdFromCreateNative: true,
         // spotSource is null (native spot)
       );
 
-      final docRef = await _firestore.collection('spots').add(nativeSpot.toFirestore());
-      
+      final docRef = await _firestore
+          .collection('spots')
+          .add(nativeSpot.toFirestore());
+
       _isLoading = false;
       notifyListeners();
       return docRef.id; // Return the spot ID
@@ -118,13 +125,19 @@ class SpotService extends ChangeNotifier {
   }
 
   // Create a new spot
-  Future<String?> createSpot(Spot spot, {File? imageFile, Uint8List? imageBytes, List<File>? imageFiles, List<Uint8List>? imageBytesList}) async {
+  Future<String?> createSpot(
+    Spot spot, {
+    File? imageFile,
+    Uint8List? imageBytes,
+    List<File>? imageFiles,
+    List<Uint8List>? imageBytesList,
+  }) async {
     try {
       _isLoading = true;
       notifyListeners();
 
       List<String>? imageUrls;
-      
+
       // Handle single image uploads
       if (imageFile != null) {
         final imageUrl = await _uploadImage(imageFile);
@@ -133,7 +146,7 @@ class SpotService extends ChangeNotifier {
         final imageUrl = await _uploadImageBytes(imageBytes);
         imageUrls = [imageUrl];
       }
-      
+
       // Handle multiple image uploads
       if (imageFiles != null && imageFiles.isNotEmpty) {
         imageUrls = await _uploadImages(imageFiles);
@@ -147,11 +160,14 @@ class SpotService extends ChangeNotifier {
         updatedAt: DateTime.now(),
         ranking: spot.ranking ?? Random().nextDouble(),
         duplicateOf: null, // New spot, not a duplicate
-        hidden: spot.hidden, // Preserve hidden field (defaults to false for new spots)
+        hidden: spot
+            .hidden, // Preserve hidden field (defaults to false for new spots)
       );
 
-      final docRef = await _firestore.collection('spots').add(spotWithImages.toFirestore());
-      
+      final docRef = await _firestore
+          .collection('spots')
+          .add(spotWithImages.toFirestore());
+
       return docRef.id; // Return the spot ID
     } catch (e) {
       _error = 'Failed to create spot: $e';
@@ -165,17 +181,15 @@ class SpotService extends ChangeNotifier {
 
   // Update an existing spot with comprehensive image management
   Future<bool> updateSpot(
-    Spot spot, 
-    {
-      List<File>? newImageFiles,
-      List<Uint8List>? newImageBytesList,
-      List<String>? imagesToDelete,
-      String? userId,
-      String? userName,
-      String? reportId,
-      String? notes,
-    }
-  ) async {
+    Spot spot, {
+    List<File>? newImageFiles,
+    List<Uint8List>? newImageBytesList,
+    List<String>? imagesToDelete,
+    String? userId,
+    String? userName,
+    String? reportId,
+    String? notes,
+  }) async {
     try {
       _isLoading = true;
       notifyListeners();
@@ -212,8 +226,11 @@ class SpotService extends ChangeNotifier {
         hidden: spot.hidden, // Preserve existing hidden field
       );
 
-      await _firestore.collection('spots').doc(spot.id).update(updatedSpot.toFirestore(isUpdate: true));
-      
+      await _firestore
+          .collection('spots')
+          .doc(spot.id)
+          .update(updatedSpot.toFirestore(isUpdate: true));
+
       // Log audit trail if user info is provided (moderator edit)
       if (userId != null && userName != null && oldSpot != null) {
         final changes = _computeSpotChanges(oldSpot, updatedSpot);
@@ -228,7 +245,7 @@ class SpotService extends ChangeNotifier {
           );
         }
       }
-      
+
       _isLoading = false;
       notifyListeners();
       return true;
@@ -273,7 +290,9 @@ class SpotService extends ChangeNotifier {
         updatedSpot = updatedSpot.copyWith(name: updates['name'] as String?);
       }
       if (updates.containsKey('description')) {
-        updatedSpot = updatedSpot.copyWith(description: updates['description'] as String?);
+        updatedSpot = updatedSpot.copyWith(
+          description: updates['description'] as String?,
+        );
       }
       if (updates.containsKey('latitude') && updates.containsKey('longitude')) {
         updatedSpot = updatedSpot.copyWith(
@@ -299,7 +318,9 @@ class SpotService extends ChangeNotifier {
         );
       }
       if (updates.containsKey('spotAccess')) {
-        updatedSpot = updatedSpot.copyWith(spotAccess: updates['spotAccess'] as String?);
+        updatedSpot = updatedSpot.copyWith(
+          spotAccess: updates['spotAccess'] as String?,
+        );
       }
       if (updates.containsKey('spotFacilities')) {
         updatedSpot = updatedSpot.copyWith(
@@ -309,11 +330,16 @@ class SpotService extends ChangeNotifier {
         );
       }
 
-      List<Map<String, String>> contributors = List.from(updatedSpot.contributors ?? []);
+      List<Map<String, String>> contributors = List.from(
+        updatedSpot.contributors ?? [],
+      );
       if (reporterUserId != null && reporterUserName != null) {
         final exists = contributors.any((c) => c['userId'] == reporterUserId);
         if (!exists) {
-          contributors.add({'userId': reporterUserId, 'userName': reporterUserName});
+          contributors.add({
+            'userId': reporterUserId,
+            'userName': reporterUserName,
+          });
         }
       }
 
@@ -322,7 +348,10 @@ class SpotService extends ChangeNotifier {
         updatedAt: DateTime.now(),
       );
 
-      await _firestore.collection('spots').doc(spot.id).update(updatedSpot.toFirestore(isUpdate: true));
+      await _firestore
+          .collection('spots')
+          .doc(spot.id)
+          .update(updatedSpot.toFirestore(isUpdate: true));
 
       final changes = _computeSpotChanges(oldSpot, updatedSpot);
       if (changes.isNotEmpty) {
@@ -390,10 +419,7 @@ class SpotService extends ChangeNotifier {
 
     // Compare each field
     if (!valuesEqual(oldSpot.name, newSpot.name)) {
-      changes['name'] = {
-        'from': oldSpot.name,
-        'to': newSpot.name,
-      };
+      changes['name'] = {'from': oldSpot.name, 'to': newSpot.name};
     }
 
     if (!valuesEqual(oldSpot.description, newSpot.description)) {
@@ -403,7 +429,8 @@ class SpotService extends ChangeNotifier {
       };
     }
 
-    if (oldSpot.latitude != newSpot.latitude || oldSpot.longitude != newSpot.longitude) {
+    if (oldSpot.latitude != newSpot.latitude ||
+        oldSpot.longitude != newSpot.longitude) {
       changes['location'] = {
         'from': {'latitude': oldSpot.latitude, 'longitude': oldSpot.longitude},
         'to': {'latitude': newSpot.latitude, 'longitude': newSpot.longitude},
@@ -411,17 +438,11 @@ class SpotService extends ChangeNotifier {
     }
 
     if (!valuesEqual(oldSpot.address, newSpot.address)) {
-      changes['address'] = {
-        'from': oldSpot.address,
-        'to': newSpot.address,
-      };
+      changes['address'] = {'from': oldSpot.address, 'to': newSpot.address};
     }
 
     if (!valuesEqual(oldSpot.city, newSpot.city)) {
-      changes['city'] = {
-        'from': oldSpot.city,
-        'to': newSpot.city,
-      };
+      changes['city'] = {'from': oldSpot.city, 'to': newSpot.city};
     }
 
     if (!valuesEqual(oldSpot.countryCode, newSpot.countryCode)) {
@@ -502,7 +523,7 @@ class SpotService extends ChangeNotifier {
       notifyListeners();
 
       await _firestore.collection('spots').doc(spotId).delete();
-      
+
       return true;
     } catch (e) {
       _error = 'Failed to delete spot: $e';
@@ -514,14 +535,14 @@ class SpotService extends ChangeNotifier {
     }
   }
 
-
   // Upload single image to Firebase Storage
   Future<String> _uploadImage(File imageFile) async {
     try {
       final bytes = await imageFile.readAsBytes();
       final prepared = await prepareImageForUpload(bytes);
       final ext = _extensionForContentType(prepared.contentType);
-      final fileName = 'spots/${DateTime.now().millisecondsSinceEpoch}_web_image$ext';
+      final fileName =
+          'spots/${DateTime.now().millisecondsSinceEpoch}_web_image$ext';
       final ref = _storage.ref().child(fileName);
 
       final uploadTask = ref.putData(
@@ -542,7 +563,8 @@ class SpotService extends ChangeNotifier {
     try {
       final prepared = await prepareImageForUpload(imageBytes);
       final ext = _extensionForContentType(prepared.contentType);
-      final fileName = 'spots/${DateTime.now().millisecondsSinceEpoch}_web_image$ext';
+      final fileName =
+          'spots/${DateTime.now().millisecondsSinceEpoch}_web_image$ext';
       final ref = _storage.ref().child(fileName);
 
       final uploadTask = ref.putData(
@@ -584,7 +606,9 @@ class SpotService extends ChangeNotifier {
   }
 
   // Upload multiple image bytes to Firebase Storage (for web)
-  Future<List<String>> _uploadImagesBytes(List<Uint8List> imageBytesList) async {
+  Future<List<String>> _uploadImagesBytes(
+    List<Uint8List> imageBytesList,
+  ) async {
     final List<String> imageUrls = [];
     for (final imageBytes in imageBytesList) {
       final imageUrl = await _uploadImageBytes(imageBytes);
@@ -654,9 +678,12 @@ class SpotService extends ChangeNotifier {
     required String? userName,
     String? reportId,
     String? notes,
-    String? targetSpotId, // Optional: if spot is duplicate, add to original spot instead
-    String? approvedByUserId, // Optional: userId of the approver (for audit log)
-    String? approvedByUserName, // Optional: userName of the approver (for audit log)
+    String?
+    targetSpotId, // Optional: if spot is duplicate, add to original spot instead
+    String?
+    approvedByUserId, // Optional: userId of the approver (for audit log)
+    String?
+    approvedByUserName, // Optional: userName of the approver (for audit log)
     void Function(int current, int total)? onProgress,
   }) async {
     try {
@@ -665,7 +692,7 @@ class SpotService extends ChangeNotifier {
 
       // Determine target spot (use targetSpotId if provided, otherwise use spotId)
       final finalSpotId = targetSpotId ?? spotId;
-      
+
       // Get the target spot
       final targetSpot = await getSpotById(finalSpotId);
       if (targetSpot == null) {
@@ -689,11 +716,12 @@ class SpotService extends ChangeNotifier {
           // Extract the file path from the URL
           final uri = Uri.parse(photoUrl);
           String? filePath;
-          
+
           // Handle Firebase Storage URL formats
           if (uri.pathSegments.contains('o')) {
             // Format: /v0/b/bucket/o/suggestions%2Ffilename.jpg
-            final encodedPath = uri.pathSegments[uri.pathSegments.indexOf('o') + 1];
+            final encodedPath =
+                uri.pathSegments[uri.pathSegments.indexOf('o') + 1];
             filePath = Uri.decodeComponent(encodedPath);
           } else if (uri.host.contains('storage.googleapis.com')) {
             // Format: https://storage.googleapis.com/bucket/suggestions/filename.jpg
@@ -702,20 +730,20 @@ class SpotService extends ChangeNotifier {
               filePath = uri.pathSegments.sublist(pathIndex).join('/');
             }
           }
-          
+
           if (filePath == null || !filePath.startsWith('suggestions/')) {
             debugPrint('Invalid photo URL format: $photoUrl');
             continue;
           }
-          
+
           // Create new path in /spots/ (use .jpg since we resize to JPEG)
           final suggestedPath = filePath.replaceFirst('suggestions/', 'spots/');
           final baseName = suggestedPath.split('.').first;
           final newPath = '$baseName.jpg';
-          
+
           final sourceRef = _storage.ref().child(filePath);
           final destRef = _storage.ref().child(newPath);
-          
+
           // Fetch via HTTP (bypasses getData's 10MB limit), then resize to avoid
           // timeout/memory issues with very large images (e.g. 13MB phone photos).
           final response = await http.get(Uri.parse(photoUrl));
@@ -724,13 +752,15 @@ class SpotService extends ChangeNotifier {
             continue;
           }
           final rawBytes = Uint8List.fromList(response.bodyBytes);
-          await Future<void>.delayed(Duration.zero); // Let UI update before CPU-heavy resize
+          await Future<void>.delayed(
+            Duration.zero,
+          ); // Let UI update before CPU-heavy resize
           final resizedBytes = resizeImageForSpotUpload(rawBytes);
           if (resizedBytes == null || resizedBytes.isEmpty) {
             debugPrint('Failed to resize photo: $photoUrl');
             continue;
           }
-          
+
           await destRef.putData(
             resizedBytes,
             SettableMetadata(contentType: 'image/jpeg'),
@@ -743,7 +773,7 @@ class SpotService extends ChangeNotifier {
           // Continue with other photos even if one fails
         }
       }
-      
+
       if (finalPhotoUrls.isEmpty) {
         _error = 'Failed to move any photos';
         _isLoading = false;
@@ -760,15 +790,16 @@ class SpotService extends ChangeNotifier {
       }
 
       // Update contributors list
-      List<Map<String, String>> updatedContributors = List.from(targetSpot.contributors ?? []);
+      List<Map<String, String>> updatedContributors = List.from(
+        targetSpot.contributors ?? [],
+      );
       if (userId != null && userName != null) {
         // Check if contributor already exists
-        final contributorExists = updatedContributors.any((c) => c['userId'] == userId);
+        final contributorExists = updatedContributors.any(
+          (c) => c['userId'] == userId,
+        );
         if (!contributorExists) {
-          updatedContributors.add({
-            'userId': userId,
-            'userName': userName,
-          });
+          updatedContributors.add({'userId': userId, 'userName': userName});
         }
       }
 
@@ -779,8 +810,11 @@ class SpotService extends ChangeNotifier {
         updatedAt: DateTime.now(),
       );
 
-      await _firestore.collection('spots').doc(finalSpotId).update(updatedSpot.toFirestore(isUpdate: true));
-      
+      await _firestore
+          .collection('spots')
+          .doc(finalSpotId)
+          .update(updatedSpot.toFirestore(isUpdate: true));
+
       // Log audit trail (use approver info if provided, otherwise use contributor info)
       final auditUserId = approvedByUserId ?? userId;
       final auditUserName = approvedByUserName ?? userName;
@@ -791,11 +825,12 @@ class SpotService extends ChangeNotifier {
           userId: auditUserId,
           userName: auditUserName,
           reportId: reportId,
-          originalPhotoUrls: photoUrls, // Keep track of original URLs from suggestions
+          originalPhotoUrls:
+              photoUrls, // Keep track of original URLs from suggestions
           notes: notes,
         );
       }
-      
+
       _isLoading = false;
       notifyListeners();
       return finalPhotoUrls; // Return the new URLs from /spots/
@@ -812,16 +847,17 @@ class SpotService extends ChangeNotifier {
   Future<List<String>> movePhotosToRejected(List<String> photoUrls) async {
     try {
       final List<String> rejectedUrls = [];
-      
+
       for (final photoUrl in photoUrls) {
         try {
           // Extract the file path from the URL
           final uri = Uri.parse(photoUrl);
           String? filePath;
-          
+
           // Handle Firebase Storage URL formats
           if (uri.pathSegments.contains('o')) {
-            final encodedPath = uri.pathSegments[uri.pathSegments.indexOf('o') + 1];
+            final encodedPath =
+                uri.pathSegments[uri.pathSegments.indexOf('o') + 1];
             filePath = Uri.decodeComponent(encodedPath);
           } else if (uri.host.contains('storage.googleapis.com')) {
             final pathIndex = uri.pathSegments.indexOf('suggestions');
@@ -829,32 +865,32 @@ class SpotService extends ChangeNotifier {
               filePath = uri.pathSegments.sublist(pathIndex).join('/');
             }
           }
-          
+
           if (filePath != null && filePath.startsWith('suggestions/')) {
             // Create new path in /rejected/
             final newPath = filePath.replaceFirst('suggestions/', 'rejected/');
-            
+
             // Get references
             final sourceRef = _storage.ref().child(filePath);
             final destRef = _storage.ref().child(newPath);
-            
+
             // Copy the file
             final data = await sourceRef.getData();
             if (data != null) {
               // Get content type from metadata
               final metadata = await sourceRef.getMetadata();
               final contentType = metadata.contentType ?? 'image/jpeg';
-              
+
               // Upload to rejected location
               await destRef.putData(
                 data,
                 SettableMetadata(contentType: contentType),
               );
-              
+
               // Get the new URL
               final newUrl = await destRef.getDownloadURL();
               rejectedUrls.add(newUrl);
-              
+
               // Delete the original from /suggestions/
               await sourceRef.delete();
             }
@@ -864,7 +900,7 @@ class SpotService extends ChangeNotifier {
           // Continue with other photos even if one fails
         }
       }
-      
+
       return rejectedUrls;
     } catch (e) {
       debugPrint('Error moving suggested photos to rejected: $e');
@@ -873,19 +909,22 @@ class SpotService extends ChangeNotifier {
   }
 
   // Move photos from /rejected/ back to /suggestions/ path (used when undoing rejection)
-  Future<List<String>> movePhotosFromRejectedToSuggestions(List<String> rejectedPhotoUrls) async {
+  Future<List<String>> movePhotosFromRejectedToSuggestions(
+    List<String> rejectedPhotoUrls,
+  ) async {
     try {
       final List<String> suggestionUrls = [];
-      
+
       for (final photoUrl in rejectedPhotoUrls) {
         try {
           // Extract the file path from the URL
           final uri = Uri.parse(photoUrl);
           String? filePath;
-          
+
           // Handle Firebase Storage URL formats
           if (uri.pathSegments.contains('o')) {
-            final encodedPath = uri.pathSegments[uri.pathSegments.indexOf('o') + 1];
+            final encodedPath =
+                uri.pathSegments[uri.pathSegments.indexOf('o') + 1];
             filePath = Uri.decodeComponent(encodedPath);
           } else if (uri.host.contains('storage.googleapis.com')) {
             final pathIndex = uri.pathSegments.indexOf('rejected');
@@ -893,42 +932,44 @@ class SpotService extends ChangeNotifier {
               filePath = uri.pathSegments.sublist(pathIndex).join('/');
             }
           }
-          
+
           if (filePath != null && filePath.startsWith('rejected/')) {
             // Create new path in /suggestions/
             final newPath = filePath.replaceFirst('rejected/', 'suggestions/');
-            
+
             // Get references
             final sourceRef = _storage.ref().child(filePath);
             final destRef = _storage.ref().child(newPath);
-            
+
             // Copy the file
             final data = await sourceRef.getData();
             if (data != null) {
               // Get content type from metadata
               final metadata = await sourceRef.getMetadata();
               final contentType = metadata.contentType ?? 'image/jpeg';
-              
+
               // Upload to suggestions location
               await destRef.putData(
                 data,
                 SettableMetadata(contentType: contentType),
               );
-              
+
               // Get the new URL
               final newUrl = await destRef.getDownloadURL();
               suggestionUrls.add(newUrl);
-              
+
               // Delete the original from /rejected/
               await sourceRef.delete();
             }
           }
         } catch (e) {
-          debugPrint('Error moving rejected photo back to suggestions $photoUrl: $e');
+          debugPrint(
+            'Error moving rejected photo back to suggestions $photoUrl: $e',
+          );
           // Continue with other photos even if one fails
         }
       }
-      
+
       return suggestionUrls;
     } catch (e) {
       debugPrint('Error moving rejected photos back to suggestions: $e');
@@ -944,14 +985,14 @@ class SpotService extends ChangeNotifier {
         debugPrint('User ID is required for rating');
         return false;
       }
-      
+
       // Check if user already rated this spot
       final existingRatingDoc = await _firestore
           .collection('ratings')
           .where('spotId', isEqualTo: spotId)
           .where('userId', isEqualTo: userId)
           .get();
-      
+
       if (existingRatingDoc.docs.isNotEmpty) {
         // Update existing rating
         final ratingDoc = existingRatingDoc.docs.first;
@@ -969,7 +1010,7 @@ class SpotService extends ChangeNotifier {
           'updatedAt': FieldValue.serverTimestamp(),
         });
       }
-      
+
       return true;
     } catch (e) {
       debugPrint('Error rating spot: $e');
@@ -985,7 +1026,7 @@ class SpotService extends ChangeNotifier {
           .where('spotId', isEqualTo: spotId)
           .where('userId', isEqualTo: userId)
           .get();
-      
+
       if (ratingDoc.docs.isNotEmpty) {
         return ratingDoc.docs.first.data()['rating'] as double?;
       }
@@ -1003,7 +1044,7 @@ class SpotService extends ChangeNotifier {
           .collection('ratings')
           .where('spotId', isEqualTo: spotId)
           .get();
-      
+
       return ratingsSnapshot.docs
           .map((doc) => Rating.fromFirestore(doc))
           .toList();
@@ -1022,7 +1063,7 @@ class SpotService extends ChangeNotifier {
         final data = doc.data() as Map<String, dynamic>;
         final avg = (data['averageRating'] ?? 0).toDouble();
         final count = (data['ratingCount'] ?? 0) as int;
-        
+
         return {
           'averageRating': avg,
           'ratingCount': count,
@@ -1052,9 +1093,7 @@ class SpotService extends ChangeNotifier {
       final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
       final callable = functions.httpsCallable(
         'recomputeAllRatedSpots',
-        options: HttpsCallableOptions(
-          timeout: const Duration(minutes: 9),
-        ),
+        options: HttpsCallableOptions(timeout: const Duration(minutes: 9)),
       );
       final result = await callable.call();
       final data = result.data as Map<String, dynamic>;
@@ -1070,9 +1109,7 @@ class SpotService extends ChangeNotifier {
       final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
       final callable = functions.httpsCallable(
         'recomputeSpotRankings',
-        options: HttpsCallableOptions(
-          timeout: const Duration(minutes: 9),
-        ),
+        options: HttpsCallableOptions(timeout: const Duration(minutes: 9)),
       );
       final result = await callable.call();
       final data = result.data as Map<String, dynamic>;
@@ -1088,9 +1125,7 @@ class SpotService extends ChangeNotifier {
     final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
     final callable = functions.httpsCallable(
       'generateSitemaps',
-      options: HttpsCallableOptions(
-        timeout: const Duration(minutes: 9),
-      ),
+      options: HttpsCallableOptions(timeout: const Duration(minutes: 9)),
     );
     final result = await callable.call();
     final data = result.data as Map<String, dynamic>?;
@@ -1107,9 +1142,12 @@ class SpotService extends ChangeNotifier {
     double maxLng, {
     int limit = 100,
     String? filterArea, // "amenities" | "source" | null (null = source)
-    String? spotSource, // when source: null = all, "" = native, string = specific source
-    List<String>? folders, // when source: list of folder names (null = all folders)
-    List<String>? spotAccess, // when amenities: ["public", "restricted", "paid"] for OR query, empty = any
+    String?
+    spotSource, // when source: null = all, "" = native, string = specific source
+    List<String>?
+    folders, // when source: list of folder names (null = all folders)
+    List<String>?
+    spotAccess, // when amenities: ["public", "restricted", "paid"] for OR query, empty = any
     bool? spotFacilitiesCovered, // when amenities: true = "yes"
     bool? spotFacilitiesLighting, // when amenities: true = "yes"
     bool? spotFacilitiesWaterTap, // when amenities: true = "yes"
@@ -1133,15 +1171,24 @@ class SpotService extends ChangeNotifier {
       }
       if (filterArea == 'amenities') {
         if (spotAccess != null && spotAccess.isNotEmpty) {
-          requestData['spotAccess'] = spotAccess.length == 1 ? spotAccess.first : spotAccess;
+          requestData['spotAccess'] = spotAccess.length == 1
+              ? spotAccess.first
+              : spotAccess;
         }
-        if (spotFacilitiesCovered == true) requestData['spotFacilitiesCovered'] = 'yes';
-        if (spotFacilitiesLighting == true) requestData['spotFacilitiesLighting'] = 'yes';
-        if (spotFacilitiesWaterTap == true) requestData['spotFacilitiesWaterTap'] = 'yes';
-        if (spotFacilitiesToilet == true) requestData['spotFacilitiesToilet'] = 'yes';
-        if (spotFacilitiesParking == true) requestData['spotFacilitiesParking'] = 'yes';
-        if (goodFor != null && goodFor.isNotEmpty) requestData['goodFor'] = goodFor.take(10).toList();
-        if (spotFeatures != null && spotFeatures.isNotEmpty) requestData['spotFeatures'] = spotFeatures.take(10).toList();
+        if (spotFacilitiesCovered == true)
+          requestData['spotFacilitiesCovered'] = 'yes';
+        if (spotFacilitiesLighting == true)
+          requestData['spotFacilitiesLighting'] = 'yes';
+        if (spotFacilitiesWaterTap == true)
+          requestData['spotFacilitiesWaterTap'] = 'yes';
+        if (spotFacilitiesToilet == true)
+          requestData['spotFacilitiesToilet'] = 'yes';
+        if (spotFacilitiesParking == true)
+          requestData['spotFacilitiesParking'] = 'yes';
+        if (goodFor != null && goodFor.isNotEmpty)
+          requestData['goodFor'] = goodFor.take(10).toList();
+        if (spotFeatures != null && spotFeatures.isNotEmpty)
+          requestData['spotFeatures'] = spotFeatures.take(10).toList();
       } else {
         if (spotSource != null) {
           requestData['spotSource'] = spotSource;
@@ -1154,10 +1201,15 @@ class SpotService extends ChangeNotifier {
 
       final responseData = result.data as Map<String, dynamic>?;
       if (responseData == null || responseData['success'] != true) {
-        throw Exception(responseData != null && responseData['error'] is String ? responseData['error'] : 'Unknown error');
+        throw Exception(
+          responseData != null && responseData['error'] is String
+              ? responseData['error']
+              : 'Unknown error',
+        );
       }
 
-      final List<dynamic> items = (responseData['spots'] as List<dynamic>? ?? <dynamic>[]);
+      final List<dynamic> items =
+          (responseData['spots'] as List<dynamic>? ?? <dynamic>[]);
       final spots = items
           .whereType<Map<String, dynamic>>()
           .map((m) => Spot.fromMap(m))
@@ -1165,13 +1217,21 @@ class SpotService extends ChangeNotifier {
 
       return {
         'spots': spots,
-        'totalCount': (responseData['totalCount'] as num?)?.toInt() ?? spots.length,
-        'shownCount': (responseData['shownCount'] as num?)?.toInt() ?? spots.length,
-        'averageWilson': (responseData['averageWilson'] as num?)?.toDouble() ?? 0.0,
+        'totalCount':
+            (responseData['totalCount'] as num?)?.toInt() ?? spots.length,
+        'shownCount':
+            (responseData['shownCount'] as num?)?.toInt() ?? spots.length,
+        'averageWilson':
+            (responseData['averageWilson'] as num?)?.toDouble() ?? 0.0,
       };
     } catch (e) {
       debugPrint('Error getting top ranked spots in bounds: $e');
-      return {'spots': <Spot>[], 'totalCount': 0, 'shownCount': 0, 'averageWilson': 0.0};
+      return {
+        'spots': <Spot>[],
+        'totalCount': 0,
+        'shownCount': 0,
+        'averageWilson': 0.0,
+      };
     }
   }
 
@@ -1203,12 +1263,14 @@ class SpotService extends ChangeNotifier {
           .orderBy('updatedAt', descending: true);
 
       final querySnapshot = await query.get();
-      
+
       final spots = querySnapshot.docs
           .map((doc) => Spot.fromFirestore(doc))
           .toList();
 
-      debugPrint('✅ Found ${spots.length} spots for source $sourceId last updated before ${timestamp.day}/${timestamp.month}/${timestamp.year}');
+      debugPrint(
+        '✅ Found ${spots.length} spots for source $sourceId last updated before ${timestamp.day}/${timestamp.month}/${timestamp.year}',
+      );
 
       return spots;
     } catch (e) {
@@ -1231,7 +1293,9 @@ class SpotService extends ChangeNotifier {
 
       debugPrint('🔍 Searching for removed spots');
       if (sourceId != null) {
-        debugPrint('📦 Source filter: ${sourceId.isEmpty ? "Native spots (no source)" : sourceId}');
+        debugPrint(
+          '📦 Source filter: ${sourceId.isEmpty ? "Native spots (no source)" : sourceId}',
+        );
       } else {
         debugPrint('📦 Source filter: All sources');
       }
@@ -1256,7 +1320,7 @@ class SpotService extends ChangeNotifier {
       query = query.orderBy('spotSourceRemovedAt', descending: true);
 
       final querySnapshot = await query.get();
-      
+
       final spots = querySnapshot.docs
           .map((doc) => Spot.fromFirestore(doc))
           .toList();
@@ -1294,10 +1358,7 @@ class SpotService extends ChangeNotifier {
         }
       }
 
-      return {
-        'deleted': deletedCount,
-        'failed': failedCount,
-      };
+      return {'deleted': deletedCount, 'failed': failedCount};
     } catch (e) {
       _error = 'Failed to delete spots: $e';
       debugPrint('Error deleting spots: $e');
@@ -1317,7 +1378,10 @@ class SpotService extends ChangeNotifier {
     try {
       Query queryRef = _firestore
           .collection('spots')
-          .where('duplicateOf', isNull: true); // Exclude spots that are already duplicates
+          .where(
+            'duplicateOf',
+            isNull: true,
+          ); // Exclude spots that are already duplicates
 
       final querySnapshot = await queryRef.limit(limit).get();
 
@@ -1331,9 +1395,13 @@ class SpotService extends ChangeNotifier {
         final queryLower = query.toLowerCase();
         spots.retainWhere((spot) {
           final nameMatch = spot.name.toLowerCase().contains(queryLower);
-          final descriptionMatch = spot.description.toLowerCase().contains(queryLower);
-          final addressMatch = spot.address?.toLowerCase().contains(queryLower) ?? false;
-          final cityMatch = spot.city?.toLowerCase().contains(queryLower) ?? false;
+          final descriptionMatch = spot.description.toLowerCase().contains(
+            queryLower,
+          );
+          final addressMatch =
+              spot.address?.toLowerCase().contains(queryLower) ?? false;
+          final cityMatch =
+              spot.city?.toLowerCase().contains(queryLower) ?? false;
           return nameMatch || descriptionMatch || addressMatch || cityMatch;
         });
       }
@@ -1393,7 +1461,8 @@ class SpotService extends ChangeNotifier {
       // Prevent marking a spot as duplicate if other spots are already marked as duplicates of it
       final existingDuplicates = await getDuplicatesOfSpot(spotId);
       if (existingDuplicates.isNotEmpty) {
-        _error = 'Cannot mark this spot as a duplicate because other spots are already marked as duplicates of it';
+        _error =
+            'Cannot mark this spot as a duplicate because other spots are already marked as duplicates of it';
         _isLoading = false;
         notifyListeners();
         return false;
@@ -1401,7 +1470,8 @@ class SpotService extends ChangeNotifier {
 
       // Prevent circular references (check if original is already marked as duplicate)
       if (originalSpot.duplicateOf != null) {
-        _error = 'Cannot mark as duplicate of a spot that is already a duplicate';
+        _error =
+            'Cannot mark as duplicate of a spot that is already a duplicate';
         _isLoading = false;
         notifyListeners();
         return false;
@@ -1409,7 +1479,8 @@ class SpotService extends ChangeNotifier {
 
       // Ensure the original spot is a native parkour.spot spot (not from external source)
       if (originalSpot.spotSource != null) {
-        _error = 'Original spot must be a native parkour.spot spot, not from an external source';
+        _error =
+            'Original spot must be a native parkour.spot spot, not from an external source';
         _isLoading = false;
         notifyListeners();
         return false;
@@ -1420,12 +1491,14 @@ class SpotService extends ChangeNotifier {
       bool needsOriginalUpdate = false;
 
       // Merge photos if requested
-      if (transferPhotos && duplicateSpot.imageUrls != null && duplicateSpot.imageUrls!.isNotEmpty) {
+      if (transferPhotos &&
+          duplicateSpot.imageUrls != null &&
+          duplicateSpot.imageUrls!.isNotEmpty) {
         final existingPhotos = List<String>.from(originalSpot.imageUrls ?? []);
         final newPhotos = duplicateSpot.imageUrls!
             .where((url) => !existingPhotos.contains(url))
             .toList();
-        
+
         if (newPhotos.isNotEmpty) {
           originalSpotUpdates['imageUrls'] = [...existingPhotos, ...newPhotos];
           needsOriginalUpdate = true;
@@ -1433,14 +1506,21 @@ class SpotService extends ChangeNotifier {
       }
 
       // Merge YouTube links if requested
-      if (transferYoutubeLinks && duplicateSpot.youtubeVideoIds != null && duplicateSpot.youtubeVideoIds!.isNotEmpty) {
-        final existingYoutubeLinks = List<String>.from(originalSpot.youtubeVideoIds ?? []);
+      if (transferYoutubeLinks &&
+          duplicateSpot.youtubeVideoIds != null &&
+          duplicateSpot.youtubeVideoIds!.isNotEmpty) {
+        final existingYoutubeLinks = List<String>.from(
+          originalSpot.youtubeVideoIds ?? [],
+        );
         final newYoutubeLinks = duplicateSpot.youtubeVideoIds!
             .where((id) => !existingYoutubeLinks.contains(id))
             .toList();
-        
+
         if (newYoutubeLinks.isNotEmpty) {
-          originalSpotUpdates['youtubeVideoIds'] = [...existingYoutubeLinks, ...newYoutubeLinks];
+          originalSpotUpdates['youtubeVideoIds'] = [
+            ...existingYoutubeLinks,
+            ...newYoutubeLinks,
+          ];
           needsOriginalUpdate = true;
         }
       }
@@ -1465,7 +1545,8 @@ class SpotService extends ChangeNotifier {
           originalSpotUpdates['longitude'] = duplicateSpot.longitude;
           hasLocationData = true;
         }
-        if (duplicateSpot.address != null && duplicateSpot.address!.isNotEmpty) {
+        if (duplicateSpot.address != null &&
+            duplicateSpot.address!.isNotEmpty) {
           originalSpotUpdates['address'] = duplicateSpot.address;
           hasLocationData = true;
         }
@@ -1473,7 +1554,8 @@ class SpotService extends ChangeNotifier {
           originalSpotUpdates['city'] = duplicateSpot.city;
           hasLocationData = true;
         }
-        if (duplicateSpot.countryCode != null && duplicateSpot.countryCode!.isNotEmpty) {
+        if (duplicateSpot.countryCode != null &&
+            duplicateSpot.countryCode!.isNotEmpty) {
           originalSpotUpdates['countryCode'] = duplicateSpot.countryCode;
           hasLocationData = true;
         }
@@ -1485,19 +1567,23 @@ class SpotService extends ChangeNotifier {
       // Overwrite spot attributes if requested and duplicate has attributes
       if (overwriteSpotAttributes) {
         bool hasAttributes = false;
-        if (duplicateSpot.spotAccess != null && duplicateSpot.spotAccess!.isNotEmpty) {
+        if (duplicateSpot.spotAccess != null &&
+            duplicateSpot.spotAccess!.isNotEmpty) {
           originalSpotUpdates['spotAccess'] = duplicateSpot.spotAccess;
           hasAttributes = true;
         }
-        if (duplicateSpot.spotFeatures != null && duplicateSpot.spotFeatures!.isNotEmpty) {
+        if (duplicateSpot.spotFeatures != null &&
+            duplicateSpot.spotFeatures!.isNotEmpty) {
           originalSpotUpdates['spotFeatures'] = duplicateSpot.spotFeatures;
           hasAttributes = true;
         }
-        if (duplicateSpot.spotFacilities != null && duplicateSpot.spotFacilities!.isNotEmpty) {
+        if (duplicateSpot.spotFacilities != null &&
+            duplicateSpot.spotFacilities!.isNotEmpty) {
           originalSpotUpdates['spotFacilities'] = duplicateSpot.spotFacilities;
           hasAttributes = true;
         }
-        if (duplicateSpot.goodFor != null && duplicateSpot.goodFor!.isNotEmpty) {
+        if (duplicateSpot.goodFor != null &&
+            duplicateSpot.goodFor!.isNotEmpty) {
           originalSpotUpdates['goodFor'] = duplicateSpot.goodFor;
           hasAttributes = true;
         }
@@ -1509,7 +1595,10 @@ class SpotService extends ChangeNotifier {
       // Update the original spot if needed
       if (needsOriginalUpdate) {
         originalSpotUpdates['updatedAt'] = FieldValue.serverTimestamp();
-        await _firestore.collection('spots').doc(originalSpotId).update(originalSpotUpdates);
+        await _firestore
+            .collection('spots')
+            .doc(originalSpotId)
+            .update(originalSpotUpdates);
       }
 
       // Update the spot to mark it as duplicate
@@ -1556,9 +1645,7 @@ class SpotService extends ChangeNotifier {
           .where('duplicateOf', isEqualTo: spotId)
           .get();
 
-      return querySnapshot.docs
-          .map((doc) => Spot.fromFirestore(doc))
-          .toList();
+      return querySnapshot.docs.map((doc) => Spot.fromFirestore(doc)).toList();
     } catch (e) {
       debugPrint('Error getting duplicates of spot: $e');
       return [];
@@ -1717,7 +1804,12 @@ class SpotService extends ChangeNotifier {
         }
 
         if (missingUrls.isNotEmpty) {
-          results.add(SpotWithMissingResizedImages(spot: spot, missingImageUrls: missingUrls));
+          results.add(
+            SpotWithMissingResizedImages(
+              spot: spot,
+              missingImageUrls: missingUrls,
+            ),
+          );
         }
       }
 
@@ -1777,9 +1869,7 @@ class SpotService extends ChangeNotifier {
       final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
       final callable = functions.httpsCallable(
         'triggerResizeForMissingImages',
-        options: HttpsCallableOptions(
-          timeout: const Duration(minutes: 9),
-        ),
+        options: HttpsCallableOptions(timeout: const Duration(minutes: 9)),
       );
 
       final result = await callable.call();
@@ -1814,9 +1904,7 @@ class SpotService extends ChangeNotifier {
       final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
       final callable = functions.httpsCallable(
         'findDuplicateSpots',
-        options: HttpsCallableOptions(
-          timeout: const Duration(minutes: 9),
-        ),
+        options: HttpsCallableOptions(timeout: const Duration(minutes: 9)),
       );
 
       final result = await callable.call({
@@ -1826,9 +1914,11 @@ class SpotService extends ChangeNotifier {
 
       final responseData = result.data as Map<String, dynamic>?;
       if (responseData == null || responseData['success'] != true) {
-        throw Exception(responseData != null && responseData['error'] is String
-            ? responseData['error']
-            : 'Unknown error');
+        throw Exception(
+          responseData != null && responseData['error'] is String
+              ? responseData['error']
+              : 'Unknown error',
+        );
       }
 
       _isLoading = false;

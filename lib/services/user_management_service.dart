@@ -25,7 +25,7 @@ class UserStats {
 /// Service responsible for loading admin-facing user information and actions.
 class UserManagementService extends ChangeNotifier {
   UserManagementService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
 
@@ -85,10 +85,12 @@ class UserManagementService extends ChangeNotifier {
   bool isLoadingStats(String userId) => _loadingStatsFor.contains(userId);
 
   /// Whether the service is currently updating moderator status for the user.
-  bool isUpdatingModerator(String userId) => _updatingModeratorFor.contains(userId);
+  bool isUpdatingModerator(String userId) =>
+      _updatingModeratorFor.contains(userId);
 
   /// Whether the service is currently updating feature access for the user.
-  bool isUpdatingFeatureAccess(String userId) => _updatingFeatureAccessFor.contains(userId);
+  bool isUpdatingFeatureAccess(String userId) =>
+      _updatingFeatureAccessFor.contains(userId);
 
   /// Whether the service is currently calculating user activity metrics.
   bool get isCalculatingMetrics => _calculatingMetrics;
@@ -224,10 +226,7 @@ class UserManagementService extends ChangeNotifier {
     for (final doc in docs) {
       final data = doc.data();
       _users.add(
-        app_user.User.fromMap(<String, dynamic>{
-          'id': doc.id,
-          ...data,
-        }),
+        app_user.User.fromMap(<String, dynamic>{'id': doc.id, ...data}),
       );
     }
     if (replaceExisting) {
@@ -242,7 +241,10 @@ class UserManagementService extends ChangeNotifier {
   }
 
   /// Ensures statistics for the provided user are loaded and cached.
-  Future<UserStats?> loadUserStats(String userId, {bool forceRefresh = false}) async {
+  Future<UserStats?> loadUserStats(
+    String userId, {
+    bool forceRefresh = false,
+  }) async {
     if (!forceRefresh && _statsCache.containsKey(userId)) {
       return _statsCache[userId];
     }
@@ -256,14 +258,27 @@ class UserManagementService extends ChangeNotifier {
 
     try {
       final int reportedCount = await _countDocuments(
-        _firestore.collection('spotReports').where('reporterUserId', isEqualTo: userId),
+        _firestore
+            .collection('spotReports')
+            .where('reporterUserId', isEqualTo: userId),
       );
       final int ratingsCount = await _countDocuments(
         _firestore.collection('ratings').where('userId', isEqualTo: userId),
       );
-      final int spotsCreatedCount = await _countDocuments(
+      final int totalSpotsCreatedCount = await _countDocuments(
         _firestore.collection('spots').where('createdBy', isEqualTo: userId),
       );
+      final int createNativeSpotsCreatedCount = await _countDocuments(
+        _firestore
+            .collection('spots')
+            .where('createdBy', isEqualTo: userId)
+            .where('createdFromCreateNative', isEqualTo: true),
+      );
+      final int spotsCreatedCount =
+          (totalSpotsCreatedCount - createNativeSpotsCreatedCount).clamp(
+            0,
+            1 << 30,
+          );
 
       final stats = UserStats(
         spotReports: reportedCount,
@@ -313,13 +328,17 @@ class UserManagementService extends ChangeNotifier {
   }
 
   /// Updates feature access for a user and updates internal cache.
-  /// 
+  ///
   /// [featureName] is the name of the feature (e.g., "spotLists").
   /// [hasAccess] indicates whether the user should have access to the feature.
-  /// 
+  ///
   /// This method merges the new feature access with existing feature access,
   /// so other features are not affected.
-  Future<bool> updateFeatureAccess(String userId, String featureName, bool hasAccess) async {
+  Future<bool> updateFeatureAccess(
+    String userId,
+    String featureName,
+    bool hasAccess,
+  ) async {
     if (_updatingFeatureAccessFor.contains(userId)) {
       return false;
     }
@@ -331,16 +350,20 @@ class UserManagementService extends ChangeNotifier {
       // Get current user to preserve existing feature access
       final userIndex = _users.indexWhere((u) => u.id == userId);
       Map<String, bool>? currentFeatureAccess;
-      
+
       if (userIndex != -1) {
-        currentFeatureAccess = Map<String, bool>.from(_users[userIndex].featureAccess ?? {});
+        currentFeatureAccess = Map<String, bool>.from(
+          _users[userIndex].featureAccess ?? {},
+        );
       } else {
         // If user not in cache, fetch from Firestore
         final userDoc = await _firestore.collection('users').doc(userId).get();
         if (userDoc.exists) {
           final data = userDoc.data();
           if (data != null && data['featureAccess'] != null) {
-            currentFeatureAccess = Map<String, bool>.from(data['featureAccess']);
+            currentFeatureAccess = Map<String, bool>.from(
+              data['featureAccess'],
+            );
           }
         }
         currentFeatureAccess ??= <String, bool>{};
@@ -356,7 +379,9 @@ class UserManagementService extends ChangeNotifier {
 
       // Update local cache
       if (userIndex != -1) {
-        _users[userIndex] = _users[userIndex].copyWith(featureAccess: currentFeatureAccess);
+        _users[userIndex] = _users[userIndex].copyWith(
+          featureAccess: currentFeatureAccess,
+        );
       }
 
       return true;
@@ -385,9 +410,7 @@ class UserManagementService extends ChangeNotifier {
       final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
       final callable = functions.httpsCallable(
         'testCalculateUserActivityMetrics',
-        options: HttpsCallableOptions(
-          timeout: const Duration(minutes: 9),
-        ),
+        options: HttpsCallableOptions(timeout: const Duration(minutes: 9)),
       );
 
       final result = await callable.call();
@@ -397,7 +420,9 @@ class UserManagementService extends ChangeNotifier {
       return data;
     } catch (e, stackTrace) {
       _metricsError = 'Failed to calculate metrics: $e';
-      debugPrint('UserManagementService.calculateUserActivityMetrics error: $e');
+      debugPrint(
+        'UserManagementService.calculateUserActivityMetrics error: $e',
+      );
       debugPrint('$stackTrace');
       return null;
     } finally {
@@ -407,7 +432,7 @@ class UserManagementService extends ChangeNotifier {
   }
 
   /// Syncs user.createdAt from Firebase Auth creation time.
-  /// 
+  ///
   /// [dryRun] if true, previews changes without updating.
   /// [limit] optional limit on number of users to process (for testing).
   Future<Map<String, dynamic>?> syncUserCreatedAtFromAuth({
@@ -426,9 +451,7 @@ class UserManagementService extends ChangeNotifier {
       final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
       final callable = functions.httpsCallable(
         'syncUserCreatedAtFromAuth',
-        options: HttpsCallableOptions(
-          timeout: const Duration(minutes: 9),
-        ),
+        options: HttpsCallableOptions(timeout: const Duration(minutes: 9)),
       );
 
       final result = await callable.call({
@@ -438,12 +461,12 @@ class UserManagementService extends ChangeNotifier {
       final data = result.data as Map<String, dynamic>?;
 
       _lastSyncCreatedAtResult = data;
-      
+
       // Refresh users list if sync was successful and not a dry run
       if (data?['success'] == true && !dryRun) {
         await fetchUsers(forceRefresh: true);
       }
-      
+
       return data;
     } catch (e, stackTrace) {
       _syncCreatedAtError = 'Failed to sync user createdAt: $e';
@@ -478,9 +501,7 @@ class UserManagementService extends ChangeNotifier {
       final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
       final callable = functions.httpsCallable(
         'copyGoogleAvatarsToStorage',
-        options: HttpsCallableOptions(
-          timeout: const Duration(minutes: 15),
-        ),
+        options: HttpsCallableOptions(timeout: const Duration(minutes: 15)),
       );
 
       final result = await callable.call({
@@ -522,9 +543,7 @@ class UserManagementService extends ChangeNotifier {
       final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
       final callable = functions.httpsCallable(
         'makeProfilePicturesPublic',
-        options: HttpsCallableOptions(
-          timeout: const Duration(minutes: 5),
-        ),
+        options: HttpsCallableOptions(timeout: const Duration(minutes: 5)),
       );
 
       final result = await callable.call();
@@ -540,8 +559,7 @@ class UserManagementService extends ChangeNotifier {
     } catch (e, stackTrace) {
       _makeProfilePicturesPublicError =
           'Failed to make profile pictures public: $e';
-      debugPrint(
-          'UserManagementService.makeProfilePicturesPublic error: $e');
+      debugPrint('UserManagementService.makeProfilePicturesPublic error: $e');
       debugPrint('$stackTrace');
       return null;
     } finally {
@@ -570,9 +588,7 @@ class UserManagementService extends ChangeNotifier {
       final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
       final callable = functions.httpsCallable(
         'syncSpotDisplayNames',
-        options: HttpsCallableOptions(
-          timeout: const Duration(minutes: 9),
-        ),
+        options: HttpsCallableOptions(timeout: const Duration(minutes: 9)),
       );
 
       final result = await callable.call({'dryRun': dryRun});

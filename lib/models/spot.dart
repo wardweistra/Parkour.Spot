@@ -30,7 +30,10 @@ class Spot {
   final List<String>? goodFor;
   final String? duplicateOf; // ID of the original spot if this is a duplicate
   final bool hidden; // Whether the spot is hidden from public view
-  final List<Map<String, String>>? contributors; // List of contributors who improved the spot
+  final List<Map<String, String>>?
+  contributors; // List of contributors who improved the spot
+  final bool
+  createdFromCreateNative; // Whether spot was created via "Create Native"
 
   static const Object _unset = Object();
 
@@ -65,6 +68,7 @@ class Spot {
     this.duplicateOf,
     this.hidden = false,
     this.contributors,
+    this.createdFromCreateNative = false,
   });
 
   factory Spot.fromFirestore(DocumentSnapshot doc) {
@@ -73,14 +77,17 @@ class Spot {
       final trimmed = input.trim();
       if (trimmed.isEmpty) return null;
       // If it's already a likely ID, return as-is (11 chars typical)
-      if (RegExp(r'^[a-zA-Z0-9_-]{6,}$').hasMatch(trimmed) && !trimmed.contains('/')) {
+      if (RegExp(r'^[a-zA-Z0-9_-]{6,}$').hasMatch(trimmed) &&
+          !trimmed.contains('/')) {
         return trimmed;
       }
       try {
         final uri = Uri.parse(trimmed);
         // youtu.be/<id>
         if (uri.host.contains('youtu.be')) {
-          final seg = uri.pathSegments.isNotEmpty ? uri.pathSegments.last : null;
+          final seg = uri.pathSegments.isNotEmpty
+              ? uri.pathSegments.last
+              : null;
           if (seg != null && seg.isNotEmpty) return seg;
         }
         // youtube.com/watch?v=<id>
@@ -99,6 +106,7 @@ class Spot {
       } catch (_) {}
       return trimmed; // Fallback to raw value
     }
+
     List<String>? extractYoutubeIdsList(dynamic value) {
       if (value == null) return null;
       if (value is List) {
@@ -115,6 +123,7 @@ class Spot {
       }
       return null;
     }
+
     return Spot(
       id: doc.id,
       name: data['name'] ?? '',
@@ -127,9 +136,7 @@ class Spot {
       imageUrls: data['imageUrls'] != null
           ? List<String>.from(data['imageUrls'])
           : (data['imageUrl'] != null ? [data['imageUrl']] : null),
-      youtubeVideoIds: extractYoutubeIdsList(
-        data['youtubeVideoIds'],
-      ),
+      youtubeVideoIds: extractYoutubeIdsList(data['youtubeVideoIds']),
       folderName: data['folderName'],
       createdBy: data['createdBy'],
       createdByName: data['createdByName'],
@@ -141,21 +148,34 @@ class Spot {
       spotSourceRemovedAt: data['spotSourceRemovedAt'] is Timestamp
           ? (data['spotSourceRemovedAt'] as Timestamp).toDate()
           : null,
-      averageRating: data['averageRating'] != null ? (data['averageRating'] as num).toDouble() : null,
+      averageRating: data['averageRating'] != null
+          ? (data['averageRating'] as num).toDouble()
+          : null,
       ratingCount: data['ratingCount'],
-      wilsonLowerBound: data['wilsonLowerBound'] != null ? (data['wilsonLowerBound'] as num).toDouble() : null,
-      ranking: data['ranking'] != null ? (data['ranking'] as num).toDouble() : null,
+      wilsonLowerBound: data['wilsonLowerBound'] != null
+          ? (data['wilsonLowerBound'] as num).toDouble()
+          : null,
+      ranking: data['ranking'] != null
+          ? (data['ranking'] as num).toDouble()
+          : null,
       spotAccess: data['spotAccess'],
-      spotFeatures: data['spotFeatures'] != null ? List<String>.from(data['spotFeatures']) : null,
-      spotFacilities: data['spotFacilities'] != null ? Map<String, String>.from(data['spotFacilities']) : null,
-      goodFor: data['goodFor'] != null ? List<String>.from(data['goodFor']) : null,
+      spotFeatures: data['spotFeatures'] != null
+          ? List<String>.from(data['spotFeatures'])
+          : null,
+      spotFacilities: data['spotFacilities'] != null
+          ? Map<String, String>.from(data['spotFacilities'])
+          : null,
+      goodFor: data['goodFor'] != null
+          ? List<String>.from(data['goodFor'])
+          : null,
       duplicateOf: data['duplicateOf'],
       hidden: data['hidden'] == true,
       contributors: data['contributors'] != null
           ? (data['contributors'] as List)
-              .map((e) => Map<String, String>.from(e as Map))
-              .toList()
+                .map((e) => Map<String, String>.from(e as Map))
+                .toList()
           : null,
+      createdFromCreateNative: data['createdFromCreateNative'] == true,
     );
   }
 
@@ -163,13 +183,16 @@ class Spot {
     String? extractYoutubeId(String input) {
       final trimmed = input.trim();
       if (trimmed.isEmpty) return null;
-      if (RegExp(r'^[a-zA-Z0-9_-]{6,}$').hasMatch(trimmed) && !trimmed.contains('/')) {
+      if (RegExp(r'^[a-zA-Z0-9_-]{6,}$').hasMatch(trimmed) &&
+          !trimmed.contains('/')) {
         return trimmed;
       }
       try {
         final uri = Uri.parse(trimmed);
         if (uri.host.contains('youtu.be')) {
-          final seg = uri.pathSegments.isNotEmpty ? uri.pathSegments.last : null;
+          final seg = uri.pathSegments.isNotEmpty
+              ? uri.pathSegments.last
+              : null;
           if (seg != null && seg.isNotEmpty) return seg;
         }
         final vParam = uri.queryParameters['v'];
@@ -185,6 +208,7 @@ class Spot {
       } catch (_) {}
       return trimmed;
     }
+
     List<String>? extractYoutubeIdsList(dynamic value) {
       if (value == null) return null;
       if (value is List) {
@@ -201,6 +225,7 @@ class Spot {
       }
       return null;
     }
+
     DateTime? parseDate(dynamic v) {
       if (v == null) return null;
       if (v is Timestamp) return v.toDate();
@@ -226,9 +251,7 @@ class Spot {
       imageUrls: data['imageUrls'] is List
           ? List<String>.from(data['imageUrls'])
           : (data['imageUrl'] != null ? [data['imageUrl'] as String] : null),
-      youtubeVideoIds: extractYoutubeIdsList(
-        data['youtubeVideoIds'],
-      ),
+      youtubeVideoIds: extractYoutubeIdsList(data['youtubeVideoIds']),
       folderName: data['folderName'] as String?,
       createdBy: data['createdBy'] as String?,
       createdByName: data['createdByName'] as String?,
@@ -239,20 +262,29 @@ class Spot {
       spotSourceRemoved: data['spotSourceRemoved'] == true,
       spotSourceRemovedAt: parseDate(data['spotSourceRemovedAt']),
       averageRating: (data['averageRating'] as num?)?.toDouble(),
-      ratingCount: (data['ratingCount'] is int) ? data['ratingCount'] as int : (data['ratingCount'] as num?)?.toInt(),
+      ratingCount: (data['ratingCount'] is int)
+          ? data['ratingCount'] as int
+          : (data['ratingCount'] as num?)?.toInt(),
       wilsonLowerBound: (data['wilsonLowerBound'] as num?)?.toDouble(),
       ranking: (data['ranking'] as num?)?.toDouble(),
       spotAccess: data['spotAccess'] as String?,
-      spotFeatures: data['spotFeatures'] is List ? List<String>.from(data['spotFeatures']) : null,
-      spotFacilities: data['spotFacilities'] is Map ? Map<String, String>.from(data['spotFacilities']) : null,
-      goodFor: data['goodFor'] is List ? List<String>.from(data['goodFor']) : null,
+      spotFeatures: data['spotFeatures'] is List
+          ? List<String>.from(data['spotFeatures'])
+          : null,
+      spotFacilities: data['spotFacilities'] is Map
+          ? Map<String, String>.from(data['spotFacilities'])
+          : null,
+      goodFor: data['goodFor'] is List
+          ? List<String>.from(data['goodFor'])
+          : null,
       duplicateOf: data['duplicateOf'] as String?,
       hidden: data['hidden'] == true,
       contributors: data['contributors'] is List
           ? (data['contributors'] as List)
-              .map((e) => Map<String, String>.from(e as Map))
-              .toList()
+                .map((e) => Map<String, String>.from(e as Map))
+                .toList()
           : null,
+      createdFromCreateNative: data['createdFromCreateNative'] == true,
     );
   }
 
@@ -278,7 +310,8 @@ class Spot {
       'spotSource': spotSource,
       'spotSourceName': spotSourceName,
       'spotSourceRemoved': spotSourceRemoved,
-      if (spotSourceRemovedAt != null) 'spotSourceRemovedAt': spotSourceRemovedAt,
+      if (spotSourceRemovedAt != null)
+        'spotSourceRemovedAt': spotSourceRemovedAt,
       if (averageRating != null) 'averageRating': averageRating,
       if (ratingCount != null) 'ratingCount': ratingCount,
       if (wilsonLowerBound != null) 'wilsonLowerBound': wilsonLowerBound,
@@ -290,6 +323,7 @@ class Spot {
       'duplicateOf': duplicateOf,
       'hidden': hidden,
       if (contributors != null) 'contributors': contributors,
+      'createdFromCreateNative': createdFromCreateNative,
     };
   }
 
@@ -324,6 +358,7 @@ class Spot {
     Object? duplicateOf = _unset,
     bool? hidden,
     List<Map<String, String>>? contributors,
+    bool? createdFromCreateNative,
   }) {
     return Spot(
       id: id ?? this.id,
@@ -335,7 +370,9 @@ class Spot {
       city: city ?? this.city,
       countryCode: countryCode ?? this.countryCode,
       imageUrls: imageUrls ?? this.imageUrls,
-      youtubeVideoIds: identical(youtubeVideoIds, _unset) ? this.youtubeVideoIds : youtubeVideoIds as List<String>?,
+      youtubeVideoIds: identical(youtubeVideoIds, _unset)
+          ? this.youtubeVideoIds
+          : youtubeVideoIds as List<String>?,
       folderName: folderName ?? this.folderName,
       createdBy: createdBy ?? this.createdBy,
       createdByName: createdByName ?? this.createdByName,
@@ -355,12 +392,15 @@ class Spot {
       spotFeatures: spotFeatures ?? this.spotFeatures,
       spotFacilities: spotFacilities ?? this.spotFacilities,
       goodFor: goodFor ?? this.goodFor,
-      duplicateOf: identical(duplicateOf, _unset) ? this.duplicateOf : duplicateOf as String?,
+      duplicateOf: identical(duplicateOf, _unset)
+          ? this.duplicateOf
+          : duplicateOf as String?,
       hidden: hidden ?? this.hidden,
       contributors: contributors ?? this.contributors,
+      createdFromCreateNative:
+          createdFromCreateNative ?? this.createdFromCreateNative,
     );
   }
-
 
   @override
   String toString() {
