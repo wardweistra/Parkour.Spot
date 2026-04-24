@@ -1120,6 +1120,24 @@ class SpotService extends ChangeNotifier {
     }
   }
 
+  Future<Map<String, dynamic>> markCreateNativeDuplicateTargets() async {
+    try {
+      final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
+      final callable = functions.httpsCallable(
+        'markCreateNativeDuplicateTargets',
+        options: HttpsCallableOptions(timeout: const Duration(minutes: 9)),
+      );
+      final result = await callable.call();
+      final data = result.data as Map<String, dynamic>;
+      return data;
+    } catch (e) {
+      debugPrint(
+        'Error marking Create Native original spots retroactively: $e',
+      );
+      rethrow;
+    }
+  }
+
   /// Admin: Trigger sitemap generation (countries, unlocated spots, lists, users).
   Future<void> generateSitemaps() async {
     final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
