@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:web/web.dart' as web;
@@ -30,8 +31,15 @@ class ExploreScreen extends StatefulWidget {
   final int initialTab;
   final String? initialLocationQuery;
   final String? initialListId;
-  
-  const ExploreScreen({super.key, this.initialTab = 0, this.initialLocationQuery, this.initialListId});
+  final LatLng? initialAddSpotLocation;
+
+  const ExploreScreen({
+    super.key,
+    this.initialTab = 0,
+    this.initialLocationQuery,
+    this.initialListId,
+    this.initialAddSpotLocation,
+  });
 
   @override
   State<ExploreScreen> createState() => _ExploreScreenState();
@@ -40,7 +48,9 @@ class ExploreScreen extends StatefulWidget {
 class _ExploreScreenState extends State<ExploreScreen> {
   int _currentIndex = 0;
   late PageController _pageController;
-  final GlobalKey<SearchScreenState> _searchKey = GlobalKey<SearchScreenState>();
+  final GlobalKey<SearchScreenState> _searchKey =
+      GlobalKey<SearchScreenState>();
+
   /// Cached for web meta reset in [dispose] (cannot use [BuildContext] there).
   String? _cachedMetaDefaultTitle;
   String? _cachedMetaDefaultDescription;
@@ -50,7 +60,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
     super.initState();
     _currentIndex = widget.initialTab;
     _pageController = PageController(initialPage: _currentIndex);
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
@@ -119,7 +129,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
     // Reset document title and meta description when leaving the page
     if (kIsWeb && widget.initialLocationQuery != null) {
       final title = _cachedMetaDefaultTitle ?? 'Parkour·Spot';
-      final description = _cachedMetaDefaultDescription ??
+      final description =
+          _cachedMetaDefaultDescription ??
           'Discover, map, and share the best parkour spots worldwide with community photos, ratings, and local tips for your next training session.';
       web.document.title = title;
       _updateMetaDescription(description);
@@ -136,41 +147,44 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
     final l10n = AppLocalizations.of(context)!;
     final locationQuery = widget.initialLocationQuery!;
-    
+
     // Extract country code from current URL to determine if "the" article is needed
     final countryCode = _extractCountryCodeFromUrl();
-    
+
     // Check if this is a city+country format (e.g., "Amsterdam, Netherlands")
     // or just a country (e.g., "Netherlands" or "the Netherlands")
     final parts = locationQuery.split(',').map((s) => s.trim()).toList();
-    
+
     String title;
     String description;
-    
+
     if (parts.length >= 2) {
       // City + Country format: "City, Country"
       // For city pages, don't add "the" article (matching cloud function behavior)
       final city = parts[0];
-      final country = parts.sublist(1).join(', '); // Handle countries with commas
+      final country = parts
+          .sublist(1)
+          .join(', '); // Handle countries with commas
       title = l10n.exploreMetaTitleCityCountry(city, country);
       description = l10n.exploreMetaDescriptionCityCountry(city, country);
     } else {
       // Country only format: "Country" or "the Country"
       // For country pages, add "the" article if needed (matching cloud function behavior)
       var country = parts[0];
-      
+
       // If country code is available and needs "the" article, add it
-      if (countryCode != null && _countriesWithArticle.contains(countryCode.toUpperCase())) {
+      if (countryCode != null &&
+          _countriesWithArticle.contains(countryCode.toUpperCase())) {
         // Check if "the" is not already present
         if (!country.toLowerCase().startsWith('the ')) {
           country = 'the $country';
         }
       }
-      
+
       title = l10n.exploreMetaTitleCountry(country);
       description = l10n.exploreMetaDescriptionCountry(country);
     }
-    
+
     web.document.title = title;
     _updateMetaDescription(description);
     _updateMetaTitle(title);
@@ -180,34 +194,37 @@ class _ExploreScreenState extends State<ExploreScreen> {
   /// Returns null if country code cannot be determined
   String? _extractCountryCodeFromUrl() {
     if (!kIsWeb) return null;
-    
+
     try {
       final uri = Uri.parse(web.window.location.href);
       final pathSegments = uri.pathSegments.where((s) => s.isNotEmpty).toList();
-      
+
       // For country-only pages: /gb -> pathSegments = ['gb']
       // For city pages: /gb/london -> pathSegments = ['gb', 'london']
       // For spot pages: /gb/london/spot-id -> pathSegments = ['gb', 'london', 'spot-id']
-      
+
       if (pathSegments.isNotEmpty) {
         final firstSegment = pathSegments[0];
         // Validate it's a 2-letter country code
-        if (firstSegment.length == 2 && RegExp(r'^[a-zA-Z]{2}$').hasMatch(firstSegment)) {
+        if (firstSegment.length == 2 &&
+            RegExp(r'^[a-zA-Z]{2}$').hasMatch(firstSegment)) {
           return firstSegment.toUpperCase();
         }
       }
     } catch (e) {
       // If URL parsing fails, return null
     }
-    
+
     return null;
   }
 
   void _updateMetaDescription(String description) {
     if (!kIsWeb) return;
-    
+
     // Find or create the meta description tag
-    final metaDescription = web.document.querySelector('meta[name="description"]');
+    final metaDescription = web.document.querySelector(
+      'meta[name="description"]',
+    );
     if (metaDescription != null) {
       metaDescription.setAttribute('content', description);
     } else {
@@ -217,14 +234,18 @@ class _ExploreScreenState extends State<ExploreScreen> {
       meta.content = description;
       web.document.head?.appendChild(meta);
     }
-    
+
     // Also update Open Graph and Twitter meta tags
-    final ogDescription = web.document.querySelector('meta[property="og:description"]');
+    final ogDescription = web.document.querySelector(
+      'meta[property="og:description"]',
+    );
     if (ogDescription != null) {
       ogDescription.setAttribute('content', description);
     }
-    
-    final twitterDescription = web.document.querySelector('meta[name="twitter:description"]');
+
+    final twitterDescription = web.document.querySelector(
+      'meta[name="twitter:description"]',
+    );
     if (twitterDescription != null) {
       twitterDescription.setAttribute('content', description);
     }
@@ -232,14 +253,16 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   void _updateMetaTitle(String title) {
     if (!kIsWeb) return;
-    
+
     // Update Open Graph and Twitter title tags
     final ogTitle = web.document.querySelector('meta[property="og:title"]');
     if (ogTitle != null) {
       ogTitle.setAttribute('content', title);
     }
-    
-    final twitterTitle = web.document.querySelector('meta[name="twitter:title"]');
+
+    final twitterTitle = web.document.querySelector(
+      'meta[name="twitter:title"]',
+    );
     if (twitterTitle != null) {
       twitterTitle.setAttribute('content', title);
     }
@@ -273,7 +296,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
-    
+
     // Update URL to reflect current tab (but don't navigate away)
     _updateUrlForTab(index);
   }
@@ -293,12 +316,15 @@ class _ExploreScreenState extends State<ExploreScreen> {
         final uri = GoRouterState.of(context).uri;
         final listId = uri.queryParameters['listId'];
         final locateSpotId = uri.queryParameters['locateSpotId'];
-        final hasMapParams = (listId?.isNotEmpty ?? false) || (locateSpotId?.isNotEmpty ?? false);
+        final hasMapParams =
+            (listId?.isNotEmpty ?? false) ||
+            (locateSpotId?.isNotEmpty ?? false);
         if (hasMapParams) {
           final params = <String, String>{};
           if (listId != null) params['listId'] = listId;
           if (locateSpotId != null) params['locateSpotId'] = locateSpotId;
-          newPath = '/explore?${params.entries.map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}').join('&')}';
+          newPath =
+              '/explore?${params.entries.map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}').join('&')}';
         } else {
           newPath = '/explore';
         }
@@ -328,10 +354,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
       ),
       // Require profile loaded before Add spot (prevents email-as-createdByName race)
       authService.isProfileReady
-          ? const AddSpotScreen()
+          ? AddSpotScreen(initialLocation: widget.initialAddSpotLocation)
           : authService.isAuthenticated
-              ? _buildProfileLoadingScreen(authService)
-              : _buildLoginPromptScreen(Icons.add_location),
+          ? _buildProfileLoadingScreen(authService)
+          : _buildLoginPromptScreen(Icons.add_location),
       // Profile tab is always accessible
       const ProfileScreen(),
     ];
@@ -364,10 +390,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   error,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.9),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.9),
                   ),
                 ),
               ),
@@ -381,7 +406,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   }
                 },
                 icon: const Icon(Icons.refresh),
-                label: Text(kIsWeb ? l10n.profileRefreshPage : l10n.profileRetry),
+                label: Text(
+                  kIsWeb ? l10n.profileRefreshPage : l10n.profileRetry,
+                ),
               ),
             ] else ...[
               SizedBox(
@@ -396,10 +423,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
               Text(
                 l10n.exploreLoadingProfile,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.7),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
               ),
             ],
@@ -436,23 +462,27 @@ class _ExploreScreenState extends State<ExploreScreen> {
                         Icon(
                           icon,
                           size: 48,
-                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.6),
                         ),
                         const SizedBox(height: 16),
                         Text(
                           l10n.exploreSignInToAddSpot,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 8),
                         Text(
                           l10n.exploreAddSpotSubtitle,
                           textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                          ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withValues(alpha: 0.7),
+                              ),
                         ),
                         const SizedBox(height: 16),
                         Center(
@@ -460,7 +490,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
                             constraints: const BoxConstraints(maxWidth: 400),
                             child: CustomButton(
                               onPressed: () {
-                                context.go('/login?redirectTo=${Uri.encodeComponent('/explore?tab=add')}');
+                                context.go(
+                                  '/login?redirectTo=${Uri.encodeComponent('/explore?tab=add')}',
+                                );
                               },
                               text: l10n.profileSignInButton,
                               width: double.infinity,
@@ -473,21 +505,31 @@ class _ExploreScreenState extends State<ExploreScreen> {
                           children: [
                             Expanded(
                               child: Divider(
-                                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.outline.withValues(alpha: 0.3),
                               ),
                             ),
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
                               child: Text(
                                 l10n.profileOrDivider,
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                                ),
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.6),
+                                    ),
                               ),
                             ),
                             Expanded(
                               child: Divider(
-                                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.outline.withValues(alpha: 0.3),
                               ),
                             ),
                           ],
@@ -498,7 +540,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
                             constraints: const BoxConstraints(maxWidth: 400),
                             child: CustomButton(
                               onPressed: () {
-                                context.go('/login?mode=signup&redirectTo=${Uri.encodeComponent('/explore?tab=add')}');
+                                context.go(
+                                  '/login?mode=signup&redirectTo=${Uri.encodeComponent('/explore?tab=add')}',
+                                );
                               },
                               text: l10n.profileCreateAccount,
                               width: double.infinity,
@@ -527,11 +571,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
     const icon = Icon(Icons.person);
     if (unreadCount <= 0) return icon;
     final scheme = Theme.of(context).colorScheme;
-    return Badge(
-      smallSize: 8,
-      backgroundColor: scheme.error,
-      child: icon,
-    );
+    return Badge(smallSize: 8, backgroundColor: scheme.error, child: icon);
   }
 
   @override
@@ -540,10 +580,11 @@ class _ExploreScreenState extends State<ExploreScreen> {
       // On Explore tab (mobile): don't resize when keyboard opens - the bottom sheet
       // and search bar would be pushed around. Let the keyboard overlay instead.
       // On Add Spot/Account: keep default resize so text fields scroll into view.
-      resizeToAvoidBottomInset: !(_currentIndex == 0 && MobileDetectionService.isMobileDevice),
+      resizeToAvoidBottomInset:
+          !(_currentIndex == 0 && MobileDetectionService.isMobileDevice),
       body: PageView(
         controller: _pageController,
-        physics: _currentIndex == 0 
+        physics: _currentIndex == 0
             ? const NeverScrollableScrollPhysics() // Disable swiping on Explore tab (map gestures)
             : const PageScrollPhysics(), // Enable swiping on other tabs
         onPageChanged: (index) {
@@ -579,10 +620,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   currentIndex: _currentIndex,
                   onTap: _onTabTapped,
                   selectedItemColor: Theme.of(context).colorScheme.primary,
-                  unselectedItemColor: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.6),
+                  unselectedItemColor: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.6),
                   backgroundColor: Theme.of(context).colorScheme.surface,
                   elevation: 8,
                   items: [
@@ -608,4 +648,3 @@ class _ExploreScreenState extends State<ExploreScreen> {
     );
   }
 }
-

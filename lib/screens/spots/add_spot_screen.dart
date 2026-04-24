@@ -26,18 +26,19 @@ import '../../l10n/app_localizations.dart';
 
 class AddSpotScreen extends StatefulWidget {
   final LatLng? initialLocation;
-  
+
   const AddSpotScreen({super.key, this.initialLocation});
 
   @override
   State<AddSpotScreen> createState() => _AddSpotScreenState();
 }
 
-class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin {
+class _AddSpotScreenState extends State<AddSpotScreen>
+    with MapRecenteringMixin {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
-  
+
   final List<Uint8List?> _selectedImageBytes = [];
   Position? _currentPosition;
   LatLng? _pickedLocation;
@@ -50,7 +51,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
   bool _isSatelliteView = false;
   bool _isLocationPermissionDenied = false;
   SearchStateService? _searchStateServiceRef;
-  
+
   // Spot attributes
   String? _selectedAccess;
   final Set<String> _selectedFeatures = <String>{};
@@ -60,7 +61,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
   @override
   void initState() {
     super.initState();
-    
+
     // If initial location is provided, use it; otherwise get current location
     if (widget.initialLocation != null) {
       setState(() {
@@ -68,24 +69,36 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
       });
       // Geocode the initial location
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _geocodeLocation(widget.initialLocation!.latitude, widget.initialLocation!.longitude);
+        _geocodeLocation(
+          widget.initialLocation!.latitude,
+          widget.initialLocation!.longitude,
+        );
       });
     } else {
       // Set default location so map is always visible, even if permission is denied
       setState(() {
-        _pickedLocation = const LatLng(AppConfig.defaultMapCenterLat, AppConfig.defaultMapCenterLng);
+        _pickedLocation = const LatLng(
+          AppConfig.defaultMapCenterLat,
+          AppConfig.defaultMapCenterLng,
+        );
       });
       // Geocode the default location
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _geocodeLocation(AppConfig.defaultMapCenterLat, AppConfig.defaultMapCenterLng);
+        _geocodeLocation(
+          AppConfig.defaultMapCenterLat,
+          AppConfig.defaultMapCenterLng,
+        );
       });
       // Try to get current location, but don't block if permission is denied
       _getCurrentLocation();
     }
-    
+
     // Initialize satellite view from SearchStateService
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _searchStateServiceRef = Provider.of<SearchStateService>(context, listen: false);
+      _searchStateServiceRef = Provider.of<SearchStateService>(
+        context,
+        listen: false,
+      );
       _searchStateServiceRef!.addListener(_onSearchStateChanged);
       setState(() {
         _isSatelliteView = _searchStateServiceRef!.isSatellite;
@@ -97,7 +110,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
     if (!mounted) return;
     final searchState = _searchStateServiceRef;
     if (searchState == null) return;
-    
+
     setState(() {
       _isSatelliteView = searchState.isSatellite;
     });
@@ -108,9 +121,33 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
     super.didChangeDependencies();
     // Center map on location after the map controller is created
     if (_currentPosition != null || _pickedLocation != null) {
-      final target = _pickedLocation ?? LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
+      final target =
+          _pickedLocation ??
+          LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
       centerMapAfterBuild(target);
     }
+  }
+
+  @override
+  void didUpdateWidget(covariant AddSpotScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final newLocation = widget.initialLocation;
+    final oldLocation = oldWidget.initialLocation;
+    if (newLocation == null) return;
+
+    final locationChanged =
+        oldLocation == null ||
+        oldLocation.latitude != newLocation.latitude ||
+        oldLocation.longitude != newLocation.longitude;
+    if (!locationChanged) return;
+
+    setState(() {
+      _pickedLocation = newLocation;
+      // Ensure map centers on the explicit location and not stale device location.
+      _currentPosition = null;
+    });
+    centerMapOnLocationWithDelay(newLocation);
+    _geocodeLocation(newLocation.latitude, newLocation.longitude);
   }
 
   @override
@@ -131,9 +168,11 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
       context: context,
       showErrorMessages: true,
     );
-    
-    final isPermissionGranted = LocationPermissionUtils.isPermissionGranted(permission);
-    
+
+    final isPermissionGranted = LocationPermissionUtils.isPermissionGranted(
+      permission,
+    );
+
     if (mounted) {
       setState(() {
         _isLocationPermissionDenied = !isPermissionGranted;
@@ -145,10 +184,16 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
         // If permission denied, ensure we still have a default location for the map
         if (_pickedLocation == null && _currentPosition == null) {
           setState(() {
-            _pickedLocation = const LatLng(AppConfig.defaultMapCenterLat, AppConfig.defaultMapCenterLng);
+            _pickedLocation = const LatLng(
+              AppConfig.defaultMapCenterLat,
+              AppConfig.defaultMapCenterLng,
+            );
           });
           // Geocode the default location
-          _geocodeLocation(AppConfig.defaultMapCenterLat, AppConfig.defaultMapCenterLng);
+          _geocodeLocation(
+            AppConfig.defaultMapCenterLat,
+            AppConfig.defaultMapCenterLng,
+          );
         }
         setState(() {
           _isGettingLocation = false;
@@ -172,7 +217,9 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
           _isLocationPermissionDenied = false;
         });
         // Center the map on the new current location with a small delay to ensure controller is ready
-        centerMapOnLocationWithDelay(LatLng(position.latitude, position.longitude));
+        centerMapOnLocationWithDelay(
+          LatLng(position.latitude, position.longitude),
+        );
         // Geocode the coordinates to get address
         _geocodeCurrentLocation();
       }
@@ -180,7 +227,9 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.exploreLocationError('$e')),
+            content: Text(
+              AppLocalizations.of(context)!.exploreLocationError('$e'),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -214,10 +263,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
           } on ImagePreparationException catch (e) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(e.message),
-                  backgroundColor: Colors.red,
-                ),
+                SnackBar(content: Text(e.message), backgroundColor: Colors.red),
               );
             }
           }
@@ -259,10 +305,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
     } on ImagePreparationException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.message),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(e.message), backgroundColor: Colors.red),
         );
       }
     } catch (e) {
@@ -292,15 +335,18 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
     });
   }
 
-
   Future<void> _pickLocationOnMap() async {
     final result = await Navigator.push<LatLng>(
       context,
       MaterialPageRoute(
         builder: (context) => LocationPickerScreen(
-          initialLocation: _pickedLocation ?? 
-              (_currentPosition != null 
-                  ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
+          initialLocation:
+              _pickedLocation ??
+              (_currentPosition != null
+                  ? LatLng(
+                      _currentPosition!.latitude,
+                      _currentPosition!.longitude,
+                    )
                   : null),
           showUsageTip: true,
         ),
@@ -322,18 +368,27 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
 
   Future<void> _geocodeCurrentLocation() async {
     if (_currentPosition == null) return;
-      await _geocodeLocation(_currentPosition!.latitude, _currentPosition!.longitude);
+    await _geocodeLocation(
+      _currentPosition!.latitude,
+      _currentPosition!.longitude,
+    );
   }
 
   Future<void> _geocodeLocation(double latitude, double longitude) async {
     try {
-    setState(() {
-      _isGeocoding = true;
-    });
+      setState(() {
+        _isGeocoding = true;
+      });
 
-      final geocodingService = Provider.of<GeocodingService>(context, listen: false);
-      final result = await geocodingService.geocodeCoordinatesDetails(latitude, longitude);
-      
+      final geocodingService = Provider.of<GeocodingService>(
+        context,
+        listen: false,
+      );
+      final result = await geocodingService.geocodeCoordinatesDetails(
+        latitude,
+        longitude,
+      );
+
       if (mounted) {
         setState(() {
           _currentAddress = result['address'];
@@ -342,7 +397,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
         });
       }
     } catch (e) {
-        debugPrint('Error geocoding location: $e');
+      debugPrint('Error geocoding location: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -354,7 +409,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
 
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     // Check if at least one photo is uploaded
     if (_selectedImageBytes.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -365,7 +420,7 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
       );
       return;
     }
-    
+
     if (_currentPosition == null && _pickedLocation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -389,7 +444,8 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
       }
 
       // Create spot - resolve createdByName (prefer profile displayName, then Auth displayName, then email)
-      final displayName = authService.userProfile?.displayName ??
+      final displayName =
+          authService.userProfile?.displayName ??
           authService.currentUser?.displayName;
       final email = authService.currentUser?.email;
       final uid = authService.currentUser?.uid;
@@ -404,13 +460,17 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
         countryCode: _currentCountryCode,
         createdBy: authService.currentUser?.uid,
         createdByName: createdByName,
-      averageRating: 0.0,
-      ratingCount: 0,
-      wilsonLowerBound: 0.0,
-      ranking: Random().nextDouble(),
-      spotAccess: _selectedAccess,
-        spotFeatures: _selectedFeatures.isNotEmpty ? _selectedFeatures.toList() : null,
-        spotFacilities: _selectedFacilities.isNotEmpty ? _selectedFacilities : null,
+        averageRating: 0.0,
+        ratingCount: 0,
+        wilsonLowerBound: 0.0,
+        ranking: Random().nextDouble(),
+        spotAccess: _selectedAccess,
+        spotFeatures: _selectedFeatures.isNotEmpty
+            ? _selectedFeatures.toList()
+            : null,
+        spotFacilities: _selectedFacilities.isNotEmpty
+            ? _selectedFacilities
+            : null,
         goodFor: _selectedGoodFor.isNotEmpty ? _selectedGoodFor.toList() : null,
         duplicateOf: null, // New spot, not a duplicate
         hidden: false, // New spot, not hidden
@@ -419,7 +479,10 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
       final spotId = await spotService.createSpot(
         spot,
         imageFiles: null,
-        imageBytesList: _selectedImageBytes.where((bytes) => bytes != null).cast<Uint8List>().toList(),
+        imageBytesList: _selectedImageBytes
+            .where((bytes) => bytes != null)
+            .cast<Uint8List>()
+            .toList(),
       );
 
       if (spotId != null && mounted) {
@@ -433,14 +496,14 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
           _selectedFacilities.clear();
           _selectedGoodFor.clear();
         });
-        
+
         // Navigate to the newly created spot detail page
         if (context.mounted) {
           // Use locale and city-based URL format
           final navigationUrl = UrlService.generateNavigationUrl(
-            spotId, 
-            countryCode: _currentCountryCode, 
-            city: _currentCity
+            spotId,
+            countryCode: _currentCountryCode,
+            city: _currentCity,
           );
           // Use go so back from the new spot doesn't return to the add form
           context.go(navigationUrl);
@@ -450,7 +513,9 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.addSpotCreateError('$e')),
+            content: Text(
+              AppLocalizations.of(context)!.addSpotCreateError('$e'),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -485,131 +550,145 @@ class _AddSpotScreenState extends State<AddSpotScreen> with MapRecenteringMixin 
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-              // Location Section
-              SpotLocationSection(
-                currentLocation: _pickedLocation != null 
-                    ? LatLng(_pickedLocation!.latitude, _pickedLocation!.longitude)
-                    : (_currentPosition != null 
-                        ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude) 
-                        : null),
-                address: _currentAddress,
-                countryCode: _currentCountryCode,
-                isGettingLocation: _isGettingLocation,
-                isGeocoding: _isGeocoding,
-                isSatelliteView: _isSatelliteView,
-                isLocationPermissionDenied: _isLocationPermissionDenied,
-                onRefreshLocation: _getCurrentLocation,
-                onPickOnMap: _pickLocationOnMap,
-                onToggleSatellite: (value) {
-                                    setState(() {
-                                      _isSatelliteView = value;
-                                    });
-                                    final searchState = Provider.of<SearchStateService>(context, listen: false);
-                                    searchState.setSatellite(value);
-                                  },
-                onMapCreated: onMapCreated,
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Image Section
-              SpotImageSection(
-                selectedImageBytes: _selectedImageBytes,
-                existingImageUrls: const <String>[],
-                onPickFromGallery: _pickImagesFromGallery,
-                onTakePhoto: _takePhoto,
-                onRemoveSelectedAt: _removeImageAt,
-                onRemoveExistingAt: (index) {}, // Not used in add mode
-                onReorderSelected: _reorderSelectedImage,
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Name Field
-              CustomTextField(
-                controller: _nameController,
-                labelText: l10n.addSpotNameLabel,
-                prefixIcon: Icons.location_on,
-                textCapitalization: TextCapitalization.words,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return l10n.addSpotNameRequired;
-                  }
-                  return null;
-                },
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Description Field
-              CustomTextField(
-                controller: _descriptionController,
-                labelText: l10n.addSpotDescriptionLabel,
-                prefixIcon: Icons.description,
-                maxLines: 3,
-                textCapitalization: TextCapitalization.sentences,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return l10n.addSpotDescriptionRequired;
-                  }
-                  if (value.trim().length < 10) {
-                    return l10n.addSpotDescriptionMinLength;
-                  }
-                  return null;
-                },
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Attributes Section
-              SpotAttributesSection(
-                selectedAccess: _selectedAccess,
-                selectedFeatures: _selectedFeatures,
-                selectedFacilities: _selectedFacilities,
-                selectedGoodFor: _selectedGoodFor,
-                onAccessChanged: (value) {
-                  setState(() {
-                    _selectedAccess = value;
-                  });
-                },
-                onToggleFeature: (key, selected) {
-        setState(() {
-                    if (selected) {
-                      _selectedFeatures.add(key);
-          } else {
-                      _selectedFeatures.remove(key);
-          }
-        });
-      },
-                onFacilityChanged: (key, value) {
-              setState(() {
-                    _selectedFacilities[key] = value;
-              });
-            },
-                onToggleGoodFor: (key, selected) {
-        setState(() {
-                    if (selected) {
-                      _selectedGoodFor.add(key);
-          } else {
-                      _selectedGoodFor.remove(key);
-          }
-        });
-        },
-              ),
-              
-              const SizedBox(height: 24),
-              
-              // Submit Button
-              CustomButton(
-                onPressed: _isLoading || 
-                           (_currentPosition == null && _pickedLocation == null) || 
-                           _selectedImageBytes.isEmpty 
-                           ? null : _submitForm,
-                text: _isLoading ? l10n.addSpotCreating : l10n.addSpotCreateButton,
-                isLoading: _isLoading,
-                icon: Icons.add_location,
-            ),
-          ],
+                  // Location Section
+                  SpotLocationSection(
+                    currentLocation: _pickedLocation != null
+                        ? LatLng(
+                            _pickedLocation!.latitude,
+                            _pickedLocation!.longitude,
+                          )
+                        : (_currentPosition != null
+                              ? LatLng(
+                                  _currentPosition!.latitude,
+                                  _currentPosition!.longitude,
+                                )
+                              : null),
+                    address: _currentAddress,
+                    countryCode: _currentCountryCode,
+                    isGettingLocation: _isGettingLocation,
+                    isGeocoding: _isGeocoding,
+                    isSatelliteView: _isSatelliteView,
+                    isLocationPermissionDenied: _isLocationPermissionDenied,
+                    onRefreshLocation: _getCurrentLocation,
+                    onPickOnMap: _pickLocationOnMap,
+                    onToggleSatellite: (value) {
+                      setState(() {
+                        _isSatelliteView = value;
+                      });
+                      final searchState = Provider.of<SearchStateService>(
+                        context,
+                        listen: false,
+                      );
+                      searchState.setSatellite(value);
+                    },
+                    onMapCreated: onMapCreated,
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Image Section
+                  SpotImageSection(
+                    selectedImageBytes: _selectedImageBytes,
+                    existingImageUrls: const <String>[],
+                    onPickFromGallery: _pickImagesFromGallery,
+                    onTakePhoto: _takePhoto,
+                    onRemoveSelectedAt: _removeImageAt,
+                    onRemoveExistingAt: (index) {}, // Not used in add mode
+                    onReorderSelected: _reorderSelectedImage,
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Name Field
+                  CustomTextField(
+                    controller: _nameController,
+                    labelText: l10n.addSpotNameLabel,
+                    prefixIcon: Icons.location_on,
+                    textCapitalization: TextCapitalization.words,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return l10n.addSpotNameRequired;
+                      }
+                      return null;
+                    },
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Description Field
+                  CustomTextField(
+                    controller: _descriptionController,
+                    labelText: l10n.addSpotDescriptionLabel,
+                    prefixIcon: Icons.description,
+                    maxLines: 3,
+                    textCapitalization: TextCapitalization.sentences,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return l10n.addSpotDescriptionRequired;
+                      }
+                      if (value.trim().length < 10) {
+                        return l10n.addSpotDescriptionMinLength;
+                      }
+                      return null;
+                    },
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Attributes Section
+                  SpotAttributesSection(
+                    selectedAccess: _selectedAccess,
+                    selectedFeatures: _selectedFeatures,
+                    selectedFacilities: _selectedFacilities,
+                    selectedGoodFor: _selectedGoodFor,
+                    onAccessChanged: (value) {
+                      setState(() {
+                        _selectedAccess = value;
+                      });
+                    },
+                    onToggleFeature: (key, selected) {
+                      setState(() {
+                        if (selected) {
+                          _selectedFeatures.add(key);
+                        } else {
+                          _selectedFeatures.remove(key);
+                        }
+                      });
+                    },
+                    onFacilityChanged: (key, value) {
+                      setState(() {
+                        _selectedFacilities[key] = value;
+                      });
+                    },
+                    onToggleGoodFor: (key, selected) {
+                      setState(() {
+                        if (selected) {
+                          _selectedGoodFor.add(key);
+                        } else {
+                          _selectedGoodFor.remove(key);
+                        }
+                      });
+                    },
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Submit Button
+                  CustomButton(
+                    onPressed:
+                        _isLoading ||
+                            (_currentPosition == null &&
+                                _pickedLocation == null) ||
+                            _selectedImageBytes.isEmpty
+                        ? null
+                        : _submitForm,
+                    text: _isLoading
+                        ? l10n.addSpotCreating
+                        : l10n.addSpotCreateButton,
+                    isLoading: _isLoading,
+                    icon: Icons.add_location,
+                  ),
+                ],
               ),
             ),
           ),

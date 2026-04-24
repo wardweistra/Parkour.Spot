@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 import 'package:go_router/go_router.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:web/web.dart' as web;
 import 'package:sealed_countries/sealed_countries.dart';
@@ -273,11 +274,19 @@ class AppRouter {
 
             // Parse listId query parameter
             final listId = state.uri.queryParameters['listId'];
+            final latParam = state.uri.queryParameters['lat'];
+            final lngParam = state.uri.queryParameters['lng'];
+            final lat = latParam != null ? double.tryParse(latParam) : null;
+            final lng = lngParam != null ? double.tryParse(lngParam) : null;
+            final initialAddSpotLocation = (lat != null && lng != null)
+                ? LatLng(lat, lng)
+                : null;
 
             return ExploreScreen(
               initialTab: initialTab,
               initialLocationQuery: locationQuery,
               initialListId: listId,
+              initialAddSpotLocation: initialAddSpotLocation,
             );
           },
         ),
