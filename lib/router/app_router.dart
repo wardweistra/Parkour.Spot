@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 import 'package:go_router/go_router.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart' as gmaps;
 import 'package:provider/provider.dart';
 import 'package:web/web.dart' as web;
 import 'package:sealed_countries/sealed_countries.dart';
@@ -279,7 +279,7 @@ class AppRouter {
             final lat = latParam != null ? double.tryParse(latParam) : null;
             final lng = lngParam != null ? double.tryParse(lngParam) : null;
             final initialAddSpotLocation = (lat != null && lng != null)
-                ? LatLng(lat, lng)
+                ? gmaps.LatLng(lat, lng)
                 : null;
 
             return ExploreScreen(
