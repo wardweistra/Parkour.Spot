@@ -725,14 +725,14 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       }).toList();
 
       if (filteredContributors.isNotEmpty) {
-        textSpans.add(
-          TextSpan(
-            text: willHaveUpdatedDate
-                ? l10n.spotDetailImprovedByAfterComma
-                : l10n.spotDetailImprovedByAfterAnd,
-            style: textStyle,
-          ),
-        );
+        final improvedByPrefix = hasPreviousContent
+            ? (willHaveUpdatedDate
+                  ? l10n.spotDetailImprovedByAfterComma
+                  : l10n.spotDetailImprovedByAfterAnd)
+            : _trimLeadingContributorPrefix(
+                l10n.spotDetailImprovedByAfterComma,
+              );
+        textSpans.add(TextSpan(text: improvedByPrefix, style: textStyle));
 
         // Add each contributor name as a clickable link
         for (int i = 0; i < filteredContributors.length; i++) {
@@ -835,6 +835,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
   String _formatRelativeDate(DateTime date, AppLocalizations l10n) {
     return formatRelativeDateInDays(date, l10n);
+  }
+
+  String _trimLeadingContributorPrefix(String value) {
+    return value.replaceFirst(RegExp(r'^[\s,]+'), '');
   }
 
   void _copySpotToClipboard() async {
