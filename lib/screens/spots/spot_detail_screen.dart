@@ -619,6 +619,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       color: theme.colorScheme.onSurfaceVariant,
     );
     final bool hideCreatorAttribution = _spot.createdFromCreateNative;
+    final String? createdByName = hideCreatorAttribution ? null : _spot.createdByName;
+    final String? createdById = hideCreatorAttribution ? null : _spot.createdBy;
     bool hasPreviousContent = false;
 
     // Check if there will be an updated date part (to determine if we should use commas)
@@ -629,10 +631,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         (_spot.updatedAt != null && _spot.createdAt == null);
 
     // Created by
-    if (!hideCreatorAttribution &&
-        (_spot.createdBy != null || _spot.createdByName != null)) {
-      final createdBy = _spot.createdByName ?? _spot.createdBy ?? '';
-      final createdById = _spot.createdBy;
+    if (createdById != null || createdByName != null) {
+      final createdBy = createdByName ?? createdById ?? '';
 
       // Add created date if available
       if (_spot.createdAt != null) {
@@ -665,6 +665,18 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         textSpans.add(TextSpan(text: createdBy, style: textStyle));
       }
 
+      hasPreviousContent = true;
+    } else if (_spot.createdAt != null && hideCreatorAttribution) {
+      // Preserve provenance line for create-native spots while omitting creator identity.
+      final createdDateText = _formatRelativeDate(_spot.createdAt!, l10n);
+      textSpans.add(
+        TextSpan(
+          text: _stripCreatorSuffix(
+            l10n.spotDetailSpotCreatedOnDateBy(createdDateText),
+          ),
+          style: textStyle,
+        ),
+      );
       hasPreviousContent = true;
     }
 
@@ -713,15 +725,12 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     // Contributors (filter out the createdBy user)
     bool hasContributors = false;
     if (_spot.contributors != null && _spot.contributors!.isNotEmpty) {
-      final createdByName = hideCreatorAttribution ? null : _spot.createdByName;
-      final createdBy = hideCreatorAttribution ? null : _spot.createdBy;
-
       // Filter out contributors that match the createdBy user
       final filteredContributors = _spot.contributors!.where((c) {
         final userName = c['userName'];
         final userId = c['userId'];
         // Exclude if userName matches createdByName or userId matches createdBy
-        return userName != createdByName && userId != createdBy;
+        return userName != createdByName && userId != createdById;
       }).toList();
 
       if (filteredContributors.isNotEmpty) {
@@ -839,6 +848,14 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
   String _trimLeadingContributorPrefix(String value) {
     return value.replaceFirst(RegExp(r'^[\s,]+'), '');
+  }
+
+  String _stripCreatorSuffix(String value) {
+    final trimmed = value.trimRight();
+    return trimmed.replaceFirst(
+      RegExp(r'\s+(by|par|por|von|door|da)$', caseSensitive: false),
+      '',
+    );
   }
 
   void _copySpotToClipboard() async {
@@ -2623,6 +2640,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         if ((!_spot.createdFromCreateNative &&
                                 (_spot.createdBy != null ||
                                     _spot.createdByName != null)) ||
+                            (_spot.createdFromCreateNative &&
+                                _spot.createdAt != null) ||
                             _spot.spotSource != null ||
                             (_spot.contributors != null &&
                                 _spot.contributors!.isNotEmpty)) ...[
