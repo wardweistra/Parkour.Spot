@@ -27,7 +27,6 @@ import '../../utils/map_bounds_utils.dart';
 import '../../utils/location_permission_utils.dart';
 import '../../constants/spot_attributes.dart';
 import '../../l10n/app_localizations.dart';
-import 'add_spot_screen.dart';
 
 /// Stateful overlay for autocomplete suggestions; manages ScrollController lifecycle.
 class _AutocompleteOverlayContent extends StatefulWidget {
@@ -3612,6 +3611,16 @@ class SearchScreenState extends State<SearchScreen>
                                               onPressed: () {
                                                 final location =
                                                     _longPressedLocation!;
+                                                final addSpotUri = Uri(
+                                                  path: '/explore',
+                                                  queryParameters: {
+                                                    'tab': 'add',
+                                                    'lat': location.latitude
+                                                        .toString(),
+                                                    'lng': location.longitude
+                                                        .toString(),
+                                                  },
+                                                );
                                                 final authService =
                                                     Provider.of<AuthService>(
                                                       context,
@@ -3631,7 +3640,7 @@ class SearchScreenState extends State<SearchScreen>
                                                 if (!authService
                                                     .isAuthenticated) {
                                                   context.go(
-                                                    '/login?redirectTo=${Uri.encodeComponent('/explore?tab=add')}',
+                                                    '/login?redirectTo=${Uri.encodeComponent(addSpotUri.toString())}',
                                                   );
                                                 } else if (!authService
                                                     .isProfileReady) {
@@ -3647,16 +3656,9 @@ class SearchScreenState extends State<SearchScreen>
                                                     ),
                                                   );
                                                 } else {
-                                                  // Navigate to add spot screen with the location
-                                                  Navigator.push(
-                                                    context,
-                                                    MaterialPageRoute(
-                                                      builder: (context) =>
-                                                          AddSpotScreen(
-                                                            initialLocation:
-                                                                location,
-                                                          ),
-                                                    ),
+                                                  // Navigate to Add Spot tab (preserves bottom navigation).
+                                                  context.go(
+                                                    addSpotUri.toString(),
                                                   );
                                                 }
                                               },
