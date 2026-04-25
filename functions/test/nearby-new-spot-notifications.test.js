@@ -35,6 +35,13 @@ describe("shouldFanOutNearbyNewSpotNotifications", () => {
       longitude: 1,
     })).toBe(false);
   });
+  it("returns false when spot was created from Create Native", () => {
+    expect(shouldFanOutNearbyNewSpotNotifications({
+      createdFromCreateNative: true,
+      latitude: 1,
+      longitude: 1,
+    })).toBe(false);
+  });
   it("returns false for invalid coordinates", () => {
     expect(shouldFanOutNearbyNewSpotNotifications({
       latitude: NaN,

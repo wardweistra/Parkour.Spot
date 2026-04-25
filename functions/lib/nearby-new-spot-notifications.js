@@ -148,6 +148,9 @@ function shouldFanOutNearbyNewSpotNotifications(spotData) {
   if (!spotData || spotData.hidden === true) {
     return false;
   }
+  if (spotData.createdFromCreateNative === true) {
+    return false;
+  }
   if (spotData.spotSource != null && String(spotData.spotSource).trim() !== "") {
     return false;
   }

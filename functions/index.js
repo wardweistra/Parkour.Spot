@@ -61,6 +61,9 @@ const {
   fanOutNearbyNewSpotNotifications,
 } = require("./lib/nearby-new-spot-notifications");
 const {
+  markRetroactiveCreateNativeFlags,
+} = require("./lib/retroactive-create-native-flag");
+const {
   fanOutNearbyCheckInNotifications,
 } = require("./lib/nearby-check-in-notifications");
 const {
@@ -1096,6 +1099,26 @@ exports.recomputeSpotRankings = onCall(
       } catch (error) {
         console.error("recomputeSpotRankings error", error);
         return {success: false, error: error.message};
+      }
+    },
+);
+
+// ========== Admin Callable: Mark retroactive Create Native originals ==========
+exports.markCreateNativeDuplicateTargets = onCall(
+    {region: "europe-west1", memory: "512MiB", timeoutSeconds: 540},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const result = await markRetroactiveCreateNativeFlags({
+          db,
+          FieldValue,
+        });
+        return {success: true, ...result};
+      } catch (error) {
+        console.error("markCreateNativeDuplicateTargets error", error);
+        throw new Error(
+            `Failed to mark Create Native duplicate targets: ${error.message}`,
+        );
       }
     },
 );

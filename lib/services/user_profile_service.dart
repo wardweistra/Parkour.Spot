@@ -4,7 +4,7 @@ import '../models/user.dart' as app_user;
 
 class UserProfileService extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  
+
   bool _isLoading = false;
   String? _error;
 
@@ -15,7 +15,10 @@ class UserProfileService extends ChangeNotifier {
   /// Returns null if user not found or profile is private (unless currentUserId matches)
   /// Note: Email is excluded from public profiles unless viewing own profile
   /// [currentUserId] - Optional current user ID to allow viewing own private profile
-  Future<app_user.User?> getUserProfile(String userIdOrUsername, {String? currentUserId}) async {
+  Future<app_user.User?> getUserProfile(
+    String userIdOrUsername, {
+    String? currentUserId,
+  }) async {
     try {
       _isLoading = true;
       _error = null;
@@ -41,7 +44,7 @@ class UserProfileService extends ChangeNotifier {
             .where('username', isEqualTo: userIdOrUsername.toLowerCase())
             .limit(1)
             .get();
-        
+
         if (querySnapshot.docs.isNotEmpty) {
           doc = querySnapshot.docs.first;
           resolvedUserId = doc.id;
@@ -55,11 +58,12 @@ class UserProfileService extends ChangeNotifier {
       }
 
       final data = doc.data() as Map<String, dynamic>;
-      
+
       // Check if profile is public
       final isPublicProfile = data['isPublicProfile'] ?? true;
-      final isOwnProfile = currentUserId != null && resolvedUserId == currentUserId;
-      
+      final isOwnProfile =
+          currentUserId != null && resolvedUserId == currentUserId;
+
       // Allow viewing own profile even if private
       if (!isPublicProfile && !isOwnProfile) {
         _isLoading = false;
@@ -72,7 +76,9 @@ class UserProfileService extends ChangeNotifier {
       final user = app_user.User.fromMap({
         'id': doc.id,
         ...data,
-        'email': isOwnProfile ? (data['email'] ?? '') : '', // Include email only for own profile
+        'email': isOwnProfile
+            ? (data['email'] ?? '')
+            : '', // Include email only for own profile
       });
 
       _isLoading = false;
@@ -137,13 +143,15 @@ class UserProfileService extends ChangeNotifier {
 
       // Validate username length (max 27 to prevent conflicts with 28-character user IDs)
       if (trimmedUsername.length >= 28) {
-        _error = 'Username must be 27 characters or less to avoid conflicts with user IDs';
+        _error =
+            'Username must be 27 characters or less to avoid conflicts with user IDs';
         _isLoading = false;
         notifyListeners();
         return false;
       }
       if (!RegExp(r'^[a-zA-Z0-9_-]{3,27}$').hasMatch(trimmedUsername)) {
-        _error = 'Username must be 3-27 characters and contain only letters, numbers, underscores, and hyphens';
+        _error =
+            'Username must be 3-27 characters and contain only letters, numbers, underscores, and hyphens';
         _isLoading = false;
         notifyListeners();
         return false;
@@ -155,7 +163,10 @@ class UserProfileService extends ChangeNotifier {
       final isAvailable = await checkUsernameAvailability(normalizedUsername);
       if (!isAvailable) {
         // Check if it's the current user's username
-        final currentUserDoc = await _firestore.collection('users').doc(userId).get();
+        final currentUserDoc = await _firestore
+            .collection('users')
+            .doc(userId)
+            .get();
         if (currentUserDoc.exists) {
           final currentData = currentUserDoc.data() as Map<String, dynamic>;
           final currentUsername = currentData['username'] as String?;
@@ -166,7 +177,7 @@ class UserProfileService extends ChangeNotifier {
             return true;
           }
         }
-        
+
         _error = 'Username is already taken';
         _isLoading = false;
         notifyListeners();
@@ -218,17 +229,22 @@ class UserProfileService extends ChangeNotifier {
   /// Returns a map with 'spotsCreated' and 'ratings' counts
   Future<Map<String, int>?> getUserStats(String userId) async {
     try {
-      final int spotsCreatedCount = await _countDocuments(
+      final int totalSpotsCreatedCount = await _countDocuments(
         _firestore.collection('spots').where('createdBy', isEqualTo: userId),
       );
+      final int createNativeSpotsCount = await _countDocuments(
+        _firestore
+            .collection('spots')
+            .where('createdBy', isEqualTo: userId)
+            .where('createdFromCreateNative', isEqualTo: true),
+      );
+      final int spotsCreatedCount =
+          (totalSpotsCreatedCount - createNativeSpotsCount).clamp(0, 1 << 30);
       final int ratingsCount = await _countDocuments(
         _firestore.collection('ratings').where('userId', isEqualTo: userId),
       );
 
-      return {
-        'spotsCreated': spotsCreatedCount,
-        'ratings': ratingsCount,
-      };
+      return {'spotsCreated': spotsCreatedCount, 'ratings': ratingsCount};
     } catch (e) {
       debugPrint('Error getting user stats: $e');
       return null;
