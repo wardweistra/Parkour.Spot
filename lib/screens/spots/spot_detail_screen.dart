@@ -163,6 +163,7 @@ enum _SpotSaveMenuAction {
 }
 
 class _SpotDetailScreenState extends State<SpotDetailScreen> {
+  static const String _fallbackDocumentTitle = 'Parkour·Spot';
   double _userRating = 0;
   double _previousRating = 0; // Track the user's previous rating
   bool _hasRated = false;
@@ -190,6 +191,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
   // Current spot (can be updated after operations like hide/unhide)
   Spot? _currentSpot;
+  String _exploreDocumentTitle = _fallbackDocumentTitle;
 
   /// Cached future for Jumpflix videos (avoids refetch on rebuild).
   Future<List<JumpflixVideo>>? _jumpflixVideosFuture;
@@ -198,6 +200,16 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   Spot get _spot => _currentSpot ?? widget.spot;
 
   AppLocalizations get _l10n => AppLocalizations.of(context)!;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    try {
+      _exploreDocumentTitle = AppLocalizations.of(context)!.exploreMetaDefaultTitle;
+    } catch (_) {
+      _exploreDocumentTitle = _fallbackDocumentTitle;
+    }
+  }
 
   void _showSuccessSnack(String message) {
     // Use global messenger to avoid context churn issues
@@ -476,6 +488,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
     // Initialize satellite view from SearchStateService
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       _searchStateServiceRef = Provider.of<SearchStateService>(
         context,
         listen: false,
@@ -534,9 +547,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   void dispose() {
     // Reset document title to default when leaving spot page
     if (kIsWeb) {
-      web.document.title = AppLocalizations.of(
-        context,
-      )!.exploreMetaDefaultTitle;
+      web.document.title = _exploreDocumentTitle;
     }
     _scrollController.dispose();
     _videoPageController.dispose();

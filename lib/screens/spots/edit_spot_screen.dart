@@ -77,6 +77,12 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
   String? _selectedReportId;
   final _notesController = TextEditingController();
 
+  String? _deriveDetailPathFromEditPath(String path) {
+    if (!path.endsWith('/edit')) return null;
+    final basePath = path.substring(0, path.length - '/edit'.length);
+    return basePath.isEmpty ? null : basePath;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -561,7 +567,13 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Spot updated successfully!')),
           );
-          context.pop();
+          final currentPath = GoRouterState.of(context).uri.path;
+          final detailPath = _deriveDetailPathFromEditPath(currentPath);
+          if (detailPath != null) {
+            context.go(detailPath);
+          } else {
+            context.pop();
+          }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Failed to update spot')),

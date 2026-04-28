@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart' as gmaps;
 import 'package:provider/provider.dart';
@@ -651,7 +651,7 @@ class AppRouter {
   }
 }
 
-class SpotDetailRoute extends StatelessWidget {
+class SpotDetailRoute extends StatefulWidget {
   final String spotId;
   final int? initialImageIndex;
 
@@ -662,23 +662,39 @@ class SpotDetailRoute extends StatelessWidget {
   });
 
   @override
+  State<SpotDetailRoute> createState() => _SpotDetailRouteState();
+}
+
+class _SpotDetailRouteState extends State<SpotDetailRoute> {
+  Future<Spot?>? _spotFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _spotFuture = Provider.of<SpotService>(
+      context,
+      listen: false,
+    ).getSpotById(widget.spotId);
+  }
+
+  @override
+  void didUpdateWidget(covariant SpotDetailRoute oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.spotId != widget.spotId) {
+      _spotFuture = Provider.of<SpotService>(
+        context,
+        listen: false,
+      ).getSpotById(widget.spotId);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Consumer<SpotService>(
       builder: (context, spotService, child) {
-        // Always fetch the individual spot directly since we no longer maintain a global spots list
-        Future<Spot?> spotFuture = spotService.getSpotById(spotId);
-
         return FutureBuilder<Spot?>(
-          future: spotFuture,
+          future: _spotFuture,
           builder: (context, snapshot) {
-            // Debug logging
-            if (kDebugMode) {
-              print(
-                'SpotDetailRoute: connectionState=${snapshot.connectionState}, hasData=${snapshot.hasData}, hasError=${snapshot.hasError}',
-              );
-              print('SpotDetailRoute: isLoading=${spotService.isLoading}');
-            }
-
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Scaffold(
                 body: Center(child: CircularProgressIndicator()),
@@ -737,7 +753,7 @@ class SpotDetailRoute extends StatelessWidget {
             final spot = snapshot.data!;
             return SpotDetailScreen(
               spot: spot,
-              initialImageIndex: initialImageIndex,
+              initialImageIndex: widget.initialImageIndex,
             );
           },
         );
@@ -753,29 +769,72 @@ class EditSpotRoute extends StatelessWidget {
   const EditSpotRoute({super.key, required this.spotId, this.spot});
 
   @override
+  Widget build(BuildContext context) => _EditSpotRouteContent(
+    spotId: spotId,
+    providedSpot: spot,
+  );
+}
+
+class _EditSpotRouteContent extends StatefulWidget {
+  final String spotId;
+  final Spot? providedSpot;
+
+  const _EditSpotRouteContent({required this.spotId, required this.providedSpot});
+
+  @override
+  State<_EditSpotRouteContent> createState() => _EditSpotRouteContentState();
+}
+
+class _EditSpotRouteContentState extends State<_EditSpotRouteContent> {
+  Future<Spot?>? _spotFuture;
+  Spot? _resolvedSpot;
+
+  @override
+  void initState() {
+    super.initState();
+    _resolvedSpot = widget.providedSpot;
+    if (_resolvedSpot == null) {
+      _spotFuture = Provider.of<SpotService>(
+        context,
+        listen: false,
+      ).getSpotById(widget.spotId);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _EditSpotRouteContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.providedSpot != null && _resolvedSpot == null) {
+      _resolvedSpot = widget.providedSpot;
+    }
+    if (oldWidget.spotId != widget.spotId) {
+      _resolvedSpot = widget.providedSpot;
+      if (_resolvedSpot == null) {
+        _spotFuture = Provider.of<SpotService>(
+          context,
+          listen: false,
+        ).getSpotById(widget.spotId);
+      } else {
+        _spotFuture = null;
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // If spot is provided directly (from state.extra), use it immediately
-    final providedSpot = spot;
-    if (providedSpot != null) {
-      return EditSpotScreen(spot: providedSpot);
+    final resolvedSpot = _resolvedSpot;
+    if (resolvedSpot != null) {
+      return EditSpotScreen(
+        key: ValueKey('edit-${resolvedSpot.id}'),
+        spot: resolvedSpot,
+      );
     }
 
-    // Otherwise, fetch the spot by ID
     return Consumer<SpotService>(
       builder: (context, spotService, child) {
-        Future<Spot?> spotFuture = spotService.getSpotById(spotId);
-
         return FutureBuilder<Spot?>(
-          future: spotFuture,
+          future: _spotFuture,
           builder: (context, snapshot) {
-            // Debug logging
-            if (kDebugMode) {
-              print(
-                'EditSpotRoute: connectionState=${snapshot.connectionState}, hasData=${snapshot.hasData}, hasError=${snapshot.hasError}',
-              );
-              print('EditSpotRoute: isLoading=${spotService.isLoading}');
-            }
-
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Scaffold(
                 body: Center(child: CircularProgressIndicator()),
@@ -835,7 +894,10 @@ class EditSpotRoute extends StatelessWidget {
             }
 
             final spot = snapshot.data!;
-            return EditSpotScreen(spot: spot);
+            return EditSpotScreen(
+              key: ValueKey('edit-${spot.id}'),
+              spot: spot,
+            );
           },
         );
       },
