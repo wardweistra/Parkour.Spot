@@ -7511,11 +7511,19 @@ async function calculateUserActivityMetrics(useYesterdayDate = false) {
           "User ID",
           "Created At",
           "Last Login At",
+          "Last Active At",
           "Is Admin",
           "Is Moderator",
           "Has Photo URL",
+          "Has Instagram URL",
+          "Preferred Language Code",
           "Has Username",
           "Is Public Profile",
+          "Has Any Visited",
+          "Has Any Want To Visit",
+          "Has Any Locations Of Interest",
+          "Has Any Push Subscriptions",
+          "Has Any Saved Spot Lists",
         ],
       ];
       await rateLimitedSheetsCall(
@@ -7542,6 +7550,28 @@ async function calculateUserActivityMetrics(useYesterdayDate = false) {
         const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
         return date.toISOString();
       };
+
+      /**
+       * Build a set of user IDs that have at least one document
+       * in the given users subcollection.
+       * @param {string} subcollectionName
+       * @return {Promise<Set<string>>}
+       */
+      const getUserIdsWithAnyInSubcollection = async (subcollectionName) => {
+        const snapshot = await db.collectionGroup(subcollectionName).select().get();
+        const userIds = new Set();
+        snapshot.forEach((subDoc) => {
+          const userDocRef = subDoc.ref.parent.parent;
+          if (userDocRef && userDocRef.id) {
+            userIds.add(userDocRef.id);
+          }
+        });
+        return userIds;
+      };
+
+      const usersWithLocationsOfInterest = await getUserIdsWithAnyInSubcollection("locationsOfInterest");
+      const usersWithPushSubscriptions = await getUserIdsWithAnyInSubcollection("pushSubscriptions");
+      const usersWithSavedSpotLists = await getUserIdsWithAnyInSubcollection("savedSpotLists");
 
       let processingUsers = true;
       while (processingUsers) {
@@ -7575,20 +7605,35 @@ async function calculateUserActivityMetrics(useYesterdayDate = false) {
 
           // Extract and format fields
           const hasPhotoURL = !!(userData.photoURL && userData.photoURL !== "");
+          const hasInstagramUrl = !!(userData.instagramUrl && userData.instagramUrl !== "");
+          const preferredLanguageCode = userData.preferredLanguageCode || "";
           const hasUsername = !!(userData.username && userData.username !== "");
           const isAdmin = userData.isAdmin === true;
           const isModerator = userData.isModerator === true;
           const isPublicProfile = userData.isPublicProfile !== false; // Defaults to true
+          const hasAnyVisited = Array.isArray(userData.visited) && userData.visited.length > 0;
+          const hasAnyWantToVisit = Array.isArray(userData.wantToVisit) && userData.wantToVisit.length > 0;
+          const hasAnyLocationsOfInterest = usersWithLocationsOfInterest.has(doc.id);
+          const hasAnyPushSubscriptions = usersWithPushSubscriptions.has(doc.id);
+          const hasAnySavedSpotLists = usersWithSavedSpotLists.has(doc.id);
 
           userBatchData.push([
             doc.id, // User ID
             formatDate(userData.createdAt), // Created At
             formatDate(userData.lastLoginAt), // Last Login At
+            formatDate(userData.lastActiveAt), // Last Active At
             isAdmin, // Is Admin
             isModerator, // Is Moderator
             hasPhotoURL, // Has Photo URL
+            hasInstagramUrl, // Has Instagram URL
+            preferredLanguageCode, // Preferred Language Code
             hasUsername, // Has Username
             isPublicProfile, // Is Public Profile
+            hasAnyVisited, // Has Any Visited
+            hasAnyWantToVisit, // Has Any Want To Visit
+            hasAnyLocationsOfInterest, // Has Any Locations Of Interest
+            hasAnyPushSubscriptions, // Has Any Push Subscriptions
+            hasAnySavedSpotLists, // Has Any Saved Spot Lists
           ]);
         });
 
