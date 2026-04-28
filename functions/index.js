@@ -7524,6 +7524,8 @@ async function calculateUserActivityMetrics(useYesterdayDate = false) {
           "Has Any Locations Of Interest",
           "Has Any Push Subscriptions",
           "Has Any Saved Spot Lists",
+          "Has Any Check Ins",
+          "Has Any Training Plans",
         ],
       ];
       await rateLimitedSheetsCall(
@@ -7573,6 +7575,27 @@ async function calculateUserActivityMetrics(useYesterdayDate = false) {
       const usersWithPushSubscriptions = await getUserIdsWithAnyInSubcollection("pushSubscriptions");
       const usersWithSavedSpotLists = await getUserIdsWithAnyInSubcollection("savedSpotLists");
 
+      /**
+       * Build a set of user IDs that have at least one document
+       * in a top-level collection containing a userId field.
+       * @param {string} collectionName
+       * @return {Promise<Set<string>>}
+       */
+      const getUserIdsWithAnyInTopLevelCollection = async (collectionName) => {
+        const snapshot = await db.collection(collectionName).select("userId").get();
+        const userIds = new Set();
+        snapshot.forEach((doc) => {
+          const userId = doc.get("userId");
+          if (typeof userId === "string" && userId.length > 0) {
+            userIds.add(userId);
+          }
+        });
+        return userIds;
+      };
+
+      const usersWithCheckIns = await getUserIdsWithAnyInTopLevelCollection("spotCheckIns");
+      const usersWithTrainingPlans = await getUserIdsWithAnyInTopLevelCollection("spotTrainingPlans");
+
       let processingUsers = true;
       while (processingUsers) {
         userBatchNumber++;
@@ -7616,6 +7639,8 @@ async function calculateUserActivityMetrics(useYesterdayDate = false) {
           const hasAnyLocationsOfInterest = usersWithLocationsOfInterest.has(doc.id);
           const hasAnyPushSubscriptions = usersWithPushSubscriptions.has(doc.id);
           const hasAnySavedSpotLists = usersWithSavedSpotLists.has(doc.id);
+          const hasAnyCheckIns = usersWithCheckIns.has(doc.id);
+          const hasAnyTrainingPlans = usersWithTrainingPlans.has(doc.id);
 
           userBatchData.push([
             doc.id, // User ID
@@ -7634,6 +7659,8 @@ async function calculateUserActivityMetrics(useYesterdayDate = false) {
             hasAnyLocationsOfInterest, // Has Any Locations Of Interest
             hasAnyPushSubscriptions, // Has Any Push Subscriptions
             hasAnySavedSpotLists, // Has Any Saved Spot Lists
+            hasAnyCheckIns, // Has Any Check Ins
+            hasAnyTrainingPlans, // Has Any Training Plans
           ]);
         });
 
