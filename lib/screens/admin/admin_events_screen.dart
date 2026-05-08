@@ -335,6 +335,15 @@ class _EventCard extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ],
+            if (event.id != null)
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: () => context.push('/event/${event.id}'),
+                  icon: const Icon(Icons.open_in_new),
+                  label: const Text('Open event page'),
+                ),
+              ),
           ],
         ),
       ),

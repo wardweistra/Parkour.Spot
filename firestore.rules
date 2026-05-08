@@ -91,7 +91,7 @@ service cloud.firestore {
           eventCommonShape(request.resource.data);
       }
 
-      allow read: if requestingUserIsAdmin();
+      allow read: if true;
       allow create: if requestingUserIsAdmin() && eventCreateShape();
       allow update: if requestingUserIsAdmin() && eventUpdateShape();
       allow delete: if requestingUserIsAdmin();

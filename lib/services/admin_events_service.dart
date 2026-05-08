@@ -208,6 +208,19 @@ class AdminEventsService extends ChangeNotifier {
     return imageUrls;
   }
 
+  Future<ParkourEvent?> getEventById(String eventId) async {
+    try {
+      final doc = await _firestore.collection('events').doc(eventId).get();
+      if (!doc.exists || doc.data() == null) {
+        return null;
+      }
+      return ParkourEvent.fromFirestore(doc);
+    } catch (e, st) {
+      debugPrint('AdminEventsService.getEventById error: $e\n$st');
+      return null;
+    }
+  }
+
   void _applyPage(
     QuerySnapshot<Map<String, dynamic>> snapshot,
     int pageSize, {
