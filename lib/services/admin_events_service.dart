@@ -229,12 +229,20 @@ class AdminEventsService extends ChangeNotifier {
           .where('spotIds', arrayContains: spotId)
           .limit(100)
           .get();
-      final events =
-          snapshot.docs
-              .map(ParkourEvent.fromFirestore)
-              .where((event) => event.startAt.toUtc().isAfter(now))
-              .toList()
-            ..sort((a, b) => a.startAt.compareTo(b.startAt));
+      final events = <ParkourEvent>[];
+      for (final doc in snapshot.docs) {
+        try {
+          final event = ParkourEvent.fromFirestore(doc);
+          if (event.startAt.toUtc().isAfter(now)) {
+            events.add(event);
+          }
+        } catch (e) {
+          debugPrint(
+            'AdminEventsService.getNextUpcomingEventForSpot skipping malformed event ${doc.id}: $e',
+          );
+        }
+      }
+      events.sort((a, b) => a.startAt.compareTo(b.startAt));
       if (events.isEmpty) return null;
       return events.first;
     } catch (e, st) {
