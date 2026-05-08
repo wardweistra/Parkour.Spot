@@ -1,13 +1,19 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/parkour_event.dart';
 import '../../models/spot.dart';
 import '../../services/admin_events_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/geocoding_service.dart';
 import '../../services/spot_service.dart';
+import '../../utils/image_preparation.dart';
 import '../../widgets/spot_selection_dialog.dart';
 
 class AdminEventsScreen extends StatefulWidget {
@@ -55,8 +61,13 @@ class _AdminEventsScreenState extends State<AdminEventsScreen> {
             ({
               required String title,
               String? description,
+              List<String>? imageUrls,
+              String? websiteUrl,
               required DateTime startAt,
               DateTime? endAt,
+              double? latitude,
+              double? longitude,
+              String? address,
               required List<String> spotIds,
             }) async {
               final authService = context.read<AuthService>();
@@ -64,8 +75,13 @@ class _AdminEventsScreenState extends State<AdminEventsScreen> {
               return context.read<AdminEventsService>().createEvent(
                 title: title,
                 description: description,
+                imageUrls: imageUrls,
+                websiteUrl: websiteUrl,
                 startAt: startAt,
                 endAt: endAt,
+                latitude: latitude,
+                longitude: longitude,
+                address: address,
                 spotIds: spotIds,
                 createdBy: createdBy,
               );
@@ -219,6 +235,9 @@ class _EventCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final startLabel = _formatUtc(event.startAt);
     final endLabel = event.endAt == null ? null : _formatUtc(event.endAt!);
+    final websiteUrl = event.websiteUrl?.trim();
+    final hasWebsite = websiteUrl != null && websiteUrl.isNotEmpty;
+    final hasLocation = event.latitude != null && event.longitude != null;
 
     return Card(
       child: Padding(
@@ -264,6 +283,58 @@ class _EventCard extends StatelessWidget {
               'Spot IDs: ${event.spotIds.join(', ')}',
               style: Theme.of(context).textTheme.bodySmall,
             ),
+            if (event.imageUrls.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                height: 72,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: event.imageUrls.length,
+                  separatorBuilder: (_, _) => const SizedBox(width: 8),
+                  itemBuilder: (context, index) {
+                    return ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        event.imageUrls[index],
+                        width: 72,
+                        height: 72,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => Container(
+                          width: 72,
+                          height: 72,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
+                          child: const Icon(Icons.broken_image_outlined),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+            if (hasWebsite) ...[
+              const SizedBox(height: 10),
+              InkWell(
+                onTap: () => _openWebsite(websiteUrl!),
+                child: Text(
+                  websiteUrl,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ],
+            if (hasLocation) ...[
+              const SizedBox(height: 10),
+              Text(
+                event.address?.trim().isNotEmpty == true
+                    ? event.address!
+                    : '${event.latitude!.toStringAsFixed(5)}, ${event.longitude!.toStringAsFixed(5)}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
           ],
         ),
       ),
@@ -272,6 +343,12 @@ class _EventCard extends StatelessWidget {
 
   String _formatUtc(DateTime value) {
     return '${DateFormat.yMMMd().add_Hm().format(value.toUtc())} UTC';
+  }
+
+  Future<void> _openWebsite(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 }
 
@@ -307,8 +384,13 @@ class _CreateEventDialog extends StatefulWidget {
   final Future<bool> Function({
     required String title,
     String? description,
+    List<String>? imageUrls,
+    String? websiteUrl,
     required DateTime startAt,
     DateTime? endAt,
+    double? latitude,
+    double? longitude,
+    String? address,
     required List<String> spotIds,
   })
   onCreate;
@@ -321,17 +403,30 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _websiteController = TextEditingController();
+  final TextEditingController _latitudeController = TextEditingController();
+  final TextEditingController _longitudeController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
+  final TextEditingController _newImageUrlController = TextEditingController();
 
   DateTime _startAt = DateTime.now().toUtc().add(const Duration(hours: 1));
   DateTime? _endAt;
   bool _isSubmitting = false;
+  bool _isGeocoding = false;
   String? _formError;
   final List<Spot> _linkedSpots = <Spot>[];
+  final List<Uint8List> _selectedImageBytes = <Uint8List>[];
+  final List<String> _imageUrls = <String>[];
 
   @override
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
+    _websiteController.dispose();
+    _latitudeController.dispose();
+    _longitudeController.dispose();
+    _addressController.dispose();
+    _newImageUrlController.dispose();
     super.dispose();
   }
 
@@ -379,6 +474,154 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
     });
   }
 
+  Future<void> _pickImagesFromGallery() async {
+    try {
+      final picker = ImagePicker();
+      final pickedFiles = await picker.pickMultiImage(
+        maxWidth: 2048,
+        maxHeight: 2048,
+        imageQuality: 85,
+      );
+      if (pickedFiles.isEmpty) return;
+
+      var addedCount = 0;
+      for (final pickedFile in pickedFiles) {
+        final bytes = await pickedFile.readAsBytes();
+        final prepared = await prepareImageForUpload(bytes);
+        _selectedImageBytes.add(prepared.bytes);
+        addedCount++;
+      }
+
+      if (!mounted || addedCount == 0) return;
+      setState(() {
+        _formError = null;
+      });
+    } on ImagePreparationException catch (e) {
+      setState(() {
+        _formError = e.message;
+      });
+    } catch (e) {
+      setState(() {
+        _formError = 'Failed to pick images: $e';
+      });
+    }
+  }
+
+  void _removeSelectedImageAt(int index) {
+    setState(() {
+      _selectedImageBytes.removeAt(index);
+    });
+  }
+
+  void _addImageUrl() {
+    final value = _newImageUrlController.text.trim();
+    if (value.isEmpty) return;
+    final uri = Uri.tryParse(value);
+    final valid =
+        uri != null &&
+        (uri.scheme == 'http' || uri.scheme == 'https') &&
+        uri.host.isNotEmpty;
+    if (!valid) {
+      setState(() {
+        _formError = 'Image URL must be a valid http(s) link';
+      });
+      return;
+    }
+    if (_imageUrls.contains(value)) {
+      _newImageUrlController.clear();
+      return;
+    }
+    setState(() {
+      _imageUrls.add(value);
+      _newImageUrlController.clear();
+      _formError = null;
+    });
+  }
+
+  void _removeImageUrlAt(int index) {
+    setState(() {
+      _imageUrls.removeAt(index);
+    });
+  }
+
+  Future<bool> _tryGeocodeCoordinatesIfNeeded({bool force = false}) async {
+    final latRaw = _latitudeController.text.trim();
+    final lngRaw = _longitudeController.text.trim();
+    final hasLatitudeText = latRaw.isNotEmpty;
+    final hasLongitudeText = lngRaw.isNotEmpty;
+    final hasAddress = _addressController.text.trim().isNotEmpty;
+
+    if (!hasLatitudeText && !hasLongitudeText) {
+      return true;
+    }
+    if (hasLatitudeText != hasLongitudeText) {
+      setState(() {
+        _formError = 'Both latitude and longitude are required';
+      });
+      return false;
+    }
+    final latitude = double.tryParse(latRaw);
+    final longitude = double.tryParse(lngRaw);
+    if (latitude == null || longitude == null) {
+      setState(() {
+        _formError = 'Latitude and longitude must be valid numbers';
+      });
+      return false;
+    }
+    if (latitude < -90 || latitude > 90) {
+      setState(() {
+        _formError = 'Latitude must be between -90 and 90';
+      });
+      return false;
+    }
+    if (longitude < -180 || longitude > 180) {
+      setState(() {
+        _formError = 'Longitude must be between -180 and 180';
+      });
+      return false;
+    }
+    if (hasAddress && !force) {
+      return true;
+    }
+
+    setState(() {
+      _isGeocoding = true;
+      _formError = null;
+    });
+    try {
+      final geocoding = context.read<GeocodingService>();
+      final details = await geocoding.geocodeCoordinatesDetails(
+        latitude,
+        longitude,
+      );
+      final resolvedAddress = details['address']?.trim();
+      if (!mounted) return false;
+      if (resolvedAddress == null || resolvedAddress.isEmpty) {
+        setState(() {
+          _formError = 'Unable to geocode these coordinates';
+        });
+        return false;
+      }
+      _addressController.text = resolvedAddress;
+      setState(() {
+        _formError = null;
+      });
+      return true;
+    } catch (e) {
+      if (!mounted) return false;
+      setState(() {
+        _formError = 'Failed to geocode coordinates: $e';
+      });
+      return false;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGeocoding = false;
+        });
+      }
+    }
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_linkedSpots.isEmpty) {
@@ -394,16 +637,41 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
       return;
     }
 
+    final geocoded = await _tryGeocodeCoordinatesIfNeeded();
+    if (!geocoded) return;
+
+    List<String> uploadedImageUrls = <String>[];
+
     setState(() {
       _isSubmitting = true;
       _formError = null;
     });
 
+    try {
+      if (_selectedImageBytes.isNotEmpty) {
+        uploadedImageUrls = await context
+            .read<AdminEventsService>()
+            .uploadEventImages(_selectedImageBytes);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isSubmitting = false;
+        _formError = 'Failed to upload images: $e';
+      });
+      return;
+    }
+
     final success = await widget.onCreate(
       title: _titleController.text.trim(),
       description: _descriptionController.text.trim(),
+      imageUrls: [..._imageUrls, ...uploadedImageUrls],
+      websiteUrl: _websiteController.text.trim(),
       startAt: _startAt,
       endAt: _endAt,
+      latitude: double.tryParse(_latitudeController.text.trim()),
+      longitude: double.tryParse(_longitudeController.text.trim()),
+      address: _addressController.text.trim(),
       spotIds: _linkedSpots.map((spot) => spot.id!).toList(),
     );
     if (!mounted) return;
@@ -456,6 +724,187 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
                   ),
                   minLines: 2,
                   maxLines: 4,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _websiteController,
+                  decoration: const InputDecoration(
+                    labelText: 'Website URL (optional)',
+                    border: OutlineInputBorder(),
+                    hintText: 'https://example.com/event',
+                  ),
+                  keyboardType: TextInputType.url,
+                  validator: (value) {
+                    final trimmed = value?.trim() ?? '';
+                    if (trimmed.isEmpty) return null;
+                    final uri = Uri.tryParse(trimmed);
+                    final valid =
+                        uri != null &&
+                        (uri.scheme == 'http' || uri.scheme == 'https') &&
+                        uri.host.isNotEmpty;
+                    if (!valid) return 'Enter a valid http(s) URL';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Event images',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    FilledButton.icon(
+                      onPressed: _isSubmitting ? null : _pickImagesFromGallery,
+                      icon: const Icon(Icons.photo_library_outlined),
+                      label: const Text('Upload image(s)'),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _newImageUrlController,
+                        decoration: const InputDecoration(
+                          labelText: 'Add image URL',
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                        keyboardType: TextInputType.url,
+                        onFieldSubmitted: (_) => _addImageUrl(),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      onPressed: _isSubmitting ? null : _addImageUrl,
+                      icon: const Icon(Icons.add_link),
+                      tooltip: 'Add image URL',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                if (_selectedImageBytes.isNotEmpty)
+                  SizedBox(
+                    height: 84,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _selectedImageBytes.length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 8),
+                      itemBuilder: (context, index) {
+                        return Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.memory(
+                                _selectedImageBytes[index],
+                                width: 84,
+                                height: 84,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            Positioned(
+                              top: 2,
+                              right: 2,
+                              child: InkWell(
+                                onTap: _isSubmitting
+                                    ? null
+                                    : () => _removeSelectedImageAt(index),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.black54,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  padding: const EdgeInsets.all(2),
+                                  child: const Icon(
+                                    Icons.close,
+                                    size: 14,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                if (_imageUrls.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: _imageUrls
+                        .asMap()
+                        .entries
+                        .map(
+                          (entry) => Chip(
+                            label: Text('URL ${entry.key + 1}'),
+                            onDeleted: _isSubmitting
+                                ? null
+                                : () => _removeImageUrlAt(entry.key),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                Text(
+                  'Event location',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _latitudeController,
+                        decoration: const InputDecoration(
+                          labelText: 'Latitude',
+                          border: OutlineInputBorder(),
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                          signed: true,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _longitudeController,
+                        decoration: const InputDecoration(
+                          labelText: 'Longitude',
+                          border: OutlineInputBorder(),
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                          signed: true,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton.tonalIcon(
+                      onPressed: (_isSubmitting || _isGeocoding)
+                          ? null
+                          : () => _tryGeocodeCoordinatesIfNeeded(force: true),
+                      icon: _isGeocoding
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.pin_drop_outlined),
+                      label: const Text('Geocode'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _addressController,
+                  decoration: const InputDecoration(
+                    labelText: 'Address (auto-filled from coordinates)',
+                    border: OutlineInputBorder(),
+                  ),
+                  minLines: 2,
+                  maxLines: 3,
                 ),
                 const SizedBox(height: 16),
                 _DateField(

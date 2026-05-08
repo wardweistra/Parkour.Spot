@@ -28,15 +28,47 @@ service cloud.firestore {
 
     // Parkour events (admin-managed). Each event links to one or more spots.
     match /events/{eventId} {
+      function eventWebsiteOk(data) {
+        return !('websiteUrl' in data) ||
+          (data.websiteUrl is string &&
+            data.websiteUrl.size() > 0 &&
+            data.websiteUrl.size() <= 2048 &&
+            data.websiteUrl.matches('^https?://.+$'));
+      }
+
+      function eventImagesOk(data) {
+        return !('imageUrls' in data) ||
+          (data.imageUrls is list && data.imageUrls.size() <= 20);
+      }
+
+      function eventLocationOk(data) {
+        return (
+          !('latitude' in data) &&
+          !('longitude' in data) &&
+          !('address' in data)
+        ) || (
+          data.latitude is number &&
+          data.longitude is number &&
+          data.latitude >= -90 && data.latitude <= 90 &&
+          data.longitude >= -180 && data.longitude <= 180 &&
+          data.address is string &&
+          data.address.size() > 0 &&
+          data.address.size() <= 500
+        );
+      }
+
       function eventCommonShape(data) {
         return data.title is string &&
           data.title.size() > 0 &&
           data.title.size() <= 200 &&
           (!('description' in data) ||
             (data.description is string && data.description.size() <= 2000)) &&
+          eventImagesOk(data) &&
+          eventWebsiteOk(data) &&
           data.startAt is timestamp &&
           (!('endAt' in data) ||
             (data.endAt is timestamp && data.endAt >= data.startAt)) &&
+          eventLocationOk(data) &&
           data.spotIds is list &&
           data.spotIds.size() > 0 &&
           data.spotIds.size() <= 50;

@@ -14,8 +14,13 @@ void main() {
         'id': 'event-1',
         'title': 'Sunset Jam',
         'description': 'Open training session',
+        'imageUrls': ['https://img.example/1.jpg', 'https://img.example/2.jpg'],
+        'websiteUrl': 'https://parkour.spot/events/sunset-jam',
         'startAt': Timestamp.fromDate(startAt),
         'endAt': Timestamp.fromDate(endAt),
+        'latitude': 52.3702,
+        'longitude': 4.8952,
+        'address': 'Amsterdam, Netherlands',
         'spotIds': ['spot-a', 'spot-b'],
         'createdBy': 'admin-uid',
         'createdAt': Timestamp.fromDate(createdAt),
@@ -25,8 +30,16 @@ void main() {
       expect(event.id, 'event-1');
       expect(event.title, 'Sunset Jam');
       expect(event.description, 'Open training session');
+      expect(event.imageUrls, [
+        'https://img.example/1.jpg',
+        'https://img.example/2.jpg',
+      ]);
+      expect(event.websiteUrl, 'https://parkour.spot/events/sunset-jam');
       expect(event.startAt.toUtc(), startAt);
       expect(event.endAt?.toUtc(), endAt);
+      expect(event.latitude, 52.3702);
+      expect(event.longitude, 4.8952);
+      expect(event.address, 'Amsterdam, Netherlands');
       expect(event.spotIds, ['spot-a', 'spot-b']);
       expect(event.createdBy, 'admin-uid');
       expect(event.createdAt?.toUtc(), createdAt);
@@ -38,8 +51,13 @@ void main() {
         id: 'event-2',
         title: 'Community Session',
         description: '  Meet and train  ',
+        imageUrls: const ['https://img.example/event.jpg'],
+        websiteUrl: ' https://event.example/info ',
         startAt: DateTime.utc(2026, 6, 1, 14, 0),
         endAt: DateTime.utc(2026, 6, 1, 16, 0),
+        latitude: 48.8566,
+        longitude: 2.3522,
+        address: '  Paris, France ',
         spotIds: const ['spot-c', 'spot-d'],
         createdBy: 'admin-uid',
         createdAt: DateTime.utc(2026, 5, 25, 8, 0),
@@ -50,9 +68,14 @@ void main() {
 
       expect(map['title'], 'Community Session');
       expect(map['description'], 'Meet and train');
+      expect(map['imageUrls'], ['https://img.example/event.jpg']);
+      expect(map['websiteUrl'], 'https://event.example/info');
       expect(map['spotIds'], ['spot-c', 'spot-d']);
       expect(map['startAt'], DateTime.utc(2026, 6, 1, 14, 0));
       expect(map['endAt'], DateTime.utc(2026, 6, 1, 16, 0));
+      expect(map['latitude'], 48.8566);
+      expect(map['longitude'], 2.3522);
+      expect(map['address'], 'Paris, France');
       expect(map['createdBy'], 'admin-uid');
       expect(map['createdAt'], DateTime.utc(2026, 5, 25, 8, 0));
       expect(map['updatedAt'], DateTime.utc(2026, 5, 25, 9, 0));

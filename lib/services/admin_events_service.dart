@@ -1,13 +1,18 @@
+import 'dart:typed_data';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 
 import '../models/parkour_event.dart';
+import '../utils/image_preparation.dart';
 
 class AdminEventsService extends ChangeNotifier {
   AdminEventsService({FirebaseFirestore? firestore})
     : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
 
   final List<ParkourEvent> _events = <ParkourEvent>[];
   bool _isLoading = false;
@@ -88,11 +93,23 @@ class AdminEventsService extends ChangeNotifier {
   Future<bool> createEvent({
     required String title,
     String? description,
+    List<String>? imageUrls,
+    String? websiteUrl,
     required DateTime startAt,
     DateTime? endAt,
+    double? latitude,
+    double? longitude,
+    String? address,
     required List<String> spotIds,
     required String createdBy,
   }) async {
+    final normalizedImageUrls = (imageUrls ?? const <String>[])
+        .map((url) => url.trim())
+        .where((url) => url.isNotEmpty)
+        .toSet()
+        .toList();
+    final normalizedWebsiteUrl = websiteUrl?.trim();
+    final normalizedAddress = address?.trim();
     final normalizedSpotIds = spotIds
         .map((id) => id.trim())
         .where((id) => id.isNotEmpty)
@@ -100,6 +117,36 @@ class AdminEventsService extends ChangeNotifier {
         .toList();
     if (title.trim().isEmpty || normalizedSpotIds.isEmpty) {
       _error = 'Title and at least one linked spot are required';
+      notifyListeners();
+      return false;
+    }
+    if (normalizedWebsiteUrl != null &&
+        normalizedWebsiteUrl.isNotEmpty &&
+        !_isValidHttpUrl(normalizedWebsiteUrl)) {
+      _error = 'Website URL must be a valid http(s) link';
+      notifyListeners();
+      return false;
+    }
+    final hasLatitude = latitude != null;
+    final hasLongitude = longitude != null;
+    if (hasLatitude != hasLongitude) {
+      _error = 'Both latitude and longitude are required for event location';
+      notifyListeners();
+      return false;
+    }
+    if (latitude != null && (latitude < -90 || latitude > 90)) {
+      _error = 'Latitude must be between -90 and 90';
+      notifyListeners();
+      return false;
+    }
+    if (longitude != null && (longitude < -180 || longitude > 180)) {
+      _error = 'Longitude must be between -180 and 180';
+      notifyListeners();
+      return false;
+    }
+    if (latitude != null &&
+        (normalizedAddress == null || normalizedAddress.isEmpty)) {
+      _error = 'Address is required when coordinates are provided';
       notifyListeners();
       return false;
     }
@@ -117,8 +164,15 @@ class AdminEventsService extends ChangeNotifier {
       final event = ParkourEvent(
         title: title.trim(),
         description: description?.trim().isEmpty == true ? null : description,
+        imageUrls: normalizedImageUrls,
+        websiteUrl: normalizedWebsiteUrl?.isEmpty == true
+            ? null
+            : normalizedWebsiteUrl,
         startAt: startAt.toUtc(),
         endAt: endAt?.toUtc(),
+        latitude: latitude,
+        longitude: longitude,
+        address: normalizedAddress?.isEmpty == true ? null : normalizedAddress,
         spotIds: normalizedSpotIds,
         createdBy: createdBy,
         createdAt: now,
@@ -137,6 +191,23 @@ class AdminEventsService extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  Future<List<String>> uploadEventImages(List<Uint8List> imageBytesList) async {
+    final List<String> imageUrls = [];
+    for (var index = 0; index < imageBytesList.length; index++) {
+      final prepared = await prepareImageForUpload(imageBytesList[index]);
+      final ext = _extensionForContentType(prepared.contentType);
+      final fileName =
+          'events/${DateTime.now().millisecondsSinceEpoch}_event_image_$index$ext';
+      final ref = _storage.ref().child(fileName);
+      final snapshot = await ref.putData(
+        prepared.bytes,
+        SettableMetadata(contentType: prepared.contentType),
+      );
+      imageUrls.add(await snapshot.ref.getDownloadURL());
+    }
+    return imageUrls;
   }
 
   void _applyPage(
@@ -162,5 +233,26 @@ class AdminEventsService extends ChangeNotifier {
     }
     _lastEventDocument = docs.last;
     _hasMore = docs.length >= pageSize;
+  }
+
+  bool _isValidHttpUrl(String value) {
+    final uri = Uri.tryParse(value);
+    if (uri == null || uri.host.isEmpty) return false;
+    return uri.scheme == 'http' || uri.scheme == 'https';
+  }
+
+  String _extensionForContentType(String contentType) {
+    switch (contentType) {
+      case 'image/jpeg':
+        return '.jpg';
+      case 'image/png':
+        return '.png';
+      case 'image/gif':
+        return '.gif';
+      case 'image/webp':
+        return '.webp';
+      default:
+        return '.jpg';
+    }
   }
 }
