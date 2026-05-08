@@ -25,12 +25,12 @@ void main() {
       expect(event.id, 'event-1');
       expect(event.title, 'Sunset Jam');
       expect(event.description, 'Open training session');
-      expect(event.startAt, startAt);
-      expect(event.endAt, endAt);
+      expect(event.startAt.toUtc(), startAt);
+      expect(event.endAt?.toUtc(), endAt);
       expect(event.spotIds, ['spot-a', 'spot-b']);
       expect(event.createdBy, 'admin-uid');
-      expect(event.createdAt, createdAt);
-      expect(event.updatedAt, updatedAt);
+      expect(event.createdAt?.toUtc(), createdAt);
+      expect(event.updatedAt?.toUtc(), updatedAt);
     });
 
     test('toFirestore keeps linked spots and trims description', () {

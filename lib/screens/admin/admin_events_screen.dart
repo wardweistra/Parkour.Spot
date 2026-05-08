@@ -218,7 +218,7 @@ class _EventCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final startLabel = _formatUtc(event.startAt);
-    final endLabel = event.endAt == null ? null : _formatUtc(event.endAt);
+    final endLabel = event.endAt == null ? null : _formatUtc(event.endAt!);
 
     return Card(
       child: Padding(
