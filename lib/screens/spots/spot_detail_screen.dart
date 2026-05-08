@@ -14,6 +14,7 @@ import '../../widgets/spot_training_plan_dialog.dart';
 import '../../utils/spot_check_in_flow.dart';
 import '../../services/spot_service.dart';
 import '../../services/spot_report_service.dart';
+import '../../services/admin_events_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/url_service.dart';
 import '../../services/web_share_service.dart';
@@ -35,6 +36,7 @@ import '../../services/spot_check_in_service.dart';
 import '../../services/spot_training_plan_service.dart';
 import '../../services/feature_access_service.dart';
 import '../../models/spot_list.dart';
+import '../../models/parkour_event.dart';
 import '../../utils/resized_spot_image_provider.dart';
 import '../../widgets/resized_spot_image.dart';
 import '../../widgets/spot_detail_community_section.dart';
@@ -195,6 +197,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
   /// Cached future for Jumpflix videos (avoids refetch on rebuild).
   Future<List<JumpflixVideo>>? _jumpflixVideosFuture;
+  Future<ParkourEvent?>? _upcomingSpotEventFuture;
 
   // Getter for the current spot (falls back to widget.spot if not updated)
   Spot get _spot => _currentSpot ?? widget.spot;
@@ -205,7 +208,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     try {
-      _exploreDocumentTitle = AppLocalizations.of(context)!.exploreMetaDefaultTitle;
+      _exploreDocumentTitle = AppLocalizations.of(
+        context,
+      )!.exploreMetaDefaultTitle;
     } catch (_) {
       _exploreDocumentTitle = _fallbackDocumentTitle;
     }
@@ -482,8 +487,13 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         context,
         listen: false,
       ).getJumpflixVideosForSpot(widget.spot.id!);
+      _upcomingSpotEventFuture = Provider.of<AdminEventsService>(
+        context,
+        listen: false,
+      ).getNextUpcomingEventForSpot(widget.spot.id!);
     } else {
       _jumpflixVideosFuture = Future<List<JumpflixVideo>>.value([]);
+      _upcomingSpotEventFuture = Future<ParkourEvent?>.value(null);
     }
 
     // Initialize satellite view from SearchStateService
@@ -511,8 +521,13 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           context,
           listen: false,
         ).getJumpflixVideosForSpot(widget.spot.id!);
+        _upcomingSpotEventFuture = Provider.of<AdminEventsService>(
+          context,
+          listen: false,
+        ).getNextUpcomingEventForSpot(widget.spot.id!);
       } else {
         _jumpflixVideosFuture = Future<List<JumpflixVideo>>.value([]);
+        _upcomingSpotEventFuture = Future<ParkourEvent?>.value(null);
       }
     }
   }
@@ -630,7 +645,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       color: theme.colorScheme.onSurfaceVariant,
     );
     final bool hideCreatorAttribution = _spot.createdFromCreateNative;
-    final String? createdByName = hideCreatorAttribution ? null : _spot.createdByName;
+    final String? createdByName = hideCreatorAttribution
+        ? null
+        : _spot.createdByName;
     final String? createdById = hideCreatorAttribution ? null : _spot.createdBy;
     bool hasPreviousContent = false;
 
@@ -2241,6 +2258,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                               },
                             ),
                           ),
+                          const SizedBox(height: 4),
+                          _buildUpcomingSpotEventPanel(),
+                          const SizedBox(height: 12),
                           SpotDetailCommunitySection(
                             spotId: _spot.id!,
                             spotDisplayName: _spot.name,
@@ -4955,6 +4975,79 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildUpcomingSpotEventPanel() {
+    if (_spot.id == null) return const SizedBox.shrink();
+
+    return FutureBuilder<ParkourEvent?>(
+      future: _upcomingSpotEventFuture ?? Future<ParkourEvent?>.value(null),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox.shrink();
+        }
+        final event = snapshot.data;
+        if (event == null || event.id == null) {
+          return const SizedBox.shrink();
+        }
+
+        final colors = Theme.of(context).colorScheme;
+        return Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: colors.primaryContainer.withValues(alpha: 0.35),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: colors.primary.withValues(alpha: 0.25)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.event_available_outlined, color: colors.primary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Upcoming event',
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: colors.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      event.title,
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _formatUpcomingEventDateTime(event.startAt),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () => context.push('/event/${event.id}'),
+                icon: const Icon(Icons.open_in_new, size: 16),
+                label: const Text('Open'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _formatUpcomingEventDateTime(DateTime dateTime) {
+    final local = dateTime.toLocal();
+    final localizations = MaterialLocalizations.of(context);
+    final date = localizations.formatMediumDate(local);
+    final time = localizations.formatTimeOfDay(TimeOfDay.fromDateTime(local));
+    return '$date · $time';
   }
 
   Widget _buildFacilityChip(String facilityKey, String status) {

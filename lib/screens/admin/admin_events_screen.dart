@@ -356,6 +356,17 @@ class _EventCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
+              if (event.id != null) ...[
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: FilledButton.tonalIcon(
+                    onPressed: openEventPage,
+                    icon: const Icon(Icons.open_in_new),
+                    label: const Text('Open event page'),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

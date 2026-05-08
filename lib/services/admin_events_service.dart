@@ -221,6 +221,30 @@ class AdminEventsService extends ChangeNotifier {
     }
   }
 
+  Future<ParkourEvent?> getNextUpcomingEventForSpot(String spotId) async {
+    try {
+      final now = DateTime.now().toUtc();
+      final snapshot = await _firestore
+          .collection('events')
+          .where('spotIds', arrayContains: spotId)
+          .limit(100)
+          .get();
+      final events =
+          snapshot.docs
+              .map(ParkourEvent.fromFirestore)
+              .where((event) => event.startAt.toUtc().isAfter(now))
+              .toList()
+            ..sort((a, b) => a.startAt.compareTo(b.startAt));
+      if (events.isEmpty) return null;
+      return events.first;
+    } catch (e, st) {
+      debugPrint(
+        'AdminEventsService.getNextUpcomingEventForSpot error: $e\n$st',
+      );
+      return null;
+    }
+  }
+
   void _applyPage(
     QuerySnapshot<Map<String, dynamic>> snapshot,
     int pageSize, {
