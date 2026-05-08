@@ -96,9 +96,9 @@ class EventDetailScreen extends StatelessWidget {
             Text('Website', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             InkWell(
-              onTap: () => _openExternal(websiteUrl!),
+              onTap: () => _openExternal(websiteUrl),
               child: Text(
-                websiteUrl!,
+                websiteUrl,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.primary,
                   decoration: TextDecoration.underline,

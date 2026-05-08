@@ -238,113 +238,126 @@ class _EventCard extends StatelessWidget {
     final websiteUrl = event.websiteUrl?.trim();
     final hasWebsite = websiteUrl != null && websiteUrl.isNotEmpty;
     final hasLocation = event.latitude != null && event.longitude != null;
+    final openEventPage = event.id == null
+        ? null
+        : () => context.push('/event/${event.id}');
 
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(event.title, style: Theme.of(context).textTheme.titleMedium),
-            if (event.description != null &&
-                event.description!.trim().isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Text(event.description!),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: openEventPage,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      event.title,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                  if (event.id != null)
+                    IconButton(
+                      onPressed: openEventPage,
+                      tooltip: 'Open event page',
+                      icon: const Icon(Icons.open_in_new),
+                    ),
+                ],
               ),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: [
-                Chip(
-                  avatar: const Icon(Icons.schedule, size: 16),
-                  label: Text(startLabel),
-                  visualDensity: VisualDensity.compact,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              if (event.description != null &&
+                  event.description!.trim().isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(event.description!),
                 ),
-                if (endLabel != null)
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: [
                   Chip(
-                    avatar: const Icon(Icons.hourglass_bottom, size: 16),
-                    label: Text(endLabel),
+                    avatar: const Icon(Icons.schedule, size: 16),
+                    label: Text(startLabel),
                     visualDensity: VisualDensity.compact,
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                Chip(
-                  avatar: const Icon(Icons.place_outlined, size: 16),
-                  label: Text('${event.spotIds.length} linked spot(s)'),
-                  visualDensity: VisualDensity.compact,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            SelectableText(
-              'Spot IDs: ${event.spotIds.join(', ')}',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            if (event.imageUrls.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              SizedBox(
-                height: 72,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: event.imageUrls.length,
-                  separatorBuilder: (_, _) => const SizedBox(width: 8),
-                  itemBuilder: (context, index) {
-                    return ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        event.imageUrls[index],
-                        width: 72,
-                        height: 72,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Container(
-                          width: 72,
-                          height: 72,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.surfaceContainerHighest,
-                          child: const Icon(Icons.broken_image_outlined),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-            if (hasWebsite) ...[
-              const SizedBox(height: 10),
-              InkWell(
-                onTap: () => _openWebsite(websiteUrl),
-                child: Text(
-                  websiteUrl,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                    decoration: TextDecoration.underline,
+                  if (endLabel != null)
+                    Chip(
+                      avatar: const Icon(Icons.hourglass_bottom, size: 16),
+                      label: Text(endLabel),
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  Chip(
+                    avatar: const Icon(Icons.place_outlined, size: 16),
+                    label: Text('${event.spotIds.length} linked spot(s)'),
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                ),
+                ],
               ),
-            ],
-            if (hasLocation) ...[
               const SizedBox(height: 10),
-              Text(
-                event.address?.trim().isNotEmpty == true
-                    ? event.address!
-                    : '${event.latitude!.toStringAsFixed(5)}, ${event.longitude!.toStringAsFixed(5)}',
+              SelectableText(
+                'Spot IDs: ${event.spotIds.join(', ')}',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
-            ],
-            if (event.id != null)
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed: () => context.push('/event/${event.id}'),
-                  icon: const Icon(Icons.open_in_new),
-                  label: const Text('Open event page'),
+              if (event.imageUrls.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                SizedBox(
+                  height: 72,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: event.imageUrls.length,
+                    separatorBuilder: (_, _) => const SizedBox(width: 8),
+                    itemBuilder: (context, index) {
+                      return ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          event.imageUrls[index],
+                          width: 72,
+                          height: 72,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => Container(
+                            width: 72,
+                            height: 72,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest,
+                            child: const Icon(Icons.broken_image_outlined),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              ),
-          ],
+              ],
+              if (hasWebsite) ...[
+                const SizedBox(height: 10),
+                InkWell(
+                  onTap: () => _openWebsite(websiteUrl),
+                  child: Text(
+                    websiteUrl,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+              ],
+              if (hasLocation) ...[
+                const SizedBox(height: 10),
+                Text(
+                  event.address?.trim().isNotEmpty == true
+                      ? event.address!
+                      : '${event.latitude!.toStringAsFixed(5)}, ${event.longitude!.toStringAsFixed(5)}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
