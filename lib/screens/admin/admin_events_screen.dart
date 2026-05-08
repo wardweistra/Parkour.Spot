@@ -316,7 +316,7 @@ class _EventCard extends StatelessWidget {
             if (hasWebsite) ...[
               const SizedBox(height: 10),
               InkWell(
-                onTap: () => _openWebsite(websiteUrl!),
+                onTap: () => _openWebsite(websiteUrl),
                 child: Text(
                   websiteUrl,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -623,6 +623,7 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
   }
 
   Future<void> _submit() async {
+    final eventsService = context.read<AdminEventsService>();
     if (!_formKey.currentState!.validate()) return;
     if (_linkedSpots.isEmpty) {
       setState(() {
@@ -649,9 +650,9 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
 
     try {
       if (_selectedImageBytes.isNotEmpty) {
-        uploadedImageUrls = await context
-            .read<AdminEventsService>()
-            .uploadEventImages(_selectedImageBytes);
+        uploadedImageUrls = await eventsService.uploadEventImages(
+          _selectedImageBytes,
+        );
       }
     } catch (e) {
       if (!mounted) return;
@@ -685,7 +686,7 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
     }
 
     setState(() {
-      _formError = context.read<AdminEventsService>().error ?? 'Create failed';
+      _formError = eventsService.error ?? 'Create failed';
     });
   }
 
