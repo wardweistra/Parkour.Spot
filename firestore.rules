@@ -26,6 +26,45 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
 
+    // Parkour events (admin-managed). Each event links to one or more spots.
+    match /events/{eventId} {
+      function eventCommonShape(data) {
+        return data.title is string &&
+          data.title.size() > 0 &&
+          data.title.size() <= 200 &&
+          (!('description' in data) ||
+            (data.description is string && data.description.size() <= 2000)) &&
+          data.startAt is timestamp &&
+          (!('endAt' in data) ||
+            (data.endAt is timestamp && data.endAt >= data.startAt)) &&
+          data.spotIds is list &&
+          data.spotIds.size() > 0 &&
+          data.spotIds.size() <= 50;
+      }
+
+      function eventCreateShape() {
+        return request.auth != null &&
+          request.resource.data.createdBy is string &&
+          request.resource.data.createdBy == request.auth.uid &&
+          request.resource.data.createdAt is timestamp &&
+          request.resource.data.updatedAt is timestamp &&
+          eventCommonShape(request.resource.data);
+      }
+
+      function eventUpdateShape() {
+        return request.auth != null &&
+          request.resource.data.createdBy == resource.data.createdBy &&
+          request.resource.data.createdAt == resource.data.createdAt &&
+          request.resource.data.updatedAt is timestamp &&
+          eventCommonShape(request.resource.data);
+      }
+
+      allow read: if requestingUserIsAdmin();
+      allow create: if requestingUserIsAdmin() && eventCreateShape();
+      allow update: if requestingUserIsAdmin() && eventUpdateShape();
+      allow delete: if requestingUserIsAdmin();
+    }
+
     // Spot check-ins (one document per check-in event; query by userId and/or spotId)
     match /spotCheckIns/{checkInId} {
       function spotCheckInCommentOk(data) {

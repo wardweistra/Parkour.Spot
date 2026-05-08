@@ -13,6 +13,7 @@ import '../screens/admin/geocoding_admin_screen.dart';
 import '../screens/admin/spot_management_screen.dart';
 import '../screens/admin/user_management_screen.dart';
 import '../screens/admin/admin_notifications_screen.dart';
+import '../screens/admin/admin_events_screen.dart';
 import '../screens/admin/admin_push_subscriptions_screen.dart';
 import '../screens/admin/user_activity_metrics_screen.dart';
 import '../screens/admin/audit_log_viewer_screen.dart';
@@ -378,6 +379,10 @@ class AppRouter {
         GoRoute(
           path: '/admin/notifications',
           builder: (context, state) => const AdminNotificationsScreen(),
+        ),
+        GoRoute(
+          path: '/admin/events',
+          builder: (context, state) => const AdminEventsScreen(),
         ),
         GoRoute(
           path: '/admin/push-subscriptions',
@@ -769,17 +774,18 @@ class EditSpotRoute extends StatelessWidget {
   const EditSpotRoute({super.key, required this.spotId, this.spot});
 
   @override
-  Widget build(BuildContext context) => _EditSpotRouteContent(
-    spotId: spotId,
-    providedSpot: spot,
-  );
+  Widget build(BuildContext context) =>
+      _EditSpotRouteContent(spotId: spotId, providedSpot: spot);
 }
 
 class _EditSpotRouteContent extends StatefulWidget {
   final String spotId;
   final Spot? providedSpot;
 
-  const _EditSpotRouteContent({required this.spotId, required this.providedSpot});
+  const _EditSpotRouteContent({
+    required this.spotId,
+    required this.providedSpot,
+  });
 
   @override
   State<_EditSpotRouteContent> createState() => _EditSpotRouteContentState();
@@ -894,10 +900,7 @@ class _EditSpotRouteContentState extends State<_EditSpotRouteContent> {
             }
 
             final spot = snapshot.data!;
-            return EditSpotScreen(
-              key: ValueKey('edit-${spot.id}'),
-              spot: spot,
-            );
+            return EditSpotScreen(key: ValueKey('edit-${spot.id}'), spot: spot);
           },
         );
       },

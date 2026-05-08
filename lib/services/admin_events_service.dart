@@ -1,0 +1,166 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
+
+import '../models/parkour_event.dart';
+
+class AdminEventsService extends ChangeNotifier {
+  AdminEventsService({FirebaseFirestore? firestore})
+    : _firestore = firestore ?? FirebaseFirestore.instance;
+
+  final FirebaseFirestore _firestore;
+
+  final List<ParkourEvent> _events = <ParkourEvent>[];
+  bool _isLoading = false;
+  bool _isLoadingMore = false;
+  String? _error;
+  QueryDocumentSnapshot<Map<String, dynamic>>? _lastEventDocument;
+  bool _hasMore = true;
+
+  static const int _defaultPageSize = 30;
+
+  List<ParkourEvent> get events => List<ParkourEvent>.unmodifiable(_events);
+  bool get isLoading => _isLoading;
+  bool get isLoadingMore => _isLoadingMore;
+  bool get hasMore => _hasMore;
+  String? get error => _error;
+
+  Future<void> fetchEvents({
+    bool forceRefresh = false,
+    int pageSize = _defaultPageSize,
+  }) async {
+    if (_isLoading && !forceRefresh) return;
+
+    _isLoading = true;
+    _isLoadingMore = false;
+    _error = null;
+    if (forceRefresh) {
+      _events.clear();
+      _lastEventDocument = null;
+      _hasMore = true;
+    }
+    notifyListeners();
+
+    try {
+      final snapshot = await _firestore
+          .collection('events')
+          .orderBy('startAt', descending: true)
+          .limit(pageSize)
+          .get();
+      _applyPage(snapshot, pageSize, replaceExisting: true);
+    } catch (e, st) {
+      _error = 'Failed to load events';
+      debugPrint('AdminEventsService.fetchEvents error: $e\n$st');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadMore({int pageSize = _defaultPageSize}) async {
+    if (!_hasMore ||
+        _isLoading ||
+        _isLoadingMore ||
+        _lastEventDocument == null) {
+      return;
+    }
+
+    _isLoadingMore = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final snapshot = await _firestore
+          .collection('events')
+          .orderBy('startAt', descending: true)
+          .startAfterDocument(_lastEventDocument!)
+          .limit(pageSize)
+          .get();
+      _applyPage(snapshot, pageSize, replaceExisting: false);
+    } catch (e, st) {
+      _error = 'Failed to load more events';
+      debugPrint('AdminEventsService.loadMore error: $e\n$st');
+    } finally {
+      _isLoadingMore = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> createEvent({
+    required String title,
+    String? description,
+    required DateTime startAt,
+    DateTime? endAt,
+    required List<String> spotIds,
+    required String createdBy,
+  }) async {
+    final normalizedSpotIds = spotIds
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList();
+    if (title.trim().isEmpty || normalizedSpotIds.isEmpty) {
+      _error = 'Title and at least one linked spot are required';
+      notifyListeners();
+      return false;
+    }
+    if (endAt != null && endAt.isBefore(startAt)) {
+      _error = 'End time cannot be before start time';
+      notifyListeners();
+      return false;
+    }
+
+    _error = null;
+    notifyListeners();
+
+    try {
+      final now = DateTime.now().toUtc();
+      final event = ParkourEvent(
+        title: title.trim(),
+        description: description?.trim().isEmpty == true ? null : description,
+        startAt: startAt.toUtc(),
+        endAt: endAt?.toUtc(),
+        spotIds: normalizedSpotIds,
+        createdBy: createdBy,
+        createdAt: now,
+        updatedAt: now,
+      );
+      final ref = await _firestore
+          .collection('events')
+          .add(event.toFirestore());
+      _events.insert(0, event.copyWith(id: ref.id));
+      _events.sort((a, b) => b.startAt.compareTo(a.startAt));
+      notifyListeners();
+      return true;
+    } catch (e, st) {
+      _error = 'Failed to create event';
+      debugPrint('AdminEventsService.createEvent error: $e\n$st');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  void _applyPage(
+    QuerySnapshot<Map<String, dynamic>> snapshot,
+    int pageSize, {
+    required bool replaceExisting,
+  }) {
+    final docs = snapshot.docs;
+    if (replaceExisting) {
+      _events.clear();
+    }
+    for (final doc in docs) {
+      _events.add(ParkourEvent.fromFirestore(doc));
+    }
+    if (replaceExisting) {
+      _lastEventDocument = docs.isNotEmpty ? docs.last : null;
+      _hasMore = docs.length >= pageSize;
+      return;
+    }
+    if (docs.isEmpty) {
+      _hasMore = false;
+      return;
+    }
+    _lastEventDocument = docs.last;
+    _hasMore = docs.length >= pageSize;
+  }
+}
