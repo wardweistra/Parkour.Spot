@@ -95,6 +95,18 @@ class AdminHomeScreen extends StatelessWidget {
           const SizedBox(height: 8),
           Card(
             child: ListTile(
+              leading: const Icon(Icons.event_note_outlined),
+              title: const Text('Events'),
+              subtitle: const Text(
+                'Browse and create parkour events linked to spots',
+              ),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () => context.push('/admin/events'),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Card(
+            child: ListTile(
               leading: const Icon(Icons.phonelink_ring_outlined),
               title: const Text('Web push subscriptions'),
               subtitle: const Text(

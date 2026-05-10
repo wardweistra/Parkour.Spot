@@ -13,6 +13,7 @@ import '../screens/admin/geocoding_admin_screen.dart';
 import '../screens/admin/spot_management_screen.dart';
 import '../screens/admin/user_management_screen.dart';
 import '../screens/admin/admin_notifications_screen.dart';
+import '../screens/admin/admin_events_screen.dart';
 import '../screens/admin/admin_push_subscriptions_screen.dart';
 import '../screens/admin/user_activity_metrics_screen.dart';
 import '../screens/admin/audit_log_viewer_screen.dart';
@@ -26,6 +27,7 @@ import '../screens/admin/api_clients_screen.dart';
 import '../screens/moderator/moderator_tools_screen.dart';
 import '../screens/moderator/spot_report_queue_screen.dart';
 import '../screens/spots/spot_detail_screen.dart';
+import '../screens/events/event_detail_screen.dart';
 import '../l10n/app_localizations.dart';
 import '../screens/spots/edit_spot_screen.dart';
 import '../screens/spots/spot_list_detail_screen.dart';
@@ -35,7 +37,9 @@ import '../screens/profile/my_check_ins_screen.dart';
 import '../screens/profile/account_settings_screen.dart';
 import '../screens/profile/notifications_screen.dart';
 import '../screens/profile/public_profile_screen.dart';
+import '../models/parkour_event.dart';
 import '../models/spot.dart';
+import '../services/admin_events_service.dart';
 import '../services/spot_service.dart';
 import '../services/auth_service.dart';
 import '../analytics/web_analytics.dart';
@@ -380,6 +384,10 @@ class AppRouter {
           builder: (context, state) => const AdminNotificationsScreen(),
         ),
         GoRoute(
+          path: '/admin/events',
+          builder: (context, state) => const AdminEventsScreen(),
+        ),
+        GoRoute(
           path: '/admin/push-subscriptions',
           builder: (context, state) => const AdminPushSubscriptionsScreen(),
         ),
@@ -406,6 +414,13 @@ class AppRouter {
         GoRoute(
           path: '/admin/api-clients',
           builder: (context, state) => const ApiClientsScreen(),
+        ),
+        GoRoute(
+          path: '/event/:eventId',
+          builder: (context, state) {
+            final eventId = state.pathParameters['eventId']!;
+            return EventDetailRoute(eventId: eventId);
+          },
         ),
         GoRoute(
           path: '/moderator',
@@ -651,6 +666,101 @@ class AppRouter {
   }
 }
 
+class EventDetailRoute extends StatefulWidget {
+  final String eventId;
+
+  const EventDetailRoute({super.key, required this.eventId});
+
+  @override
+  State<EventDetailRoute> createState() => _EventDetailRouteState();
+}
+
+class _EventDetailRouteState extends State<EventDetailRoute> {
+  Future<ParkourEvent?>? _eventFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _eventFuture = Provider.of<AdminEventsService>(
+      context,
+      listen: false,
+    ).getEventById(widget.eventId);
+  }
+
+  @override
+  void didUpdateWidget(covariant EventDetailRoute oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.eventId != widget.eventId) {
+      _eventFuture = Provider.of<AdminEventsService>(
+        context,
+        listen: false,
+      ).getEventById(widget.eventId);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<ParkourEvent?>(
+      future: _eventFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error loading event',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Please try again later',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        if (!snapshot.hasData || snapshot.data == null) {
+          return Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.event_busy_outlined, size: 64),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Event not found',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 12),
+                  FilledButton(
+                    onPressed: () => context.go('/explore'),
+                    child: const Text('Go to Explore'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return EventDetailScreen(event: snapshot.data!);
+      },
+    );
+  }
+}
+
 class SpotDetailRoute extends StatefulWidget {
   final String spotId;
   final int? initialImageIndex;
@@ -769,17 +879,18 @@ class EditSpotRoute extends StatelessWidget {
   const EditSpotRoute({super.key, required this.spotId, this.spot});
 
   @override
-  Widget build(BuildContext context) => _EditSpotRouteContent(
-    spotId: spotId,
-    providedSpot: spot,
-  );
+  Widget build(BuildContext context) =>
+      _EditSpotRouteContent(spotId: spotId, providedSpot: spot);
 }
 
 class _EditSpotRouteContent extends StatefulWidget {
   final String spotId;
   final Spot? providedSpot;
 
-  const _EditSpotRouteContent({required this.spotId, required this.providedSpot});
+  const _EditSpotRouteContent({
+    required this.spotId,
+    required this.providedSpot,
+  });
 
   @override
   State<_EditSpotRouteContent> createState() => _EditSpotRouteContentState();
@@ -894,10 +1005,7 @@ class _EditSpotRouteContentState extends State<_EditSpotRouteContent> {
             }
 
             final spot = snapshot.data!;
-            return EditSpotScreen(
-              key: ValueKey('edit-${spot.id}'),
-              spot: spot,
-            );
+            return EditSpotScreen(key: ValueKey('edit-${spot.id}'), spot: spot);
           },
         );
       },
