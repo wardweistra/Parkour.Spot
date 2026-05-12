@@ -289,6 +289,8 @@ class _EventSyncSourcesScreenState extends State<EventSyncSourcesScreen> {
                                     );
                                 return;
                               case 'delete':
+                                final eventSourceService = context
+                                    .read<EventSyncSourceService>();
                                 final confirmed = await showDialog<bool>(
                                   context: context,
                                   builder: (dialogContext) => AlertDialog(
@@ -309,9 +311,9 @@ class _EventSyncSourcesScreenState extends State<EventSyncSourcesScreen> {
                                   ),
                                 );
                                 if (confirmed == true && mounted) {
-                                  await context
-                                      .read<EventSyncSourceService>()
-                                      .deleteSource(source.id);
+                                  await eventSourceService.deleteSource(
+                                    source.id,
+                                  );
                                 }
                                 return;
                             }
@@ -461,6 +463,8 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
               : () async {
                   if (!_formKey.currentState!.validate()) return;
                   final service = context.read<EventSyncSourceService>();
+                  final navigator = Navigator.of(context);
+                  final messenger = ScaffoldMessenger.of(context);
                   setState(() => _isSaving = true);
                   final trimmedDescription = _descriptionCtrl.text.trim();
                   final trimmedPublicUrl = _publicUrlCtrl.text.trim();
@@ -491,11 +495,11 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
 
                   if (!mounted) return;
                   setState(() => _isSaving = false);
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  messenger.showSnackBar(
                     SnackBar(content: Text(ok ? 'Saved' : 'Failed to save')),
                   );
                   if (ok) {
-                    Navigator.pop(context, true);
+                    navigator.pop(true);
                   }
                 },
           child: _isSaving

@@ -94,25 +94,41 @@ function nullableDateEqual(storedValue, incomingDate) {
  */
 function hasExternalEventContentChanges(existingData, incomingData) {
   if (!nullableStringEqual(existingData.title, incomingData.title)) return true;
-  if (!nullableStringEqual(existingData.description, incomingData.description)) {
+  if (
+    !nullableStringEqual(existingData.description, incomingData.description)
+  ) {
     return true;
   }
   if (!nullableStringEqual(existingData.websiteUrl, incomingData.websiteUrl)) {
     return true;
   }
-  if (!nullableStringEqual(existingData.address, incomingData.address)) return true;
-  if (!nullableDateEqual(existingData.startAt, incomingData.startAt)) return true;
-  if (!nullableDateEqual(existingData.endAt, incomingData.endAt)) return true;
-  if (!nullableStringEqual(existingData.eventSourceId, incomingData.eventSourceId)) {
+  if (!nullableStringEqual(existingData.address, incomingData.address)) {
+    return true;
+  }
+  if (!nullableDateEqual(existingData.startAt, incomingData.startAt)) {
+    return true;
+  }
+  if (!nullableDateEqual(existingData.endAt, incomingData.endAt)) {
     return true;
   }
   if (
-    !nullableStringEqual(existingData.eventSourceName, incomingData.eventSourceName)
+    !nullableStringEqual(existingData.eventSourceId, incomingData.eventSourceId)
   ) {
     return true;
   }
   if (
-    !nullableStringEqual(existingData.externalEventUid, incomingData.externalEventUid)
+    !nullableStringEqual(
+        existingData.eventSourceName,
+        incomingData.eventSourceName,
+    )
+  ) {
+    return true;
+  }
+  if (
+    !nullableStringEqual(
+        existingData.externalEventUid,
+        incomingData.externalEventUid,
+    )
   ) {
     return true;
   }
@@ -125,7 +141,10 @@ function hasExternalEventContentChanges(existingData, incomingData) {
     return true;
   }
   if (
-    !nullableStringEqual(existingData.externalEventKey, incomingData.externalEventKey)
+    !nullableStringEqual(
+        existingData.externalEventKey,
+        incomingData.externalEventKey,
+    )
   ) {
     return true;
   }
