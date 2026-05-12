@@ -15,6 +15,13 @@ class ParkourEvent {
   final String? createdBy;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final String? eventSourceId;
+  final String? eventSourceName;
+  final String? externalEventUid;
+  final String? externalEventRecurrenceId;
+  final String? externalEventKey;
+  final DateTime? externalSyncLastSeenAt;
+  final DateTime? externalSyncLastChangedAt;
 
   ParkourEvent({
     this.id,
@@ -31,6 +38,13 @@ class ParkourEvent {
     this.createdBy,
     this.createdAt,
     this.updatedAt,
+    this.eventSourceId,
+    this.eventSourceName,
+    this.externalEventUid,
+    this.externalEventRecurrenceId,
+    this.externalEventKey,
+    this.externalSyncLastSeenAt,
+    this.externalSyncLastChangedAt,
   });
 
   factory ParkourEvent.fromFirestore(DocumentSnapshot doc) {
@@ -59,6 +73,17 @@ class ParkourEvent {
           : null,
       updatedAt: data['updatedAt'] is Timestamp
           ? (data['updatedAt'] as Timestamp).toDate()
+          : null,
+      eventSourceId: data['eventSourceId'] as String?,
+      eventSourceName: data['eventSourceName'] as String?,
+      externalEventUid: data['externalEventUid'] as String?,
+      externalEventRecurrenceId: data['externalEventRecurrenceId'] as String?,
+      externalEventKey: data['externalEventKey'] as String?,
+      externalSyncLastSeenAt: data['externalSyncLastSeenAt'] is Timestamp
+          ? (data['externalSyncLastSeenAt'] as Timestamp).toDate()
+          : null,
+      externalSyncLastChangedAt: data['externalSyncLastChangedAt'] is Timestamp
+          ? (data['externalSyncLastChangedAt'] as Timestamp).toDate()
           : null,
     );
   }
@@ -91,6 +116,13 @@ class ParkourEvent {
       createdBy: data['createdBy'] as String?,
       createdAt: parseDate(data['createdAt']),
       updatedAt: parseDate(data['updatedAt']),
+      eventSourceId: data['eventSourceId'] as String?,
+      eventSourceName: data['eventSourceName'] as String?,
+      externalEventUid: data['externalEventUid'] as String?,
+      externalEventRecurrenceId: data['externalEventRecurrenceId'] as String?,
+      externalEventKey: data['externalEventKey'] as String?,
+      externalSyncLastSeenAt: parseDate(data['externalSyncLastSeenAt']),
+      externalSyncLastChangedAt: parseDate(data['externalSyncLastChangedAt']),
     );
   }
 
@@ -112,6 +144,21 @@ class ParkourEvent {
       if (createdBy != null) 'createdBy': createdBy,
       if (createdAt != null) 'createdAt': createdAt!.toUtc(),
       if (updatedAt != null) 'updatedAt': updatedAt!.toUtc(),
+      if (eventSourceId != null && eventSourceId!.trim().isNotEmpty)
+        'eventSourceId': eventSourceId!.trim(),
+      if (eventSourceName != null && eventSourceName!.trim().isNotEmpty)
+        'eventSourceName': eventSourceName!.trim(),
+      if (externalEventUid != null && externalEventUid!.trim().isNotEmpty)
+        'externalEventUid': externalEventUid!.trim(),
+      if (externalEventRecurrenceId != null &&
+          externalEventRecurrenceId!.trim().isNotEmpty)
+        'externalEventRecurrenceId': externalEventRecurrenceId!.trim(),
+      if (externalEventKey != null && externalEventKey!.trim().isNotEmpty)
+        'externalEventKey': externalEventKey!.trim(),
+      if (externalSyncLastSeenAt != null)
+        'externalSyncLastSeenAt': externalSyncLastSeenAt!.toUtc(),
+      if (externalSyncLastChangedAt != null)
+        'externalSyncLastChangedAt': externalSyncLastChangedAt!.toUtc(),
     };
   }
 
@@ -130,6 +177,13 @@ class ParkourEvent {
     Object? createdBy = _unset,
     Object? createdAt = _unset,
     Object? updatedAt = _unset,
+    Object? eventSourceId = _unset,
+    Object? eventSourceName = _unset,
+    Object? externalEventUid = _unset,
+    Object? externalEventRecurrenceId = _unset,
+    Object? externalEventKey = _unset,
+    Object? externalSyncLastSeenAt = _unset,
+    Object? externalSyncLastChangedAt = _unset,
   }) {
     return ParkourEvent(
       id: id ?? this.id,
@@ -158,6 +212,27 @@ class ParkourEvent {
       updatedAt: identical(updatedAt, _unset)
           ? this.updatedAt
           : updatedAt as DateTime?,
+      eventSourceId: identical(eventSourceId, _unset)
+          ? this.eventSourceId
+          : eventSourceId as String?,
+      eventSourceName: identical(eventSourceName, _unset)
+          ? this.eventSourceName
+          : eventSourceName as String?,
+      externalEventUid: identical(externalEventUid, _unset)
+          ? this.externalEventUid
+          : externalEventUid as String?,
+      externalEventRecurrenceId: identical(externalEventRecurrenceId, _unset)
+          ? this.externalEventRecurrenceId
+          : externalEventRecurrenceId as String?,
+      externalEventKey: identical(externalEventKey, _unset)
+          ? this.externalEventKey
+          : externalEventKey as String?,
+      externalSyncLastSeenAt: identical(externalSyncLastSeenAt, _unset)
+          ? this.externalSyncLastSeenAt
+          : externalSyncLastSeenAt as DateTime?,
+      externalSyncLastChangedAt: identical(externalSyncLastChangedAt, _unset)
+          ? this.externalSyncLastChangedAt
+          : externalSyncLastChangedAt as DateTime?,
     );
   }
 

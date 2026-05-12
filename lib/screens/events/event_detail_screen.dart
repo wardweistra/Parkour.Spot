@@ -20,6 +20,8 @@ class EventDetailScreen extends StatelessWidget {
     final hasWebsite = websiteUrl != null && websiteUrl.isNotEmpty;
     final hasLocation = event.latitude != null && event.longitude != null;
     final hasAddress = event.address?.trim().isNotEmpty == true;
+    final sourceName = event.eventSourceName?.trim();
+    final hasSource = sourceName != null && sourceName.isNotEmpty;
 
     return PageScaffold(
       title: event.title,
@@ -57,8 +59,38 @@ class EventDetailScreen extends StatelessWidget {
                 avatar: const Icon(Icons.place_outlined, size: 16),
                 label: Text('${event.spotIds.length} linked spot(s)'),
               ),
+              if (hasSource)
+                Chip(
+                  avatar: const Icon(Icons.sync, size: 16),
+                  label: Text(sourceName),
+                ),
             ],
           ),
+          if (hasSource &&
+              (event.externalSyncLastSeenAt != null ||
+                  event.externalSyncLastChangedAt != null)) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                if (event.externalSyncLastSeenAt != null)
+                  Chip(
+                    avatar: const Icon(Icons.update, size: 16),
+                    label: Text(
+                      'Seen: ${_formatUtc(event.externalSyncLastSeenAt!)}',
+                    ),
+                  ),
+                if (event.externalSyncLastChangedAt != null)
+                  Chip(
+                    avatar: const Icon(Icons.edit_calendar, size: 16),
+                    label: Text(
+                      'Changed: ${_formatUtc(event.externalSyncLastChangedAt!)}',
+                    ),
+                  ),
+              ],
+            ),
+          ],
           if (event.imageUrls.isNotEmpty) ...[
             const SizedBox(height: 16),
             Text('Images', style: Theme.of(context).textTheme.titleMedium),

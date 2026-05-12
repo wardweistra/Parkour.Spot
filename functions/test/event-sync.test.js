@@ -1,0 +1,95 @@
+const {
+  buildExternalEventKey,
+  hasExternalEventContentChanges,
+  parseExternalEventsFromIcs,
+} = require("../lib/event-sync");
+
+describe("event-sync helpers", () => {
+  describe("buildExternalEventKey", () => {
+    it("returns UID when recurrence ID is missing", () => {
+      expect(buildExternalEventKey("abc-123", null)).toBe("abc-123");
+    });
+
+    it("builds UID+recurrence key when recurrence ID exists", () => {
+      const key = buildExternalEventKey(
+          "recurring-uid",
+          "20260513T120000Z",
+      );
+      expect(key).toBe("recurring-uid::20260513T120000Z");
+    });
+  });
+
+  describe("hasExternalEventContentChanges", () => {
+    const incoming = {
+      title: "Jam Session",
+      description: "Bring water",
+      websiteUrl: "https://example.com/jam",
+      address: "Central Park",
+      startAt: new Date("2026-05-13T10:00:00.000Z"),
+      endAt: new Date("2026-05-13T12:00:00.000Z"),
+      eventSourceId: "source-1",
+      eventSourceName: "Source 1",
+      externalEventUid: "uid-1",
+      externalEventRecurrenceId: null,
+      externalEventKey: "uid-1",
+    };
+
+    it("returns false when relevant fields are unchanged", () => {
+      const existing = {...incoming};
+      expect(hasExternalEventContentChanges(existing, incoming)).toBe(false);
+    });
+
+    it("returns true when one tracked field changes", () => {
+      const existing = {...incoming, title: "Old title"};
+      expect(hasExternalEventContentChanges(existing, incoming)).toBe(true);
+    });
+
+    it("treats empty string and null as equivalent", () => {
+      const existing = {...incoming, description: ""};
+      const incomingWithoutDescription = {...incoming, description: null};
+      expect(
+          hasExternalEventContentChanges(existing, incomingWithoutDescription),
+      ).toBe(false);
+    });
+  });
+
+  describe("parseExternalEventsFromIcs", () => {
+    it("parses UID and recurrence ID into unique keys", () => {
+      const icsText = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//parkour spot test//EN",
+        "BEGIN:VEVENT",
+        "UID:single-event-uid@example.com",
+        "DTSTART:20260512T180000Z",
+        "DTEND:20260512T200000Z",
+        "SUMMARY:Single event",
+        "DESCRIPTION:Bring friends",
+        "URL:https://example.com/single",
+        "LOCATION:Single place",
+        "END:VEVENT",
+        "BEGIN:VEVENT",
+        "UID:recurring-event-uid@example.com",
+        "RECURRENCE-ID:20260513T180000Z",
+        "DTSTART:20260513T180000Z",
+        "DTEND:20260513T200000Z",
+        "SUMMARY:Recurring event instance",
+        "END:VEVENT",
+        "END:VCALENDAR",
+      ].join("\r\n");
+
+      const events = parseExternalEventsFromIcs(icsText, {
+        sourceId: "source-1",
+        sourceName: "Source name",
+      });
+
+      expect(events).toHaveLength(2);
+      expect(events[0].externalEventKey).toBe("single-event-uid@example.com");
+      expect(events[1].externalEventKey).toBe(
+          "recurring-event-uid@example.com::2026-05-13T18:00:00.000Z",
+      );
+      expect(events[0].eventSourceId).toBe("source-1");
+      expect(events[0].eventSourceName).toBe("Source name");
+    });
+  });
+});

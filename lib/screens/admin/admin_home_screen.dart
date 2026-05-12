@@ -107,6 +107,18 @@ class AdminHomeScreen extends StatelessWidget {
           const SizedBox(height: 8),
           Card(
             child: ListTile(
+              leading: const Icon(Icons.event_repeat_outlined),
+              title: const Text('Event Sync Sources'),
+              subtitle: const Text(
+                'Configure and sync external calendar sources',
+              ),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () => context.push('/admin/event-sources'),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Card(
+            child: ListTile(
               leading: const Icon(Icons.phonelink_ring_outlined),
               title: const Text('Web push subscriptions'),
               subtitle: const Text(
