@@ -1,7 +1,10 @@
 const {
   buildExternalEventKey,
+  extractLastHttpUrlFromDescription,
   hasExternalEventContentChanges,
+  normalizeImportedEventDescription,
   parseExternalEventsFromIcs,
+  removeExtractedWebsiteUrlFromDescription,
 } = require("../lib/event-sync");
 
 describe("event-sync helpers", () => {
@@ -53,6 +56,43 @@ describe("event-sync helpers", () => {
     });
   });
 
+  describe("normalizeImportedEventDescription", () => {
+    it("turns br into newlines and strips HTML tags", () => {
+      const raw =
+          "A<br>B<br/>C <strong>x</strong> &amp; <a href=\"https://x.com\">link</a>";
+      expect(normalizeImportedEventDescription(raw)).toBe(
+          "A\nB\nC x & link",
+      );
+    });
+  });
+
+  describe("extractLastHttpUrlFromDescription", () => {
+    it("returns the last URL in document order", () => {
+      const html =
+          "<a href=\"https://first.example/a\">x</a> text https://second.example/b";
+      expect(extractLastHttpUrlFromDescription(html)).toBe(
+          "https://second.example/b",
+      );
+    });
+  });
+
+  describe("removeExtractedWebsiteUrlFromDescription", () => {
+    it("removes the URL and tidies spaces", () => {
+      expect(
+          removeExtractedWebsiteUrlFromDescription(
+              "Line1\nLine2 old https://newer.example/b",
+              "https://newer.example/b",
+          ),
+      ).toBe("Line1\nLine2 old");
+    });
+
+    it("returns text unchanged when url is null", () => {
+      expect(
+          removeExtractedWebsiteUrlFromDescription("plain text", null),
+      ).toBe("plain text");
+    });
+  });
+
   describe("parseExternalEventsFromIcs", () => {
     it("parses UID and recurrence ID into unique keys", () => {
       const icsText = [
@@ -90,6 +130,34 @@ describe("event-sync helpers", () => {
       );
       expect(events[0].eventSourceId).toBe("source-1");
       expect(events[0].eventSourceName).toBe("Source name");
+      expect(events[0].websiteUrl).toBe("https://example.com/single");
+    });
+
+    it("uses last URL from HTML description and cleans description text", () => {
+      const icsText = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//parkour spot test//EN",
+        "BEGIN:VEVENT",
+        "UID:html-url@example.com",
+        "DTSTART:20260512T180000Z",
+        "DTEND:20260512T200000Z",
+        "SUMMARY:Jam",
+        "DESCRIPTION:Line1<br>Line2 <a href=\"https://older.example/a\">old</a> https://newer.example/b",
+        "URL:https://ics-fallback.example/",
+        "LOCATION:Park",
+        "END:VEVENT",
+        "END:VCALENDAR",
+      ].join("\r\n");
+
+      const events = parseExternalEventsFromIcs(icsText, {
+        sourceId: "s",
+        sourceName: "S",
+      });
+
+      expect(events).toHaveLength(1);
+      expect(events[0].websiteUrl).toBe("https://newer.example/b");
+      expect(events[0].description).toBe("Line1\nLine2 old");
     });
   });
 });

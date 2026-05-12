@@ -87,6 +87,108 @@ function nullableDateEqual(storedValue, incomingDate) {
 }
 
 /**
+ * Decodes a small set of HTML entities (for extracted URLs and text snippets).
+ * @param {string} s
+ * @return {string}
+ */
+function decodeBasicHtmlEntities(s) {
+  if (!s) return "";
+  return s
+      .replace(/&amp;/gi, "&")
+      .replace(/&lt;/gi, "<")
+      .replace(/&gt;/gi, ">")
+      .replace(/&quot;/gi, "\"")
+      .replace(/&#39;/g, "'")
+      .replace(/&apos;/gi, "'");
+}
+
+/**
+ * Trims trailing punctuation often glued to URLs in prose or ICS text.
+ * @param {string} url
+ * @return {string}
+ */
+function trimTrailingUrlPunctuation(url) {
+  return url.replace(/[.,;:!?)]+$/g, "");
+}
+
+/**
+ * Collects every http(s) URL in document order (href= and plain text).
+ * @param {string} html
+ * @return {Array<{idx: number, url: string}>}
+ */
+function collectHttpUrlsInOrder(html) {
+  if (!html || typeof html !== "string") return [];
+  /** @type {Array<{idx: number, url: string}>} */
+  const found = [];
+  let m;
+  const hrefRe = /\bhref\s*=\s*["'](https?:\/\/[^"'>\s]+)/gi;
+  while ((m = hrefRe.exec(html)) !== null) {
+    const url = trimTrailingUrlPunctuation(decodeBasicHtmlEntities(m[1]));
+    if (url.length > 0) found.push({idx: m.index, url});
+  }
+  const plainRe = /\bhttps?:\/\/[^\s<>"']+/gi;
+  while ((m = plainRe.exec(html)) !== null) {
+    const url = trimTrailingUrlPunctuation(decodeBasicHtmlEntities(m[0]));
+    if (url.length > 0) found.push({idx: m.index, url});
+  }
+  found.sort((a, b) => a.idx - b.idx);
+  return found;
+}
+
+/**
+ * Last http(s) URL in reading order (for event website from feed description).
+ * @param {string} html
+ * @return {string|null}
+ */
+function extractLastHttpUrlFromDescription(html) {
+  const found = collectHttpUrlsInOrder(html);
+  if (found.length === 0) return null;
+  return found[found.length - 1].url;
+}
+
+/**
+ * ICS / HTML event description: br tags to newlines, strip tags,
+ * decode common entities.
+ * @param {string} raw
+ * @return {string|null}
+ */
+function normalizeImportedEventDescription(raw) {
+  if (!raw || typeof raw !== "string") return null;
+  const text = raw
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<[^>]*>/g, "")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, "\"")
+      .replace(/&apos;/g, "'")
+      .replace(/&#39;/g, "'")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  return text.length > 0 ? text : null;
+}
+
+/**
+ * Removes the URL chosen for websiteUrl from plain description text
+ * (all exact matches), then tidies whitespace.
+ * @param {string|null} text
+ * @param {string|null} urlToRemove
+ * @return {string|null}
+ */
+function removeExtractedWebsiteUrlFromDescription(text, urlToRemove) {
+  if (!text || !urlToRemove) return text;
+  let out = text.split(urlToRemove).join("");
+  out = out
+      .replace(/[ \t]+\n/g, "\n")
+      .replace(/\n[ \t]+/g, "\n")
+      .replace(/[ \t]{2,}/g, " ")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  return out.length > 0 ? out : null;
+}
+
+/**
  * Checks whether a source-sync should update event content fields.
  * @param {Object} existingData
  * @param {Object} incomingData
@@ -173,10 +275,28 @@ function parseExternalEventsFromIcs(icsText, {sourceId, sourceName}) {
     if (!startAt) continue;
 
     const recurrenceId = normalizeRecurrenceId(value.recurrenceid);
+
+    const rawDescription =
+        typeof value.description === "string" ? value.description : "";
+    const descriptionFromBody = normalizeImportedEventDescription(
+        rawDescription,
+    );
+    const lastUrlInDescription = extractLastHttpUrlFromDescription(
+        rawDescription,
+    );
+    const websiteUrl =
+        toNonEmptyString(lastUrlInDescription) || toNonEmptyString(value.url);
+
+    const descriptionAfterUrlRemoval =
+        removeExtractedWebsiteUrlFromDescription(
+            descriptionFromBody,
+            lastUrlInDescription,
+        );
+
     parsedEvents.push({
       title: toNonEmptyString(value.summary) || "Untitled event",
-      description: toNonEmptyString(value.description),
-      websiteUrl: toNonEmptyString(value.url),
+      description: toNonEmptyString(descriptionAfterUrlRemoval),
+      websiteUrl,
       address: toNonEmptyString(value.location),
       startAt,
       endAt: normalizeDate(value.end),
@@ -193,7 +313,10 @@ function parseExternalEventsFromIcs(icsText, {sourceId, sourceName}) {
 
 module.exports = {
   buildExternalEventKey,
+  extractLastHttpUrlFromDescription,
   hasExternalEventContentChanges,
+  normalizeImportedEventDescription,
   parseExternalEventsFromIcs,
   normalizeRecurrenceId,
+  removeExtractedWebsiteUrlFromDescription,
 };
