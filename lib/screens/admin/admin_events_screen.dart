@@ -238,6 +238,8 @@ class _EventCard extends StatelessWidget {
     final websiteUrl = event.websiteUrl?.trim();
     final hasWebsite = websiteUrl != null && websiteUrl.isNotEmpty;
     final hasLocation = event.latitude != null && event.longitude != null;
+    final sourceName = event.eventSourceName?.trim();
+    final hasSource = sourceName != null && sourceName.isNotEmpty;
     final openEventPage = event.id == null
         ? null
         : () => context.push('/event/${event.id}');
@@ -297,8 +299,44 @@ class _EventCard extends StatelessWidget {
                     visualDensity: VisualDensity.compact,
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
+                  if (hasSource)
+                    Chip(
+                      avatar: const Icon(Icons.sync, size: 16),
+                      label: Text(sourceName),
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                 ],
               ),
+              if (hasSource &&
+                  (event.externalSyncLastSeenAt != null ||
+                      event.externalSyncLastChangedAt != null)) ...[
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    if (event.externalSyncLastSeenAt != null)
+                      Chip(
+                        avatar: const Icon(Icons.update, size: 16),
+                        label: Text(
+                          'Seen: ${_formatUtc(event.externalSyncLastSeenAt!)}',
+                        ),
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    if (event.externalSyncLastChangedAt != null)
+                      Chip(
+                        avatar: const Icon(Icons.edit_calendar, size: 16),
+                        label: Text(
+                          'Changed: ${_formatUtc(event.externalSyncLastChangedAt!)}',
+                        ),
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 10),
               SelectableText(
                 'Spot IDs: ${event.spotIds.join(', ')}',

@@ -23,6 +23,7 @@ const admin = require("firebase-admin");
 const sharp = require("sharp");
 const yauzl = require("yauzl");
 const xml2js = require("xml2js");
+const http = require("http");
 const https = require("https");
 const path = require("path");
 const {google} = require("googleapis");
@@ -99,6 +100,11 @@ const {
   generateImageHash,
 } = require("./lib/import-helpers");
 const {shouldRunSync} = require("./lib/sync-helpers");
+const {
+  hasExternalEventContentChanges,
+  parseExternalEventsFromIcs,
+  buildExternalEventKey,
+} = require("./lib/event-sync");
 
 // Import shared HTML template
 const {generateHtmlPage} = require("./html-template");
@@ -3849,6 +3855,538 @@ exports.getSyncSource = onCall({region: "europe-west1"}, async (request) => {
     throw new Error(`Failed to get sync source: ${error.message}`);
   }
 });
+
+/**
+ * Normalizes and validates an external ICS URL.
+ * @param {*} value
+ * @return {string}
+ */
+function normalizeIcsUrl(value) {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new Error("icsUrl is required");
+  }
+  const trimmed = value.trim();
+  let parsed;
+  try {
+    parsed = new URL(trimmed);
+  } catch (_) {
+    throw new Error("icsUrl must be a valid URL");
+  }
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    throw new Error("icsUrl must use http or https");
+  }
+  return parsed.toString();
+}
+
+/**
+ * Downloads text content and follows redirects.
+ * @param {string} url
+ * @param {number=} redirectCount
+ * @return {Promise<string>}
+ */
+function downloadTextFromUrl(url, redirectCount = 0) {
+  if (redirectCount > 5) {
+    throw new Error("Too many redirects while fetching ICS");
+  }
+
+  const parsedUrl = new URL(url);
+  if (parsedUrl.protocol !== "https:" && parsedUrl.protocol !== "http:") {
+    throw new Error("ICS URL must use http or https");
+  }
+  const client = parsedUrl.protocol === "http:" ? http : https;
+
+  return new Promise((resolve, reject) => {
+    const request = client.get(parsedUrl, (response) => {
+      if (
+        response.statusCode &&
+        response.statusCode >= 300 &&
+        response.statusCode < 400 &&
+        response.headers.location
+      ) {
+        response.resume();
+        const redirectedUrl = new URL(
+            response.headers.location,
+            parsedUrl,
+        ).toString();
+        resolve(downloadTextFromUrl(redirectedUrl, redirectCount + 1));
+        return;
+      }
+
+      if (!response.statusCode || response.statusCode >= 400) {
+        const statusCode = response.statusCode || 0;
+        response.resume();
+        reject(new Error(`Failed fetching ICS (HTTP ${statusCode})`));
+        return;
+      }
+
+      let body = "";
+      response.setEncoding("utf8");
+      response.on("data", (chunk) => {
+        body += chunk;
+      });
+      response.on("end", () => {
+        resolve(body);
+      });
+    });
+
+    request.on("error", reject);
+    request.setTimeout(15000, () => {
+      request.destroy(new Error("ICS request timed out"));
+    });
+  });
+}
+
+/**
+ * Builds Firestore payload for newly imported external events.
+ * @param {Object} parsedEvent
+ * @return {Object}
+ */
+function buildExternalEventCreateData(parsedEvent) {
+  const createData = {
+    title: parsedEvent.title,
+    startAt: parsedEvent.startAt,
+    spotIds: [],
+    imageUrls: [],
+    createdBy: "external-event-sync",
+    eventSourceId: parsedEvent.eventSourceId,
+    eventSourceName: parsedEvent.eventSourceName,
+    externalEventUid: parsedEvent.externalEventUid,
+    externalEventKey: parsedEvent.externalEventKey,
+    createdAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
+    externalSyncLastSeenAt: FieldValue.serverTimestamp(),
+    externalSyncLastChangedAt: FieldValue.serverTimestamp(),
+  };
+
+  if (parsedEvent.description) createData.description = parsedEvent.description;
+  if (parsedEvent.websiteUrl) createData.websiteUrl = parsedEvent.websiteUrl;
+  if (parsedEvent.address) createData.address = parsedEvent.address;
+  if (parsedEvent.endAt) createData.endAt = parsedEvent.endAt;
+  if (parsedEvent.externalEventRecurrenceId) {
+    createData.externalEventRecurrenceId = parsedEvent.externalEventRecurrenceId;
+  }
+
+  return createData;
+}
+
+/**
+ * Builds Firestore update payload for changed external events.
+ * @param {Object} parsedEvent
+ * @return {Object}
+ */
+function buildExternalEventChangedUpdate(parsedEvent) {
+  const updateData = {
+    title: parsedEvent.title,
+    startAt: parsedEvent.startAt,
+    eventSourceId: parsedEvent.eventSourceId,
+    eventSourceName: parsedEvent.eventSourceName,
+    externalEventUid: parsedEvent.externalEventUid,
+    externalEventKey: parsedEvent.externalEventKey,
+    updatedAt: FieldValue.serverTimestamp(),
+    externalSyncLastSeenAt: FieldValue.serverTimestamp(),
+    externalSyncLastChangedAt: FieldValue.serverTimestamp(),
+  };
+
+  updateData.description = parsedEvent.description || FieldValue.delete();
+  updateData.websiteUrl = parsedEvent.websiteUrl || FieldValue.delete();
+  updateData.address = parsedEvent.address || FieldValue.delete();
+  updateData.endAt = parsedEvent.endAt || FieldValue.delete();
+  updateData.externalEventRecurrenceId =
+    parsedEvent.externalEventRecurrenceId || FieldValue.delete();
+
+  return updateData;
+}
+
+/**
+ * Syncs one external event source into events collection.
+ * @param {DocumentSnapshot} sourceDoc
+ * @return {Promise<Object>}
+ */
+async function syncExternalEventSource(sourceDoc) {
+  const sourceData = sourceDoc.data() || {};
+  const sourceId = sourceDoc.id;
+  const sourceName = typeof sourceData.name === "string" &&
+      sourceData.name.trim().length > 0 ?
+    sourceData.name.trim() :
+    sourceId;
+  const icsUrl = normalizeIcsUrl(sourceData.icsUrl);
+  const icsText = await downloadTextFromUrl(icsUrl);
+  const parsedEvents = parseExternalEventsFromIcs(icsText, {
+    sourceId,
+    sourceName,
+  });
+
+  const uniqueEventsByKey = new Map();
+  for (const parsedEvent of parsedEvents) {
+    uniqueEventsByKey.set(parsedEvent.externalEventKey, parsedEvent);
+  }
+  const uniqueEvents = Array.from(uniqueEventsByKey.values());
+
+  const existingEventsSnapshot = await db
+      .collection("events")
+      .where("eventSourceId", "==", sourceId)
+      .get();
+  const existingByKey = new Map();
+  for (const existingDoc of existingEventsSnapshot.docs) {
+    const existingData = existingDoc.data() || {};
+    let existingKey = null;
+    if (
+      typeof existingData.externalEventKey === "string" &&
+      existingData.externalEventKey.trim().length > 0
+    ) {
+      existingKey = existingData.externalEventKey.trim();
+    } else if (
+      typeof existingData.externalEventUid === "string" &&
+      existingData.externalEventUid.trim().length > 0
+    ) {
+      try {
+        existingKey = buildExternalEventKey(
+            existingData.externalEventUid,
+            existingData.externalEventRecurrenceId || null,
+        );
+      } catch (_) {
+        existingKey = null;
+      }
+    }
+
+    if (existingKey) {
+      existingByKey.set(existingKey, {ref: existingDoc.ref, data: existingData});
+    }
+  }
+
+  let batch = db.batch();
+  let operationCount = 0;
+  const stats = {
+    totalParsed: parsedEvents.length,
+    totalUnique: uniqueEvents.length,
+    duplicatesInFeed: parsedEvents.length - uniqueEvents.length,
+    created: 0,
+    changed: 0,
+    unchanged: 0,
+  };
+
+  const commitBatch = async () => {
+    if (operationCount === 0) return;
+    await batch.commit();
+    batch = db.batch();
+    operationCount = 0;
+  };
+
+  for (const parsedEvent of uniqueEvents) {
+    const existing = existingByKey.get(parsedEvent.externalEventKey);
+    if (!existing) {
+      const newEventRef = db.collection("events").doc();
+      batch.set(newEventRef, buildExternalEventCreateData(parsedEvent));
+      stats.created += 1;
+      operationCount += 1;
+    } else if (hasExternalEventContentChanges(existing.data, parsedEvent)) {
+      batch.update(existing.ref, buildExternalEventChangedUpdate(parsedEvent));
+      stats.changed += 1;
+      operationCount += 1;
+    } else {
+      batch.update(existing.ref, {
+        externalSyncLastSeenAt: FieldValue.serverTimestamp(),
+      });
+      stats.unchanged += 1;
+      operationCount += 1;
+    }
+
+    if (operationCount >= 400) {
+      await commitBatch();
+    }
+  }
+
+  await commitBatch();
+  await sourceDoc.ref.update({
+    lastSyncAt: FieldValue.serverTimestamp(),
+    lastSyncStats: stats,
+  });
+
+  return {
+    sourceId,
+    sourceName,
+    stats,
+  };
+}
+
+// Function to create an event sync source (admin only).
+exports.createEventSyncSource = onCall(
+    {region: "europe-west1"},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const {
+          name,
+          icsUrl,
+          description,
+          publicUrl,
+          isActive = true,
+        } = request.data || {};
+
+        if (typeof name !== "string" || name.trim().length === 0) {
+          throw new Error("name is required");
+        }
+
+        const sourceData = {
+          name: name.trim(),
+          icsUrl: normalizeIcsUrl(icsUrl),
+          isActive: Boolean(isActive),
+          createdAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+        };
+
+        if (typeof description === "string" && description.trim().length > 0) {
+          sourceData.description = description.trim();
+        }
+        if (typeof publicUrl === "string" && publicUrl.trim().length > 0) {
+          sourceData.publicUrl = publicUrl.trim();
+        }
+
+        const docRef = await db.collection("eventSyncSources").add(sourceData);
+        return {
+          success: true,
+          sourceId: docRef.id,
+          message: "Event sync source created successfully",
+        };
+      } catch (error) {
+        console.error("Error creating event sync source:", error);
+        throw new Error(`Failed to create event sync source: ${error.message}`);
+      }
+    },
+);
+
+// Function to update an event sync source (admin only).
+exports.updateEventSyncSource = onCall(
+    {region: "europe-west1"},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const {
+          sourceId,
+          name,
+          icsUrl,
+          description,
+          publicUrl,
+          isActive,
+        } = request.data || {};
+
+        if (typeof sourceId !== "string" || sourceId.trim().length === 0) {
+          throw new Error("sourceId is required");
+        }
+
+        const updateData = {
+          updatedAt: FieldValue.serverTimestamp(),
+        };
+
+        if (name !== undefined) {
+          if (typeof name !== "string" || name.trim().length === 0) {
+            throw new Error("name must be a non-empty string");
+          }
+          updateData.name = name.trim();
+        }
+        if (icsUrl !== undefined) {
+          updateData.icsUrl = normalizeIcsUrl(icsUrl);
+        }
+        if (description !== undefined) {
+          if (typeof description === "string" && description.trim().length > 0) {
+            updateData.description = description.trim();
+          } else {
+            updateData.description = FieldValue.delete();
+          }
+        }
+        if (publicUrl !== undefined) {
+          if (typeof publicUrl === "string" && publicUrl.trim().length > 0) {
+            updateData.publicUrl = publicUrl.trim();
+          } else {
+            updateData.publicUrl = FieldValue.delete();
+          }
+        }
+        if (isActive !== undefined) {
+          updateData.isActive = Boolean(isActive);
+        }
+
+        await db.collection("eventSyncSources").doc(sourceId.trim())
+            .update(updateData);
+
+        return {
+          success: true,
+          sourceId: sourceId.trim(),
+          message: "Event sync source updated successfully",
+        };
+      } catch (error) {
+        console.error("Error updating event sync source:", error);
+        throw new Error(`Failed to update event sync source: ${error.message}`);
+      }
+    },
+);
+
+// Function to delete an event sync source (admin only).
+exports.deleteEventSyncSource = onCall(
+    {region: "europe-west1"},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const {sourceId} = request.data || {};
+        if (typeof sourceId !== "string" || sourceId.trim().length === 0) {
+          throw new Error("sourceId is required");
+        }
+
+        await db.collection("eventSyncSources").doc(sourceId.trim()).delete();
+        return {
+          success: true,
+          sourceId: sourceId.trim(),
+          message: "Event sync source deleted successfully",
+        };
+      } catch (error) {
+        console.error("Error deleting event sync source:", error);
+        throw new Error(`Failed to delete event sync source: ${error.message}`);
+      }
+    },
+);
+
+// Function to get event sync sources (admin only).
+exports.getEventSyncSources = onCall(
+    {region: "europe-west1"},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const {includeInactive = true} = request.data || {};
+        let query = db.collection("eventSyncSources");
+
+        if (!includeInactive) {
+          query = query.where("isActive", "==", true);
+        }
+
+        const snapshot = await query.orderBy("createdAt", "desc").get();
+        const sources = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        return {
+          success: true,
+          sources,
+          count: sources.length,
+        };
+      } catch (error) {
+        console.error("Error getting event sync sources:", error);
+        throw new Error(`Failed to get event sync sources: ${error.message}`);
+      }
+    },
+);
+
+// Function to sync one configured event source (admin only).
+exports.syncEventSource = onCall(
+    {region: "europe-west1", timeoutSeconds: 540, memory: "1GiB"},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const {sourceId} = request.data || {};
+        if (typeof sourceId !== "string" || sourceId.trim().length === 0) {
+          throw new Error("sourceId is required");
+        }
+
+        const sourceDoc = await db.collection("eventSyncSources")
+            .doc(sourceId.trim()).get();
+        if (!sourceDoc.exists) {
+          throw new Error(`Event sync source with ID ${sourceId} not found`);
+        }
+        const sourceData = sourceDoc.data() || {};
+        if (sourceData.isActive === false) {
+          throw new Error("Cannot sync an inactive event source");
+        }
+
+        const result = await syncExternalEventSource(sourceDoc);
+        return {
+          success: true,
+          sourceId: result.sourceId,
+          sourceName: result.sourceName,
+          stats: result.stats,
+          message: "Event source sync completed successfully",
+        };
+      } catch (error) {
+        console.error("Error syncing event source:", error);
+        throw new Error(`Failed to sync event source: ${error.message}`);
+      }
+    },
+);
+
+// Function to sync all active event sources (admin only).
+exports.syncAllEventSources = onCall(
+    {region: "europe-west1", timeoutSeconds: 540, memory: "1GiB"},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const snapshot = await db.collection("eventSyncSources")
+            .where("isActive", "==", true).get();
+
+        if (snapshot.empty) {
+          return {
+            success: true,
+            results: [],
+            totalStats: {
+              totalParsed: 0,
+              totalUnique: 0,
+              duplicatesInFeed: 0,
+              created: 0,
+              changed: 0,
+              unchanged: 0,
+            },
+            message: "No active event sources found",
+          };
+        }
+
+        const results = [];
+        const totalStats = {
+          totalParsed: 0,
+          totalUnique: 0,
+          duplicatesInFeed: 0,
+          created: 0,
+          changed: 0,
+          unchanged: 0,
+        };
+
+        for (const sourceDoc of snapshot.docs) {
+          try {
+            const result = await syncExternalEventSource(sourceDoc);
+            totalStats.totalParsed += result.stats.totalParsed;
+            totalStats.totalUnique += result.stats.totalUnique;
+            totalStats.duplicatesInFeed += result.stats.duplicatesInFeed;
+            totalStats.created += result.stats.created;
+            totalStats.changed += result.stats.changed;
+            totalStats.unchanged += result.stats.unchanged;
+            results.push({
+              sourceId: result.sourceId,
+              sourceName: result.sourceName,
+              success: true,
+              stats: result.stats,
+            });
+          } catch (sourceError) {
+            console.error(
+                `Failed syncing event source ${sourceDoc.id}:`,
+                sourceError,
+            );
+            results.push({
+              sourceId: sourceDoc.id,
+              sourceName: sourceDoc.data()?.name || sourceDoc.id,
+              success: false,
+              error: sourceError.message,
+            });
+          }
+        }
+
+        return {
+          success: true,
+          results,
+          totalStats,
+          message: `Processed ${results.length} event source(s)`,
+        };
+      } catch (error) {
+        console.error("Error syncing all event sources:", error);
+        throw new Error(`Failed to sync all event sources: ${error.message}`);
+      }
+    },
+);
 
 // Admin callable to backfill source/folder default spot attributes.
 exports.backfillSourceSpotAttributes = onCall(
