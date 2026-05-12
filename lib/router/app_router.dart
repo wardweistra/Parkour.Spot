@@ -38,9 +38,7 @@ import '../screens/profile/my_check_ins_screen.dart';
 import '../screens/profile/account_settings_screen.dart';
 import '../screens/profile/notifications_screen.dart';
 import '../screens/profile/public_profile_screen.dart';
-import '../models/parkour_event.dart';
 import '../models/spot.dart';
-import '../services/admin_events_service.dart';
 import '../services/spot_service.dart';
 import '../services/auth_service.dart';
 import '../analytics/web_analytics.dart';
@@ -424,7 +422,7 @@ class AppRouter {
           path: '/event/:eventId',
           builder: (context, state) {
             final eventId = state.pathParameters['eventId']!;
-            return EventDetailRoute(eventId: eventId);
+            return EventDetailScreen(eventId: eventId);
           },
         ),
         GoRoute(
@@ -668,101 +666,6 @@ class AppRouter {
 
     // If lookup fails, return null
     return null;
-  }
-}
-
-class EventDetailRoute extends StatefulWidget {
-  final String eventId;
-
-  const EventDetailRoute({super.key, required this.eventId});
-
-  @override
-  State<EventDetailRoute> createState() => _EventDetailRouteState();
-}
-
-class _EventDetailRouteState extends State<EventDetailRoute> {
-  Future<ParkourEvent?>? _eventFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _eventFuture = Provider.of<AdminEventsService>(
-      context,
-      listen: false,
-    ).getEventById(widget.eventId);
-  }
-
-  @override
-  void didUpdateWidget(covariant EventDetailRoute oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.eventId != widget.eventId) {
-      _eventFuture = Provider.of<AdminEventsService>(
-        context,
-        listen: false,
-      ).getEventById(widget.eventId);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<ParkourEvent?>(
-      future: _eventFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        if (snapshot.hasError) {
-          return Scaffold(
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error, size: 64, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Error loading event',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Please try again later',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-
-        if (!snapshot.hasData || snapshot.data == null) {
-          return Scaffold(
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.event_busy_outlined, size: 64),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Event not found',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 12),
-                  FilledButton(
-                    onPressed: () => context.go('/explore'),
-                    child: const Text('Go to Explore'),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-
-        return EventDetailScreen(event: snapshot.data!);
-      },
-    );
   }
 }
 

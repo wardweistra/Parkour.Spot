@@ -696,12 +696,6 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
   Future<void> _submit() async {
     final eventsService = context.read<AdminEventsService>();
     if (!_formKey.currentState!.validate()) return;
-    if (_linkedSpots.isEmpty) {
-      setState(() {
-        _formError = 'Link at least one spot to the event';
-      });
-      return;
-    }
     if (_endAt != null && _endAt!.isBefore(_startAt)) {
       setState(() {
         _formError = 'End time cannot be before start time';

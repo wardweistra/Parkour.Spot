@@ -44,6 +44,20 @@ void main() {
       expect(event.createdBy, 'admin-uid');
       expect(event.createdAt?.toUtc(), createdAt);
       expect(event.updatedAt?.toUtc(), updatedAt);
+      expect(event.duplicateOf, isNull);
+      expect(event.isNativeEvent, isTrue);
+    });
+
+    test('fromMap parses duplicateOf and external source for isNativeEvent', () {
+      final event = ParkourEvent.fromMap({
+        'title': 'Synced',
+        'startAt': Timestamp.fromDate(DateTime.utc(2026, 1, 1)),
+        'spotIds': const ['spot-x'],
+        'eventSourceId': 'ics-source',
+        'duplicateOf': 'native-original',
+      });
+      expect(event.duplicateOf, 'native-original');
+      expect(event.isNativeEvent, isFalse);
     });
 
     test('toFirestore keeps linked spots and trims description', () {
@@ -79,6 +93,17 @@ void main() {
       expect(map['createdBy'], 'admin-uid');
       expect(map['createdAt'], DateTime.utc(2026, 5, 25, 8, 0));
       expect(map['updatedAt'], DateTime.utc(2026, 5, 25, 9, 0));
+    });
+
+    test('toFirestore includes duplicateOf when non-empty', () {
+      final event = ParkourEvent(
+        title: 'Dup',
+        startAt: DateTime.utc(2026, 7, 1, 12, 0),
+        spotIds: const ['spot-z'],
+        duplicateOf: '  orig-id  ',
+      );
+      final map = event.toFirestore();
+      expect(map['duplicateOf'], 'orig-id');
     });
   });
 }

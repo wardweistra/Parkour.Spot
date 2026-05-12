@@ -785,5 +785,19 @@
   "profileLocationAlertsEnabledLabel": "Activado",
   "profileLocationAlertsLabelRequired": "Introduce una etiqueta",
   "profileLocationAlertsLocationRequired": "Elige una ubicación en el mapa",
-  "profileLocationAlertsNoLocationsEnabledWarning": "No recibirás notificaciones basadas en la ubicación hasta que actives «Usar la última ubicación conocida» o al menos un lugar guardado."
+  "profileLocationAlertsNoLocationsEnabledWarning": "No recibirás notificaciones basadas en la ubicación hasta que actives «Usar la última ubicación conocida» o al menos un lugar guardado.",
+  "eventDetailOriginalEventFallback": "Evento original",
+  "eventDetailMarkDuplicateAdminOnly": "Solo los administradores pueden marcar eventos como duplicados.",
+  "eventDetailMarkDuplicatePickNativeTitle": "Marcar como duplicado de un evento nativo",
+  "eventDetailMarkDuplicateSearchHint": "URL o ID del evento",
+  "eventDetailMarkDuplicateNotFoundOrInvalid": "Introduce un ID de evento válido o un enlace /event/…",
+  "eventDetailMarkDuplicateTargetNotNative": "Ese evento no es un evento nativo de parkour.spot. Solo los eventos nativos pueden ser el original.",
+  "eventDetailMarkDuplicateTargetIsDuplicate": "Ese evento ya está marcado como duplicado de otro evento.",
+  "eventDetailMarkDuplicateUseButton": "Usar este evento",
+  "eventDetailMarkDuplicateSuggestionsHeader": "Eventos nativos recientes",
+  "eventDetailMarkDuplicateNoSuggestions": "No hay sugerencias disponibles.",
+  "eventDetailMarkDuplicateConfirmBody": "¿Marcar este evento como duplicado de «{title}»?",
+  "eventDetailMarkDuplicateSuccess": "Evento marcado como duplicado.",
+  "eventDetailRemoveDuplicateConfirmBody": "¿Quitar el estado de duplicado de este evento? Dejará de apuntar a otro evento como original.",
+  "eventDetailRemoveDuplicateSuccess": "Estado de duplicado eliminado."
 }

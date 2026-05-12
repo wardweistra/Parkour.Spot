@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 
@@ -113,8 +114,8 @@ class AdminEventsService extends ChangeNotifier {
         .where((id) => id.isNotEmpty)
         .toSet()
         .toList();
-    if (title.trim().isEmpty || normalizedSpotIds.isEmpty) {
-      _error = 'Title and at least one linked spot are required';
+    if (title.trim().isEmpty) {
+      _error = 'Title is required';
       notifyListeners();
       return false;
     }
@@ -233,6 +234,9 @@ class AdminEventsService extends ChangeNotifier {
       for (final doc in snapshot.docs) {
         try {
           final event = ParkourEvent.fromFirestore(doc);
+          if (event.duplicateOf != null && event.duplicateOf!.trim().isNotEmpty) {
+            continue;
+          }
           if (event.startAt.toUtc().isAfter(now)) {
             events.add(event);
           }
@@ -296,6 +300,176 @@ class AdminEventsService extends ChangeNotifier {
         return '.webp';
       default:
         return '.jpg';
+    }
+  }
+
+  /// Events that point to [eventId] as their canonical native original.
+  Future<List<ParkourEvent>> getEventsDuplicating(String eventId) async {
+    try {
+      final snapshot = await _firestore
+          .collection('events')
+          .where('duplicateOf', isEqualTo: eventId)
+          .get();
+      return snapshot.docs.map(ParkourEvent.fromFirestore).toList();
+    } catch (e, st) {
+      debugPrint('AdminEventsService.getEventsDuplicating error: $e\n$st');
+      return const <ParkourEvent>[];
+    }
+  }
+
+  /// Recent events that can serve as a duplicate target: native, not a duplicate.
+  Future<List<ParkourEvent>> fetchNativeOriginalEventCandidates({
+    required String excludeEventId,
+    int limit = 40,
+  }) async {
+    try {
+      final snapshot = await _firestore
+          .collection('events')
+          .orderBy('startAt', descending: true)
+          .limit(limit * 3)
+          .get();
+      final out = <ParkourEvent>[];
+      for (final doc in snapshot.docs) {
+        if (doc.id == excludeEventId) continue;
+        final event = ParkourEvent.fromFirestore(doc);
+        if (!event.isNativeEvent) continue;
+        final dup = event.duplicateOf?.trim();
+        if (dup != null && dup.isNotEmpty) continue;
+        out.add(event);
+        if (out.length >= limit) break;
+      }
+      return out;
+    } catch (e, st) {
+      debugPrint(
+        'AdminEventsService.fetchNativeOriginalEventCandidates error: $e\n$st',
+      );
+      return const <ParkourEvent>[];
+    }
+  }
+
+  /// Validates and sets [duplicateEventId].duplicateOf to [nativeOriginalEventId].
+  Future<bool> markEventAsDuplicate({
+    required String duplicateEventId,
+    required String nativeOriginalEventId,
+  }) async {
+    _error = null;
+    notifyListeners();
+
+    final trimmedOriginal = nativeOriginalEventId.trim();
+    final trimmedDup = duplicateEventId.trim();
+    if (trimmedOriginal.isEmpty || trimmedDup.isEmpty) {
+      _error = 'Invalid event id';
+      notifyListeners();
+      return false;
+    }
+    if (trimmedOriginal == trimmedDup) {
+      _error = 'An event cannot be a duplicate of itself';
+      notifyListeners();
+      return false;
+    }
+
+    try {
+      final originalSnap = await _firestore
+          .collection('events')
+          .doc(trimmedOriginal)
+          .get();
+      if (!originalSnap.exists) {
+        _error = 'Original event not found';
+        notifyListeners();
+        return false;
+      }
+      final original = ParkourEvent.fromFirestore(originalSnap);
+      if (!original.isNativeEvent) {
+        _error =
+            'The original must be a native parkour.spot event, not from an external source';
+        notifyListeners();
+        return false;
+      }
+      final origDup = original.duplicateOf?.trim();
+      if (origDup != null && origDup.isNotEmpty) {
+        _error = 'Cannot point to an event that is already marked as a duplicate';
+        notifyListeners();
+        return false;
+      }
+
+      final dupSnap = await _firestore
+          .collection('events')
+          .doc(trimmedDup)
+          .get();
+      if (!dupSnap.exists) {
+        _error = 'Event to mark as duplicate was not found';
+        notifyListeners();
+        return false;
+      }
+      final duplicate = ParkourEvent.fromFirestore(dupSnap);
+      final existingDup = duplicate.duplicateOf?.trim();
+      if (existingDup != null && existingDup.isNotEmpty) {
+        _error = 'This event is already marked as a duplicate';
+        notifyListeners();
+        return false;
+      }
+
+      final dependents = await getEventsDuplicating(trimmedDup);
+      if (dependents.isNotEmpty) {
+        _error =
+            'Cannot mark this event as a duplicate because other events are already marked as duplicates of it';
+        notifyListeners();
+        return false;
+      }
+
+      final dupData = dupSnap.data();
+      final spotIdsLen = dupData?['spotIds'] is List
+          ? (dupData!['spotIds'] as List).length
+          : -1;
+      debugPrint(
+        'AdminEventsService.markEventAsDuplicate: uid=${FirebaseAuth.instance.currentUser?.uid} '
+        'dup=$trimmedDup original=$trimmedOriginal '
+        'spotIdsLen=$spotIdsLen createdBy=${dupData?['createdBy']} '
+        'eventSourceId=${dupData?['eventSourceId']}',
+      );
+
+      await _firestore.collection('events').doc(trimmedDup).update({
+        'duplicateOf': trimmedOriginal,
+        'updatedAt': Timestamp.fromDate(DateTime.now().toUtc()),
+      });
+      notifyListeners();
+      return true;
+    } catch (e, st) {
+      _error = 'Failed to mark event as duplicate';
+      debugPrint('AdminEventsService.markEventAsDuplicate error: $e\n$st');
+      if (e is FirebaseException && e.code == 'permission-denied') {
+        debugPrint(
+          'AdminEventsService.markEventAsDuplicate: permission-denied '
+          '(deploy firestore.rules; external events may have had empty spotIds until rules fix; '
+          'admin must be token.admin or users/{uid}.isAdmin).',
+        );
+      }
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> clearEventDuplicateStatus(String eventId) async {
+    _error = null;
+    notifyListeners();
+    final id = eventId.trim();
+    if (id.isEmpty) {
+      _error = 'Invalid event id';
+      notifyListeners();
+      return false;
+    }
+    try {
+      await _firestore.collection('events').doc(id).update({
+        'duplicateOf': FieldValue.delete(),
+        'updatedAt': Timestamp.fromDate(DateTime.now().toUtc()),
+      });
+      notifyListeners();
+      return true;
+    } catch (e, st) {
+      _error = 'Failed to remove duplicate status';
+      debugPrint('AdminEventsService.clearEventDuplicateStatus error: $e\n$st');
+      notifyListeners();
+      return false;
     }
   }
 }

@@ -2873,4 +2873,58 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get publicProfileFailedToUpdateProfilePrivacy =>
       'No se pudo actualizar la privacidad del perfil';
+
+  @override
+  String get eventDetailOriginalEventFallback => 'Evento original';
+
+  @override
+  String get eventDetailMarkDuplicateAdminOnly =>
+      'Solo los administradores pueden marcar eventos como duplicados.';
+
+  @override
+  String get eventDetailMarkDuplicatePickNativeTitle =>
+      'Marcar como duplicado de un evento nativo';
+
+  @override
+  String get eventDetailMarkDuplicateSearchHint => 'URL o ID del evento';
+
+  @override
+  String get eventDetailMarkDuplicateNotFoundOrInvalid =>
+      'Introduce un ID de evento válido o un enlace /event/…';
+
+  @override
+  String get eventDetailMarkDuplicateTargetNotNative =>
+      'Ese evento no es un evento nativo de parkour.spot. Solo los eventos nativos pueden ser el original.';
+
+  @override
+  String get eventDetailMarkDuplicateTargetIsDuplicate =>
+      'Ese evento ya está marcado como duplicado de otro evento.';
+
+  @override
+  String get eventDetailMarkDuplicateUseButton => 'Usar este evento';
+
+  @override
+  String get eventDetailMarkDuplicateSuggestionsHeader =>
+      'Eventos nativos recientes';
+
+  @override
+  String get eventDetailMarkDuplicateNoSuggestions =>
+      'No hay sugerencias disponibles.';
+
+  @override
+  String eventDetailMarkDuplicateConfirmBody(String title) {
+    return '¿Marcar este evento como duplicado de «$title»?';
+  }
+
+  @override
+  String get eventDetailMarkDuplicateSuccess =>
+      'Evento marcado como duplicado.';
+
+  @override
+  String get eventDetailRemoveDuplicateConfirmBody =>
+      '¿Quitar el estado de duplicado de este evento? Dejará de apuntar a otro evento como original.';
+
+  @override
+  String get eventDetailRemoveDuplicateSuccess =>
+      'Estado de duplicado eliminado.';
 }

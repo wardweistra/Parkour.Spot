@@ -785,5 +785,19 @@
   "profileLocationAlertsEnabledLabel": "Activé",
   "profileLocationAlertsLabelRequired": "Veuillez saisir un libellé",
   "profileLocationAlertsLocationRequired": "Veuillez choisir un lieu sur la carte",
-  "profileLocationAlertsNoLocationsEnabledWarning": "Vous ne recevrez aucune notification basée sur la localisation tant que l’option « Utiliser la dernière position connue » est désactivée et qu’aucun lieu enregistré n’est activé."
+  "profileLocationAlertsNoLocationsEnabledWarning": "Vous ne recevrez aucune notification basée sur la localisation tant que l’option « Utiliser la dernière position connue » est désactivée et qu’aucun lieu enregistré n’est activé.",
+  "eventDetailOriginalEventFallback": "Événement d’origine",
+  "eventDetailMarkDuplicateAdminOnly": "Seuls les administrateurs peuvent marquer des événements comme doublons.",
+  "eventDetailMarkDuplicatePickNativeTitle": "Marquer comme doublon d’un événement natif",
+  "eventDetailMarkDuplicateSearchHint": "URL ou ID de l’événement",
+  "eventDetailMarkDuplicateNotFoundOrInvalid": "Saisissez un ID d’événement valide ou un lien /event/…",
+  "eventDetailMarkDuplicateTargetNotNative": "Cet événement n’est pas un événement natif parkour.spot. Seuls les événements natifs peuvent être l’original.",
+  "eventDetailMarkDuplicateTargetIsDuplicate": "Cet événement est déjà marqué comme doublon d’un autre événement.",
+  "eventDetailMarkDuplicateUseButton": "Utiliser cet événement",
+  "eventDetailMarkDuplicateSuggestionsHeader": "Événements natifs récents",
+  "eventDetailMarkDuplicateNoSuggestions": "Aucune suggestion disponible.",
+  "eventDetailMarkDuplicateConfirmBody": "Marquer cet événement comme doublon de « {title} » ?",
+  "eventDetailMarkDuplicateSuccess": "Événement marqué comme doublon.",
+  "eventDetailRemoveDuplicateConfirmBody": "Retirer le statut de doublon pour cet événement ? Il ne pointera plus vers un autre événement comme original.",
+  "eventDetailRemoveDuplicateSuccess": "Statut de doublon retiré."
 }

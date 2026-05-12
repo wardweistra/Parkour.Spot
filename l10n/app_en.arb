@@ -2640,5 +2640,66 @@
   "publicProfileFailedToUpdateProfilePrivacy": "Failed to update profile privacy",
   "@publicProfileFailedToUpdateProfilePrivacy": {
     "description": "Snackbar when privacy toggle update fails"
+  },
+  "eventDetailOriginalEventFallback": "Original event",
+  "@eventDetailOriginalEventFallback": {
+    "description": "Event detail: title unknown while loading duplicate original"
+  },
+  "eventDetailMarkDuplicateAdminOnly": "Only admins can mark events as duplicates.",
+  "@eventDetailMarkDuplicateAdminOnly": {
+    "description": "Shown when a non-admin opens admin-only duplicate action"
+  },
+  "eventDetailMarkDuplicatePickNativeTitle": "Mark as duplicate of native event",
+  "@eventDetailMarkDuplicatePickNativeTitle": {
+    "description": "Event selection dialog title"
+  },
+  "eventDetailMarkDuplicateSearchHint": "Event URL or ID",
+  "@eventDetailMarkDuplicateSearchHint": {
+    "description": "Hint for finding canonical event by id or link"
+  },
+  "eventDetailMarkDuplicateNotFoundOrInvalid": "Enter a valid event id or /event/… link.",
+  "@eventDetailMarkDuplicateNotFoundOrInvalid": {
+    "description": "Invalid search input for event duplicate picker"
+  },
+  "eventDetailMarkDuplicateTargetNotNative": "That event is not a native parkour.spot event. Only native events can be the original.",
+  "@eventDetailMarkDuplicateTargetNotNative": {
+    "description": "Chosen original has an external calendar source"
+  },
+  "eventDetailMarkDuplicateTargetIsDuplicate": "That event is already marked as a duplicate of another event.",
+  "@eventDetailMarkDuplicateTargetIsDuplicate": {
+    "description": "Chosen original is itself a duplicate"
+  },
+  "eventDetailMarkDuplicateUseButton": "Use this event",
+  "@eventDetailMarkDuplicateUseButton": {
+    "description": "Confirm picked search result in duplicate dialog"
+  },
+  "eventDetailMarkDuplicateSuggestionsHeader": "Recent native events",
+  "@eventDetailMarkDuplicateSuggestionsHeader": {
+    "description": "Section header in duplicate picker"
+  },
+  "eventDetailMarkDuplicateNoSuggestions": "No suggestions available.",
+  "@eventDetailMarkDuplicateNoSuggestions": {
+    "description": "Empty suggestions in duplicate picker"
+  },
+  "eventDetailMarkDuplicateConfirmBody": "Mark this event as a duplicate of “{title}”?",
+  "@eventDetailMarkDuplicateConfirmBody": {
+    "description": "Confirm marking duplicate; title is canonical event name",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "eventDetailMarkDuplicateSuccess": "Event marked as duplicate.",
+  "@eventDetailMarkDuplicateSuccess": {
+    "description": "Snackbar after duplicate link saved"
+  },
+  "eventDetailRemoveDuplicateConfirmBody": "Remove duplicate status from this event? It will no longer point to another event as its original.",
+  "@eventDetailRemoveDuplicateConfirmBody": {
+    "description": "Confirm clearing duplicateOf"
+  },
+  "eventDetailRemoveDuplicateSuccess": "Duplicate status removed.",
+  "@eventDetailRemoveDuplicateSuccess": {
+    "description": "Snackbar after duplicate cleared"
   }
 }

@@ -26,7 +26,7 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
 
-    // Parkour events (admin-managed). Each event links to one or more spots.
+    // Parkour events (admin-managed). spotIds may be empty (e.g. ICS imports before linking).
     match /events/{eventId} {
       function eventWebsiteOk(data) {
         return !('websiteUrl' in data) ||
@@ -57,21 +57,36 @@ service cloud.firestore {
         );
       }
 
-      function eventCommonShape(data) {
+      // Title, media, location, times, duplicateOf; spotIds capped in eventSpotIdsOk.
+      function eventFieldsShared(data) {
         return data.title is string &&
           data.title.size() > 0 &&
           data.title.size() <= 200 &&
           (!('description' in data) ||
             (data.description is string && data.description.size() <= 2000)) &&
+          (!('duplicateOf' in data) || data.duplicateOf == null ||
+            (data.duplicateOf is string &&
+              data.duplicateOf.size() > 0 &&
+              data.duplicateOf.size() <= 200)) &&
           eventImagesOk(data) &&
           eventWebsiteOk(data) &&
           data.startAt is timestamp &&
           (!('endAt' in data) ||
             (data.endAt is timestamp && data.endAt >= data.startAt)) &&
-          eventLocationOk(data) &&
-          data.spotIds is list &&
-          data.spotIds.size() > 0 &&
-          data.spotIds.size() <= 50;
+          eventLocationOk(data);
+      }
+
+      function eventSpotIdsOk(data) {
+        return data.spotIds is list && data.spotIds.size() <= 50;
+      }
+
+      function eventCommonShape(data) {
+        return eventFieldsShared(data) && eventSpotIdsOk(data);
+      }
+
+      // serverTimestamp() is not "is timestamp" in rules; it equals request.time.
+      function eventUpdatedAtOk(data) {
+        return data.updatedAt == request.time || data.updatedAt is timestamp;
       }
 
       function eventCreateShape() {
@@ -79,7 +94,7 @@ service cloud.firestore {
           request.resource.data.createdBy is string &&
           request.resource.data.createdBy == request.auth.uid &&
           request.resource.data.createdAt is timestamp &&
-          request.resource.data.updatedAt is timestamp &&
+          eventUpdatedAtOk(request.resource.data) &&
           eventCommonShape(request.resource.data);
       }
 
@@ -87,7 +102,7 @@ service cloud.firestore {
         return request.auth != null &&
           request.resource.data.createdBy == resource.data.createdBy &&
           request.resource.data.createdAt == resource.data.createdAt &&
-          request.resource.data.updatedAt is timestamp &&
+          eventUpdatedAtOk(request.resource.data) &&
           eventCommonShape(request.resource.data);
       }
 

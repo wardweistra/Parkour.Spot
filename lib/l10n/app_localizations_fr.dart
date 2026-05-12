@@ -2895,4 +2895,57 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get publicProfileFailedToUpdateProfilePrivacy =>
       'Impossible de mettre à jour la confidentialité du profil';
+
+  @override
+  String get eventDetailOriginalEventFallback => 'Événement d’origine';
+
+  @override
+  String get eventDetailMarkDuplicateAdminOnly =>
+      'Seuls les administrateurs peuvent marquer des événements comme doublons.';
+
+  @override
+  String get eventDetailMarkDuplicatePickNativeTitle =>
+      'Marquer comme doublon d’un événement natif';
+
+  @override
+  String get eventDetailMarkDuplicateSearchHint => 'URL ou ID de l’événement';
+
+  @override
+  String get eventDetailMarkDuplicateNotFoundOrInvalid =>
+      'Saisissez un ID d’événement valide ou un lien /event/…';
+
+  @override
+  String get eventDetailMarkDuplicateTargetNotNative =>
+      'Cet événement n’est pas un événement natif parkour.spot. Seuls les événements natifs peuvent être l’original.';
+
+  @override
+  String get eventDetailMarkDuplicateTargetIsDuplicate =>
+      'Cet événement est déjà marqué comme doublon d’un autre événement.';
+
+  @override
+  String get eventDetailMarkDuplicateUseButton => 'Utiliser cet événement';
+
+  @override
+  String get eventDetailMarkDuplicateSuggestionsHeader =>
+      'Événements natifs récents';
+
+  @override
+  String get eventDetailMarkDuplicateNoSuggestions =>
+      'Aucune suggestion disponible.';
+
+  @override
+  String eventDetailMarkDuplicateConfirmBody(String title) {
+    return 'Marquer cet événement comme doublon de « $title » ?';
+  }
+
+  @override
+  String get eventDetailMarkDuplicateSuccess =>
+      'Événement marqué comme doublon.';
+
+  @override
+  String get eventDetailRemoveDuplicateConfirmBody =>
+      'Retirer le statut de doublon pour cet événement ? Il ne pointera plus vers un autre événement comme original.';
+
+  @override
+  String get eventDetailRemoveDuplicateSuccess => 'Statut de doublon retiré.';
 }

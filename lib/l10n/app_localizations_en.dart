@@ -2846,4 +2846,56 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get publicProfileFailedToUpdateProfilePrivacy =>
       'Failed to update profile privacy';
+
+  @override
+  String get eventDetailOriginalEventFallback => 'Original event';
+
+  @override
+  String get eventDetailMarkDuplicateAdminOnly =>
+      'Only admins can mark events as duplicates.';
+
+  @override
+  String get eventDetailMarkDuplicatePickNativeTitle =>
+      'Mark as duplicate of native event';
+
+  @override
+  String get eventDetailMarkDuplicateSearchHint => 'Event URL or ID';
+
+  @override
+  String get eventDetailMarkDuplicateNotFoundOrInvalid =>
+      'Enter a valid event id or /event/… link.';
+
+  @override
+  String get eventDetailMarkDuplicateTargetNotNative =>
+      'That event is not a native parkour.spot event. Only native events can be the original.';
+
+  @override
+  String get eventDetailMarkDuplicateTargetIsDuplicate =>
+      'That event is already marked as a duplicate of another event.';
+
+  @override
+  String get eventDetailMarkDuplicateUseButton => 'Use this event';
+
+  @override
+  String get eventDetailMarkDuplicateSuggestionsHeader =>
+      'Recent native events';
+
+  @override
+  String get eventDetailMarkDuplicateNoSuggestions =>
+      'No suggestions available.';
+
+  @override
+  String eventDetailMarkDuplicateConfirmBody(String title) {
+    return 'Mark this event as a duplicate of “$title”?';
+  }
+
+  @override
+  String get eventDetailMarkDuplicateSuccess => 'Event marked as duplicate.';
+
+  @override
+  String get eventDetailRemoveDuplicateConfirmBody =>
+      'Remove duplicate status from this event? It will no longer point to another event as its original.';
+
+  @override
+  String get eventDetailRemoveDuplicateSuccess => 'Duplicate status removed.';
 }

@@ -22,6 +22,8 @@ class ParkourEvent {
   final String? externalEventKey;
   final DateTime? externalSyncLastSeenAt;
   final DateTime? externalSyncLastChangedAt;
+  /// When set, this event is a duplicate of the canonical native event [duplicateOf].
+  final String? duplicateOf;
 
   ParkourEvent({
     this.id,
@@ -45,7 +47,12 @@ class ParkourEvent {
     this.externalEventKey,
     this.externalSyncLastSeenAt,
     this.externalSyncLastChangedAt,
+    this.duplicateOf,
   });
+
+  /// Native events are authored on parkour.spot (not imported from an external calendar source).
+  bool get isNativeEvent =>
+      eventSourceId == null || eventSourceId!.trim().isEmpty;
 
   factory ParkourEvent.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -85,6 +92,7 @@ class ParkourEvent {
       externalSyncLastChangedAt: data['externalSyncLastChangedAt'] is Timestamp
           ? (data['externalSyncLastChangedAt'] as Timestamp).toDate()
           : null,
+      duplicateOf: data['duplicateOf'] as String?,
     );
   }
 
@@ -123,6 +131,7 @@ class ParkourEvent {
       externalEventKey: data['externalEventKey'] as String?,
       externalSyncLastSeenAt: parseDate(data['externalSyncLastSeenAt']),
       externalSyncLastChangedAt: parseDate(data['externalSyncLastChangedAt']),
+      duplicateOf: data['duplicateOf'] as String?,
     );
   }
 
@@ -159,6 +168,8 @@ class ParkourEvent {
         'externalSyncLastSeenAt': externalSyncLastSeenAt!.toUtc(),
       if (externalSyncLastChangedAt != null)
         'externalSyncLastChangedAt': externalSyncLastChangedAt!.toUtc(),
+      if (duplicateOf != null && duplicateOf!.trim().isNotEmpty)
+        'duplicateOf': duplicateOf!.trim(),
     };
   }
 
@@ -184,6 +195,7 @@ class ParkourEvent {
     Object? externalEventKey = _unset,
     Object? externalSyncLastSeenAt = _unset,
     Object? externalSyncLastChangedAt = _unset,
+    Object? duplicateOf = _unset,
   }) {
     return ParkourEvent(
       id: id ?? this.id,
@@ -233,6 +245,9 @@ class ParkourEvent {
       externalSyncLastChangedAt: identical(externalSyncLastChangedAt, _unset)
           ? this.externalSyncLastChangedAt
           : externalSyncLastChangedAt as DateTime?,
+      duplicateOf: identical(duplicateOf, _unset)
+          ? this.duplicateOf
+          : duplicateOf as String?,
     );
   }
 

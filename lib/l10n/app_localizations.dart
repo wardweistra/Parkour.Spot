@@ -4832,6 +4832,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to update profile privacy'**
   String get publicProfileFailedToUpdateProfilePrivacy;
+
+  /// Event detail: title unknown while loading duplicate original
+  ///
+  /// In en, this message translates to:
+  /// **'Original event'**
+  String get eventDetailOriginalEventFallback;
+
+  /// Shown when a non-admin opens admin-only duplicate action
+  ///
+  /// In en, this message translates to:
+  /// **'Only admins can mark events as duplicates.'**
+  String get eventDetailMarkDuplicateAdminOnly;
+
+  /// Event selection dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as duplicate of native event'**
+  String get eventDetailMarkDuplicatePickNativeTitle;
+
+  /// Hint for finding canonical event by id or link
+  ///
+  /// In en, this message translates to:
+  /// **'Event URL or ID'**
+  String get eventDetailMarkDuplicateSearchHint;
+
+  /// Invalid search input for event duplicate picker
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid event id or /event/… link.'**
+  String get eventDetailMarkDuplicateNotFoundOrInvalid;
+
+  /// Chosen original has an external calendar source
+  ///
+  /// In en, this message translates to:
+  /// **'That event is not a native parkour.spot event. Only native events can be the original.'**
+  String get eventDetailMarkDuplicateTargetNotNative;
+
+  /// Chosen original is itself a duplicate
+  ///
+  /// In en, this message translates to:
+  /// **'That event is already marked as a duplicate of another event.'**
+  String get eventDetailMarkDuplicateTargetIsDuplicate;
+
+  /// Confirm picked search result in duplicate dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Use this event'**
+  String get eventDetailMarkDuplicateUseButton;
+
+  /// Section header in duplicate picker
+  ///
+  /// In en, this message translates to:
+  /// **'Recent native events'**
+  String get eventDetailMarkDuplicateSuggestionsHeader;
+
+  /// Empty suggestions in duplicate picker
+  ///
+  /// In en, this message translates to:
+  /// **'No suggestions available.'**
+  String get eventDetailMarkDuplicateNoSuggestions;
+
+  /// Confirm marking duplicate; title is canonical event name
+  ///
+  /// In en, this message translates to:
+  /// **'Mark this event as a duplicate of “{title}”?'**
+  String eventDetailMarkDuplicateConfirmBody(String title);
+
+  /// Snackbar after duplicate link saved
+  ///
+  /// In en, this message translates to:
+  /// **'Event marked as duplicate.'**
+  String get eventDetailMarkDuplicateSuccess;
+
+  /// Confirm clearing duplicateOf
+  ///
+  /// In en, this message translates to:
+  /// **'Remove duplicate status from this event? It will no longer point to another event as its original.'**
+  String get eventDetailRemoveDuplicateConfirmBody;
+
+  /// Snackbar after duplicate cleared
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate status removed.'**
+  String get eventDetailRemoveDuplicateSuccess;
 }
 
 class _AppLocalizationsDelegate
