@@ -1,10 +1,12 @@
 const {
   buildExternalEventKey,
   extractLastHttpUrlFromDescription,
+  hasExternalEventAddressChanged,
   hasExternalEventContentChanges,
   normalizeImportedEventDescription,
   parseExternalEventsFromIcs,
   removeExtractedWebsiteUrlFromDescription,
+  shouldGeocodeExternalEventAddress,
 } = require("../lib/event-sync");
 
 describe("event-sync helpers", () => {
@@ -52,6 +54,53 @@ describe("event-sync helpers", () => {
       const incomingWithoutDescription = {...incoming, description: null};
       expect(
           hasExternalEventContentChanges(existing, incomingWithoutDescription),
+      ).toBe(false);
+    });
+  });
+
+  describe("address geocoding helpers", () => {
+    it("detects address changes after normalization", () => {
+      expect(
+          hasExternalEventAddressChanged(
+              {address: "  Central Park  "},
+              {address: "Central Park"},
+          ),
+      ).toBe(false);
+      expect(
+          hasExternalEventAddressChanged(
+              {address: "Central Park"},
+              {address: "Riverside Park"},
+          ),
+      ).toBe(true);
+    });
+
+    it("requests geocoding for create with address", () => {
+      expect(
+          shouldGeocodeExternalEventAddress(
+              null,
+              {address: "Rua Augusta, 10"},
+          ),
+      ).toBe(true);
+    });
+
+    it("requests geocoding only when update address changed", () => {
+      expect(
+          shouldGeocodeExternalEventAddress(
+              {address: "Rua Augusta, 10"},
+              {address: "Rua Augusta, 10"},
+          ),
+      ).toBe(false);
+      expect(
+          shouldGeocodeExternalEventAddress(
+              {address: "Rua Augusta, 10"},
+              {address: "Avenida Paulista, 1000"},
+          ),
+      ).toBe(true);
+      expect(
+          shouldGeocodeExternalEventAddress(
+              {address: "Rua Augusta, 10"},
+              {address: ""},
+          ),
       ).toBe(false);
     });
   });
