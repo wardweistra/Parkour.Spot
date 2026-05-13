@@ -83,10 +83,10 @@ describe("event-sync helpers", () => {
       ).toBe(true);
     });
 
-    it("requests geocoding only when update address changed", () => {
+    it("requests geocoding when update address changed", () => {
       expect(
           shouldGeocodeExternalEventAddress(
-              {address: "Rua Augusta, 10"},
+              {address: "Rua Augusta, 10", latitude: 1, longitude: 2},
               {address: "Rua Augusta, 10"},
           ),
       ).toBe(false);
@@ -100,6 +100,27 @@ describe("event-sync helpers", () => {
           shouldGeocodeExternalEventAddress(
               {address: "Rua Augusta, 10"},
               {address: ""},
+          ),
+      ).toBe(false);
+    });
+
+    it("requests geocoding when address unchanged but coordinates missing", () => {
+      expect(
+          shouldGeocodeExternalEventAddress(
+              {address: "Rua Augusta, 10"},
+              {address: "Rua Augusta, 10"},
+          ),
+      ).toBe(true);
+      expect(
+          shouldGeocodeExternalEventAddress(
+              {address: "Rua Augusta, 10", latitude: null, longitude: null},
+              {address: "Rua Augusta, 10"},
+          ),
+      ).toBe(true);
+      expect(
+          shouldGeocodeExternalEventAddress(
+              {address: "Rua Augusta, 10", latitude: 38.7, longitude: -9.1},
+              {address: "Rua Augusta, 10"},
           ),
       ).toBe(false);
     });

@@ -14,6 +14,7 @@
 
 const {onCall, onRequest, HttpsError} = require("firebase-functions/v2/https");
 const {onSchedule} = require("firebase-functions/v2/scheduler");
+const logger = require("firebase-functions/logger");
 const {
   onDocumentCreated,
   onDocumentUpdated,
@@ -2248,13 +2249,25 @@ async function reverseGeocodeAddress(address, apiKey) {
         longitude: location.lng,
       };
     } else {
+      logger.warn("mapsGeocode.addressToCoordsNonOk", {
+        fn: "reverseGeocodeAddress",
+        mapsStatus: response.status,
+        errorMessage: response.error_message || null,
+        addressSnippet: address.slice(0, 120),
+      });
       return {
         success: false,
-        error: response.error_message || "No coordinates found for address",
+        error:
+          response.error_message ||
+          `Geocoding API status was ${response.status}`,
       };
     }
   } catch (error) {
-    console.warn(`Reverse geocoding error for ${address}:`, error);
+    logger.warn("mapsGeocode.addressToCoordsException", {
+      fn: "reverseGeocodeAddress",
+      message: error.message,
+      addressSnippet: address.slice(0, 120),
+    });
     return {
       success: false,
       error: error.message || "Reverse geocoding request failed",
@@ -3957,6 +3970,10 @@ async function geocodeExternalEventAddress(address, options = {}) {
 
   const apiKey = options.googleMapsApiKey;
   if (typeof apiKey !== "string" || apiKey.trim().length === 0) {
+    logger.warn("externalEventGeocode.skippedMissingApiKey", {
+      fn: "geocodeExternalEventAddress",
+      addressSnippet: normalizedAddress.slice(0, 120),
+    });
     if (geocodeCache instanceof Map) geocodeCache.set(cacheKey, null);
     return null;
   }
@@ -3971,6 +3988,14 @@ async function geocodeExternalEventAddress(address, options = {}) {
     latitude: geocodeResult.latitude,
     longitude: geocodeResult.longitude,
   } : null;
+  if (!hasValidCoordinates) {
+    logger.warn("externalEventGeocode.noCoordinatesFromMaps", {
+      fn: "geocodeExternalEventAddress",
+      addressSnippet: normalizedAddress.slice(0, 120),
+      geocodeReportedSuccess: geocodeResult?.success === true,
+      geocodeError: geocodeResult?.error || null,
+    });
+  }
   if (geocodeCache instanceof Map) geocodeCache.set(cacheKey, coordinates);
   return coordinates;
 }
@@ -4055,7 +4080,12 @@ async function buildExternalEventChangedUpdate(
   updateData.externalEventRecurrenceId =
     parsedEvent.externalEventRecurrenceId || FieldValue.delete();
 
-  if (hasExternalEventAddressChanged(existingData, parsedEvent)) {
+  const addressChanged = hasExternalEventAddressChanged(
+      existingData,
+      parsedEvent,
+  );
+
+  if (addressChanged) {
     if (shouldGeocodeExternalEventAddress(existingData, parsedEvent)) {
       const coordinates = await geocodeExternalEventAddress(
           parsedEvent.address,
@@ -4070,6 +4100,15 @@ async function buildExternalEventChangedUpdate(
     } else {
       updateData.latitude = FieldValue.delete();
       updateData.longitude = FieldValue.delete();
+    }
+  } else if (shouldGeocodeExternalEventAddress(existingData, parsedEvent)) {
+    const coordinates = await geocodeExternalEventAddress(
+        parsedEvent.address,
+        options,
+    );
+    if (coordinates) {
+      updateData.latitude = coordinates.latitude;
+      updateData.longitude = coordinates.longitude;
     }
   }
 
@@ -4088,6 +4127,13 @@ async function syncExternalEventSource(sourceDoc) {
       sourceData.name.trim().length > 0 ?
     sourceData.name.trim() :
     sourceId;
+  logger.info("externalEventSync.start", {
+    sourceId,
+    mapsApiKeyConfigured: Boolean(
+        typeof process.env.GOOGLE_MAPS_API_KEY === "string" &&
+        process.env.GOOGLE_MAPS_API_KEY.trim().length > 0,
+    ),
+  });
   const icsUrl = normalizeIcsUrl(sourceData.icsUrl);
   const icsText = await downloadTextFromUrl(icsUrl);
   const parsedEvents = parseExternalEventsFromIcs(icsText, {
@@ -4146,6 +4192,7 @@ async function syncExternalEventSource(sourceDoc) {
     created: 0,
     changed: 0,
     unchanged: 0,
+    coordinatesBackfilled: 0,
   };
 
   const commitBatch = async () => {
@@ -4176,9 +4223,28 @@ async function syncExternalEventSource(sourceDoc) {
       stats.changed += 1;
       operationCount += 1;
     } else {
-      batch.update(existing.ref, {
-        externalSyncLastSeenAt: FieldValue.serverTimestamp(),
-      });
+      let wroteCoords = false;
+      if (shouldGeocodeExternalEventAddress(existing.data, parsedEvent)) {
+        const coordinates = await geocodeExternalEventAddress(
+            parsedEvent.address,
+            externalEventGeocodeOptions,
+        );
+        if (coordinates) {
+          batch.update(existing.ref, {
+            latitude: coordinates.latitude,
+            longitude: coordinates.longitude,
+            updatedAt: FieldValue.serverTimestamp(),
+            externalSyncLastSeenAt: FieldValue.serverTimestamp(),
+          });
+          wroteCoords = true;
+          stats.coordinatesBackfilled += 1;
+        }
+      }
+      if (!wroteCoords) {
+        batch.update(existing.ref, {
+          externalSyncLastSeenAt: FieldValue.serverTimestamp(),
+        });
+      }
       stats.unchanged += 1;
       operationCount += 1;
     }

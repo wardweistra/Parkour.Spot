@@ -267,9 +267,26 @@ function hasExternalEventAddressChanged(existingData, incomingData) {
 }
 
 /**
+ * @param {Object|null|undefined} data
+ * @return {boolean}
+ */
+function hasStoredEventCoordinates(data) {
+  if (!data || typeof data !== "object") return false;
+  const lat = data.latitude;
+  const lng = data.longitude;
+  return (
+    lat != null &&
+    lng != null &&
+    Number.isFinite(Number(lat)) &&
+    Number.isFinite(Number(lng))
+  );
+}
+
+/**
  * Checks whether this event should attempt address geocoding now.
  * - Always true for creates with an address.
- * - True for updates only when address changed to a non-empty value.
+ * - True when the address changed to another non-empty value.
+ * - True when the address matches but lat/lon are missing or invalid.
  * @param {Object|null|undefined} existingData
  * @param {Object} incomingData
  * @return {boolean}
@@ -280,7 +297,8 @@ function shouldGeocodeExternalEventAddress(existingData, incomingData) {
   );
   if (!incomingAddress) return false;
   if (!existingData) return true;
-  return hasExternalEventAddressChanged(existingData, incomingData);
+  if (hasExternalEventAddressChanged(existingData, incomingData)) return true;
+  return !hasStoredEventCoordinates(existingData);
 }
 
 /**
