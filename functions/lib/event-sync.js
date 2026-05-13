@@ -254,6 +254,36 @@ function hasExternalEventContentChanges(existingData, incomingData) {
 }
 
 /**
+ * Checks whether the normalized event address changed.
+ * @param {Object|null|undefined} existingData
+ * @param {Object} incomingData
+ * @return {boolean}
+ */
+function hasExternalEventAddressChanged(existingData, incomingData) {
+  return !nullableStringEqual(
+      existingData ? existingData.address : null,
+      incomingData ? incomingData.address : null,
+  );
+}
+
+/**
+ * Checks whether this event should attempt address geocoding now.
+ * - Always true for creates with an address.
+ * - True for updates only when address changed to a non-empty value.
+ * @param {Object|null|undefined} existingData
+ * @param {Object} incomingData
+ * @return {boolean}
+ */
+function shouldGeocodeExternalEventAddress(existingData, incomingData) {
+  const incomingAddress = toNonEmptyString(
+      incomingData ? incomingData.address : null,
+  );
+  if (!incomingAddress) return false;
+  if (!existingData) return true;
+  return hasExternalEventAddressChanged(existingData, incomingData);
+}
+
+/**
  * Parses VEVENT records from an ICS file into normalized event payloads.
  * @param {string} icsText
  * @param {Object} sourceMeta
@@ -314,9 +344,11 @@ function parseExternalEventsFromIcs(icsText, {sourceId, sourceName}) {
 module.exports = {
   buildExternalEventKey,
   extractLastHttpUrlFromDescription,
+  hasExternalEventAddressChanged,
   hasExternalEventContentChanges,
   normalizeImportedEventDescription,
   parseExternalEventsFromIcs,
   normalizeRecurrenceId,
   removeExtractedWebsiteUrlFromDescription,
+  shouldGeocodeExternalEventAddress,
 };

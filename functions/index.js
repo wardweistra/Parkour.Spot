@@ -101,9 +101,11 @@ const {
 } = require("./lib/import-helpers");
 const {shouldRunSync} = require("./lib/sync-helpers");
 const {
+  hasExternalEventAddressChanged,
   hasExternalEventContentChanges,
   parseExternalEventsFromIcs,
   buildExternalEventKey,
+  shouldGeocodeExternalEventAddress,
 } = require("./lib/event-sync");
 
 // Import shared HTML template
@@ -3937,11 +3939,51 @@ function downloadTextFromUrl(url, redirectCount = 0) {
 }
 
 /**
+ * Attempts to geocode one imported event address using a per-sync cache.
+ * @param {string|null|undefined} address
+ * @param {Object} options
+ * @param {string=} options.googleMapsApiKey
+ * @param {Map<string, {latitude: number, longitude: number}|null>=} options.geocodeCache
+ * @return {Promise<{latitude: number, longitude: number}|null>}
+ */
+async function geocodeExternalEventAddress(address, options = {}) {
+  const normalizedAddress = typeof address === "string" ? address.trim() : "";
+  if (normalizedAddress.length === 0) return null;
+  const cacheKey = normalizedAddress.toLowerCase();
+  const geocodeCache = options.geocodeCache;
+  if (geocodeCache instanceof Map && geocodeCache.has(cacheKey)) {
+    return geocodeCache.get(cacheKey);
+  }
+
+  const apiKey = options.googleMapsApiKey;
+  if (typeof apiKey !== "string" || apiKey.trim().length === 0) {
+    if (geocodeCache instanceof Map) geocodeCache.set(cacheKey, null);
+    return null;
+  }
+
+  const geocodeResult = await reverseGeocodeAddress(normalizedAddress, apiKey);
+  const hasValidCoordinates = geocodeResult &&
+      geocodeResult.success &&
+      Number.isFinite(geocodeResult.latitude) &&
+      Number.isFinite(geocodeResult.longitude);
+
+  const coordinates = hasValidCoordinates ? {
+    latitude: geocodeResult.latitude,
+    longitude: geocodeResult.longitude,
+  } : null;
+  if (geocodeCache instanceof Map) geocodeCache.set(cacheKey, coordinates);
+  return coordinates;
+}
+
+/**
  * Builds Firestore payload for newly imported external events.
  * @param {Object} parsedEvent
- * @return {Object}
+ * @param {Object=} options
+ * @param {string=} options.googleMapsApiKey
+ * @param {Map<string, {latitude: number, longitude: number}|null>=} options.geocodeCache
+ * @return {Promise<Object>}
  */
-function buildExternalEventCreateData(parsedEvent) {
+async function buildExternalEventCreateData(parsedEvent, options = {}) {
   const createData = {
     title: parsedEvent.title,
     startAt: parsedEvent.startAt,
@@ -3966,15 +4008,34 @@ function buildExternalEventCreateData(parsedEvent) {
     createData.externalEventRecurrenceId = parsedEvent.externalEventRecurrenceId;
   }
 
+  if (shouldGeocodeExternalEventAddress(null, parsedEvent)) {
+    const coordinates = await geocodeExternalEventAddress(
+        parsedEvent.address,
+        options,
+    );
+    if (coordinates) {
+      createData.latitude = coordinates.latitude;
+      createData.longitude = coordinates.longitude;
+    }
+  }
+
   return createData;
 }
 
 /**
  * Builds Firestore update payload for changed external events.
  * @param {Object} parsedEvent
- * @return {Object}
+ * @param {Object} existingData
+ * @param {Object=} options
+ * @param {string=} options.googleMapsApiKey
+ * @param {Map<string, {latitude: number, longitude: number}|null>=} options.geocodeCache
+ * @return {Promise<Object>}
  */
-function buildExternalEventChangedUpdate(parsedEvent) {
+async function buildExternalEventChangedUpdate(
+    parsedEvent,
+    existingData,
+    options = {},
+) {
   const updateData = {
     title: parsedEvent.title,
     startAt: parsedEvent.startAt,
@@ -3993,6 +4054,24 @@ function buildExternalEventChangedUpdate(parsedEvent) {
   updateData.endAt = parsedEvent.endAt || FieldValue.delete();
   updateData.externalEventRecurrenceId =
     parsedEvent.externalEventRecurrenceId || FieldValue.delete();
+
+  if (hasExternalEventAddressChanged(existingData, parsedEvent)) {
+    if (shouldGeocodeExternalEventAddress(existingData, parsedEvent)) {
+      const coordinates = await geocodeExternalEventAddress(
+          parsedEvent.address,
+          options,
+      );
+      updateData.latitude = coordinates ?
+        coordinates.latitude :
+        FieldValue.delete();
+      updateData.longitude = coordinates ?
+        coordinates.longitude :
+        FieldValue.delete();
+    } else {
+      updateData.latitude = FieldValue.delete();
+      updateData.longitude = FieldValue.delete();
+    }
+  }
 
   return updateData;
 }
@@ -4021,6 +4100,10 @@ async function syncExternalEventSource(sourceDoc) {
     uniqueEventsByKey.set(parsedEvent.externalEventKey, parsedEvent);
   }
   const uniqueEvents = Array.from(uniqueEventsByKey.values());
+  const externalEventGeocodeOptions = {
+    googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
+    geocodeCache: new Map(),
+  };
 
   const existingEventsSnapshot = await db
       .collection("events")
@@ -4076,11 +4159,20 @@ async function syncExternalEventSource(sourceDoc) {
     const existing = existingByKey.get(parsedEvent.externalEventKey);
     if (!existing) {
       const newEventRef = db.collection("events").doc();
-      batch.set(newEventRef, buildExternalEventCreateData(parsedEvent));
+      const createData = await buildExternalEventCreateData(
+          parsedEvent,
+          externalEventGeocodeOptions,
+      );
+      batch.set(newEventRef, createData);
       stats.created += 1;
       operationCount += 1;
     } else if (hasExternalEventContentChanges(existing.data, parsedEvent)) {
-      batch.update(existing.ref, buildExternalEventChangedUpdate(parsedEvent));
+      const updateData = await buildExternalEventChangedUpdate(
+          parsedEvent,
+          existing.data,
+          externalEventGeocodeOptions,
+      );
+      batch.update(existing.ref, updateData);
       stats.changed += 1;
       operationCount += 1;
     } else {
@@ -4277,7 +4369,12 @@ exports.getEventSyncSources = onCall(
 
 // Function to sync one configured event source (admin only).
 exports.syncEventSource = onCall(
-    {region: "europe-west1", timeoutSeconds: 540, memory: "1GiB"},
+    {
+      region: "europe-west1",
+      timeoutSeconds: 540,
+      memory: "1GiB",
+      secrets: ["GOOGLE_MAPS_API_KEY"],
+    },
     async (request) => {
       try {
         await ensureAdmin(request);
@@ -4313,7 +4410,12 @@ exports.syncEventSource = onCall(
 
 // Function to sync all active event sources (admin only).
 exports.syncAllEventSources = onCall(
-    {region: "europe-west1", timeoutSeconds: 540, memory: "1GiB"},
+    {
+      region: "europe-west1",
+      timeoutSeconds: 540,
+      memory: "1GiB",
+      secrets: ["GOOGLE_MAPS_API_KEY"],
+    },
     async (request) => {
       try {
         await ensureAdmin(request);
