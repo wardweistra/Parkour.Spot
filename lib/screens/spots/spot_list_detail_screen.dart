@@ -864,7 +864,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
 
   // Build markers for all spots
   Set<Marker> _buildMarkers() {
-    return _spots.map((spot) {
+    return MarkerIconUtils.sortSpotsForMapDrawOrder(_spots).map((spot) {
       final bool isSelected = _selectedSpot?.id != null
           ? _selectedSpot!.id == spot.id
           : _selectedSpot?.name == spot.name;

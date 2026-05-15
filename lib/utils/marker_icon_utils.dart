@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import '../models/spot.dart';
 
 /// Utility class for creating custom map marker icons
 class MarkerIconUtils {
@@ -22,6 +23,13 @@ class MarkerIconUtils {
 
   static double get mapPinLogicalWidth =>
       mapPinLogicalHeight * mapPinAssetWidth / mapPinAssetHeight;
+
+  /// North → south draw order: northern spots first, southern spots on top when overlapping.
+  static List<Spot> sortSpotsForMapDrawOrder(Iterable<Spot> spots) {
+    final List<Spot> ordered = List<Spot>.from(spots);
+    ordered.sort((Spot a, Spot b) => b.latitude.compareTo(a.latitude));
+    return ordered;
+  }
 
   /// Approximate fill when PNG is missing from the bundle (e.g. stale `build/`).
   static const Color mapPinNormalFallbackFill = Color(0xFF1A237E);

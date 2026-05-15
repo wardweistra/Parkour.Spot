@@ -2081,7 +2081,7 @@ class SearchScreenState extends State<SearchScreen>
   }
 
   Set<Marker> _buildMarkers(List<Spot> spots) {
-    final markers = spots.map((spot) {
+    final markers = MarkerIconUtils.sortSpotsForMapDrawOrder(spots).map((spot) {
       final bool isSelected = _selectedSpot?.id != null
           ? _selectedSpot!.id == spot.id
           : _selectedSpot?.name == spot.name;
