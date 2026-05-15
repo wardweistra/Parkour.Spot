@@ -2178,27 +2178,33 @@ class SearchScreenState extends State<SearchScreen>
 
   Future<void> _loadSpotIcons() async {
     try {
+      final double browsePinHeight = MarkerIconUtils.mapPinBrowseLogicalHeight;
       final BitmapDescriptor normalPin = await MarkerIconUtils.loadMapPinPng(
         MarkerIconUtils.mapPinNormalAsset,
         fallbackFill: MarkerIconUtils.mapPinNormalFallbackFill,
+        logicalHeight: browsePinHeight,
       );
       final BitmapDescriptor listPin = await MarkerIconUtils.loadMapPinPng(
         MarkerIconUtils.mapPinListAsset,
         fallbackFill: MarkerIconUtils.mapPinListFallbackFill,
+        logicalHeight: browsePinHeight,
       );
       final BitmapDescriptor normalSelectedPin =
           await MarkerIconUtils.loadMapPinPng(
         MarkerIconUtils.mapPinNormalSelectedAsset,
         fallbackFill: MarkerIconUtils.mapPinNormalFallbackFill,
+        logicalHeight: browsePinHeight,
       );
       final BitmapDescriptor listSelectedPin =
           await MarkerIconUtils.loadMapPinPng(
         MarkerIconUtils.mapPinListSelectedAsset,
         fallbackFill: MarkerIconUtils.mapPinListFallbackFill,
+        logicalHeight: browsePinHeight,
       );
       final BitmapDescriptor addPin = await MarkerIconUtils.loadMapPinPng(
         MarkerIconUtils.mapPinAddAsset,
         fallbackFill: MarkerIconUtils.mapPinAddFallbackFill,
+        logicalHeight: browsePinHeight,
       );
       if (mounted) {
         setState(() {

@@ -79,14 +79,17 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
 
   Future<void> _loadSpotIcons() async {
     try {
+      final double h = MarkerIconUtils.mapPinBrowseLogicalHeight;
       final BitmapDescriptor listPin = await MarkerIconUtils.loadMapPinPng(
         MarkerIconUtils.mapPinListAsset,
         fallbackFill: MarkerIconUtils.mapPinListFallbackFill,
+        logicalHeight: h,
       );
       final BitmapDescriptor listSelectedPin =
           await MarkerIconUtils.loadMapPinPng(
         MarkerIconUtils.mapPinListSelectedAsset,
         fallbackFill: MarkerIconUtils.mapPinListFallbackFill,
+        logicalHeight: h,
       );
       if (mounted) {
         setState(() {

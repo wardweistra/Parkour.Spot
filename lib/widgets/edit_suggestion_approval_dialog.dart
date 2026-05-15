@@ -74,13 +74,16 @@ class _EditSuggestionApprovalDialogState
   }
 
   Future<void> _loadLocationReviewMapIcons() async {
+    final double h = MarkerIconUtils.mapPinSingleSpotLogicalHeight;
     final BitmapDescriptor current = await MarkerIconUtils.loadMapPinPng(
       MarkerIconUtils.mapPinNormalAsset,
       fallbackFill: MarkerIconUtils.mapPinNormalFallbackFill,
+      logicalHeight: h,
     );
     final BitmapDescriptor suggested = await MarkerIconUtils.loadMapPinPng(
       MarkerIconUtils.mapPinNormalSelectedAsset,
       fallbackFill: MarkerIconUtils.mapPinNormalFallbackFill,
+      logicalHeight: h,
     );
     if (!mounted) return;
     setState(() {

@@ -30,17 +30,18 @@ class MarkerIconUtils {
   static const double mapPinAssetWidth = 128;
   static const double mapPinAssetHeight = 160;
 
-  /// On-map height in logical pixels (Explore); width follows asset aspect ratio.
-  static const double mapPinLogicalHeight = 30;
+  /// Explore and spot-list-detail pins; width follows asset aspect ratio.
+  static const double mapPinBrowseLogicalHeight = 34;
 
-  /// Slightly larger pins on single-spot preview maps (detail, add/edit, picker).
+  /// Single-spot preview maps (detail, add/edit, picker) and moderator
+  /// location-review map.
   static const double mapPinSingleSpotLogicalHeight = 38;
 
   static double mapPinLogicalWidthForHeight(double logicalHeight) =>
       logicalHeight * mapPinAssetWidth / mapPinAssetHeight;
 
   static double get mapPinLogicalWidth =>
-      mapPinLogicalWidthForHeight(mapPinLogicalHeight);
+      mapPinLogicalWidthForHeight(mapPinBrowseLogicalHeight);
 
   /// North → south draw order: northern spots first, southern spots on top when overlapping.
   static List<Spot> sortSpotsForMapDrawOrder(Iterable<Spot> spots) {
@@ -78,7 +79,7 @@ class MarkerIconUtils {
     required Color fallbackFill,
     double? logicalHeight,
   }) async {
-    final double height = logicalHeight ?? mapPinLogicalHeight;
+    final double height = logicalHeight ?? mapPinBrowseLogicalHeight;
     final double width = mapPinLogicalWidthForHeight(height);
     try {
       final ByteData data = await rootBundle.load(assetPath);
