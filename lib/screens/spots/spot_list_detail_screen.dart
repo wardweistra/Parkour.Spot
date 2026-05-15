@@ -51,8 +51,8 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
   String? _error;
   bool _isSatelliteView = false;
   GoogleMapController? _mapController;
-  BitmapDescriptor? _spotHighlightedIcon; // Black icon for spots in list
-  BitmapDescriptor? _spotSelectedHighlightedIcon; // Grey icon for selected spot
+  BitmapDescriptor? _spotHighlightedIcon;
+  BitmapDescriptor? _spotSelectedHighlightedIcon;
   Spot? _selectedSpot; // Currently selected/highlighted spot
   final ScrollController _scrollController = ScrollController();
   String? _creatorName;
@@ -79,19 +79,19 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
 
   Future<void> _loadSpotIcons() async {
     try {
-      final BitmapDescriptor normalPin = await MarkerIconUtils.loadMapPinPng(
-        MarkerIconUtils.mapPinNormalAsset,
-        fallbackFill: MarkerIconUtils.mapPinNormalFallbackFill,
-      );
       final BitmapDescriptor listPin = await MarkerIconUtils.loadMapPinPng(
         MarkerIconUtils.mapPinListAsset,
         fallbackFill: MarkerIconUtils.mapPinListFallbackFill,
       );
+      final BitmapDescriptor listSelectedPin =
+          await MarkerIconUtils.loadMapPinPng(
+        MarkerIconUtils.mapPinListSelectedAsset,
+        fallbackFill: MarkerIconUtils.mapPinListFallbackFill,
+      );
       if (mounted) {
         setState(() {
-          // All spots are on this list — list pin by default; dark pin for selection.
           _spotHighlightedIcon = listPin;
-          _spotSelectedHighlightedIcon = normalPin;
+          _spotSelectedHighlightedIcon = listSelectedPin;
         });
       }
     } catch (_) {

@@ -248,12 +248,10 @@ class SearchScreenState extends State<SearchScreen>
   bool _isBottomSheetOpen = false; // Start collapsed by default
   Position? _currentPosition;
   BitmapDescriptor? _userLocationIcon;
-  BitmapDescriptor? _spotDefaultIcon; // Web fallback
-  BitmapDescriptor? _spotSelectedIcon; // Web fallback
-  BitmapDescriptor?
-  _spotHighlightedIcon; // Web fallback for black highlighted spots
-  BitmapDescriptor?
-  _spotSelectedHighlightedIcon; // Web fallback for selected+highlighted spots (lighter grey)
+  BitmapDescriptor? _spotDefaultIcon;
+  BitmapDescriptor? _spotSelectedIcon;
+  BitmapDescriptor? _spotHighlightedIcon;
+  BitmapDescriptor? _spotSelectedHighlightedIcon;
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   String _searchQuery = '';
@@ -2088,8 +2086,6 @@ class SearchScreenState extends State<SearchScreen>
       final bool isHighlighted =
           spot.id != null && _highlightedSpotIds.contains(spot.id);
 
-      // Pin art: list asset for spots in the active list (unless selected);
-      // normal asset for default and any selected pin.
       final BitmapDescriptor icon = isSelected && isHighlighted
           ? (_spotSelectedHighlightedIcon ?? BitmapDescriptor.defaultMarker)
           : isSelected
@@ -2190,12 +2186,22 @@ class SearchScreenState extends State<SearchScreen>
         MarkerIconUtils.mapPinListAsset,
         fallbackFill: MarkerIconUtils.mapPinListFallbackFill,
       );
+      final BitmapDescriptor normalSelectedPin =
+          await MarkerIconUtils.loadMapPinPng(
+        MarkerIconUtils.mapPinNormalSelectedAsset,
+        fallbackFill: MarkerIconUtils.mapPinNormalFallbackFill,
+      );
+      final BitmapDescriptor listSelectedPin =
+          await MarkerIconUtils.loadMapPinPng(
+        MarkerIconUtils.mapPinListSelectedAsset,
+        fallbackFill: MarkerIconUtils.mapPinListFallbackFill,
+      );
       if (mounted) {
         setState(() {
           _spotDefaultIcon = normalPin;
-          _spotSelectedIcon = normalPin;
+          _spotSelectedIcon = normalSelectedPin;
           _spotHighlightedIcon = listPin;
-          _spotSelectedHighlightedIcon = normalPin;
+          _spotSelectedHighlightedIcon = listSelectedPin;
         });
       }
     } catch (_) {

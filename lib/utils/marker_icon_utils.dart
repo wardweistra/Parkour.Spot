@@ -6,7 +6,7 @@ import '../models/spot.dart';
 
 /// Utility class for creating custom map marker icons
 class MarkerIconUtils {
-  /// Teardrop PNG (128×160), transparent — default / selected pin on the map.
+  /// Teardrop PNG (128×160), transparent — default spot pin on the map.
   static const String mapPinNormalAsset =
       'assets/images/map/map-icon-normal-64x64.png';
 
@@ -14,12 +14,20 @@ class MarkerIconUtils {
   static const String mapPinListAsset =
       'assets/images/map/map-icon-list-64x64.png';
 
+  /// Selected spot (checkmark), when not in the active list filter.
+  static const String mapPinNormalSelectedAsset =
+      'assets/images/map/map-icon-normal-64x64-selected.png';
+
+  /// Selected spot in the active list filter.
+  static const String mapPinListSelectedAsset =
+      'assets/images/map/map-icon-list-64x64-selected.png';
+
   /// Source PNG dimensions (filenames say 64×64 but assets are 128×160).
   static const double mapPinAssetWidth = 128;
   static const double mapPinAssetHeight = 160;
 
   /// On-map height in logical pixels; width follows [mapPinAssetWidth]:[mapPinAssetHeight].
-  static const double mapPinLogicalHeight = 28;
+  static const double mapPinLogicalHeight = 30;
 
   static double get mapPinLogicalWidth =>
       mapPinLogicalHeight * mapPinAssetWidth / mapPinAssetHeight;
