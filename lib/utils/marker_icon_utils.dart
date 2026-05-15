@@ -1,10 +1,64 @@
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 /// Utility class for creating custom map marker icons
 class MarkerIconUtils {
+  /// Teardrop PNG (128×160), transparent — default / selected pin on the map.
+  static const String mapPinNormalAsset =
+      'assets/images/map/map-icon-normal-64x64.png';
+
+  /// Teardrop PNG (128×160), transparent — spot belongs to the active list filter.
+  static const String mapPinListAsset =
+      'assets/images/map/map-icon-list-64x64.png';
+
+  /// Source PNG dimensions (filenames say 64×64 but assets are 128×160).
+  static const double mapPinAssetWidth = 128;
+  static const double mapPinAssetHeight = 160;
+
+  /// On-map height in logical pixels; width follows [mapPinAssetWidth]:[mapPinAssetHeight].
+  static const double mapPinLogicalHeight = 28;
+
+  static double get mapPinLogicalWidth =>
+      mapPinLogicalHeight * mapPinAssetWidth / mapPinAssetHeight;
+
+  /// Approximate fill when PNG is missing from the bundle (e.g. stale `build/`).
+  static const Color mapPinNormalFallbackFill = Color(0xFF1A237E);
+  static const Color mapPinListFallbackFill = Color(0xFFE91E63);
+
+  /// Loads a marker PNG from the asset bundle.
+  ///
+  /// Decodes to [BitmapDescriptor.bytes] so Google Maps **web** uses a blob URL
+  /// for the marker image (the Maps plugin does not re-fetch the asset URL).
+  ///
+  /// On web, [rootBundle.load] requests
+  /// `{origin}/assets/` + your pubspec path (e.g. `assets/images/...`), which
+  /// looks like a doubled `assets/` segment but matches the output of
+  /// `flutter build web` under `build/web/assets/assets/...`.
+  ///
+  /// If the file is missing from the current build (stale incremental build),
+  /// uses [createMarkerIcon] so markers are not default Google pins.
+  static Future<BitmapDescriptor> loadMapPinPng(
+    String assetPath, {
+    required Color fallbackFill,
+  }) async {
+    try {
+      final ByteData data = await rootBundle.load(assetPath);
+      final Uint8List bytes = data.buffer.asUint8List();
+      // Assets are 128×160 (tall). Square width/height squashes them on the map.
+      return BitmapDescriptor.bytes(
+        bytes,
+        width: mapPinLogicalWidth,
+        height: mapPinLogicalHeight,
+        bitmapScaling: MapBitmapScaling.auto,
+      );
+    } catch (e, stackTrace) {
+      debugPrint('loadMapPinPng failed for $assetPath: $e\n$stackTrace');
+      return createMarkerIcon(size: 22, fillColor: fallbackFill);
+    }
+  }
+
   /// Creates a custom circular marker icon with a white ring and colored fill.
   /// 
   /// [size] - The size of the icon in pixels (default: 22)

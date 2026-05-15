@@ -61,7 +61,11 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
   void initState() {
     super.initState();
     _loadList();
-    _loadSpotIcons();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadSpotIcons();
+      }
+    });
   }
 
   @override
@@ -75,22 +79,19 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
 
   Future<void> _loadSpotIcons() async {
     try {
-      // Black icon for spots in list (matching highlighted style from Explore)
-      final BitmapDescriptor highlightedIcon =
-          await MarkerIconUtils.createMarkerIcon(
-            size: 22,
-            fillColor: Colors.black,
-          );
-      // Grey icon for selected spot (matching selectedHighlighted style from Explore)
-      final BitmapDescriptor selectedHighlightedIcon =
-          await MarkerIconUtils.createMarkerIcon(
-            size: 22,
-            fillColor: Colors.grey.shade400,
-          );
+      final BitmapDescriptor normalPin = await MarkerIconUtils.loadMapPinPng(
+        MarkerIconUtils.mapPinNormalAsset,
+        fallbackFill: MarkerIconUtils.mapPinNormalFallbackFill,
+      );
+      final BitmapDescriptor listPin = await MarkerIconUtils.loadMapPinPng(
+        MarkerIconUtils.mapPinListAsset,
+        fallbackFill: MarkerIconUtils.mapPinListFallbackFill,
+      );
       if (mounted) {
         setState(() {
-          _spotHighlightedIcon = highlightedIcon;
-          _spotSelectedHighlightedIcon = selectedHighlightedIcon;
+          // All spots are on this list — list pin by default; dark pin for selection.
+          _spotHighlightedIcon = listPin;
+          _spotSelectedHighlightedIcon = normalPin;
         });
       }
     } catch (_) {
@@ -868,21 +869,16 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
           ? _selectedSpot!.id == spot.id
           : _selectedSpot?.name == spot.name;
 
-      // Use grey icon for selected spot, black for others (matching Explore page style)
-      final BitmapDescriptor icon = kIsWeb
-          ? (isSelected
-                ? (_spotSelectedHighlightedIcon ??
-                      BitmapDescriptor.defaultMarker)
-                : (_spotHighlightedIcon ?? BitmapDescriptor.defaultMarker))
-          : (isSelected
-                ? (_spotSelectedHighlightedIcon ??
-                      BitmapDescriptor.defaultMarker)
-                : (_spotHighlightedIcon ?? BitmapDescriptor.defaultMarker));
+      final BitmapDescriptor icon = isSelected
+          ? (_spotSelectedHighlightedIcon ?? BitmapDescriptor.defaultMarker)
+          : (_spotHighlightedIcon ?? BitmapDescriptor.defaultMarker);
 
       return Marker(
         markerId: MarkerId(spot.id ?? spot.name),
         position: LatLng(spot.latitude, spot.longitude),
         icon: icon,
+        anchor: const Offset(0.5, 1.0),
+        zIndexInt: isSelected ? 2 : 0,
         onTap: null,
         consumeTapEvents: true,
         infoWindow: InfoWindow.noText,

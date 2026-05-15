@@ -438,7 +438,11 @@ class SearchScreenState extends State<SearchScreen>
     // Will be set from SearchStateService in post-frame callback if not provided via URL
 
     _loadUserLocationIcon();
-    _loadSpotIcons();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadSpotIcons();
+      }
+    });
 
     // Initialize bottom sheet animation
     _bottomSheetAnimationController = AnimationController(
@@ -2084,34 +2088,21 @@ class SearchScreenState extends State<SearchScreen>
       final bool isHighlighted =
           spot.id != null && _highlightedSpotIds.contains(spot.id);
 
-      // Marker color priority: 1. Selected+Highlighted (lighter grey), 2. Selected (rose/pink), 3. Highlighted (black), 4. Default (red)
-      // On web, use generated icons because hue-based markers are not supported.
-      final BitmapDescriptor icon = kIsWeb
-          ? (isSelected && isHighlighted
-                ? (_spotSelectedHighlightedIcon ??
-                      BitmapDescriptor.defaultMarker)
-                : (isSelected
-                      ? (_spotSelectedIcon ?? BitmapDescriptor.defaultMarker)
-                      : (isHighlighted
-                            ? (_spotHighlightedIcon ??
-                                  BitmapDescriptor.defaultMarker)
-                            : (_spotDefaultIcon ??
-                                  BitmapDescriptor.defaultMarker))))
-          : (isSelected && isHighlighted
-                ? (_spotSelectedHighlightedIcon ??
-                      BitmapDescriptor.defaultMarker)
-                : (isSelected
-                      ? BitmapDescriptor.defaultMarkerWithHue(
-                          BitmapDescriptor.hueRose,
-                        )
-                      : (isHighlighted
-                            ? (_spotHighlightedIcon ??
-                                  BitmapDescriptor.defaultMarker)
-                            : BitmapDescriptor.defaultMarker)));
+      // Pin art: list asset for spots in the active list (unless selected);
+      // normal asset for default and any selected pin.
+      final BitmapDescriptor icon = isSelected && isHighlighted
+          ? (_spotSelectedHighlightedIcon ?? BitmapDescriptor.defaultMarker)
+          : isSelected
+          ? (_spotSelectedIcon ?? BitmapDescriptor.defaultMarker)
+          : isHighlighted
+          ? (_spotHighlightedIcon ?? BitmapDescriptor.defaultMarker)
+          : (_spotDefaultIcon ?? BitmapDescriptor.defaultMarker);
       return Marker(
         markerId: MarkerId(spot.id ?? spot.name),
         position: LatLng(spot.latitude, spot.longitude),
         icon: icon,
+        anchor: const Offset(0.5, 1.0),
+        zIndexInt: isSelected ? 2 : (isHighlighted ? 1 : 0),
         onTap: () {
           // Don't select spot if bottom sheet or filter dialog is open
           if (_isBottomSheetOpen || _showFiltersDialog) {
@@ -2191,36 +2182,20 @@ class SearchScreenState extends State<SearchScreen>
 
   Future<void> _loadSpotIcons() async {
     try {
-      // Simple circular icons to ensure consistent coloring on web
-      final BitmapDescriptor defaultIcon =
-          await MarkerIconUtils.createMarkerIcon(
-            size: 22,
-            fillColor: Colors.red,
-          );
-      // Make selected more distinct and smaller
-      final BitmapDescriptor selectedIcon =
-          await MarkerIconUtils.createMarkerIcon(
-            size: 22,
-            fillColor: Color(0xFFFF8A80),
-          );
-      // Black icon for highlighted spots from selected list
-      final BitmapDescriptor highlightedIcon =
-          await MarkerIconUtils.createMarkerIcon(
-            size: 22,
-            fillColor: Colors.black,
-          );
-      // Lighter grey icon for selected+highlighted spots
-      final BitmapDescriptor selectedHighlightedIcon =
-          await MarkerIconUtils.createMarkerIcon(
-            size: 22,
-            fillColor: Colors.grey.shade400,
-          );
+      final BitmapDescriptor normalPin = await MarkerIconUtils.loadMapPinPng(
+        MarkerIconUtils.mapPinNormalAsset,
+        fallbackFill: MarkerIconUtils.mapPinNormalFallbackFill,
+      );
+      final BitmapDescriptor listPin = await MarkerIconUtils.loadMapPinPng(
+        MarkerIconUtils.mapPinListAsset,
+        fallbackFill: MarkerIconUtils.mapPinListFallbackFill,
+      );
       if (mounted) {
         setState(() {
-          _spotDefaultIcon = defaultIcon;
-          _spotSelectedIcon = selectedIcon;
-          _spotHighlightedIcon = highlightedIcon;
-          _spotSelectedHighlightedIcon = selectedHighlightedIcon;
+          _spotDefaultIcon = normalPin;
+          _spotSelectedIcon = normalPin;
+          _spotHighlightedIcon = listPin;
+          _spotSelectedHighlightedIcon = normalPin;
         });
       }
     } catch (_) {
