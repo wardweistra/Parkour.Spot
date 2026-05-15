@@ -3,6 +3,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import '../../services/mobile_detection_service.dart';
+import '../../utils/marker_icon_utils.dart';
 import '../../widgets/location_info_box.dart';
 import '../../l10n/app_localizations.dart';
 
@@ -39,6 +40,21 @@ class SpotLocationSection extends StatefulWidget {
 }
 
 class _SpotLocationSectionState extends State<SpotLocationSection> {
+  BitmapDescriptor? _locationPinIcon;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLocationPinIcon();
+  }
+
+  Future<void> _loadLocationPinIcon() async {
+    final BitmapDescriptor icon =
+        await MarkerIconUtils.loadNormalSelectedMapPin();
+    if (mounted) {
+      setState(() => _locationPinIcon = icon);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -127,6 +143,9 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
                         Marker(
                           markerId: const MarkerId('selected_location'),
                           position: widget.currentLocation!,
+                          icon: _locationPinIcon ??
+                              BitmapDescriptor.defaultMarker,
+                          anchor: const Offset(0.5, 1.0),
                           infoWindow: InfoWindow.noText,
                         ),
                       },

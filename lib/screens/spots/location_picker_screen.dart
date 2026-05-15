@@ -9,6 +9,7 @@ import '../../config/app_config.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../services/search_state_service.dart';
 import '../../utils/location_permission_utils.dart';
+import '../../utils/marker_icon_utils.dart';
 import '../../l10n/app_localizations.dart';
 
 class LocationPickerScreen extends StatefulWidget {
@@ -33,11 +34,13 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   bool _isGettingLocation = false;
   GoogleMapController? _mapController;
   SearchStateService? _searchStateServiceRef;
+  BitmapDescriptor? _pickedLocationPinIcon;
 
   @override
   void initState() {
     super.initState();
     _pickedLocation = widget.initialLocation;
+    _loadPickedLocationPinIcon();
 
     // Initialize satellite view from SearchStateService
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -50,6 +53,14 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         _isSatelliteView = _searchStateServiceRef!.isSatellite;
       });
     });
+  }
+
+  Future<void> _loadPickedLocationPinIcon() async {
+    final BitmapDescriptor icon =
+        await MarkerIconUtils.loadNormalSelectedMapPin();
+    if (mounted) {
+      setState(() => _pickedLocationPinIcon = icon);
+    }
   }
 
   void _onSearchStateChanged() {
@@ -203,6 +214,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                           Marker(
                             markerId: const MarkerId('picked'),
                             position: _pickedLocation!,
+                            icon: _pickedLocationPinIcon ??
+                                BitmapDescriptor.defaultMarker,
+                            anchor: const Offset(0.5, 1.0),
                             draggable: true,
                             onDragEnd: (LatLng position) {
                               setState(() {

@@ -37,6 +37,7 @@ import '../../services/spot_training_plan_service.dart';
 import '../../services/feature_access_service.dart';
 import '../../models/spot_list.dart';
 import '../../models/parkour_event.dart';
+import '../../utils/marker_icon_utils.dart';
 import '../../utils/resized_spot_image_provider.dart';
 import '../../widgets/resized_spot_image.dart';
 import '../../widgets/spot_detail_community_section.dart';
@@ -175,6 +176,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   late final PageController _videoPageController;
   late final ValueNotifier<bool> _isSatelliteViewNotifier;
   SearchStateService? _searchStateServiceRef;
+  BitmapDescriptor? _spotMapPinIcon;
 
   // Add rating cache variables
   Map<String, dynamic>? _cachedRatingStats;
@@ -469,6 +471,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _updateDocumentTitle();
     });
+    _loadSpotMapPinIcon();
 
     // Load original spot if this is a duplicate
     if (widget.spot.duplicateOf != null) {
@@ -506,6 +509,14 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       _searchStateServiceRef!.addListener(_onSearchStateChanged);
       _isSatelliteViewNotifier.value = _searchStateServiceRef!.isSatellite;
     });
+  }
+
+  Future<void> _loadSpotMapPinIcon() async {
+    final BitmapDescriptor icon =
+        await MarkerIconUtils.loadNormalSelectedMapPin();
+    if (mounted) {
+      setState(() => _spotMapPinIcon = icon);
+    }
   }
 
   @override
@@ -3247,6 +3258,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                           widget.spot.latitude,
                                           widget.spot.longitude,
                                         ),
+                                        icon: _spotMapPinIcon ??
+                                            BitmapDescriptor.defaultMarker,
+                                        anchor: const Offset(0.5, 1.0),
                                         onTap: null,
                                         consumeTapEvents: true,
                                         infoWindow: InfoWindow.noText,

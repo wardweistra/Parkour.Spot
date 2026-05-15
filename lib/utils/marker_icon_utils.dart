@@ -26,11 +26,17 @@ class MarkerIconUtils {
   static const double mapPinAssetWidth = 128;
   static const double mapPinAssetHeight = 160;
 
-  /// On-map height in logical pixels; width follows [mapPinAssetWidth]:[mapPinAssetHeight].
+  /// On-map height in logical pixels (Explore); width follows asset aspect ratio.
   static const double mapPinLogicalHeight = 30;
 
+  /// Slightly larger pins on single-spot preview maps (detail, add/edit, picker).
+  static const double mapPinSingleSpotLogicalHeight = 38;
+
+  static double mapPinLogicalWidthForHeight(double logicalHeight) =>
+      logicalHeight * mapPinAssetWidth / mapPinAssetHeight;
+
   static double get mapPinLogicalWidth =>
-      mapPinLogicalHeight * mapPinAssetWidth / mapPinAssetHeight;
+      mapPinLogicalWidthForHeight(mapPinLogicalHeight);
 
   /// North → south draw order: northern spots first, southern spots on top when overlapping.
   static List<Spot> sortSpotsForMapDrawOrder(Iterable<Spot> spots) {
@@ -42,6 +48,13 @@ class MarkerIconUtils {
   /// Approximate fill when PNG is missing from the bundle (e.g. stale `build/`).
   static const Color mapPinNormalFallbackFill = Color(0xFF1A237E);
   static const Color mapPinListFallbackFill = Color(0xFFE91E63);
+
+  /// Selected normal pin for single-spot maps (detail, add/edit, location picker).
+  static Future<BitmapDescriptor> loadNormalSelectedMapPin() => loadMapPinPng(
+        mapPinNormalSelectedAsset,
+        fallbackFill: mapPinNormalFallbackFill,
+        logicalHeight: mapPinSingleSpotLogicalHeight,
+      );
 
   /// Loads a marker PNG from the asset bundle.
   ///
@@ -58,15 +71,17 @@ class MarkerIconUtils {
   static Future<BitmapDescriptor> loadMapPinPng(
     String assetPath, {
     required Color fallbackFill,
+    double? logicalHeight,
   }) async {
+    final double height = logicalHeight ?? mapPinLogicalHeight;
+    final double width = mapPinLogicalWidthForHeight(height);
     try {
       final ByteData data = await rootBundle.load(assetPath);
       final Uint8List bytes = data.buffer.asUint8List();
-      // Assets are 128×160 (tall). Square width/height squashes them on the map.
       return BitmapDescriptor.bytes(
         bytes,
-        width: mapPinLogicalWidth,
-        height: mapPinLogicalHeight,
+        width: width,
+        height: height,
         bitmapScaling: MapBitmapScaling.auto,
       );
     } catch (e, stackTrace) {
