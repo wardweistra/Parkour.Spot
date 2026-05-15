@@ -22,6 +22,10 @@ class MarkerIconUtils {
   static const String mapPinListSelectedAsset =
       'assets/images/map/map-icon-list-64x64-selected.png';
 
+  /// Long-press / right-click “add new spot” pin on Explore.
+  static const String mapPinAddAsset =
+      'assets/images/map/map-icon-normal-64x64-add.png';
+
   /// Source PNG dimensions (filenames say 64×64 but assets are 128×160).
   static const double mapPinAssetWidth = 128;
   static const double mapPinAssetHeight = 160;
@@ -48,6 +52,7 @@ class MarkerIconUtils {
   /// Approximate fill when PNG is missing from the bundle (e.g. stale `build/`).
   static const Color mapPinNormalFallbackFill = Color(0xFF1A237E);
   static const Color mapPinListFallbackFill = Color(0xFFE91E63);
+  static const Color mapPinAddFallbackFill = Color(0xFFE53935);
 
   /// Selected normal pin for single-spot maps (detail, add/edit, location picker).
   static Future<BitmapDescriptor> loadNormalSelectedMapPin() => loadMapPinPng(

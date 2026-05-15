@@ -252,6 +252,7 @@ class SearchScreenState extends State<SearchScreen>
   BitmapDescriptor? _spotSelectedIcon;
   BitmapDescriptor? _spotHighlightedIcon;
   BitmapDescriptor? _spotSelectedHighlightedIcon;
+  BitmapDescriptor? _addSpotPinIcon;
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   String _searchQuery = '';
@@ -2149,9 +2150,8 @@ class SearchScreenState extends State<SearchScreen>
         Marker(
           markerId: const MarkerId('long_pressed_location'),
           position: _longPressedLocation!,
-          icon: BitmapDescriptor.defaultMarkerWithHue(
-            BitmapDescriptor.hueGreen,
-          ),
+          icon: _addSpotPinIcon ?? BitmapDescriptor.defaultMarker,
+          anchor: const Offset(0.5, 1.0),
           zIndexInt: 10000, // Above other markers
         ),
       );
@@ -2196,12 +2196,17 @@ class SearchScreenState extends State<SearchScreen>
         MarkerIconUtils.mapPinListSelectedAsset,
         fallbackFill: MarkerIconUtils.mapPinListFallbackFill,
       );
+      final BitmapDescriptor addPin = await MarkerIconUtils.loadMapPinPng(
+        MarkerIconUtils.mapPinAddAsset,
+        fallbackFill: MarkerIconUtils.mapPinAddFallbackFill,
+      );
       if (mounted) {
         setState(() {
           _spotDefaultIcon = normalPin;
           _spotSelectedIcon = normalSelectedPin;
           _spotHighlightedIcon = listPin;
           _spotSelectedHighlightedIcon = listSelectedPin;
+          _addSpotPinIcon = addPin;
         });
       }
     } catch (_) {
