@@ -9,6 +9,7 @@ import '../services/spot_service.dart';
 import '../services/spot_report_service.dart';
 import '../services/auth_service.dart';
 import '../services/geocoding_service.dart';
+import '../utils/marker_icon_utils.dart';
 
 /// Dialog for moderators to accept or reject individual edit suggestions from a spot report.
 class EditSuggestionApprovalDialog extends StatefulWidget {
@@ -35,6 +36,8 @@ class _EditSuggestionApprovalDialogState
   String? _targetSpotId;
   bool _isLoading = true;
   bool _isSatelliteView = false;
+  BitmapDescriptor? _locationReviewCurrentPinIcon;
+  BitmapDescriptor? _locationReviewSuggestedPinIcon;
   final TextEditingController _notesController = TextEditingController();
 
   Spot? get _targetSpot {
@@ -64,6 +67,26 @@ class _EditSuggestionApprovalDialogState
     super.initState();
     _initAccepted();
     _loadSpots();
+    if (widget.report.suggestedLatitude != null &&
+        widget.report.suggestedLongitude != null) {
+      _loadLocationReviewMapIcons();
+    }
+  }
+
+  Future<void> _loadLocationReviewMapIcons() async {
+    final BitmapDescriptor current = await MarkerIconUtils.loadMapPinPng(
+      MarkerIconUtils.mapPinNormalAsset,
+      fallbackFill: MarkerIconUtils.mapPinNormalFallbackFill,
+    );
+    final BitmapDescriptor suggested = await MarkerIconUtils.loadMapPinPng(
+      MarkerIconUtils.mapPinNormalSelectedAsset,
+      fallbackFill: MarkerIconUtils.mapPinNormalFallbackFill,
+    );
+    if (!mounted) return;
+    setState(() {
+      _locationReviewCurrentPinIcon = current;
+      _locationReviewSuggestedPinIcon = suggested;
+    });
   }
 
   @override
@@ -894,14 +917,26 @@ class _EditSuggestionApprovalDialogState
         Marker(
           markerId: const MarkerId('current'),
           position: current,
-          infoWindow: const InfoWindow(title: 'Current', snippet: 'Existing location'),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+          infoWindow: const InfoWindow(
+            title: 'Current',
+            snippet: 'Existing location',
+          ),
+          icon: _locationReviewCurrentPinIcon ??
+              BitmapDescriptor.defaultMarker,
+          anchor: const Offset(0.5, 1.0),
+          zIndexInt: 0,
         ),
         Marker(
           markerId: const MarkerId('suggested'),
           position: suggested,
-          infoWindow: const InfoWindow(title: 'Suggested', snippet: 'Proposed location'),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+          infoWindow: const InfoWindow(
+            title: 'Suggested',
+            snippet: 'Proposed location',
+          ),
+          icon: _locationReviewSuggestedPinIcon ??
+              BitmapDescriptor.defaultMarker,
+          anchor: const Offset(0.5, 1.0),
+          zIndexInt: 1,
         ),
       },
       zoomControlsEnabled: false,
