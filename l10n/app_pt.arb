@@ -414,7 +414,6 @@
   "spotDetailDuplicateOf": "Duplicado de",
   "spotDetailOriginalSpotFallback": "Spot original",
   "spotDetailAlsoBasedOn": "Também baseado em",
-  "spotDetailAlsoBasedOnCount": "Também baseado em ({count})",
   "spotDetailGalleryPageIndicator": "{current} / {total}",
   "spotDetailSaveMenuTooltip": "Guardar spot",
   "spotDetailSaveMenuSignInTitle": "Inicia sessão para guardar spots",

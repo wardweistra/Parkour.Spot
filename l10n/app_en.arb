@@ -1554,14 +1554,6 @@
   "spotDetailDuplicateOf": "Duplicate of",
   "spotDetailOriginalSpotFallback": "Original spot",
   "spotDetailAlsoBasedOn": "Also based on",
-  "spotDetailAlsoBasedOnCount": "Also based on ({count})",
-  "@spotDetailAlsoBasedOnCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "spotDetailGalleryPageIndicator": "{current} / {total}",
   "@spotDetailGalleryPageIndicator": {
     "placeholders": {

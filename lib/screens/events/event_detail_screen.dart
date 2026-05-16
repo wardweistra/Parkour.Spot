@@ -659,7 +659,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                 color: Theme.of(context).colorScheme.secondary,
               ),
               title: Text(
-                l10n.spotDetailAlsoBasedOnCount(_duplicateEvents.length),
+                l10n.spotDetailAlsoBasedOn,
                 style: Theme.of(context).textTheme.titleSmall,
               ),
             ),

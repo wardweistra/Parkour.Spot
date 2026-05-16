@@ -2793,12 +2793,6 @@ abstract class AppLocalizations {
   /// **'Also based on'**
   String get spotDetailAlsoBasedOn;
 
-  /// No description provided for @spotDetailAlsoBasedOnCount.
-  ///
-  /// In en, this message translates to:
-  /// **'Also based on ({count})'**
-  String spotDetailAlsoBasedOnCount(int count);
-
   /// No description provided for @spotDetailGalleryPageIndicator.
   ///
   /// In en, this message translates to:

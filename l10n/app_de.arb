@@ -415,7 +415,6 @@
   "spotDetailDuplicateOf": "Duplikat von",
   "spotDetailOriginalSpotFallback": "Original-Spot",
   "spotDetailAlsoBasedOn": "Außerdem basierend auf",
-  "spotDetailAlsoBasedOnCount": "Außerdem basierend auf ({count})",
   "spotDetailGalleryPageIndicator": "{current} / {total}",
   "spotDetailSaveMenuTooltip": "Spot speichern",
   "spotDetailSaveMenuSignInTitle": "Zum Speichern von Spots anmelden",

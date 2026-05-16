@@ -444,7 +444,6 @@
   "spotDetailDuplicateOf": "Duplicaat van",
   "spotDetailOriginalSpotFallback": "Originele spot",
   "spotDetailAlsoBasedOn": "Ook gebaseerd op",
-  "spotDetailAlsoBasedOnCount": "Ook gebaseerd op ({count})",
   "spotDetailGalleryPageIndicator": "{current} / {total}",
   "spotDetailSaveMenuTooltip": "Spot opslaan",
   "spotDetailSaveMenuSignInTitle": "Log in om spots op te slaan",

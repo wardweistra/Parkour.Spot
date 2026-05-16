@@ -3494,9 +3494,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                   ).colorScheme.secondary,
                                 ),
                                 title: Text(
-                                  _l10n.spotDetailAlsoBasedOnCount(
-                                    _duplicateSpots.length,
-                                  ),
+                                  _l10n.spotDetailAlsoBasedOn,
                                   style: Theme.of(context).textTheme.titleSmall,
                                 ),
                                 contentPadding: EdgeInsets.zero,

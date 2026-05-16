@@ -1622,11 +1622,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get spotDetailAlsoBasedOn => 'Also based on';
 
   @override
-  String spotDetailAlsoBasedOnCount(int count) {
-    return 'Also based on ($count)';
-  }
-
-  @override
   String spotDetailGalleryPageIndicator(int current, int total) {
     return '$current / $total';
   }
