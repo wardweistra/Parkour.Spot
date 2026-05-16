@@ -149,6 +149,64 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     }
   }
 
+  Widget _backButton() {
+    return IconButton(
+      onPressed: _goBack,
+      icon: const Icon(Icons.arrow_back, color: Colors.white),
+      style: IconButton.styleFrom(
+        backgroundColor: Colors.black.withValues(alpha: 0.5),
+        shape: const CircleBorder(),
+        fixedSize: const Size(
+          SpotDetailUi.appBarButtonSize,
+          SpotDetailUi.appBarButtonSize,
+        ),
+        padding: EdgeInsets.zero,
+      ),
+    );
+  }
+
+  Widget _adminMenuButton(
+    AppLocalizations l10n,
+    ParkourEvent event,
+    bool hasDupLink,
+  ) {
+    return PopupMenuButton<_EventAdminAction>(
+      tooltip: l10n.eventDetailAdminMenuTooltip,
+      onSelected: (action) => _onAdminMenu(context, action, event),
+      itemBuilder: (ctx) {
+        final theme = Theme.of(ctx);
+        return [
+          PopupMenuItem(
+            value: _EventAdminAction.markDuplicate,
+            enabled: !hasDupLink,
+            child: Text(
+              l10n.spotDetailMenuMarkDuplicate,
+              style: TextStyle(
+                color: hasDupLink
+                    ? theme.colorScheme.onSurface.withValues(alpha: 0.38)
+                    : null,
+              ),
+            ),
+          ),
+          if (hasDupLink)
+            PopupMenuItem(
+              value: _EventAdminAction.removeDuplicate,
+              child: Text(l10n.spotDetailMenuRemoveDuplicateStatus),
+            ),
+        ];
+      },
+      icon: Container(
+        width: SpotDetailUi.appBarButtonSize,
+        height: SpotDetailUi.appBarButtonSize,
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.5),
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(Icons.more_vert, color: Colors.white, size: 22),
+      ),
+    );
+  }
+
   Future<void> _onAdminMenu(
     BuildContext context,
     _EventAdminAction action,
@@ -326,6 +384,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         _loadingDuplicates ||
         _duplicateEvents.isNotEmpty;
 
+    final contentInset = SpotDetailUi.contentHorizontalInset(context);
+
     return DetailImageCarouselFocus(
       carouselKey: _carouselKey,
       child: Scaffold(
@@ -339,62 +399,17 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               backgroundColor: Colors.transparent,
               surfaceTintColor: Colors.transparent,
               elevation: 0,
-              leading: IconButton(
-                onPressed: _goBack,
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.black.withValues(alpha: 0.5),
-                  shape: const CircleBorder(),
-                  fixedSize: const Size(40, 40),
-                  padding: EdgeInsets.zero,
-                ),
+              leadingWidth: contentInset + SpotDetailUi.appBarButtonSize,
+              leading: Padding(
+                padding: EdgeInsets.only(left: contentInset),
+                child: _backButton(),
               ),
               actions: [
                 if (isAdmin)
-                  PopupMenuButton<_EventAdminAction>(
-                    tooltip: l10n.eventDetailAdminMenuTooltip,
-                    onSelected: (action) => _onAdminMenu(context, action, event),
-                    itemBuilder: (ctx) {
-                      final theme = Theme.of(ctx);
-                      return [
-                        PopupMenuItem(
-                          value: _EventAdminAction.markDuplicate,
-                          enabled: !hasDupLink,
-                          child: Text(
-                            l10n.spotDetailMenuMarkDuplicate,
-                            style: TextStyle(
-                              color: hasDupLink
-                                  ? theme.colorScheme.onSurface.withValues(
-                                      alpha: 0.38,
-                                    )
-                                  : null,
-                            ),
-                          ),
-                        ),
-                        if (hasDupLink)
-                          PopupMenuItem(
-                            value: _EventAdminAction.removeDuplicate,
-                            child: Text(
-                              l10n.spotDetailMenuRemoveDuplicateStatus,
-                            ),
-                          ),
-                      ];
-                    },
-                    icon: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.more_vert,
-                        color: Colors.white,
-                        size: 22,
-                      ),
-                    ),
+                  Padding(
+                    padding: EdgeInsets.only(right: contentInset),
+                    child: _adminMenuButton(l10n, event, hasDupLink),
                   ),
-                if (isAdmin) const SizedBox(width: 8),
               ],
               flexibleSpace: FlexibleSpaceBar(
                 background: DetailImageCarousel(
@@ -407,10 +422,12 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(SpotDetailUi.contentHorizontalPadding),
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1200),
+                    constraints: const BoxConstraints(
+                      maxWidth: SpotDetailUi.maxContentWidth,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [

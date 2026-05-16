@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../constants/spot_detail_ui.dart';
 import 'detail_network_gallery_viewer.dart';
 
 /// Collapsing-header image carousel used on detail pages (spots, events).
@@ -98,6 +99,7 @@ class DetailImageCarouselState extends State<DetailImageCarousel> {
     }
 
     final url = widget.imageUrls[_currentIndex];
+    final horizontalInset = SpotDetailUi.contentHorizontalInset(context);
 
     return SizedBox(
       height: widget.height,
@@ -146,7 +148,7 @@ class DetailImageCarouselState extends State<DetailImageCarousel> {
           ),
           if (widget.imageUrls.length > 1) ...[
             Positioned(
-              left: 16,
+              left: horizontalInset,
               top: 0,
               bottom: 0,
               child: Center(
@@ -157,7 +159,7 @@ class DetailImageCarouselState extends State<DetailImageCarousel> {
               ),
             ),
             Positioned(
-              right: 16,
+              right: horizontalInset,
               top: 0,
               bottom: 0,
               child: Center(

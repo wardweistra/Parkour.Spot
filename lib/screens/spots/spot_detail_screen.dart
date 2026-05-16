@@ -1180,6 +1180,30 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     );
   }
 
+  void _goBack() {
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    } else {
+      context.go('/explore');
+    }
+  }
+
+  Widget _spotDetailBackButton() {
+    return IconButton(
+      onPressed: _goBack,
+      icon: const Icon(Icons.arrow_back, color: Colors.white),
+      style: IconButton.styleFrom(
+        backgroundColor: Colors.black.withValues(alpha: 0.5),
+        shape: const CircleBorder(),
+        fixedSize: const Size(
+          SpotDetailUi.appBarButtonSize,
+          SpotDetailUi.appBarButtonSize,
+        ),
+        padding: EdgeInsets.zero,
+      ),
+    );
+  }
+
   void _openInMaps() async {
     try {
       final zoom = _searchStateServiceRef?.zoom;
@@ -2111,6 +2135,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final contentInset = SpotDetailUi.contentHorizontalInset(context);
+
     return Focus(
       autofocus: true,
       onKeyEvent: (node, event) {
@@ -2138,24 +2164,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
               backgroundColor: Colors.transparent,
               surfaceTintColor: Colors.transparent,
               elevation: 0,
-              leading: IconButton(
-                onPressed: () {
-                  // Check if we can pop back to a previous page
-                  if (Navigator.canPop(context)) {
-                    // If there's a previous page, go back to it
-                    Navigator.pop(context);
-                  } else {
-                    // If no previous page (direct link), go to explore
-                    context.go('/explore');
-                  }
-                },
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.black.withValues(alpha: 0.5),
-                  shape: const CircleBorder(),
-                  fixedSize: const Size(40, 40),
-                  padding: EdgeInsets.zero,
-                ),
+              leadingWidth: contentInset + SpotDetailUi.appBarButtonSize,
+              leading: Padding(
+                padding: EdgeInsets.only(left: contentInset),
+                child: _spotDetailBackButton(),
               ),
               flexibleSpace: FlexibleSpaceBar(
                 background: _buildImageCarousel(),
@@ -2165,10 +2177,12 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
             // Content using SliverList
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(SpotDetailUi.contentHorizontalPadding),
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1200),
+                    constraints: const BoxConstraints(
+                      maxWidth: SpotDetailUi.maxContentWidth,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -3577,6 +3591,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       );
     }
 
+    final horizontalInset = SpotDetailUi.contentHorizontalInset(context);
+
     return SizedBox(
       height: 400,
       width: double.infinity,
@@ -3586,7 +3602,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           if (kDebugMode)
             Positioned(
               top: 8,
-              left: 8,
+              left: horizontalInset,
               child: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
@@ -3719,7 +3735,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           if (widget.spot.imageUrls!.length > 1) ...[
             // Left arrow
             Positioned(
-              left: 16,
+              left: horizontalInset,
               top: 0,
               bottom: 0,
               child: Center(
@@ -3752,7 +3768,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
             // Right arrow
             Positioned(
-              right: 16,
+              right: horizontalInset,
               top: 0,
               bottom: 0,
               child: Center(
