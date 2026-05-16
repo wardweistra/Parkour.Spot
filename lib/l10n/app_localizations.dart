@@ -4155,11 +4155,23 @@ abstract class AppLocalizations {
   /// **', and last updated {date}.'**
   String spotListDetailLastUpdatedPart(String date);
 
-  /// Prefix text before external host link on list detail page (keep trailing space)
+  /// Legacy prefix for inline more-info links (prefer detailExternalLinkCaption)
   ///
   /// In en, this message translates to:
   /// **'More information on '**
   String get spotListDetailMoreInformationOn;
+
+  /// Caption on external link tile on event and list detail pages
+  ///
+  /// In en, this message translates to:
+  /// **'More information'**
+  String get detailExternalLinkCaption;
+
+  /// Accessibility label for external link tile
+  ///
+  /// In en, this message translates to:
+  /// **'Open {host}'**
+  String detailExternalLinkOpenSemantics(String host);
 
   /// Snackbar after copying list share text
   ///
@@ -4856,18 +4868,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ends'**
   String get eventDetailEndsLabel;
-
-  /// Section label for event website link
-  ///
-  /// In en, this message translates to:
-  /// **'Website'**
-  String get eventDetailWebsiteLabel;
-
-  /// Button to open event website in browser
-  ///
-  /// In en, this message translates to:
-  /// **'Open website'**
-  String get eventDetailOpenWebsite;
 
   /// Section label for event address or coordinates
   ///

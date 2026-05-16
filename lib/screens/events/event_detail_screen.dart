@@ -16,6 +16,8 @@ import '../../widgets/detail_image_carousel.dart';
 import '../../widgets/event_detail_provenance_line.dart';
 import '../../widgets/event_detail_when_block.dart';
 import '../../widgets/event_selection_dialog.dart';
+import '../../services/url_service.dart';
+import '../../widgets/detail_external_link_tile.dart';
 
 /// Event detail page; loads the document from Firestore by [eventId].
 class EventDetailScreen extends StatefulWidget {
@@ -490,6 +492,10 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     final hasAddress = event.address?.trim().isNotEmpty == true;
     final colors = Theme.of(context).colorScheme;
 
+    final hostLabel = hasWebsite
+        ? UrlService.displayHttpUrlHost(websiteUrl)
+        : null;
+
     return [
       EventDetailWhenBlock(
         startAt: event.startAt,
@@ -498,29 +504,19 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         endsLabel: l10n.eventDetailEndsLabel,
         todayLabel: l10n.spotDetailDateToday,
       ),
+      if (hasWebsite) ...[
+        const SizedBox(height: SpotDetailUi.detailSectionGap),
+        DetailExternalLinkTile(
+          url: websiteUrl,
+          caption: l10n.detailExternalLinkCaption,
+          openSemanticsLabel: l10n.detailExternalLinkOpenSemantics(hostLabel!),
+        ),
+      ],
       if (event.description?.trim().isNotEmpty == true) ...[
         const SizedBox(height: SpotDetailUi.detailSectionGap),
         Text(
           event.description!.trim(),
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.5),
-        ),
-      ],
-      if (hasWebsite) ...[
-        const SizedBox(height: SpotDetailUi.detailSectionGap),
-        Text(
-          l10n.eventDetailWebsiteLabel,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: SpotDetailUi.detailLabelGap),
-        OutlinedButton.icon(
-          onPressed: () => _openExternal(websiteUrl),
-          icon: const Icon(Icons.open_in_new, size: 18),
-          label: Text(l10n.eventDetailOpenWebsite),
-          style: OutlinedButton.styleFrom(
-            alignment: Alignment.centerLeft,
-          ),
         ),
       ],
       if (hasLocation || hasAddress) ...[
@@ -578,7 +574,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           ),
         ),
       ],
-      EventDetailProvenanceLine(key: ValueKey(event.id), event: event),
       if (event.spotIds.isNotEmpty) ...[
         const SizedBox(height: SpotDetailUi.detailSectionGap),
         Text(
@@ -593,6 +588,11 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           emptyLabel: l10n.eventDetailNoLinkedSpots,
         ),
       ],
+      EventDetailProvenanceLine(
+        key: ValueKey(event.id),
+        event: event,
+        footerStyle: true,
+      ),
     ];
   }
 
@@ -710,12 +710,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         ],
       ],
     );
-  }
-
-  Future<void> _openExternal(String url) async {
-    final uri = Uri.tryParse(url);
-    if (uri == null) return;
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   Future<void> _openMap(double lat, double lng) async {

@@ -2117,7 +2117,20 @@
   },
   "spotListDetailMoreInformationOn": "More information on ",
   "@spotListDetailMoreInformationOn": {
-    "description": "Prefix text before external host link on list detail page (keep trailing space)"
+    "description": "Legacy prefix for inline more-info links (prefer detailExternalLinkCaption)"
+  },
+  "detailExternalLinkCaption": "More information",
+  "@detailExternalLinkCaption": {
+    "description": "Caption on external link tile on event and list detail pages"
+  },
+  "detailExternalLinkOpenSemantics": "Open {host}",
+  "@detailExternalLinkOpenSemantics": {
+    "description": "Accessibility label for external link tile",
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
   },
   "spotListDetailCopiedToClipboard": "List copied to clipboard!",
   "@spotListDetailCopiedToClipboard": {
@@ -2655,14 +2668,6 @@
   "eventDetailEndsLabel": "Ends",
   "@eventDetailEndsLabel": {
     "description": "Label before event end date/time"
-  },
-  "eventDetailWebsiteLabel": "Website",
-  "@eventDetailWebsiteLabel": {
-    "description": "Section label for event website link"
-  },
-  "eventDetailOpenWebsite": "Open website",
-  "@eventDetailOpenWebsite": {
-    "description": "Button to open event website in browser"
   },
   "eventDetailLocationLabel": "Location",
   "@eventDetailLocationLabel": {

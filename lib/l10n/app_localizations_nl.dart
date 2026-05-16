@@ -2465,6 +2465,14 @@ class AppLocalizationsNl extends AppLocalizations {
   String get spotListDetailMoreInformationOn => 'Meer informatie op ';
 
   @override
+  String get detailExternalLinkCaption => 'Meer informatie';
+
+  @override
+  String detailExternalLinkOpenSemantics(String host) {
+    return 'Open $host';
+  }
+
+  @override
   String get spotListDetailCopiedToClipboard =>
       'Lijst gekopieerd naar klembord!';
 
@@ -2873,12 +2881,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get eventDetailEndsLabel => 'Eindigt';
-
-  @override
-  String get eventDetailWebsiteLabel => 'Website';
-
-  @override
-  String get eventDetailOpenWebsite => 'Website openen';
 
   @override
   String get eventDetailLocationLabel => 'Locatie';

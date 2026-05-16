@@ -25,6 +25,7 @@ import '../../constants/spot_detail_ui.dart';
 import '../../widgets/page_scaffold.dart';
 import '../../widgets/spot_detail_quick_action_chip.dart';
 import '../../widgets/spot_list_save_button.dart';
+import '../../widgets/detail_external_link_tile.dart';
 import 'package:flutter/services.dart';
 import 'spot_list_advanced_organization_screen.dart';
 import '../../l10n/app_localizations.dart';
@@ -749,67 +750,24 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.fromLTRB(16, compactTop ? 6 : 12, 16, 0),
-      margin: EdgeInsets.only(top: compactTop ? 2 : 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.info_outline,
-            size: 16,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: RichText(
-              text: TextSpan(style: textStyle, children: children),
-            ),
-          ),
-        ],
+      padding: EdgeInsets.fromLTRB(16, compactTop ? 16 : 20, 16, 8),
+      child: RichText(
+        text: TextSpan(style: textStyle, children: children),
       ),
     );
   }
 
-  Widget _buildMoreInfoLinkRow() {
+  Widget _buildMoreInfoLinkTile() {
     final url = _list?.moreInfoUrl;
     if (url == null || url.isEmpty) return const SizedBox.shrink();
 
-    final theme = Theme.of(context);
-    final textStyle = theme.textTheme.bodyMedium?.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
-    );
     final hostLabel = UrlService.displayHttpUrlHost(url);
-
-    return Container(
-      width: double.infinity,
+    return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      margin: const EdgeInsets.only(top: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.link, size: 16, color: theme.colorScheme.onSurfaceVariant),
-          const SizedBox(width: 8),
-          Expanded(
-            child: RichText(
-              text: TextSpan(
-                style: textStyle,
-                children: [
-                  TextSpan(text: _l10n.spotListDetailMoreInformationOn),
-                  TextSpan(
-                    text: hostLabel,
-                    style: textStyle?.copyWith(
-                      color: theme.colorScheme.primary,
-                    ),
-                    recognizer: TapGestureRecognizer()
-                      ..onTap = () =>
-                          UrlService.openHttpOrHttpsUrl(url, context),
-                  ),
-                  TextSpan(text: '.', style: textStyle),
-                ],
-              ),
-            ),
-          ),
-        ],
+      child: DetailExternalLinkTile(
+        url: url,
+        caption: _l10n.detailExternalLinkCaption,
+        openSemanticsLabel: _l10n.detailExternalLinkOpenSemantics(hostLabel),
       ),
     );
   }
@@ -1326,13 +1284,13 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),
               ),
-            _buildMoreInfoLinkRow(),
+            _buildMoreInfoLinkTile(),
+            // Spots list
+            _buildSpotsList(),
             _buildProvenanceSentence(
               compactTop:
                   _list!.moreInfoUrl != null && _list!.moreInfoUrl!.isNotEmpty,
             ),
-            // Spots list
-            _buildSpotsList(),
           ],
         ),
       ),

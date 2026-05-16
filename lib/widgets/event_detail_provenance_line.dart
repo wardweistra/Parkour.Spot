@@ -11,9 +11,16 @@ import '../utils/relative_date_localization.dart';
 
 /// Provenance attribution for an event detail page (creator, import source, dates).
 class EventDetailProvenanceLine extends StatefulWidget {
-  const EventDetailProvenanceLine({super.key, required this.event});
+  const EventDetailProvenanceLine({
+    super.key,
+    required this.event,
+    this.footerStyle = false,
+  });
 
   final ParkourEvent event;
+
+  /// Muted footer text without a leading info icon (avoids stacked metadata rows).
+  final bool footerStyle;
 
   @override
   State<EventDetailProvenanceLine> createState() =>
@@ -123,26 +130,30 @@ class _EventDetailProvenanceLineState extends State<EventDetailProvenanceLine> {
     }
 
     return Padding(
-      padding: const EdgeInsets.only(top: SpotDetailUi.detailSectionGap),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Icon(
-              Icons.info_outline,
-              size: 16,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: RichText(
-              text: TextSpan(style: textStyle, children: spans),
-            ),
-          ),
-        ],
+      padding: EdgeInsets.only(
+        top: widget.footerStyle ? 20 : SpotDetailUi.detailSectionGap,
       ),
+      child: widget.footerStyle
+          ? RichText(text: TextSpan(style: textStyle, children: spans))
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Icon(
+                    Icons.info_outline,
+                    size: 16,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: RichText(
+                    text: TextSpan(style: textStyle, children: spans),
+                  ),
+                ),
+              ],
+            ),
     );
   }
 
