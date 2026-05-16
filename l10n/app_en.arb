@@ -2684,15 +2684,6 @@
   "@eventDetailLinkedSpotsLabel": {
     "description": "Section heading for spots tied to this event"
   },
-  "eventDetailLinkedSpotsCount": "{count, plural, =1{1 linked spot} other{{count} linked spots}}",
-  "@eventDetailLinkedSpotsCount": {
-    "description": "Subtitle showing how many spots are linked",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "eventDetailNoLinkedSpots": "No linked spots found.",
   "@eventDetailNoLinkedSpots": {
     "description": "Empty state when linked spot ids do not resolve"

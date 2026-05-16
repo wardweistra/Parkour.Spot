@@ -4893,12 +4893,6 @@ abstract class AppLocalizations {
   /// **'Linked spots'**
   String get eventDetailLinkedSpotsLabel;
 
-  /// Subtitle showing how many spots are linked
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 linked spot} other{{count} linked spots}}'**
-  String eventDetailLinkedSpotsCount(int count);
-
   /// Empty state when linked spot ids do not resolve
   ///
   /// In en, this message translates to:

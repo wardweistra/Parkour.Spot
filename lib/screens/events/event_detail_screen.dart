@@ -587,13 +587,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          l10n.eventDetailLinkedSpotsCount(event.spotIds.length),
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: colors.onSurface.withValues(alpha: 0.65),
-          ),
-        ),
         const SizedBox(height: SpotDetailUi.detailLabelGap),
         _LinkedSpotsSection(
           spotIds: event.spotIds,

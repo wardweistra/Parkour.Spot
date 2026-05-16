@@ -797,7 +797,6 @@
   "eventDetailLocationLabel": "Ort",
   "eventDetailOpenInMaps": "In Karten öffnen",
   "eventDetailLinkedSpotsLabel": "Verknüpfte Spots",
-  "eventDetailLinkedSpotsCount": "{count, plural, =1{1 verknüpfter Spot} other{{count} verknüpfte Spots}}",
   "eventDetailNoLinkedSpots": "Keine verknüpften Spots gefunden.",
   "eventDetailSourceLabel": "Quelle",
   "eventDetailAdminMenuTooltip": "Admin",

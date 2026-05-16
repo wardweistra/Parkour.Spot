@@ -796,7 +796,6 @@
   "eventDetailLocationLabel": "Lieu",
   "eventDetailOpenInMaps": "Ouvrir dans Plans",
   "eventDetailLinkedSpotsLabel": "Spots liés",
-  "eventDetailLinkedSpotsCount": "{count, plural, =1{1 spot lié} other{{count} spots liés}}",
   "eventDetailNoLinkedSpots": "Aucun spot lié trouvé.",
   "eventDetailSourceLabel": "Source",
   "eventDetailAdminMenuTooltip": "Admin",

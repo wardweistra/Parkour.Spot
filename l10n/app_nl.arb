@@ -794,7 +794,6 @@
   "eventDetailLocationLabel": "Locatie",
   "eventDetailOpenInMaps": "Openen in kaarten",
   "eventDetailLinkedSpotsLabel": "Gekoppelde spots",
-  "eventDetailLinkedSpotsCount": "{count, plural, =1{1 gekoppelde spot} other{{count} gekoppelde spots}}",
   "eventDetailNoLinkedSpots": "Geen gekoppelde spots gevonden.",
   "eventDetailSourceLabel": "Bron",
   "eventDetailAdminMenuTooltip": "Beheer",

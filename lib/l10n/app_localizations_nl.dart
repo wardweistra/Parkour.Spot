@@ -2895,17 +2895,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get eventDetailLinkedSpotsLabel => 'Gekoppelde spots';
 
   @override
-  String eventDetailLinkedSpotsCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count gekoppelde spots',
-      one: '1 gekoppelde spot',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get eventDetailNoLinkedSpots => 'Geen gekoppelde spots gevonden.';
 
   @override

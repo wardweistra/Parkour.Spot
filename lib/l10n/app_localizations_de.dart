@@ -2928,17 +2928,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get eventDetailLinkedSpotsLabel => 'Verknüpfte Spots';
 
   @override
-  String eventDetailLinkedSpotsCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count verknüpfte Spots',
-      one: '1 verknüpfter Spot',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get eventDetailNoLinkedSpots => 'Keine verknüpften Spots gefunden.';
 
   @override
