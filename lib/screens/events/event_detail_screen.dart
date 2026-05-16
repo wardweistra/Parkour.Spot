@@ -560,25 +560,27 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         ),
       ],
       EventDetailProvenanceLine(key: ValueKey(event.id), event: event),
-      const SizedBox(height: 24),
-      Text(
-        l10n.eventDetailLinkedSpotsLabel,
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-          fontWeight: FontWeight.w600,
+      if (event.spotIds.isNotEmpty) ...[
+        const SizedBox(height: 24),
+        Text(
+          l10n.eventDetailLinkedSpotsLabel,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
         ),
-      ),
-      const SizedBox(height: 4),
-      Text(
-        l10n.eventDetailLinkedSpotsCount(event.spotIds.length),
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: colors.onSurface.withValues(alpha: 0.65),
+        const SizedBox(height: 4),
+        Text(
+          l10n.eventDetailLinkedSpotsCount(event.spotIds.length),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: colors.onSurface.withValues(alpha: 0.65),
+          ),
         ),
-      ),
-      const SizedBox(height: 8),
-      _LinkedSpotsSection(
-        spotIds: event.spotIds,
-        emptyLabel: l10n.eventDetailNoLinkedSpots,
-      ),
+        const SizedBox(height: 8),
+        _LinkedSpotsSection(
+          spotIds: event.spotIds,
+          emptyLabel: l10n.eventDetailNoLinkedSpots,
+        ),
+      ],
     ];
   }
 
