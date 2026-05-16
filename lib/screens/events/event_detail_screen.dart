@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -11,13 +12,16 @@ import '../../models/parkour_event.dart';
 import '../../models/spot.dart';
 import '../../services/admin_events_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/snackbar_service.dart';
 import '../../services/spot_service.dart';
+import '../../services/web_share_service.dart';
 import '../../widgets/detail_image_carousel.dart';
 import '../../widgets/event_detail_provenance_line.dart';
 import '../../widgets/event_detail_when_block.dart';
 import '../../widgets/event_selection_dialog.dart';
 import '../../services/url_service.dart';
 import '../../widgets/detail_external_link_tile.dart';
+import '../../widgets/spot_detail_quick_action_chip.dart';
 
 /// Event detail page; loads the document from Firestore by [eventId].
 class EventDetailScreen extends StatefulWidget {
@@ -151,6 +155,81 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     } else {
       context.go('/explore');
     }
+  }
+
+  Future<void> _shareEvent() async {
+    final event = _event;
+    final id = event?.id;
+    if (id == null) return;
+
+    try {
+      final l10n = AppLocalizations.of(context)!;
+      final url = UrlService.generateEventUrl(id);
+      final label = event!.title.trim();
+      final text = l10n.spotCardShareClipboardText(label, url);
+
+      final outcome = await WebShareService.tryShareLink(text: label, url: url);
+      if (outcome == WebShareOutcome.shared ||
+          outcome == WebShareOutcome.cancelled) {
+        return;
+      }
+
+      await Clipboard.setData(ClipboardData(text: text));
+
+      if (!mounted) return;
+      SnackbarService.showClipboardCopied(l10n.eventDetailCopiedToClipboard);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.eventDetailShareFailed('$e'),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Widget _buildShareActionRow(AppLocalizations l10n) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 4),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            Tooltip(
+              message: l10n.spotDetailShareTooltip,
+              child: Semantics(
+                button: true,
+                label: l10n.spotDetailShareTooltip,
+                child: Material(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(
+                    SpotDetailUi.surfaceRadius,
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(
+                      SpotDetailUi.surfaceRadius,
+                    ),
+                    onTap: _shareEvent,
+                    child: SpotDetailQuickActionChip(
+                      icon: Icons.share_outlined,
+                      iconColor: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.75),
+                      label: l10n.spotDetailQuickActionShare,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _backButton() {
@@ -456,6 +535,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                             ),
                           ],
                         ),
+                        _buildShareActionRow(l10n),
                         const SizedBox(height: SpotDetailUi.detailTitleGap),
                         ..._buildEventMainContent(context, event, l10n),
                         if (showDupSection) ...[

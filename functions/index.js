@@ -4402,6 +4402,42 @@ exports.deleteEventSyncSource = onCall(
     },
 );
 
+// Public callable: event sync source details for detail-page attribution.
+exports.getEventSyncSource = onCall({region: "europe-west1"}, async (request) => {
+  try {
+    const {sourceId} = request.data;
+    if (!sourceId || typeof sourceId !== "string") {
+      throw new Error("sourceId is required");
+    }
+
+    const doc = await db.collection("eventSyncSources").doc(sourceId.trim()).get();
+    if (!doc.exists) {
+      return {success: false, error: "Source not found", source: null};
+    }
+
+    const data = doc.data() || {};
+    const source = {
+      id: doc.id,
+      name: data.name,
+      description: data.description,
+      publicUrl: data.publicUrl,
+      isActive: data.isActive,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+      lastSyncAt: data.lastSyncAt,
+      lastSyncStats: data.lastSyncStats,
+    };
+
+    return {
+      success: true,
+      source,
+    };
+  } catch (error) {
+    console.error("Error getting event sync source:", error);
+    throw new Error(`Failed to get event sync source: ${error.message}`);
+  }
+});
+
 // Function to get event sync sources (admin only).
 exports.getEventSyncSources = onCall(
     {region: "europe-west1"},

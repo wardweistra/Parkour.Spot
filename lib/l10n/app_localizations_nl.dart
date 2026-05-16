@@ -2340,6 +2340,23 @@ class AppLocalizationsNl extends AppLocalizations {
   String get sourceDetailsRelativeJustNow => 'Zojuist';
 
   @override
+  String get eventSourceDetailsLoadingSource => 'Evenementbron laden...';
+
+  @override
+  String get eventSourceDetailsTotalEvents => 'Totaal aantal evenementen';
+
+  @override
+  String exploreEventCountShort(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count evenementen',
+      one: '1 evenement',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String spotTrackingSignInToViewList(String listName) {
     return 'Log in om je $listName-lijst te bekijken';
   }
@@ -2973,4 +2990,12 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get eventDetailRemoveDuplicateSuccess => 'Duplicaatstatus verwijderd.';
+
+  @override
+  String get eventDetailCopiedToClipboard => 'Event gekopieerd naar klembord!';
+
+  @override
+  String eventDetailShareFailed(String error) {
+    return 'Delen mislukt: $error';
+  }
 }

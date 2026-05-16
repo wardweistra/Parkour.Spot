@@ -1947,6 +1947,23 @@
   "@sourceDetailsRelativeJustNow": {
     "description": "Relative time for very recent source updates"
   },
+  "eventSourceDetailsLoadingSource": "Loading event source...",
+  "@eventSourceDetailsLoadingSource": {
+    "description": "Event source details dialog loading state"
+  },
+  "eventSourceDetailsTotalEvents": "Total Events",
+  "@eventSourceDetailsTotalEvents": {
+    "description": "Event source details: total number of imported events label"
+  },
+  "exploreEventCountShort": "{count, plural, one{1 event} other{{count} events}}",
+  "@exploreEventCountShort": {
+    "description": "Short event count label for event source details",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "spotTrackingSignInToViewList": "Sign in to view your {listName} list",
   "@spotTrackingSignInToViewList": {
     "description": "Prompt on spot tracking list pages when user is signed out",
@@ -2788,5 +2805,18 @@
   "eventDetailRemoveDuplicateSuccess": "Duplicate status removed.",
   "@eventDetailRemoveDuplicateSuccess": {
     "description": "Snackbar after duplicate cleared"
+  },
+  "eventDetailCopiedToClipboard": "Event copied to clipboard!",
+  "@eventDetailCopiedToClipboard": {
+    "description": "Snackbar after event share URL copied"
+  },
+  "eventDetailShareFailed": "Failed to share event: {error}",
+  "@eventDetailShareFailed": {
+    "description": "Share or clipboard error on event detail",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   }
 }

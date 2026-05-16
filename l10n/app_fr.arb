@@ -606,6 +606,9 @@
   "sourceDetailsRelativeHoursAgo": "{count, plural, one{Il y a 1 heure} other{Il y a {count} heures}}",
   "sourceDetailsRelativeMinutesAgo": "{count, plural, one{Il y a 1 minute} other{Il y a {count} minutes}}",
   "sourceDetailsRelativeJustNow": "À l'instant",
+  "eventSourceDetailsLoadingSource": "Chargement de la source d'événements...",
+  "eventSourceDetailsTotalEvents": "Événements au total",
+  "exploreEventCountShort": "{count, plural, one{1 événement} other{{count} événements}}",
   "spotTrackingSignInToViewList": "Connectez-vous pour voir votre liste « {listName} »",
   "spotTrackingNoSpotsInList": "Aucun spot dans {listName}",
   "spotListSaveTooltipSaveList": "Enregistrer la liste",
@@ -816,5 +819,7 @@
   "eventDetailMarkDuplicateConfirmBody": "Marquer cet événement comme doublon de « {title} » ?",
   "eventDetailMarkDuplicateSuccess": "Événement marqué comme doublon.",
   "eventDetailRemoveDuplicateConfirmBody": "Retirer le statut de doublon pour cet événement ? Il ne pointera plus vers un autre événement comme original.",
-  "eventDetailRemoveDuplicateSuccess": "Statut de doublon retiré."
+  "eventDetailRemoveDuplicateSuccess": "Statut de doublon retiré.",
+  "eventDetailCopiedToClipboard": "Événement copié dans le presse-papiers !",
+  "eventDetailShareFailed": "Échec du partage de l’événement : {error}"
 }

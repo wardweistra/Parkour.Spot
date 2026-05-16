@@ -636,6 +636,9 @@
   "sourceDetailsRelativeHoursAgo": "{count, plural, one{1 uur geleden} other{{count} uur geleden}}",
   "sourceDetailsRelativeMinutesAgo": "{count, plural, one{1 minuut geleden} other{{count} minuten geleden}}",
   "sourceDetailsRelativeJustNow": "Zojuist",
+  "eventSourceDetailsLoadingSource": "Evenementbron laden...",
+  "eventSourceDetailsTotalEvents": "Totaal aantal evenementen",
+  "exploreEventCountShort": "{count, plural, one{1 evenement} other{{count} evenementen}}",
   "spotTrackingSignInToViewList": "Log in om je {listName}-lijst te bekijken",
   "spotTrackingNoSpotsInList": "Geen spots in {listName}",
   "spotListSaveTooltipSaveList": "Lijst opslaan",
@@ -814,5 +817,7 @@
   "eventDetailMarkDuplicateConfirmBody": "Dit event als duplicaat van «{title}» markeren?",
   "eventDetailMarkDuplicateSuccess": "Event als duplicaat gemarkeerd.",
   "eventDetailRemoveDuplicateConfirmBody": "Duplicaatstatus van dit event verwijderen? Het wijst dan niet meer naar een ander event als origineel.",
-  "eventDetailRemoveDuplicateSuccess": "Duplicaatstatus verwijderd."
+  "eventDetailRemoveDuplicateSuccess": "Duplicaatstatus verwijderd.",
+  "eventDetailCopiedToClipboard": "Event gekopieerd naar klembord!",
+  "eventDetailShareFailed": "Delen mislukt: {error}"
 }

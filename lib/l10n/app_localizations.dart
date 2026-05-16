@@ -3945,6 +3945,24 @@ abstract class AppLocalizations {
   /// **'Just now'**
   String get sourceDetailsRelativeJustNow;
 
+  /// Event source details dialog loading state
+  ///
+  /// In en, this message translates to:
+  /// **'Loading event source...'**
+  String get eventSourceDetailsLoadingSource;
+
+  /// Event source details: total number of imported events label
+  ///
+  /// In en, this message translates to:
+  /// **'Total Events'**
+  String get eventSourceDetailsTotalEvents;
+
+  /// Short event count label for event source details
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 event} other{{count} events}}'**
+  String exploreEventCountShort(int count);
+
   /// Prompt on spot tracking list pages when user is signed out
   ///
   /// In en, this message translates to:
@@ -5018,6 +5036,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Duplicate status removed.'**
   String get eventDetailRemoveDuplicateSuccess;
+
+  /// Snackbar after event share URL copied
+  ///
+  /// In en, this message translates to:
+  /// **'Event copied to clipboard!'**
+  String get eventDetailCopiedToClipboard;
+
+  /// Share or clipboard error on event detail
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to share event: {error}'**
+  String eventDetailShareFailed(String error);
 }
 
 class _AppLocalizationsDelegate

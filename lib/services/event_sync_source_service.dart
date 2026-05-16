@@ -88,6 +88,8 @@ class EventSyncSourceService extends ChangeNotifier {
   );
 
   List<EventSyncSource> _sources = <EventSyncSource>[];
+  final Map<String, EventSyncSource> _sourceDetailsCache =
+      <String, EventSyncSource>{};
   bool _isLoading = false;
   bool _isSyncingAll = false;
   final Set<String> _syncingSources = <String>{};
@@ -98,6 +100,26 @@ class EventSyncSourceService extends ChangeNotifier {
   bool get isSyncingAll => _isSyncingAll;
   Set<String> get syncingSources => _syncingSources;
   String? get error => _error;
+
+  /// Fetches public event source details by ID. Results are cached.
+  Future<EventSyncSource?> fetchEventSyncSourceById(String sourceId) async {
+    if (_sourceDetailsCache.containsKey(sourceId)) {
+      return _sourceDetailsCache[sourceId];
+    }
+    try {
+      final callable = _functions.httpsCallable('getEventSyncSource');
+      final result = await callable.call({'sourceId': sourceId});
+      final data = _callableMap(result.data);
+      if (data['success'] == true && data['source'] != null) {
+        final source = EventSyncSource.fromMap(_callableMap(data['source']));
+        _sourceDetailsCache[sourceId] = source;
+        return source;
+      }
+    } catch (e) {
+      debugPrint('Error fetching event sync source $sourceId: $e');
+    }
+    return null;
+  }
 
   Future<void> fetchSources({bool includeInactive = true}) async {
     try {

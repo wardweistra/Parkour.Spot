@@ -8,6 +8,7 @@ import '../l10n/app_localizations.dart';
 import '../models/parkour_event.dart';
 import '../services/user_profile_service.dart';
 import '../utils/relative_date_localization.dart';
+import 'event_source_details_dialog.dart';
 
 /// Provenance attribution for an event detail page (creator, import source, dates).
 class EventDetailProvenanceLine extends StatefulWidget {
@@ -75,6 +76,17 @@ class _EventDetailProvenanceLineState extends State<EventDetailProvenanceLine> {
       if (!mounted) return;
       setState(() => _loadingCreator = false);
     }
+  }
+
+  void _showEventSourceDetails() {
+    final sourceId = _event.eventSourceId?.trim();
+    if (sourceId == null || sourceId.isEmpty) return;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => EventSourceDetailsDialog(sourceId: sourceId),
+    );
   }
 
   Future<void> _navigateToUserProfile(String userId) async {
@@ -220,6 +232,9 @@ class _EventDetailProvenanceLineState extends State<EventDetailProvenanceLine> {
     if (!_event.isNativeEvent) {
       final sourceName =
           _event.eventSourceName?.trim() ?? l10n.spotDetailUnknownSource;
+      final sourceId = _event.eventSourceId?.trim();
+      final canOpenSourceDetails =
+          sourceId != null && sourceId.isNotEmpty;
 
       if (hasPreviousContent) {
         spans.add(TextSpan(text: ' / ', style: textStyle));
@@ -242,7 +257,17 @@ class _EventDetailProvenanceLineState extends State<EventDetailProvenanceLine> {
         );
       }
 
-      spans.add(TextSpan(text: sourceName, style: textStyle));
+      spans.add(
+        TextSpan(
+          text: sourceName,
+          style: canOpenSourceDetails
+              ? textStyle?.copyWith(color: theme.colorScheme.primary)
+              : textStyle,
+          recognizer: canOpenSourceDetails
+              ? (TapGestureRecognizer()..onTap = _showEventSourceDetails)
+              : null,
+        ),
+      );
       hasPreviousContent = true;
     }
 

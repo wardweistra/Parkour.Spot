@@ -163,6 +163,11 @@ class UrlService {
     }
     return '$_baseUrl/spot/$spotId';
   }
+
+  /// Generate a shareable URL for an event (`/event/:eventId`).
+  static String generateEventUrl(String eventId) {
+    return '$_baseUrl/event/$eventId';
+  }
   
   /// Share a spot URL using clipboard (web-compatible)
   static Future<void> shareSpot(String spotId, String spotName, {String? countryCode, String? city}) async {

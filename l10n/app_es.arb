@@ -606,6 +606,9 @@
   "sourceDetailsRelativeHoursAgo": "{count, plural, one{Hace 1 hora} other{Hace {count} horas}}",
   "sourceDetailsRelativeMinutesAgo": "{count, plural, one{Hace 1 minuto} other{Hace {count} minutos}}",
   "sourceDetailsRelativeJustNow": "Justo ahora",
+  "eventSourceDetailsLoadingSource": "Cargando fuente de eventos...",
+  "eventSourceDetailsTotalEvents": "Eventos totales",
+  "exploreEventCountShort": "{count, plural, one{1 evento} other{{count} eventos}}",
   "spotTrackingSignInToViewList": "Inicia sesión para ver tu lista «{listName}»",
   "spotTrackingNoSpotsInList": "No hay spots en {listName}",
   "spotListSaveTooltipSaveList": "Guardar lista",
@@ -816,5 +819,7 @@
   "eventDetailMarkDuplicateConfirmBody": "¿Marcar este evento como duplicado de «{title}»?",
   "eventDetailMarkDuplicateSuccess": "Evento marcado como duplicado.",
   "eventDetailRemoveDuplicateConfirmBody": "¿Quitar el estado de duplicado de este evento? Dejará de apuntar a otro evento como original.",
-  "eventDetailRemoveDuplicateSuccess": "Estado de duplicado eliminado."
+  "eventDetailRemoveDuplicateSuccess": "Estado de duplicado eliminado.",
+  "eventDetailCopiedToClipboard": "¡Evento copiado al portapapeles!",
+  "eventDetailShareFailed": "Error al compartir evento: {error}"
 }

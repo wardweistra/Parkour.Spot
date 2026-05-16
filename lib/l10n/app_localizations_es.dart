@@ -2349,6 +2349,23 @@ class AppLocalizationsEs extends AppLocalizations {
   String get sourceDetailsRelativeJustNow => 'Justo ahora';
 
   @override
+  String get eventSourceDetailsLoadingSource => 'Cargando fuente de eventos...';
+
+  @override
+  String get eventSourceDetailsTotalEvents => 'Eventos totales';
+
+  @override
+  String exploreEventCountShort(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count eventos',
+      one: '1 evento',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String spotTrackingSignInToViewList(String listName) {
     return 'Inicia sesión para ver tu lista «$listName»';
   }
@@ -2984,4 +3001,12 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get eventDetailRemoveDuplicateSuccess =>
       'Estado de duplicado eliminado.';
+
+  @override
+  String get eventDetailCopiedToClipboard => '¡Evento copiado al portapapeles!';
+
+  @override
+  String eventDetailShareFailed(String error) {
+    return 'Error al compartir evento: $error';
+  }
 }
