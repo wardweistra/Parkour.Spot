@@ -193,7 +193,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
   Widget _buildShareActionRow(AppLocalizations l10n) {
     return Padding(
-      padding: const EdgeInsets.only(top: 8, bottom: 4),
+      padding: const EdgeInsets.only(top: 6, bottom: 2),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
@@ -539,7 +539,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                         const SizedBox(height: SpotDetailUi.detailTitleGap),
                         ..._buildEventMainContent(context, event, l10n),
                         if (showDupSection) ...[
-                          const SizedBox(height: SpotDetailUi.detailSectionGap),
+                          const SizedBox(height: SpotDetailUi.detailFooterGap),
                           _buildDuplicateSection(
                             context,
                             l10n,
@@ -548,7 +548,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                             dupId,
                           ),
                         ],
-                        const SizedBox(height: 32),
+                        const SizedBox(height: SpotDetailUi.detailSectionGap),
                       ],
                     ),
                   ),
@@ -561,6 +561,15 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     );
   }
 
+  Widget _detailSectionHeading(BuildContext context, String label) {
+    return Text(
+      label,
+      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+
   List<Widget> _buildEventMainContent(
     BuildContext context,
     ParkourEvent event,
@@ -568,15 +577,18 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   ) {
     final websiteUrl = event.websiteUrl?.trim();
     final hasWebsite = websiteUrl != null && websiteUrl.isNotEmpty;
+    final hasDescription = event.description?.trim().isNotEmpty == true;
     final hasLocation = event.latitude != null && event.longitude != null;
     final hasAddress = event.address?.trim().isNotEmpty == true;
+    final hasLinkedSpots = event.spotIds.isNotEmpty;
+    final hasWhereSection = hasLinkedSpots || hasLocation || hasAddress;
     final colors = Theme.of(context).colorScheme;
 
     final hostLabel = hasWebsite
         ? UrlService.displayHttpUrlHost(websiteUrl)
         : null;
 
-    return [
+    final widgets = <Widget>[
       EventDetailWhenBlock(
         startAt: event.startAt,
         endAt: event.endAt,
@@ -584,39 +596,62 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         endsLabel: l10n.eventDetailEndsLabel,
         todayLabel: l10n.spotDetailDateToday,
       ),
-      if (hasWebsite) ...[
-        const SizedBox(height: SpotDetailUi.detailSectionGap),
-        DetailExternalLinkTile(
-          url: websiteUrl,
-          caption: l10n.detailExternalLinkCaption,
-          openSemanticsLabel: l10n.detailExternalLinkOpenSemantics(hostLabel!),
-        ),
-      ],
-      if (event.description?.trim().isNotEmpty == true) ...[
+    ];
+
+    if (hasDescription) {
+      widgets.addAll([
         const SizedBox(height: SpotDetailUi.detailSectionGap),
         Text(
           event.description!.trim(),
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.5),
         ),
-      ],
-      if (hasLocation || hasAddress) ...[
-        const SizedBox(height: SpotDetailUi.detailSectionGap),
-        Text(
-          l10n.eventDetailLocationLabel,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+      ]);
+    }
+
+    if (hasWebsite) {
+      widgets.addAll([
+        SizedBox(
+          height: hasDescription
+              ? SpotDetailUi.detailSubsectionGap
+              : SpotDetailUi.detailSectionGap,
         ),
+        DetailExternalLinkTile(
+          url: websiteUrl,
+          caption: l10n.detailExternalLinkCaption,
+          openSemanticsLabel: l10n.detailExternalLinkOpenSemantics(hostLabel!),
+        ),
+      ]);
+    }
+
+    if (hasWhereSection) {
+      widgets.add(const SizedBox(height: SpotDetailUi.detailSectionGap));
+    }
+
+    if (hasLinkedSpots) {
+      widgets.addAll([
+        _detailSectionHeading(context, l10n.eventDetailLinkedSpotsLabel),
+        const SizedBox(height: SpotDetailUi.detailLabelGap),
+        _LinkedSpotsSection(
+          spotIds: event.spotIds,
+          emptyLabel: l10n.eventDetailNoLinkedSpots,
+        ),
+      ]);
+    }
+
+    if (hasLocation || hasAddress) {
+      if (hasLinkedSpots) {
+        widgets.add(const SizedBox(height: SpotDetailUi.detailSectionGap));
+      }
+      widgets.addAll([
+        _detailSectionHeading(context, l10n.eventDetailLocationLabel),
         const SizedBox(height: SpotDetailUi.detailLabelGap),
         Container(
           width: double.infinity,
           padding: SpotDetailUi.detailCardPadding,
           decoration: BoxDecoration(
-            color: colors.primaryContainer.withValues(alpha: 0.15),
+            color: colors.surfaceContainerLow,
             borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
-            border: Border.all(
-              color: colors.primary.withValues(alpha: 0.2),
-            ),
+            border: SpotDetailUi.outlineBorder(colors),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -653,27 +688,18 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             ],
           ),
         ),
-      ],
-      if (event.spotIds.isNotEmpty) ...[
-        const SizedBox(height: SpotDetailUi.detailSectionGap),
-        Text(
-          l10n.eventDetailLinkedSpotsLabel,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: SpotDetailUi.detailLabelGap),
-        _LinkedSpotsSection(
-          spotIds: event.spotIds,
-          emptyLabel: l10n.eventDetailNoLinkedSpots,
-        ),
-      ],
+      ]);
+    }
+
+    widgets.add(
       EventDetailProvenanceLine(
         key: ValueKey(event.id),
         event: event,
         footerStyle: true,
       ),
-    ];
+    );
+
+    return widgets;
   }
 
   Widget _buildDuplicateSection(
@@ -683,6 +709,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     bool hasDupLink,
     String? dupId,
   ) {
+    final theme = Theme.of(context);
+    final secondaryColor = theme.colorScheme.secondary;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -731,56 +760,70 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               subtitle: Text(l10n.spotDetailLoading),
             )
           else if (_duplicateEvents.isNotEmpty) ...[
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              dense: true,
-              leading: Icon(
-                Icons.copy_all,
-                color: Theme.of(context).colorScheme.secondary,
-              ),
-              title: Text(
-                l10n.spotDetailAlsoBasedOn,
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-            ),
+            _detailSectionHeading(context, l10n.spotDetailAlsoBasedOn),
+            const SizedBox(height: SpotDetailUi.detailLabelGap),
             ..._duplicateEvents.map((dup) {
               final id = dup.id;
-              return GestureDetector(
-                onTap: id == null || id.isEmpty
-                    ? null
-                    : () => context.push('/event/$id'),
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 48),
-                  child: ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                    leading: Icon(
-                      Icons.arrow_right,
-                      size: 16,
-                      color: Theme.of(context).colorScheme.secondary,
-                    ),
-                    title: Text(
-                      dup.title,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.secondary,
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Material(
+                  color: theme.colorScheme.surfaceContainerLow,
+                  borderRadius:
+                      BorderRadius.circular(SpotDetailUi.surfaceRadius),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: id == null || id.isEmpty
+                        ? null
+                        : () => context.push('/event/$id'),
+                    child: Container(
+                      width: double.infinity,
+                      padding: SpotDetailUi.detailCardPadding,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(
+                          SpotDetailUi.surfaceRadius,
+                        ),
+                        border: SpotDetailUi.outlineBorder(
+                          theme.colorScheme,
+                        ),
                       ),
-                    ),
-                    subtitle: dup.eventSourceName?.trim().isNotEmpty == true
-                        ? Text(
-                            dup.eventSourceName!.trim(),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .secondary
-                                  .withValues(alpha: 0.7),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.copy_all_outlined,
+                            color: secondaryColor,
+                            size: 22,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  dup.title,
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                    color: secondaryColor,
+                                  ),
+                                ),
+                                if (dup.eventSourceName?.trim().isNotEmpty ==
+                                    true)
+                                  Text(
+                                    dup.eventSourceName!.trim(),
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: secondaryColor.withValues(
+                                        alpha: 0.7,
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
-                          )
-                        : null,
-                    trailing: Icon(
-                      Icons.open_in_new,
-                      size: 16,
-                      color: Theme.of(context).colorScheme.secondary,
+                          ),
+                          Icon(
+                            Icons.open_in_new,
+                            size: 18,
+                            color: secondaryColor.withValues(alpha: 0.85),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -872,21 +915,29 @@ class _LinkedSpotsSectionState extends State<_LinkedSpotsSection> {
           );
         }
         return Column(
-          children: spots.map((spot) {
+          children: List.generate(spots.length, (i) {
+            final spot = spots[i];
             return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: EdgeInsets.only(
+                top: i > 0 ? SpotDetailUi.detailSubsectionGap : 0,
+              ),
               child: Material(
                 color: colors.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
+                borderRadius:
+                    BorderRadius.circular(SpotDetailUi.surfaceRadius),
                 clipBehavior: Clip.antiAlias,
                 child: InkWell(
                   onTap: spot.id == null
                       ? null
                       : () => context.push('/spot/${spot.id}'),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
+                  child: Container(
+                    width: double.infinity,
+                    padding: SpotDetailUi.detailCardPadding,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(
+                        SpotDetailUi.surfaceRadius,
+                      ),
+                      border: SpotDetailUi.outlineBorder(colors),
                     ),
                     child: Row(
                       children: [
@@ -931,7 +982,7 @@ class _LinkedSpotsSectionState extends State<_LinkedSpotsSection> {
                 ),
               ),
             );
-          }).toList(),
+          }),
         );
       },
     );

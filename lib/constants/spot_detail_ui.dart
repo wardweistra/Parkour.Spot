@@ -17,6 +17,12 @@ abstract final class SpotDetailUi {
   /// Space between major content blocks (description, website, linked spots).
   static const double detailSectionGap = 24;
 
+  /// Tight gap between related blocks in the same section (e.g. description then website).
+  static const double detailSubsectionGap = 12;
+
+  /// Extra separation before footer metadata (provenance, duplicates).
+  static const double detailFooterGap = 28;
+
   /// Space from a section label to its content.
   static const double detailLabelGap = 8;
 

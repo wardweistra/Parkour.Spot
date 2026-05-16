@@ -143,7 +143,9 @@ class _EventDetailProvenanceLineState extends State<EventDetailProvenanceLine> {
 
     return Padding(
       padding: EdgeInsets.only(
-        top: widget.footerStyle ? 20 : SpotDetailUi.detailSectionGap,
+        top: widget.footerStyle
+            ? SpotDetailUi.detailFooterGap
+            : SpotDetailUi.detailSectionGap,
       ),
       child: widget.footerStyle
           ? RichText(text: TextSpan(style: textStyle, children: spans))
