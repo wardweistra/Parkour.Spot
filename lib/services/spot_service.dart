@@ -1193,20 +1193,27 @@ class SpotService extends ChangeNotifier {
               ? spotAccess.first
               : spotAccess;
         }
-        if (spotFacilitiesCovered == true)
+        if (spotFacilitiesCovered == true) {
           requestData['spotFacilitiesCovered'] = 'yes';
-        if (spotFacilitiesLighting == true)
+        }
+        if (spotFacilitiesLighting == true) {
           requestData['spotFacilitiesLighting'] = 'yes';
-        if (spotFacilitiesWaterTap == true)
+        }
+        if (spotFacilitiesWaterTap == true) {
           requestData['spotFacilitiesWaterTap'] = 'yes';
-        if (spotFacilitiesToilet == true)
+        }
+        if (spotFacilitiesToilet == true) {
           requestData['spotFacilitiesToilet'] = 'yes';
-        if (spotFacilitiesParking == true)
+        }
+        if (spotFacilitiesParking == true) {
           requestData['spotFacilitiesParking'] = 'yes';
-        if (goodFor != null && goodFor.isNotEmpty)
+        }
+        if (goodFor != null && goodFor.isNotEmpty) {
           requestData['goodFor'] = goodFor.take(10).toList();
-        if (spotFeatures != null && spotFeatures.isNotEmpty)
+        }
+        if (spotFeatures != null && spotFeatures.isNotEmpty) {
           requestData['spotFeatures'] = spotFeatures.take(10).toList();
+        }
       } else {
         if (spotSource != null) {
           requestData['spotSource'] = spotSource;
