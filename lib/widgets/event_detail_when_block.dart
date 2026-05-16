@@ -8,7 +8,6 @@ class EventDetailWhenBlock extends StatelessWidget {
     super.key,
     required this.startAt,
     this.endAt,
-    required this.whenLabel,
     required this.startsLabel,
     required this.endsLabel,
     required this.todayLabel,
@@ -16,7 +15,6 @@ class EventDetailWhenBlock extends StatelessWidget {
 
   final DateTime startAt;
   final DateTime? endAt;
-  final String whenLabel;
   final String startsLabel;
   final String endsLabel;
   final String todayLabel;
@@ -72,17 +70,7 @@ class EventDetailWhenBlock extends StatelessWidget {
           borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
           border: SpotDetailUi.outlineBorder(colors),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              whenLabel,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: SpotDetailUi.detailLabelGap),
-            end == null
+        child: end == null
                 ? _SingleMoment(
                     context: context,
                     dateTime: startAt,
@@ -106,8 +94,6 @@ class EventDetailWhenBlock extends StatelessWidget {
                     showToday: showToday,
                     todayLabel: todayLabel,
                   ),
-          ],
-        ),
       ),
     );
   }

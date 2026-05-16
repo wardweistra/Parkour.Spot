@@ -2874,9 +2874,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get eventDetailRouteGoToExplore => 'Naar Ontdekken';
 
   @override
-  String get eventDetailWhenLabel => 'Wanneer';
-
-  @override
   String get eventDetailStartsLabel => 'Start';
 
   @override

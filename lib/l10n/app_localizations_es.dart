@@ -2884,9 +2884,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventDetailRouteGoToExplore => 'Ir a Explorar';
 
   @override
-  String get eventDetailWhenLabel => 'Cuándo';
-
-  @override
   String get eventDetailStartsLabel => 'Empieza';
 
   @override

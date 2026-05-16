@@ -790,7 +790,6 @@
   "eventDetailRouteTryAgainLater": "Bitte versuche es später erneut",
   "eventDetailRouteNotFound": "Event nicht gefunden",
   "eventDetailRouteGoToExplore": "Zur Entdecken-Ansicht",
-  "eventDetailWhenLabel": "Wann",
   "eventDetailStartsLabel": "Beginn",
   "eventDetailEndsLabel": "Ende",
   "eventDetailWebsiteLabel": "Website",

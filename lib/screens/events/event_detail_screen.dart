@@ -494,7 +494,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       EventDetailWhenBlock(
         startAt: event.startAt,
         endAt: event.endAt,
-        whenLabel: l10n.eventDetailWhenLabel,
         startsLabel: l10n.eventDetailStartsLabel,
         endsLabel: l10n.eventDetailEndsLabel,
         todayLabel: l10n.spotDetailDateToday,

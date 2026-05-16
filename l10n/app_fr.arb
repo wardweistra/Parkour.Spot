@@ -789,7 +789,6 @@
   "eventDetailRouteTryAgainLater": "Veuillez réessayer plus tard",
   "eventDetailRouteNotFound": "Événement introuvable",
   "eventDetailRouteGoToExplore": "Aller à Explorer",
-  "eventDetailWhenLabel": "Quand",
   "eventDetailStartsLabel": "Début",
   "eventDetailEndsLabel": "Fin",
   "eventDetailWebsiteLabel": "Site web",

@@ -4851,12 +4851,6 @@ abstract class AppLocalizations {
   /// **'Go to Explore'**
   String get eventDetailRouteGoToExplore;
 
-  /// Section label for event date and time
-  ///
-  /// In en, this message translates to:
-  /// **'When'**
-  String get eventDetailWhenLabel;
-
   /// Label for event start in a multi-day schedule
   ///
   /// In en, this message translates to:

@@ -2656,10 +2656,6 @@
   "@eventDetailRouteGoToExplore": {
     "description": "Navigate away from missing event"
   },
-  "eventDetailWhenLabel": "When",
-  "@eventDetailWhenLabel": {
-    "description": "Section label for event date and time"
-  },
   "eventDetailStartsLabel": "Starts",
   "@eventDetailStartsLabel": {
     "description": "Label for event start in a multi-day schedule"
