@@ -13,6 +13,7 @@ import '../../services/admin_events_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/spot_service.dart';
 import '../../widgets/detail_image_carousel.dart';
+import '../../widgets/event_detail_provenance_line.dart';
 import '../../widgets/event_selection_dialog.dart';
 
 /// Event detail page; loads the document from Firestore by [eventId].
@@ -469,8 +470,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     final hasWebsite = websiteUrl != null && websiteUrl.isNotEmpty;
     final hasLocation = event.latitude != null && event.longitude != null;
     final hasAddress = event.address?.trim().isNotEmpty == true;
-    final sourceName = event.eventSourceName?.trim();
-    final hasSource = sourceName != null && sourceName.isNotEmpty;
     final colors = Theme.of(context).colorScheme;
 
     return [
@@ -480,45 +479,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         whenLabel: l10n.eventDetailWhenLabel,
         endsLabel: l10n.eventDetailEndsLabel,
       ),
-      if (hasSource) ...[
-        const SizedBox(height: 12),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: colors.secondaryContainer.withValues(alpha: 0.35),
-            borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
-            border: Border.all(
-              color: colors.secondary.withValues(alpha: 0.25),
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.sync, size: 20, color: colors.secondary),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.eventDetailSourceLabel,
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: colors.secondary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      sourceName,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
       if (event.description?.trim().isNotEmpty == true) ...[
         const SizedBox(height: 20),
         Text(
@@ -599,6 +559,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           ),
         ),
       ],
+      EventDetailProvenanceLine(key: ValueKey(event.id), event: event),
       const SizedBox(height: 24),
       Text(
         l10n.eventDetailLinkedSpotsLabel,

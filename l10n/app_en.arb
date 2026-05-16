@@ -2705,6 +2705,41 @@
   "@eventDetailAdminMenuTooltip": {
     "description": "Tooltip for admin actions menu on event detail"
   },
+  "eventDetailEventCreatedOnDateBy": "Event created {date} by ",
+  "@eventDetailEventCreatedOnDateBy": {
+    "description": "Event provenance: native event with creator and created date",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "eventDetailEventCreatedBy": "Event created by ",
+  "@eventDetailEventCreatedBy": {
+    "description": "Event provenance: native event with creator, no created date"
+  },
+  "eventDetailEventCreatedOnDate": "Event created {date}",
+  "@eventDetailEventCreatedOnDate": {
+    "description": "Event provenance: native event with created date only",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "eventDetailEventImportedOnDateFrom": "Event imported {date} from ",
+  "@eventDetailEventImportedOnDateFrom": {
+    "description": "Event provenance: synced event with first-seen date",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "eventDetailEventImportedFrom": "Event imported from ",
+  "@eventDetailEventImportedFrom": {
+    "description": "Event provenance: synced event without created date"
+  },
   "eventDetailOriginalEventFallback": "Original event",
   "@eventDetailOriginalEventFallback": {
     "description": "Event detail: title unknown while loading duplicate original"

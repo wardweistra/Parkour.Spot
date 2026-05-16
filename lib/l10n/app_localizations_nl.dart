@@ -2915,6 +2915,27 @@ class AppLocalizationsNl extends AppLocalizations {
   String get eventDetailAdminMenuTooltip => 'Beheer';
 
   @override
+  String eventDetailEventCreatedOnDateBy(String date) {
+    return 'Event aangemaakt $date door ';
+  }
+
+  @override
+  String get eventDetailEventCreatedBy => 'Event aangemaakt door ';
+
+  @override
+  String eventDetailEventCreatedOnDate(String date) {
+    return 'Event aangemaakt $date';
+  }
+
+  @override
+  String eventDetailEventImportedOnDateFrom(String date) {
+    return 'Event geïmporteerd $date van ';
+  }
+
+  @override
+  String get eventDetailEventImportedFrom => 'Event geïmporteerd van ';
+
+  @override
   String get eventDetailOriginalEventFallback => 'Bronevent';
 
   @override

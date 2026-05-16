@@ -4917,6 +4917,36 @@ abstract class AppLocalizations {
   /// **'Admin'**
   String get eventDetailAdminMenuTooltip;
 
+  /// Event provenance: native event with creator and created date
+  ///
+  /// In en, this message translates to:
+  /// **'Event created {date} by '**
+  String eventDetailEventCreatedOnDateBy(String date);
+
+  /// Event provenance: native event with creator, no created date
+  ///
+  /// In en, this message translates to:
+  /// **'Event created by '**
+  String get eventDetailEventCreatedBy;
+
+  /// Event provenance: native event with created date only
+  ///
+  /// In en, this message translates to:
+  /// **'Event created {date}'**
+  String eventDetailEventCreatedOnDate(String date);
+
+  /// Event provenance: synced event with first-seen date
+  ///
+  /// In en, this message translates to:
+  /// **'Event imported {date} from '**
+  String eventDetailEventImportedOnDateFrom(String date);
+
+  /// Event provenance: synced event without created date
+  ///
+  /// In en, this message translates to:
+  /// **'Event imported from '**
+  String get eventDetailEventImportedFrom;
+
   /// Event detail: title unknown while loading duplicate original
   ///
   /// In en, this message translates to:

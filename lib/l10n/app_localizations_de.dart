@@ -2948,6 +2948,27 @@ class AppLocalizationsDe extends AppLocalizations {
   String get eventDetailAdminMenuTooltip => 'Admin';
 
   @override
+  String eventDetailEventCreatedOnDateBy(String date) {
+    return 'Event erstellt $date von ';
+  }
+
+  @override
+  String get eventDetailEventCreatedBy => 'Event erstellt von ';
+
+  @override
+  String eventDetailEventCreatedOnDate(String date) {
+    return 'Event erstellt $date';
+  }
+
+  @override
+  String eventDetailEventImportedOnDateFrom(String date) {
+    return 'Event importiert $date von ';
+  }
+
+  @override
+  String get eventDetailEventImportedFrom => 'Event importiert von ';
+
+  @override
   String get eventDetailOriginalEventFallback => 'Original-Event';
 
   @override
