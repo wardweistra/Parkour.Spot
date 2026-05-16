@@ -3578,7 +3578,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                _l10n.spotDetailNoImagesAvailable,
+                _l10n.noImagesYet,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: Theme.of(
                     context,

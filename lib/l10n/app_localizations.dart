@@ -1414,11 +1414,11 @@ abstract class AppLocalizations {
   /// **'Getting address...'**
   String get addSpotGettingAddress;
 
-  /// Spot card: placeholder when spot has no photos
+  /// Placeholder when a spot or event has no photos yet (cards, detail carousel)
   ///
   /// In en, this message translates to:
-  /// **'No images'**
-  String get spotCardNoImages;
+  /// **'No images yet'**
+  String get noImagesYet;
 
   /// Spot card: empty description
   ///
@@ -2798,12 +2798,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Also based on ({count})'**
   String spotDetailAlsoBasedOnCount(int count);
-
-  /// No description provided for @spotDetailNoImagesAvailable.
-  ///
-  /// In en, this message translates to:
-  /// **'No images available'**
-  String get spotDetailNoImagesAvailable;
 
   /// No description provided for @spotDetailGalleryPageIndicator.
   ///

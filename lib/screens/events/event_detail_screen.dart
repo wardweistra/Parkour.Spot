@@ -415,7 +415,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                 background: DetailImageCarousel(
                   key: _carouselKey,
                   imageUrls: event.imageUrls,
-                  emptyLabel: l10n.spotDetailNoImagesAvailable,
+                  emptyLabel: l10n.noImagesYet,
                   failedLabel: l10n.spotDetailImageFailedToLoad,
                 ),
               ),

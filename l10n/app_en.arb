@@ -979,9 +979,9 @@
   "@addSpotGettingAddress": {
     "description": "While reverse-geocoding coordinates"
   },
-  "spotCardNoImages": "No images",
-  "@spotCardNoImages": {
-    "description": "Spot card: placeholder when spot has no photos"
+  "noImagesYet": "No images yet",
+  "@noImagesYet": {
+    "description": "Placeholder when a spot or event has no photos yet (cards, detail carousel)"
   },
   "spotCardNoDescription": "No description yet",
   "@spotCardNoDescription": {
@@ -1562,7 +1562,6 @@
       }
     }
   },
-  "spotDetailNoImagesAvailable": "No images available",
   "spotDetailGalleryPageIndicator": "{current} / {total}",
   "@spotDetailGalleryPageIndicator": {
     "placeholders": {

@@ -786,7 +786,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addSpotGettingAddress => 'A obter morada…';
 
   @override
-  String get spotCardNoImages => 'Sem imagens';
+  String get noImagesYet => 'Ainda sem imagens';
 
   @override
   String get spotCardNoDescription => 'Ainda sem descrição';
@@ -1643,9 +1643,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String spotDetailAlsoBasedOnCount(int count) {
     return 'Também baseado em ($count)';
   }
-
-  @override
-  String get spotDetailNoImagesAvailable => 'Sem imagens disponíveis';
 
   @override
   String spotDetailGalleryPageIndicator(int current, int total) {

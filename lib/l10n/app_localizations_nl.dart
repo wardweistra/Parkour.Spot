@@ -783,7 +783,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get addSpotGettingAddress => 'Adres ophalen…';
 
   @override
-  String get spotCardNoImages => 'Geen afbeeldingen';
+  String get noImagesYet => 'Nog geen afbeeldingen';
 
   @override
   String get spotCardNoDescription => 'Nog geen beschrijving';
@@ -1633,9 +1633,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String spotDetailAlsoBasedOnCount(int count) {
     return 'Ook gebaseerd op ($count)';
   }
-
-  @override
-  String get spotDetailNoImagesAvailable => 'Geen afbeeldingen beschikbaar';
 
   @override
   String spotDetailGalleryPageIndicator(int current, int total) {

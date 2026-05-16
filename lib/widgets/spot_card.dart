@@ -259,7 +259,7 @@ class _SpotCardState extends State<SpotCard> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                l10n.spotCardNoImages,
+                                l10n.noImagesYet,
                                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                   color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                                 ),
@@ -744,7 +744,7 @@ class _SpotCardState extends State<SpotCard> {
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    l10n.spotCardNoImages,
+                                    l10n.noImagesYet,
                                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                       color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                                     ),
