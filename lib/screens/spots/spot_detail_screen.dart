@@ -2186,9 +2186,26 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        SelectableText(
-                          _spot.name,
-                          style: Theme.of(context).textTheme.headlineMedium,
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4, right: 10),
+                              child: Icon(
+                                Icons.place_outlined,
+                                size: 28,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                            Expanded(
+                              child: SelectableText(
+                                _spot.name,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineMedium,
+                              ),
+                            ),
+                          ],
                         ),
 
                         const SizedBox(height: 8),

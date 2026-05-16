@@ -432,9 +432,26 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        SelectableText(
-                          event.title,
-                          style: Theme.of(context).textTheme.headlineMedium,
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4, right: 10),
+                              child: Icon(
+                                Icons.event_available_outlined,
+                                size: 28,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                            Expanded(
+                              child: SelectableText(
+                                event.title,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineMedium,
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 16),
                         ..._buildEventMainContent(context, event, l10n),
