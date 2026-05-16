@@ -4833,6 +4833,96 @@ abstract class AppLocalizations {
   /// **'Failed to update profile privacy'**
   String get publicProfileFailedToUpdateProfilePrivacy;
 
+  /// Event detail page failed to load
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading event'**
+  String get eventDetailRouteErrorLoading;
+
+  /// Event detail load error subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Please try again later'**
+  String get eventDetailRouteTryAgainLater;
+
+  /// Event document missing
+  ///
+  /// In en, this message translates to:
+  /// **'Event not found'**
+  String get eventDetailRouteNotFound;
+
+  /// Navigate away from missing event
+  ///
+  /// In en, this message translates to:
+  /// **'Go to Explore'**
+  String get eventDetailRouteGoToExplore;
+
+  /// Section label for event date and time
+  ///
+  /// In en, this message translates to:
+  /// **'When'**
+  String get eventDetailWhenLabel;
+
+  /// Label before event end date/time
+  ///
+  /// In en, this message translates to:
+  /// **'Ends'**
+  String get eventDetailEndsLabel;
+
+  /// Section label for event website link
+  ///
+  /// In en, this message translates to:
+  /// **'Website'**
+  String get eventDetailWebsiteLabel;
+
+  /// Button to open event website in browser
+  ///
+  /// In en, this message translates to:
+  /// **'Open website'**
+  String get eventDetailOpenWebsite;
+
+  /// Section label for event address or coordinates
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get eventDetailLocationLabel;
+
+  /// Button to open event location in maps app
+  ///
+  /// In en, this message translates to:
+  /// **'Open in maps'**
+  String get eventDetailOpenInMaps;
+
+  /// Section heading for spots tied to this event
+  ///
+  /// In en, this message translates to:
+  /// **'Linked spots'**
+  String get eventDetailLinkedSpotsLabel;
+
+  /// Subtitle showing how many spots are linked
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 linked spot} other{{count} linked spots}}'**
+  String eventDetailLinkedSpotsCount(int count);
+
+  /// Empty state when linked spot ids do not resolve
+  ///
+  /// In en, this message translates to:
+  /// **'No linked spots found.'**
+  String get eventDetailNoLinkedSpots;
+
+  /// Label for external calendar source name
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get eventDetailSourceLabel;
+
+  /// Tooltip for admin actions menu on event detail
+  ///
+  /// In en, this message translates to:
+  /// **'Admin'**
+  String get eventDetailAdminMenuTooltip;
+
   /// Event detail: title unknown while loading duplicate original
   ///
   /// In en, this message translates to:

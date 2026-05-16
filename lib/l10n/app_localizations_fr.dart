@@ -2897,6 +2897,60 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible de mettre à jour la confidentialité du profil';
 
   @override
+  String get eventDetailRouteErrorLoading =>
+      'Erreur lors du chargement de l’événement';
+
+  @override
+  String get eventDetailRouteTryAgainLater => 'Veuillez réessayer plus tard';
+
+  @override
+  String get eventDetailRouteNotFound => 'Événement introuvable';
+
+  @override
+  String get eventDetailRouteGoToExplore => 'Aller à Explorer';
+
+  @override
+  String get eventDetailWhenLabel => 'Quand';
+
+  @override
+  String get eventDetailEndsLabel => 'Fin';
+
+  @override
+  String get eventDetailWebsiteLabel => 'Site web';
+
+  @override
+  String get eventDetailOpenWebsite => 'Ouvrir le site web';
+
+  @override
+  String get eventDetailLocationLabel => 'Lieu';
+
+  @override
+  String get eventDetailOpenInMaps => 'Ouvrir dans Plans';
+
+  @override
+  String get eventDetailLinkedSpotsLabel => 'Spots liés';
+
+  @override
+  String eventDetailLinkedSpotsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count spots liés',
+      one: '1 spot lié',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get eventDetailNoLinkedSpots => 'Aucun spot lié trouvé.';
+
+  @override
+  String get eventDetailSourceLabel => 'Source';
+
+  @override
+  String get eventDetailAdminMenuTooltip => 'Admin';
+
+  @override
   String get eventDetailOriginalEventFallback => 'Événement d’origine';
 
   @override

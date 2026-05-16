@@ -2641,6 +2641,71 @@
   "@publicProfileFailedToUpdateProfilePrivacy": {
     "description": "Snackbar when privacy toggle update fails"
   },
+  "eventDetailRouteErrorLoading": "Error loading event",
+  "@eventDetailRouteErrorLoading": {
+    "description": "Event detail page failed to load"
+  },
+  "eventDetailRouteTryAgainLater": "Please try again later",
+  "@eventDetailRouteTryAgainLater": {
+    "description": "Event detail load error subtitle"
+  },
+  "eventDetailRouteNotFound": "Event not found",
+  "@eventDetailRouteNotFound": {
+    "description": "Event document missing"
+  },
+  "eventDetailRouteGoToExplore": "Go to Explore",
+  "@eventDetailRouteGoToExplore": {
+    "description": "Navigate away from missing event"
+  },
+  "eventDetailWhenLabel": "When",
+  "@eventDetailWhenLabel": {
+    "description": "Section label for event date and time"
+  },
+  "eventDetailEndsLabel": "Ends",
+  "@eventDetailEndsLabel": {
+    "description": "Label before event end date/time"
+  },
+  "eventDetailWebsiteLabel": "Website",
+  "@eventDetailWebsiteLabel": {
+    "description": "Section label for event website link"
+  },
+  "eventDetailOpenWebsite": "Open website",
+  "@eventDetailOpenWebsite": {
+    "description": "Button to open event website in browser"
+  },
+  "eventDetailLocationLabel": "Location",
+  "@eventDetailLocationLabel": {
+    "description": "Section label for event address or coordinates"
+  },
+  "eventDetailOpenInMaps": "Open in maps",
+  "@eventDetailOpenInMaps": {
+    "description": "Button to open event location in maps app"
+  },
+  "eventDetailLinkedSpotsLabel": "Linked spots",
+  "@eventDetailLinkedSpotsLabel": {
+    "description": "Section heading for spots tied to this event"
+  },
+  "eventDetailLinkedSpotsCount": "{count, plural, =1{1 linked spot} other{{count} linked spots}}",
+  "@eventDetailLinkedSpotsCount": {
+    "description": "Subtitle showing how many spots are linked",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventDetailNoLinkedSpots": "No linked spots found.",
+  "@eventDetailNoLinkedSpots": {
+    "description": "Empty state when linked spot ids do not resolve"
+  },
+  "eventDetailSourceLabel": "Source",
+  "@eventDetailSourceLabel": {
+    "description": "Label for external calendar source name"
+  },
+  "eventDetailAdminMenuTooltip": "Admin",
+  "@eventDetailAdminMenuTooltip": {
+    "description": "Tooltip for admin actions menu on event detail"
+  },
   "eventDetailOriginalEventFallback": "Original event",
   "@eventDetailOriginalEventFallback": {
     "description": "Event detail: title unknown while loading duplicate original"

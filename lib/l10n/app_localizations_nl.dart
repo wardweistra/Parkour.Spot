@@ -2865,6 +2865,59 @@ class AppLocalizationsNl extends AppLocalizations {
       'Bijwerken van profielprivacy mislukt';
 
   @override
+  String get eventDetailRouteErrorLoading => 'Fout bij laden van event';
+
+  @override
+  String get eventDetailRouteTryAgainLater => 'Probeer het later opnieuw';
+
+  @override
+  String get eventDetailRouteNotFound => 'Event niet gevonden';
+
+  @override
+  String get eventDetailRouteGoToExplore => 'Naar Ontdekken';
+
+  @override
+  String get eventDetailWhenLabel => 'Wanneer';
+
+  @override
+  String get eventDetailEndsLabel => 'Eindigt';
+
+  @override
+  String get eventDetailWebsiteLabel => 'Website';
+
+  @override
+  String get eventDetailOpenWebsite => 'Website openen';
+
+  @override
+  String get eventDetailLocationLabel => 'Locatie';
+
+  @override
+  String get eventDetailOpenInMaps => 'Openen in kaarten';
+
+  @override
+  String get eventDetailLinkedSpotsLabel => 'Gekoppelde spots';
+
+  @override
+  String eventDetailLinkedSpotsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count gekoppelde spots',
+      one: '1 gekoppelde spot',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get eventDetailNoLinkedSpots => 'Geen gekoppelde spots gevonden.';
+
+  @override
+  String get eventDetailSourceLabel => 'Bron';
+
+  @override
+  String get eventDetailAdminMenuTooltip => 'Beheer';
+
+  @override
   String get eventDetailOriginalEventFallback => 'Bronevent';
 
   @override

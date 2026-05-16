@@ -2848,6 +2848,59 @@ class AppLocalizationsEn extends AppLocalizations {
       'Failed to update profile privacy';
 
   @override
+  String get eventDetailRouteErrorLoading => 'Error loading event';
+
+  @override
+  String get eventDetailRouteTryAgainLater => 'Please try again later';
+
+  @override
+  String get eventDetailRouteNotFound => 'Event not found';
+
+  @override
+  String get eventDetailRouteGoToExplore => 'Go to Explore';
+
+  @override
+  String get eventDetailWhenLabel => 'When';
+
+  @override
+  String get eventDetailEndsLabel => 'Ends';
+
+  @override
+  String get eventDetailWebsiteLabel => 'Website';
+
+  @override
+  String get eventDetailOpenWebsite => 'Open website';
+
+  @override
+  String get eventDetailLocationLabel => 'Location';
+
+  @override
+  String get eventDetailOpenInMaps => 'Open in maps';
+
+  @override
+  String get eventDetailLinkedSpotsLabel => 'Linked spots';
+
+  @override
+  String eventDetailLinkedSpotsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count linked spots',
+      one: '1 linked spot',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get eventDetailNoLinkedSpots => 'No linked spots found.';
+
+  @override
+  String get eventDetailSourceLabel => 'Source';
+
+  @override
+  String get eventDetailAdminMenuTooltip => 'Admin';
+
+  @override
   String get eventDetailOriginalEventFallback => 'Original event';
 
   @override

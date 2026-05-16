@@ -2875,6 +2875,59 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se pudo actualizar la privacidad del perfil';
 
   @override
+  String get eventDetailRouteErrorLoading => 'Error al cargar el evento';
+
+  @override
+  String get eventDetailRouteTryAgainLater => 'Inténtalo de nuevo más tarde';
+
+  @override
+  String get eventDetailRouteNotFound => 'Evento no encontrado';
+
+  @override
+  String get eventDetailRouteGoToExplore => 'Ir a Explorar';
+
+  @override
+  String get eventDetailWhenLabel => 'Cuándo';
+
+  @override
+  String get eventDetailEndsLabel => 'Termina';
+
+  @override
+  String get eventDetailWebsiteLabel => 'Sitio web';
+
+  @override
+  String get eventDetailOpenWebsite => 'Abrir sitio web';
+
+  @override
+  String get eventDetailLocationLabel => 'Ubicación';
+
+  @override
+  String get eventDetailOpenInMaps => 'Abrir en mapas';
+
+  @override
+  String get eventDetailLinkedSpotsLabel => 'Spots vinculados';
+
+  @override
+  String eventDetailLinkedSpotsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count spots vinculados',
+      one: '1 spot vinculado',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get eventDetailNoLinkedSpots => 'No se encontraron spots vinculados.';
+
+  @override
+  String get eventDetailSourceLabel => 'Fuente';
+
+  @override
+  String get eventDetailAdminMenuTooltip => 'Admin';
+
+  @override
   String get eventDetailOriginalEventFallback => 'Evento original';
 
   @override

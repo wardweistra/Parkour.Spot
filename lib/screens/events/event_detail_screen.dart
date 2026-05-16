@@ -1,19 +1,19 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:web/web.dart' as web;
 
+import '../../constants/spot_detail_ui.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/parkour_event.dart';
 import '../../models/spot.dart';
 import '../../services/admin_events_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/spot_service.dart';
+import '../../widgets/detail_image_carousel.dart';
 import '../../widgets/event_selection_dialog.dart';
-import '../../widgets/page_scaffold.dart';
 
 /// Event detail page; loads the document from Firestore by [eventId].
 class EventDetailScreen extends StatefulWidget {
@@ -26,6 +26,9 @@ class EventDetailScreen extends StatefulWidget {
 }
 
 class _EventDetailScreenState extends State<EventDetailScreen> {
+  final GlobalKey<DetailImageCarouselState> _carouselKey =
+      GlobalKey<DetailImageCarouselState>();
+
   ParkourEvent? _event;
   bool _loading = true;
   bool _loadError = false;
@@ -138,6 +141,14 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     await _loadEvent();
   }
 
+  void _goBack() {
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    } else {
+      context.go('/explore');
+    }
+  }
+
   Future<void> _onAdminMenu(
     BuildContext context,
     _EventAdminAction action,
@@ -248,6 +259,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     if (_loading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
@@ -257,15 +270,19 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error, size: 64, color: Colors.red),
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: Theme.of(context).colorScheme.error,
+              ),
               const SizedBox(height: 16),
               Text(
-                'Error loading event',
+                l10n.eventDetailRouteErrorLoading,
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               const SizedBox(height: 8),
               Text(
-                'Please try again later',
+                l10n.eventDetailRouteTryAgainLater,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ],
@@ -284,13 +301,13 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               const Icon(Icons.event_busy_outlined, size: 64),
               const SizedBox(height: 16),
               Text(
-                'Event not found',
+                l10n.eventDetailRouteNotFound,
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 12),
               FilledButton(
                 onPressed: () => context.go('/explore'),
-                child: const Text('Go to Explore'),
+                child: Text(l10n.eventDetailRouteGoToExplore),
               ),
             ],
           ),
@@ -298,7 +315,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       );
     }
 
-    final l10n = AppLocalizations.of(context)!;
     final auth = context.watch<AuthService>();
     final isAdmin = auth.isAuthenticated && auth.isAdmin;
     final dupId = event.duplicateOf?.trim();
@@ -310,302 +326,398 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         _loadingDuplicates ||
         _duplicateEvents.isNotEmpty;
 
-    return PageScaffold(
-      title: event.title,
-      onBack: () {
-        if (Navigator.canPop(context)) {
-          Navigator.pop(context);
-        } else {
-          context.go('/explore');
-        }
-      },
-      actions: [
-        if (isAdmin)
-          PopupMenuButton<_EventAdminAction>(
-            tooltip: 'Admin',
-            onSelected: (action) => _onAdminMenu(context, action, event),
-            itemBuilder: (ctx) {
-              final isDup = hasDupLink;
-              final theme = Theme.of(ctx);
-              return [
-                PopupMenuItem(
-                  value: _EventAdminAction.markDuplicate,
-                  enabled: !isDup,
-                  child: Text(
-                    l10n.spotDetailMenuMarkDuplicate,
-                    style: TextStyle(
-                      color: isDup ? theme.colorScheme.onSurface.withValues(alpha: 0.38) : null,
-                    ),
-                  ),
+    return DetailImageCarouselFocus(
+      carouselKey: _carouselKey,
+      child: Scaffold(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        body: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              expandedHeight: 400,
+              pinned: true,
+              floating: false,
+              backgroundColor: Colors.transparent,
+              surfaceTintColor: Colors.transparent,
+              elevation: 0,
+              leading: IconButton(
+                onPressed: _goBack,
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black.withValues(alpha: 0.5),
+                  shape: const CircleBorder(),
+                  fixedSize: const Size(40, 40),
+                  padding: EdgeInsets.zero,
                 ),
-                if (isDup)
-                  PopupMenuItem(
-                    value: _EventAdminAction.removeDuplicate,
-                    child: Text(l10n.spotDetailMenuRemoveDuplicateStatus),
-                  ),
-              ];
-            },
-            child: const Icon(Icons.more_vert),
-          ),
-      ],
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (showDupSection) ...[
-            if (hasDupLink || _originalEvent != null || _loadingOriginal) ...[
-              GestureDetector(
-                onTap: _loadingOriginal
-                    ? null
-                    : () {
-                        final targetId = _originalEvent?.id ?? dupId;
-                        if (targetId != null && targetId.isNotEmpty) {
-                          context.push('/event/$targetId');
-                        }
-                      },
-                child: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(
-                    Icons.copy_all,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  title: Text(l10n.spotDetailDuplicateOf),
-                  subtitle: _loadingOriginal
-                      ? Text(l10n.spotDetailLoading)
-                      : Text(
-                          _originalEvent?.title ??
-                              l10n.eventDetailOriginalEventFallback,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.primary,
+              ),
+              actions: [
+                if (isAdmin)
+                  PopupMenuButton<_EventAdminAction>(
+                    tooltip: l10n.eventDetailAdminMenuTooltip,
+                    onSelected: (action) => _onAdminMenu(context, action, event),
+                    itemBuilder: (ctx) {
+                      final theme = Theme.of(ctx);
+                      return [
+                        PopupMenuItem(
+                          value: _EventAdminAction.markDuplicate,
+                          enabled: !hasDupLink,
+                          child: Text(
+                            l10n.spotDetailMenuMarkDuplicate,
+                            style: TextStyle(
+                              color: hasDupLink
+                                  ? theme.colorScheme.onSurface.withValues(
+                                      alpha: 0.38,
+                                    )
+                                  : null,
+                            ),
                           ),
                         ),
-                  trailing: Icon(
-                    Icons.open_in_new,
-                    size: 16,
-                    color: Theme.of(context).colorScheme.primary,
+                        if (hasDupLink)
+                          PopupMenuItem(
+                            value: _EventAdminAction.removeDuplicate,
+                            child: Text(
+                              l10n.spotDetailMenuRemoveDuplicateStatus,
+                            ),
+                          ),
+                      ];
+                    },
+                    icon: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.5),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.more_vert,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                  ),
+                if (isAdmin) const SizedBox(width: 8),
+              ],
+              flexibleSpace: FlexibleSpaceBar(
+                background: DetailImageCarousel(
+                  key: _carouselKey,
+                  imageUrls: event.imageUrls,
+                  emptyLabel: l10n.spotDetailNoImagesAvailable,
+                  failedLabel: l10n.spotDetailImageFailedToLoad,
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1200),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SelectableText(
+                          event.title,
+                          style: Theme.of(context).textTheme.headlineMedium,
+                        ),
+                        const SizedBox(height: 16),
+                        ..._buildEventMainContent(context, event, l10n),
+                        if (showDupSection) ...[
+                          const SizedBox(height: 24),
+                          _buildDuplicateSection(
+                            context,
+                            l10n,
+                            event,
+                            hasDupLink,
+                            dupId,
+                          ),
+                        ],
+                        const SizedBox(height: 32),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ],
-            if (!hasDupLink && _originalEvent == null && !_loadingOriginal) ...[
-              if (_loadingDuplicates)
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(
-                    Icons.copy_all,
-                    color: Theme.of(context).colorScheme.secondary,
-                  ),
-                  title: Text(l10n.spotDetailAlsoBasedOn),
-                  subtitle: Text(l10n.spotDetailLoading),
-                )
-              else if (_duplicateEvents.isNotEmpty) ...[
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                  leading: Icon(
-                    Icons.copy_all,
-                    color: Theme.of(context).colorScheme.secondary,
-                  ),
-                  title: Text(
-                    l10n.spotDetailAlsoBasedOnCount(_duplicateEvents.length),
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                ),
-                ..._duplicateEvents.map((dup) {
-                  final id = dup.id;
-                  return GestureDetector(
-                    onTap: id == null || id.isEmpty
-                        ? null
-                        : () => context.push('/event/$id'),
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 48),
-                      child: ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        dense: true,
-                        leading: Icon(
-                          Icons.arrow_right,
-                          size: 16,
-                          color: Theme.of(context).colorScheme.secondary,
-                        ),
-                        title: Text(
-                          dup.title,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.secondary,
-                          ),
-                        ),
-                        subtitle: dup.eventSourceName?.trim().isNotEmpty == true
-                            ? Text(
-                                dup.eventSourceName!.trim(),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .secondary
-                                      .withValues(alpha: 0.7),
-                                ),
-                              )
-                            : null,
-                        trailing: Icon(
-                          Icons.open_in_new,
-                          size: 16,
-                          color: Theme.of(context).colorScheme.secondary,
-                        ),
-                      ),
-                    ),
-                  );
-                }),
-              ],
-            ],
-            const SizedBox(height: 16),
+            ),
           ],
-          ..._buildEventMainContent(context, event),
-        ],
+        ),
       ),
     );
   }
 
-  List<Widget> _buildEventMainContent(BuildContext context, ParkourEvent event) {
+  List<Widget> _buildEventMainContent(
+    BuildContext context,
+    ParkourEvent event,
+    AppLocalizations l10n,
+  ) {
     final websiteUrl = event.websiteUrl?.trim();
     final hasWebsite = websiteUrl != null && websiteUrl.isNotEmpty;
     final hasLocation = event.latitude != null && event.longitude != null;
     final hasAddress = event.address?.trim().isNotEmpty == true;
     final sourceName = event.eventSourceName?.trim();
     final hasSource = sourceName != null && sourceName.isNotEmpty;
+    final colors = Theme.of(context).colorScheme;
 
     return [
-      if (event.description?.trim().isNotEmpty == true) ...[
-        Text(
-          event.description!,
-          style: Theme.of(context).textTheme.bodyLarge,
-        ),
-        const SizedBox(height: 16),
-      ],
-      Wrap(
-        spacing: 8,
-        runSpacing: 6,
-        children: [
-          Chip(
-            avatar: const Icon(Icons.schedule, size: 16),
-            label: Text(_formatUtc(event.startAt)),
-          ),
-          if (event.endAt != null)
-            Chip(
-              avatar: const Icon(Icons.hourglass_bottom, size: 16),
-              label: Text(_formatUtc(event.endAt!)),
-            ),
-          Chip(
-            avatar: const Icon(Icons.place_outlined, size: 16),
-            label: Text('${event.spotIds.length} linked spot(s)'),
-          ),
-          if (hasSource)
-            Chip(
-              avatar: const Icon(Icons.sync, size: 16),
-              label: Text(sourceName),
-            ),
-        ],
+      _EventWhenCard(
+        startAt: event.startAt,
+        endAt: event.endAt,
+        whenLabel: l10n.eventDetailWhenLabel,
+        endsLabel: l10n.eventDetailEndsLabel,
       ),
-      if (hasSource &&
-          (event.externalSyncLastSeenAt != null ||
-              event.externalSyncLastChangedAt != null)) ...[
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 6,
-          children: [
-            if (event.externalSyncLastSeenAt != null)
-              Chip(
-                avatar: const Icon(Icons.update, size: 16),
-                label: Text(
-                  'Seen: ${_formatUtc(event.externalSyncLastSeenAt!)}',
+      if (hasSource) ...[
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: colors.secondaryContainer.withValues(alpha: 0.35),
+            borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
+            border: Border.all(
+              color: colors.secondary.withValues(alpha: 0.25),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.sync, size: 20, color: colors.secondary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.eventDetailSourceLabel,
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: colors.secondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      sourceName,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
                 ),
               ),
-            if (event.externalSyncLastChangedAt != null)
-              Chip(
-                avatar: const Icon(Icons.edit_calendar, size: 16),
-                label: Text(
-                  'Changed: ${_formatUtc(event.externalSyncLastChangedAt!)}',
-                ),
-              ),
-          ],
+            ],
+          ),
         ),
       ],
-      if (event.imageUrls.isNotEmpty) ...[
-        const SizedBox(height: 16),
-        Text('Images', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 8),
-        SizedBox(
-          height: 190,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: event.imageUrls.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 10),
-            itemBuilder: (context, index) {
-              return ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Image.network(
-                  event.imageUrls[index],
-                  width: 280,
-                  height: 190,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => Container(
-                    width: 280,
-                    height: 190,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHighest,
-                    child: const Icon(Icons.broken_image_outlined),
-                  ),
-                ),
-              );
-            },
-          ),
+      if (event.description?.trim().isNotEmpty == true) ...[
+        const SizedBox(height: 20),
+        Text(
+          event.description!.trim(),
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.5),
         ),
       ],
       if (hasWebsite) ...[
-        const SizedBox(height: 16),
-        Text('Website', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 20),
+        Text(
+          l10n.eventDetailWebsiteLabel,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         const SizedBox(height: 8),
-        InkWell(
-          onTap: () => _openExternal(websiteUrl),
-          child: Text(
-            websiteUrl,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.primary,
-              decoration: TextDecoration.underline,
-            ),
+        OutlinedButton.icon(
+          onPressed: () => _openExternal(websiteUrl),
+          icon: const Icon(Icons.open_in_new, size: 18),
+          label: Text(l10n.eventDetailOpenWebsite),
+          style: OutlinedButton.styleFrom(
+            alignment: Alignment.centerLeft,
           ),
         ),
       ],
       if (hasLocation || hasAddress) ...[
-        const SizedBox(height: 16),
-        Text('Location', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 8),
+        const SizedBox(height: 20),
         Text(
-          hasAddress
-              ? event.address!.trim()
-              : '${event.latitude!.toStringAsFixed(5)}, ${event.longitude!.toStringAsFixed(5)}',
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-        if (hasLocation)
-          TextButton.icon(
-            onPressed: () => _openMap(event.latitude!, event.longitude!),
-            icon: const Icon(Icons.map_outlined),
-            label: const Text('Open in maps'),
+          l10n.eventDetailLocationLabel,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
           ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: colors.primaryContainer.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
+            border: Border.all(
+              color: colors.primary.withValues(alpha: 0.2),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.place_outlined, color: colors.primary, size: 22),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: SelectableText(
+                      hasAddress
+                          ? event.address!.trim()
+                          : '${event.latitude!.toStringAsFixed(5)}, ${event.longitude!.toStringAsFixed(5)}',
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (hasLocation) ...[
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: () =>
+                        _openMap(event.latitude!, event.longitude!),
+                    icon: const Icon(Icons.map_outlined, size: 18),
+                    label: Text(l10n.eventDetailOpenInMaps),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ],
-      const SizedBox(height: 16),
-      Text('Linked spots', style: Theme.of(context).textTheme.titleMedium),
+      const SizedBox(height: 24),
+      Text(
+        l10n.eventDetailLinkedSpotsLabel,
+        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      const SizedBox(height: 4),
+      Text(
+        l10n.eventDetailLinkedSpotsCount(event.spotIds.length),
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: colors.onSurface.withValues(alpha: 0.65),
+        ),
+      ),
       const SizedBox(height: 8),
-      _LinkedSpotsSection(spotIds: event.spotIds),
-      const SizedBox(height: 8),
-      SelectableText(
-        'Event ID: ${event.id ?? '(pending)'}',
-        style: Theme.of(context).textTheme.bodySmall,
+      _LinkedSpotsSection(
+        spotIds: event.spotIds,
+        emptyLabel: l10n.eventDetailNoLinkedSpots,
       ),
     ];
   }
 
-  String _formatUtc(DateTime value) {
-    return '${DateFormat.yMMMd().add_Hm().format(value.toUtc())} UTC';
+  Widget _buildDuplicateSection(
+    BuildContext context,
+    AppLocalizations l10n,
+    ParkourEvent event,
+    bool hasDupLink,
+    String? dupId,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (hasDupLink || _originalEvent != null || _loadingOriginal)
+          GestureDetector(
+            onTap: _loadingOriginal
+                ? null
+                : () {
+                    final targetId = _originalEvent?.id ?? dupId;
+                    if (targetId != null && targetId.isNotEmpty) {
+                      context.push('/event/$targetId');
+                    }
+                  },
+            child: ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(
+                Icons.copy_all,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              title: Text(l10n.spotDetailDuplicateOf),
+              subtitle: _loadingOriginal
+                  ? Text(l10n.spotDetailLoading)
+                  : Text(
+                      _originalEvent?.title ??
+                          l10n.eventDetailOriginalEventFallback,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+              trailing: Icon(
+                Icons.open_in_new,
+                size: 16,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ),
+        if (!hasDupLink && _originalEvent == null && !_loadingOriginal) ...[
+          if (_loadingDuplicates)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(
+                Icons.copy_all,
+                color: Theme.of(context).colorScheme.secondary,
+              ),
+              title: Text(l10n.spotDetailAlsoBasedOn),
+              subtitle: Text(l10n.spotDetailLoading),
+            )
+          else if (_duplicateEvents.isNotEmpty) ...[
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              leading: Icon(
+                Icons.copy_all,
+                color: Theme.of(context).colorScheme.secondary,
+              ),
+              title: Text(
+                l10n.spotDetailAlsoBasedOnCount(_duplicateEvents.length),
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+            ),
+            ..._duplicateEvents.map((dup) {
+              final id = dup.id;
+              return GestureDetector(
+                onTap: id == null || id.isEmpty
+                    ? null
+                    : () => context.push('/event/$id'),
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 48),
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                    leading: Icon(
+                      Icons.arrow_right,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.secondary,
+                    ),
+                    title: Text(
+                      dup.title,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.secondary,
+                      ),
+                    ),
+                    subtitle: dup.eventSourceName?.trim().isNotEmpty == true
+                        ? Text(
+                            dup.eventSourceName!.trim(),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .secondary
+                                  .withValues(alpha: 0.7),
+                            ),
+                          )
+                        : null,
+                    trailing: Icon(
+                      Icons.open_in_new,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.secondary,
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ],
+        ],
+      ],
+    );
   }
 
   Future<void> _openExternal(String url) async {
@@ -624,10 +736,91 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
 enum _EventAdminAction { markDuplicate, removeDuplicate }
 
+class _EventWhenCard extends StatelessWidget {
+  const _EventWhenCard({
+    required this.startAt,
+    required this.endAt,
+    required this.whenLabel,
+    required this.endsLabel,
+  });
+
+  final DateTime startAt;
+  final DateTime? endAt;
+  final String whenLabel;
+  final String endsLabel;
+
+  String _formatDateTime(BuildContext context, DateTime dateTime) {
+    final local = dateTime.toLocal();
+    final localizations = MaterialLocalizations.of(context);
+    final date = localizations.formatMediumDate(local);
+    final time = localizations.formatTimeOfDay(TimeOfDay.fromDateTime(local));
+    return '$date · $time';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colors.primaryContainer.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
+        border: Border.all(color: colors.primary.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.event_available_outlined, color: colors.primary, size: 26),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  whenLabel,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: colors.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _formatDateTime(context, startAt),
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                if (endAt != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    endsLabel,
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: colors.onSurface.withValues(alpha: 0.7),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _formatDateTime(context, endAt!),
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _LinkedSpotsSection extends StatefulWidget {
-  const _LinkedSpotsSection({required this.spotIds});
+  const _LinkedSpotsSection({
+    required this.spotIds,
+    required this.emptyLabel,
+  });
 
   final List<String> spotIds;
+  final String emptyLabel;
 
   @override
   State<_LinkedSpotsSection> createState() => _LinkedSpotsSectionState();
@@ -660,35 +853,96 @@ class _LinkedSpotsSectionState extends State<_LinkedSpotsSection> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
     return FutureBuilder<List<Spot>>(
       future: _spotsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
-            child: CircularProgressIndicator(strokeWidth: 2),
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Center(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
           );
         }
         final spots = snapshot.data ?? const <Spot>[];
         if (spots.isEmpty) {
-          return const Text('No linked spots found.');
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              widget.emptyLabel,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: colors.onSurface.withValues(alpha: 0.65),
+              ),
+            ),
+          );
         }
         return Column(
-          children: spots
-              .map(
-                (spot) => Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    title: Text(spot.name),
-                    subtitle: Text(spot.address ?? spot.city ?? spot.id ?? ''),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 14),
-                    onTap: spot.id == null
-                        ? null
-                        : () => context.push('/spot/${spot.id}'),
+          children: spots.map((spot) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Material(
+                color: colors.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: spot.id == null
+                      ? null
+                      : () => context.push('/spot/${spot.id}'),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.place_outlined,
+                          color: colors.primary,
+                          size: 22,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                spot.name,
+                                style: Theme.of(context).textTheme.titleSmall,
+                              ),
+                              if ((spot.address ?? spot.city)?.isNotEmpty ==
+                                  true)
+                                Text(
+                                  spot.address ?? spot.city ?? '',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: colors.onSurface.withValues(
+                                          alpha: 0.65,
+                                        ),
+                                      ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          Icons.chevron_right,
+                          size: 20,
+                          color: colors.onSurface.withValues(alpha: 0.5),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              )
-              .toList(),
+              ),
+            );
+          }).toList(),
         );
       },
     );

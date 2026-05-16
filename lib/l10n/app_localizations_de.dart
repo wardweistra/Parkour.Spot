@@ -2898,6 +2898,59 @@ class AppLocalizationsDe extends AppLocalizations {
       'Profil-Privatsphäre konnte nicht aktualisiert werden';
 
   @override
+  String get eventDetailRouteErrorLoading => 'Fehler beim Laden des Events';
+
+  @override
+  String get eventDetailRouteTryAgainLater => 'Bitte versuche es später erneut';
+
+  @override
+  String get eventDetailRouteNotFound => 'Event nicht gefunden';
+
+  @override
+  String get eventDetailRouteGoToExplore => 'Zur Entdecken-Ansicht';
+
+  @override
+  String get eventDetailWhenLabel => 'Wann';
+
+  @override
+  String get eventDetailEndsLabel => 'Ende';
+
+  @override
+  String get eventDetailWebsiteLabel => 'Website';
+
+  @override
+  String get eventDetailOpenWebsite => 'Website öffnen';
+
+  @override
+  String get eventDetailLocationLabel => 'Ort';
+
+  @override
+  String get eventDetailOpenInMaps => 'In Karten öffnen';
+
+  @override
+  String get eventDetailLinkedSpotsLabel => 'Verknüpfte Spots';
+
+  @override
+  String eventDetailLinkedSpotsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count verknüpfte Spots',
+      one: '1 verknüpfter Spot',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get eventDetailNoLinkedSpots => 'Keine verknüpften Spots gefunden.';
+
+  @override
+  String get eventDetailSourceLabel => 'Quelle';
+
+  @override
+  String get eventDetailAdminMenuTooltip => 'Admin';
+
+  @override
   String get eventDetailOriginalEventFallback => 'Original-Event';
 
   @override
