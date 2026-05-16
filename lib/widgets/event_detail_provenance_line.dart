@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../constants/spot_detail_ui.dart';
 import '../l10n/app_localizations.dart';
 import '../models/parkour_event.dart';
 import '../services/user_profile_service.dart';
@@ -111,8 +112,9 @@ class _EventDetailProvenanceLineState extends State<EventDetailProvenanceLine> {
 
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final textStyle = theme.textTheme.bodyLarge?.copyWith(
+    final textStyle = theme.textTheme.bodyMedium?.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
+      height: 1.4,
     );
     final spans = _buildSpans(context, l10n, theme, textStyle);
 
@@ -120,17 +122,18 @@ class _EventDetailProvenanceLineState extends State<EventDetailProvenanceLine> {
       return const SizedBox.shrink();
     }
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.only(top: 12),
-      margin: const EdgeInsets.only(top: 8),
+    return Padding(
+      padding: const EdgeInsets.only(top: SpotDetailUi.detailSectionGap),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.info_outline,
-            size: 16,
-            color: theme.colorScheme.onSurfaceVariant,
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(
+              Icons.info_outline,
+              size: 16,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(width: 8),
           Expanded(

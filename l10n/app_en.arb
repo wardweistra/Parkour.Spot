@@ -2660,6 +2660,10 @@
   "@eventDetailWhenLabel": {
     "description": "Section label for event date and time"
   },
+  "eventDetailStartsLabel": "Starts",
+  "@eventDetailStartsLabel": {
+    "description": "Label for event start in a multi-day schedule"
+  },
   "eventDetailEndsLabel": "Ends",
   "@eventDetailEndsLabel": {
     "description": "Label before event end date/time"

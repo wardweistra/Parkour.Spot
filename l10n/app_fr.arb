@@ -790,6 +790,7 @@
   "eventDetailRouteNotFound": "Événement introuvable",
   "eventDetailRouteGoToExplore": "Aller à Explorer",
   "eventDetailWhenLabel": "Quand",
+  "eventDetailStartsLabel": "Début",
   "eventDetailEndsLabel": "Fin",
   "eventDetailWebsiteLabel": "Site web",
   "eventDetailOpenWebsite": "Ouvrir le site web",

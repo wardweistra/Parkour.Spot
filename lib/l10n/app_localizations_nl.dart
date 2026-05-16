@@ -2877,6 +2877,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get eventDetailWhenLabel => 'Wanneer';
 
   @override
+  String get eventDetailStartsLabel => 'Start';
+
+  @override
   String get eventDetailEndsLabel => 'Eindigt';
 
   @override

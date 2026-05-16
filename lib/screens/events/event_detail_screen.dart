@@ -14,6 +14,7 @@ import '../../services/auth_service.dart';
 import '../../services/spot_service.dart';
 import '../../widgets/detail_image_carousel.dart';
 import '../../widgets/event_detail_provenance_line.dart';
+import '../../widgets/event_detail_when_block.dart';
 import '../../widgets/event_selection_dialog.dart';
 
 /// Event detail page; loads the document from Firestore by [eventId].
@@ -453,10 +454,10 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: SpotDetailUi.detailTitleGap),
                         ..._buildEventMainContent(context, event, l10n),
                         if (showDupSection) ...[
-                          const SizedBox(height: 24),
+                          const SizedBox(height: SpotDetailUi.detailSectionGap),
                           _buildDuplicateSection(
                             context,
                             l10n,
@@ -490,28 +491,30 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     final colors = Theme.of(context).colorScheme;
 
     return [
-      _EventWhenCard(
+      EventDetailWhenBlock(
         startAt: event.startAt,
         endAt: event.endAt,
         whenLabel: l10n.eventDetailWhenLabel,
+        startsLabel: l10n.eventDetailStartsLabel,
         endsLabel: l10n.eventDetailEndsLabel,
+        todayLabel: l10n.spotDetailDateToday,
       ),
       if (event.description?.trim().isNotEmpty == true) ...[
-        const SizedBox(height: 20),
+        const SizedBox(height: SpotDetailUi.detailSectionGap),
         Text(
           event.description!.trim(),
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.5),
         ),
       ],
       if (hasWebsite) ...[
-        const SizedBox(height: 20),
+        const SizedBox(height: SpotDetailUi.detailSectionGap),
         Text(
           l10n.eventDetailWebsiteLabel,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: SpotDetailUi.detailLabelGap),
         OutlinedButton.icon(
           onPressed: () => _openExternal(websiteUrl),
           icon: const Icon(Icons.open_in_new, size: 18),
@@ -522,17 +525,17 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         ),
       ],
       if (hasLocation || hasAddress) ...[
-        const SizedBox(height: 20),
+        const SizedBox(height: SpotDetailUi.detailSectionGap),
         Text(
           l10n.eventDetailLocationLabel,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: SpotDetailUi.detailLabelGap),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(12),
+          padding: SpotDetailUi.detailCardPadding,
           decoration: BoxDecoration(
             color: colors.primaryContainer.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
@@ -578,7 +581,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       ],
       EventDetailProvenanceLine(key: ValueKey(event.id), event: event),
       if (event.spotIds.isNotEmpty) ...[
-        const SizedBox(height: 24),
+        const SizedBox(height: SpotDetailUi.detailSectionGap),
         Text(
           l10n.eventDetailLinkedSpotsLabel,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
@@ -592,7 +595,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             color: colors.onSurface.withValues(alpha: 0.65),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: SpotDetailUi.detailLabelGap),
         _LinkedSpotsSection(
           spotIds: event.spotIds,
           emptyLabel: l10n.eventDetailNoLinkedSpots,
@@ -732,83 +735,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 }
 
 enum _EventAdminAction { markDuplicate, removeDuplicate }
-
-class _EventWhenCard extends StatelessWidget {
-  const _EventWhenCard({
-    required this.startAt,
-    required this.endAt,
-    required this.whenLabel,
-    required this.endsLabel,
-  });
-
-  final DateTime startAt;
-  final DateTime? endAt;
-  final String whenLabel;
-  final String endsLabel;
-
-  String _formatDateTime(BuildContext context, DateTime dateTime) {
-    final local = dateTime.toLocal();
-    final localizations = MaterialLocalizations.of(context);
-    final date = localizations.formatMediumDate(local);
-    final time = localizations.formatTimeOfDay(TimeOfDay.fromDateTime(local));
-    return '$date · $time';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: colors.primaryContainer.withValues(alpha: 0.35),
-        borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
-        border: Border.all(color: colors.primary.withValues(alpha: 0.25)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.event_available_outlined, color: colors.primary, size: 26),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  whenLabel,
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: colors.primary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _formatDateTime(context, startAt),
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-                if (endAt != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    endsLabel,
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: colors.onSurface.withValues(alpha: 0.7),
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _formatDateTime(context, endAt!),
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _LinkedSpotsSection extends StatefulWidget {
   const _LinkedSpotsSection({

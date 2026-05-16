@@ -2910,6 +2910,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get eventDetailWhenLabel => 'Quand';
 
   @override
+  String get eventDetailStartsLabel => 'Début';
+
+  @override
   String get eventDetailEndsLabel => 'Fin';
 
   @override

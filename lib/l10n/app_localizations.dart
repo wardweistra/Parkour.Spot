@@ -4857,6 +4857,12 @@ abstract class AppLocalizations {
   /// **'When'**
   String get eventDetailWhenLabel;
 
+  /// Label for event start in a multi-day schedule
+  ///
+  /// In en, this message translates to:
+  /// **'Starts'**
+  String get eventDetailStartsLabel;
+
   /// Label before event end date/time
   ///
   /// In en, this message translates to:

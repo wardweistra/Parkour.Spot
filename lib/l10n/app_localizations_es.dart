@@ -2887,6 +2887,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventDetailWhenLabel => 'Cuándo';
 
   @override
+  String get eventDetailStartsLabel => 'Empieza';
+
+  @override
   String get eventDetailEndsLabel => 'Termina';
 
   @override

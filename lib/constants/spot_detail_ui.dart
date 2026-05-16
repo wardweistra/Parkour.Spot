@@ -11,6 +11,22 @@ abstract final class SpotDetailUi {
 
   static const double contentHorizontalPadding = 16;
 
+  /// Vertical space after the detail title row.
+  static const double detailTitleGap = 20;
+
+  /// Space between major content blocks (description, website, linked spots).
+  static const double detailSectionGap = 24;
+
+  /// Space from a section label to its content.
+  static const double detailLabelGap = 8;
+
+  /// Padding inside surfaced detail blocks (when card, location box).
+  static const EdgeInsets detailCardPadding =
+      EdgeInsets.symmetric(horizontal: 16, vertical: 14);
+
+  /// Gap between stacked timeline moments on multi-day events.
+  static const double timelineMomentGap = 20;
+
   static const double appBarButtonSize = 40;
 
   /// Below this width, Edit and Save quick actions use icon-only chips (Material compact).
