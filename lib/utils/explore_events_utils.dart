@@ -15,12 +15,26 @@ Map<String, EventMapPin> eventPinsBySpotId(Iterable<EventMapPin> pins) {
   return result;
 }
 
-/// One representative pin per [eventId] (earliest [startAt]).
+bool _preferEventPin(EventMapPin candidate, EventMapPin current) {
+  if (candidate.startAt.isBefore(current.startAt)) return true;
+  if (candidate.startAt.isAfter(current.startAt)) return false;
+  if (candidate.kind == EventMapPinKind.venue &&
+      current.kind != EventMapPinKind.venue) {
+    return true;
+  }
+  if (current.kind == EventMapPinKind.venue &&
+      candidate.kind != EventMapPinKind.venue) {
+    return false;
+  }
+  return candidate.imageUrls.length > current.imageUrls.length;
+}
+
+/// One representative pin per [eventId] (earliest [startAt], venue preferred).
 List<EventMapPin> dedupePinsByEventId(List<EventMapPin> pins) {
   final byEvent = <String, EventMapPin>{};
   for (final pin in pins) {
     final existing = byEvent[pin.eventId];
-    if (existing == null || pin.startAt.isBefore(existing.startAt)) {
+    if (existing == null || _preferEventPin(pin, existing)) {
       byEvent[pin.eventId] = pin;
     }
   }

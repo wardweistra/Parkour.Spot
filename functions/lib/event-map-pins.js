@@ -148,6 +148,35 @@ function collectLinkedSpotIds(eventData, listsById) {
 }
 
 /**
+ * Denormalized card fields for Explore event pins.
+ * @param {Object} eventData
+ * @return {Object}
+ */
+function pickEventCardFields(eventData) {
+  const fields = {};
+  const description = typeof eventData.description === "string" ?
+    eventData.description.trim() :
+    "";
+  if (description.length > 0) {
+    fields.description = description.length > 500 ?
+      description.slice(0, 500) :
+      description;
+  }
+
+  const imageUrls = Array.isArray(eventData.imageUrls) ?
+    eventData.imageUrls
+        .filter((url) => typeof url === "string" && url.trim().length > 0)
+        .map((url) => url.trim())
+        .slice(0, 10) :
+    [];
+  if (imageUrls.length > 0) {
+    fields.imageUrls = imageUrls;
+  }
+
+  return fields;
+}
+
+/**
  * Builds pin document payloads for an event (pure; for tests).
  * @param {string} eventId
  * @param {Object} eventData
@@ -186,6 +215,7 @@ function buildEventMapPinWrites(
     eventId,
     startAt,
     title: title.length > 0 ? title : "Event",
+    ...pickEventCardFields(eventData),
   };
   if (endAt) basePin.endAt = endAt;
 
@@ -341,6 +371,7 @@ module.exports = {
   effectiveSpotIdsFromList,
   isSpotEligibleForPin,
   collectLinkedSpotIds,
+  pickEventCardFields,
   buildEventMapPinWrites,
   deleteEventMapPins,
   materializeEventMapPins,

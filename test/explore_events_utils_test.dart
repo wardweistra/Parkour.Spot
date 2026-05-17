@@ -53,5 +53,31 @@ void main() {
       ];
       expect(dedupePinsByEventId(pins), hasLength(1));
     });
+
+    test('dedupePinsByEventId prefers venue pin at same startAt', () {
+      final start = DateTime.utc(2026, 12, 1);
+      final pins = [
+        EventMapPin(
+          id: 'e1_spot_x',
+          eventId: 'e1',
+          kind: EventMapPinKind.spot,
+          latitude: 2,
+          longitude: 2,
+          title: 'Spot',
+          startAt: start,
+          spotId: 'x',
+        ),
+        EventMapPin(
+          id: 'e1_venue',
+          eventId: 'e1',
+          kind: EventMapPinKind.venue,
+          latitude: 1,
+          longitude: 1,
+          title: 'Venue',
+          startAt: start,
+        ),
+      ];
+      expect(dedupePinsByEventId(pins).single.kind, EventMapPinKind.venue);
+    });
   });
 }

@@ -11,7 +11,7 @@ import '../../services/event_map_service.dart';
 import '../../services/spot_service.dart';
 import '../../models/event_map_pin.dart';
 import '../../utils/explore_events_utils.dart';
-import '../../widgets/explore_event_list_tile.dart';
+import '../../widgets/event_card.dart';
 import '../../widgets/explore_bottom_sheet_header.dart';
 import '../../services/sync_source_service.dart';
 import '../../services/search_state_service.dart';
@@ -2755,18 +2755,75 @@ class SearchScreenState extends State<SearchScreen>
     return _eventPinBySpotId[id];
   }
 
+  Future<void> _locateEvent(EventMapPin pin) async {
+    if (_isBottomSheetOpen) {
+      await _bottomSheetAnimationController.reverse();
+      if (mounted) {
+        setState(() {
+          _isBottomSheetOpen = false;
+        });
+      }
+    }
+
+    if (_mapController != null) {
+      const double desiredZoom = 15.0;
+      final double targetZoom =
+          _lastKnownZoom < desiredZoom ? desiredZoom : _lastKnownZoom;
+      await _mapController!.animateCamera(
+        CameraUpdate.newLatLng(LatLng(pin.latitude, pin.longitude)),
+      );
+      if (_lastKnownZoom < targetZoom) {
+        await _mapController!.animateCamera(CameraUpdate.zoomTo(targetZoom));
+      }
+    }
+  }
+
+  Widget _buildEventCard(EventMapPin pin) {
+    return EventCard(
+      pin: pin,
+      onTapWithImageIndex: (imageIndex) {
+        _mapController?.animateCamera(
+          CameraUpdate.newLatLng(LatLng(pin.latitude, pin.longitude)),
+        );
+        final path = '/event/${pin.eventId}';
+        final navigationUrl =
+            imageIndex > 0 ? '$path?imageIndex=$imageIndex' : path;
+        context.push(navigationUrl);
+      },
+      onLocate: () => _locateEvent(pin),
+    );
+  }
+
   Widget _buildEventsList() {
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+    final screenWidth = MediaQuery.of(context).size.width;
+    final useGrid = screenWidth >= 600;
+
+    if (useGrid) {
+      const maxCrossAxisExtent = 480.0;
+      const mainAxisExtent = 440.0;
+
+      return GridView.builder(
+        padding: const EdgeInsets.all(16),
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: maxCrossAxisExtent,
+          mainAxisExtent: mainAxisExtent,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+        ),
+        itemCount: _visibleEvents.length,
+        itemBuilder: (context, index) {
+          return _buildEventCard(_visibleEvents[index]);
+        },
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       itemCount: _visibleEvents.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
-        final pin = _visibleEvents[index];
-        return ExploreEventListTile(
-          pin: pin,
-          onLocate: () {
-            locateEventPinOnMap(_mapController, pin);
-          },
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _buildEventCard(_visibleEvents[index]),
         );
       },
     );

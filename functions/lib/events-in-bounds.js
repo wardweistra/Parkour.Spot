@@ -48,6 +48,22 @@ function normalizePin(docId, data) {
     if (spotId.length > 0) pin.spotId = spotId;
   }
 
+  const description = typeof data.description === "string" ?
+    data.description.trim() :
+    "";
+  if (description.length > 0) {
+    pin.description = description;
+  }
+
+  if (Array.isArray(data.imageUrls)) {
+    const imageUrls = data.imageUrls
+        .filter((url) => typeof url === "string" && url.trim().length > 0)
+        .map((url) => url.trim());
+    if (imageUrls.length > 0) {
+      pin.imageUrls = imageUrls;
+    }
+  }
+
   return pin;
 }
 

@@ -112,6 +112,8 @@ describe("event-map-pins helpers", () => {
       ]);
       const {pins} = buildEventMapPinWrites("evt-1", {
         title: "Jam",
+        description: "Community jam in the park.",
+        imageUrls: ["https://example.com/events/jam.jpg"],
         startAt: futureStart,
         endAt: futureEnd,
         latitude: 51.0,
@@ -124,6 +126,10 @@ describe("event-map-pins helpers", () => {
       expect(pins.find((p) => p.id === "evt-1_venue")).toBeTruthy();
       expect(pins.find((p) => p.id === "evt-1_spot_spot-1")).toBeTruthy();
       expect(pins[0].data.eventId).toBe("evt-1");
+      expect(pins[0].data.description).toBe("Community jam in the park.");
+      expect(pins[0].data.imageUrls).toEqual(
+          ["https://example.com/events/jam.jpg"],
+      );
     });
 
     it("skips spots without valid coordinates", () => {
