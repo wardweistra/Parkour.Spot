@@ -268,6 +268,7 @@ class SearchScreenState extends State<SearchScreen>
   List<Spot> _loadedSpots = []; // Spots loaded for the current map view
   Set<Marker> _markers = {};
   Spot? _selectedSpot;
+  EventMapPin? _selectedEventPin;
   bool _isLoadingSpotsForView =
       false; // Loading state for spots within current view
   bool _isSearchingLocation = false; // Loading state for location search
@@ -281,6 +282,7 @@ class SearchScreenState extends State<SearchScreen>
   bool _isLoadingEventsForView = false;
   String _exploreListMode = 'spots';
   BitmapDescriptor? _eventVenueIcon;
+  BitmapDescriptor? _eventVenueSelectedIcon;
   BitmapDescriptor? _eventSpotIcon;
   BitmapDescriptor? _eventSpotSelectedIcon;
   late AnimationController _bottomSheetAnimationController;
@@ -2171,6 +2173,7 @@ class SearchScreenState extends State<SearchScreen>
             if (_isBottomSheetOpen || _showFiltersDialog) return;
             setState(() {
               _selectedSpot = spot;
+              _selectedEventPin = null;
               _showListPreview = false;
               _markers = _rebuildMarkers();
             });
@@ -2190,9 +2193,16 @@ class SearchScreenState extends State<SearchScreen>
       final markerId = pin.kind == EventMapPinKind.venue
           ? 'event_venue_${pin.eventId}'
           : 'event_spot_${pin.id}';
+      final isSelected = _selectedEventPin?.id == pin.id;
       final icon = pin.kind == EventMapPinKind.venue
-          ? (_eventVenueIcon ?? BitmapDescriptor.defaultMarker)
-          : (_eventSpotIcon ?? BitmapDescriptor.defaultMarker);
+          ? (isSelected
+                ? (_eventVenueSelectedIcon ?? _eventVenueIcon)
+                : _eventVenueIcon) ??
+              BitmapDescriptor.defaultMarker
+          : (isSelected
+                ? _eventSpotSelectedIcon
+                : _eventSpotIcon) ??
+              BitmapDescriptor.defaultMarker;
 
       markers.add(
         Marker(
@@ -2200,10 +2210,10 @@ class SearchScreenState extends State<SearchScreen>
           position: LatLng(pin.latitude, pin.longitude),
           icon: icon,
           anchor: const Offset(0.5, 1.0),
-          zIndexInt: pin.kind == EventMapPinKind.venue ? 3 : 1,
+          zIndexInt: isSelected ? 4 : (pin.kind == EventMapPinKind.venue ? 3 : 1),
           onTap: () {
             if (_isBottomSheetOpen || _showFiltersDialog) return;
-            context.push('/event/${pin.eventId}');
+            _selectEventPin(pin, focusMap: false);
           },
         ),
       );
@@ -2301,6 +2311,10 @@ class SearchScreenState extends State<SearchScreen>
           await MarkerIconUtils.loadEventVenueMapPin(
         logicalHeight: browsePinHeight,
       );
+      final BitmapDescriptor eventVenueSelectedPin =
+          await MarkerIconUtils.loadEventVenueSelectedMapPin(
+        logicalHeight: browsePinHeight,
+      );
       final BitmapDescriptor eventSpotPin =
           await MarkerIconUtils.loadSpotEventMapPin(
         logicalHeight: browsePinHeight,
@@ -2317,6 +2331,7 @@ class SearchScreenState extends State<SearchScreen>
           _spotSelectedHighlightedIcon = listSelectedPin;
           _addSpotPinIcon = addPin;
           _eventVenueIcon = eventVenuePin;
+          _eventVenueSelectedIcon = eventVenueSelectedPin;
           _eventSpotIcon = eventSpotPin;
           _eventSpotSelectedIcon = eventSpotSelectedPin;
         });
@@ -2379,8 +2394,9 @@ class SearchScreenState extends State<SearchScreen>
 
     setState(() {
       _showListPreview = true;
-      // Close spot detail if open
+      // Close spot/event detail if open
       _selectedSpot = null;
+      _selectedEventPin = null;
     });
 
     // Fit map to show all spots in the list
@@ -2467,9 +2483,10 @@ class SearchScreenState extends State<SearchScreen>
     }
     setState(() {
       _isBottomSheetOpen = !_isBottomSheetOpen;
-      // Clear selected spot when opening bottom sheet
+      // Clear selected spot/event when opening bottom sheet
       if (_isBottomSheetOpen) {
         _selectedSpot = null;
+        _selectedEventPin = null;
       }
     });
   }
@@ -2509,6 +2526,19 @@ class SearchScreenState extends State<SearchScreen>
     if (_selectedSpot != null) {
       setState(() {
         _selectedSpot = null;
+        _markers = _rebuildMarkers();
+      });
+    }
+  }
+
+  // Public API to check if event detail card is open
+  bool get isEventDetailOpen => _selectedEventPin != null;
+
+  // Public API so parent can close event detail if open
+  void closeEventDetail() {
+    if (_selectedEventPin != null) {
+      setState(() {
+        _selectedEventPin = null;
         _markers = _rebuildMarkers();
       });
     }
@@ -2626,6 +2656,42 @@ class SearchScreenState extends State<SearchScreen>
     if (mounted) {
       setState(() {
         _selectedSpot = spot;
+        _selectedEventPin = null;
+        _markers = _rebuildMarkers();
+      });
+    }
+  }
+
+  Future<void> _selectEventPin(
+    EventMapPin pin, {
+    bool focusMap = true,
+  }) async {
+    if (_isBottomSheetOpen) {
+      await _bottomSheetAnimationController.reverse();
+      if (mounted) {
+        setState(() {
+          _isBottomSheetOpen = false;
+        });
+      }
+    }
+
+    if (focusMap && _mapController != null) {
+      const double desiredZoom = 15.0;
+      final double targetZoom =
+          _lastKnownZoom < desiredZoom ? desiredZoom : _lastKnownZoom;
+      await _mapController!.animateCamera(
+        CameraUpdate.newLatLng(LatLng(pin.latitude, pin.longitude)),
+      );
+      if (_lastKnownZoom < targetZoom) {
+        await _mapController!.animateCamera(CameraUpdate.zoomTo(targetZoom));
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _selectedEventPin = pin;
+        _selectedSpot = null;
+        _showListPreview = false;
         _markers = _rebuildMarkers();
       });
     }
@@ -2756,26 +2822,28 @@ class SearchScreenState extends State<SearchScreen>
   }
 
   Future<void> _locateEvent(EventMapPin pin) async {
-    if (_isBottomSheetOpen) {
-      await _bottomSheetAnimationController.reverse();
-      if (mounted) {
-        setState(() {
-          _isBottomSheetOpen = false;
-        });
-      }
-    }
+    await _selectEventPin(pin, focusMap: true);
+  }
 
-    if (_mapController != null) {
-      const double desiredZoom = 15.0;
-      final double targetZoom =
-          _lastKnownZoom < desiredZoom ? desiredZoom : _lastKnownZoom;
-      await _mapController!.animateCamera(
-        CameraUpdate.newLatLng(LatLng(pin.latitude, pin.longitude)),
-      );
-      if (_lastKnownZoom < targetZoom) {
-        await _mapController!.animateCamera(CameraUpdate.zoomTo(targetZoom));
-      }
-    }
+  Widget _buildEventOverlayCard({required double maxWidth}) {
+    final pin = _selectedEventPin!;
+    return EventCard(
+      pin: pin,
+      variant: EventCardVariant.overlay,
+      maxWidth: maxWidth,
+      onTapWithImageIndex: (imageIndex) {
+        final path = '/event/${pin.eventId}';
+        final navigationUrl =
+            imageIndex > 0 ? '$path?imageIndex=$imageIndex' : path;
+        context.push(navigationUrl);
+      },
+      onClose: () {
+        setState(() {
+          _selectedEventPin = null;
+          _markers = _rebuildMarkers();
+        });
+      },
+    );
   }
 
   Widget _buildEventCard(EventMapPin pin) {
@@ -3044,28 +3112,37 @@ class SearchScreenState extends State<SearchScreen>
                     myLocationButtonEnabled:
                         !_isBottomSheetOpen &&
                         _selectedSpot == null &&
+                        _selectedEventPin == null &&
                         !_showListPreview &&
-                        !_showFiltersDialog, // Disable location button when expanded, spot detail is open, list preview is open, or filters dialog is open
+                        !_showFiltersDialog, // Disable location button when expanded, map card is open, list preview is open, or filters dialog is open
                     zoomControlsEnabled: false,
                     zoomGesturesEnabled:
                         !_isBottomSheetOpen &&
                         !_showFiltersDialog &&
-                        (_selectedSpot == null && !_showListPreview ||
+                        ((_selectedSpot == null &&
+                                _selectedEventPin == null &&
+                                !_showListPreview) ||
                             !MobileDetectionService.isMobileDevice),
                     scrollGesturesEnabled:
                         !_isBottomSheetOpen &&
                         !_showFiltersDialog &&
-                        (_selectedSpot == null && !_showListPreview ||
+                        ((_selectedSpot == null &&
+                                _selectedEventPin == null &&
+                                !_showListPreview) ||
                             !MobileDetectionService.isMobileDevice),
                     rotateGesturesEnabled:
                         !_isBottomSheetOpen &&
                         !_showFiltersDialog &&
-                        (_selectedSpot == null && !_showListPreview ||
+                        ((_selectedSpot == null &&
+                                _selectedEventPin == null &&
+                                !_showListPreview) ||
                             !MobileDetectionService.isMobileDevice),
                     tiltGesturesEnabled:
                         !_isBottomSheetOpen &&
                         !_showFiltersDialog &&
-                        (_selectedSpot == null && !_showListPreview ||
+                        ((_selectedSpot == null &&
+                                _selectedEventPin == null &&
+                                !_showListPreview) ||
                             !MobileDetectionService.isMobileDevice),
                     liteModeEnabled: kIsWeb,
                     compassEnabled: false,
@@ -3171,11 +3248,14 @@ class SearchScreenState extends State<SearchScreen>
                         _lastAutocompleteSpotSelection = null;
                         return;
                       }
-                      // Dismiss spot detail card or list preview when map is tapped (but not when markers are tapped)
-                      if ((_selectedSpot != null || _showListPreview) &&
+                      // Dismiss map cards or list preview when map is tapped (but not when markers are tapped)
+                      if ((_selectedSpot != null ||
+                              _selectedEventPin != null ||
+                              _showListPreview) &&
                           !_isBottomSheetOpen) {
                         setState(() {
                           _selectedSpot = null;
+                          _selectedEventPin = null;
                           _showListPreview = false;
                           // Rebuild markers to clear selection color
                           _markers = _rebuildMarkers();
@@ -3221,6 +3301,7 @@ class SearchScreenState extends State<SearchScreen>
                       !_isBottomSheetOpen &&
                       !_showFiltersDialog &&
                       _selectedSpot == null &&
+                      _selectedEventPin == null &&
                       !_showListPreview &&
                       _longPressedLocation == null)
                     Positioned.fill(
@@ -3758,11 +3839,29 @@ class SearchScreenState extends State<SearchScreen>
                             ),
                     ),
 
+                  // Event Detail Card (when event marker is selected)
+                  if (_selectedEventPin != null && !_isBottomSheetOpen)
+                    Positioned(
+                      left: 16,
+                      right: MediaQuery.of(context).size.width >= 600
+                          ? null
+                          : 16,
+                      bottom: 16,
+                      child: MediaQuery.of(context).size.width >= 600
+                          ? _buildEventOverlayCard(maxWidth: 400)
+                          : Center(
+                              child: _buildEventOverlayCard(
+                                maxWidth: double.infinity,
+                              ),
+                            ),
+                    ),
+
                   // Spot List Preview Card (when chip is clicked)
                   if (_showListPreview &&
                       _selectedList != null &&
                       !_isBottomSheetOpen &&
-                      _selectedSpot == null)
+                      _selectedSpot == null &&
+                      _selectedEventPin == null)
                     Positioned(
                       left: 16,
                       right: MediaQuery.of(context).size.width >= 600
@@ -3781,6 +3880,7 @@ class SearchScreenState extends State<SearchScreen>
                   // Add Spot Button (when long press is detected)
                   if (_longPressedLocation != null &&
                       _selectedSpot == null &&
+                      _selectedEventPin == null &&
                       !_showListPreview &&
                       !_showFiltersDialog)
                     Stack(
@@ -3923,8 +4023,9 @@ class SearchScreenState extends State<SearchScreen>
                       ],
                     ),
 
-                  // Bottom Sheet with Spots List - hide when spot detail card, list preview, or add spot button is visible
+                  // Bottom Sheet with Spots List - hide when map card, list preview, or add spot button is visible
                   if (_selectedSpot == null &&
+                      _selectedEventPin == null &&
                       !_showListPreview &&
                       _longPressedLocation == null)
                     Positioned(
@@ -4179,6 +4280,7 @@ class SearchScreenState extends State<SearchScreen>
                   // Refresh Spots Button - Floating Action Button
                   if (!_isBottomSheetOpen &&
                       _selectedSpot == null &&
+                      _selectedEventPin == null &&
                       !_showListPreview)
                     Builder(
                       builder: (context) {
@@ -4225,6 +4327,7 @@ class SearchScreenState extends State<SearchScreen>
                   // Map Type Toggle Button - Floating Action Button
                   if (!_isBottomSheetOpen &&
                       _selectedSpot == null &&
+                      _selectedEventPin == null &&
                       !_showListPreview)
                     Builder(
                       builder: (context) {
@@ -4270,9 +4373,10 @@ class SearchScreenState extends State<SearchScreen>
                       },
                     ),
 
-                  // Location Button - Floating Action Button (only show when bottom sheet is collapsed and no spot selected)
+                  // Location Button - Floating Action Button (only show when bottom sheet is collapsed and no map card open)
                   if (!_isBottomSheetOpen &&
                       _selectedSpot == null &&
+                      _selectedEventPin == null &&
                       !_showListPreview)
                     Builder(
                       builder: (context) {

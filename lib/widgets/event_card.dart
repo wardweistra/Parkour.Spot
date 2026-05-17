@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:pointer_interceptor/pointer_interceptor.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/event_map_pin.dart';
@@ -11,12 +12,20 @@ import '../services/web_share_service.dart';
 import 'no_images_placeholder.dart';
 import 'resized_spot_image.dart';
 
-/// Card for an event in Explore, styled like [SpotCard] list variant.
+enum EventCardVariant {
+  list,
+  overlay,
+}
+
+/// Card for an event in Explore, styled like [SpotCard].
 class EventCard extends StatefulWidget {
   final EventMapPin pin;
   final VoidCallback? onTap;
   final ValueChanged<int>? onTapWithImageIndex;
   final VoidCallback? onLocate;
+  final VoidCallback? onClose;
+  final EventCardVariant variant;
+  final double? maxWidth;
 
   const EventCard({
     super.key,
@@ -24,6 +33,9 @@ class EventCard extends StatefulWidget {
     this.onTap,
     this.onTapWithImageIndex,
     this.onLocate,
+    this.onClose,
+    this.variant = EventCardVariant.list,
+    this.maxWidth,
   });
 
   @override
@@ -56,7 +68,13 @@ class _EventCardState extends State<EventCard> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    if (widget.variant == EventCardVariant.overlay) {
+      return _buildOverlayCard(context);
+    }
+    return _buildListCard(context);
+  }
+
+  Widget _buildListCard(BuildContext context) {
     final images = widget.pin.imageUrls;
     final description = widget.pin.description?.trim() ?? '';
 
@@ -76,31 +94,7 @@ class _EventCardState extends State<EventCard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (images.isNotEmpty)
-                  ClipRRect(
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(16)),
-                    child: AspectRatio(
-                      aspectRatio: 16 / 9,
-                      child: _buildImageGallery(context, images),
-                    ),
-                  )
-                else
-                  ClipRRect(
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(16)),
-                    child: AspectRatio(
-                      aspectRatio: 16 / 9,
-                      child: Container(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .surfaceContainerHighest,
-                        child: Center(
-                          child: NoImagesPlaceholder(label: l10n.noImagesYet),
-                        ),
-                      ),
-                    ),
-                  ),
+                _buildImageSection(context, images, borderRadius: 16),
                 SingleChildScrollView(
                   physics: const NeverScrollableScrollPhysics(),
                   child: Padding(
@@ -109,42 +103,10 @@ class _EventCardState extends State<EventCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          widget.pin.title,
-                          style: Theme.of(context).textTheme.titleLarge,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          _formatWhen(context),
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.7),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          description.isEmpty
-                              ? l10n.spotCardNoDescription
-                              : description,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.7),
-                            height: 1.4,
-                            fontStyle: description.isEmpty
-                                ? FontStyle.italic
-                                : FontStyle.normal,
-                          ),
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
+                        ..._buildTextContent(
+                          context,
+                          description: description,
+                          descriptionMaxLines: 3,
                         ),
                         const SizedBox(height: 50),
                       ],
@@ -170,56 +132,222 @@ class _EventCardState extends State<EventCard> {
                         .onSurface
                         .withValues(alpha: 0.6),
                   ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Material(
-                        color: Theme.of(context).colorScheme.secondary,
-                        shape: const CircleBorder(),
-                        elevation: 2,
-                        child: InkWell(
-                          onTap: () => _shareEvent(context),
-                          customBorder: const CircleBorder(),
-                          child: Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: Icon(
-                              Icons.share,
-                              size: 18,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSecondary,
-                            ),
-                          ),
-                        ),
-                      ),
-                      if (widget.onLocate != null) ...[
-                        const SizedBox(width: 8),
-                        Material(
-                          color: Theme.of(context).colorScheme.secondary,
-                          shape: const CircleBorder(),
-                          elevation: 2,
-                          child: InkWell(
-                            onTap: widget.onLocate,
-                            customBorder: const CircleBorder(),
-                            child: Padding(
-                              padding: const EdgeInsets.all(8),
-                              child: Icon(
-                                Icons.my_location,
-                                size: 18,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSecondary,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
+                  _buildListActionButtons(context),
                 ],
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOverlayCard(BuildContext context) {
+    final images = widget.pin.imageUrls;
+    final description = widget.pin.description?.trim() ?? '';
+
+    return PointerInterceptor(
+      child: GestureDetector(
+        onTap: widget.onTapWithImageIndex != null
+            ? () => widget.onTapWithImageIndex!(_currentPage)
+            : widget.onTap,
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: widget.maxWidth ?? double.infinity,
+          ),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildImageSection(context, images, borderRadius: 12),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: _buildTextContent(
+                        context,
+                        description: description,
+                        descriptionMaxLines: 2,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _overlayCircleButton(
+                      icon: Icons.share,
+                      onTap: () => _shareEvent(context),
+                    ),
+                    if (widget.onClose != null) ...[
+                      const SizedBox(width: 8),
+                      _overlayCircleButton(
+                        icon: Icons.close,
+                        onTap: widget.onClose!,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildTextContent(
+    BuildContext context, {
+    required String description,
+    required int descriptionMaxLines,
+  }) {
+    final l10n = AppLocalizations.of(context)!;
+    return [
+      Text(
+        widget.pin.title,
+        style: Theme.of(context).textTheme.titleLarge,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        textAlign: TextAlign.start,
+      ),
+      const SizedBox(height: 6),
+      Text(
+        _formatWhen(context),
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      const SizedBox(height: 8),
+      Text(
+        description.isEmpty ? l10n.spotCardNoDescription : description,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+          height: 1.4,
+          fontStyle:
+              description.isEmpty ? FontStyle.italic : FontStyle.normal,
+        ),
+        maxLines: descriptionMaxLines,
+        overflow: TextOverflow.ellipsis,
+      ),
+    ];
+  }
+
+  Widget _buildImageSection(
+    BuildContext context,
+    List<String> images, {
+    required double borderRadius,
+  }) {
+    final l10n = AppLocalizations.of(context)!;
+    final radius = BorderRadius.vertical(top: Radius.circular(borderRadius));
+
+    if (images.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: radius,
+        child: AspectRatio(
+          aspectRatio: 16 / 9,
+          child: _buildImageGallery(context, images),
+        ),
+      );
+    }
+
+    return ClipRRect(
+      borderRadius: radius,
+      child: AspectRatio(
+        aspectRatio: 16 / 9,
+        child: Container(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          child: Center(
+            child: NoImagesPlaceholder(label: l10n.noImagesYet),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildListActionButtons(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Material(
+          color: Theme.of(context).colorScheme.secondary,
+          shape: const CircleBorder(),
+          elevation: 2,
+          child: InkWell(
+            onTap: () => _shareEvent(context),
+            customBorder: const CircleBorder(),
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Icon(
+                Icons.share,
+                size: 18,
+                color: Theme.of(context).colorScheme.onSecondary,
+              ),
+            ),
+          ),
+        ),
+        if (widget.onLocate != null) ...[
+          const SizedBox(width: 8),
+          Material(
+            color: Theme.of(context).colorScheme.secondary,
+            shape: const CircleBorder(),
+            elevation: 2,
+            child: InkWell(
+              onTap: widget.onLocate,
+              customBorder: const CircleBorder(),
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Icon(
+                  Icons.my_location,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.onSecondary,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _overlayCircleButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.black.withValues(alpha: 0.6),
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.3),
+              width: 1,
+            ),
+          ),
+          child: Icon(icon, color: Colors.white, size: 18),
         ),
       ),
     );

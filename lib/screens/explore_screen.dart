@@ -273,9 +273,13 @@ class _ExploreScreenState extends State<ExploreScreen> {
     if (index == 0 && _currentIndex == 0) {
       final searchState = _searchKey.currentState;
       if (searchState != null) {
-        // If Spot Detail Card is open, close it (don't touch bottom sheet)
+        // If a map detail card is open, close it (don't touch bottom sheet)
         if (searchState.isSpotDetailOpen) {
           searchState.closeSpotDetail();
+          return;
+        }
+        if (searchState.isEventDetailOpen) {
+          searchState.closeEventDetail();
           return;
         }
         // Otherwise, toggle bottom sheet: if open, close it; if closed, open it

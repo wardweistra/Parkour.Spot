@@ -589,6 +589,7 @@ class _SpotCardState extends State<SpotCard> {
           children: [
             Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Spot image gallery or location marker
                 ClipRRect(
@@ -779,7 +780,7 @@ class _SpotCardState extends State<SpotCard> {
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       // Title and Rating Row (same as list)
                       Row(
