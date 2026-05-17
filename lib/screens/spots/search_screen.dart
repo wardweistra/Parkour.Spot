@@ -281,10 +281,8 @@ class SearchScreenState extends State<SearchScreen>
   int? _eventCountInView;
   bool _isLoadingEventsForView = false;
   String _exploreListMode = 'spots';
-  BitmapDescriptor? _eventVenueIcon;
-  BitmapDescriptor? _eventVenueSelectedIcon;
-  BitmapDescriptor? _eventSpotIcon;
-  BitmapDescriptor? _eventSpotSelectedIcon;
+  BitmapDescriptor? _eventIcon;
+  BitmapDescriptor? _eventSelectedIcon;
   late AnimationController _bottomSheetAnimationController;
   late Animation<double> _bottomSheetAnimation;
   late PageController _imagePageController;
@@ -2144,12 +2142,12 @@ class SearchScreenState extends State<SearchScreen>
 
       BitmapDescriptor icon;
       if (hasEvent && !isSelected && !isHighlighted) {
-        icon = _eventSpotIcon ?? BitmapDescriptor.defaultMarker;
+        icon = _eventIcon ?? BitmapDescriptor.defaultMarker;
       } else if (isSelected && isHighlighted) {
         icon =
             _spotSelectedHighlightedIcon ?? BitmapDescriptor.defaultMarker;
       } else if (isSelected && hasEvent) {
-        icon = _eventSpotSelectedIcon ?? BitmapDescriptor.defaultMarker;
+        icon = _eventSelectedIcon ?? BitmapDescriptor.defaultMarker;
       } else if (isSelected) {
         icon = _spotSelectedIcon ?? BitmapDescriptor.defaultMarker;
       } else if (isHighlighted) {
@@ -2194,15 +2192,10 @@ class SearchScreenState extends State<SearchScreen>
           ? 'event_venue_${pin.eventId}'
           : 'event_spot_${pin.id}';
       final isSelected = _selectedEventPin?.id == pin.id;
-      final icon = pin.kind == EventMapPinKind.venue
-          ? (isSelected
-                ? (_eventVenueSelectedIcon ?? _eventVenueIcon)
-                : _eventVenueIcon) ??
-              BitmapDescriptor.defaultMarker
-          : (isSelected
-                ? _eventSpotSelectedIcon
-                : _eventSpotIcon) ??
-              BitmapDescriptor.defaultMarker;
+      final icon = (isSelected
+              ? (_eventSelectedIcon ?? _eventIcon)
+              : _eventIcon) ??
+          BitmapDescriptor.defaultMarker;
 
       markers.add(
         Marker(
@@ -2307,19 +2300,11 @@ class SearchScreenState extends State<SearchScreen>
         fallbackFill: MarkerIconUtils.mapPinAddFallbackFill,
         logicalHeight: browsePinHeight,
       );
-      final BitmapDescriptor eventVenuePin =
-          await MarkerIconUtils.loadEventVenueMapPin(
-        logicalHeight: browsePinHeight,
-      );
-      final BitmapDescriptor eventVenueSelectedPin =
-          await MarkerIconUtils.loadEventVenueSelectedMapPin(
-        logicalHeight: browsePinHeight,
-      );
-      final BitmapDescriptor eventSpotPin =
+      final BitmapDescriptor eventPin =
           await MarkerIconUtils.loadSpotEventMapPin(
         logicalHeight: browsePinHeight,
       );
-      final BitmapDescriptor eventSpotSelectedPin =
+      final BitmapDescriptor eventSelectedPin =
           await MarkerIconUtils.loadSpotEventSelectedMapPin(
         logicalHeight: browsePinHeight,
       );
@@ -2330,10 +2315,8 @@ class SearchScreenState extends State<SearchScreen>
           _spotHighlightedIcon = listPin;
           _spotSelectedHighlightedIcon = listSelectedPin;
           _addSpotPinIcon = addPin;
-          _eventVenueIcon = eventVenuePin;
-          _eventVenueSelectedIcon = eventVenueSelectedPin;
-          _eventSpotIcon = eventSpotPin;
-          _eventSpotSelectedIcon = eventSpotSelectedPin;
+          _eventIcon = eventPin;
+          _eventSelectedIcon = eventSelectedPin;
         });
       }
     } catch (_) {

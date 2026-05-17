@@ -26,19 +26,11 @@ class MarkerIconUtils {
   static const String mapPinAddAsset =
       'assets/images/map/map-icon-normal-64x64-add.png';
 
-  /// Standalone event venue pin on Explore.
-  static const String mapPinEventAsset =
-      'assets/images/map/map-icon-event-64x64.png';
-
-  /// Selected standalone event venue pin.
-  static const String mapPinEventSelectedAsset =
-      'assets/images/map/map-icon-event-64x64-selected.png';
-
-  /// Spot with an upcoming event (not selected / not in list filter).
+  /// Event pin on Explore (venue and spot-linked events).
   static const String mapPinSpotEventAsset =
       'assets/images/map/map-icon-spotevent-64x64.png';
 
-  /// Selected spot with an upcoming event.
+  /// Selected event pin on Explore.
   static const String mapPinSpotEventSelectedAsset =
       'assets/images/map/map-icon-spotevent-64x64-selected.png';
 
@@ -173,27 +165,7 @@ class MarkerIconUtils {
     return createMarkerIcon(size: size, fillColor: fillColor);
   }
 
-  /// Event venue pin on Explore.
-  static Future<BitmapDescriptor> loadEventVenueMapPin({
-    double? logicalHeight,
-  }) =>
-      loadMapPinPng(
-        mapPinEventAsset,
-        fallbackFill: mapPinEventFallbackFill,
-        logicalHeight: logicalHeight,
-      );
-
-  /// Selected event venue pin on Explore.
-  static Future<BitmapDescriptor> loadEventVenueSelectedMapPin({
-    double? logicalHeight,
-  }) =>
-      loadMapPinPng(
-        mapPinEventSelectedAsset,
-        fallbackFill: mapPinEventSelectedFallbackFill,
-        logicalHeight: logicalHeight,
-      );
-
-  /// Spot with an upcoming event on Explore.
+  /// Event pin on Explore (venue and spot-linked events).
   static Future<BitmapDescriptor> loadSpotEventMapPin({
     double? logicalHeight,
   }) =>
@@ -203,7 +175,7 @@ class MarkerIconUtils {
         logicalHeight: logicalHeight,
       );
 
-  /// Selected spot with an upcoming event on Explore.
+  /// Selected event pin on Explore.
   static Future<BitmapDescriptor> loadSpotEventSelectedMapPin({
     double? logicalHeight,
   }) =>
