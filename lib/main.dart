@@ -13,6 +13,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:parkour_spot/services/auth_service.dart';
+import 'package:parkour_spot/services/event_map_service.dart';
 import 'package:parkour_spot/services/spot_service.dart';
 import 'package:parkour_spot/services/spot_report_service.dart';
 import 'package:parkour_spot/services/sync_source_service.dart';
@@ -189,6 +190,7 @@ class ParkourSpotApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => EventSyncSourceService()),
         ChangeNotifierProvider(create: (_) => AdminPushSubscriptionsService()),
         ChangeNotifierProvider(create: (_) => SpotService()),
+        ChangeNotifierProvider(create: (_) => EventMapService()),
         ChangeNotifierProvider(create: (_) => SyncSourceService()),
         ChangeNotifierProvider(create: (_) => ApiClientService()),
         ChangeNotifierProvider(

@@ -145,7 +145,7 @@ class MarkerIconUtils {
   }
 
   /// Creates a user location marker icon.
-  /// 
+  ///
   /// [size] - The size of the icon in pixels (default: 24)
   /// [fillColor] - The color of the inner fill circle (default: Colors.blue)
   static Future<BitmapDescriptor> createUserLocationIcon({
@@ -154,5 +154,13 @@ class MarkerIconUtils {
   }) async {
     return createMarkerIcon(size: size, fillColor: fillColor);
   }
+
+  /// Event venue pin on Explore (calendar-style dot).
+  static Future<BitmapDescriptor> createEventVenueMarkerIcon() =>
+      createMarkerIcon(size: 24, fillColor: const Color(0xFF1565C0));
+
+  /// Event-at-spot pin when the spot is not in the ranked top set.
+  static Future<BitmapDescriptor> createEventSpotMarkerIcon() =>
+      createMarkerIcon(size: 22, fillColor: const Color(0xFF6A1B9A));
 }
 

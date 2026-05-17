@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:country_flags/country_flags.dart';
 import 'package:go_router/go_router.dart';
+import '../models/event_map_pin.dart';
 import '../models/spot.dart';
 import '../services/mobile_detection_service.dart';
 import '../services/url_service.dart';
@@ -35,6 +36,8 @@ class SpotCard extends StatefulWidget {
   final String? customNote; // Optional per-spot note (e.g. from list section entry)
   /// When true (e.g. Explore), shows who’s checked in at the top right (left of share/close or list actions); loads lazily when visible.
   final bool showCheckInPresence;
+  /// Upcoming event at this spot from Explore viewport pin cache (no extra fetch).
+  final EventMapPin? upcomingEventPin;
 
   const SpotCard({
     super.key,
@@ -54,6 +57,7 @@ class SpotCard extends StatefulWidget {
     this.onSpotListTap,
     this.customNote,
     this.showCheckInPresence = false,
+    this.upcomingEventPin,
   });
 
   @override
@@ -315,6 +319,11 @@ class _SpotCardState extends State<SpotCard> {
                             ],
                           ],
                         ),
+
+                        if (widget.upcomingEventPin != null) ...[
+                          const SizedBox(height: 8),
+                          _UpcomingEventBadge(pin: widget.upcomingEventPin!),
+                        ],
                         
                         const SizedBox(height: 8),
                         
@@ -1118,6 +1127,45 @@ class _SpotCardState extends State<SpotCard> {
       );
     }
   }
+}
 
+class _UpcomingEventBadge extends StatelessWidget {
+  final EventMapPin pin;
 
+  const _UpcomingEventBadge({required this.pin});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = Theme.of(context).colorScheme;
+    return Material(
+      color: colors.primaryContainer.withValues(alpha: 0.45),
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () => context.push('/event/${pin.eventId}'),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          child: Row(
+            children: [
+              Icon(Icons.event_available_outlined,
+                  size: 16, color: colors.primary),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  '${l10n.spotCardUpcomingEventBadge}: ${pin.title}',
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: colors.onPrimaryContainer,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

@@ -609,6 +609,25 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get exploreMapListModeSpots => 'Spots';
+
+  @override
+  String get exploreMapListModeEvents => 'Events';
+
+  @override
+  String get exploreNoEventsArea => 'No events in this area';
+
+  @override
+  String get exploreNoEventsAreaHint =>
+      'Pan the map to another area or check back later';
+
+  @override
+  String get spotCardUpcomingEventBadge => 'Event';
+
+  @override
+  String get exploreEventLocate => 'Locate';
+
+  @override
   String get exploreNoSpotsSearch => 'No spots found';
 
   @override

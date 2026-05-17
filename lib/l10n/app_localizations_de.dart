@@ -617,6 +617,25 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get exploreMapListModeSpots => 'Spots';
+
+  @override
+  String get exploreMapListModeEvents => 'Events';
+
+  @override
+  String get exploreNoEventsArea => 'Keine Events in diesem Gebiet';
+
+  @override
+  String get exploreNoEventsAreaHint =>
+      'Karte verschieben oder später erneut prüfen';
+
+  @override
+  String get spotCardUpcomingEventBadge => 'Event';
+
+  @override
+  String get exploreEventLocate => 'Orten';
+
+  @override
   String get exploreNoSpotsSearch => 'Keine Spots gefunden';
 
   @override

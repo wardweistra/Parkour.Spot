@@ -372,8 +372,8 @@
       "collectionGroup": "eventMapPins",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "longitude", "order": "ASCENDING" },
-        { "fieldPath": "latitude", "order": "ASCENDING" }
+        { "fieldPath": "latitude", "order": "ASCENDING" },
+        { "fieldPath": "longitude", "order": "ASCENDING" }
       ]
     }
   ],

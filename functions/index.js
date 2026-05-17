@@ -114,6 +114,7 @@ const {
   materializeEventMapPins,
   rematerializeEventsForSpotList,
 } = require("./lib/event-map-pins");
+const {executeEventsInBoundsQuery} = require("./lib/events-in-bounds");
 
 // Import shared HTML template
 const {generateHtmlPage} = require("./html-template");
@@ -904,6 +905,21 @@ exports.getTopSpotsInBounds = onCall(
         return await executeTopSpotsInBoundsQuery(request.data || {});
       } catch (error) {
         console.error("getTopSpotsInBounds error", error);
+        return {success: false, error: error.message};
+      }
+    },
+);
+
+/**
+ * Returns event map pins within given map bounds (upcoming / in-progress only).
+ */
+exports.getEventsInBounds = onCall(
+    {region: "europe-west1", timeoutSeconds: 60, memory: "512MiB"},
+    async (request) => {
+      try {
+        return await executeEventsInBoundsQuery(db, request.data || {});
+      } catch (error) {
+        console.error("getEventsInBounds error", error);
         return {success: false, error: error.message};
       }
     },

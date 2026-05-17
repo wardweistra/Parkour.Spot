@@ -1114,6 +1114,42 @@ abstract class AppLocalizations {
   /// **' ({count} best shown)'**
   String exploreMapBestShownParenthetical(int count);
 
+  /// Explore bottom sheet segmented control: spots list
+  ///
+  /// In en, this message translates to:
+  /// **'Spots'**
+  String get exploreMapListModeSpots;
+
+  /// Explore bottom sheet segmented control: events list
+  ///
+  /// In en, this message translates to:
+  /// **'Events'**
+  String get exploreMapListModeEvents;
+
+  /// Empty state when map area has no upcoming events
+  ///
+  /// In en, this message translates to:
+  /// **'No events in this area'**
+  String get exploreNoEventsArea;
+
+  /// Empty state hint when no events in viewport
+  ///
+  /// In en, this message translates to:
+  /// **'Pan the map to another area or check back later'**
+  String get exploreNoEventsAreaHint;
+
+  /// Short badge on spot cards when an upcoming event is linked
+  ///
+  /// In en, this message translates to:
+  /// **'Event'**
+  String get spotCardUpcomingEventBadge;
+
+  /// Button to center map on an event pin
+  ///
+  /// In en, this message translates to:
+  /// **'Locate'**
+  String get exploreEventLocate;
+
   /// Empty state when search has no results
   ///
   /// In en, this message translates to:

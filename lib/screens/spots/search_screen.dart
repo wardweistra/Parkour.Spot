@@ -8,7 +8,11 @@ import 'dart:async';
 import 'package:uuid/uuid.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../services/event_map_service.dart';
 import '../../services/spot_service.dart';
+import '../../models/event_map_pin.dart';
+import '../../utils/explore_events_utils.dart';
+import '../../widgets/explore_event_list_tile.dart';
 import '../../services/sync_source_service.dart';
 import '../../services/search_state_service.dart';
 import '../../services/url_service.dart';
@@ -269,6 +273,15 @@ class SearchScreenState extends State<SearchScreen>
   bool _isSearchingLocation = false; // Loading state for location search
   int? _totalSpotsInView; // Total unfiltered spots in current bounds
   int? _bestShownCount; // Number of ranked spots returned (up to 100)
+  List<EventMapPin> _loadedEventPins = [];
+  List<EventMapPin> _visibleEvents = [];
+  Map<String, EventMapPin> _eventPinBySpotId = {};
+  int? _totalEventPinsInView;
+  int? _eventCountInView;
+  bool _isLoadingEventsForView = false;
+  String _exploreListMode = 'spots';
+  BitmapDescriptor? _eventVenueIcon;
+  BitmapDescriptor? _eventSpotIcon;
   late AnimationController _bottomSheetAnimationController;
   late Animation<double> _bottomSheetAnimation;
   late PageController _imagePageController;
@@ -383,13 +396,13 @@ class SearchScreenState extends State<SearchScreen>
           _selectedListName = null;
           _showListPreview = false;
           _highlightedSpotIds.clear();
-          _markers = _buildMarkers(_visibleSpots);
+          _markers = _rebuildMarkers();
         });
       }
     }
 
     if (filterChanged && _mapController != null) {
-      _loadSpotsForCurrentView();
+      _loadMapDataForCurrentView();
     } else if (filterChanged) {
       _updateVisibleSpots();
     }
@@ -839,7 +852,7 @@ class SearchScreenState extends State<SearchScreen>
       if (fullSpot != null && mounted && _selectedSpot?.id == spotId) {
         setState(() {
           _selectedSpot = fullSpot;
-          _markers = _buildMarkers(_visibleSpots);
+          _markers = _rebuildMarkers();
         });
       }
     });
@@ -1193,14 +1206,15 @@ class SearchScreenState extends State<SearchScreen>
     _locationPollingTimer = null;
   }
 
-  // Load spots for the current map view
-  Future<void> _loadSpotsForCurrentView() async {
+  // Load spots and event pins for the current map view.
+  Future<void> _loadMapDataForCurrentView() async {
     if (_mapController == null) {
       return;
     }
 
     setState(() {
       _isLoadingSpotsForView = true;
+      _isLoadingEventsForView = true;
     });
 
     try {
@@ -1208,6 +1222,10 @@ class SearchScreenState extends State<SearchScreen>
 
       if (!mounted) return;
       final spotService = Provider.of<SpotService>(context, listen: false);
+      final eventMapService = Provider.of<EventMapService>(
+        context,
+        listen: false,
+      );
       final searchState = Provider.of<SearchStateService>(
         context,
         listen: false,
@@ -1220,52 +1238,76 @@ class SearchScreenState extends State<SearchScreen>
         );
       }
 
-      final ranked = await spotService.getTopRankedSpotsInBounds(
-        bounds.southwest.latitude,
-        bounds.northeast.latitude,
-        bounds.southwest.longitude,
-        bounds.northeast.longitude,
-        limit: 100,
-        filterArea: _filterArea ?? 'amenities',
-        spotSource: (_filterArea ?? 'amenities') == 'amenities'
-            ? null
-            : _selectedSpotSource,
-        folders: selectedFolders.isEmpty ? null : selectedFolders,
-        spotAccess: _spotAccess.isEmpty ? null : _spotAccess,
-        spotFacilitiesCovered: _spotFacilitiesCovered,
-        spotFacilitiesLighting: _spotFacilitiesLighting,
-        spotFacilitiesWaterTap: _spotFacilitiesWaterTap,
-        spotFacilitiesToilet: _spotFacilitiesToilet,
-        spotFacilitiesParking: _spotFacilitiesParking,
-        goodFor: _goodFor.isEmpty ? null : _goodFor,
-        spotFeatures: _spotFeatures.isEmpty ? null : _spotFeatures,
-      );
+      final minLat = bounds.southwest.latitude;
+      final maxLat = bounds.northeast.latitude;
+      final minLng = bounds.southwest.longitude;
+      final maxLng = bounds.northeast.longitude;
+
+      final results = await Future.wait([
+        spotService.getTopRankedSpotsInBounds(
+          minLat,
+          maxLat,
+          minLng,
+          maxLng,
+          limit: 100,
+          filterArea: _filterArea ?? 'amenities',
+          spotSource: (_filterArea ?? 'amenities') == 'amenities'
+              ? null
+              : _selectedSpotSource,
+          folders: selectedFolders.isEmpty ? null : selectedFolders,
+          spotAccess: _spotAccess.isEmpty ? null : _spotAccess,
+          spotFacilitiesCovered: _spotFacilitiesCovered,
+          spotFacilitiesLighting: _spotFacilitiesLighting,
+          spotFacilitiesWaterTap: _spotFacilitiesWaterTap,
+          spotFacilitiesToilet: _spotFacilitiesToilet,
+          spotFacilitiesParking: _spotFacilitiesParking,
+          goodFor: _goodFor.isEmpty ? null : _goodFor,
+          spotFeatures: _spotFeatures.isEmpty ? null : _spotFeatures,
+        ),
+        eventMapService.getEventsInBounds(
+          minLat,
+          maxLat,
+          minLng,
+          maxLng,
+          limit: 100,
+        ),
+      ]);
+
+      final ranked = results[0] as Map<String, dynamic>;
+      final eventsResult = results[1] as EventsInBoundsResult;
 
       _loadedSpots = (ranked['spots'] as List<Spot>?) ?? <Spot>[];
       _totalSpotsInView = ranked['totalCount'] as int?;
       _bestShownCount = ranked['shownCount'] as int?;
 
-      // All filtering is now done at database level, just update visible spots
+      _loadedEventPins = eventsResult.pins;
+      _totalEventPinsInView = eventsResult.totalCount;
+      _eventCountInView = eventsResult.eventCount;
+      _eventPinBySpotId = eventPinsBySpotId(_loadedEventPins);
+      _visibleEvents = dedupePinsByEventId(_loadedEventPins);
+
       _updateVisibleSpots();
     } catch (e) {
-      debugPrint('Error loading spots for current view: $e');
+      debugPrint('Error loading map data for current view: $e');
     } finally {
-      setState(() {
-        _isLoadingSpotsForView = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoadingSpotsForView = false;
+          _isLoadingEventsForView = false;
+        });
+      }
     }
   }
 
   void _updateVisibleSpots() {
-    // Note: Search query is now only used for location autocomplete, not spot name filtering
-    // Source and image filtering are now done at database level, so no client-side filtering needed
-
-    // Update visible spots and markers
     setState(() {
       _visibleSpots = _loadedSpots;
-      _markers = _buildMarkers(_loadedSpots);
+      _markers = _rebuildMarkers();
     });
   }
+
+  bool get _isLoadingMapData =>
+      _isLoadingSpotsForView || _isLoadingEventsForView;
 
   Widget _buildFilters() {
     final l10n = AppLocalizations.of(context)!;
@@ -1312,7 +1354,7 @@ class SearchScreenState extends State<SearchScreen>
             if (_mapController != null) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted && _mapController != null) {
-                  _loadSpotsForCurrentView();
+                  _loadMapDataForCurrentView();
                 }
               });
             }
@@ -1387,7 +1429,7 @@ class SearchScreenState extends State<SearchScreen>
                   onTap: () {
                     searchState.clearSpotAccess();
                     setState(() => _spotAccess = []);
-                    if (_mapController != null) _loadSpotsForCurrentView();
+                    if (_mapController != null) _loadMapDataForCurrentView();
                   },
                 ),
                 ...keys.map((key) {
@@ -1442,7 +1484,7 @@ class SearchScreenState extends State<SearchScreen>
                               ..add(key);
                           }
                         });
-                        if (_mapController != null) _loadSpotsForCurrentView();
+                        if (_mapController != null) _loadMapDataForCurrentView();
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(
@@ -1534,7 +1576,7 @@ class SearchScreenState extends State<SearchScreen>
           setState(() => _spotFacilitiesParking = v);
           break;
       }
-      if (_mapController != null) _loadSpotsForCurrentView();
+      if (_mapController != null) _loadMapDataForCurrentView();
     }
 
     return Card(
@@ -1727,7 +1769,7 @@ class SearchScreenState extends State<SearchScreen>
                     _goodFor = [];
                   }
                 });
-                if (_mapController != null) _loadSpotsForCurrentView();
+                if (_mapController != null) _loadMapDataForCurrentView();
               },
             ),
             const SizedBox(height: 12),
@@ -1757,7 +1799,7 @@ class SearchScreenState extends State<SearchScreen>
                               ..add(key);
                           }
                         });
-                        if (_mapController != null) _loadSpotsForCurrentView();
+                        if (_mapController != null) _loadMapDataForCurrentView();
                       },
                       child: _buildAttributeChip(
                         label: label,
@@ -1792,7 +1834,7 @@ class SearchScreenState extends State<SearchScreen>
                             _goodFor = List<String>.from(_goodFor)..add(key);
                           }
                         });
-                        if (_mapController != null) _loadSpotsForCurrentView();
+                        if (_mapController != null) _loadMapDataForCurrentView();
                       },
                       child: _buildAttributeChip(
                         label: label,
@@ -1912,7 +1954,7 @@ class SearchScreenState extends State<SearchScreen>
                     listen: false,
                   ).setSelectedSpotSource(value);
                   // Reload spots with new filter
-                  _loadSpotsForCurrentView();
+                  _loadMapDataForCurrentView();
                 },
                 child: SizedBox(
                   height: (MediaQuery.of(context).size.height * 0.5).clamp(
@@ -2011,7 +2053,7 @@ class SearchScreenState extends State<SearchScreen>
                                               summary.id,
                                             );
                                             if (_mapController != null) {
-                                              _loadSpotsForCurrentView();
+                                              _loadMapDataForCurrentView();
                                             }
                                           }
                                         },
@@ -2046,7 +2088,7 @@ class SearchScreenState extends State<SearchScreen>
                                           folder,
                                         );
                                         if (_mapController != null) {
-                                          _loadSpotsForCurrentView();
+                                          _loadMapDataForCurrentView();
                                         }
                                       },
                                       selectedColor: Theme.of(
@@ -2079,44 +2121,91 @@ class SearchScreenState extends State<SearchScreen>
     );
   }
 
-  Set<Marker> _buildMarkers(List<Spot> spots) {
-    final markers = MarkerIconUtils.sortSpotsForMapDrawOrder(spots).map((spot) {
+  Set<Marker> _rebuildMarkers() {
+    final markers = <Marker>{};
+    final visibleSpotIds = _visibleSpots
+        .map((s) => s.id)
+        .whereType<String>()
+        .toSet();
+    final upgradedSpotIds = <String>{};
+
+    for (final spot in MarkerIconUtils.sortSpotsForMapDrawOrder(_visibleSpots)) {
       final bool isSelected = _selectedSpot?.id != null
           ? _selectedSpot!.id == spot.id
           : _selectedSpot?.name == spot.name;
       final bool isHighlighted =
           spot.id != null && _highlightedSpotIds.contains(spot.id);
+      final eventPin =
+          spot.id != null ? _eventPinBySpotId[spot.id!] : null;
+      final bool hasEvent = eventPin != null;
 
-      final BitmapDescriptor icon = isSelected && isHighlighted
-          ? (_spotSelectedHighlightedIcon ?? BitmapDescriptor.defaultMarker)
-          : isSelected
-          ? (_spotSelectedIcon ?? BitmapDescriptor.defaultMarker)
-          : isHighlighted
-          ? (_spotHighlightedIcon ?? BitmapDescriptor.defaultMarker)
-          : (_spotDefaultIcon ?? BitmapDescriptor.defaultMarker);
-      return Marker(
-        markerId: MarkerId(spot.id ?? spot.name),
-        position: LatLng(spot.latitude, spot.longitude),
-        icon: icon,
-        anchor: const Offset(0.5, 1.0),
-        zIndexInt: isSelected ? 2 : (isHighlighted ? 1 : 0),
-        onTap: () {
-          // Don't select spot if bottom sheet or filter dialog is open
-          if (_isBottomSheetOpen || _showFiltersDialog) {
-            return;
-          }
-          // Select the spot and show detail card
-          setState(() {
-            _selectedSpot = spot;
-            _showListPreview = false; // Close list preview if open
-            // Rebuild markers to reflect selection color
-            _markers = _buildMarkers(_visibleSpots);
-          });
-        },
+      BitmapDescriptor icon;
+      if (hasEvent && !isSelected && !isHighlighted) {
+        icon = _eventSpotIcon ?? BitmapDescriptor.defaultMarker;
+      } else if (isSelected && isHighlighted) {
+        icon =
+            _spotSelectedHighlightedIcon ?? BitmapDescriptor.defaultMarker;
+      } else if (isSelected) {
+        icon = _spotSelectedIcon ?? BitmapDescriptor.defaultMarker;
+      } else if (isHighlighted) {
+        icon = _spotHighlightedIcon ?? BitmapDescriptor.defaultMarker;
+      } else {
+        icon = _spotDefaultIcon ?? BitmapDescriptor.defaultMarker;
+      }
+
+      if (hasEvent && spot.id != null) {
+        upgradedSpotIds.add(spot.id!);
+      }
+
+      markers.add(
+        Marker(
+          markerId: MarkerId(spot.id ?? spot.name),
+          position: LatLng(spot.latitude, spot.longitude),
+          icon: icon,
+          anchor: const Offset(0.5, 1.0),
+          zIndexInt: isSelected ? 2 : (hasEvent ? 1 : (isHighlighted ? 1 : 0)),
+          onTap: () {
+            if (_isBottomSheetOpen || _showFiltersDialog) return;
+            setState(() {
+              _selectedSpot = spot;
+              _showListPreview = false;
+              _markers = _rebuildMarkers();
+            });
+          },
+        ),
       );
-    }).toSet();
+    }
 
-    // Add current user location marker if available
+    for (final pin in _loadedEventPins) {
+      if (pin.kind == EventMapPinKind.spot &&
+          pin.spotId != null &&
+          visibleSpotIds.contains(pin.spotId) &&
+          upgradedSpotIds.contains(pin.spotId)) {
+        continue;
+      }
+
+      final markerId = pin.kind == EventMapPinKind.venue
+          ? 'event_venue_${pin.eventId}'
+          : 'event_spot_${pin.id}';
+      final icon = pin.kind == EventMapPinKind.venue
+          ? (_eventVenueIcon ?? BitmapDescriptor.defaultMarker)
+          : (_eventSpotIcon ?? BitmapDescriptor.defaultMarker);
+
+      markers.add(
+        Marker(
+          markerId: MarkerId(markerId),
+          position: LatLng(pin.latitude, pin.longitude),
+          icon: icon,
+          anchor: const Offset(0.5, 1.0),
+          zIndexInt: pin.kind == EventMapPinKind.venue ? 3 : 1,
+          onTap: () {
+            if (_isBottomSheetOpen || _showFiltersDialog) return;
+            context.push('/event/${pin.eventId}');
+          },
+        ),
+      );
+    }
+
     if (_currentPosition != null) {
       markers.add(
         Marker(
@@ -2144,7 +2233,6 @@ class SearchScreenState extends State<SearchScreen>
       );
     }
 
-    // Add marker for long-pressed location
     if (_longPressedLocation != null) {
       markers.add(
         Marker(
@@ -2152,7 +2240,7 @@ class SearchScreenState extends State<SearchScreen>
           position: _longPressedLocation!,
           icon: _addSpotPinIcon ?? BitmapDescriptor.defaultMarker,
           anchor: const Offset(0.5, 1.0),
-          zIndexInt: 10000, // Above other markers
+          zIndexInt: 10000,
         ),
       );
     }
@@ -2206,6 +2294,10 @@ class SearchScreenState extends State<SearchScreen>
         fallbackFill: MarkerIconUtils.mapPinAddFallbackFill,
         logicalHeight: browsePinHeight,
       );
+      final BitmapDescriptor eventVenuePin =
+          await MarkerIconUtils.createEventVenueMarkerIcon();
+      final BitmapDescriptor eventSpotPin =
+          await MarkerIconUtils.createEventSpotMarkerIcon();
       if (mounted) {
         setState(() {
           _spotDefaultIcon = normalPin;
@@ -2213,6 +2305,8 @@ class SearchScreenState extends State<SearchScreen>
           _spotHighlightedIcon = listPin;
           _spotSelectedHighlightedIcon = listSelectedPin;
           _addSpotPinIcon = addPin;
+          _eventVenueIcon = eventVenuePin;
+          _eventSpotIcon = eventSpotPin;
         });
       }
     } catch (_) {
@@ -2236,7 +2330,7 @@ class SearchScreenState extends State<SearchScreen>
           _selectedListName = null;
           _showListPreview = false;
           _highlightedSpotIds.clear();
-          _markers = _buildMarkers(_visibleSpots);
+          _markers = _rebuildMarkers();
         });
 
         if (_selectedListId == listId) {
@@ -2250,7 +2344,7 @@ class SearchScreenState extends State<SearchScreen>
         _selectedListName = list.name;
         _highlightedSpotIds = list.effectiveSpotIds.toSet();
         // Rebuild markers to reflect highlighting
-        _markers = _buildMarkers(_visibleSpots);
+        _markers = _rebuildMarkers();
       });
     } catch (e) {
       debugPrint('Error loading spot list: $e');
@@ -2319,7 +2413,7 @@ class SearchScreenState extends State<SearchScreen>
       _selectedListName = null;
       _showListPreview = false;
       _highlightedSpotIds.clear();
-      _markers = _buildMarkers(_visibleSpots);
+      _markers = _rebuildMarkers();
     });
 
     // Update SearchStateService to persist the change
@@ -2393,7 +2487,7 @@ class SearchScreenState extends State<SearchScreen>
     if (_selectedSpot != null && !_isBottomSheetOpen) {
       setState(() {
         _selectedSpot = null;
-        _markers = _buildMarkers(_visibleSpots);
+        _markers = _rebuildMarkers();
       });
     }
   }
@@ -2403,7 +2497,7 @@ class SearchScreenState extends State<SearchScreen>
     if (_selectedSpot != null) {
       setState(() {
         _selectedSpot = null;
-        _markers = _buildMarkers(_visibleSpots);
+        _markers = _rebuildMarkers();
       });
     }
   }
@@ -2423,7 +2517,7 @@ class SearchScreenState extends State<SearchScreen>
     // Debounce loading spots to avoid too many requests while user is panning
     _cameraMoveDebounce?.cancel();
     _cameraMoveDebounce = Timer(const Duration(milliseconds: 1000), () {
-      _loadSpotsForCurrentView();
+      _loadMapDataForCurrentView();
     });
   }
 
@@ -2484,7 +2578,7 @@ class SearchScreenState extends State<SearchScreen>
       setState(() {
         _longPressedLocation = position;
         // Rebuild markers to include the long-pressed location marker
-        _markers = _buildMarkers(_visibleSpots);
+        _markers = _rebuildMarkers();
       });
     }
   }
@@ -2520,7 +2614,7 @@ class SearchScreenState extends State<SearchScreen>
     if (mounted) {
       setState(() {
         _selectedSpot = spot;
-        _markers = _buildMarkers(_visibleSpots);
+        _markers = _rebuildMarkers();
       });
     }
   }
@@ -2573,6 +2667,7 @@ class SearchScreenState extends State<SearchScreen>
           return SpotCard(
             spot: spot,
             showCheckInPresence: true,
+            upcomingEventPin: _upcomingEventPinForSpot(spot),
             spotListId: isHighlighted ? _selectedListId : null,
             spotListName: isHighlighted ? _selectedListName : null,
             onSpotListTap: isHighlighted && _selectedListId != null
@@ -2612,6 +2707,7 @@ class SearchScreenState extends State<SearchScreen>
             child: SpotCard(
               spot: spot,
               showCheckInPresence: true,
+              upcomingEventPin: _upcomingEventPinForSpot(spot),
               spotListId: isHighlighted ? _selectedListId : null,
               spotListName: isHighlighted ? _selectedListName : null,
               onSpotListTap: isHighlighted && _selectedListId != null
@@ -2639,6 +2735,124 @@ class SearchScreenState extends State<SearchScreen>
         },
       );
     }
+  }
+
+  EventMapPin? _upcomingEventPinForSpot(Spot spot) {
+    final id = spot.id;
+    if (id == null) return null;
+    return _eventPinBySpotId[id];
+  }
+
+  Widget _buildEventsList() {
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      itemCount: _visibleEvents.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 8),
+      itemBuilder: (context, index) {
+        final pin = _visibleEvents[index];
+        return ExploreEventListTile(
+          pin: pin,
+          onLocate: () {
+            locateEventPinOnMap(_mapController, pin);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildExploreEventsEmptyState(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.event_busy,
+            size: 64,
+            color: Theme.of(context)
+                .colorScheme
+                .onSurface
+                .withValues(alpha: 0.5),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            l10n.exploreNoEventsArea,
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.exploreNoEventsAreaHint,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.7),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExploreBottomSheetCountLine(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    if (_exploreListMode == 'events') {
+      final count = _eventCountInView ?? _visibleEvents.length;
+      final pinTotal = _totalEventPinsInView;
+      final shownPins = _loadedEventPins.length;
+      return RichText(
+        text: TextSpan(
+          children: [
+            TextSpan(
+              text: l10n.exploreEventCountShort(count),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            if (pinTotal != null && shownPins < pinTotal)
+              TextSpan(
+                text: l10n.exploreMapBestShownParenthetical(shownPins),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.normal,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.6),
+                ),
+              ),
+          ],
+        ),
+      );
+    }
+    final mainLine = _totalSpotsInView != null && _bestShownCount != null
+        ? l10n.exploreMapRankedTotalBar(_totalSpotsInView!)
+        : l10n.exploreMapSpotsFoundLine(_visibleSpots.length);
+    return RichText(
+      text: TextSpan(
+        children: [
+          TextSpan(
+            text: mainLine,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          if (_totalSpotsInView != null &&
+              _bestShownCount != null &&
+              _bestShownCount! < _totalSpotsInView!)
+            TextSpan(
+              text: l10n.exploreMapBestShownParenthetical(_bestShownCount!),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.normal,
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.6),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   Widget _buildSpotListPreviewCard({required double maxWidth}) {
@@ -2866,7 +3080,7 @@ class SearchScreenState extends State<SearchScreen>
 
                       // Load spots for the current view after a short delay to ensure map is ready
                       Future.delayed(const Duration(milliseconds: 500), () {
-                        _loadSpotsForCurrentView();
+                        _loadMapDataForCurrentView();
 
                         // If we have a spot ID to locate, locate it after spots are loaded
                         if (_spotIdToLocate != null) {
@@ -2931,7 +3145,7 @@ class SearchScreenState extends State<SearchScreen>
                           _selectedSpot = null;
                           _showListPreview = false;
                           // Rebuild markers to clear selection color
-                          _markers = _buildMarkers(_visibleSpots);
+                          _markers = _rebuildMarkers();
                         });
                       }
                       // Clear long press location on regular tap
@@ -2941,7 +3155,7 @@ class SearchScreenState extends State<SearchScreen>
                           _longPressedLocation = null;
                           _longPressHandled = false;
                           // Rebuild markers to remove the long-pressed location marker
-                          _markers = _buildMarkers(_visibleSpots);
+                          _markers = _rebuildMarkers();
                         });
                       }
                     },
@@ -3394,6 +3608,8 @@ class SearchScreenState extends State<SearchScreen>
                               spot: _selectedSpot!,
                               variant: SpotCardVariant.overlay,
                               showCheckInPresence: true,
+                              upcomingEventPin:
+                                  _upcomingEventPinForSpot(_selectedSpot!),
                               maxWidth: 400,
                               spotListId:
                                   (_selectedSpot!.id != null &&
@@ -3442,7 +3658,7 @@ class SearchScreenState extends State<SearchScreen>
                               onClose: () {
                                 setState(() {
                                   _selectedSpot = null;
-                                  _markers = _buildMarkers(_visibleSpots);
+                                  _markers = _rebuildMarkers();
                                 });
                               },
                             )
@@ -3451,6 +3667,8 @@ class SearchScreenState extends State<SearchScreen>
                                 spot: _selectedSpot!,
                                 variant: SpotCardVariant.overlay,
                                 showCheckInPresence: true,
+                                upcomingEventPin:
+                                    _upcomingEventPinForSpot(_selectedSpot!),
                                 maxWidth: double.infinity,
                                 spotListId:
                                     (_selectedSpot!.id != null &&
@@ -3500,7 +3718,7 @@ class SearchScreenState extends State<SearchScreen>
                                 onClose: () {
                                   setState(() {
                                     _selectedSpot = null;
-                                    _markers = _buildMarkers(_visibleSpots);
+                                    _markers = _rebuildMarkers();
                                   });
                                 },
                               ),
@@ -3542,7 +3760,7 @@ class SearchScreenState extends State<SearchScreen>
                                 _longPressedLocation = null;
                                 _longPressHandled = false;
                                 // Rebuild markers to remove the long-pressed location marker
-                                _markers = _buildMarkers(_visibleSpots);
+                                _markers = _rebuildMarkers();
                               });
                             },
                             child: Container(color: Colors.transparent),
@@ -3587,9 +3805,7 @@ class SearchScreenState extends State<SearchScreen>
                                                   _longPressedLocation = null;
                                                   _longPressHandled = false;
                                                   // Rebuild markers to remove the long-pressed location marker
-                                                  _markers = _buildMarkers(
-                                                    _visibleSpots,
-                                                  );
+                                                  _markers = _rebuildMarkers();
                                                 });
                                               },
                                               child: Text(
@@ -3623,9 +3839,7 @@ class SearchScreenState extends State<SearchScreen>
                                                   _longPressedLocation = null;
                                                   _longPressHandled = false;
                                                   // Rebuild markers to remove the long-pressed location marker
-                                                  _markers = _buildMarkers(
-                                                    _visibleSpots,
-                                                  );
+                                                  _markers = _rebuildMarkers();
                                                 });
 
                                                 // Require profile loaded before add spot (prevents email-as-createdByName)
@@ -3724,111 +3938,93 @@ class SearchScreenState extends State<SearchScreen>
                                     ),
                                     child: Column(
                                       children: [
-                                        // Header with spot count
                                         Padding(
-                                          padding: const EdgeInsets.all(16),
-                                          child: Center(
-                                            child: TextButton(
-                                              onPressed: _toggleBottomSheet,
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.center,
-                                                children: [
-                                                  SvgPicture.asset(
-                                                    Theme.of(
-                                                              context,
-                                                            ).brightness ==
-                                                            Brightness.dark
-                                                        ? 'assets/images/logo-square-dark.svg'
-                                                        : 'assets/images/logo-square.svg',
-                                                    width: 24,
-                                                    height: 24,
-                                                    fit: BoxFit.contain,
+                                          padding: const EdgeInsets.fromLTRB(
+                                            16,
+                                            16,
+                                            16,
+                                            8,
+                                          ),
+                                          child: Column(
+                                            children: [
+                                              Center(
+                                                child: TextButton(
+                                                  onPressed: _toggleBottomSheet,
+                                                  child: Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      SvgPicture.asset(
+                                                        Theme.of(context)
+                                                                    .brightness ==
+                                                                Brightness.dark
+                                                            ? 'assets/images/logo-square-dark.svg'
+                                                            : 'assets/images/logo-square.svg',
+                                                        width: 24,
+                                                        height: 24,
+                                                        fit: BoxFit.contain,
+                                                      ),
+                                                      const SizedBox(width: 12),
+                                                      _buildExploreBottomSheetCountLine(
+                                                        context,
+                                                      ),
+                                                      const SizedBox(width: 8),
+                                                      ReliableIcon(
+                                                        icon: _isBottomSheetOpen
+                                                            ? Icons.expand_more
+                                                            : Icons.expand_less,
+                                                      ),
+                                                    ],
                                                   ),
-                                                  const SizedBox(width: 12),
-                                                  Builder(
-                                                    builder: (context) {
-                                                      final l10n =
-                                                          AppLocalizations.of(
-                                                            context,
-                                                          )!;
-                                                      final mainLine =
-                                                          _totalSpotsInView !=
-                                                                  null &&
-                                                              _bestShownCount !=
-                                                                  null
-                                                          ? l10n.exploreMapRankedTotalBar(
-                                                              _totalSpotsInView!,
-                                                            )
-                                                          : l10n.exploreMapSpotsFoundLine(
-                                                              _visibleSpots
-                                                                  .length,
-                                                            );
-                                                      return RichText(
-                                                        text: TextSpan(
-                                                          children: [
-                                                            TextSpan(
-                                                              text: mainLine,
-                                                              style: Theme.of(context)
-                                                                  .textTheme
-                                                                  .titleMedium
-                                                                  ?.copyWith(
-                                                                    color: Theme.of(
-                                                                      context,
-                                                                    ).colorScheme.onSurface,
-                                                                  ),
-                                                            ),
-                                                            if (_totalSpotsInView !=
-                                                                    null &&
-                                                                _bestShownCount !=
-                                                                    null &&
-                                                                _bestShownCount! <
-                                                                    _totalSpotsInView!)
-                                                              TextSpan(
-                                                                text: l10n
-                                                                    .exploreMapBestShownParenthetical(
-                                                                      _bestShownCount!,
-                                                                    ),
-                                                                style: Theme.of(context)
-                                                                    .textTheme
-                                                                    .titleMedium
-                                                                    ?.copyWith(
-                                                                      fontWeight:
-                                                                          FontWeight
-                                                                              .normal,
-                                                                      color: Theme.of(context)
-                                                                          .colorScheme
-                                                                          .onSurface
-                                                                          .withValues(
-                                                                            alpha:
-                                                                                0.6,
-                                                                          ),
-                                                                    ),
-                                                              ),
-                                                          ],
-                                                        ),
-                                                      );
-                                                    },
+                                                ),
+                                              ),
+                                              SegmentedButton<String>(
+                                                segments: [
+                                                  ButtonSegment(
+                                                    value: 'spots',
+                                                    label: Text(
+                                                      AppLocalizations.of(
+                                                        context,
+                                                      )!.exploreMapListModeSpots,
+                                                    ),
+                                                    icon: const Icon(
+                                                      Icons.place_outlined,
+                                                    ),
                                                   ),
-                                                  const SizedBox(width: 8),
-                                                  ReliableIcon(
-                                                    icon: _isBottomSheetOpen
-                                                        ? Icons.expand_more
-                                                        : Icons.expand_less,
+                                                  ButtonSegment(
+                                                    value: 'events',
+                                                    label: Text(
+                                                      AppLocalizations.of(
+                                                        context,
+                                                      )!.exploreMapListModeEvents,
+                                                    ),
+                                                    icon: const Icon(
+                                                      Icons.event_outlined,
+                                                    ),
                                                   ),
                                                 ],
+                                                selected: {_exploreListMode},
+                                                onSelectionChanged:
+                                                    (Set<String> selected) {
+                                                  setState(() {
+                                                    _exploreListMode =
+                                                        selected.first;
+                                                  });
+                                                },
                                               ),
-                                            ),
+                                            ],
                                           ),
                                         ),
 
-                                        // Spots List - only show when expanded
                                         if (_isBottomSheetOpen)
                                           Expanded(
-                                            child: _visibleSpots.isEmpty
+                                            child: _exploreListMode == 'events'
+                                                ? (_visibleEvents.isEmpty
+                                                    ? _buildExploreEventsEmptyState(
+                                                        context,
+                                                      )
+                                                    : _buildEventsList())
+                                                : (_visibleSpots.isEmpty
                                                 ? Center(
                                                     child: Column(
                                                       mainAxisAlignment:
@@ -3900,7 +4096,7 @@ class SearchScreenState extends State<SearchScreen>
                                                       ],
                                                     ),
                                                   )
-                                                : _buildSpotsList(),
+                                                : _buildSpotsList()),
                                           ),
                                       ],
                                     ),
@@ -3997,17 +4193,17 @@ class SearchScreenState extends State<SearchScreen>
                               144, // Position above map/satellite button
                           child: PointerInterceptor(
                             child: FloatingActionButton(
-                              onPressed: _isLoadingSpotsForView
+                              onPressed: _isLoadingMapData
                                   ? null
                                   : () {
-                                      _loadSpotsForCurrentView();
+                                      _loadMapDataForCurrentView();
                                     },
                               heroTag: 'refreshSpotsFab',
                               mini: true,
                               tooltip: AppLocalizations.of(
                                 context,
                               )!.exploreRefreshMapTooltip,
-                              child: _isLoadingSpotsForView
+                              child: _isLoadingMapData
                                   ? const SizedBox(
                                       width: 20,
                                       height: 20,
@@ -4243,7 +4439,7 @@ class SearchScreenState extends State<SearchScreen>
                                       _showFiltersDialog = false;
                                     });
                                     // Reload spots since source filtering is done at database level
-                                    _loadSpotsForCurrentView();
+                                    _loadMapDataForCurrentView();
                                   },
                                   child: Text(
                                     AppLocalizations.of(

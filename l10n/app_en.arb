@@ -769,6 +769,30 @@
       }
     }
   },
+  "exploreMapListModeSpots": "Spots",
+  "@exploreMapListModeSpots": {
+    "description": "Explore bottom sheet segmented control: spots list"
+  },
+  "exploreMapListModeEvents": "Events",
+  "@exploreMapListModeEvents": {
+    "description": "Explore bottom sheet segmented control: events list"
+  },
+  "exploreNoEventsArea": "No events in this area",
+  "@exploreNoEventsArea": {
+    "description": "Empty state when map area has no upcoming events"
+  },
+  "exploreNoEventsAreaHint": "Pan the map to another area or check back later",
+  "@exploreNoEventsAreaHint": {
+    "description": "Empty state hint when no events in viewport"
+  },
+  "spotCardUpcomingEventBadge": "Event",
+  "@spotCardUpcomingEventBadge": {
+    "description": "Short badge on spot cards when an upcoming event is linked"
+  },
+  "exploreEventLocate": "Locate",
+  "@exploreEventLocate": {
+    "description": "Button to center map on an event pin"
+  },
   "exploreNoSpotsSearch": "No spots found",
   "@exploreNoSpotsSearch": {
     "description": "Empty state when search has no results"
