@@ -49,9 +49,11 @@ function extractFilename(url) {
   }
 }
 
+const RESIZABLE_STORAGE_PREFIXES = ["spots", "events"];
+
 /**
- * Converts a Firebase Storage spot image URL to its resized version (1200x1200).
- * storage-resize-images extension creates: spots/resized/baseName_1200x1200.webp
+ * Converts a Firebase Storage spot/event image URL to its resized version (1200x1200).
+ * storage-resize-images extension creates: {prefix}/resized/baseName_1200x1200.webp
  * @param {string} originalUrl - Original Firebase Storage URL
  * @return {string} Resized URL or original if not convertible
  */
@@ -62,18 +64,31 @@ function getResizedImageUrlForApi(originalUrl) {
         !originalUrl.includes("firebasestorage.googleapis.com")) {
       return originalUrl;
     }
-    // Handle firebasestorage.googleapis.com/v0/b/bucket/o/spots%2Ffilename.jpg
-    if (originalUrl.includes("firebasestorage.googleapis.com") &&
-        originalUrl.includes("spots%2F") && !originalUrl.includes("spots%2Fresized%2F")) {
-      return originalUrl
-          .replace(/spots%2F([^?&#]+)\.(jpg|jpeg|png|webp)/i, "spots%2Fresized%2F$1_1200x1200.webp");
-    }
-    // Handle storage.googleapis.com format: .../spots/filename.jpg
-    const match = originalUrl.match(/\/(spots)\/([^/]+)\.(jpg|jpeg|png|webp)(\?|#|$)/i);
-    if (match && match[1] === "spots" && match[2] !== "resized") {
-      const baseName = match[2];
-      return originalUrl
-          .replace(`/spots/${baseName}.${match[3]}`, `/spots/resized/${baseName}_1200x1200.webp`);
+    for (const prefix of RESIZABLE_STORAGE_PREFIXES) {
+      const encodedPrefix = `${prefix}%2F`;
+      const encodedResizedPrefix = `${prefix}%2Fresized%2F`;
+      if (originalUrl.includes("firebasestorage.googleapis.com") &&
+          originalUrl.includes(encodedPrefix) &&
+          !originalUrl.includes(encodedResizedPrefix)) {
+        const pattern = new RegExp(
+            `${prefix}%2F([^?&#]+)\\.(jpg|jpeg|png|webp|gif)`, "i");
+        if (pattern.test(originalUrl)) {
+          return originalUrl.replace(
+              pattern,
+              `${prefix}%2Fresized%2F$1_1200x1200.webp`,
+          );
+        }
+      }
+      const match = originalUrl.match(
+          new RegExp(`\\/(?:${prefix})\\/([^/]+)\\.(jpg|jpeg|png|webp|gif)(\\?|#|$)`, "i"),
+      );
+      if (match && match[1] !== "resized") {
+        const baseName = match[1];
+        return originalUrl.replace(
+            `/${prefix}/${baseName}.${match[2]}`,
+            `/${prefix}/resized/${baseName}_1200x1200.webp`,
+        );
+      }
     }
     return originalUrl;
   } catch {
@@ -82,8 +97,8 @@ function getResizedImageUrlForApi(originalUrl) {
 }
 
 /**
- * Parses a Firebase Storage spot image URL and returns original + expected resized paths.
- * Returns null if URL is not a spots/ image (external, already resized, etc).
+ * Parses a Firebase Storage spot/event image URL and returns original + expected resized paths.
+ * Returns null if URL is not a spots/ or events/ image (external, already resized, etc).
  * resizedPathCandidates: paths to check for existence (1200x1200, 1200x630). Image "has resized" if any exists.
  * @param {string} url - Firebase Storage image URL
  * @return {{originalPath: string, resizedPath: string, resizedPathCandidates: string[]}|null}
@@ -100,21 +115,27 @@ function getResizedPathInfo(url) {
       const encodedPath = url.split("/o/")[1]?.split("?")[0] || "";
       originalPath = decodeURIComponent(encodedPath);
     } else {
-      const match = url.match(/\/(spots)\/([^/]+)\.(jpg|jpeg|png|webp)(\?|#|$)/i);
-      if (match && match[1] === "spots" && match[2] !== "resized") {
-        originalPath = `spots/${match[2]}.${match[3].toLowerCase()}`;
+      for (const prefix of RESIZABLE_STORAGE_PREFIXES) {
+        const match = url.match(
+            new RegExp(`\\/(?:${prefix})\\/([^/]+)\\.(jpg|jpeg|png|webp|gif)(\\?|#|$)`, "i"),
+        );
+        if (match && match[1] !== "resized") {
+          originalPath = `${prefix}/${match[1]}.${match[2].toLowerCase()}`;
+          break;
+        }
       }
     }
-    if (!originalPath || !originalPath.startsWith("spots/") ||
-        originalPath.startsWith("spots/resized/")) {
+    if (!originalPath) return null;
+    const prefix = RESIZABLE_STORAGE_PREFIXES.find((p) => originalPath.startsWith(`${p}/`));
+    if (!prefix || originalPath.startsWith(`${prefix}/resized/`)) {
       return null;
     }
     const filename = originalPath.split("/").pop();
     const baseName = filename.replace(/\.[^.]+$/, "");
-    const resizedPath = `spots/resized/${baseName}_1200x1200.webp`;
+    const resizedPath = `${prefix}/resized/${baseName}_1200x1200.webp`;
     const resizedPathCandidates = [
       resizedPath,
-      `spots/resized/${baseName}_1200x630.webp`,
+      `${prefix}/resized/${baseName}_1200x630.webp`,
     ];
     return {originalPath, resizedPath, resizedPathCandidates};
   } catch (_) {

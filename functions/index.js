@@ -6681,6 +6681,47 @@ exports.uploadReplacementImage = onCall(
     },
 );
 
+// Upload one event image (admin only; uses Admin SDK to avoid client Storage rules)
+exports.uploadEventImage = onCall(
+    {region: "europe-west1", memory: "256MiB", timeoutSeconds: 60},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+
+        const {imageData, contentType = "image/jpeg", index = 0} = request.data;
+        if (!imageData) {
+          throw new Error("imageData is required");
+        }
+
+        const extByType = {
+          "image/jpeg": ".jpg",
+          "image/png": ".png",
+          "image/gif": ".gif",
+          "image/webp": ".webp",
+        };
+        const ext = extByType[contentType] || ".jpg";
+        const imageBuffer = Buffer.from(imageData, "base64");
+        const fileName = `events/${Date.now()}_event_image_${index}${ext}`;
+        const file = bucket.file(fileName);
+
+        await file.save(imageBuffer, {
+          metadata: {
+            contentType,
+            cacheControl: "public, max-age=31536000",
+          },
+        });
+        await file.makePublic();
+
+        const imageUrl =
+          `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+        return {success: true, imageUrl};
+      } catch (error) {
+        console.error("Error uploading event image:", error);
+        return {success: false, error: error.message};
+      }
+    },
+);
+
 // Trigger storage-resize-images extension for one spot's images missing resized versions (admin only)
 exports.triggerResizeForSpot = onCall(
     {region: "europe-west1", memory: "512MiB", timeoutSeconds: 120},

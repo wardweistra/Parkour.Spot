@@ -61,6 +61,14 @@ describe("getResizedImageUrlForApi", () => {
   it("returns original for non-string input", () => {
     expect(getResizedImageUrlForApi(null)).toBeNull();
   });
+  it("converts firebasestorage events URL to resized", () => {
+    const url = "https://firebasestorage.googleapis.com/v0/b/bucket/o/events%2Fphoto.jpg";
+    expect(getResizedImageUrlForApi(url)).toContain("events%2Fresized%2Fphoto_1200x1200.webp");
+  });
+  it("converts storage.googleapis events URL to resized", () => {
+    const url = "https://storage.googleapis.com/bucket/events/photo.png";
+    expect(getResizedImageUrlForApi(url)).toContain("/events/resized/photo_1200x1200.webp");
+  });
 });
 
 describe("getResizedPathInfo", () => {
@@ -97,6 +105,18 @@ describe("getResizedPathInfo", () => {
   });
   it("returns null for non-string input", () => {
     expect(getResizedPathInfo(null)).toBeNull();
+  });
+  it("returns path info for firebasestorage events URL", () => {
+    const url = "https://firebasestorage.googleapis.com/v0/b/bucket/o/events%2Fphoto.jpg";
+    const info = getResizedPathInfo(url);
+    expect(info).toEqual({
+      originalPath: "events/photo.jpg",
+      resizedPath: "events/resized/photo_1200x1200.webp",
+      resizedPathCandidates: [
+        "events/resized/photo_1200x1200.webp",
+        "events/resized/photo_1200x630.webp",
+      ],
+    });
   });
 });
 

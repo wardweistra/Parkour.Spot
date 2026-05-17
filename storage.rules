@@ -1,5 +1,16 @@
 rules_version = '2';
 service firebase.storage {
+  // Align with Firestore `requestingUserIsAdmin`: custom claim `admin` OR users doc flag.
+  function requestingUserIsAdmin() {
+    return request.auth != null && (
+      request.auth.token.admin == true ||
+      (
+        firestore.exists(/databases/(default)/documents/users/$(request.auth.uid)) &&
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin == true
+      )
+    );
+  }
+
   match /b/{bucket}/o {
     // Spots images - anyone can read, authenticated users can upload
     match /spots/{allPaths=**} {
@@ -35,6 +46,12 @@ service firebase.storage {
     match /media/{allPaths=**} {
       allow read: if true;
       allow write: if request.auth != null;
+    }
+
+    // Event images - public read, admin write (matches Firestore events collection)
+    match /events/{allPaths=**} {
+      allow read: if true;
+      allow write: if requestingUserIsAdmin();
     }
     
     // Jumpflix thumbnails - public read, only Cloud Functions write

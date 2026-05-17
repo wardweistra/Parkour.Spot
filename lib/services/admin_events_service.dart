@@ -1,17 +1,23 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 
 import '../models/parkour_event.dart';
 import '../utils/image_preparation.dart';
 
 class AdminEventsService extends ChangeNotifier {
-  AdminEventsService({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+  AdminEventsService({
+    FirebaseFirestore? firestore,
+    FirebaseFunctions? functions,
+  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+        _functions =
+            functions ?? FirebaseFunctions.instanceFor(region: 'europe-west1');
 
   final FirebaseFirestore _firestore;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
+  final FirebaseFunctions _functions;
 
   final List<ParkourEvent> _events = <ParkourEvent>[];
   bool _isLoading = false;
@@ -284,18 +290,24 @@ class AdminEventsService extends ChangeNotifier {
   }
 
   Future<List<String>> uploadEventImages(List<Uint8List> imageBytesList) async {
-    final List<String> imageUrls = [];
+    final callable = _functions.httpsCallable('uploadEventImage');
+    final imageUrls = <String>[];
     for (var index = 0; index < imageBytesList.length; index++) {
       final prepared = await prepareImageForUpload(imageBytesList[index]);
-      final ext = _extensionForContentType(prepared.contentType);
-      final fileName =
-          'events/${DateTime.now().millisecondsSinceEpoch}_event_image_$index$ext';
-      final ref = _storage.ref().child(fileName);
-      final snapshot = await ref.putData(
-        prepared.bytes,
-        SettableMetadata(contentType: prepared.contentType),
-      );
-      imageUrls.add(await snapshot.ref.getDownloadURL());
+      final result = await callable.call<Map<String, dynamic>>({
+        'imageData': base64Encode(prepared.bytes),
+        'contentType': prepared.contentType,
+        'index': index,
+      });
+      final data = result.data;
+      if (data['success'] != true) {
+        throw Exception(data['error'] ?? 'Upload failed');
+      }
+      final url = data['imageUrl'] as String?;
+      if (url == null || url.isEmpty) {
+        throw Exception('Upload returned no image URL');
+      }
+      imageUrls.add(url);
     }
     return imageUrls;
   }
@@ -571,21 +583,6 @@ class AdminEventsService extends ChangeNotifier {
     final uri = Uri.tryParse(value);
     if (uri == null || uri.host.isEmpty) return false;
     return uri.scheme == 'http' || uri.scheme == 'https';
-  }
-
-  String _extensionForContentType(String contentType) {
-    switch (contentType) {
-      case 'image/jpeg':
-        return '.jpg';
-      case 'image/png':
-        return '.png';
-      case 'image/gif':
-        return '.gif';
-      case 'image/webp':
-        return '.webp';
-      default:
-        return '.jpg';
-    }
   }
 
   /// Events that point to [eventId] as their canonical native original.

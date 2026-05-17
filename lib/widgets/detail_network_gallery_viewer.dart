@@ -4,6 +4,7 @@ import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 
 import '../l10n/app_localizations.dart';
+import '../utils/resized_spot_image_provider.dart';
 
 /// Full-screen swipeable gallery for network image URLs.
 class DetailNetworkGalleryViewer extends StatefulWidget {
@@ -124,7 +125,7 @@ class _DetailNetworkGalleryViewerState extends State<DetailNetworkGalleryViewer>
                 final actualIndex = virtualIndex % widget.imageUrls.length;
                 final url = widget.imageUrls[actualIndex];
                 return PhotoViewGalleryPageOptions(
-                  imageProvider: NetworkImage(url),
+                  imageProvider: ResizedSpotImageProvider.fromUrl(url),
                   initialScale: PhotoViewComputedScale.contained,
                   minScale: PhotoViewComputedScale.contained,
                   maxScale: PhotoViewComputedScale.covered * 2,

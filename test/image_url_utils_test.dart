@@ -87,4 +87,29 @@ void main() {
       expect(getResizedPathInfo(url), isNull);
     });
   });
+
+  group('events image URLs', () {
+    test('converts firebasestorage events URL to resized', () {
+      const url =
+          'https://firebasestorage.googleapis.com/v0/b/bucket/o/events%2Fphoto.jpg';
+      final result = getResizedImageUrl(url);
+      expect(result, contains('events%2Fresized%2Fphoto_1200x1200.webp'));
+    });
+
+    test('converts storage.googleapis events URL to resized', () {
+      const url =
+          'https://storage.googleapis.com/bucket/events/photo.png';
+      final result = getResizedImageUrl(url);
+      expect(result, contains('/events/resized/photo_1200x1200.webp'));
+    });
+
+    test('returns resized path info for events URL', () {
+      const url =
+          'https://firebasestorage.googleapis.com/v0/b/bucket/o/events%2Fphoto.jpg';
+      final info = getResizedPathInfo(url);
+      expect(info, isNotNull);
+      expect(info!.originalPath, 'events/photo.jpg');
+      expect(info.resizedPath, 'events/resized/photo_1200x1200.webp');
+    });
+  });
 }

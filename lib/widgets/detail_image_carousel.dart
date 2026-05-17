@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../constants/spot_detail_ui.dart';
 import 'detail_network_gallery_viewer.dart';
+import 'resized_spot_image.dart';
 
 /// Collapsing-header image carousel used on detail pages (spots, events).
 class DetailImageCarousel extends StatefulWidget {
@@ -220,21 +221,18 @@ class DetailImageCarouselState extends State<DetailImageCarousel> {
         child: builder(context, url),
       );
     }
-    return Image.network(
-      url,
+    return ResizedSpotImage(
+      imageUrl: url,
       width: double.infinity,
       height: widget.height,
       fit: BoxFit.cover,
-      errorBuilder: (_, _, _) => _errorPlaceholder(context),
-      loadingBuilder: (context, child, progress) {
-        if (progress == null) return child;
-        return Container(
-          width: double.infinity,
-          height: widget.height,
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          child: const Center(child: CircularProgressIndicator()),
-        );
-      },
+      errorWidget: (_, _, _) => _errorPlaceholder(context),
+      placeholder: (_, _) => Container(
+        width: double.infinity,
+        height: widget.height,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        child: const Center(child: CircularProgressIndicator()),
+      ),
     );
   }
 
