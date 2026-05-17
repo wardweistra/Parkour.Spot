@@ -287,6 +287,54 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
     });
   }
 
+  Future<bool> _tryReverseGeocodeAddressIfNeeded({bool force = false}) async {
+    final address = _addressController.text.trim();
+    if (address.isEmpty) return true;
+
+    final latRaw = _latitudeController.text.trim();
+    final lngRaw = _longitudeController.text.trim();
+    final hasLatitudeText = latRaw.isNotEmpty;
+    final hasLongitudeText = lngRaw.isNotEmpty;
+
+    if (hasLatitudeText && hasLongitudeText && !force) return true;
+    if (hasLatitudeText != hasLongitudeText) {
+      setState(() => _formError = 'Both latitude and longitude are required');
+      return false;
+    }
+
+    setState(() {
+      _isGeocoding = true;
+      _formError = null;
+    });
+    try {
+      final geocoding = context.read<GeocodingService>();
+      final coords = await geocoding.reverseGeocodeAddress(address);
+      if (!mounted) return false;
+      if (coords == null) {
+        setState(() {
+          _formError =
+              geocoding.error ?? 'Unable to locate coordinates for this address';
+        });
+        return false;
+      }
+      final latitude = coords['latitude'];
+      final longitude = coords['longitude'];
+      if (latitude == null || longitude == null) {
+        setState(() => _formError = 'Unable to locate coordinates for this address');
+        return false;
+      }
+      _latitudeController.text = latitude.toString();
+      _longitudeController.text = longitude.toString();
+      return true;
+    } catch (e) {
+      if (!mounted) return false;
+      setState(() => _formError = 'Failed to locate address: $e');
+      return false;
+    } finally {
+      if (mounted) setState(() => _isGeocoding = false);
+    }
+  }
+
   Future<bool> _tryGeocodeCoordinatesIfNeeded({bool force = false}) async {
     final latRaw = _latitudeController.text.trim();
     final lngRaw = _longitudeController.text.trim();
@@ -341,6 +389,7 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
       setState(() => _formError = 'End time cannot be before start time');
       return;
     }
+    if (!await _tryReverseGeocodeAddressIfNeeded()) return;
     if (!await _tryGeocodeCoordinatesIfNeeded()) return;
 
     setState(() {
@@ -524,19 +573,40 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
                                 child: CircularProgressIndicator(strokeWidth: 2),
                               )
                             : const Icon(Icons.pin_drop_outlined),
-                        label: const Text('Geocode'),
+                        label: const Text('To address'),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _addressController,
-                    decoration: const InputDecoration(
-                      labelText: 'Address',
-                      border: OutlineInputBorder(),
-                    ),
-                    minLines: 2,
-                    maxLines: 3,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _addressController,
+                          decoration: const InputDecoration(
+                            labelText: 'Address',
+                            border: OutlineInputBorder(),
+                          ),
+                          minLines: 2,
+                          maxLines: 3,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton.tonalIcon(
+                        onPressed: (_isSubmitting || _isGeocoding)
+                            ? null
+                            : () => _tryReverseGeocodeAddressIfNeeded(force: true),
+                        icon: _isGeocoding
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.location_searching_outlined),
+                        label: const Text('To coords'),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
                   SpotImageSection(
