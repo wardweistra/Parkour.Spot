@@ -9,6 +9,8 @@ import '../../constants/spot_detail_ui.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/parkour_event.dart';
 import '../../models/spot.dart';
+import '../../models/spot_list.dart';
+import '../../services/spot_list_service.dart';
 import '../../services/admin_events_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/snackbar_service.dart';
@@ -295,6 +297,10 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         final theme = Theme.of(ctx);
         return [
           PopupMenuItem(
+            value: _EventAdminAction.editEvent,
+            child: Text(l10n.eventDetailAdminEditEvent),
+          ),
+          PopupMenuItem(
             value: _EventAdminAction.markDuplicate,
             enabled: !hasDupLink,
             child: Text(
@@ -343,6 +349,14 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     if (id == null) return;
 
     switch (action) {
+      case _EventAdminAction.editEvent:
+        final updated = await context.push<bool>(
+          '/admin/events/$id/edit',
+        );
+        if (updated == true && mounted) {
+          await _loadEvent();
+        }
+        return;
       case _EventAdminAction.markDuplicate:
         final originalId = await showDialog<String>(
           context: context,
@@ -617,7 +631,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     final hasLocation = event.latitude != null && event.longitude != null;
     final hasAddress = event.address?.trim().isNotEmpty == true;
     final hasLinkedSpots = event.spotIds.isNotEmpty;
-    final hasWhereSection = hasLinkedSpots || hasLocation || hasAddress;
+    final hasLinkedSpotLists = event.spotListIds.isNotEmpty;
+    final hasWhereSection =
+        hasLinkedSpots || hasLinkedSpotLists || hasLocation || hasAddress;
     final colors = Theme.of(context).colorScheme;
 
     final hostLabel = hasWebsite
@@ -674,8 +690,22 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       ]);
     }
 
-    if (hasLocation || hasAddress) {
+    if (hasLinkedSpotLists) {
       if (hasLinkedSpots) {
+        widgets.add(const SizedBox(height: SpotDetailUi.detailSectionGap));
+      }
+      widgets.addAll([
+        _detailSectionHeading(context, l10n.eventDetailLinkedSpotListsLabel),
+        const SizedBox(height: SpotDetailUi.detailLabelGap),
+        _LinkedSpotListsSection(
+          spotListIds: event.spotListIds,
+          emptyLabel: l10n.eventDetailNoLinkedSpotLists,
+        ),
+      ]);
+    }
+
+    if (hasLocation || hasAddress) {
+      if (hasLinkedSpots || hasLinkedSpotLists) {
         widgets.add(const SizedBox(height: SpotDetailUi.detailSectionGap));
       }
       widgets.addAll([
@@ -878,7 +908,136 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   }
 }
 
-enum _EventAdminAction { markDuplicate, removeDuplicate }
+enum _EventAdminAction { editEvent, markDuplicate, removeDuplicate }
+
+class _LinkedSpotListsSection extends StatefulWidget {
+  const _LinkedSpotListsSection({
+    required this.spotListIds,
+    required this.emptyLabel,
+  });
+
+  final List<String> spotListIds;
+  final String emptyLabel;
+
+  @override
+  State<_LinkedSpotListsSection> createState() => _LinkedSpotListsSectionState();
+}
+
+class _LinkedSpotListsSectionState extends State<_LinkedSpotListsSection> {
+  Future<List<SpotList>>? _listsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _listsFuture = _loadLists();
+  }
+
+  @override
+  void didUpdateWidget(covariant _LinkedSpotListsSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.spotListIds.join(',') != widget.spotListIds.join(',')) {
+      _listsFuture = _loadLists();
+    }
+  }
+
+  Future<List<SpotList>> _loadLists() async {
+    final spotListService = context.read<SpotListService>();
+    final lists = await Future.wait(
+      widget.spotListIds.map(spotListService.getSpotListById),
+    );
+    return lists.whereType<SpotList>().toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return FutureBuilder<List<SpotList>>(
+      future: _listsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Center(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          );
+        }
+        final lists = snapshot.data ?? const <SpotList>[];
+        if (lists.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              widget.emptyLabel,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: colors.onSurface.withValues(alpha: 0.65),
+              ),
+            ),
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: lists.map((list) {
+            final listId = list.id;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: InkWell(
+                onTap: listId == null ? null : () => context.push('/list/$listId'),
+                borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
+                child: Container(
+                  width: double.infinity,
+                  padding: SpotDetailUi.detailCardPadding,
+                  decoration: BoxDecoration(
+                    color: colors.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(
+                      SpotDetailUi.surfaceRadius,
+                    ),
+                    border: SpotDetailUi.outlineBorder(colors),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.list, color: colors.primary, size: 22),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              list.name,
+                              style: Theme.of(context).textTheme.titleSmall,
+                            ),
+                            Text(
+                              '${list.visibility.label} · ${list.spotCount} spots',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: colors.onSurface.withValues(
+                                      alpha: 0.65,
+                                    ),
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (listId != null)
+                        Icon(
+                          Icons.chevron_right,
+                          color: colors.onSurface.withValues(alpha: 0.5),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+}
 
 class _LinkedSpotsSection extends StatefulWidget {
   const _LinkedSpotsSection({required this.spotIds, required this.emptyLabel});

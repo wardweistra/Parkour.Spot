@@ -9,11 +9,14 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/parkour_event.dart';
 import '../../models/spot.dart';
+import '../../models/spot_list.dart';
 import '../../services/admin_events_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/geocoding_service.dart';
+import '../../services/spot_list_service.dart';
 import '../../services/spot_service.dart';
 import '../../utils/image_preparation.dart';
+import '../../widgets/spot_list_selection_dialog.dart';
 import '../../widgets/spot_selection_dialog.dart';
 
 class AdminEventsScreen extends StatefulWidget {
@@ -69,6 +72,7 @@ class _AdminEventsScreenState extends State<AdminEventsScreen> {
               double? longitude,
               String? address,
               required List<String> spotIds,
+              List<String> spotListIds = const <String>[],
             }) async {
               final authService = context.read<AuthService>();
               final createdBy = authService.currentUser?.uid ?? 'unknown';
@@ -83,6 +87,7 @@ class _AdminEventsScreenState extends State<AdminEventsScreen> {
                 longitude: longitude,
                 address: address,
                 spotIds: spotIds,
+                spotListIds: spotListIds,
                 createdBy: createdBy,
               );
             },
@@ -261,12 +266,20 @@ class _EventCard extends StatelessWidget {
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                   ),
-                  if (event.id != null)
+                  if (event.id != null) ...[
+                    IconButton(
+                      onPressed: () {
+                        context.push('/admin/events/${event.id}/edit');
+                      },
+                      tooltip: 'Edit event',
+                      icon: const Icon(Icons.edit_outlined),
+                    ),
                     IconButton(
                       onPressed: openEventPage,
                       tooltip: 'Open event page',
                       icon: const Icon(Icons.open_in_new),
                     ),
+                  ],
                 ],
               ),
               if (event.description != null &&
@@ -296,6 +309,12 @@ class _EventCard extends StatelessWidget {
                   Chip(
                     avatar: const Icon(Icons.place_outlined, size: 16),
                     label: Text('${event.spotIds.length} linked spot(s)'),
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  Chip(
+                    avatar: const Icon(Icons.list, size: 16),
+                    label: Text('${event.spotListIds.length} linked list(s)'),
                     visualDensity: VisualDensity.compact,
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
@@ -342,6 +361,11 @@ class _EventCard extends StatelessWidget {
                 'Spot IDs: ${event.spotIds.join(', ')}',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
+              if (event.spotListIds.isNotEmpty)
+                SelectableText(
+                  'List IDs: ${event.spotListIds.join(', ')}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               if (event.imageUrls.isNotEmpty) ...[
                 const SizedBox(height: 10),
                 SizedBox(
@@ -463,6 +487,7 @@ class _CreateEventDialog extends StatefulWidget {
     double? longitude,
     String? address,
     required List<String> spotIds,
+    List<String> spotListIds,
   })
   onCreate;
 
@@ -486,6 +511,7 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
   bool _isGeocoding = false;
   String? _formError;
   final List<Spot> _linkedSpots = <Spot>[];
+  final List<SpotList> _linkedLists = <SpotList>[];
   final List<Uint8List> _selectedImageBytes = <Uint8List>[];
   final List<String> _imageUrls = <String>[];
 
@@ -541,6 +567,30 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
 
     setState(() {
       _linkedSpots.add(spot);
+      _formError = null;
+    });
+  }
+
+  Future<void> _addLinkedList() async {
+    final selectedListId = await showDialog<String>(
+      context: context,
+      builder: (_) => const SpotListSelectionDialog(),
+    );
+    if (selectedListId == null || !mounted) return;
+    if (_linkedLists.any((list) => list.id == selectedListId)) return;
+
+    final spotListService = context.read<SpotListService>();
+    final list = await spotListService.getSpotListById(selectedListId);
+    if (!mounted) return;
+    if (list == null || list.id == null) {
+      setState(() {
+        _formError = 'Could not load the selected spot list';
+      });
+      return;
+    }
+
+    setState(() {
+      _linkedLists.add(list);
       _formError = null;
     });
   }
@@ -739,6 +789,7 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
       longitude: double.tryParse(_longitudeController.text.trim()),
       address: _addressController.text.trim(),
       spotIds: _linkedSpots.map((spot) => spot.id!).toList(),
+      spotListIds: _linkedLists.map((list) => list.id!).toList(),
     );
     if (!mounted) return;
 
@@ -1026,6 +1077,50 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
                                     setState(() {
                                       _linkedSpots.removeWhere(
                                         (s) => s.id == spot.id,
+                                      );
+                                    });
+                                  },
+                          ),
+                        )
+                        .toList(),
+                  ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Text(
+                      'Linked spot lists',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    const Spacer(),
+                    FilledButton.icon(
+                      onPressed: _isSubmitting ? null : _addLinkedList,
+                      icon: const Icon(Icons.add),
+                      label: const Text('Add list'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                if (_linkedLists.isEmpty)
+                  Text(
+                    'No spot lists selected yet',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  )
+                else
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: _linkedLists
+                        .map(
+                          (list) => Chip(
+                            label: Text(
+                              '${list.name} (${list.visibility.label})',
+                            ),
+                            onDeleted: _isSubmitting
+                                ? null
+                                : () {
+                                    setState(() {
+                                      _linkedLists.removeWhere(
+                                        (l) => l.id == list.id,
                                       );
                                     });
                                   },

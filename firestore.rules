@@ -80,8 +80,18 @@ service cloud.firestore {
         return data.spotIds is list && data.spotIds.size() <= 50;
       }
 
+      function eventSpotListIdsOk(data) {
+        return !('spotListIds' in data) || (
+          data.spotListIds is list &&
+          data.spotListIds.size() <= 10 &&
+          data.spotListIds.size() == data.spotListIds.toSet().size()
+        );
+      }
+
       function eventCommonShape(data) {
-        return eventFieldsShared(data) && eventSpotIdsOk(data);
+        return eventFieldsShared(data) &&
+          eventSpotIdsOk(data) &&
+          eventSpotListIdsOk(data);
       }
 
       // serverTimestamp() is not "is timestamp" in rules; it equals request.time.
@@ -110,6 +120,12 @@ service cloud.firestore {
       allow create: if requestingUserIsAdmin() && eventCreateShape();
       allow update: if requestingUserIsAdmin() && eventUpdateShape();
       allow delete: if requestingUserIsAdmin();
+    }
+
+    // Materialized map pins for events (written by Cloud Functions only).
+    match /eventMapPins/{pinId} {
+      allow read: if true;
+      allow create, update, delete: if false;
     }
 
     // Spot check-ins (one document per check-in event; query by userId and/or spotId)

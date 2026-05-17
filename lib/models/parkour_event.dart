@@ -12,6 +12,7 @@ class ParkourEvent {
   final double? longitude;
   final String? address;
   final List<String> spotIds;
+  final List<String> spotListIds;
   final String? createdBy;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -36,7 +37,8 @@ class ParkourEvent {
     this.latitude,
     this.longitude,
     this.address,
-    required this.spotIds,
+    this.spotIds = const <String>[],
+    this.spotListIds = const <String>[],
     this.createdBy,
     this.createdAt,
     this.updatedAt,
@@ -73,6 +75,9 @@ class ParkourEvent {
       address: data['address'] as String?,
       spotIds: data['spotIds'] is List
           ? List<String>.from(data['spotIds'])
+          : const <String>[],
+      spotListIds: data['spotListIds'] is List
+          ? List<String>.from(data['spotListIds'])
           : const <String>[],
       createdBy: data['createdBy'] as String?,
       createdAt: data['createdAt'] is Timestamp
@@ -121,6 +126,9 @@ class ParkourEvent {
       spotIds: data['spotIds'] is List
           ? List<String>.from(data['spotIds'])
           : const <String>[],
+      spotListIds: data['spotListIds'] is List
+          ? List<String>.from(data['spotListIds'])
+          : const <String>[],
       createdBy: data['createdBy'] as String?,
       createdAt: parseDate(data['createdAt']),
       updatedAt: parseDate(data['updatedAt']),
@@ -150,6 +158,7 @@ class ParkourEvent {
       if (address != null && address!.trim().isNotEmpty)
         'address': address!.trim(),
       'spotIds': spotIds,
+      'spotListIds': spotListIds,
       if (createdBy != null) 'createdBy': createdBy,
       if (createdAt != null) 'createdAt': createdAt!.toUtc(),
       if (updatedAt != null) 'updatedAt': updatedAt!.toUtc(),
@@ -185,6 +194,7 @@ class ParkourEvent {
     Object? longitude = _unset,
     Object? address = _unset,
     List<String>? spotIds,
+    List<String>? spotListIds,
     Object? createdBy = _unset,
     Object? createdAt = _unset,
     Object? updatedAt = _unset,
@@ -215,6 +225,7 @@ class ParkourEvent {
           : longitude as double?,
       address: identical(address, _unset) ? this.address : address as String?,
       spotIds: spotIds ?? this.spotIds,
+      spotListIds: spotListIds ?? this.spotListIds,
       createdBy: identical(createdBy, _unset)
           ? this.createdBy
           : createdBy as String?,

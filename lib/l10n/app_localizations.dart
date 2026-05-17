@@ -4911,6 +4911,126 @@ abstract class AppLocalizations {
   /// **'No linked spots found.'**
   String get eventDetailNoLinkedSpots;
 
+  /// Section heading for spot lists tied to this event
+  ///
+  /// In en, this message translates to:
+  /// **'Linked spot lists'**
+  String get eventDetailLinkedSpotListsLabel;
+
+  /// Empty state when linked spot list ids do not resolve
+  ///
+  /// In en, this message translates to:
+  /// **'No linked spot lists found.'**
+  String get eventDetailNoLinkedSpotLists;
+
+  /// Title for admin edit event screen
+  ///
+  /// In en, this message translates to:
+  /// **'Edit event'**
+  String get adminEventEditTitle;
+
+  /// Save button on admin edit event screen
+  ///
+  /// In en, this message translates to:
+  /// **'Save changes'**
+  String get adminEventEditSave;
+
+  /// Banner title when editing an imported event
+  ///
+  /// In en, this message translates to:
+  /// **'External calendar event'**
+  String get adminEventExternalSyncWarningTitle;
+
+  /// Banner body when editing an imported event
+  ///
+  /// In en, this message translates to:
+  /// **'The next sync may overwrite the title, schedule, description, and venue address or coordinates from the external feed. Linked spots and spot lists are managed here and are not cleared by sync.'**
+  String get adminEventExternalSyncWarningBody;
+
+  /// Section title for spot lists linked to an event in admin form
+  ///
+  /// In en, this message translates to:
+  /// **'Linked spot lists'**
+  String get adminEventLinkedSpotListsTitle;
+
+  /// Button to link a spot list to an event
+  ///
+  /// In en, this message translates to:
+  /// **'Add list'**
+  String get adminEventAddSpotList;
+
+  /// Empty state for linked spot lists in admin event form
+  ///
+  /// In en, this message translates to:
+  /// **'No spot lists selected yet'**
+  String get adminEventNoLinkedSpotLists;
+
+  /// Title for spot list selection dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Select spot list'**
+  String get adminSpotListSelectionTitle;
+
+  /// Input label for spot list selection dialog
+  ///
+  /// In en, this message translates to:
+  /// **'List ID or URL'**
+  String get adminSpotListSelectionInputLabel;
+
+  /// Input hint for spot list selection dialog
+  ///
+  /// In en, this message translates to:
+  /// **'list-id or https://parkour.spot/list/…'**
+  String get adminSpotListSelectionInputHint;
+
+  /// Button to look up a spot list by id or URL
+  ///
+  /// In en, this message translates to:
+  /// **'Look up'**
+  String get adminSpotListSelectionLookup;
+
+  /// Confirm spot list selection
+  ///
+  /// In en, this message translates to:
+  /// **'Select'**
+  String get adminSpotListSelectionSelect;
+
+  /// Error when spot list lookup input is invalid
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a list ID or a /list/… URL'**
+  String get adminSpotListSelectionInvalidInput;
+
+  /// Error when spot list lookup fails
+  ///
+  /// In en, this message translates to:
+  /// **'Spot list not found or not accessible'**
+  String get adminSpotListSelectionNotFound;
+
+  /// Error when admin tries to link a private list
+  ///
+  /// In en, this message translates to:
+  /// **'Private lists cannot be linked to events'**
+  String get adminSpotListSelectionPrivateList;
+
+  /// Generic error when spot list lookup fails
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load the spot list'**
+  String get adminSpotListSelectionLoadFailed;
+
+  /// Subtitle after a spot list is found in selection dialog
+  ///
+  /// In en, this message translates to:
+  /// **'{visibility} · {count} spots'**
+  String adminSpotListSelectionFoundSubtitle(String visibility, int count);
+
+  /// Admin menu item to edit an event
+  ///
+  /// In en, this message translates to:
+  /// **'Edit event'**
+  String get eventDetailAdminEditEvent;
+
   /// Label for external calendar source name
   ///
   /// In en, this message translates to:

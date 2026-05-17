@@ -2702,6 +2702,94 @@
   "@eventDetailNoLinkedSpots": {
     "description": "Empty state when linked spot ids do not resolve"
   },
+  "eventDetailLinkedSpotListsLabel": "Linked spot lists",
+  "@eventDetailLinkedSpotListsLabel": {
+    "description": "Section heading for spot lists tied to this event"
+  },
+  "eventDetailNoLinkedSpotLists": "No linked spot lists found.",
+  "@eventDetailNoLinkedSpotLists": {
+    "description": "Empty state when linked spot list ids do not resolve"
+  },
+  "adminEventEditTitle": "Edit event",
+  "@adminEventEditTitle": {
+    "description": "Title for admin edit event screen"
+  },
+  "adminEventEditSave": "Save changes",
+  "@adminEventEditSave": {
+    "description": "Save button on admin edit event screen"
+  },
+  "adminEventExternalSyncWarningTitle": "External calendar event",
+  "@adminEventExternalSyncWarningTitle": {
+    "description": "Banner title when editing an imported event"
+  },
+  "adminEventExternalSyncWarningBody": "The next sync may overwrite the title, schedule, description, and venue address or coordinates from the external feed. Linked spots and spot lists are managed here and are not cleared by sync.",
+  "@adminEventExternalSyncWarningBody": {
+    "description": "Banner body when editing an imported event"
+  },
+  "adminEventLinkedSpotListsTitle": "Linked spot lists",
+  "@adminEventLinkedSpotListsTitle": {
+    "description": "Section title for spot lists linked to an event in admin form"
+  },
+  "adminEventAddSpotList": "Add list",
+  "@adminEventAddSpotList": {
+    "description": "Button to link a spot list to an event"
+  },
+  "adminEventNoLinkedSpotLists": "No spot lists selected yet",
+  "@adminEventNoLinkedSpotLists": {
+    "description": "Empty state for linked spot lists in admin event form"
+  },
+  "adminSpotListSelectionTitle": "Select spot list",
+  "@adminSpotListSelectionTitle": {
+    "description": "Title for spot list selection dialog"
+  },
+  "adminSpotListSelectionInputLabel": "List ID or URL",
+  "@adminSpotListSelectionInputLabel": {
+    "description": "Input label for spot list selection dialog"
+  },
+  "adminSpotListSelectionInputHint": "list-id or https://parkour.spot/list/…",
+  "@adminSpotListSelectionInputHint": {
+    "description": "Input hint for spot list selection dialog"
+  },
+  "adminSpotListSelectionLookup": "Look up",
+  "@adminSpotListSelectionLookup": {
+    "description": "Button to look up a spot list by id or URL"
+  },
+  "adminSpotListSelectionSelect": "Select",
+  "@adminSpotListSelectionSelect": {
+    "description": "Confirm spot list selection"
+  },
+  "adminSpotListSelectionInvalidInput": "Enter a list ID or a /list/… URL",
+  "@adminSpotListSelectionInvalidInput": {
+    "description": "Error when spot list lookup input is invalid"
+  },
+  "adminSpotListSelectionNotFound": "Spot list not found or not accessible",
+  "@adminSpotListSelectionNotFound": {
+    "description": "Error when spot list lookup fails"
+  },
+  "adminSpotListSelectionPrivateList": "Private lists cannot be linked to events",
+  "@adminSpotListSelectionPrivateList": {
+    "description": "Error when admin tries to link a private list"
+  },
+  "adminSpotListSelectionLoadFailed": "Could not load the spot list",
+  "@adminSpotListSelectionLoadFailed": {
+    "description": "Generic error when spot list lookup fails"
+  },
+  "adminSpotListSelectionFoundSubtitle": "{visibility} · {count} spots",
+  "@adminSpotListSelectionFoundSubtitle": {
+    "description": "Subtitle after a spot list is found in selection dialog",
+    "placeholders": {
+      "visibility": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventDetailAdminEditEvent": "Edit event",
+  "@eventDetailAdminEditEvent": {
+    "description": "Admin menu item to edit an event"
+  },
   "eventDetailSourceLabel": "Source",
   "@eventDetailSourceLabel": {
     "description": "Label for external calendar source name"

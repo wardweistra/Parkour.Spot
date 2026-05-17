@@ -2912,6 +2912,74 @@ class AppLocalizationsNl extends AppLocalizations {
   String get eventDetailNoLinkedSpots => 'Geen gekoppelde spots gevonden.';
 
   @override
+  String get eventDetailLinkedSpotListsLabel => 'Gekoppelde spotlijsten';
+
+  @override
+  String get eventDetailNoLinkedSpotLists =>
+      'Geen gekoppelde spotlijsten gevonden.';
+
+  @override
+  String get adminEventEditTitle => 'Evenement bewerken';
+
+  @override
+  String get adminEventEditSave => 'Wijzigingen opslaan';
+
+  @override
+  String get adminEventExternalSyncWarningTitle => 'Extern kalender-evenement';
+
+  @override
+  String get adminEventExternalSyncWarningBody =>
+      'De volgende sync kan titel, planning, beschrijving en locatie uit de externe feed overschrijven. Gekoppelde spots en lijsten beheer je hier en worden niet gewist bij sync.';
+
+  @override
+  String get adminEventLinkedSpotListsTitle => 'Gekoppelde spotlijsten';
+
+  @override
+  String get adminEventAddSpotList => 'Lijst toevoegen';
+
+  @override
+  String get adminEventNoLinkedSpotLists => 'Nog geen lijsten geselecteerd';
+
+  @override
+  String get adminSpotListSelectionTitle => 'Spotlijst kiezen';
+
+  @override
+  String get adminSpotListSelectionInputLabel => 'Lijst-ID of URL';
+
+  @override
+  String get adminSpotListSelectionInputHint =>
+      'lijst-id of https://parkour.spot/list/…';
+
+  @override
+  String get adminSpotListSelectionLookup => 'Zoeken';
+
+  @override
+  String get adminSpotListSelectionSelect => 'Selecteren';
+
+  @override
+  String get adminSpotListSelectionInvalidInput =>
+      'Voer een lijst-ID of /list/…-URL in';
+
+  @override
+  String get adminSpotListSelectionNotFound =>
+      'Spotlijst niet gevonden of niet toegankelijk';
+
+  @override
+  String get adminSpotListSelectionPrivateList =>
+      'Privélijsten kunnen niet aan evenementen worden gekoppeld';
+
+  @override
+  String get adminSpotListSelectionLoadFailed => 'Kon de spotlijst niet laden';
+
+  @override
+  String adminSpotListSelectionFoundSubtitle(String visibility, int count) {
+    return '$visibility · $count spots';
+  }
+
+  @override
+  String get eventDetailAdminEditEvent => 'Evenement bewerken';
+
+  @override
   String get eventDetailSourceLabel => 'Bron';
 
   @override

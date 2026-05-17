@@ -14,6 +14,7 @@ import '../screens/admin/spot_management_screen.dart';
 import '../screens/admin/user_management_screen.dart';
 import '../screens/admin/admin_notifications_screen.dart';
 import '../screens/admin/admin_events_screen.dart';
+import '../screens/admin/admin_event_edit_screen.dart';
 import '../screens/admin/event_sync_sources_screen.dart';
 import '../screens/admin/admin_push_subscriptions_screen.dart';
 import '../screens/admin/user_activity_metrics_screen.dart';
@@ -385,6 +386,13 @@ class AppRouter {
         GoRoute(
           path: '/admin/events',
           builder: (context, state) => const AdminEventsScreen(),
+        ),
+        GoRoute(
+          path: '/admin/events/:eventId/edit',
+          builder: (context, state) {
+            final eventId = state.pathParameters['eventId']!;
+            return AdminEventEditScreen(eventId: eventId);
+          },
         ),
         GoRoute(
           path: '/admin/event-sources',

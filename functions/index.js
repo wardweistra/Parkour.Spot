@@ -19,6 +19,7 @@ const {
   onDocumentCreated,
   onDocumentUpdated,
   onDocumentDeleted,
+  onDocumentWritten,
 } = require("firebase-functions/v2/firestore");
 const admin = require("firebase-admin");
 const sharp = require("sharp");
@@ -108,6 +109,11 @@ const {
   buildExternalEventKey,
   shouldGeocodeExternalEventAddress,
 } = require("./lib/event-sync");
+const {
+  deleteEventMapPins,
+  materializeEventMapPins,
+  rematerializeEventsForSpotList,
+} = require("./lib/event-map-pins");
 
 // Import shared HTML template
 const {generateHtmlPage} = require("./html-template");
@@ -4059,6 +4065,7 @@ async function buildExternalEventCreateData(parsedEvent, options = {}) {
     title: parsedEvent.title,
     startAt: parsedEvent.startAt,
     spotIds: [],
+    spotListIds: [],
     imageUrls: [],
     createdBy: "external-event-sync",
     eventSourceId: parsedEvent.eventSourceId,
@@ -4634,6 +4641,86 @@ exports.syncAllEventSources = onCall(
       } catch (error) {
         console.error("Error syncing all event sources:", error);
         throw new Error(`Failed to sync all event sources: ${error.message}`);
+      }
+    },
+);
+
+// Materialize eventMapPins when an event is created, updated, or deleted.
+exports.onEventWritten = onDocumentWritten(
+    {document: "events/{eventId}", region: "europe-west1"},
+    async (event) => {
+      const eventId = event.params.eventId;
+      try {
+        if (!event.data || !event.data.after.exists) {
+          await deleteEventMapPins(db, eventId);
+          return;
+        }
+        await materializeEventMapPins(db, eventId, event.data.after.data() || {});
+      } catch (err) {
+        console.error("onEventWritten error", {eventId, err});
+        throw err;
+      }
+    },
+);
+
+// Re-materialize events when a linked spot list changes.
+exports.onSpotListUpdatedForEventPins = onDocumentUpdated(
+    {document: "spotLists/{listId}", region: "europe-west1"},
+    async (event) => {
+      const listId = event.params.listId;
+      try {
+        await rematerializeEventsForSpotList(db, listId);
+      } catch (err) {
+        console.error("onSpotListUpdatedForEventPins error", {listId, err});
+        throw err;
+      }
+    },
+);
+
+// Admin callable to backfill eventMapPins for all or one event.
+exports.backfillEventMapPins = onCall(
+    {region: "europe-west1", timeoutSeconds: 540, memory: "512MiB"},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const {eventId = null} = request.data || {};
+        if (eventId != null && typeof eventId !== "string") {
+          throw new Error("eventId must be a string when provided");
+        }
+
+        let processed = 0;
+        let pinsWritten = 0;
+        let truncatedCount = 0;
+
+        if (eventId && eventId.trim().length > 0) {
+          const doc = await db.collection("events").doc(eventId.trim()).get();
+          if (!doc.exists) {
+            throw new Error(`Event ${eventId} not found`);
+          }
+          const result = await materializeEventMapPins(db, doc.id, doc.data() || {});
+          processed = 1;
+          pinsWritten = result.pinsWritten;
+          if (result.truncated) truncatedCount = 1;
+        } else {
+          const snapshot = await db.collection("events").get();
+          for (const doc of snapshot.docs) {
+            const result = await materializeEventMapPins(db, doc.id, doc.data() || {});
+            processed += 1;
+            pinsWritten += result.pinsWritten;
+            if (result.truncated) truncatedCount += 1;
+          }
+        }
+
+        return {
+          success: true,
+          processed,
+          pinsWritten,
+          truncatedCount,
+          message: `Materialized map pins for ${processed} event(s)`,
+        };
+      } catch (error) {
+        console.error("backfillEventMapPins error:", error);
+        throw new HttpsError("internal", error.message);
       }
     },
 );

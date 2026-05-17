@@ -22,6 +22,7 @@ void main() {
         'longitude': 4.8952,
         'address': 'Amsterdam, Netherlands',
         'spotIds': ['spot-a', 'spot-b'],
+        'spotListIds': ['list-1'],
         'createdBy': 'admin-uid',
         'createdAt': Timestamp.fromDate(createdAt),
         'updatedAt': Timestamp.fromDate(updatedAt),
@@ -41,6 +42,7 @@ void main() {
       expect(event.longitude, 4.8952);
       expect(event.address, 'Amsterdam, Netherlands');
       expect(event.spotIds, ['spot-a', 'spot-b']);
+      expect(event.spotListIds, ['list-1']);
       expect(event.createdBy, 'admin-uid');
       expect(event.createdAt?.toUtc(), createdAt);
       expect(event.updatedAt?.toUtc(), updatedAt);
@@ -85,6 +87,7 @@ void main() {
       expect(map['imageUrls'], ['https://img.example/event.jpg']);
       expect(map['websiteUrl'], 'https://event.example/info');
       expect(map['spotIds'], ['spot-c', 'spot-d']);
+      expect(map['spotListIds'], isEmpty);
       expect(map['startAt'], DateTime.utc(2026, 6, 1, 14, 0));
       expect(map['endAt'], DateTime.utc(2026, 6, 1, 16, 0));
       expect(map['latitude'], 48.8566);
@@ -93,6 +96,15 @@ void main() {
       expect(map['createdBy'], 'admin-uid');
       expect(map['createdAt'], DateTime.utc(2026, 5, 25, 8, 0));
       expect(map['updatedAt'], DateTime.utc(2026, 5, 25, 9, 0));
+    });
+
+    test('fromMap defaults spotListIds to empty list', () {
+      final event = ParkourEvent.fromMap({
+        'title': 'No lists',
+        'startAt': Timestamp.fromDate(DateTime.utc(2026, 1, 1)),
+        'spotIds': const <String>[],
+      });
+      expect(event.spotListIds, isEmpty);
     });
 
     test('toFirestore includes duplicateOf when non-empty', () {

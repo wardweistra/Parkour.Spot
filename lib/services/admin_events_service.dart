@@ -21,6 +21,7 @@ class AdminEventsService extends ChangeNotifier {
   bool _hasMore = true;
 
   static const int _defaultPageSize = 30;
+  static const int maxSpotListIds = 10;
 
   List<ParkourEvent> get events => List<ParkourEvent>.unmodifiable(_events);
   bool get isLoading => _isLoading;
@@ -100,57 +101,33 @@ class AdminEventsService extends ChangeNotifier {
     double? longitude,
     String? address,
     required List<String> spotIds,
+    List<String> spotListIds = const <String>[],
     required String createdBy,
   }) async {
-    final normalizedImageUrls = (imageUrls ?? const <String>[])
-        .map((url) => url.trim())
-        .where((url) => url.isNotEmpty)
-        .toSet()
-        .toList();
-    final normalizedWebsiteUrl = websiteUrl?.trim();
-    final normalizedAddress = address?.trim();
-    final normalizedSpotIds = spotIds
-        .map((id) => id.trim())
-        .where((id) => id.isNotEmpty)
-        .toSet()
-        .toList();
-    if (title.trim().isEmpty) {
-      _error = 'Title is required';
+    final normalized = _normalizeEventInput(
+      title: title,
+      description: description,
+      imageUrls: imageUrls,
+      websiteUrl: websiteUrl,
+      address: address,
+      spotIds: spotIds,
+      spotListIds: spotListIds,
+      startAt: startAt,
+      endAt: endAt,
+      latitude: latitude,
+      longitude: longitude,
+    );
+    if (normalized.error != null) {
+      _error = normalized.error;
       notifyListeners();
       return false;
     }
-    if (normalizedWebsiteUrl != null &&
-        normalizedWebsiteUrl.isNotEmpty &&
-        !_isValidHttpUrl(normalizedWebsiteUrl)) {
-      _error = 'Website URL must be a valid http(s) link';
-      notifyListeners();
-      return false;
-    }
-    final hasLatitude = latitude != null;
-    final hasLongitude = longitude != null;
-    if (hasLatitude != hasLongitude) {
-      _error = 'Both latitude and longitude are required for event location';
-      notifyListeners();
-      return false;
-    }
-    if (latitude != null && (latitude < -90 || latitude > 90)) {
-      _error = 'Latitude must be between -90 and 90';
-      notifyListeners();
-      return false;
-    }
-    if (longitude != null && (longitude < -180 || longitude > 180)) {
-      _error = 'Longitude must be between -180 and 180';
-      notifyListeners();
-      return false;
-    }
-    if (latitude != null &&
-        (normalizedAddress == null || normalizedAddress.isEmpty)) {
-      _error = 'Address is required when coordinates are provided';
-      notifyListeners();
-      return false;
-    }
-    if (endAt != null && endAt.isBefore(startAt)) {
-      _error = 'End time cannot be before start time';
+
+    final listError = await validateSpotListIdsForLinking(
+      normalized.spotListIds,
+    );
+    if (listError != null) {
+      _error = listError;
       notifyListeners();
       return false;
     }
@@ -161,18 +138,17 @@ class AdminEventsService extends ChangeNotifier {
     try {
       final now = DateTime.now().toUtc();
       final event = ParkourEvent(
-        title: title.trim(),
-        description: description?.trim().isEmpty == true ? null : description,
-        imageUrls: normalizedImageUrls,
-        websiteUrl: normalizedWebsiteUrl?.isEmpty == true
-            ? null
-            : normalizedWebsiteUrl,
-        startAt: startAt.toUtc(),
-        endAt: endAt?.toUtc(),
-        latitude: latitude,
-        longitude: longitude,
-        address: normalizedAddress?.isEmpty == true ? null : normalizedAddress,
-        spotIds: normalizedSpotIds,
+        title: normalized.title,
+        description: normalized.description,
+        imageUrls: normalized.imageUrls,
+        websiteUrl: normalized.websiteUrl,
+        startAt: normalized.startAt,
+        endAt: normalized.endAt,
+        latitude: normalized.latitude,
+        longitude: normalized.longitude,
+        address: normalized.address,
+        spotIds: normalized.spotIds,
+        spotListIds: normalized.spotListIds,
         createdBy: createdBy,
         createdAt: now,
         updatedAt: now,
@@ -190,6 +166,121 @@ class AdminEventsService extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  Future<bool> updateEvent({
+    required String eventId,
+    required String title,
+    String? description,
+    List<String>? imageUrls,
+    String? websiteUrl,
+    required DateTime startAt,
+    DateTime? endAt,
+    double? latitude,
+    double? longitude,
+    String? address,
+    required List<String> spotIds,
+    List<String> spotListIds = const <String>[],
+  }) async {
+    final trimmedId = eventId.trim();
+    if (trimmedId.isEmpty) {
+      _error = 'Invalid event id';
+      notifyListeners();
+      return false;
+    }
+
+    final existingSnap = await _firestore
+        .collection('events')
+        .doc(trimmedId)
+        .get();
+    if (!existingSnap.exists) {
+      _error = 'Event not found';
+      notifyListeners();
+      return false;
+    }
+    final existing = ParkourEvent.fromFirestore(existingSnap);
+
+    final normalized = _normalizeEventInput(
+      title: title,
+      description: description,
+      imageUrls: imageUrls,
+      websiteUrl: websiteUrl,
+      address: address,
+      spotIds: spotIds,
+      spotListIds: spotListIds,
+      startAt: startAt,
+      endAt: endAt,
+      latitude: latitude,
+      longitude: longitude,
+    );
+    if (normalized.error != null) {
+      _error = normalized.error;
+      notifyListeners();
+      return false;
+    }
+
+    final listError = await validateSpotListIdsForLinking(
+      normalized.spotListIds,
+    );
+    if (listError != null) {
+      _error = listError;
+      notifyListeners();
+      return false;
+    }
+
+    _error = null;
+    notifyListeners();
+
+    try {
+      final now = DateTime.now().toUtc();
+      final updated = existing.copyWith(
+        title: normalized.title,
+        description: normalized.description,
+        imageUrls: normalized.imageUrls,
+        websiteUrl: normalized.websiteUrl,
+        startAt: normalized.startAt,
+        endAt: normalized.endAt,
+        latitude: normalized.latitude,
+        longitude: normalized.longitude,
+        address: normalized.address,
+        spotIds: normalized.spotIds,
+        spotListIds: normalized.spotListIds,
+        updatedAt: now,
+      );
+      await _firestore
+          .collection('events')
+          .doc(trimmedId)
+          .update(updated.toFirestore());
+
+      final index = _events.indexWhere((e) => e.id == trimmedId);
+      if (index >= 0) {
+        _events[index] = updated.copyWith(id: trimmedId);
+        _events.sort((a, b) => b.startAt.compareTo(a.startAt));
+      }
+      notifyListeners();
+      return true;
+    } catch (e, st) {
+      _error = 'Failed to update event';
+      debugPrint('AdminEventsService.updateEvent error: $e\n$st');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Returns an error message when any list is missing or not linkable (public/unlisted).
+  Future<String?> validateSpotListIdsForLinking(List<String> listIds) async {
+    for (final listId in listIds) {
+      final doc = await _firestore.collection('spotLists').doc(listId).get();
+      if (!doc.exists) {
+        return 'Spot list not found: $listId';
+      }
+      final data = doc.data();
+      final visibility = data?['visibility'] as String?;
+      if (visibility == 'private') {
+        return 'Private spot lists cannot be linked to events';
+      }
+    }
+    return null;
   }
 
   Future<List<String>> uploadEventImages(List<Uint8List> imageBytesList) async {
@@ -280,6 +371,200 @@ class AdminEventsService extends ChangeNotifier {
     }
     _lastEventDocument = docs.last;
     _hasMore = docs.length >= pageSize;
+  }
+
+  ({
+    String? error,
+    String title,
+    String? description,
+    List<String> imageUrls,
+    String? websiteUrl,
+    DateTime startAt,
+    DateTime? endAt,
+    double? latitude,
+    double? longitude,
+    String? address,
+    List<String> spotIds,
+    List<String> spotListIds,
+  }) _normalizeEventInput({
+    required String title,
+    String? description,
+    List<String>? imageUrls,
+    String? websiteUrl,
+    required DateTime startAt,
+    DateTime? endAt,
+    double? latitude,
+    double? longitude,
+    String? address,
+    required List<String> spotIds,
+    required List<String> spotListIds,
+  }) {
+    final normalizedImageUrls = (imageUrls ?? const <String>[])
+        .map((url) => url.trim())
+        .where((url) => url.isNotEmpty)
+        .toSet()
+        .toList();
+    final normalizedWebsiteUrl = websiteUrl?.trim();
+    final normalizedAddress = address?.trim();
+    final normalizedSpotIds = spotIds
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList();
+    final normalizedSpotListIds = spotListIds
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList();
+
+    if (title.trim().isEmpty) {
+      return (
+        error: 'Title is required',
+        title: '',
+        description: null,
+        imageUrls: const <String>[],
+        websiteUrl: null,
+        startAt: startAt.toUtc(),
+        endAt: null,
+        latitude: null,
+        longitude: null,
+        address: null,
+        spotIds: const <String>[],
+        spotListIds: const <String>[],
+      );
+    }
+    if (normalizedSpotListIds.length > maxSpotListIds) {
+      return (
+        error: 'At most $maxSpotListIds spot lists can be linked',
+        title: '',
+        description: null,
+        imageUrls: const <String>[],
+        websiteUrl: null,
+        startAt: startAt.toUtc(),
+        endAt: null,
+        latitude: null,
+        longitude: null,
+        address: null,
+        spotIds: const <String>[],
+        spotListIds: const <String>[],
+      );
+    }
+    if (normalizedWebsiteUrl != null &&
+        normalizedWebsiteUrl.isNotEmpty &&
+        !_isValidHttpUrl(normalizedWebsiteUrl)) {
+      return (
+        error: 'Website URL must be a valid http(s) link',
+        title: '',
+        description: null,
+        imageUrls: const <String>[],
+        websiteUrl: null,
+        startAt: startAt.toUtc(),
+        endAt: null,
+        latitude: null,
+        longitude: null,
+        address: null,
+        spotIds: const <String>[],
+        spotListIds: const <String>[],
+      );
+    }
+    final hasLatitude = latitude != null;
+    final hasLongitude = longitude != null;
+    if (hasLatitude != hasLongitude) {
+      return (
+        error: 'Both latitude and longitude are required for event location',
+        title: '',
+        description: null,
+        imageUrls: const <String>[],
+        websiteUrl: null,
+        startAt: startAt.toUtc(),
+        endAt: null,
+        latitude: null,
+        longitude: null,
+        address: null,
+        spotIds: const <String>[],
+        spotListIds: const <String>[],
+      );
+    }
+    if (latitude != null && (latitude < -90 || latitude > 90)) {
+      return (
+        error: 'Latitude must be between -90 and 90',
+        title: '',
+        description: null,
+        imageUrls: const <String>[],
+        websiteUrl: null,
+        startAt: startAt.toUtc(),
+        endAt: null,
+        latitude: null,
+        longitude: null,
+        address: null,
+        spotIds: const <String>[],
+        spotListIds: const <String>[],
+      );
+    }
+    if (longitude != null && (longitude < -180 || longitude > 180)) {
+      return (
+        error: 'Longitude must be between -180 and 180',
+        title: '',
+        description: null,
+        imageUrls: const <String>[],
+        websiteUrl: null,
+        startAt: startAt.toUtc(),
+        endAt: null,
+        latitude: null,
+        longitude: null,
+        address: null,
+        spotIds: const <String>[],
+        spotListIds: const <String>[],
+      );
+    }
+    if (latitude != null &&
+        (normalizedAddress == null || normalizedAddress.isEmpty)) {
+      return (
+        error: 'Address is required when coordinates are provided',
+        title: '',
+        description: null,
+        imageUrls: const <String>[],
+        websiteUrl: null,
+        startAt: startAt.toUtc(),
+        endAt: null,
+        latitude: null,
+        longitude: null,
+        address: null,
+        spotIds: const <String>[],
+        spotListIds: const <String>[],
+      );
+    }
+    if (endAt != null && endAt.isBefore(startAt)) {
+      return (
+        error: 'End time cannot be before start time',
+        title: '',
+        description: null,
+        imageUrls: const <String>[],
+        websiteUrl: null,
+        startAt: startAt.toUtc(),
+        endAt: null,
+        latitude: null,
+        longitude: null,
+        address: null,
+        spotIds: const <String>[],
+        spotListIds: const <String>[],
+      );
+    }
+
+    return (
+      error: null,
+      title: title.trim(),
+      description: description?.trim().isEmpty == true ? null : description?.trim(),
+      imageUrls: normalizedImageUrls,
+      websiteUrl: normalizedWebsiteUrl?.isEmpty == true ? null : normalizedWebsiteUrl,
+      startAt: startAt.toUtc(),
+      endAt: endAt?.toUtc(),
+      latitude: latitude,
+      longitude: longitude,
+      address: normalizedAddress?.isEmpty == true ? null : normalizedAddress,
+      spotIds: normalizedSpotIds,
+      spotListIds: normalizedSpotListIds,
+    );
   }
 
   bool _isValidHttpUrl(String value) {

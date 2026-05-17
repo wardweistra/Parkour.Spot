@@ -2930,6 +2930,76 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventDetailNoLinkedSpots => 'Nenhum spot ligado encontrado.';
 
   @override
+  String get eventDetailLinkedSpotListsLabel => 'Listas de spots ligadas';
+
+  @override
+  String get eventDetailNoLinkedSpotLists =>
+      'Nenhuma lista de spots ligada encontrada.';
+
+  @override
+  String get adminEventEditTitle => 'Editar evento';
+
+  @override
+  String get adminEventEditSave => 'Guardar alterações';
+
+  @override
+  String get adminEventExternalSyncWarningTitle =>
+      'Evento de calendário externo';
+
+  @override
+  String get adminEventExternalSyncWarningBody =>
+      'A próxima sincronização pode substituir título, horário, descrição e local do feed externo. Spots e listas ligados são geridos aqui e não são apagados na sincronização.';
+
+  @override
+  String get adminEventLinkedSpotListsTitle => 'Listas de spots ligadas';
+
+  @override
+  String get adminEventAddSpotList => 'Adicionar lista';
+
+  @override
+  String get adminEventNoLinkedSpotLists => 'Ainda sem listas selecionadas';
+
+  @override
+  String get adminSpotListSelectionTitle => 'Selecionar lista de spots';
+
+  @override
+  String get adminSpotListSelectionInputLabel => 'ID da lista ou URL';
+
+  @override
+  String get adminSpotListSelectionInputHint =>
+      'id-lista ou https://parkour.spot/list/…';
+
+  @override
+  String get adminSpotListSelectionLookup => 'Procurar';
+
+  @override
+  String get adminSpotListSelectionSelect => 'Selecionar';
+
+  @override
+  String get adminSpotListSelectionInvalidInput =>
+      'Introduza um ID de lista ou URL /list/…';
+
+  @override
+  String get adminSpotListSelectionNotFound =>
+      'Lista não encontrada ou inacessível';
+
+  @override
+  String get adminSpotListSelectionPrivateList =>
+      'Listas privadas não podem ser ligadas a eventos';
+
+  @override
+  String get adminSpotListSelectionLoadFailed =>
+      'Não foi possível carregar a lista';
+
+  @override
+  String adminSpotListSelectionFoundSubtitle(String visibility, int count) {
+    return '$visibility · $count spots';
+  }
+
+  @override
+  String get eventDetailAdminEditEvent => 'Editar evento';
+
+  @override
   String get eventDetailSourceLabel => 'Fonte';
 
   @override

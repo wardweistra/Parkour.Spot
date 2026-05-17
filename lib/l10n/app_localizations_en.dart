@@ -2895,6 +2895,73 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventDetailNoLinkedSpots => 'No linked spots found.';
 
   @override
+  String get eventDetailLinkedSpotListsLabel => 'Linked spot lists';
+
+  @override
+  String get eventDetailNoLinkedSpotLists => 'No linked spot lists found.';
+
+  @override
+  String get adminEventEditTitle => 'Edit event';
+
+  @override
+  String get adminEventEditSave => 'Save changes';
+
+  @override
+  String get adminEventExternalSyncWarningTitle => 'External calendar event';
+
+  @override
+  String get adminEventExternalSyncWarningBody =>
+      'The next sync may overwrite the title, schedule, description, and venue address or coordinates from the external feed. Linked spots and spot lists are managed here and are not cleared by sync.';
+
+  @override
+  String get adminEventLinkedSpotListsTitle => 'Linked spot lists';
+
+  @override
+  String get adminEventAddSpotList => 'Add list';
+
+  @override
+  String get adminEventNoLinkedSpotLists => 'No spot lists selected yet';
+
+  @override
+  String get adminSpotListSelectionTitle => 'Select spot list';
+
+  @override
+  String get adminSpotListSelectionInputLabel => 'List ID or URL';
+
+  @override
+  String get adminSpotListSelectionInputHint =>
+      'list-id or https://parkour.spot/list/…';
+
+  @override
+  String get adminSpotListSelectionLookup => 'Look up';
+
+  @override
+  String get adminSpotListSelectionSelect => 'Select';
+
+  @override
+  String get adminSpotListSelectionInvalidInput =>
+      'Enter a list ID or a /list/… URL';
+
+  @override
+  String get adminSpotListSelectionNotFound =>
+      'Spot list not found or not accessible';
+
+  @override
+  String get adminSpotListSelectionPrivateList =>
+      'Private lists cannot be linked to events';
+
+  @override
+  String get adminSpotListSelectionLoadFailed => 'Could not load the spot list';
+
+  @override
+  String adminSpotListSelectionFoundSubtitle(String visibility, int count) {
+    return '$visibility · $count spots';
+  }
+
+  @override
+  String get eventDetailAdminEditEvent => 'Edit event';
+
+  @override
   String get eventDetailSourceLabel => 'Source';
 
   @override
