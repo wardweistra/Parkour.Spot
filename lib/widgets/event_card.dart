@@ -119,21 +119,9 @@ class _EventCardState extends State<EventCard> {
               left: 16,
               right: 16,
               bottom: 12,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Icon(
-                    widget.pin.kind == EventMapPinKind.venue
-                        ? Icons.event
-                        : Icons.place_outlined,
-                    size: 20,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.6),
-                  ),
-                  _buildListActionButtons(context),
-                ],
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: _buildListActionButtons(context),
               ),
             ),
           ],
@@ -220,12 +208,27 @@ class _EventCardState extends State<EventCard> {
   }) {
     final l10n = AppLocalizations.of(context)!;
     return [
-      Text(
-        widget.pin.title,
-        style: Theme.of(context).textTheme.titleLarge,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        textAlign: TextAlign.start,
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 3, right: 8),
+            child: Icon(
+              Icons.event_available_outlined,
+              size: 24,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              widget.pin.title,
+              style: Theme.of(context).textTheme.titleLarge,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.start,
+            ),
+          ),
+        ],
       ),
       const SizedBox(height: 6),
       Text(

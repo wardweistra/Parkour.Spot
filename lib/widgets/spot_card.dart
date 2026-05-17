@@ -82,6 +82,50 @@ class _SpotCardState extends State<SpotCard> {
     super.dispose();
   }
 
+  Widget _buildSpotTitleRow(BuildContext context, {required bool showRating}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 3, right: 8),
+          child: Icon(
+            Icons.place_outlined,
+            size: 24,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+        Expanded(
+          child: Text(
+            widget.spot.name,
+            style: Theme.of(context).textTheme.titleLarge,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        if (showRating &&
+            widget.spot.ratingCount != null &&
+            widget.spot.ratingCount! > 0)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.star,
+                size: 16,
+                color: Colors.amber,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                (widget.spot.averageRating ?? 0.0).toStringAsFixed(1),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.variant == SpotCardVariant.overlay) {
@@ -269,40 +313,9 @@ class _SpotCardState extends State<SpotCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min, // Prevent unnecessary expansion
                       children: [
-                        // Title and Rating Row
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                widget.spot.name,
-                                style: Theme.of(context).textTheme.titleLarge,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            if (widget.showRating) ...[
-                              // Rating display using Spot model fields directly
-                              widget.spot.ratingCount != null && widget.spot.ratingCount! > 0
-                                  ? Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.star,
-                                          size: 16,
-                                          color: Colors.amber,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          (widget.spot.averageRating ?? 0.0).toStringAsFixed(1),
-                                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ],
-                                    )
-                                  : const SizedBox.shrink(),
-                            ],
-                          ],
+                        _buildSpotTitleRow(
+                          context,
+                          showRating: widget.showRating,
                         ),
 
                         if (widget.upcomingEventPin != null) ...[
@@ -782,39 +795,7 @@ class _SpotCardState extends State<SpotCard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Title and Rating Row (same as list)
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              widget.spot.name,
-                              style: Theme.of(context).textTheme.titleLarge,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          // Always show ratings in overlay like list style
-                          widget.spot.ratingCount != null && widget.spot.ratingCount! > 0
-                              ? Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.star,
-                                      size: 16,
-                                      color: Colors.amber,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      (widget.spot.averageRating ?? 0.0).toStringAsFixed(1),
-                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                )
-                              : const SizedBox.shrink(),
-                        ],
-                      ),
+                      _buildSpotTitleRow(context, showRating: true),
 
                       if (widget.upcomingEventPin != null) ...[
                         const SizedBox(height: 8),
