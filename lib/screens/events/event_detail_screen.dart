@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:web/web.dart' as web;
 
 import '../../constants/spot_detail_ui.dart';
 import '../../l10n/app_localizations.dart';
@@ -22,6 +21,7 @@ import '../../widgets/event_selection_dialog.dart';
 import '../../services/url_service.dart';
 import '../../widgets/detail_external_link_tile.dart';
 import '../../widgets/spot_detail_quick_action_chip.dart';
+import '../../utils/web_meta_utils.dart';
 
 /// Event detail page; loads the document from Firestore by [eventId].
 class EventDetailScreen extends StatefulWidget {
@@ -60,6 +60,44 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     }
   }
 
+  @override
+  void dispose() {
+    if (kIsWeb) {
+      WebMetaUtils.resetPageMeta();
+    }
+    super.dispose();
+  }
+
+  String _eventMetaTitle(ParkourEvent event) => '${event.title} - Parkour·Spot';
+
+  String _eventMetaDescription(ParkourEvent event) {
+    final eventDescription = event.description?.trim();
+    final baseDescription =
+        eventDescription != null && eventDescription.isNotEmpty
+        ? WebMetaUtils.clipForMeta(eventDescription)
+        : 'View details, location, and linked spots for ${event.title} on Parkour·Spot';
+    return '$baseDescription — ${WebMetaUtils.defaultDescription}';
+  }
+
+  void _updateEventPageMeta(ParkourEvent event) {
+    if (!kIsWeb) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      WebMetaUtils.updatePageMeta(
+        _eventMetaTitle(event),
+        _eventMetaDescription(event),
+      );
+    });
+  }
+
+  void _resetEventPageMeta() {
+    if (!kIsWeb) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      WebMetaUtils.resetPageMeta();
+    });
+  }
+
   Future<void> _loadEvent() async {
     setState(() {
       _loading = true;
@@ -80,17 +118,14 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           _loading = false;
           _event = null;
         });
+        _resetEventPageMeta();
         return;
       }
       setState(() {
         _event = e;
         _loading = false;
       });
-      if (kIsWeb) {
-        final l10n = AppLocalizations.of(context);
-        final brand = l10n?.exploreMetaDefaultTitle ?? 'Parkour·Spot';
-        web.document.title = '${e.title} - $brand';
-      }
+      _updateEventPageMeta(e);
       _attachDuplicateContext(e);
     } catch (e, st) {
       debugPrint('EventDetailScreen._loadEvent: $e\n$st');
@@ -99,6 +134,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         _loading = false;
         _loadError = true;
       });
+      _resetEventPageMeta();
     }
   }
 
@@ -216,10 +252,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     onTap: _shareEvent,
                     child: SpotDetailQuickActionChip(
                       icon: Icons.share_outlined,
-                      iconColor: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.75),
+                      iconColor: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.75),
                       label: l10n.spotDetailQuickActionShare,
                     ),
                   ),
@@ -388,8 +423,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                admin.error ??
-                    l10n.eventDetailMarkDuplicateNotFoundOrInvalid,
+                admin.error ?? l10n.eventDetailMarkDuplicateNotFoundOrInvalid,
               ),
             ),
           );
@@ -505,7 +539,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.all(SpotDetailUi.contentHorizontalPadding),
+                padding: const EdgeInsets.all(
+                  SpotDetailUi.contentHorizontalPadding,
+                ),
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(
@@ -528,9 +564,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                             Expanded(
                               child: SelectableText(
                                 event.title,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineMedium,
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.headlineMedium,
                               ),
                             ),
                           ],
@@ -564,9 +600,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   Widget _detailSectionHeading(BuildContext context, String label) {
     return Text(
       label,
-      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-        fontWeight: FontWeight.w600,
-      ),
+      style: Theme.of(
+        context,
+      ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
     );
   }
 
@@ -666,9 +702,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                       hasAddress
                           ? event.address!.trim()
                           : '${event.latitude!.toStringAsFixed(5)}, ${event.longitude!.toStringAsFixed(5)}',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        height: 1.4,
-                      ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyLarge?.copyWith(height: 1.4),
                     ),
                   ),
                 ],
@@ -768,8 +804,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Material(
                   color: theme.colorScheme.surfaceContainerLow,
-                  borderRadius:
-                      BorderRadius.circular(SpotDetailUi.surfaceRadius),
+                  borderRadius: BorderRadius.circular(
+                    SpotDetailUi.surfaceRadius,
+                  ),
                   clipBehavior: Clip.antiAlias,
                   child: InkWell(
                     onTap: id == null || id.isEmpty
@@ -782,9 +819,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                         borderRadius: BorderRadius.circular(
                           SpotDetailUi.surfaceRadius,
                         ),
-                        border: SpotDetailUi.outlineBorder(
-                          theme.colorScheme,
-                        ),
+                        border: SpotDetailUi.outlineBorder(theme.colorScheme),
                       ),
                       child: Row(
                         children: [
@@ -846,10 +881,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 enum _EventAdminAction { markDuplicate, removeDuplicate }
 
 class _LinkedSpotsSection extends StatefulWidget {
-  const _LinkedSpotsSection({
-    required this.spotIds,
-    required this.emptyLabel,
-  });
+  const _LinkedSpotsSection({required this.spotIds, required this.emptyLabel});
 
   final List<String> spotIds;
   final String emptyLabel;
@@ -923,8 +955,7 @@ class _LinkedSpotsSectionState extends State<_LinkedSpotsSection> {
               ),
               child: Material(
                 color: colors.surfaceContainerLow,
-                borderRadius:
-                    BorderRadius.circular(SpotDetailUi.surfaceRadius),
+                borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
                 clipBehavior: Clip.antiAlias,
                 child: InkWell(
                   onTap: spot.id == null
@@ -959,9 +990,7 @@ class _LinkedSpotsSectionState extends State<_LinkedSpotsSection> {
                                   true)
                                 Text(
                                   spot.address ?? spot.city ?? '',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
+                                  style: Theme.of(context).textTheme.bodySmall
                                       ?.copyWith(
                                         color: colors.onSurface.withValues(
                                           alpha: 0.65,

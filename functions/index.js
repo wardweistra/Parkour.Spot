@@ -140,6 +140,26 @@ function spotTitleWithLocation(spot) {
 }
 
 /**
+ * Event share/browser description (matches Flutter web event detail metadata).
+ * @param {Object} event
+ * @param {string} siteName
+ * @return {string}
+ */
+function buildEventMetaDescription(event, siteName = "Parkour·Spot") {
+  const eventTitle = event && event.title ? String(event.title).trim() : "";
+  const rawDescription = event && typeof event.description === "string" ?
+    event.description.trim() :
+    "";
+  const fallbackDescription = eventTitle.length > 0 ?
+    `View details, location, and linked spots for ${eventTitle} on ${siteName}` :
+    `View details, location, and linked spots for this parkour event on ${siteName}`;
+  const baseDescription = rawDescription.length > 0 ?
+    clipForMeta(rawDescription) :
+    fallbackDescription;
+  return `${baseDescription} — ${APP_DESCRIPTION}`;
+}
+
+/**
  * Helper: perform geocoding for given lat/lng
  * @param {number} latitude - The latitude coordinate
  * @param {number} longitude - The longitude coordinate
@@ -427,11 +447,11 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
   }
 });
 
-// ========== Social sharing: Dynamic User and Spot List Open Graph/Twitter meta ==========
+// ========== Social sharing: Dynamic User, Spot List, and Event OG/Twitter meta ==========
 /**
  * HTTP function that serves HTML with dynamic Open Graph/Twitter meta tags for
- * /user/:id and /list/:id URLs. Boots the Flutter web app for normal users;
- * crawlers read the meta tags for share previews.
+ * /user/:id, /list/:id, and /event/:id URLs. Boots the Flutter web app for
+ * normal users; crawlers read the meta tags for share previews.
  */
 exports.userAndListPage = onRequest({region: "europe-west1"}, async (req, res) => {
   try {
@@ -532,6 +552,32 @@ exports.userAndListPage = onRequest({region: "europe-west1"}, async (req, res) =
 
           breadcrumbs.push({name: listName, url: `/list/${listId}`});
         }
+      }
+    }
+
+    // /event/:eventId
+    if (pathSegments[0] === "event" && pathSegments.length >= 2) {
+      const eventId = pathSegments[1];
+      const eventSnap = await db.collection("events").doc(eventId).get();
+      if (eventSnap.exists) {
+        const event = {id: eventSnap.id, ...eventSnap.data()};
+        const eventTitle =
+          typeof event.title === "string" && event.title.trim().length > 0 ?
+          event.title.trim() :
+          "Parkour event";
+        title = `${eventTitle} - ${siteName}`;
+        description = buildEventMetaDescription(event, siteName);
+
+        const eventImageUrls = Array.isArray(event.imageUrls) ?
+          event.imageUrls :
+          [];
+        if (eventImageUrls.length > 0 &&
+            typeof eventImageUrls[0] === "string" &&
+            eventImageUrls[0].trim().length > 0) {
+          imageUrl = getResizedImageUrlForApi(eventImageUrls[0].trim());
+        }
+
+        breadcrumbs.push({name: eventTitle, url: `/event/${eventId}`});
       }
     }
 

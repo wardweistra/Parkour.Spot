@@ -54,6 +54,10 @@
         "function": "userAndListPage"
       },
       {
+        "source": "/event/**",
+        "function": "userAndListPage"
+      },
+      {
         "source": "/:countryCode/:city/:spotId",
         "function": "spotPage"
       },
