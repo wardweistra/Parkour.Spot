@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../constants/spot_detail_ui.dart';
 import 'detail_network_gallery_viewer.dart';
+import 'no_images_placeholder.dart';
 import 'resized_spot_image.dart';
 
 /// Collapsing-header image carousel used on detail pages (spots, events).
@@ -74,26 +75,9 @@ class DetailImageCarouselState extends State<DetailImageCarousel> {
         width: double.infinity,
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
         child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.image_not_supported_outlined,
-                size: 64,
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.5),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                widget.emptyLabel,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.5),
-                ),
-              ),
-            ],
+          child: NoImagesPlaceholder(
+            label: widget.emptyLabel,
+            layout: NoImagesPlaceholderLayout.detail,
           ),
         ),
       );
@@ -245,7 +229,7 @@ class DetailImageCarouselState extends State<DetailImageCarousel> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.broken_image_outlined,
+            Icons.image_not_supported,
             size: 64,
             color: Theme.of(context).colorScheme.onSurface,
           ),

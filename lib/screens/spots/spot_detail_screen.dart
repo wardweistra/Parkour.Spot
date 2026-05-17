@@ -39,6 +39,7 @@ import '../../models/spot_list.dart';
 import '../../models/parkour_event.dart';
 import '../../utils/marker_icon_utils.dart';
 import '../../utils/resized_spot_image_provider.dart';
+import '../../widgets/no_images_placeholder.dart';
 import '../../widgets/resized_spot_image.dart';
 import '../../widgets/spot_detail_community_section.dart';
 import '../../widgets/spot_detail_quick_action_chip.dart';
@@ -3581,26 +3582,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         width: double.infinity,
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
         child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.image_not_supported,
-                size: 64,
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.5),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                _l10n.noImagesYet,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.5),
-                ),
-              ),
-            ],
+          child: NoImagesPlaceholder(
+            label: _l10n.noImagesYet,
+            layout: NoImagesPlaceholderLayout.detail,
           ),
         ),
       );

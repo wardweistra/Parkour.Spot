@@ -8,6 +8,7 @@ import '../services/mobile_detection_service.dart';
 import '../services/snackbar_service.dart';
 import '../services/url_service.dart';
 import '../services/web_share_service.dart';
+import 'no_images_placeholder.dart';
 import 'resized_spot_image.dart';
 
 /// Card for an event in Explore, styled like [SpotCard] list variant.
@@ -95,32 +96,7 @@ class _EventCardState extends State<EventCard> {
                             .colorScheme
                             .surfaceContainerHighest,
                         child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.event_outlined,
-                                size: 48,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withValues(alpha: 0.5),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                l10n.noImagesYet,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withValues(alpha: 0.5),
-                                ),
-                              ),
-                            ],
-                          ),
+                          child: NoImagesPlaceholder(label: l10n.noImagesYet),
                         ),
                       ),
                     ),

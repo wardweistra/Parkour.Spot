@@ -10,6 +10,7 @@ import '../services/url_service.dart';
 import '../services/web_share_service.dart';
 import '../services/snackbar_service.dart';
 import '../l10n/app_localizations.dart';
+import 'no_images_placeholder.dart';
 import 'resized_spot_image.dart';
 import 'spot_check_in_presence.dart';
 
@@ -253,23 +254,7 @@ class _SpotCardState extends State<SpotCard> {
                       child: Container(
                         color: Theme.of(context).colorScheme.surfaceContainerHighest,
                         child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.image_not_supported,
-                                size: 48,
-                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                l10n.noImagesYet,
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-                                ),
-                              ),
-                            ],
-                          ),
+                          child: NoImagesPlaceholder(label: l10n.noImagesYet),
                         ),
                       ),
                     ),
@@ -743,23 +728,7 @@ class _SpotCardState extends State<SpotCard> {
                               color: Theme.of(context).colorScheme.surfaceContainerHighest,
                             ),
                             child: Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.image_not_supported,
-                                    size: 48,
-                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    l10n.noImagesYet,
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                              child: NoImagesPlaceholder(label: l10n.noImagesYet),
                             ),
                           ),
                         ],
