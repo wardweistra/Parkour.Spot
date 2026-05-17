@@ -51,12 +51,19 @@ class MarkerIconUtils {
   static double get mapPinLogicalWidth =>
       mapPinLogicalWidthForHeight(mapPinBrowseLogicalHeight);
 
-  /// North → south draw order: northern spots first, southern spots on top when overlapping.
-  static List<Spot> sortSpotsForMapDrawOrder(Iterable<Spot> spots) {
-    final List<Spot> ordered = List<Spot>.from(spots);
-    ordered.sort((Spot a, Spot b) => b.latitude.compareTo(a.latitude));
+  /// North → south draw order: northern items first, southern items on top when overlapping.
+  static List<T> sortByLatitudeNorthFirst<T>(
+    Iterable<T> items,
+    double Function(T) latitude,
+  ) {
+    final List<T> ordered = List<T>.from(items);
+    ordered.sort((T a, T b) => latitude(b).compareTo(latitude(a)));
     return ordered;
   }
+
+  /// North → south draw order for [Spot] markers.
+  static List<Spot> sortSpotsForMapDrawOrder(Iterable<Spot> spots) =>
+      sortByLatitudeNorthFirst(spots, (Spot s) => s.latitude);
 
   /// Approximate fill when PNG is missing from the bundle (e.g. stale `build/`).
   static const Color mapPinNormalFallbackFill = Color(0xFF1A237E);

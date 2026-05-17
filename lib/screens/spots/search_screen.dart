@@ -229,6 +229,21 @@ class ReliableIcon extends StatelessWidget {
   }
 }
 
+/// Selected explore pins stack above latitude-ordered pins but below overlays.
+const int _exploreSelectedMarkerZBase = 8000;
+
+class _PendingExploreMarker {
+  const _PendingExploreMarker({
+    required this.latitude,
+    required this.isSelected,
+    required this.build,
+  });
+
+  final double latitude;
+  final bool isSelected;
+  final Marker Function(int zIndex) build;
+}
+
 class SearchScreen extends StatefulWidget {
   final String? initialLocationQuery;
   final String? initialListId;
@@ -2129,8 +2144,9 @@ class SearchScreenState extends State<SearchScreen>
         .whereType<String>()
         .toSet();
     final upgradedSpotIds = <String>{};
+    final pending = <_PendingExploreMarker>[];
 
-    for (final spot in MarkerIconUtils.sortSpotsForMapDrawOrder(_visibleSpots)) {
+    for (final spot in _visibleSpots) {
       final bool isSelected = _selectedSpot?.id != null
           ? _selectedSpot!.id == spot.id
           : _selectedSpot?.name == spot.name;
@@ -2160,22 +2176,26 @@ class SearchScreenState extends State<SearchScreen>
         upgradedSpotIds.add(spot.id!);
       }
 
-      markers.add(
-        Marker(
-          markerId: MarkerId(spot.id ?? spot.name),
-          position: LatLng(spot.latitude, spot.longitude),
-          icon: icon,
-          anchor: const Offset(0.5, 1.0),
-          zIndexInt: isSelected ? 2 : (hasEvent ? 1 : (isHighlighted ? 1 : 0)),
-          onTap: () {
-            if (_isBottomSheetOpen || _showFiltersDialog) return;
-            setState(() {
-              _selectedSpot = spot;
-              _selectedEventPin = null;
-              _showListPreview = false;
-              _markers = _rebuildMarkers();
-            });
-          },
+      pending.add(
+        _PendingExploreMarker(
+          latitude: spot.latitude,
+          isSelected: isSelected,
+          build: (zIndex) => Marker(
+            markerId: MarkerId(spot.id ?? spot.name),
+            position: LatLng(spot.latitude, spot.longitude),
+            icon: icon,
+            anchor: const Offset(0.5, 1.0),
+            zIndexInt: zIndex,
+            onTap: () {
+              if (_isBottomSheetOpen || _showFiltersDialog) return;
+              setState(() {
+                _selectedSpot = spot;
+                _selectedEventPin = null;
+                _showListPreview = false;
+                _markers = _rebuildMarkers();
+              });
+            },
+          ),
         ),
       );
     }
@@ -2197,19 +2217,33 @@ class SearchScreenState extends State<SearchScreen>
               : _eventIcon) ??
           BitmapDescriptor.defaultMarker;
 
-      markers.add(
-        Marker(
-          markerId: MarkerId(markerId),
-          position: LatLng(pin.latitude, pin.longitude),
-          icon: icon,
-          anchor: const Offset(0.5, 1.0),
-          zIndexInt: isSelected ? 4 : (pin.kind == EventMapPinKind.venue ? 3 : 1),
-          onTap: () {
-            if (_isBottomSheetOpen || _showFiltersDialog) return;
-            _selectEventPin(pin, focusMap: false);
-          },
+      pending.add(
+        _PendingExploreMarker(
+          latitude: pin.latitude,
+          isSelected: isSelected,
+          build: (zIndex) => Marker(
+            markerId: MarkerId(markerId),
+            position: LatLng(pin.latitude, pin.longitude),
+            icon: icon,
+            anchor: const Offset(0.5, 1.0),
+            zIndexInt: zIndex,
+            onTap: () {
+              if (_isBottomSheetOpen || _showFiltersDialog) return;
+              _selectEventPin(pin, focusMap: false);
+            },
+          ),
         ),
       );
+    }
+
+    final ordered = MarkerIconUtils.sortByLatitudeNorthFirst(
+      pending,
+      (item) => item.latitude,
+    );
+    for (var i = 0; i < ordered.length; i++) {
+      final item = ordered[i];
+      final zIndex = item.isSelected ? _exploreSelectedMarkerZBase + i : i;
+      markers.add(item.build(zIndex));
     }
 
     if (_currentPosition != null) {
