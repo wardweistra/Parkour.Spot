@@ -26,6 +26,22 @@ class MarkerIconUtils {
   static const String mapPinAddAsset =
       'assets/images/map/map-icon-normal-64x64-add.png';
 
+  /// Standalone event venue pin on Explore.
+  static const String mapPinEventAsset =
+      'assets/images/map/map-icon-event-64x64.png';
+
+  /// Selected standalone event venue pin.
+  static const String mapPinEventSelectedAsset =
+      'assets/images/map/map-icon-event-64x64-selected.png';
+
+  /// Spot with an upcoming event (not selected / not in list filter).
+  static const String mapPinSpotEventAsset =
+      'assets/images/map/map-icon-spotevent-64x64.png';
+
+  /// Selected spot with an upcoming event.
+  static const String mapPinSpotEventSelectedAsset =
+      'assets/images/map/map-icon-spotevent-64x64-selected.png';
+
   /// Source PNG dimensions (filenames say 64×64 but assets are 128×160).
   static const double mapPinAssetWidth = 128;
   static const double mapPinAssetHeight = 160;
@@ -54,6 +70,8 @@ class MarkerIconUtils {
   static const Color mapPinNormalFallbackFill = Color(0xFF1A237E);
   static const Color mapPinListFallbackFill = Color(0xFFE91E63);
   static const Color mapPinAddFallbackFill = Color(0xFFE53935);
+  static const Color mapPinEventFallbackFill = Color(0xFF7B1FA2);
+  static const Color mapPinEventSelectedFallbackFill = Color(0xFFE53935);
 
   /// Selected normal pin for single-spot maps (detail, add/edit, location picker).
   static Future<BitmapDescriptor> loadNormalSelectedMapPin() => loadMapPinPng(
@@ -155,12 +173,44 @@ class MarkerIconUtils {
     return createMarkerIcon(size: size, fillColor: fillColor);
   }
 
-  /// Event venue pin on Explore (calendar-style dot).
-  static Future<BitmapDescriptor> createEventVenueMarkerIcon() =>
-      createMarkerIcon(size: 24, fillColor: const Color(0xFF1565C0));
+  /// Event venue pin on Explore.
+  static Future<BitmapDescriptor> loadEventVenueMapPin({
+    double? logicalHeight,
+  }) =>
+      loadMapPinPng(
+        mapPinEventAsset,
+        fallbackFill: mapPinEventFallbackFill,
+        logicalHeight: logicalHeight,
+      );
 
-  /// Event-at-spot pin when the spot is not in the ranked top set.
-  static Future<BitmapDescriptor> createEventSpotMarkerIcon() =>
-      createMarkerIcon(size: 22, fillColor: const Color(0xFF6A1B9A));
+  /// Selected event venue pin on Explore.
+  static Future<BitmapDescriptor> loadEventVenueSelectedMapPin({
+    double? logicalHeight,
+  }) =>
+      loadMapPinPng(
+        mapPinEventSelectedAsset,
+        fallbackFill: mapPinEventSelectedFallbackFill,
+        logicalHeight: logicalHeight,
+      );
+
+  /// Spot with an upcoming event on Explore.
+  static Future<BitmapDescriptor> loadSpotEventMapPin({
+    double? logicalHeight,
+  }) =>
+      loadMapPinPng(
+        mapPinSpotEventAsset,
+        fallbackFill: mapPinEventFallbackFill,
+        logicalHeight: logicalHeight,
+      );
+
+  /// Selected spot with an upcoming event on Explore.
+  static Future<BitmapDescriptor> loadSpotEventSelectedMapPin({
+    double? logicalHeight,
+  }) =>
+      loadMapPinPng(
+        mapPinSpotEventSelectedAsset,
+        fallbackFill: mapPinEventSelectedFallbackFill,
+        logicalHeight: logicalHeight,
+      );
 }
 

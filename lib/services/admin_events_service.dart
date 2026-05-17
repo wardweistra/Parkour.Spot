@@ -731,6 +731,33 @@ class AdminEventsService extends ChangeNotifier {
     }
   }
 
+  /// Materializes [eventMapPins] for all events or a single event (admin callable).
+  Future<Map<String, dynamic>?> backfillEventMapPins({String? eventId}) async {
+    _error = null;
+    try {
+      final callable = _functions.httpsCallable(
+        'backfillEventMapPins',
+        options: HttpsCallableOptions(
+          timeout: const Duration(minutes: 9),
+        ),
+      );
+      final result = await callable.call({
+        if (eventId != null && eventId.trim().isNotEmpty)
+          'eventId': eventId.trim(),
+      });
+      final data = result.data;
+      if (data is Map) {
+        return Map<String, dynamic>.from(data);
+      }
+      return null;
+    } catch (e, st) {
+      _error = 'Failed to backfill event map pins: $e';
+      debugPrint('AdminEventsService.backfillEventMapPins error: $e\n$st');
+      notifyListeners();
+      return null;
+    }
+  }
+
   Future<bool> clearEventDuplicateStatus(String eventId) async {
     _error = null;
     notifyListeners();

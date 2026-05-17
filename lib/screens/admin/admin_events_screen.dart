@@ -56,6 +56,165 @@ class _AdminEventsScreenState extends State<AdminEventsScreen> {
     service.fetchEvents();
   }
 
+  Future<void> _showBackfillEventMapPinsDialog() async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Backfill Event Map Pins'),
+          content: const Text(
+            'Materializes eventMapPins for map display from each event\'s '
+            'linked spots and spot lists. This may take several minutes for '
+            'large databases.\n\n'
+            'Backfill all events or select one event?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                _runBackfillEventMapPins();
+              },
+              child: const Text('All Events'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                _showBackfillEventSelectionDialog();
+              },
+              child: const Text('Select Event'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showBackfillEventSelectionDialog() async {
+    final eventsService = context.read<AdminEventsService>();
+    final events = [...eventsService.events]
+      ..sort((a, b) => a.title.compareTo(b.title));
+
+    if (events.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No events loaded to select from')),
+      );
+      return;
+    }
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Select Event'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: events.length,
+              itemBuilder: (_, index) {
+                final event = events[index];
+                final id = event.id;
+                if (id == null) return const SizedBox.shrink();
+                return ListTile(
+                  title: Text(event.title),
+                  subtitle: Text(id),
+                  onTap: () {
+                    Navigator.pop(dialogContext);
+                    _runBackfillEventMapPins(eventId: id);
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _runBackfillEventMapPins({String? eventId}) async {
+    final eventsService = context.read<AdminEventsService>();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    late NavigatorState progressNavigator;
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        progressNavigator = Navigator.of(dialogContext);
+        return AlertDialog(
+          content: Row(
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  eventId == null
+                      ? 'Backfilling map pins for all events...'
+                      : 'Backfilling map pins for event...',
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    try {
+      final result = await eventsService.backfillEventMapPins(
+        eventId: eventId,
+      );
+      progressNavigator.pop();
+      if (!mounted) return;
+
+      if (result != null && result['success'] == true) {
+        final processed = result['processed'] ?? 0;
+        final pinsWritten = result['pinsWritten'] ?? 0;
+        final truncatedCount = result['truncatedCount'] ?? 0;
+        final truncatedNote = truncatedCount > 0
+            ? ', $truncatedCount truncated'
+            : '';
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.green,
+            content: Text(
+              'Map pins backfill complete. Events: $processed, '
+              'pins written: $pinsWritten$truncatedNote',
+            ),
+          ),
+        );
+      } else {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.red,
+            content: Text(
+              eventsService.error ?? 'Event map pins backfill failed',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      progressNavigator.pop();
+      if (!mounted) return;
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          content: Text('Event map pins backfill failed: $e'),
+        ),
+      );
+    }
+  }
+
   Future<void> _openCreateDialog() async {
     final created = await showDialog<bool>(
       context: context,
@@ -127,6 +286,11 @@ class _AdminEventsScreenState extends State<AdminEventsScreen> {
           },
         ),
         actions: [
+          IconButton(
+            tooltip: 'Backfill event map pins',
+            icon: const Icon(Icons.map_outlined),
+            onPressed: _showBackfillEventMapPinsDialog,
+          ),
           Consumer<AdminEventsService>(
             builder: (context, service, _) {
               return IconButton(

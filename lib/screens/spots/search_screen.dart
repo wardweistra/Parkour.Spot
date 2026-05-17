@@ -282,6 +282,7 @@ class SearchScreenState extends State<SearchScreen>
   String _exploreListMode = 'spots';
   BitmapDescriptor? _eventVenueIcon;
   BitmapDescriptor? _eventSpotIcon;
+  BitmapDescriptor? _eventSpotSelectedIcon;
   late AnimationController _bottomSheetAnimationController;
   late Animation<double> _bottomSheetAnimation;
   late PageController _imagePageController;
@@ -2145,6 +2146,8 @@ class SearchScreenState extends State<SearchScreen>
       } else if (isSelected && isHighlighted) {
         icon =
             _spotSelectedHighlightedIcon ?? BitmapDescriptor.defaultMarker;
+      } else if (isSelected && hasEvent) {
+        icon = _eventSpotSelectedIcon ?? BitmapDescriptor.defaultMarker;
       } else if (isSelected) {
         icon = _spotSelectedIcon ?? BitmapDescriptor.defaultMarker;
       } else if (isHighlighted) {
@@ -2295,9 +2298,17 @@ class SearchScreenState extends State<SearchScreen>
         logicalHeight: browsePinHeight,
       );
       final BitmapDescriptor eventVenuePin =
-          await MarkerIconUtils.createEventVenueMarkerIcon();
+          await MarkerIconUtils.loadEventVenueMapPin(
+        logicalHeight: browsePinHeight,
+      );
       final BitmapDescriptor eventSpotPin =
-          await MarkerIconUtils.createEventSpotMarkerIcon();
+          await MarkerIconUtils.loadSpotEventMapPin(
+        logicalHeight: browsePinHeight,
+      );
+      final BitmapDescriptor eventSpotSelectedPin =
+          await MarkerIconUtils.loadSpotEventSelectedMapPin(
+        logicalHeight: browsePinHeight,
+      );
       if (mounted) {
         setState(() {
           _spotDefaultIcon = normalPin;
@@ -2307,6 +2318,7 @@ class SearchScreenState extends State<SearchScreen>
           _addSpotPinIcon = addPin;
           _eventVenueIcon = eventVenuePin;
           _eventSpotIcon = eventSpotPin;
+          _eventSpotSelectedIcon = eventSpotSelectedPin;
         });
       }
     } catch (_) {
