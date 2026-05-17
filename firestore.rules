@@ -14,6 +14,16 @@ service cloud.firestore {
     );
   }
 
+  function requestingUserIsModerator() {
+    return request.auth != null &&
+      exists(/databases/(default)/documents/users/$(request.auth.uid)) &&
+      get(/databases/(default)/documents/users/$(request.auth.uid)).data.isModerator == true;
+  }
+
+  function requestingUserIsStaff() {
+    return requestingUserIsAdmin() || requestingUserIsModerator();
+  }
+
   match /databases/{database}/documents {
     // Spots collection - all spots are public, authenticated users can create, admins/moderators can edit, only admins can delete any spot
     match /spots/{spotId} {
@@ -117,8 +127,8 @@ service cloud.firestore {
       }
 
       allow read: if true;
-      allow create: if requestingUserIsAdmin() && eventCreateShape();
-      allow update: if requestingUserIsAdmin() && eventUpdateShape();
+      allow create: if requestingUserIsStaff() && eventCreateShape();
+      allow update: if requestingUserIsStaff() && eventUpdateShape();
       allow delete: if requestingUserIsAdmin();
     }
 

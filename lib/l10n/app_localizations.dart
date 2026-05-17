@@ -5079,6 +5079,66 @@ abstract class AppLocalizations {
   /// **'Admin'**
   String get eventDetailAdminMenuTooltip;
 
+  /// Tooltip for staff actions menu on event detail
+  ///
+  /// In en, this message translates to:
+  /// **'Staff'**
+  String get eventDetailStaffMenuTooltip;
+
+  /// Staff menu item to create a native copy of an external event
+  ///
+  /// In en, this message translates to:
+  /// **'Create native event'**
+  String get eventDetailMenuCreateNative;
+
+  /// Confirmation dialog title for create native event
+  ///
+  /// In en, this message translates to:
+  /// **'Create native event'**
+  String get eventDetailCreateNativeDialogTitle;
+
+  /// Confirmation dialog body for create native event
+  ///
+  /// In en, this message translates to:
+  /// **'This will create a new native event based on this event and mark the current event as a duplicate of it. Event data (title, description, schedule, location, images, website, and linked spots) will be copied to the new native event.'**
+  String get eventDetailCreateNativeDialogBody;
+
+  /// Error when create native is attempted on a native event
+  ///
+  /// In en, this message translates to:
+  /// **'This event is not from an external source.'**
+  String get eventDetailNotExternalSource;
+
+  /// Error when unauthenticated user tries create native event
+  ///
+  /// In en, this message translates to:
+  /// **'You must be logged in to create a native event.'**
+  String get eventDetailMustBeLoggedInCreateNative;
+
+  /// Error when event id is missing for create native
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to create native event right now.'**
+  String get eventDetailUnableCreateNativeNow;
+
+  /// Error when create native event Firestore write fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to create native event'**
+  String get eventDetailFailedCreateNative;
+
+  /// Success snackbar after create native event flow
+  ///
+  /// In en, this message translates to:
+  /// **'Native event created and current event marked as duplicate.'**
+  String get eventDetailNativeCreatedDuplicateMarked;
+
+  /// Helper text in event duplicate picker dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Only native events can be selected. If you need to create a native event from an external source event, use \"Create native event\" from the event menu.'**
+  String get eventDetailMarkDuplicateNativeOnlyHint;
+
   /// Event provenance: native event with creator and created date
   ///
   /// In en, this message translates to:
@@ -5115,11 +5175,11 @@ abstract class AppLocalizations {
   /// **'Original event'**
   String get eventDetailOriginalEventFallback;
 
-  /// Shown when a non-admin opens admin-only duplicate action
+  /// Shown when a non-staff user opens staff-only duplicate action
   ///
   /// In en, this message translates to:
-  /// **'Only admins can mark events as duplicates.'**
-  String get eventDetailMarkDuplicateAdminOnly;
+  /// **'Only staff can manage event duplicates.'**
+  String get eventDetailMarkDuplicateStaffOnly;
 
   /// Event selection dialog title
   ///

@@ -52,7 +52,10 @@ class _EventDetailProvenanceLineState extends State<EventDetailProvenanceLine> {
 
   Future<void> _loadCreatorIfNeeded() async {
     final createdBy = _event.createdBy?.trim();
-    if (!_event.isNativeEvent || createdBy == null || createdBy.isEmpty) {
+    if (!_event.isNativeEvent ||
+        _event.createdFromCreateNative ||
+        createdBy == null ||
+        createdBy.isEmpty) {
       return;
     }
     setState(() => _loadingCreator = true);
@@ -107,7 +110,10 @@ class _EventDetailProvenanceLineState extends State<EventDetailProvenanceLine> {
 
   bool _shouldShow() {
     final createdBy = _event.createdBy?.trim();
-    final hasCreator = createdBy != null && createdBy.isNotEmpty;
+    final hasCreator =
+        !_event.createdFromCreateNative &&
+        createdBy != null &&
+        createdBy.isNotEmpty;
     final hasSource =
         !_event.isNativeEvent &&
         ((_event.eventSourceId?.trim().isNotEmpty ?? false) ||
@@ -181,7 +187,9 @@ class _EventDetailProvenanceLineState extends State<EventDetailProvenanceLine> {
     var hasPreviousContent = false;
     final createdById = _event.createdBy?.trim();
 
-    if (_event.isNativeEvent && createdById != null) {
+    if (_event.isNativeEvent &&
+        !_event.createdFromCreateNative &&
+        createdById != null) {
       final creatorLabel = _loadingCreator
           ? '…'
           : (_creatorDisplayName ?? createdById);

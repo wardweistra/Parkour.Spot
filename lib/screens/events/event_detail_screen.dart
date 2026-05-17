@@ -20,6 +20,7 @@ import '../../widgets/detail_image_carousel.dart';
 import '../../widgets/event_detail_provenance_line.dart';
 import '../../widgets/event_detail_when_block.dart';
 import '../../widgets/event_selection_dialog.dart';
+import '../../widgets/moderator_action_fields.dart';
 import '../../services/url_service.dart';
 import '../../widgets/detail_external_link_tile.dart';
 import '../../widgets/spot_detail_quick_action_chip.dart';
@@ -285,23 +286,50 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     );
   }
 
-  Widget _adminMenuButton(
+  Widget _staffMenuButton(
     AppLocalizations l10n,
     ParkourEvent event,
     bool hasDupLink,
+    bool isAdmin,
   ) {
-    return PopupMenuButton<_EventAdminAction>(
-      tooltip: l10n.eventDetailAdminMenuTooltip,
-      onSelected: (action) => _onAdminMenu(context, action, event),
+    final isExternalEvent = !event.isNativeEvent;
+    return PopupMenuButton<_EventStaffAction>(
+      tooltip: isAdmin
+          ? l10n.eventDetailAdminMenuTooltip
+          : l10n.eventDetailStaffMenuTooltip,
+      onSelected: (action) => _onStaffMenu(context, action, event, isAdmin),
       itemBuilder: (ctx) {
         final theme = Theme.of(ctx);
-        return [
+        final items = <PopupMenuEntry<_EventStaffAction>>[];
+        if (isAdmin) {
+          items.add(
+            PopupMenuItem(
+              value: _EventStaffAction.editEvent,
+              child: Text(l10n.eventDetailAdminEditEvent),
+            ),
+          );
+        }
+        if (isExternalEvent) {
+          items.add(
+            PopupMenuItem(
+              value: _EventStaffAction.createNativeEvent,
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.add_circle_outline,
+                    color: theme.colorScheme.primary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text(l10n.eventDetailMenuCreateNative)),
+                ],
+              ),
+            ),
+          );
+        }
+        items.add(
           PopupMenuItem(
-            value: _EventAdminAction.editEvent,
-            child: Text(l10n.eventDetailAdminEditEvent),
-          ),
-          PopupMenuItem(
-            value: _EventAdminAction.markDuplicate,
+            value: _EventStaffAction.markDuplicate,
             enabled: !hasDupLink,
             child: Text(
               l10n.spotDetailMenuMarkDuplicate,
@@ -312,12 +340,16 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               ),
             ),
           ),
-          if (hasDupLink)
+        );
+        if (hasDupLink) {
+          items.add(
             PopupMenuItem(
-              value: _EventAdminAction.removeDuplicate,
+              value: _EventStaffAction.removeDuplicate,
               child: Text(l10n.spotDetailMenuRemoveDuplicateStatus),
             ),
-        ];
+          );
+        }
+        return items;
       },
       icon: Container(
         width: SpotDetailUi.appBarButtonSize,
@@ -331,17 +363,22 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     );
   }
 
-  Future<void> _onAdminMenu(
+  Future<void> _onStaffMenu(
     BuildContext context,
-    _EventAdminAction action,
+    _EventStaffAction action,
     ParkourEvent event,
+    bool isAdmin,
   ) async {
     final l10n = AppLocalizations.of(context)!;
     final auth = context.read<AuthService>();
-    if (!auth.isAuthenticated || !auth.isAdmin) {
+    final hasStaffAccess =
+        auth.isAuthenticated &&
+        auth.userProfile != null &&
+        (auth.isAdmin || auth.isModerator);
+    if (!hasStaffAccess) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.eventDetailMarkDuplicateAdminOnly)),
+        SnackBar(content: Text(l10n.eventDetailMarkDuplicateStaffOnly)),
       );
       return;
     }
@@ -349,7 +386,14 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     if (id == null) return;
 
     switch (action) {
-      case _EventAdminAction.editEvent:
+      case _EventStaffAction.createNativeEvent:
+        final result = await _showCreateNativeEventConfirmationDialog(event);
+        if (result != null && result['confirmed'] == true && mounted) {
+          await _createNativeEvent(event);
+        }
+        return;
+      case _EventStaffAction.editEvent:
+        if (!isAdmin) return;
         final updated = await context.push<bool>(
           '/admin/events/$id/edit',
         );
@@ -357,7 +401,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           await _loadEvent();
         }
         return;
-      case _EventAdminAction.markDuplicate:
+      case _EventStaffAction.markDuplicate:
         final originalId = await showDialog<String>(
           context: context,
           builder: (c) => EventSelectionDialog(currentEventId: id),
@@ -406,7 +450,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           );
         }
         break;
-      case _EventAdminAction.removeDuplicate:
+      case _EventStaffAction.removeDuplicate:
         final confirmed = await showDialog<bool>(
           context: context,
           builder: (c) => AlertDialog(
@@ -506,6 +550,10 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
     final auth = context.watch<AuthService>();
     final isAdmin = auth.isAuthenticated && auth.isAdmin;
+    final hasStaffAccess =
+        auth.isAuthenticated &&
+        auth.userProfile != null &&
+        (auth.isAdmin || auth.isModerator);
     final dupId = event.duplicateOf?.trim();
     final hasDupLink = dupId != null && dupId.isNotEmpty;
     final showDupSection =
@@ -536,10 +584,15 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                 child: _backButton(),
               ),
               actions: [
-                if (isAdmin)
+                if (hasStaffAccess)
                   Padding(
                     padding: EdgeInsets.only(right: contentInset),
-                    child: _adminMenuButton(l10n, event, hasDupLink),
+                    child: _staffMenuButton(
+                      l10n,
+                      event,
+                      hasDupLink,
+                      isAdmin,
+                    ),
                   ),
               ],
               flexibleSpace: FlexibleSpaceBar(
@@ -906,9 +959,160 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     );
     await launchUrl(mapsUri, mode: LaunchMode.externalApplication);
   }
+
+  Future<Map<String, dynamic>?> _showCreateNativeEventConfirmationDialog(
+    ParkourEvent event,
+  ) async {
+    if (event.isNativeEvent) {
+      if (!mounted) return null;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.eventDetailNotExternalSource)),
+      );
+      return null;
+    }
+
+    final auth = context.read<AuthService>();
+    if (!auth.isAuthenticated || auth.currentUser == null) {
+      if (!mounted) return null;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.eventDetailMustBeLoggedInCreateNative,
+          ),
+        ),
+      );
+      return null;
+    }
+
+    final notesController = TextEditingController();
+
+    return showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (dialogContext) {
+        final dialogL10n = AppLocalizations.of(dialogContext)!;
+        return AlertDialog(
+          title: Text(dialogL10n.eventDetailCreateNativeDialogTitle),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(dialogL10n.eventDetailCreateNativeDialogBody),
+                const SizedBox(height: 16),
+                ModeratorActionFields(
+                  spotId: null,
+                  notesController: notesController,
+                  showReportSelector: false,
+                  onReportSelected: (_) {},
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                notesController.dispose();
+                Navigator.of(dialogContext).pop(null);
+              },
+              child: Text(dialogL10n.profileCancel),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                notesController.dispose();
+                Navigator.of(dialogContext).pop({'confirmed': true});
+              },
+              child: Text(dialogL10n.spotDetailCreateButton),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _createNativeEvent(ParkourEvent event) async {
+    final l10n = AppLocalizations.of(context)!;
+    final eventId = event.id;
+    if (eventId == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.eventDetailUnableCreateNativeNow)),
+      );
+      return;
+    }
+
+    final auth = context.read<AuthService>();
+    if (!auth.isAuthenticated || auth.currentUser == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.eventDetailMustBeLoggedInCreateNative)),
+      );
+      return;
+    }
+
+    final admin = context.read<AdminEventsService>();
+    final userId = auth.currentUser!.uid;
+
+    try {
+      final nativeEventId = await admin.createNativeEventFromExisting(
+        event,
+        userId,
+      );
+
+      if (nativeEventId == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(admin.error ?? l10n.eventDetailFailedCreateNative),
+          ),
+        );
+        return;
+      }
+
+      final success = await admin.markEventAsDuplicate(
+        duplicateEventId: eventId,
+        nativeOriginalEventId: nativeEventId,
+      );
+
+      if (!mounted) return;
+
+      if (success) {
+        try {
+          final createdOriginal = await admin.getEventById(nativeEventId);
+          if (mounted && createdOriginal != null) {
+            setState(() => _originalEvent = createdOriginal);
+          }
+        } catch (_) {
+          // UI refresh below still runs
+        }
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.eventDetailNativeCreatedDuplicateMarked)),
+        );
+        await _reloadAfterMutation();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              admin.error ?? l10n.eventDetailMarkDuplicateNotFoundOrInvalid,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${l10n.eventDetailFailedCreateNative}: $e')),
+      );
+    }
+  }
 }
 
-enum _EventAdminAction { editEvent, markDuplicate, removeDuplicate }
+enum _EventStaffAction {
+  editEvent,
+  createNativeEvent,
+  markDuplicate,
+  removeDuplicate,
+}
 
 class _LinkedSpotListsSection extends StatefulWidget {
   const _LinkedSpotListsSection({

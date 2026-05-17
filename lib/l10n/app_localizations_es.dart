@@ -3015,6 +3015,43 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventDetailAdminMenuTooltip => 'Admin';
 
   @override
+  String get eventDetailStaffMenuTooltip => 'Equipo';
+
+  @override
+  String get eventDetailMenuCreateNative => 'Crear evento nativo';
+
+  @override
+  String get eventDetailCreateNativeDialogTitle => 'Crear evento nativo';
+
+  @override
+  String get eventDetailCreateNativeDialogBody =>
+      'Esto creará un nuevo evento nativo basado en este evento y marcará el evento actual como duplicado. Se copiarán los datos del evento (título, descripción, horario, ubicación, imágenes, sitio web y spots vinculados) al nuevo evento nativo.';
+
+  @override
+  String get eventDetailNotExternalSource =>
+      'Este evento no proviene de una fuente externa.';
+
+  @override
+  String get eventDetailMustBeLoggedInCreateNative =>
+      'Debes iniciar sesión para crear un evento nativo.';
+
+  @override
+  String get eventDetailUnableCreateNativeNow =>
+      'No se puede crear un evento nativo en este momento.';
+
+  @override
+  String get eventDetailFailedCreateNative =>
+      'No se pudo crear el evento nativo';
+
+  @override
+  String get eventDetailNativeCreatedDuplicateMarked =>
+      'Evento nativo creado y evento actual marcado como duplicado.';
+
+  @override
+  String get eventDetailMarkDuplicateNativeOnlyHint =>
+      'Solo se pueden seleccionar eventos nativos. Si necesitas crear un evento nativo a partir de un evento externo, usa «Crear evento nativo» en el menú del evento.';
+
+  @override
   String eventDetailEventCreatedOnDateBy(String date) {
     return 'Evento creado $date por ';
   }
@@ -3039,8 +3076,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventDetailOriginalEventFallback => 'Evento original';
 
   @override
-  String get eventDetailMarkDuplicateAdminOnly =>
-      'Solo los administradores pueden marcar eventos como duplicados.';
+  String get eventDetailMarkDuplicateStaffOnly =>
+      'Solo el equipo puede gestionar duplicados de eventos.';
 
   @override
   String get eventDetailMarkDuplicatePickNativeTitle =>

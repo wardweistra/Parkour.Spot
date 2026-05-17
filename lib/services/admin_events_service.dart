@@ -174,6 +174,82 @@ class AdminEventsService extends ChangeNotifier {
     }
   }
 
+  /// Creates a native parkour.spot event by copying data from an external/imported event.
+  /// Returns the new document id, or null on failure.
+  Future<String?> createNativeEventFromExisting(
+    ParkourEvent sourceEvent,
+    String createdBy,
+  ) async {
+    if (sourceEvent.isNativeEvent) {
+      _error = 'Source event is already a native parkour.spot event';
+      notifyListeners();
+      return null;
+    }
+
+    final normalized = _normalizeEventInput(
+      title: sourceEvent.title,
+      description: sourceEvent.description,
+      imageUrls: sourceEvent.imageUrls,
+      websiteUrl: sourceEvent.websiteUrl,
+      address: sourceEvent.address,
+      spotIds: sourceEvent.spotIds,
+      spotListIds: sourceEvent.spotListIds,
+      startAt: sourceEvent.startAt,
+      endAt: sourceEvent.endAt,
+      latitude: sourceEvent.latitude,
+      longitude: sourceEvent.longitude,
+    );
+    if (normalized.error != null) {
+      _error = normalized.error;
+      notifyListeners();
+      return null;
+    }
+
+    final listError = await validateSpotListIdsForLinking(
+      normalized.spotListIds,
+    );
+    if (listError != null) {
+      _error = listError;
+      notifyListeners();
+      return null;
+    }
+
+    _error = null;
+    notifyListeners();
+
+    try {
+      final now = DateTime.now().toUtc();
+      final nativeEvent = ParkourEvent(
+        title: normalized.title,
+        description: normalized.description,
+        imageUrls: normalized.imageUrls,
+        websiteUrl: normalized.websiteUrl,
+        startAt: normalized.startAt,
+        endAt: normalized.endAt,
+        latitude: normalized.latitude,
+        longitude: normalized.longitude,
+        address: normalized.address,
+        spotIds: normalized.spotIds,
+        spotListIds: normalized.spotListIds,
+        createdBy: createdBy,
+        createdAt: now,
+        updatedAt: now,
+        duplicateOf: null,
+        createdFromCreateNative: true,
+      );
+      final ref = await _firestore
+          .collection('events')
+          .add(nativeEvent.toFirestore());
+      notifyListeners();
+      return ref.id;
+    } catch (e, st) {
+      _error = 'Failed to create native event';
+      debugPrint('AdminEventsService.createNativeEventFromExisting error: $e\n$st');
+      notifyListeners();
+      return null;
+    }
+  }
+
   Future<bool> updateEvent({
     required String eventId,
     required String title,

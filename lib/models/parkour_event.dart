@@ -25,6 +25,8 @@ class ParkourEvent {
   final DateTime? externalSyncLastChangedAt;
   /// When set, this event is a duplicate of the canonical native event [duplicateOf].
   final String? duplicateOf;
+  /// Whether this event was created via "Create native event" from an external import.
+  final bool createdFromCreateNative;
 
   ParkourEvent({
     this.id,
@@ -50,6 +52,7 @@ class ParkourEvent {
     this.externalSyncLastSeenAt,
     this.externalSyncLastChangedAt,
     this.duplicateOf,
+    this.createdFromCreateNative = false,
   });
 
   /// Native events are authored on parkour.spot (not imported from an external calendar source).
@@ -98,6 +101,7 @@ class ParkourEvent {
           ? (data['externalSyncLastChangedAt'] as Timestamp).toDate()
           : null,
       duplicateOf: data['duplicateOf'] as String?,
+      createdFromCreateNative: data['createdFromCreateNative'] == true,
     );
   }
 
@@ -140,6 +144,7 @@ class ParkourEvent {
       externalSyncLastSeenAt: parseDate(data['externalSyncLastSeenAt']),
       externalSyncLastChangedAt: parseDate(data['externalSyncLastChangedAt']),
       duplicateOf: data['duplicateOf'] as String?,
+      createdFromCreateNative: data['createdFromCreateNative'] == true,
     );
   }
 
@@ -179,6 +184,7 @@ class ParkourEvent {
         'externalSyncLastChangedAt': externalSyncLastChangedAt!.toUtc(),
       if (duplicateOf != null && duplicateOf!.trim().isNotEmpty)
         'duplicateOf': duplicateOf!.trim(),
+      if (createdFromCreateNative) 'createdFromCreateNative': true,
     };
   }
 
@@ -206,6 +212,7 @@ class ParkourEvent {
     Object? externalSyncLastSeenAt = _unset,
     Object? externalSyncLastChangedAt = _unset,
     Object? duplicateOf = _unset,
+    bool? createdFromCreateNative,
   }) {
     return ParkourEvent(
       id: id ?? this.id,
@@ -259,6 +266,8 @@ class ParkourEvent {
       duplicateOf: identical(duplicateOf, _unset)
           ? this.duplicateOf
           : duplicateOf as String?,
+      createdFromCreateNative:
+          createdFromCreateNative ?? this.createdFromCreateNative,
     );
   }
 

@@ -2822,6 +2822,46 @@
   "@eventDetailAdminMenuTooltip": {
     "description": "Tooltip for admin actions menu on event detail"
   },
+  "eventDetailStaffMenuTooltip": "Staff",
+  "@eventDetailStaffMenuTooltip": {
+    "description": "Tooltip for staff actions menu on event detail"
+  },
+  "eventDetailMenuCreateNative": "Create native event",
+  "@eventDetailMenuCreateNative": {
+    "description": "Staff menu item to create a native copy of an external event"
+  },
+  "eventDetailCreateNativeDialogTitle": "Create native event",
+  "@eventDetailCreateNativeDialogTitle": {
+    "description": "Confirmation dialog title for create native event"
+  },
+  "eventDetailCreateNativeDialogBody": "This will create a new native event based on this event and mark the current event as a duplicate of it. Event data (title, description, schedule, location, images, website, and linked spots) will be copied to the new native event.",
+  "@eventDetailCreateNativeDialogBody": {
+    "description": "Confirmation dialog body for create native event"
+  },
+  "eventDetailNotExternalSource": "This event is not from an external source.",
+  "@eventDetailNotExternalSource": {
+    "description": "Error when create native is attempted on a native event"
+  },
+  "eventDetailMustBeLoggedInCreateNative": "You must be logged in to create a native event.",
+  "@eventDetailMustBeLoggedInCreateNative": {
+    "description": "Error when unauthenticated user tries create native event"
+  },
+  "eventDetailUnableCreateNativeNow": "Unable to create native event right now.",
+  "@eventDetailUnableCreateNativeNow": {
+    "description": "Error when event id is missing for create native"
+  },
+  "eventDetailFailedCreateNative": "Failed to create native event",
+  "@eventDetailFailedCreateNative": {
+    "description": "Error when create native event Firestore write fails"
+  },
+  "eventDetailNativeCreatedDuplicateMarked": "Native event created and current event marked as duplicate.",
+  "@eventDetailNativeCreatedDuplicateMarked": {
+    "description": "Success snackbar after create native event flow"
+  },
+  "eventDetailMarkDuplicateNativeOnlyHint": "Only native events can be selected. If you need to create a native event from an external source event, use \"Create native event\" from the event menu.",
+  "@eventDetailMarkDuplicateNativeOnlyHint": {
+    "description": "Helper text in event duplicate picker dialog"
+  },
   "eventDetailEventCreatedOnDateBy": "Event created {date} by ",
   "@eventDetailEventCreatedOnDateBy": {
     "description": "Event provenance: native event with creator and created date",
@@ -2861,9 +2901,9 @@
   "@eventDetailOriginalEventFallback": {
     "description": "Event detail: title unknown while loading duplicate original"
   },
-  "eventDetailMarkDuplicateAdminOnly": "Only admins can mark events as duplicates.",
-  "@eventDetailMarkDuplicateAdminOnly": {
-    "description": "Shown when a non-admin opens admin-only duplicate action"
+  "eventDetailMarkDuplicateStaffOnly": "Only staff can manage event duplicates.",
+  "@eventDetailMarkDuplicateStaffOnly": {
+    "description": "Shown when a non-staff user opens staff-only duplicate action"
   },
   "eventDetailMarkDuplicatePickNativeTitle": "Mark as duplicate of native event",
   "@eventDetailMarkDuplicatePickNativeTitle": {

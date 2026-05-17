@@ -3039,6 +3039,43 @@ class AppLocalizationsDe extends AppLocalizations {
   String get eventDetailAdminMenuTooltip => 'Admin';
 
   @override
+  String get eventDetailStaffMenuTooltip => 'Team';
+
+  @override
+  String get eventDetailMenuCreateNative => 'Natives Event erstellen';
+
+  @override
+  String get eventDetailCreateNativeDialogTitle => 'Natives Event erstellen';
+
+  @override
+  String get eventDetailCreateNativeDialogBody =>
+      'Dadurch wird ein neues natives Event auf Basis dieses Events erstellt und das aktuelle Event als Duplikat markiert. Eventdaten (Titel, Beschreibung, Zeitplan, Ort, Bilder, Website und verknüpfte Spots) werden in das neue native Event kopiert.';
+
+  @override
+  String get eventDetailNotExternalSource =>
+      'Dieses Event stammt nicht aus einer externen Quelle.';
+
+  @override
+  String get eventDetailMustBeLoggedInCreateNative =>
+      'Du musst angemeldet sein, um ein natives Event zu erstellen.';
+
+  @override
+  String get eventDetailUnableCreateNativeNow =>
+      'Natives Event kann gerade nicht erstellt werden.';
+
+  @override
+  String get eventDetailFailedCreateNative =>
+      'Natives Event konnte nicht erstellt werden';
+
+  @override
+  String get eventDetailNativeCreatedDuplicateMarked =>
+      'Natives Event erstellt und aktuelles Event als Duplikat markiert.';
+
+  @override
+  String get eventDetailMarkDuplicateNativeOnlyHint =>
+      'Nur native Events können ausgewählt werden. Um ein natives Event aus einem externen Event zu erstellen, nutze „Natives Event erstellen“ im Event-Menü.';
+
+  @override
   String eventDetailEventCreatedOnDateBy(String date) {
     return 'Event erstellt $date von ';
   }
@@ -3063,8 +3100,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get eventDetailOriginalEventFallback => 'Original-Event';
 
   @override
-  String get eventDetailMarkDuplicateAdminOnly =>
-      'Nur Administratoren können Events als Duplikate markieren.';
+  String get eventDetailMarkDuplicateStaffOnly =>
+      'Nur Teammitglieder können Event-Duplikate verwalten.';
 
   @override
   String get eventDetailMarkDuplicatePickNativeTitle =>

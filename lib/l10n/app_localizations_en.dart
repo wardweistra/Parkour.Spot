@@ -2987,6 +2987,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventDetailAdminMenuTooltip => 'Admin';
 
   @override
+  String get eventDetailStaffMenuTooltip => 'Staff';
+
+  @override
+  String get eventDetailMenuCreateNative => 'Create native event';
+
+  @override
+  String get eventDetailCreateNativeDialogTitle => 'Create native event';
+
+  @override
+  String get eventDetailCreateNativeDialogBody =>
+      'This will create a new native event based on this event and mark the current event as a duplicate of it. Event data (title, description, schedule, location, images, website, and linked spots) will be copied to the new native event.';
+
+  @override
+  String get eventDetailNotExternalSource =>
+      'This event is not from an external source.';
+
+  @override
+  String get eventDetailMustBeLoggedInCreateNative =>
+      'You must be logged in to create a native event.';
+
+  @override
+  String get eventDetailUnableCreateNativeNow =>
+      'Unable to create native event right now.';
+
+  @override
+  String get eventDetailFailedCreateNative => 'Failed to create native event';
+
+  @override
+  String get eventDetailNativeCreatedDuplicateMarked =>
+      'Native event created and current event marked as duplicate.';
+
+  @override
+  String get eventDetailMarkDuplicateNativeOnlyHint =>
+      'Only native events can be selected. If you need to create a native event from an external source event, use \"Create native event\" from the event menu.';
+
+  @override
   String eventDetailEventCreatedOnDateBy(String date) {
     return 'Event created $date by ';
   }
@@ -3011,8 +3047,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventDetailOriginalEventFallback => 'Original event';
 
   @override
-  String get eventDetailMarkDuplicateAdminOnly =>
-      'Only admins can mark events as duplicates.';
+  String get eventDetailMarkDuplicateStaffOnly =>
+      'Only staff can manage event duplicates.';
 
   @override
   String get eventDetailMarkDuplicatePickNativeTitle =>

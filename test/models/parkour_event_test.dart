@@ -117,5 +117,81 @@ void main() {
       final map = event.toFirestore();
       expect(map['duplicateOf'], 'orig-id');
     });
+
+    test('fromMap parses createdFromCreateNative', () {
+      final event = ParkourEvent.fromMap({
+        'title': 'Promoted',
+        'startAt': Timestamp.fromDate(DateTime.utc(2026, 1, 1)),
+        'spotIds': const <String>[],
+        'createdFromCreateNative': true,
+      });
+      expect(event.createdFromCreateNative, isTrue);
+      expect(event.isNativeEvent, isTrue);
+    });
+
+    test('toFirestore includes createdFromCreateNative when true', () {
+      final event = ParkourEvent(
+        title: 'Promoted',
+        startAt: DateTime.utc(2026, 1, 1, 12, 0),
+        spotIds: const <String>[],
+        createdBy: 'mod-uid',
+        createdFromCreateNative: true,
+      );
+      final map = event.toFirestore();
+      expect(map['createdFromCreateNative'], isTrue);
+      expect(map.containsKey('eventSourceId'), isFalse);
+    });
+
+    test('native copy from external omits import fields', () {
+      final external = ParkourEvent(
+        title: 'ICS Jam',
+        description: 'Imported session',
+        imageUrls: const ['https://img.example/ics.jpg'],
+        websiteUrl: 'https://example.com/event',
+        startAt: DateTime.utc(2026, 8, 1, 18, 0),
+        endAt: DateTime.utc(2026, 8, 1, 20, 0),
+        latitude: 51.0,
+        longitude: 5.0,
+        address: 'Utrecht',
+        spotIds: const ['spot-1'],
+        spotListIds: const ['list-1'],
+        eventSourceId: 'source-abc',
+        eventSourceName: 'Community calendar',
+        externalEventUid: 'uid-1',
+        externalEventKey: 'key-1',
+        createdBy: 'external-event-sync',
+      );
+      expect(external.isNativeEvent, isFalse);
+
+      final native = ParkourEvent(
+        title: external.title,
+        description: external.description,
+        imageUrls: external.imageUrls,
+        websiteUrl: external.websiteUrl,
+        startAt: external.startAt,
+        endAt: external.endAt,
+        latitude: external.latitude,
+        longitude: external.longitude,
+        address: external.address,
+        spotIds: external.spotIds,
+        spotListIds: external.spotListIds,
+        createdBy: 'moderator-uid',
+        createdAt: DateTime.utc(2026, 5, 17, 12, 0),
+        updatedAt: DateTime.utc(2026, 5, 17, 12, 0),
+        duplicateOf: null,
+        createdFromCreateNative: true,
+      );
+
+      expect(native.isNativeEvent, isTrue);
+      final map = native.toFirestore();
+      expect(map['title'], 'ICS Jam');
+      expect(map['spotIds'], ['spot-1']);
+      expect(map['spotListIds'], ['list-1']);
+      expect(map.containsKey('eventSourceId'), isFalse);
+      expect(map.containsKey('eventSourceName'), isFalse);
+      expect(map.containsKey('externalEventUid'), isFalse);
+      expect(map.containsKey('externalEventKey'), isFalse);
+      expect(map['createdFromCreateNative'], isTrue);
+    });
   });
 }

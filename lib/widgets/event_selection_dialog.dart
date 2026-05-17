@@ -210,6 +210,13 @@ class _EventSelectionDialogState extends State<EventSelectionDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Text(
+                l10n.eventDetailMarkDuplicateNativeOnlyHint,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 12),
               TextField(
                 controller: _inputController,
                 decoration: InputDecoration(

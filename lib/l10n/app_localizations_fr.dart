@@ -3041,6 +3041,43 @@ class AppLocalizationsFr extends AppLocalizations {
   String get eventDetailAdminMenuTooltip => 'Admin';
 
   @override
+  String get eventDetailStaffMenuTooltip => 'Équipe';
+
+  @override
+  String get eventDetailMenuCreateNative => 'Créer un événement natif';
+
+  @override
+  String get eventDetailCreateNativeDialogTitle => 'Créer un événement natif';
+
+  @override
+  String get eventDetailCreateNativeDialogBody =>
+      'Cela créera un nouvel événement natif basé sur cet événement et marquera l\'événement actuel comme doublon. Les données (titre, description, horaires, lieu, images, site web et spots liés) seront copiées vers le nouvel événement natif.';
+
+  @override
+  String get eventDetailNotExternalSource =>
+      'Cet événement ne provient pas d\'une source externe.';
+
+  @override
+  String get eventDetailMustBeLoggedInCreateNative =>
+      'Vous devez être connecté pour créer un événement natif.';
+
+  @override
+  String get eventDetailUnableCreateNativeNow =>
+      'Impossible de créer un événement natif pour le moment.';
+
+  @override
+  String get eventDetailFailedCreateNative =>
+      'Échec de la création de l\'événement natif';
+
+  @override
+  String get eventDetailNativeCreatedDuplicateMarked =>
+      'Événement natif créé et événement actuel marqué comme doublon.';
+
+  @override
+  String get eventDetailMarkDuplicateNativeOnlyHint =>
+      'Seuls les événements natifs peuvent être sélectionnés. Pour créer un événement natif à partir d\'un événement externe, utilisez « Créer un événement natif » dans le menu de l\'événement.';
+
+  @override
   String eventDetailEventCreatedOnDateBy(String date) {
     return 'Événement créé $date par ';
   }
@@ -3065,8 +3102,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get eventDetailOriginalEventFallback => 'Événement d’origine';
 
   @override
-  String get eventDetailMarkDuplicateAdminOnly =>
-      'Seuls les administrateurs peuvent marquer des événements comme doublons.';
+  String get eventDetailMarkDuplicateStaffOnly =>
+      'Seule l\'équipe peut gérer les doublons d\'événements.';
 
   @override
   String get eventDetailMarkDuplicatePickNativeTitle =>

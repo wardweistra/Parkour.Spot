@@ -3004,6 +3004,43 @@ class AppLocalizationsNl extends AppLocalizations {
   String get eventDetailAdminMenuTooltip => 'Beheer';
 
   @override
+  String get eventDetailStaffMenuTooltip => 'Team';
+
+  @override
+  String get eventDetailMenuCreateNative => 'Native evenement aanmaken';
+
+  @override
+  String get eventDetailCreateNativeDialogTitle => 'Native evenement aanmaken';
+
+  @override
+  String get eventDetailCreateNativeDialogBody =>
+      'Dit maakt een nieuw native evenement op basis van dit evenement en markeert het huidige evenement als duplicaat. Evenementgegevens (titel, beschrijving, schema, locatie, afbeeldingen, website en gekoppelde spots) worden naar het nieuwe native evenement gekopieerd.';
+
+  @override
+  String get eventDetailNotExternalSource =>
+      'Dit evenement komt niet van een externe bron.';
+
+  @override
+  String get eventDetailMustBeLoggedInCreateNative =>
+      'Je moet ingelogd zijn om een native evenement aan te maken.';
+
+  @override
+  String get eventDetailUnableCreateNativeNow =>
+      'Kan nu geen native evenement aanmaken.';
+
+  @override
+  String get eventDetailFailedCreateNative =>
+      'Native evenement aanmaken mislukt';
+
+  @override
+  String get eventDetailNativeCreatedDuplicateMarked =>
+      'Native evenement aangemaakt en huidig evenement als duplicaat gemarkeerd.';
+
+  @override
+  String get eventDetailMarkDuplicateNativeOnlyHint =>
+      'Alleen native evenementen kunnen worden geselecteerd. Gebruik \"Native evenement aanmaken\" in het evenementmenu om een native evenement van een extern evenement te maken.';
+
+  @override
   String eventDetailEventCreatedOnDateBy(String date) {
     return 'Event aangemaakt $date door ';
   }
@@ -3028,8 +3065,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get eventDetailOriginalEventFallback => 'Bronevent';
 
   @override
-  String get eventDetailMarkDuplicateAdminOnly =>
-      'Alleen beheerders kunnen events als duplicaat markeren.';
+  String get eventDetailMarkDuplicateStaffOnly =>
+      'Alleen teamleden kunnen eventduplicaten beheren.';
 
   @override
   String get eventDetailMarkDuplicatePickNativeTitle =>

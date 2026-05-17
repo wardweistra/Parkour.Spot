@@ -3024,6 +3024,42 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventDetailAdminMenuTooltip => 'Admin';
 
   @override
+  String get eventDetailStaffMenuTooltip => 'Equipa';
+
+  @override
+  String get eventDetailMenuCreateNative => 'Criar evento nativo';
+
+  @override
+  String get eventDetailCreateNativeDialogTitle => 'Criar evento nativo';
+
+  @override
+  String get eventDetailCreateNativeDialogBody =>
+      'Isto criará um novo evento nativo com base neste evento e marcará o evento atual como duplicado. Os dados do evento (título, descrição, horário, localização, imagens, site e spots ligados) serão copiados para o novo evento nativo.';
+
+  @override
+  String get eventDetailNotExternalSource =>
+      'Este evento não é de uma fonte externa.';
+
+  @override
+  String get eventDetailMustBeLoggedInCreateNative =>
+      'Tem de iniciar sessão para criar um evento nativo.';
+
+  @override
+  String get eventDetailUnableCreateNativeNow =>
+      'Não é possível criar um evento nativo agora.';
+
+  @override
+  String get eventDetailFailedCreateNative => 'Falha ao criar evento nativo';
+
+  @override
+  String get eventDetailNativeCreatedDuplicateMarked =>
+      'Evento nativo criado e evento atual marcado como duplicado.';
+
+  @override
+  String get eventDetailMarkDuplicateNativeOnlyHint =>
+      'Só eventos nativos podem ser selecionados. Para criar um evento nativo a partir de um evento externo, use \"Criar evento nativo\" no menu do evento.';
+
+  @override
   String eventDetailEventCreatedOnDateBy(String date) {
     return 'Evento criado $date por ';
   }
@@ -3048,8 +3084,8 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventDetailOriginalEventFallback => 'Evento original';
 
   @override
-  String get eventDetailMarkDuplicateAdminOnly =>
-      'Só os administradores podem marcar eventos como duplicados.';
+  String get eventDetailMarkDuplicateStaffOnly =>
+      'Só a equipa pode gerir duplicados de eventos.';
 
   @override
   String get eventDetailMarkDuplicatePickNativeTitle =>
