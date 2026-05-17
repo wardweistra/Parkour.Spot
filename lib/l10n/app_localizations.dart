@@ -5067,6 +5067,24 @@ abstract class AppLocalizations {
   /// **'Edit event'**
   String get eventDetailAdminEditEvent;
 
+  /// Subtitle when edit is disabled because the event is from an external source
+  ///
+  /// In en, this message translates to:
+  /// **'Create native event first'**
+  String get eventDetailMenuEditEventSubtitleNative;
+
+  /// Subtitle on enabled edit event menu item for staff
+  ///
+  /// In en, this message translates to:
+  /// **'Moderator only'**
+  String get eventDetailMenuEditEventSubtitleMod;
+
+  /// Shown when a moderator tries to edit an imported calendar event
+  ///
+  /// In en, this message translates to:
+  /// **'Events from external sources cannot be edited. Please create a native event first using “Mark as Duplicate” → “Create native event”.'**
+  String get eventDetailExternalSourceCannotEdit;
+
   /// Label for external calendar source name
   ///
   /// In en, this message translates to:

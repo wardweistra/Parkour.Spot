@@ -2814,6 +2814,18 @@
   "@eventDetailAdminEditEvent": {
     "description": "Admin menu item to edit an event"
   },
+  "eventDetailMenuEditEventSubtitleNative": "Create native event first",
+  "@eventDetailMenuEditEventSubtitleNative": {
+    "description": "Subtitle when edit is disabled because the event is from an external source"
+  },
+  "eventDetailMenuEditEventSubtitleMod": "Moderator only",
+  "@eventDetailMenuEditEventSubtitleMod": {
+    "description": "Subtitle on enabled edit event menu item for staff"
+  },
+  "eventDetailExternalSourceCannotEdit": "Events from external sources cannot be edited. Please create a native event first using “Mark as Duplicate” → “Create native event”.",
+  "@eventDetailExternalSourceCannotEdit": {
+    "description": "Shown when a moderator tries to edit an imported calendar event"
+  },
   "eventDetailSourceLabel": "Source",
   "@eventDetailSourceLabel": {
     "description": "Label for external calendar source name"

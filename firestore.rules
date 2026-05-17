@@ -126,9 +126,20 @@ service cloud.firestore {
           eventCommonShape(request.resource.data);
       }
 
+      // Native events have no external calendar source id.
+      function eventIsNative() {
+        return !('eventSourceId' in resource.data) ||
+          resource.data.eventSourceId == null ||
+          (resource.data.eventSourceId is string &&
+            resource.data.eventSourceId.size() == 0);
+      }
+
       allow read: if true;
       allow create: if requestingUserIsStaff() && eventCreateShape();
-      allow update: if requestingUserIsStaff() && eventUpdateShape();
+      allow update: if eventUpdateShape() && (
+        requestingUserIsAdmin() ||
+        (requestingUserIsModerator() && eventIsNative())
+      );
       allow delete: if requestingUserIsAdmin();
     }
 

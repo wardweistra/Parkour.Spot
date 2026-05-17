@@ -2998,6 +2998,17 @@ class AppLocalizationsNl extends AppLocalizations {
   String get eventDetailAdminEditEvent => 'Evenement bewerken';
 
   @override
+  String get eventDetailMenuEditEventSubtitleNative =>
+      'Maak eerst een native evenement';
+
+  @override
+  String get eventDetailMenuEditEventSubtitleMod => 'Alleen moderator';
+
+  @override
+  String get eventDetailExternalSourceCannotEdit =>
+      'Evenementen van externe bronnen kunnen niet worden bewerkt. Maak eerst een native evenement via ‘Markeer als duplicaat’ → ‘Native evenement aanmaken’.';
+
+  @override
   String get eventDetailSourceLabel => 'Bron';
 
   @override

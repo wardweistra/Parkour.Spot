@@ -291,24 +291,70 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     ParkourEvent event,
     bool hasDupLink,
     bool isAdmin,
+    bool isModeratorOnly,
   ) {
     final isExternalEvent = !event.isNativeEvent;
+    final shouldDisableEdit = isExternalEvent && isModeratorOnly;
     return PopupMenuButton<_EventStaffAction>(
       tooltip: isAdmin
           ? l10n.eventDetailAdminMenuTooltip
           : l10n.eventDetailStaffMenuTooltip,
-      onSelected: (action) => _onStaffMenu(context, action, event, isAdmin),
+      onSelected: (action) => _onStaffMenu(
+        context,
+        action,
+        event,
+        isAdmin,
+        isModeratorOnly,
+      ),
       itemBuilder: (ctx) {
         final theme = Theme.of(ctx);
-        final items = <PopupMenuEntry<_EventStaffAction>>[];
-        if (isAdmin) {
-          items.add(
-            PopupMenuItem(
-              value: _EventStaffAction.editEvent,
-              child: Text(l10n.eventDetailAdminEditEvent),
+        final items = <PopupMenuEntry<_EventStaffAction>>[
+          PopupMenuItem(
+            value: _EventStaffAction.editEvent,
+            enabled: !shouldDisableEdit,
+            child: Row(
+              children: [
+                Icon(
+                  Icons.edit,
+                  color: shouldDisableEdit
+                      ? theme.colorScheme.onSurface.withValues(alpha: 0.38)
+                      : theme.colorScheme.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        l10n.eventDetailAdminEditEvent,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: shouldDisableEdit
+                              ? theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.38,
+                                )
+                              : null,
+                        ),
+                      ),
+                      Text(
+                        shouldDisableEdit
+                            ? l10n.eventDetailMenuEditEventSubtitleNative
+                            : l10n.eventDetailMenuEditEventSubtitleMod,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.6,
+                          ),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          );
-        }
+          ),
+        ];
         if (isExternalEvent) {
           items.add(
             PopupMenuItem(
@@ -368,6 +414,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     _EventStaffAction action,
     ParkourEvent event,
     bool isAdmin,
+    bool isModeratorOnly,
   ) async {
     final l10n = AppLocalizations.of(context)!;
     final auth = context.read<AuthService>();
@@ -393,7 +440,22 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         }
         return;
       case _EventStaffAction.editEvent:
-        if (!isAdmin) return;
+        final isExternalEvent = !event.isNativeEvent;
+        if (isExternalEvent && isModeratorOnly) {
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.eventDetailExternalSourceCannotEdit),
+              duration: const Duration(seconds: 5),
+              action: SnackBarAction(
+                label: l10n.spotDetailOk,
+                onPressed: () {},
+              ),
+            ),
+          );
+          return;
+        }
+        if (!isAdmin && !context.read<AuthService>().isModerator) return;
         final updated = await context.push<bool>(
           '/admin/events/$id/edit',
         );
@@ -550,6 +612,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
     final auth = context.watch<AuthService>();
     final isAdmin = auth.isAuthenticated && auth.isAdmin;
+    final isModeratorOnly = auth.isModerator && !auth.isAdmin;
     final hasStaffAccess =
         auth.isAuthenticated &&
         auth.userProfile != null &&
@@ -592,6 +655,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                       event,
                       hasDupLink,
                       isAdmin,
+                      isModeratorOnly,
                     ),
                   ),
               ],

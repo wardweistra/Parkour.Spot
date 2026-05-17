@@ -381,8 +381,18 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
     }
   }
 
+  bool _canEditLoadedEvent(AuthService auth) {
+    final event = _event;
+    if (event == null) return false;
+    if (auth.isAdmin) return true;
+    return auth.isModerator && event.isNativeEvent;
+  }
+
   Future<void> _save() async {
     final l10n = AppLocalizations.of(context)!;
+    final auth = context.read<AuthService>();
+    if (!_canEditLoadedEvent(auth)) return;
+
     final eventsService = context.read<AdminEventsService>();
     if (!_formKey.currentState!.validate()) return;
     if (_endAt != null && _endAt!.isBefore(_startAt)) {
@@ -449,16 +459,87 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
     setState(() => _formError = eventsService.error ?? 'Update failed');
   }
 
+  Widget _buildExternalSourceBlockedBody(AppLocalizations l10n) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.info_outline,
+            size: 64,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(height: 24),
+          Text(
+            l10n.adminEventExternalSyncWarningTitle,
+            style: Theme.of(context).textTheme.headlineSmall,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            l10n.eventDetailExternalSourceCannotEdit,
+            style: Theme.of(context).textTheme.bodyLarge,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 32),
+          if (_event?.eventSourceName?.trim().isNotEmpty == true)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.source,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.eventDetailSourceLabel,
+                            style: Theme.of(context).textTheme.labelSmall,
+                          ),
+                          Text(
+                            _event!.eventSourceName!.trim(),
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          const SizedBox(height: 24),
+          FilledButton.icon(
+            onPressed: () => context.pop(),
+            icon: const Icon(Icons.arrow_back),
+            label: const Text('Go back'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final isAdmin = context.select<AuthService, bool>((s) => s.isAdmin);
-    if (!isAdmin) {
+    final auth = context.select<AuthService, AuthService>((s) => s);
+    final isStaff = auth.isModerator || auth.isAdmin;
+    if (!isStaff) {
       return Scaffold(
         appBar: AppBar(title: Text(l10n.adminEventEditTitle)),
-        body: const Center(child: Text('Administrator access required')),
+        body: const Center(child: Text('Moderator or administrator access required')),
       );
     }
+
+    final isModeratorOnly = auth.isModerator && !auth.isAdmin;
+    final isExternalBlocked =
+        !_isLoading && _event != null && !_event!.isNativeEvent && isModeratorOnly;
 
     return Scaffold(
       appBar: AppBar(
@@ -472,12 +553,14 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
           ? const Center(child: CircularProgressIndicator())
           : _event == null
           ? Center(child: Text(_formError ?? 'Event not found'))
+          : isExternalBlocked
+          ? _buildExternalSourceBlockedBody(l10n)
           : Form(
               key: _formKey,
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  if (!_event!.isNativeEvent) ...[
+                  if (!_event!.isNativeEvent && auth.isAdmin) ...[
                     MaterialBanner(
                       backgroundColor: Theme.of(context)
                           .colorScheme

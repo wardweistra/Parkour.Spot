@@ -3018,6 +3018,17 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventDetailAdminEditEvent => 'Editar evento';
 
   @override
+  String get eventDetailMenuEditEventSubtitleNative =>
+      'Cria primeiro um evento nativo';
+
+  @override
+  String get eventDetailMenuEditEventSubtitleMod => 'Apenas moderador';
+
+  @override
+  String get eventDetailExternalSourceCannotEdit =>
+      'Eventos de fontes externas não podem ser editados. Cria primeiro um evento nativo com «Marcar como duplicado» → «Criar evento nativo».';
+
+  @override
   String get eventDetailSourceLabel => 'Fonte';
 
   @override
