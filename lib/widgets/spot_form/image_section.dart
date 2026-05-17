@@ -11,6 +11,8 @@ class SpotImageSection extends StatelessWidget {
   final void Function(int) onRemoveExistingAt;
   final void Function(int, int)? onReorderExisting;
   final void Function(int, int)? onReorderSelected;
+  final String? sectionTitle;
+  final bool showRequiredIndicator;
 
   const SpotImageSection({
     super.key,
@@ -22,6 +24,8 @@ class SpotImageSection extends StatelessWidget {
     required this.onRemoveExistingAt,
     this.onReorderExisting,
     this.onReorderSelected,
+    this.sectionTitle,
+    this.showRequiredIndicator = true,
   });
 
   @override
@@ -36,16 +40,18 @@ class SpotImageSection extends StatelessWidget {
             Row(
               children: [
                 Text(
-                  l10n.addSpotImagesSectionTitle,
+                  sectionTitle ?? l10n.addSpotImagesSectionTitle,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  '*',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                ),
+                if (showRequiredIndicator) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    '*',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: 12),

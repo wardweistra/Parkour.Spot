@@ -16,6 +16,7 @@ import '../../services/geocoding_service.dart';
 import '../../services/spot_list_service.dart';
 import '../../services/spot_service.dart';
 import '../../utils/image_preparation.dart';
+import '../../widgets/spot_form/image_section.dart';
 import '../../widgets/spot_list_selection_dialog.dart';
 import '../../widgets/spot_selection_dialog.dart';
 
@@ -47,8 +48,8 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
   String? _formError;
   final List<Spot> _linkedSpots = <Spot>[];
   final List<SpotList> _linkedLists = <SpotList>[];
-  final List<Uint8List> _selectedImageBytes = <Uint8List>[];
-  final List<String> _imageUrls = <String>[];
+  final List<Uint8List?> _selectedImageBytes = <Uint8List?>[];
+  final List<String> _existingImageUrls = <String>[];
 
   @override
   void initState() {
@@ -116,7 +117,7 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
       _linkedLists
         ..clear()
         ..addAll(lists);
-      _imageUrls
+      _existingImageUrls
         ..clear()
         ..addAll(event.imageUrls);
       _isLoading = false;
@@ -184,7 +185,7 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
     });
   }
 
-  Future<void> _pickImagesFromGallery() async {
+  Future<void> _pickFromGallery() async {
     try {
       final picker = ImagePicker();
       final pickedFiles = await picker.pickMultiImage(
@@ -195,17 +196,95 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
       if (pickedFiles.isEmpty) return;
 
       for (final pickedFile in pickedFiles) {
-        final bytes = await pickedFile.readAsBytes();
-        final prepared = await prepareImageForUpload(bytes);
-        _selectedImageBytes.add(prepared.bytes);
+        try {
+          final bytes = await pickedFile.readAsBytes();
+          final prepared = await prepareImageForUpload(bytes);
+          if (mounted) {
+            setState(() => _selectedImageBytes.add(prepared.bytes));
+          }
+        } on ImagePreparationException catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+            );
+          }
+        }
       }
       if (!mounted) return;
       setState(() => _formError = null);
-    } on ImagePreparationException catch (e) {
-      setState(() => _formError = e.message);
     } catch (e) {
-      setState(() => _formError = 'Failed to pick images: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e is ImagePreparationException
+                ? e.message
+                : 'Failed to pick images. Please try again.',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
+  }
+
+  Future<void> _takePhoto() async {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 2048,
+        maxHeight: 2048,
+        imageQuality: 85,
+      );
+      if (pickedFile == null) return;
+
+      final bytes = await pickedFile.readAsBytes();
+      final prepared = await prepareImageForUpload(bytes);
+      if (!mounted) return;
+      setState(() {
+        _selectedImageBytes.add(prepared.bytes);
+        _formError = null;
+      });
+    } on ImagePreparationException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to take photo. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _removeSelectedImageAt(int index) {
+    setState(() {
+      if (index < _selectedImageBytes.length) {
+        _selectedImageBytes[index] = null;
+      }
+    });
+  }
+
+  void _removeExistingImageAt(int index) {
+    setState(() => _existingImageUrls.removeAt(index));
+  }
+
+  void _reorderExistingImage(int oldIndex, int newIndex) {
+    setState(() {
+      final imageUrl = _existingImageUrls.removeAt(oldIndex);
+      _existingImageUrls.insert(newIndex, imageUrl);
+    });
+  }
+
+  void _reorderSelectedImage(int oldIndex, int newIndex) {
+    setState(() {
+      final imageBytes = _selectedImageBytes.removeAt(oldIndex);
+      _selectedImageBytes.insert(newIndex, imageBytes);
+    });
   }
 
   Future<bool> _tryGeocodeCoordinatesIfNeeded({bool force = false}) async {
@@ -269,11 +348,16 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
       _formError = null;
     });
 
+    final validNewImageBytes = _selectedImageBytes
+        .where((bytes) => bytes != null)
+        .cast<Uint8List>()
+        .toList();
+
     List<String> uploadedImageUrls = <String>[];
     try {
-      if (_selectedImageBytes.isNotEmpty) {
+      if (validNewImageBytes.isNotEmpty) {
         uploadedImageUrls = await eventsService.uploadEventImages(
-          _selectedImageBytes,
+          validNewImageBytes,
         );
       }
     } catch (e) {
@@ -289,7 +373,7 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
       eventId: widget.eventId,
       title: _titleController.text.trim(),
       description: _descriptionController.text.trim(),
-      imageUrls: [..._imageUrls, ...uploadedImageUrls],
+      imageUrls: [..._existingImageUrls, ...uploadedImageUrls],
       websiteUrl: _websiteController.text.trim(),
       startAt: _startAt,
       endAt: _endAt,
@@ -455,33 +539,18 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
                     maxLines: 3,
                   ),
                   const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      FilledButton.icon(
-                        onPressed: _isSubmitting ? null : _pickImagesFromGallery,
-                        icon: const Icon(Icons.photo_library_outlined),
-                        label: const Text('Upload image(s)'),
-                      ),
-                    ],
+                  SpotImageSection(
+                    selectedImageBytes: _selectedImageBytes,
+                    existingImageUrls: _existingImageUrls,
+                    sectionTitle: 'Images (optional)',
+                    showRequiredIndicator: false,
+                    onPickFromGallery: _pickFromGallery,
+                    onTakePhoto: _takePhoto,
+                    onRemoveSelectedAt: _removeSelectedImageAt,
+                    onRemoveExistingAt: _removeExistingImageAt,
+                    onReorderExisting: _reorderExistingImage,
+                    onReorderSelected: _reorderSelectedImage,
                   ),
-                  if (_imageUrls.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      children: _imageUrls
-                          .asMap()
-                          .entries
-                          .map(
-                            (e) => Chip(
-                              label: Text('URL ${e.key + 1}'),
-                              onDeleted: _isSubmitting
-                                  ? null
-                                  : () => setState(() => _imageUrls.removeAt(e.key)),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                  ],
                   const SizedBox(height: 16),
                   _buildLinkedSpotsSection(l10n),
                   const SizedBox(height: 16),
