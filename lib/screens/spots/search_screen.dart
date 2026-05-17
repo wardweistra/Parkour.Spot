@@ -7,12 +7,12 @@ import 'package:flutter/foundation.dart' show kIsWeb, debugPrint, listEquals;
 import 'dart:async';
 import 'package:uuid/uuid.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import '../../services/event_map_service.dart';
 import '../../services/spot_service.dart';
 import '../../models/event_map_pin.dart';
 import '../../utils/explore_events_utils.dart';
 import '../../widgets/explore_event_list_tile.dart';
+import '../../widgets/explore_bottom_sheet_header.dart';
 import '../../services/sync_source_service.dart';
 import '../../services/search_state_service.dart';
 import '../../services/url_service.dart';
@@ -2795,64 +2795,28 @@ class SearchScreenState extends State<SearchScreen>
     );
   }
 
-  Widget _buildExploreBottomSheetCountLine(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    if (_exploreListMode == 'events') {
-      final count = _eventCountInView ?? _visibleEvents.length;
-      final pinTotal = _totalEventPinsInView;
-      final shownPins = _loadedEventPins.length;
-      return RichText(
-        text: TextSpan(
-          children: [
-            TextSpan(
-              text: l10n.exploreEventCountShort(count),
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-            if (pinTotal != null && shownPins < pinTotal)
-              TextSpan(
-                text: l10n.exploreMapBestShownParenthetical(shownPins),
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.normal,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.6),
-                ),
-              ),
-          ],
-        ),
-      );
+  int _exploreSpotCountForHeader() =>
+      _totalSpotsInView ?? _visibleSpots.length;
+
+  int _exploreEventCountForHeader() =>
+      _eventCountInView ?? _visibleEvents.length;
+
+  String? _exploreSpotsSegmentSuffix(AppLocalizations l10n) {
+    if (_totalSpotsInView != null &&
+        _bestShownCount != null &&
+        _bestShownCount! < _totalSpotsInView!) {
+      return l10n.exploreMapBestShownParenthetical(_bestShownCount!).trim();
     }
-    final mainLine = _totalSpotsInView != null && _bestShownCount != null
-        ? l10n.exploreMapRankedTotalBar(_totalSpotsInView!)
-        : l10n.exploreMapSpotsFoundLine(_visibleSpots.length);
-    return RichText(
-      text: TextSpan(
-        children: [
-          TextSpan(
-            text: mainLine,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          if (_totalSpotsInView != null &&
-              _bestShownCount != null &&
-              _bestShownCount! < _totalSpotsInView!)
-            TextSpan(
-              text: l10n.exploreMapBestShownParenthetical(_bestShownCount!),
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.normal,
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withValues(alpha: 0.6),
-              ),
-            ),
-        ],
-      ),
-    );
+    return null;
+  }
+
+  String? _exploreEventsSegmentSuffix(AppLocalizations l10n) {
+    final pinTotal = _totalEventPinsInView;
+    final shownPins = _loadedEventPins.length;
+    if (pinTotal != null && shownPins < pinTotal) {
+      return l10n.exploreMapBestShownParenthetical(shownPins).trim();
+    }
+    return null;
   }
 
   Widget _buildSpotListPreviewCard({required double maxWidth}) {
@@ -3945,74 +3909,41 @@ class SearchScreenState extends State<SearchScreen>
                                             16,
                                             8,
                                           ),
-                                          child: Column(
-                                            children: [
-                                              Center(
-                                                child: TextButton(
-                                                  onPressed: _toggleBottomSheet,
-                                                  child: Row(
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    children: [
-                                                      SvgPicture.asset(
-                                                        Theme.of(context)
-                                                                    .brightness ==
-                                                                Brightness.dark
-                                                            ? 'assets/images/logo-square-dark.svg'
-                                                            : 'assets/images/logo-square.svg',
-                                                        width: 24,
-                                                        height: 24,
-                                                        fit: BoxFit.contain,
-                                                      ),
-                                                      const SizedBox(width: 12),
-                                                      _buildExploreBottomSheetCountLine(
-                                                        context,
-                                                      ),
-                                                      const SizedBox(width: 8),
-                                                      ReliableIcon(
-                                                        icon: _isBottomSheetOpen
-                                                            ? Icons.expand_more
-                                                            : Icons.expand_less,
-                                                      ),
-                                                    ],
-                                                  ),
+                                          child: Builder(
+                                            builder: (context) {
+                                              final l10n =
+                                                  AppLocalizations.of(
+                                                    context,
+                                                  )!;
+                                              return ExploreBottomSheetHeader(
+                                                mode: _exploreListMode,
+                                                spotsLabel: l10n
+                                                    .exploreSpotCountShort(
+                                                  _exploreSpotCountForHeader(),
                                                 ),
-                                              ),
-                                              SegmentedButton<String>(
-                                                segments: [
-                                                  ButtonSegment(
-                                                    value: 'spots',
-                                                    label: Text(
-                                                      AppLocalizations.of(
-                                                        context,
-                                                      )!.exploreMapListModeSpots,
-                                                    ),
-                                                    icon: const Icon(
-                                                      Icons.place_outlined,
-                                                    ),
-                                                  ),
-                                                  ButtonSegment(
-                                                    value: 'events',
-                                                    label: Text(
-                                                      AppLocalizations.of(
-                                                        context,
-                                                      )!.exploreMapListModeEvents,
-                                                    ),
-                                                    icon: const Icon(
-                                                      Icons.event_outlined,
-                                                    ),
-                                                  ),
-                                                ],
-                                                selected: {_exploreListMode},
-                                                onSelectionChanged:
-                                                    (Set<String> selected) {
+                                                eventsLabel: l10n
+                                                    .exploreEventCountShort(
+                                                  _exploreEventCountForHeader(),
+                                                ),
+                                                spotsDetailSuffix:
+                                                    _exploreSpotsSegmentSuffix(
+                                                  l10n,
+                                                ),
+                                                eventsDetailSuffix:
+                                                    _exploreEventsSegmentSuffix(
+                                                  l10n,
+                                                ),
+                                                isSheetOpen:
+                                                    _isBottomSheetOpen,
+                                                onModeChanged: (mode) {
                                                   setState(() {
-                                                    _exploreListMode =
-                                                        selected.first;
+                                                    _exploreListMode = mode;
                                                   });
                                                 },
-                                              ),
-                                            ],
+                                                onToggleSheet:
+                                                    _toggleBottomSheet,
+                                              );
+                                            },
                                           ),
                                         ),
 
