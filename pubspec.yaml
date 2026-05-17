@@ -80,5 +80,5 @@ flutter:
     - assets/images/map/map-icon-normal-64x64-selected.png
     - assets/images/map/map-icon-list-64x64-selected.png
     - assets/images/map/map-icon-normal-64x64-add.png
-    - assets/images/map/map-icon-spotevent-64x64.png
-    - assets/images/map/map-icon-spotevent-64x64-selected.png
+    - assets/images/map/map-icon-event-64x64.png
+    - assets/images/map/map-icon-event-64x64-selected.png

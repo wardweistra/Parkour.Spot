@@ -27,12 +27,12 @@ class MarkerIconUtils {
       'assets/images/map/map-icon-normal-64x64-add.png';
 
   /// Event pin on Explore (venue and spot-linked events).
-  static const String mapPinSpotEventAsset =
-      'assets/images/map/map-icon-spotevent-64x64.png';
+  static const String mapPinEventAsset =
+      'assets/images/map/map-icon-event-64x64.png';
 
   /// Selected event pin on Explore.
-  static const String mapPinSpotEventSelectedAsset =
-      'assets/images/map/map-icon-spotevent-64x64-selected.png';
+  static const String mapPinEventSelectedAsset =
+      'assets/images/map/map-icon-event-64x64-selected.png';
 
   /// Source PNG dimensions (filenames say 64×64 but assets are 128×160).
   static const double mapPinAssetWidth = 128;
@@ -173,21 +173,21 @@ class MarkerIconUtils {
   }
 
   /// Event pin on Explore (venue and spot-linked events).
-  static Future<BitmapDescriptor> loadSpotEventMapPin({
+  static Future<BitmapDescriptor> loadEventMapPin({
     double? logicalHeight,
   }) =>
       loadMapPinPng(
-        mapPinSpotEventAsset,
+        mapPinEventAsset,
         fallbackFill: mapPinEventFallbackFill,
         logicalHeight: logicalHeight,
       );
 
   /// Selected event pin on Explore.
-  static Future<BitmapDescriptor> loadSpotEventSelectedMapPin({
+  static Future<BitmapDescriptor> loadEventSelectedMapPin({
     double? logicalHeight,
   }) =>
       loadMapPinPng(
-        mapPinSpotEventSelectedAsset,
+        mapPinEventSelectedAsset,
         fallbackFill: mapPinEventSelectedFallbackFill,
         logicalHeight: logicalHeight,
       );

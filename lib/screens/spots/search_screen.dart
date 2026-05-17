@@ -2335,11 +2335,11 @@ class SearchScreenState extends State<SearchScreen>
         logicalHeight: browsePinHeight,
       );
       final BitmapDescriptor eventPin =
-          await MarkerIconUtils.loadSpotEventMapPin(
+          await MarkerIconUtils.loadEventMapPin(
         logicalHeight: browsePinHeight,
       );
       final BitmapDescriptor eventSelectedPin =
-          await MarkerIconUtils.loadSpotEventSelectedMapPin(
+          await MarkerIconUtils.loadEventSelectedMapPin(
         logicalHeight: browsePinHeight,
       );
       if (mounted) {
