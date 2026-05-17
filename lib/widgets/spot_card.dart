@@ -845,6 +845,12 @@ class _SpotCardState extends State<SpotCard> {
                               : const SizedBox.shrink(),
                         ],
                       ),
+
+                      if (widget.upcomingEventPin != null) ...[
+                        const SizedBox(height: 8),
+                        _UpcomingEventBadge(pin: widget.upcomingEventPin!),
+                      ],
+
                       const SizedBox(height: 8),
                       Text(
                         widget.spot.description.trim().isEmpty 
