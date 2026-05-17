@@ -126,7 +126,9 @@ function collectLinkedSpotIds(eventData, listsById) {
     result.push(trimmed);
   };
 
-  const directSpotIds = Array.isArray(eventData.spotIds) ? eventData.spotIds : [];
+  const directSpotIds = Array.isArray(eventData.spotIds) ?
+    eventData.spotIds :
+    [];
   for (const spotId of directSpotIds) addId(spotId);
 
   const spotListIds = Array.isArray(eventData.spotListIds) ?
@@ -155,7 +157,13 @@ function collectLinkedSpotIds(eventData, listsById) {
  * @param {Date=} options.now
  * @return {{pins: Array<{id: string, data: Object}>, truncated: boolean}}
  */
-function buildEventMapPinWrites(eventId, eventData, spotsById, listsById, options = {}) {
+function buildEventMapPinWrites(
+    eventId,
+    eventData,
+    spotsById,
+    listsById,
+    options = {},
+) {
   const now = options.now || new Date();
   const pins = [];
 
@@ -167,7 +175,9 @@ function buildEventMapPinWrites(eventId, eventData, spotsById, listsById, option
     return {pins, truncated: false};
   }
 
-  const title = typeof eventData.title === "string" ? eventData.title.trim() : "";
+  const title = typeof eventData.title === "string" ?
+    eventData.title.trim() :
+    "";
   const startAt = normalizeDate(eventData.startAt);
   const endAt = normalizeDate(eventData.endAt);
   if (!startAt) return {pins, truncated: false};
@@ -295,7 +305,10 @@ async function materializeEventMapPins(db, eventId, eventData, options = {}) {
   await batch.commit();
 
   if (truncated) {
-    console.warn("eventMapPins.truncated", {eventId, max: MAX_SPOT_PINS_PER_EVENT});
+    console.warn("eventMapPins.truncated", {
+      eventId,
+      max: MAX_SPOT_PINS_PER_EVENT,
+    });
   }
 
   return {pinsWritten: pins.length, truncated};
