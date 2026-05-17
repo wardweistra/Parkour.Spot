@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/parkour_event.dart';
 import '../../models/spot.dart';
 import '../../models/spot_list.dart';
@@ -402,6 +403,7 @@ class _EventCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final startLabel = _formatUtc(event.startAt);
     final endLabel = event.endAt == null ? null : _formatUtc(event.endAt!);
     final websiteUrl = event.websiteUrl?.trim();
@@ -409,6 +411,9 @@ class _EventCard extends StatelessWidget {
     final hasLocation = event.latitude != null && event.longitude != null;
     final sourceName = event.eventSourceName?.trim();
     final hasSource = sourceName != null && sourceName.isNotEmpty;
+    final duplicateOfId = event.duplicateOf?.trim();
+    final hasDuplicateLink =
+        duplicateOfId != null && duplicateOfId.isNotEmpty;
     final openEventPage = event.id == null
         ? null
         : () => context.push('/event/${event.id}');
@@ -452,6 +457,14 @@ class _EventCard extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 6),
                   child: Text(event.description!),
                 ),
+              if (hasDuplicateLink) ...[
+                const SizedBox(height: 8),
+                _EventDuplicateChip(
+                  originalEventId: duplicateOfId,
+                  duplicateOfLabel: l10n.spotDetailDuplicateOf,
+                  originalTitleFallback: l10n.eventDetailOriginalEventFallback,
+                ),
+              ],
               const SizedBox(height: 10),
               Wrap(
                 spacing: 8,
@@ -608,6 +621,116 @@ class _EventCard extends StatelessWidget {
     final uri = Uri.tryParse(url);
     if (uri == null) return;
     await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+}
+
+class _EventDuplicateChip extends StatefulWidget {
+  const _EventDuplicateChip({
+    required this.originalEventId,
+    required this.duplicateOfLabel,
+    required this.originalTitleFallback,
+  });
+
+  final String originalEventId;
+  final String duplicateOfLabel;
+  final String originalTitleFallback;
+
+  @override
+  State<_EventDuplicateChip> createState() => _EventDuplicateChipState();
+}
+
+class _EventDuplicateChipState extends State<_EventDuplicateChip> {
+  String? _originalTitle;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOriginalTitle();
+  }
+
+  @override
+  void didUpdateWidget(covariant _EventDuplicateChip oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.originalEventId != widget.originalEventId) {
+      setState(() {
+        _originalTitle = null;
+        _loading = true;
+      });
+      _loadOriginalTitle();
+    }
+  }
+
+  Future<void> _loadOriginalTitle() async {
+    final original = await context.read<AdminEventsService>().getEventById(
+      widget.originalEventId,
+    );
+    if (!mounted) return;
+    setState(() {
+      _originalTitle = original?.title.trim();
+      _loading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final title = _loading
+        ? '…'
+        : ((_originalTitle != null && _originalTitle!.isNotEmpty)
+              ? _originalTitle!
+              : widget.originalTitleFallback);
+
+    return Material(
+      color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.45),
+      borderRadius: BorderRadius.circular(8),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => context.push('/event/${widget.originalEventId}'),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          child: Row(
+            children: [
+              Icon(
+                Icons.copy_all,
+                size: 18,
+                color: theme.colorScheme.secondary,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.duplicateOfLabel,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSecondaryContainer.withValues(
+                          alpha: 0.8,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.secondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.open_in_new,
+                size: 16,
+                color: theme.colorScheme.secondary,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
