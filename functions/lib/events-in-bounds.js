@@ -1,4 +1,6 @@
-const {normalizeDate, isEventPast} = require("./event-map-pins");
+const {normalizeDate, isEventPast, pickEventCardFields} =
+  require("./event-map-pins");
+const {getResizedImageUrlForApi} = require("./url-helpers");
 
 /** Max pins fetched for exact distinct eventId count. */
 const EXACT_EVENT_COUNT_PIN_CAP = 500;
@@ -55,16 +57,67 @@ function normalizePin(docId, data) {
     pin.description = description;
   }
 
-  if (Array.isArray(data.imageUrls)) {
-    const imageUrls = data.imageUrls
-        .filter((url) => typeof url === "string" && url.trim().length > 0)
-        .map((url) => url.trim());
-    if (imageUrls.length > 0) {
-      pin.imageUrls = imageUrls;
-    }
+  const imageUrls = normalizeImageUrls(data.imageUrls);
+  if (imageUrls.length > 0) {
+    pin.imageUrls = imageUrls;
   }
 
   return pin;
+}
+
+/**
+ * @param {unknown} rawUrls
+ * @return {string[]}
+ */
+function normalizeImageUrls(rawUrls) {
+  if (!Array.isArray(rawUrls)) return [];
+  return rawUrls
+      .filter((url) => typeof url === "string" && url.trim().length > 0)
+      .map((url) => getResizedImageUrlForApi(url.trim()))
+      .slice(0, 10);
+}
+
+/**
+ * Fills missing pin imageUrls from canonical event documents (stale map pins).
+ * @param {FirebaseFirestore.Firestore} db
+ * @param {Object[]} pins
+ * @return {Promise<Object[]>}
+ */
+async function enrichPinsWithEventImages(db, pins) {
+  if (!Array.isArray(pins) || pins.length === 0) return pins;
+
+  const eventIdsNeedingImages = [...new Set(
+      pins
+          .filter((pin) => !pin.imageUrls || pin.imageUrls.length === 0)
+          .map((pin) => pin.eventId)
+          .filter((id) => typeof id === "string" && id.length > 0),
+  )];
+  if (eventIdsNeedingImages.length === 0) return pins;
+
+  const imageUrlsByEventId = new Map();
+  const chunkSize = 10;
+  for (let i = 0; i < eventIdsNeedingImages.length; i += chunkSize) {
+    const chunk = eventIdsNeedingImages.slice(i, i + chunkSize);
+    const refs = chunk.map((eventId) => db.collection("events").doc(eventId));
+    const snaps = await db.getAll(...refs);
+    for (const snap of snaps) {
+      if (!snap.exists) continue;
+      const cardFields = pickEventCardFields(snap.data() || {});
+      const urls = normalizeImageUrls(cardFields.imageUrls);
+      if (urls.length > 0) {
+        imageUrlsByEventId.set(snap.id, urls);
+      }
+    }
+  }
+
+  if (imageUrlsByEventId.size === 0) return pins;
+
+  return pins.map((pin) => {
+    if (pin.imageUrls && pin.imageUrls.length > 0) return pin;
+    const urls = imageUrlsByEventId.get(pin.eventId);
+    if (!urls || urls.length === 0) return pin;
+    return {...pin, imageUrls: urls};
+  });
 }
 
 /**
@@ -245,7 +298,8 @@ async function executeEventsInBoundsQuery(db, params) {
   }
 
   const filteredPins = mapDocsToPins(allDocs);
-  const pins = filteredPins.slice(0, maxItems);
+  const enrichedPins = await enrichPinsWithEventImages(db, filteredPins);
+  const pins = enrichedPins.slice(0, maxItems);
   const shownCount = pins.length;
 
   let eventCount;
@@ -269,6 +323,8 @@ module.exports = {
   EXACT_EVENT_COUNT_PIN_CAP,
   isPinShowable,
   normalizePin,
+  normalizeImageUrls,
+  enrichPinsWithEventImages,
   countDistinctEventIds,
   dedupePinsByEventId,
   resolveLongitudeBounds,
