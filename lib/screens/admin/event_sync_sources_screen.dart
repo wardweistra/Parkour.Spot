@@ -6,6 +6,11 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../services/auth_service.dart';
 import '../../services/event_sync_source_service.dart';
 
+const TextStyle _kEventSyncChipLabelText = TextStyle(
+  fontSize: 11,
+  fontWeight: FontWeight.normal,
+);
+
 class EventSyncSourcesScreen extends StatefulWidget {
   const EventSyncSourcesScreen({super.key});
 
@@ -228,8 +233,32 @@ class _EventSyncSourcesScreenState extends State<EventSyncSourcesScreen> {
                               Chip(
                                 label: Text('Last sync: ${source.lastSyncAt}'),
                               ),
+                            if (source.autoSyncEnabled == true)
+                              Chip(
+                                backgroundColor: Colors.green.shade100,
+                                label: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.schedule, size: 16),
+                                    SizedBox(width: 4),
+                                    Text('Auto-Sync ON'),
+                                  ],
+                                ),
+                              ),
                           ],
                         ),
+                        if (source.autoSyncEnabled == true &&
+                            source.syncSchedule != null &&
+                            source.syncSchedule!.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Chip(
+                            backgroundColor: Colors.blue.shade50,
+                            label: Text(
+                              'Schedule: ${source.syncSchedule}',
+                              style: _kEventSyncChipLabelText,
+                            ),
+                          ),
+                        ],
                         if (source.lastSyncStats != null)
                           Wrap(
                             spacing: 6,
@@ -364,7 +393,9 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
   late final TextEditingController _icsUrlCtrl;
   late final TextEditingController _descriptionCtrl;
   late final TextEditingController _publicUrlCtrl;
+  late final TextEditingController _syncScheduleCtrl;
   late bool _isActive;
+  late bool _autoSyncEnabled;
   bool _isSaving = false;
 
   @override
@@ -378,7 +409,11 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
     _publicUrlCtrl = TextEditingController(
       text: widget.source?.publicUrl ?? '',
     );
+    _syncScheduleCtrl = TextEditingController(
+      text: widget.source?.syncSchedule ?? '',
+    );
     _isActive = widget.source?.isActive ?? true;
+    _autoSyncEnabled = widget.source?.autoSyncEnabled ?? false;
   }
 
   @override
@@ -387,6 +422,7 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
     _icsUrlCtrl.dispose();
     _descriptionCtrl.dispose();
     _publicUrlCtrl.dispose();
+    _syncScheduleCtrl.dispose();
     super.dispose();
   }
 
@@ -447,6 +483,30 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                   value: _isActive,
                   onChanged: (value) => setState(() => _isActive = value),
                 ),
+                const Divider(),
+                const Text(
+                  'Auto-Sync Configuration',
+                  style: TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 8),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Enable Auto-Sync'),
+                  subtitle: const Text(
+                    'Automatically sync this event source according to the schedule below',
+                  ),
+                  value: _autoSyncEnabled,
+                  onChanged: (value) =>
+                      setState(() => _autoSyncEnabled = value),
+                ),
+                TextFormField(
+                  controller: _syncScheduleCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Sync Schedule (Cron)',
+                    helperText:
+                        'Cron expression (e.g., "0 */6 * * *" every 6 hours in UTC). Leave empty to disable schedule.',
+                  ),
+                ),
               ],
             ),
           ),
@@ -481,6 +541,10 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                           ? null
                           : trimmedPublicUrl,
                       isActive: _isActive,
+                      syncSchedule: _syncScheduleCtrl.text.trim().isEmpty
+                          ? null
+                          : _syncScheduleCtrl.text.trim(),
+                      autoSyncEnabled: _autoSyncEnabled,
                     );
                   } else {
                     ok = await service.updateSource(
@@ -490,6 +554,8 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                       description: trimmedDescription,
                       publicUrl: trimmedPublicUrl,
                       isActive: _isActive,
+                      syncSchedule: _syncScheduleCtrl.text.trim(),
+                      autoSyncEnabled: _autoSyncEnabled,
                     );
                   }
 
