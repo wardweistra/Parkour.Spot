@@ -382,7 +382,36 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
           .read<GeocodingService>()
           .geocodeCoordinatesDetails(latitude, longitude);
       final resolvedAddress = details['address']?.trim();
+      final resolvedCity = details['city']?.trim();
+      final resolvedCountryCode =
+          details['countryCode']?.trim().toUpperCase();
       if (!mounted) return false;
+
+      if (force) {
+        if (resolvedAddress == null || resolvedAddress.isEmpty) {
+          setState(() => _formError = 'Unable to geocode these coordinates');
+          return false;
+        }
+        _addressController.text = resolvedAddress;
+        _currentCity = resolvedCity?.isNotEmpty == true ? resolvedCity : null;
+        _currentCountryCode = resolvedCountryCode?.isNotEmpty == true
+            ? resolvedCountryCode
+            : null;
+        return true;
+      }
+
+      // Keep an existing address (e.g. imported ICS location); only backfill
+      // missing city/country from coordinates.
+      if (hasAddress) {
+        if (resolvedCity?.isNotEmpty == true && !hasCity) {
+          _currentCity = resolvedCity;
+        }
+        if (resolvedCountryCode?.isNotEmpty == true && !hasCountryCode) {
+          _currentCountryCode = resolvedCountryCode;
+        }
+        return true;
+      }
+
       if (resolvedAddress == null || resolvedAddress.isEmpty) {
         if (!shouldRequireGeocodeSuccess) {
           return true;
@@ -391,8 +420,10 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
         return false;
       }
       _addressController.text = resolvedAddress;
-      _currentCity = details['city']?.trim();
-      _currentCountryCode = details['countryCode']?.trim().toUpperCase();
+      _currentCity = resolvedCity?.isNotEmpty == true ? resolvedCity : null;
+      _currentCountryCode = resolvedCountryCode?.isNotEmpty == true
+          ? resolvedCountryCode
+          : null;
       return true;
     } catch (e) {
       if (!mounted) return false;

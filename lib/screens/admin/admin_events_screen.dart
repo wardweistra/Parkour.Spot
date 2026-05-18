@@ -1012,7 +1012,42 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
         longitude,
       );
       final resolvedAddress = details['address']?.trim();
+      final resolvedCity = details['city']?.trim();
+      final resolvedCountryCode =
+          details['countryCode']?.trim().toUpperCase();
       if (!mounted) return false;
+
+      if (force) {
+        if (resolvedAddress == null || resolvedAddress.isEmpty) {
+          setState(() {
+            _formError = 'Unable to geocode these coordinates';
+          });
+          return false;
+        }
+        setState(() {
+          _addressController.text = resolvedAddress;
+          _currentCity = resolvedCity?.isNotEmpty == true ? resolvedCity : null;
+          _currentCountryCode = resolvedCountryCode?.isNotEmpty == true
+              ? resolvedCountryCode
+              : null;
+          _formError = null;
+        });
+        return true;
+      }
+
+      if (hasAddress) {
+        setState(() {
+          if (resolvedCity?.isNotEmpty == true && !hasCity) {
+            _currentCity = resolvedCity;
+          }
+          if (resolvedCountryCode?.isNotEmpty == true && !hasCountryCode) {
+            _currentCountryCode = resolvedCountryCode;
+          }
+          _formError = null;
+        });
+        return true;
+      }
+
       if (resolvedAddress == null || resolvedAddress.isEmpty) {
         if (!shouldRequireGeocodeSuccess) {
           return true;
@@ -1022,10 +1057,12 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
         });
         return false;
       }
-      _addressController.text = resolvedAddress;
       setState(() {
-        _currentCity = details['city']?.trim();
-        _currentCountryCode = details['countryCode']?.trim().toUpperCase();
+        _addressController.text = resolvedAddress;
+        _currentCity = resolvedCity?.isNotEmpty == true ? resolvedCity : null;
+        _currentCountryCode = resolvedCountryCode?.isNotEmpty == true
+            ? resolvedCountryCode
+            : null;
         _formError = null;
       });
       return true;
