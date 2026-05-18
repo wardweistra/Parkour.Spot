@@ -292,8 +292,6 @@ class SearchScreenState extends State<SearchScreen>
   List<EventMapPin> _loadedEventPins = [];
   List<EventMapPin> _visibleEvents = [];
   Map<String, EventMapPin> _eventPinBySpotId = {};
-  int? _totalEventPinsInView;
-  int? _eventCountInView;
   bool _isLoadingEventsForView = false;
   String _exploreListMode = 'spots';
   BitmapDescriptor? _eventIcon;
@@ -1297,8 +1295,6 @@ class SearchScreenState extends State<SearchScreen>
       _bestShownCount = ranked['shownCount'] as int?;
 
       _loadedEventPins = eventsResult.pins;
-      _totalEventPinsInView = eventsResult.totalCount;
-      _eventCountInView = eventsResult.eventCount;
       _eventPinBySpotId = eventPinsBySpotId(_loadedEventPins);
       _visibleEvents = dedupePinsByEventId(_loadedEventPins);
 
@@ -2952,23 +2948,13 @@ class SearchScreenState extends State<SearchScreen>
   int _exploreSpotCountForHeader() =>
       _totalSpotsInView ?? _visibleSpots.length;
 
-  int _exploreEventCountForHeader() =>
-      _eventCountInView ?? _visibleEvents.length;
+  int _exploreEventCountForHeader() => _visibleEvents.length;
 
   String? _exploreSpotsSegmentSuffix(AppLocalizations l10n) {
     if (_totalSpotsInView != null &&
         _bestShownCount != null &&
         _bestShownCount! < _totalSpotsInView!) {
       return l10n.exploreMapBestShownParenthetical(_bestShownCount!).trim();
-    }
-    return null;
-  }
-
-  String? _exploreEventsSegmentSuffix(AppLocalizations l10n) {
-    final pinTotal = _totalEventPinsInView;
-    final shownPins = _loadedEventPins.length;
-    if (pinTotal != null && shownPins < pinTotal) {
-      return l10n.exploreMapBestShownParenthetical(shownPins).trim();
     }
     return null;
   }
@@ -4114,10 +4100,6 @@ class SearchScreenState extends State<SearchScreen>
                                                 ),
                                                 spotsDetailSuffix:
                                                     _exploreSpotsSegmentSuffix(
-                                                  l10n,
-                                                ),
-                                                eventsDetailSuffix:
-                                                    _exploreEventsSegmentSuffix(
                                                   l10n,
                                                 ),
                                                 isSheetOpen:
