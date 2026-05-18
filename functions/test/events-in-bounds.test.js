@@ -45,6 +45,8 @@ describe("events-in-bounds helpers", () => {
         title: " Jam ",
         startAt: futureStart,
         endAt: futureEnd,
+        city: "Utrecht",
+        countryCode: "nl",
       });
       expect(pin).toEqual({
         id: "evt1_venue",
@@ -55,6 +57,8 @@ describe("events-in-bounds helpers", () => {
         title: "Jam",
         startAt: futureStart.toISOString(),
         endAt: futureEnd.toISOString(),
+        city: "Utrecht",
+        countryCode: "NL",
       });
     });
 
@@ -175,6 +179,36 @@ describe("events-in-bounds helpers", () => {
       expect(enriched[0].description).toBe("Community jam in the park.");
     });
 
+    it("fills missing city and countryCode from event documents", async () => {
+      const db = {
+        collection: (name) => ({
+          doc: (id) => ({collection: name, id}),
+        }),
+        getAll: jest.fn(async (...refs) => refs.map((ref) => ({
+          id: ref.id,
+          exists: true,
+          data: () => ({
+            city: "Ghent",
+            countryCode: "be",
+          }),
+        }))),
+      };
+
+      const pins = [{
+        id: "evt1_venue",
+        eventId: "evt1",
+        kind: "venue",
+        latitude: 1,
+        longitude: 2,
+        title: "Jam",
+        startAt: futureStart.toISOString(),
+      }];
+
+      const enriched = await enrichPinsWithEventCardFields(db, pins);
+      expect(enriched[0].city).toBe("Ghent");
+      expect(enriched[0].countryCode).toBe("BE");
+    });
+
     it("leaves pins unchanged when they already have card fields", async () => {
       const db = {getAll: jest.fn()};
       const pins = [{
@@ -182,6 +216,8 @@ describe("events-in-bounds helpers", () => {
         eventId: "evt1",
         imageUrls: ["https://example.com/a.jpg"],
         description: "Already here",
+        city: "Paris",
+        countryCode: "FR",
       }];
       const enriched = await enrichPinsWithEventCardFields(db, pins);
       expect(enriched).toEqual(pins);

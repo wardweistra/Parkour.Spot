@@ -2310,11 +2310,39 @@ async function reverseGeocodeAddress(address, apiKey) {
       response.results &&
       response.results.length > 0
     ) {
-      const location = response.results[0].geometry.location;
+      const topResult = response.results[0];
+      const location = topResult.geometry.location;
+      let city = null;
+      let countryCode = null;
+      if (Array.isArray(topResult.address_components)) {
+        const components = topResult.address_components;
+        const countryComp = components.find(
+            (c) => c.types && c.types.includes("country"),
+        );
+        if (countryComp && countryComp.short_name) {
+          countryCode = countryComp.short_name;
+        }
+        const cityTypesPriority = [
+          "locality",
+          "postal_town",
+          "administrative_area_level_2",
+          "administrative_area_level_1",
+        ];
+        for (const t of cityTypesPriority) {
+          const comp = components.find((c) => c.types && c.types.includes(t));
+          if (comp && comp.long_name) {
+            city = comp.long_name;
+            break;
+          }
+        }
+      }
       return {
         success: true,
         latitude: location.lat,
         longitude: location.lng,
+        city,
+        countryCode,
+        formattedAddress: topResult.formatted_address || null,
       };
     } else {
       logger.warn("mapsGeocode.addressToCoordsNonOk", {
@@ -4024,8 +4052,8 @@ function downloadTextFromUrl(url, redirectCount = 0) {
  * @param {string|null|undefined} address
  * @param {Object} options
  * @param {string=} options.googleMapsApiKey
- * @param {Map<string, {latitude: number, longitude: number}|null>=} options.geocodeCache
- * @return {Promise<{latitude: number, longitude: number}|null>}
+ * @param {Map<string, {latitude: number, longitude: number, city: string|null, countryCode: string|null, address: string|null}|null>=} options.geocodeCache
+ * @return {Promise<{latitude: number, longitude: number, city: string|null, countryCode: string|null, address: string|null}|null>}
  */
 async function geocodeExternalEventAddress(address, options = {}) {
   const normalizedAddress = typeof address === "string" ? address.trim() : "";
@@ -4052,9 +4080,21 @@ async function geocodeExternalEventAddress(address, options = {}) {
       Number.isFinite(geocodeResult.latitude) &&
       Number.isFinite(geocodeResult.longitude);
 
-  const coordinates = hasValidCoordinates ? {
+  const geocodedLocation = hasValidCoordinates ? {
     latitude: geocodeResult.latitude,
     longitude: geocodeResult.longitude,
+    city: typeof geocodeResult.city === "string" &&
+      geocodeResult.city.trim().length > 0 ?
+      geocodeResult.city.trim() :
+      null,
+    countryCode: typeof geocodeResult.countryCode === "string" &&
+      geocodeResult.countryCode.trim().length > 0 ?
+      geocodeResult.countryCode.trim().toUpperCase() :
+      null,
+    address: typeof geocodeResult.formattedAddress === "string" &&
+      geocodeResult.formattedAddress.trim().length > 0 ?
+      geocodeResult.formattedAddress.trim() :
+      null,
   } : null;
   if (!hasValidCoordinates) {
     logger.warn("externalEventGeocode.noCoordinatesFromMaps", {
@@ -4064,8 +4104,8 @@ async function geocodeExternalEventAddress(address, options = {}) {
       geocodeError: geocodeResult?.error || null,
     });
   }
-  if (geocodeCache instanceof Map) geocodeCache.set(cacheKey, coordinates);
-  return coordinates;
+  if (geocodeCache instanceof Map) geocodeCache.set(cacheKey, geocodedLocation);
+  return geocodedLocation;
 }
 
 /**
@@ -4073,7 +4113,7 @@ async function geocodeExternalEventAddress(address, options = {}) {
  * @param {Object} parsedEvent
  * @param {Object=} options
  * @param {string=} options.googleMapsApiKey
- * @param {Map<string, {latitude: number, longitude: number}|null>=} options.geocodeCache
+ * @param {Map<string, {latitude: number, longitude: number, city: string|null, countryCode: string|null, address: string|null}|null>=} options.geocodeCache
  * @return {Promise<Object>}
  */
 async function buildExternalEventCreateData(parsedEvent, options = {}) {
@@ -4103,13 +4143,20 @@ async function buildExternalEventCreateData(parsedEvent, options = {}) {
   }
 
   if (shouldGeocodeExternalEventAddress(null, parsedEvent)) {
-    const coordinates = await geocodeExternalEventAddress(
+    const geocodedLocation = await geocodeExternalEventAddress(
         parsedEvent.address,
         options,
     );
-    if (coordinates) {
-      createData.latitude = coordinates.latitude;
-      createData.longitude = coordinates.longitude;
+    if (geocodedLocation) {
+      createData.latitude = geocodedLocation.latitude;
+      createData.longitude = geocodedLocation.longitude;
+      if (geocodedLocation.city) createData.city = geocodedLocation.city;
+      if (geocodedLocation.countryCode) {
+        createData.countryCode = geocodedLocation.countryCode;
+      }
+      if (!createData.address && geocodedLocation.address) {
+        createData.address = geocodedLocation.address;
+      }
     }
   }
 
@@ -4122,7 +4169,7 @@ async function buildExternalEventCreateData(parsedEvent, options = {}) {
  * @param {Object} existingData
  * @param {Object=} options
  * @param {string=} options.googleMapsApiKey
- * @param {Map<string, {latitude: number, longitude: number}|null>=} options.geocodeCache
+ * @param {Map<string, {latitude: number, longitude: number, city: string|null, countryCode: string|null, address: string|null}|null>=} options.geocodeCache
  * @return {Promise<Object>}
  */
 async function buildExternalEventChangedUpdate(
@@ -4156,28 +4203,46 @@ async function buildExternalEventChangedUpdate(
 
   if (addressChanged) {
     if (shouldGeocodeExternalEventAddress(existingData, parsedEvent)) {
-      const coordinates = await geocodeExternalEventAddress(
+      const geocodedLocation = await geocodeExternalEventAddress(
           parsedEvent.address,
           options,
       );
-      updateData.latitude = coordinates ?
-        coordinates.latitude :
+      updateData.latitude = geocodedLocation ?
+        geocodedLocation.latitude :
         FieldValue.delete();
-      updateData.longitude = coordinates ?
-        coordinates.longitude :
+      updateData.longitude = geocodedLocation ?
+        geocodedLocation.longitude :
         FieldValue.delete();
+      updateData.city = geocodedLocation && geocodedLocation.city ?
+        geocodedLocation.city :
+        FieldValue.delete();
+      updateData.countryCode = geocodedLocation && geocodedLocation.countryCode ?
+        geocodedLocation.countryCode :
+        FieldValue.delete();
+      if (geocodedLocation && geocodedLocation.address) {
+        updateData.address = geocodedLocation.address;
+      }
     } else {
       updateData.latitude = FieldValue.delete();
       updateData.longitude = FieldValue.delete();
+      updateData.city = FieldValue.delete();
+      updateData.countryCode = FieldValue.delete();
     }
   } else if (shouldGeocodeExternalEventAddress(existingData, parsedEvent)) {
-    const coordinates = await geocodeExternalEventAddress(
+    const geocodedLocation = await geocodeExternalEventAddress(
         parsedEvent.address,
         options,
     );
-    if (coordinates) {
-      updateData.latitude = coordinates.latitude;
-      updateData.longitude = coordinates.longitude;
+    if (geocodedLocation) {
+      updateData.latitude = geocodedLocation.latitude;
+      updateData.longitude = geocodedLocation.longitude;
+      if (geocodedLocation.city) updateData.city = geocodedLocation.city;
+      if (geocodedLocation.countryCode) {
+        updateData.countryCode = geocodedLocation.countryCode;
+      }
+      if (!parsedEvent.address && geocodedLocation.address) {
+        updateData.address = geocodedLocation.address;
+      }
     }
   }
 
@@ -4294,17 +4359,24 @@ async function syncExternalEventSource(sourceDoc) {
     } else {
       let wroteCoords = false;
       if (shouldGeocodeExternalEventAddress(existing.data, parsedEvent)) {
-        const coordinates = await geocodeExternalEventAddress(
+        const geocodedLocation = await geocodeExternalEventAddress(
             parsedEvent.address,
             externalEventGeocodeOptions,
         );
-        if (coordinates) {
-          batch.update(existing.ref, {
-            latitude: coordinates.latitude,
-            longitude: coordinates.longitude,
+        if (geocodedLocation) {
+          const coordinateBackfillUpdate = {
+            latitude: geocodedLocation.latitude,
+            longitude: geocodedLocation.longitude,
             updatedAt: FieldValue.serverTimestamp(),
             externalSyncLastSeenAt: FieldValue.serverTimestamp(),
-          });
+          };
+          if (geocodedLocation.city) {
+            coordinateBackfillUpdate.city = geocodedLocation.city;
+          }
+          if (geocodedLocation.countryCode) {
+            coordinateBackfillUpdate.countryCode = geocodedLocation.countryCode;
+          }
+          batch.update(existing.ref, coordinateBackfillUpdate);
           wroteCoords = true;
           stats.coordinatesBackfilled += 1;
         }

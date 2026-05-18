@@ -46,6 +46,8 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
   bool _isSubmitting = false;
   bool _isGeocoding = false;
   String? _formError;
+  String? _currentCity;
+  String? _currentCountryCode;
   final List<Spot> _linkedSpots = <Spot>[];
   final List<SpotList> _linkedLists = <SpotList>[];
   final List<Uint8List?> _selectedImageBytes = <Uint8List?>[];
@@ -109,6 +111,8 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
         _longitudeController.text = event.longitude.toString();
       }
       _addressController.text = event.address ?? '';
+      _currentCity = event.city;
+      _currentCountryCode = event.countryCode;
       _startAt = event.startAt.toUtc();
       _endAt = event.endAt?.toUtc();
       _linkedSpots
@@ -313,18 +317,23 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
       if (coords == null) {
         setState(() {
           _formError =
-              geocoding.error ?? 'Unable to locate coordinates for this address';
+              geocoding.error ??
+              'Unable to locate coordinates for this address';
         });
         return false;
       }
       final latitude = coords['latitude'];
       final longitude = coords['longitude'];
       if (latitude == null || longitude == null) {
-        setState(() => _formError = 'Unable to locate coordinates for this address');
+        setState(
+          () => _formError = 'Unable to locate coordinates for this address',
+        );
         return false;
       }
       _latitudeController.text = latitude.toString();
       _longitudeController.text = longitude.toString();
+      _currentCity = null;
+      _currentCountryCode = null;
       return true;
     } catch (e) {
       if (!mounted) return false;
@@ -342,7 +351,11 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
     final hasLongitudeText = lngRaw.isNotEmpty;
     final hasAddress = _addressController.text.trim().isNotEmpty;
 
-    if (!hasLatitudeText && !hasLongitudeText) return true;
+    if (!hasLatitudeText && !hasLongitudeText) {
+      _currentCity = null;
+      _currentCountryCode = null;
+      return true;
+    }
     if (hasLatitudeText != hasLongitudeText) {
       setState(() => _formError = 'Both latitude and longitude are required');
       return false;
@@ -350,20 +363,23 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
     final latitude = double.tryParse(latRaw);
     final longitude = double.tryParse(lngRaw);
     if (latitude == null || longitude == null) {
-      setState(() => _formError = 'Latitude and longitude must be valid numbers');
+      setState(
+        () => _formError = 'Latitude and longitude must be valid numbers',
+      );
       return false;
     }
-    if (hasAddress && !force) return true;
+    final hasCity = _currentCity?.trim().isNotEmpty == true;
+    final hasCountryCode = _currentCountryCode?.trim().isNotEmpty == true;
+    if (hasAddress && hasCity && hasCountryCode && !force) return true;
 
     setState(() {
       _isGeocoding = true;
       _formError = null;
     });
     try {
-      final details = await context.read<GeocodingService>().geocodeCoordinatesDetails(
-        latitude,
-        longitude,
-      );
+      final details = await context
+          .read<GeocodingService>()
+          .geocodeCoordinatesDetails(latitude, longitude);
       final resolvedAddress = details['address']?.trim();
       if (!mounted) return false;
       if (resolvedAddress == null || resolvedAddress.isEmpty) {
@@ -371,6 +387,8 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
         return false;
       }
       _addressController.text = resolvedAddress;
+      _currentCity = details['city']?.trim();
+      _currentCountryCode = details['countryCode']?.trim().toUpperCase();
       return true;
     } catch (e) {
       if (!mounted) return false;
@@ -439,6 +457,8 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
       latitude: double.tryParse(_latitudeController.text.trim()),
       longitude: double.tryParse(_longitudeController.text.trim()),
       address: _addressController.text.trim(),
+      city: _currentCity,
+      countryCode: _currentCountryCode,
       spotIds: _linkedSpots.map((s) => s.id!).toList(),
       spotListIds: _linkedLists.map((l) => l.id!).toList(),
     );
@@ -533,13 +553,18 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
     if (!isStaff) {
       return Scaffold(
         appBar: AppBar(title: Text(l10n.adminEventEditTitle)),
-        body: const Center(child: Text('Moderator or administrator access required')),
+        body: const Center(
+          child: Text('Moderator or administrator access required'),
+        ),
       );
     }
 
     final isModeratorOnly = auth.isModerator && !auth.isAdmin;
     final isExternalBlocked =
-        !_isLoading && _event != null && !_event!.isNativeEvent && isModeratorOnly;
+        !_isLoading &&
+        _event != null &&
+        !_event!.isNativeEvent &&
+        isModeratorOnly;
 
     return Scaffold(
       appBar: AppBar(
@@ -562,10 +587,9 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
                 children: [
                   if (!_event!.isNativeEvent && auth.isAdmin) ...[
                     MaterialBanner(
-                      backgroundColor: Theme.of(context)
-                          .colorScheme
-                          .tertiaryContainer
-                          .withValues(alpha: 0.5),
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.tertiaryContainer.withValues(alpha: 0.5),
                       leading: const Icon(Icons.sync),
                       content: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -588,8 +612,9 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
                       labelText: 'Title',
                       border: OutlineInputBorder(),
                     ),
-                    validator: (v) =>
-                        v == null || v.trim().isEmpty ? 'Title is required' : null,
+                    validator: (v) => v == null || v.trim().isEmpty
+                        ? 'Title is required'
+                        : null,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
@@ -653,7 +678,9 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
                             ? const SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Icon(Icons.pin_drop_outlined),
                         label: const Text('To address'),
@@ -679,12 +706,16 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
                       FilledButton.tonalIcon(
                         onPressed: (_isSubmitting || _isGeocoding)
                             ? null
-                            : () => _tryReverseGeocodeAddressIfNeeded(force: true),
+                            : () => _tryReverseGeocodeAddressIfNeeded(
+                                force: true,
+                              ),
                         icon: _isGeocoding
                             ? const SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Icon(Icons.location_searching_outlined),
                         label: const Text('To coords'),
@@ -719,13 +750,17 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
                     label: 'End (UTC, optional)',
                     value: _endAt,
                     onPick: _pickEndAt,
-                    onClear: _endAt == null ? null : () => setState(() => _endAt = null),
+                    onClear: _endAt == null
+                        ? null
+                        : () => setState(() => _endAt = null),
                   ),
                   if (_formError != null) ...[
                     const SizedBox(height: 16),
                     Text(
                       _formError!,
-                      style: TextStyle(color: Theme.of(context).colorScheme.error),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
                     ),
                   ],
                   const SizedBox(height: 24),
@@ -762,7 +797,10 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
         ),
         const SizedBox(height: 8),
         if (_linkedSpots.isEmpty)
-          Text('No spots selected', style: Theme.of(context).textTheme.bodySmall)
+          Text(
+            'No spots selected',
+            style: Theme.of(context).textTheme.bodySmall,
+          )
         else
           Wrap(
             spacing: 8,
@@ -774,7 +812,9 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
                     onDeleted: _isSubmitting
                         ? null
                         : () => setState(
-                            () => _linkedSpots.removeWhere((s) => s.id == spot.id),
+                            () => _linkedSpots.removeWhere(
+                              (s) => s.id == spot.id,
+                            ),
                           ),
                   ),
                 )
@@ -819,7 +859,9 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
                     onDeleted: _isSubmitting
                         ? null
                         : () => setState(
-                            () => _linkedLists.removeWhere((l) => l.id == list.id),
+                            () => _linkedLists.removeWhere(
+                              (l) => l.id == list.id,
+                            ),
                           ),
                   ),
                 )

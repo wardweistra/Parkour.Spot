@@ -114,6 +114,8 @@ describe("event-map-pins helpers", () => {
         title: "Jam",
         description: "Community jam in the park.",
         imageUrls: ["https://example.com/events/jam.jpg"],
+        city: "Rotterdam",
+        countryCode: "nl",
         startAt: futureStart,
         endAt: futureEnd,
         latitude: 51.0,
@@ -130,6 +132,8 @@ describe("event-map-pins helpers", () => {
       expect(pins[0].data.imageUrls).toEqual(
           ["https://example.com/events/jam.jpg"],
       );
+      expect(pins[0].data.city).toBe("Rotterdam");
+      expect(pins[0].data.countryCode).toBe("NL");
     });
 
     it("skips spots without valid coordinates", () => {
