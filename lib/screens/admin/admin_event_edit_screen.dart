@@ -760,6 +760,25 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 8),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: _buildReadOnlyLocationField(
+                          label: 'City',
+                          value: _currentCity,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildReadOnlyLocationField(
+                          label: 'Country code',
+                          value: _currentCountryCode,
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 16),
                   SpotImageSection(
                     selectedImageBytes: _selectedImageBytes,
@@ -906,6 +925,29 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
                 .toList(),
           ),
       ],
+    );
+  }
+
+  Widget _buildReadOnlyLocationField({
+    required String label,
+    required String? value,
+  }) {
+    final trimmed = value?.trim();
+    final hasValue = trimmed != null && trimmed.isNotEmpty;
+    return InputDecorator(
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+        filled: true,
+        helperText: 'Set automatically from coordinates',
+        helperMaxLines: 2,
+      ),
+      child: Text(
+        hasValue ? trimmed : 'Not set',
+        style: hasValue
+            ? null
+            : TextStyle(color: Theme.of(context).hintColor),
+      ),
     );
   }
 
