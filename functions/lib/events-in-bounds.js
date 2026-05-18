@@ -78,47 +78,80 @@ function normalizeImageUrls(rawUrls) {
 }
 
 /**
- * Fills missing pin imageUrls from canonical event documents (stale map pins).
+ * @param {Object} pin
+ * @return {boolean}
+ */
+function pinNeedsCardFieldsEnrichment(pin) {
+  const missingImages = !pin.imageUrls || pin.imageUrls.length === 0;
+  const description = typeof pin.description === "string" ?
+    pin.description.trim() :
+    "";
+  const missingDescription = description.length === 0;
+  return missingImages || missingDescription;
+}
+
+/**
+ * Fills missing pin imageUrls and descriptions from event documents (stale map pins).
  * @param {FirebaseFirestore.Firestore} db
  * @param {Object[]} pins
  * @return {Promise<Object[]>}
  */
-async function enrichPinsWithEventImages(db, pins) {
+async function enrichPinsWithEventCardFields(db, pins) {
   if (!Array.isArray(pins) || pins.length === 0) return pins;
 
-  const eventIdsNeedingImages = [...new Set(
+  const eventIdsNeedingFields = [...new Set(
       pins
-          .filter((pin) => !pin.imageUrls || pin.imageUrls.length === 0)
+          .filter(pinNeedsCardFieldsEnrichment)
           .map((pin) => pin.eventId)
           .filter((id) => typeof id === "string" && id.length > 0),
   )];
-  if (eventIdsNeedingImages.length === 0) return pins;
+  if (eventIdsNeedingFields.length === 0) return pins;
 
-  const imageUrlsByEventId = new Map();
+  const cardFieldsByEventId = new Map();
   const chunkSize = 10;
-  for (let i = 0; i < eventIdsNeedingImages.length; i += chunkSize) {
-    const chunk = eventIdsNeedingImages.slice(i, i + chunkSize);
+  for (let i = 0; i < eventIdsNeedingFields.length; i += chunkSize) {
+    const chunk = eventIdsNeedingFields.slice(i, i + chunkSize);
     const refs = chunk.map((eventId) => db.collection("events").doc(eventId));
     const snaps = await db.getAll(...refs);
     for (const snap of snaps) {
       if (!snap.exists) continue;
       const cardFields = pickEventCardFields(snap.data() || {});
       const urls = normalizeImageUrls(cardFields.imageUrls);
-      if (urls.length > 0) {
-        imageUrlsByEventId.set(snap.id, urls);
-      }
+      const description = typeof cardFields.description === "string" ?
+        cardFields.description.trim() :
+        "";
+      if (urls.length === 0 && description.length === 0) continue;
+      cardFieldsByEventId.set(snap.id, {
+        imageUrls: urls,
+        description: description.length > 0 ? description : undefined,
+      });
     }
   }
 
-  if (imageUrlsByEventId.size === 0) return pins;
+  if (cardFieldsByEventId.size === 0) return pins;
 
   return pins.map((pin) => {
-    if (pin.imageUrls && pin.imageUrls.length > 0) return pin;
-    const urls = imageUrlsByEventId.get(pin.eventId);
-    if (!urls || urls.length === 0) return pin;
-    return {...pin, imageUrls: urls};
+    if (!pinNeedsCardFieldsEnrichment(pin)) return pin;
+    const fields = cardFieldsByEventId.get(pin.eventId);
+    if (!fields) return pin;
+
+    const updated = {...pin};
+    if ((!pin.imageUrls || pin.imageUrls.length === 0) &&
+        fields.imageUrls.length > 0) {
+      updated.imageUrls = fields.imageUrls;
+    }
+    const pinDescription = typeof pin.description === "string" ?
+      pin.description.trim() :
+      "";
+    if (pinDescription.length === 0 && fields.description) {
+      updated.description = fields.description;
+    }
+    return updated;
   });
 }
+
+/** @deprecated Use enrichPinsWithEventCardFields */
+const enrichPinsWithEventImages = enrichPinsWithEventCardFields;
 
 /**
  * @param {Iterable<Object>} pins
@@ -298,7 +331,7 @@ async function executeEventsInBoundsQuery(db, params) {
   }
 
   const filteredPins = mapDocsToPins(allDocs);
-  const enrichedPins = await enrichPinsWithEventImages(db, filteredPins);
+  const enrichedPins = await enrichPinsWithEventCardFields(db, filteredPins);
   const pins = enrichedPins.slice(0, maxItems);
   const shownCount = pins.length;
 
@@ -324,6 +357,8 @@ module.exports = {
   isPinShowable,
   normalizePin,
   normalizeImageUrls,
+  pinNeedsCardFieldsEnrichment,
+  enrichPinsWithEventCardFields,
   enrichPinsWithEventImages,
   countDistinctEventIds,
   dedupePinsByEventId,

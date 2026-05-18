@@ -2,6 +2,7 @@ const {
   isPinShowable,
   normalizePin,
   normalizeImageUrls,
+  enrichPinsWithEventCardFields,
   enrichPinsWithEventImages,
   countDistinctEventIds,
   dedupePinsByEventId,
@@ -75,6 +76,19 @@ describe("events-in-bounds helpers", () => {
       expect(normalizePin("bad", {kind: "venue"})).toBeNull();
     });
 
+    it("includes description when present on pin data", () => {
+      const pin = normalizePin("evt1_venue", {
+        eventId: "evt1",
+        kind: "venue",
+        latitude: 50.1,
+        longitude: 4.2,
+        title: "Jam",
+        startAt: futureStart,
+        description: "  Community jam  ",
+      });
+      expect(pin?.description).toBe("Community jam");
+    });
+
     it("includes resized imageUrls when present on pin data", () => {
       const original =
         "https://storage.googleapis.com/bucket/events/photo.jpg";
@@ -99,7 +113,7 @@ describe("events-in-bounds helpers", () => {
     });
   });
 
-  describe("enrichPinsWithEventImages", () => {
+  describe("enrichPinsWithEventCardFields", () => {
     it("fills missing imageUrls from event documents", async () => {
       const db = {
         collection: (name) => ({
@@ -126,22 +140,56 @@ describe("events-in-bounds helpers", () => {
         startAt: futureStart.toISOString(),
       }];
 
-      const enriched = await enrichPinsWithEventImages(db, pins);
+      const enriched = await enrichPinsWithEventCardFields(db, pins);
       expect(enriched[0].imageUrls).toEqual([
         "https://storage.googleapis.com/bucket/events/resized/jam_1200x1200.webp",
       ]);
     });
 
-    it("leaves pins unchanged when they already have images", async () => {
+    it("fills missing descriptions from event documents", async () => {
+      const db = {
+        collection: (name) => ({
+          doc: (id) => ({collection: name, id}),
+        }),
+        getAll: jest.fn(async (...refs) => refs.map((ref) => ({
+          id: ref.id,
+          exists: true,
+          data: () => ({
+            description: "Community jam in the park.",
+          }),
+        }))),
+      };
+
+      const pins = [{
+        id: "evt1_venue",
+        eventId: "evt1",
+        kind: "venue",
+        latitude: 1,
+        longitude: 2,
+        title: "Jam",
+        startAt: futureStart.toISOString(),
+        imageUrls: ["https://example.com/a.jpg"],
+      }];
+
+      const enriched = await enrichPinsWithEventCardFields(db, pins);
+      expect(enriched[0].description).toBe("Community jam in the park.");
+    });
+
+    it("leaves pins unchanged when they already have card fields", async () => {
       const db = {getAll: jest.fn()};
       const pins = [{
         id: "evt1_venue",
         eventId: "evt1",
         imageUrls: ["https://example.com/a.jpg"],
+        description: "Already here",
       }];
-      const enriched = await enrichPinsWithEventImages(db, pins);
+      const enriched = await enrichPinsWithEventCardFields(db, pins);
       expect(enriched).toEqual(pins);
       expect(db.getAll).not.toHaveBeenCalled();
+    });
+
+    it("enrichPinsWithEventImages is an alias for enrichPinsWithEventCardFields", () => {
+      expect(enrichPinsWithEventImages).toBe(enrichPinsWithEventCardFields);
     });
   });
 
