@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
+import 'package:country_flags/country_flags.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/event_map_pin.dart';
@@ -12,10 +13,7 @@ import '../services/web_share_service.dart';
 import 'no_images_placeholder.dart';
 import 'resized_spot_image.dart';
 
-enum EventCardVariant {
-  list,
-  overlay,
-}
+enum EventCardVariant { list, overlay }
 
 /// Card for an event in Explore, styled like [SpotCard].
 class EventCard extends StatefulWidget {
@@ -80,9 +78,7 @@ class _EventCardState extends State<EventCard> {
 
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: widget.onTapWithImageIndex != null
             ? () => widget.onTapWithImageIndex!(_currentPage)
@@ -119,9 +115,18 @@ class _EventCardState extends State<EventCard> {
               left: 16,
               right: 16,
               bottom: 12,
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: _buildListActionButtons(context),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  _buildLocationMeta(
+                    context,
+                    flagHeight: 20,
+                    flagWidth: 30,
+                    spacing: 8,
+                  ),
+                  _buildListActionButtons(context),
+                ],
               ),
             ),
           ],
@@ -244,13 +249,59 @@ class _EventCardState extends State<EventCard> {
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
           color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
           height: 1.4,
-          fontStyle:
-              description.isEmpty ? FontStyle.italic : FontStyle.normal,
+          fontStyle: description.isEmpty ? FontStyle.italic : FontStyle.normal,
         ),
         maxLines: descriptionMaxLines,
         overflow: TextOverflow.ellipsis,
       ),
+      if (widget.pin.city != null || widget.pin.countryCode != null) ...[
+        const SizedBox(height: 12),
+        _buildLocationMeta(context, flagHeight: 16, flagWidth: 24, spacing: 6),
+      ],
     ];
+  }
+
+  Widget _buildLocationMeta(
+    BuildContext context, {
+    required double flagHeight,
+    required double flagWidth,
+    required double spacing,
+  }) {
+    final city = widget.pin.city?.trim();
+    final countryCode = widget.pin.countryCode?.trim().toUpperCase();
+    if ((city == null || city.isEmpty) &&
+        (countryCode == null || countryCode.isEmpty)) {
+      return const SizedBox.shrink();
+    }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (countryCode != null && countryCode.isNotEmpty)
+          ClipRRect(
+            borderRadius: BorderRadius.circular(2),
+            child: SizedBox(
+              height: flagHeight,
+              width: flagWidth,
+              child: CountryFlag.fromCountryCode(countryCode),
+            ),
+          ),
+        if (countryCode != null &&
+            countryCode.isNotEmpty &&
+            city != null &&
+            city.isNotEmpty)
+          SizedBox(width: spacing),
+        if (city != null && city.isNotEmpty)
+          Text(
+            city,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.7),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+      ],
+    );
   }
 
   Widget _buildImageSection(
@@ -277,9 +328,7 @@ class _EventCardState extends State<EventCard> {
         aspectRatio: 16 / 9,
         child: Container(
           color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          child: Center(
-            child: NoImagesPlaceholder(label: l10n.noImagesYet),
-          ),
+          child: Center(child: NoImagesPlaceholder(label: l10n.noImagesYet)),
         ),
       ),
     );
@@ -461,8 +510,7 @@ class _EventCardState extends State<EventCard> {
       final label = widget.pin.title.trim();
       final text = l10n.spotCardShareClipboardText(label, url);
 
-      final outcome =
-          await WebShareService.tryShareLink(text: label, url: url);
+      final outcome = await WebShareService.tryShareLink(text: label, url: url);
       if (outcome == WebShareOutcome.shared ||
           outcome == WebShareOutcome.cancelled) {
         return;
@@ -510,10 +558,7 @@ class _EventCardState extends State<EventCard> {
 }
 
 /// Centers the map on [pin] (used from Explore locate).
-void locateEventPinOnMap(
-  GoogleMapController? controller,
-  EventMapPin pin,
-) {
+void locateEventPinOnMap(GoogleMapController? controller, EventMapPin pin) {
   controller?.animateCamera(
     CameraUpdate.newLatLng(LatLng(pin.latitude, pin.longitude)),
   );

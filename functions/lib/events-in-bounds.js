@@ -57,6 +57,18 @@ function normalizePin(docId, data) {
     pin.description = description;
   }
 
+  const city = typeof data.city === "string" ? data.city.trim() : "";
+  if (city.length > 0) {
+    pin.city = city;
+  }
+
+  const countryCode = typeof data.countryCode === "string" ?
+    data.countryCode.trim().toUpperCase() :
+    "";
+  if (countryCode.length > 0) {
+    pin.countryCode = countryCode;
+  }
+
   const imageUrls = normalizeImageUrls(data.imageUrls);
   if (imageUrls.length > 0) {
     pin.imageUrls = imageUrls;
@@ -87,7 +99,13 @@ function pinNeedsCardFieldsEnrichment(pin) {
     pin.description.trim() :
     "";
   const missingDescription = description.length === 0;
-  return missingImages || missingDescription;
+  const city = typeof pin.city === "string" ? pin.city.trim() : "";
+  const countryCode = typeof pin.countryCode === "string" ?
+    pin.countryCode.trim() :
+    "";
+  const missingCity = city.length === 0;
+  const missingCountryCode = countryCode.length === 0;
+  return missingImages || missingDescription || missingCity || missingCountryCode;
 }
 
 /**
@@ -121,10 +139,23 @@ async function enrichPinsWithEventCardFields(db, pins) {
       const description = typeof cardFields.description === "string" ?
         cardFields.description.trim() :
         "";
-      if (urls.length === 0 && description.length === 0) continue;
+      const city = typeof cardFields.city === "string" ?
+        cardFields.city.trim() :
+        "";
+      const countryCode = typeof cardFields.countryCode === "string" ?
+        cardFields.countryCode.trim().toUpperCase() :
+        "";
+      if (urls.length === 0 &&
+          description.length === 0 &&
+          city.length === 0 &&
+          countryCode.length === 0) {
+        continue;
+      }
       cardFieldsByEventId.set(snap.id, {
         imageUrls: urls,
         description: description.length > 0 ? description : undefined,
+        city: city.length > 0 ? city : undefined,
+        countryCode: countryCode.length > 0 ? countryCode : undefined,
       });
     }
   }
@@ -146,6 +177,16 @@ async function enrichPinsWithEventCardFields(db, pins) {
       "";
     if (pinDescription.length === 0 && fields.description) {
       updated.description = fields.description;
+    }
+    const pinCity = typeof pin.city === "string" ? pin.city.trim() : "";
+    if (pinCity.length === 0 && fields.city) {
+      updated.city = fields.city;
+    }
+    const pinCountryCode = typeof pin.countryCode === "string" ?
+      pin.countryCode.trim() :
+      "";
+    if (pinCountryCode.length === 0 && fields.countryCode) {
+      updated.countryCode = fields.countryCode;
     }
     return updated;
   });

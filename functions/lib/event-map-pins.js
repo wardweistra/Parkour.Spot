@@ -173,6 +173,20 @@ function pickEventCardFields(eventData) {
     fields.imageUrls = imageUrls;
   }
 
+  const city = typeof eventData.city === "string" ?
+    eventData.city.trim() :
+    "";
+  if (city.length > 0) {
+    fields.city = city;
+  }
+
+  const countryCode = typeof eventData.countryCode === "string" ?
+    eventData.countryCode.trim().toUpperCase() :
+    "";
+  if (countryCode.length > 0) {
+    fields.countryCode = countryCode;
+  }
+
   return fields;
 }
 

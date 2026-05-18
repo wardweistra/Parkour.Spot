@@ -172,9 +172,7 @@ class _AdminEventsScreenState extends State<AdminEventsScreen> {
     );
 
     try {
-      final result = await eventsService.backfillEventMapPins(
-        eventId: eventId,
-      );
+      final result = await eventsService.backfillEventMapPins(eventId: eventId);
       progressNavigator.pop();
       if (!mounted) return;
 
@@ -231,6 +229,8 @@ class _AdminEventsScreenState extends State<AdminEventsScreen> {
               double? latitude,
               double? longitude,
               String? address,
+              String? city,
+              String? countryCode,
               required List<String> spotIds,
               List<String> spotListIds = const <String>[],
             }) async {
@@ -246,6 +246,8 @@ class _AdminEventsScreenState extends State<AdminEventsScreen> {
                 latitude: latitude,
                 longitude: longitude,
                 address: address,
+                city: city,
+                countryCode: countryCode,
                 spotIds: spotIds,
                 spotListIds: spotListIds,
                 createdBy: createdBy,
@@ -412,8 +414,7 @@ class _EventCard extends StatelessWidget {
     final sourceName = event.eventSourceName?.trim();
     final hasSource = sourceName != null && sourceName.isNotEmpty;
     final duplicateOfId = event.duplicateOf?.trim();
-    final hasDuplicateLink =
-        duplicateOfId != null && duplicateOfId.isNotEmpty;
+    final hasDuplicateLink = duplicateOfId != null && duplicateOfId.isNotEmpty;
     final openEventPage = event.id == null
         ? null
         : () => context.push('/event/${event.id}');
@@ -704,9 +705,8 @@ class _EventDuplicateChipState extends State<_EventDuplicateChip> {
                     Text(
                       widget.duplicateOfLabel,
                       style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSecondaryContainer.withValues(
-                          alpha: 0.8,
-                        ),
+                        color: theme.colorScheme.onSecondaryContainer
+                            .withValues(alpha: 0.8),
                       ),
                     ),
                     Text(
@@ -773,6 +773,8 @@ class _CreateEventDialog extends StatefulWidget {
     double? latitude,
     double? longitude,
     String? address,
+    String? city,
+    String? countryCode,
     required List<String> spotIds,
     List<String> spotListIds,
   })
@@ -797,6 +799,8 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
   bool _isSubmitting = false;
   bool _isGeocoding = false;
   String? _formError;
+  String? _currentCity;
+  String? _currentCountryCode;
   final List<Spot> _linkedSpots = <Spot>[];
   final List<SpotList> _linkedLists = <SpotList>[];
   final List<Uint8List> _selectedImageBytes = <Uint8List>[];
@@ -958,8 +962,11 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
     final hasLatitudeText = latRaw.isNotEmpty;
     final hasLongitudeText = lngRaw.isNotEmpty;
     final hasAddress = _addressController.text.trim().isNotEmpty;
+    final shouldRequireGeocodeSuccess = force || !hasAddress;
 
     if (!hasLatitudeText && !hasLongitudeText) {
+      _currentCity = null;
+      _currentCountryCode = null;
       return true;
     }
     if (hasLatitudeText != hasLongitudeText) {
@@ -988,7 +995,9 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
       });
       return false;
     }
-    if (hasAddress && !force) {
+    final hasCity = _currentCity?.trim().isNotEmpty == true;
+    final hasCountryCode = _currentCountryCode?.trim().isNotEmpty == true;
+    if (hasAddress && hasCity && hasCountryCode && !force) {
       return true;
     }
 
@@ -1005,6 +1014,9 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
       final resolvedAddress = details['address']?.trim();
       if (!mounted) return false;
       if (resolvedAddress == null || resolvedAddress.isEmpty) {
+        if (!shouldRequireGeocodeSuccess) {
+          return true;
+        }
         setState(() {
           _formError = 'Unable to geocode these coordinates';
         });
@@ -1012,11 +1024,16 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
       }
       _addressController.text = resolvedAddress;
       setState(() {
+        _currentCity = details['city']?.trim();
+        _currentCountryCode = details['countryCode']?.trim().toUpperCase();
         _formError = null;
       });
       return true;
     } catch (e) {
       if (!mounted) return false;
+      if (!shouldRequireGeocodeSuccess) {
+        return true;
+      }
       setState(() {
         _formError = 'Failed to geocode coordinates: $e';
       });
@@ -1075,6 +1092,8 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
       latitude: double.tryParse(_latitudeController.text.trim()),
       longitude: double.tryParse(_longitudeController.text.trim()),
       address: _addressController.text.trim(),
+      city: _currentCity,
+      countryCode: _currentCountryCode,
       spotIds: _linkedSpots.map((spot) => spot.id!).toList(),
       spotListIds: _linkedLists.map((list) => list.id!).toList(),
     );

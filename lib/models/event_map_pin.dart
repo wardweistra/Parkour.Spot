@@ -15,6 +15,8 @@ class EventMapPin {
   final String? spotId;
   final String? description;
   final List<String> imageUrls;
+  final String? city;
+  final String? countryCode;
 
   const EventMapPin({
     required this.id,
@@ -28,6 +30,8 @@ class EventMapPin {
     this.spotId,
     this.description,
     this.imageUrls = const [],
+    this.city,
+    this.countryCode,
   });
 
   factory EventMapPin.fromCallableMap(Map<String, dynamic> data) {
@@ -52,6 +56,8 @@ class EventMapPin {
       imageUrls: data['imageUrls'] is List
           ? List<String>.from(data['imageUrls'])
           : const [],
+      city: data['city'] as String?,
+      countryCode: data['countryCode'] as String?,
     );
   }
 
@@ -82,6 +88,8 @@ class EventMapPin {
       imageUrls: data['imageUrls'] is List
           ? List<String>.from(data['imageUrls'])
           : const [],
+      city: data['city'] as String?,
+      countryCode: data['countryCode'] as String?,
     );
   }
 }

@@ -11,6 +11,8 @@ class ParkourEvent {
   final double? latitude;
   final double? longitude;
   final String? address;
+  final String? city;
+  final String? countryCode;
   final List<String> spotIds;
   final List<String> spotListIds;
   final String? createdBy;
@@ -23,8 +25,10 @@ class ParkourEvent {
   final String? externalEventKey;
   final DateTime? externalSyncLastSeenAt;
   final DateTime? externalSyncLastChangedAt;
+
   /// When set, this event is a duplicate of the canonical native event [duplicateOf].
   final String? duplicateOf;
+
   /// Whether this event was created via "Create native event" from an external import.
   final bool createdFromCreateNative;
 
@@ -39,6 +43,8 @@ class ParkourEvent {
     this.latitude,
     this.longitude,
     this.address,
+    this.city,
+    this.countryCode,
     this.spotIds = const <String>[],
     this.spotListIds = const <String>[],
     this.createdBy,
@@ -76,6 +82,8 @@ class ParkourEvent {
       latitude: (data['latitude'] as num?)?.toDouble(),
       longitude: (data['longitude'] as num?)?.toDouble(),
       address: data['address'] as String?,
+      city: data['city'] as String?,
+      countryCode: data['countryCode'] as String?,
       spotIds: data['spotIds'] is List
           ? List<String>.from(data['spotIds'])
           : const <String>[],
@@ -127,6 +135,8 @@ class ParkourEvent {
       latitude: (data['latitude'] as num?)?.toDouble(),
       longitude: (data['longitude'] as num?)?.toDouble(),
       address: data['address'] as String?,
+      city: data['city'] as String?,
+      countryCode: data['countryCode'] as String?,
       spotIds: data['spotIds'] is List
           ? List<String>.from(data['spotIds'])
           : const <String>[],
@@ -162,6 +172,9 @@ class ParkourEvent {
       if (longitude != null) 'longitude': longitude,
       if (address != null && address!.trim().isNotEmpty)
         'address': address!.trim(),
+      if (city != null && city!.trim().isNotEmpty) 'city': city!.trim(),
+      if (countryCode != null && countryCode!.trim().isNotEmpty)
+        'countryCode': countryCode!.trim(),
       'spotIds': spotIds,
       'spotListIds': spotListIds,
       if (createdBy != null) 'createdBy': createdBy,
@@ -199,6 +212,8 @@ class ParkourEvent {
     Object? latitude = _unset,
     Object? longitude = _unset,
     Object? address = _unset,
+    Object? city = _unset,
+    Object? countryCode = _unset,
     List<String>? spotIds,
     List<String>? spotListIds,
     Object? createdBy = _unset,
@@ -231,6 +246,10 @@ class ParkourEvent {
           ? this.longitude
           : longitude as double?,
       address: identical(address, _unset) ? this.address : address as String?,
+      city: identical(city, _unset) ? this.city : city as String?,
+      countryCode: identical(countryCode, _unset)
+          ? this.countryCode
+          : countryCode as String?,
       spotIds: spotIds ?? this.spotIds,
       spotListIds: spotListIds ?? this.spotListIds,
       createdBy: identical(createdBy, _unset)

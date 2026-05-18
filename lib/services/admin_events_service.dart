@@ -12,9 +12,9 @@ class AdminEventsService extends ChangeNotifier {
   AdminEventsService({
     FirebaseFirestore? firestore,
     FirebaseFunctions? functions,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _functions =
-            functions ?? FirebaseFunctions.instanceFor(region: 'europe-west1');
+  }) : _firestore = firestore ?? FirebaseFirestore.instance,
+       _functions =
+           functions ?? FirebaseFunctions.instanceFor(region: 'europe-west1');
 
   final FirebaseFirestore _firestore;
   final FirebaseFunctions _functions;
@@ -106,6 +106,8 @@ class AdminEventsService extends ChangeNotifier {
     double? latitude,
     double? longitude,
     String? address,
+    String? city,
+    String? countryCode,
     required List<String> spotIds,
     List<String> spotListIds = const <String>[],
     required String createdBy,
@@ -122,6 +124,8 @@ class AdminEventsService extends ChangeNotifier {
       endAt: endAt,
       latitude: latitude,
       longitude: longitude,
+      city: city,
+      countryCode: countryCode,
     );
     if (normalized.error != null) {
       _error = normalized.error;
@@ -153,6 +157,8 @@ class AdminEventsService extends ChangeNotifier {
         latitude: normalized.latitude,
         longitude: normalized.longitude,
         address: normalized.address,
+        city: normalized.city,
+        countryCode: normalized.countryCode,
         spotIds: normalized.spotIds,
         spotListIds: normalized.spotListIds,
         createdBy: createdBy,
@@ -198,6 +204,8 @@ class AdminEventsService extends ChangeNotifier {
       endAt: sourceEvent.endAt,
       latitude: sourceEvent.latitude,
       longitude: sourceEvent.longitude,
+      city: sourceEvent.city,
+      countryCode: sourceEvent.countryCode,
     );
     if (normalized.error != null) {
       _error = normalized.error;
@@ -229,6 +237,8 @@ class AdminEventsService extends ChangeNotifier {
         latitude: normalized.latitude,
         longitude: normalized.longitude,
         address: normalized.address,
+        city: normalized.city,
+        countryCode: normalized.countryCode,
         spotIds: normalized.spotIds,
         spotListIds: normalized.spotListIds,
         createdBy: createdBy,
@@ -244,7 +254,9 @@ class AdminEventsService extends ChangeNotifier {
       return ref.id;
     } catch (e, st) {
       _error = 'Failed to create native event';
-      debugPrint('AdminEventsService.createNativeEventFromExisting error: $e\n$st');
+      debugPrint(
+        'AdminEventsService.createNativeEventFromExisting error: $e\n$st',
+      );
       notifyListeners();
       return null;
     }
@@ -261,6 +273,8 @@ class AdminEventsService extends ChangeNotifier {
     double? latitude,
     double? longitude,
     String? address,
+    String? city,
+    String? countryCode,
     required List<String> spotIds,
     List<String> spotListIds = const <String>[],
   }) async {
@@ -294,6 +308,8 @@ class AdminEventsService extends ChangeNotifier {
       endAt: endAt,
       latitude: latitude,
       longitude: longitude,
+      city: city,
+      countryCode: countryCode,
     );
     if (normalized.error != null) {
       _error = normalized.error;
@@ -325,6 +341,8 @@ class AdminEventsService extends ChangeNotifier {
         latitude: normalized.latitude,
         longitude: normalized.longitude,
         address: normalized.address,
+        city: normalized.city,
+        countryCode: normalized.countryCode,
         spotIds: normalized.spotIds,
         spotListIds: normalized.spotListIds,
         updatedAt: now,
@@ -413,7 +431,8 @@ class AdminEventsService extends ChangeNotifier {
       for (final doc in snapshot.docs) {
         try {
           final event = ParkourEvent.fromFirestore(doc);
-          if (event.duplicateOf != null && event.duplicateOf!.trim().isNotEmpty) {
+          if (event.duplicateOf != null &&
+              event.duplicateOf!.trim().isNotEmpty) {
             continue;
           }
           if (event.startAt.toUtc().isAfter(now)) {
@@ -472,9 +491,12 @@ class AdminEventsService extends ChangeNotifier {
     double? latitude,
     double? longitude,
     String? address,
+    String? city,
+    String? countryCode,
     List<String> spotIds,
     List<String> spotListIds,
-  }) _normalizeEventInput({
+  })
+  _normalizeEventInput({
     required String title,
     String? description,
     List<String>? imageUrls,
@@ -484,6 +506,8 @@ class AdminEventsService extends ChangeNotifier {
     double? latitude,
     double? longitude,
     String? address,
+    String? city,
+    String? countryCode,
     required List<String> spotIds,
     required List<String> spotListIds,
   }) {
@@ -494,6 +518,8 @@ class AdminEventsService extends ChangeNotifier {
         .toList();
     final normalizedWebsiteUrl = websiteUrl?.trim();
     final normalizedAddress = address?.trim();
+    final normalizedCity = city?.trim();
+    final normalizedCountryCode = countryCode?.trim().toUpperCase();
     final normalizedSpotIds = spotIds
         .map((id) => id.trim())
         .where((id) => id.isNotEmpty)
@@ -517,6 +543,8 @@ class AdminEventsService extends ChangeNotifier {
         latitude: null,
         longitude: null,
         address: null,
+        city: null,
+        countryCode: null,
         spotIds: const <String>[],
         spotListIds: const <String>[],
       );
@@ -533,6 +561,8 @@ class AdminEventsService extends ChangeNotifier {
         latitude: null,
         longitude: null,
         address: null,
+        city: null,
+        countryCode: null,
         spotIds: const <String>[],
         spotListIds: const <String>[],
       );
@@ -551,6 +581,8 @@ class AdminEventsService extends ChangeNotifier {
         latitude: null,
         longitude: null,
         address: null,
+        city: null,
+        countryCode: null,
         spotIds: const <String>[],
         spotListIds: const <String>[],
       );
@@ -569,6 +601,8 @@ class AdminEventsService extends ChangeNotifier {
         latitude: null,
         longitude: null,
         address: null,
+        city: null,
+        countryCode: null,
         spotIds: const <String>[],
         spotListIds: const <String>[],
       );
@@ -585,6 +619,8 @@ class AdminEventsService extends ChangeNotifier {
         latitude: null,
         longitude: null,
         address: null,
+        city: null,
+        countryCode: null,
         spotIds: const <String>[],
         spotListIds: const <String>[],
       );
@@ -601,6 +637,8 @@ class AdminEventsService extends ChangeNotifier {
         latitude: null,
         longitude: null,
         address: null,
+        city: null,
+        countryCode: null,
         spotIds: const <String>[],
         spotListIds: const <String>[],
       );
@@ -618,6 +656,8 @@ class AdminEventsService extends ChangeNotifier {
         latitude: null,
         longitude: null,
         address: null,
+        city: null,
+        countryCode: null,
         spotIds: const <String>[],
         spotListIds: const <String>[],
       );
@@ -634,6 +674,8 @@ class AdminEventsService extends ChangeNotifier {
         latitude: null,
         longitude: null,
         address: null,
+        city: null,
+        countryCode: null,
         spotIds: const <String>[],
         spotListIds: const <String>[],
       );
@@ -642,14 +684,22 @@ class AdminEventsService extends ChangeNotifier {
     return (
       error: null,
       title: title.trim(),
-      description: description?.trim().isEmpty == true ? null : description?.trim(),
+      description: description?.trim().isEmpty == true
+          ? null
+          : description?.trim(),
       imageUrls: normalizedImageUrls,
-      websiteUrl: normalizedWebsiteUrl?.isEmpty == true ? null : normalizedWebsiteUrl,
+      websiteUrl: normalizedWebsiteUrl?.isEmpty == true
+          ? null
+          : normalizedWebsiteUrl,
       startAt: startAt.toUtc(),
       endAt: endAt?.toUtc(),
       latitude: latitude,
       longitude: longitude,
       address: normalizedAddress?.isEmpty == true ? null : normalizedAddress,
+      city: normalizedCity?.isEmpty == true ? null : normalizedCity,
+      countryCode: normalizedCountryCode?.isEmpty == true
+          ? null
+          : normalizedCountryCode,
       spotIds: normalizedSpotIds,
       spotListIds: normalizedSpotListIds,
     );
@@ -745,7 +795,8 @@ class AdminEventsService extends ChangeNotifier {
       }
       final origDup = original.duplicateOf?.trim();
       if (origDup != null && origDup.isNotEmpty) {
-        _error = 'Cannot point to an event that is already marked as a duplicate';
+        _error =
+            'Cannot point to an event that is already marked as a duplicate';
         notifyListeners();
         return false;
       }
@@ -813,9 +864,7 @@ class AdminEventsService extends ChangeNotifier {
     try {
       final callable = _functions.httpsCallable(
         'backfillEventMapPins',
-        options: HttpsCallableOptions(
-          timeout: const Duration(minutes: 9),
-        ),
+        options: HttpsCallableOptions(timeout: const Duration(minutes: 9)),
       );
       final result = await callable.call({
         if (eventId != null && eventId.trim().isNotEmpty)
