@@ -4348,6 +4348,8 @@ exports.createEventSyncSource = onCall(
           description,
           publicUrl,
           isActive = true,
+          syncSchedule,
+          autoSyncEnabled = false,
         } = request.data || {};
 
         if (typeof name !== "string" || name.trim().length === 0) {
@@ -4358,6 +4360,7 @@ exports.createEventSyncSource = onCall(
           name: name.trim(),
           icsUrl: normalizeIcsUrl(icsUrl),
           isActive: Boolean(isActive),
+          autoSyncEnabled: Boolean(autoSyncEnabled),
           createdAt: FieldValue.serverTimestamp(),
           updatedAt: FieldValue.serverTimestamp(),
         };
@@ -4367,6 +4370,9 @@ exports.createEventSyncSource = onCall(
         }
         if (typeof publicUrl === "string" && publicUrl.trim().length > 0) {
           sourceData.publicUrl = publicUrl.trim();
+        }
+        if (typeof syncSchedule === "string" && syncSchedule.trim().length > 0) {
+          sourceData.syncSchedule = syncSchedule.trim();
         }
 
         const docRef = await db.collection("eventSyncSources").add(sourceData);
@@ -4395,6 +4401,8 @@ exports.updateEventSyncSource = onCall(
           description,
           publicUrl,
           isActive,
+          syncSchedule,
+          autoSyncEnabled,
         } = request.data || {};
 
         if (typeof sourceId !== "string" || sourceId.trim().length === 0) {
@@ -4430,6 +4438,16 @@ exports.updateEventSyncSource = onCall(
         }
         if (isActive !== undefined) {
           updateData.isActive = Boolean(isActive);
+        }
+        if (syncSchedule !== undefined) {
+          if (typeof syncSchedule === "string" && syncSchedule.trim().length > 0) {
+            updateData.syncSchedule = syncSchedule.trim();
+          } else {
+            updateData.syncSchedule = FieldValue.delete();
+          }
+        }
+        if (autoSyncEnabled !== undefined) {
+          updateData.autoSyncEnabled = Boolean(autoSyncEnabled);
         }
 
         await db.collection("eventSyncSources").doc(sourceId.trim())
@@ -4657,6 +4675,92 @@ exports.syncAllEventSources = onCall(
       } catch (error) {
         console.error("Error syncing all event sources:", error);
         throw new Error(`Failed to sync all event sources: ${error.message}`);
+      }
+    },
+);
+
+/**
+ * Scheduled function to check and run automated syncs for event sources.
+ * Runs every hour to check which sources need syncing based on cron schedule.
+ * Processes only one source per run to avoid timeout issues.
+ */
+exports.checkAndRunEventAutoSyncs = onSchedule(
+    {
+      schedule: "every 1 hours",
+      timeZone: "UTC",
+      region: "europe-west1",
+      memory: "2GiB",
+      timeoutSeconds: 1800,
+      secrets: ["GOOGLE_MAPS_API_KEY"],
+    },
+    async () => {
+      console.log("Event auto-sync check started");
+      const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+      if (!apiKey) {
+        throw new Error("Google Maps API key not configured");
+      }
+
+      try {
+        const sourcesSnapshot = await db
+            .collection("eventSyncSources")
+            .where("isActive", "==", true)
+            .get();
+
+        const now = new Date();
+        for (const sourceDoc of sourcesSnapshot.docs) {
+          const source = sourceDoc.data();
+          const sourceId = sourceDoc.id;
+
+          // Skip when auto-sync is disabled or no schedule is configured.
+          if (source.autoSyncEnabled !== true) continue;
+          if (typeof source.syncSchedule !== "string" ||
+              source.syncSchedule.trim().length === 0) {
+            continue;
+          }
+
+          const lastSync = source.lastSyncAt &&
+              typeof source.lastSyncAt.toDate === "function" ?
+              source.lastSyncAt.toDate() :
+              new Date(0);
+
+          const shouldRun = shouldRunSync(source.syncSchedule, lastSync, now);
+          if (!shouldRun) continue;
+
+          try {
+            console.log(
+                `Running scheduled event sync for source: ${source.name} (${sourceId})`,
+            );
+            const result = await syncExternalEventSource(sourceDoc);
+            return {
+              success: true,
+              sourceId: result.sourceId,
+              sourceName: result.sourceName,
+              schedule: source.syncSchedule,
+              stats: result.stats,
+              message: "Processed 1 event source",
+            };
+          } catch (error) {
+            console.error(`Error running scheduled event sync for ${source.name}:`, error);
+            return {
+              success: false,
+              sourceId,
+              sourceName: source.name || sourceId,
+              schedule: source.syncSchedule,
+              error: error.message,
+              message: `Failed to process source: ${source.name || sourceId}`,
+            };
+          }
+        }
+
+        console.log("Event auto-sync check completed. No sources needed syncing at this time.");
+        return {
+          success: true,
+          message: "No event sources needed syncing",
+          processed: 0,
+        };
+      } catch (error) {
+        console.error("Error in event auto-sync check:", error);
+        throw error;
       }
     },
 );

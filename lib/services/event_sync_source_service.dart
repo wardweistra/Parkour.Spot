@@ -50,6 +50,8 @@ class EventSyncSource {
   final DateTime? updatedAt;
   final DateTime? lastSyncAt;
   final Map<String, dynamic>? lastSyncStats;
+  final String? syncSchedule;
+  final bool? autoSyncEnabled;
 
   const EventSyncSource({
     required this.id,
@@ -62,6 +64,8 @@ class EventSyncSource {
     this.updatedAt,
     this.lastSyncAt,
     this.lastSyncStats,
+    this.syncSchedule,
+    this.autoSyncEnabled,
   });
 
   factory EventSyncSource.fromMap(Map<String, dynamic> data) {
@@ -77,6 +81,10 @@ class EventSyncSource {
       lastSyncAt: _parseTimestamp(data['lastSyncAt']),
       lastSyncStats: data['lastSyncStats'] is Map
           ? Map<String, dynamic>.from(data['lastSyncStats'] as Map)
+          : null,
+      syncSchedule: data['syncSchedule'] as String?,
+      autoSyncEnabled: data['autoSyncEnabled'] is bool
+          ? data['autoSyncEnabled'] as bool
           : null,
     );
   }
@@ -152,6 +160,8 @@ class EventSyncSourceService extends ChangeNotifier {
     String? description,
     String? publicUrl,
     bool isActive = true,
+    String? syncSchedule,
+    bool autoSyncEnabled = false,
   }) async {
     try {
       final callable = _functions.httpsCallable('createEventSyncSource');
@@ -161,6 +171,9 @@ class EventSyncSourceService extends ChangeNotifier {
         'description': description,
         'publicUrl': publicUrl,
         'isActive': isActive,
+        if (syncSchedule != null && syncSchedule.isNotEmpty)
+          'syncSchedule': syncSchedule,
+        'autoSyncEnabled': autoSyncEnabled,
       });
       final success = _callableMap(result.data)['success'] == true;
       if (success) {
@@ -182,6 +195,8 @@ class EventSyncSourceService extends ChangeNotifier {
     String? description,
     String? publicUrl,
     bool? isActive,
+    String? syncSchedule,
+    bool? autoSyncEnabled,
   }) async {
     try {
       final payload = <String, dynamic>{'sourceId': sourceId};
@@ -190,6 +205,12 @@ class EventSyncSourceService extends ChangeNotifier {
       if (description != null) payload['description'] = description;
       if (publicUrl != null) payload['publicUrl'] = publicUrl;
       if (isActive != null) payload['isActive'] = isActive;
+      if (syncSchedule != null) {
+        payload['syncSchedule'] = syncSchedule.isEmpty ? null : syncSchedule;
+      }
+      if (autoSyncEnabled != null) {
+        payload['autoSyncEnabled'] = autoSyncEnabled;
+      }
 
       final callable = _functions.httpsCallable('updateEventSyncSource');
       final result = await callable.call(payload);
