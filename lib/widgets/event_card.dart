@@ -103,6 +103,7 @@ class _EventCardState extends State<EventCard> {
                           context,
                           description: description,
                           descriptionMaxLines: 3,
+                          includeLocationMeta: false,
                         ),
                         const SizedBox(height: 50),
                       ],
@@ -174,6 +175,7 @@ class _EventCardState extends State<EventCard> {
                         context,
                         description: description,
                         descriptionMaxLines: 2,
+                        includeLocationMeta: true,
                       ),
                     ),
                   ),
@@ -210,6 +212,7 @@ class _EventCardState extends State<EventCard> {
     BuildContext context, {
     required String description,
     required int descriptionMaxLines,
+    required bool includeLocationMeta,
   }) {
     final l10n = AppLocalizations.of(context)!;
     return [
@@ -254,7 +257,8 @@ class _EventCardState extends State<EventCard> {
         maxLines: descriptionMaxLines,
         overflow: TextOverflow.ellipsis,
       ),
-      if (widget.pin.city != null || widget.pin.countryCode != null) ...[
+      if (includeLocationMeta &&
+          (widget.pin.city != null || widget.pin.countryCode != null)) ...[
         const SizedBox(height: 12),
         _buildLocationMeta(context, flagHeight: 16, flagWidth: 24, spacing: 6),
       ],
