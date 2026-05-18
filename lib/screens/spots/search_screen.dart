@@ -8,6 +8,7 @@ import 'dart:async';
 import 'package:uuid/uuid.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import '../../services/event_map_service.dart';
+import '../../services/admin_events_service.dart';
 import '../../services/spot_service.dart';
 import '../../models/event_map_pin.dart';
 import '../../utils/explore_events_utils.dart';
@@ -329,6 +330,7 @@ class SearchScreenState extends State<SearchScreen>
   bool _longPressHandled =
       false; // Flag to track if long press was successfully handled
   String? _spotIdToLocate; // Spot ID to locate from query parameter
+  String? _eventIdToLocate; // Event ID to locate from query parameter
   Timer? _locationPollingTimer; // Timer for polling user location periodically
   // Spot list highlighting
   String? _selectedListId; // Currently selected spot list ID
@@ -552,13 +554,22 @@ class SearchScreenState extends State<SearchScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Check for locateSpotId query parameter (only if not already set)
-    if (_spotIdToLocate == null) {
+    // Check for locateSpotId / locateEventId query parameters (only if not already set)
+    if (_spotIdToLocate == null || _eventIdToLocate == null) {
       try {
         final routerState = GoRouterState.of(context);
-        final locateSpotId = routerState.uri.queryParameters['locateSpotId'];
-        if (locateSpotId != null && locateSpotId.isNotEmpty) {
-          _spotIdToLocate = locateSpotId;
+        if (_spotIdToLocate == null) {
+          final locateSpotId = routerState.uri.queryParameters['locateSpotId'];
+          if (locateSpotId != null && locateSpotId.isNotEmpty) {
+            _spotIdToLocate = locateSpotId;
+          }
+        }
+        if (_eventIdToLocate == null) {
+          final locateEventId =
+              routerState.uri.queryParameters['locateEventId'];
+          if (locateEventId != null && locateEventId.isNotEmpty) {
+            _eventIdToLocate = locateEventId;
+          }
         }
       } catch (e) {
         // Ignore errors when accessing router state
@@ -566,22 +577,25 @@ class SearchScreenState extends State<SearchScreen>
     }
   }
 
-  /// Called when the map tab becomes visible. Processes locateSpotId/listId from
+  /// Called when the map tab becomes visible. Processes locateSpotId/locateEventId/listId from
   /// the URL and refreshes map tiles (fixes "one tile" issue when map was built off-screen).
   void onMapTabActivated() {
     if (!mounted) return;
 
     String? locateSpotId;
+    String? locateEventId;
     String? listIdFromUrl;
     try {
       final state = GoRouterState.of(context);
       locateSpotId = state.uri.queryParameters['locateSpotId'];
+      locateEventId = state.uri.queryParameters['locateEventId'];
       listIdFromUrl = state.uri.queryParameters['listId'];
     } catch (_) {}
 
     final listId = listIdFromUrl ?? widget.initialListId;
     final hasFocusIntent =
         (locateSpotId != null && locateSpotId.isNotEmpty) ||
+        (locateEventId != null && locateEventId.isNotEmpty) ||
         (listId != null && listId.isNotEmpty);
 
     // Zoom nudge forces tile refresh when map was built off-screen. Skip when
@@ -609,6 +623,12 @@ class SearchScreenState extends State<SearchScreen>
     if (locateSpotId != null && locateSpotId.isNotEmpty) {
       Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) _locateSpotById(locateSpotId!);
+      });
+    }
+
+    if (locateEventId != null && locateEventId.isNotEmpty) {
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) _locateEventById(locateEventId!);
       });
     }
   }
@@ -2733,6 +2753,42 @@ class SearchScreenState extends State<SearchScreen>
     }
   }
 
+  Future<void> _locateEventById(String eventId) async {
+    try {
+      EventMapPin? loadedPin;
+      for (final pin in _loadedEventPins) {
+        if (pin.eventId == eventId) {
+          loadedPin = pin;
+          break;
+        }
+      }
+
+      if (loadedPin != null && mounted) {
+        await _selectEventPin(loadedPin, focusMap: true);
+        if (mounted) {
+          context.go('/explore');
+        }
+        return;
+      }
+
+      final admin = Provider.of<AdminEventsService>(context, listen: false);
+      final event = await admin.getEventById(eventId);
+      if (event?.latitude == null || event?.longitude == null || !mounted) {
+        return;
+      }
+
+      final pin = EventMapPin.fromParkourEvent(event!);
+      await _selectEventPin(pin, focusMap: true);
+      if (mounted) {
+        context.go('/explore');
+      }
+    } catch (e) {
+      if (mounted) {
+        debugPrint('Failed to locate event $eventId: $e');
+      }
+    }
+  }
+
   Widget _buildSpotsList() {
     final screenWidth = MediaQuery.of(context).size.width;
     final useGrid = screenWidth >= 600; // Use grid layout on wider screens
@@ -3177,14 +3233,26 @@ class SearchScreenState extends State<SearchScreen>
                         });
                       }
 
-                      // Check for locateSpotId query parameter if not already set
-                      if (_spotIdToLocate == null) {
+                      // Check for locateSpotId / locateEventId query parameters if not already set
+                      if (_spotIdToLocate == null || _eventIdToLocate == null) {
                         try {
                           final routerState = GoRouterState.of(context);
-                          final locateSpotId =
-                              routerState.uri.queryParameters['locateSpotId'];
-                          if (locateSpotId != null && locateSpotId.isNotEmpty) {
-                            _spotIdToLocate = locateSpotId;
+                          if (_spotIdToLocate == null) {
+                            final locateSpotId =
+                                routerState.uri.queryParameters['locateSpotId'];
+                            if (locateSpotId != null &&
+                                locateSpotId.isNotEmpty) {
+                              _spotIdToLocate = locateSpotId;
+                            }
+                          }
+                          if (_eventIdToLocate == null) {
+                            final locateEventId = routerState
+                                .uri
+                                .queryParameters['locateEventId'];
+                            if (locateEventId != null &&
+                                locateEventId.isNotEmpty) {
+                              _eventIdToLocate = locateEventId;
+                            }
                           }
                         } catch (e) {
                           // Ignore errors when accessing router state
@@ -3202,6 +3270,15 @@ class SearchScreenState extends State<SearchScreen>
                               null; // Clear before attempting to locate
                           Future.delayed(const Duration(milliseconds: 300), () {
                             _locateSpotById(spotId);
+                          });
+                        }
+
+                        if (_eventIdToLocate != null) {
+                          final eventId = _eventIdToLocate!;
+                          _eventIdToLocate =
+                              null; // Clear before attempting to locate
+                          Future.delayed(const Duration(milliseconds: 300), () {
+                            _locateEventById(eventId);
                           });
                         }
                       });

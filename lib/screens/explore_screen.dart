@@ -315,18 +315,21 @@ class _ExploreScreenState extends State<ExploreScreen> {
     String newPath;
     switch (index) {
       case 0:
-        // Preserve listId and locateSpotId when switching to map tab - wiping
+        // Preserve map-focused query params when switching to map tab - wiping
         // them would cause SearchScreen to lose the intent before onMapTabActivated runs.
         final uri = GoRouterState.of(context).uri;
         final listId = uri.queryParameters['listId'];
         final locateSpotId = uri.queryParameters['locateSpotId'];
+        final locateEventId = uri.queryParameters['locateEventId'];
         final hasMapParams =
             (listId?.isNotEmpty ?? false) ||
-            (locateSpotId?.isNotEmpty ?? false);
+            (locateSpotId?.isNotEmpty ?? false) ||
+            (locateEventId?.isNotEmpty ?? false);
         if (hasMapParams) {
           final params = <String, String>{};
           if (listId != null) params['listId'] = listId;
           if (locateSpotId != null) params['locateSpotId'] = locateSpotId;
+          if (locateEventId != null) params['locateEventId'] = locateEventId;
           newPath =
               '/explore?${params.entries.map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}').join('&')}';
         } else {

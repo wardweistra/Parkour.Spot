@@ -253,12 +253,15 @@ class AppRouter {
             final tabParam = state.uri.queryParameters['tab'];
             int initialTab = 0;
 
-            // listId and locateSpotId are map-focused: always go straight to map tab
+            // listId, locateSpotId, and locateEventId are map-focused: map tab
             final hasListId =
                 state.uri.queryParameters['listId']?.isNotEmpty ?? false;
             final hasLocateSpotId =
                 state.uri.queryParameters['locateSpotId']?.isNotEmpty ?? false;
-            final forceMapTab = hasListId || hasLocateSpotId;
+            final hasLocateEventId =
+                state.uri.queryParameters['locateEventId']?.isNotEmpty ?? false;
+            final forceMapTab =
+                hasListId || hasLocateSpotId || hasLocateEventId;
 
             if (!forceMapTab && tabParam != null) {
               switch (tabParam) {

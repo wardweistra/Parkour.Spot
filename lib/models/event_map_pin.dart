@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'parkour_event.dart';
+
 enum EventMapPinKind { venue, spot }
 
 /// Materialized map pin for an upcoming/in-progress event.
@@ -58,6 +60,39 @@ class EventMapPin {
           : const [],
       city: data['city'] as String?,
       countryCode: data['countryCode'] as String?,
+    );
+  }
+
+  /// Builds a map pin from a [ParkourEvent] with direct coordinates (Explore locate).
+  factory EventMapPin.fromParkourEvent(ParkourEvent event) {
+    final eventId = event.id;
+    if (eventId == null || eventId.isEmpty) {
+      throw ArgumentError('ParkourEvent.id is required');
+    }
+    final lat = event.latitude;
+    final lng = event.longitude;
+    if (lat == null || lng == null) {
+      throw ArgumentError('ParkourEvent latitude and longitude are required');
+    }
+
+    final kind = event.spotIds.isNotEmpty
+        ? EventMapPinKind.spot
+        : EventMapPinKind.venue;
+
+    return EventMapPin(
+      id: 'event-$eventId',
+      eventId: eventId,
+      kind: kind,
+      latitude: lat,
+      longitude: lng,
+      title: event.title,
+      startAt: event.startAt,
+      endAt: event.endAt,
+      spotId: event.spotIds.isNotEmpty ? event.spotIds.first : null,
+      description: event.description,
+      imageUrls: event.imageUrls,
+      city: event.city,
+      countryCode: event.countryCode,
     );
   }
 

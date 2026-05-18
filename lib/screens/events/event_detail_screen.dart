@@ -2,8 +2,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../constants/spot_detail_ui.dart';
 import '../../l10n/app_localizations.dart';
@@ -15,6 +16,10 @@ import '../../services/admin_events_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/snackbar_service.dart';
 import '../../services/spot_service.dart';
+import '../../services/search_state_service.dart';
+import '../../services/mobile_detection_service.dart';
+import '../../utils/marker_icon_utils.dart';
+import '../../widgets/location_info_box.dart';
 import '../../services/web_share_service.dart';
 import '../../widgets/detail_image_carousel.dart';
 import '../../widgets/event_detail_provenance_line.dart';
@@ -50,9 +55,24 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   List<ParkourEvent> _duplicateEvents = const [];
   bool _loadingDuplicates = false;
 
+  late final ValueNotifier<bool> _isSatelliteViewNotifier;
+  BitmapDescriptor? _eventMapPinIcon;
+  SearchStateService? _searchStateServiceRef;
+
   @override
   void initState() {
     super.initState();
+    _isSatelliteViewNotifier = ValueNotifier<bool>(false);
+    _loadEventMapPinIcon();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _searchStateServiceRef = Provider.of<SearchStateService>(
+        context,
+        listen: false,
+      );
+      _searchStateServiceRef!.addListener(_onSearchStateChanged);
+      _isSatelliteViewNotifier.value = _searchStateServiceRef!.isSatellite;
+    });
     _loadEvent();
   }
 
@@ -66,10 +86,27 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
   @override
   void dispose() {
+    _searchStateServiceRef?.removeListener(_onSearchStateChanged);
+    _isSatelliteViewNotifier.dispose();
     if (kIsWeb) {
       WebMetaUtils.resetPageMeta();
     }
     super.dispose();
+  }
+
+  void _onSearchStateChanged() {
+    if (!mounted) return;
+    final isSatellite = _searchStateServiceRef?.isSatellite ?? false;
+    if (_isSatelliteViewNotifier.value != isSatellite) {
+      _isSatelliteViewNotifier.value = isSatellite;
+    }
+  }
+
+  Future<void> _loadEventMapPinIcon() async {
+    final icon = await MarkerIconUtils.loadEventMapPin();
+    if (mounted) {
+      setState(() => _eventMapPinIcon = icon);
+    }
   }
 
   String _eventMetaTitle(ParkourEvent event) => '${event.title} - Parkour·Spot';
@@ -781,7 +818,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     final hasLinkedSpotLists = event.spotListIds.isNotEmpty;
     final hasWhereSection =
         hasLinkedSpots || hasLinkedSpotLists || hasLocation || hasAddress;
-    final colors = Theme.of(context).colorScheme;
 
     final hostLabel = hasWebsite
         ? UrlService.displayHttpUrlHost(websiteUrl)
@@ -858,49 +894,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       widgets.addAll([
         _detailSectionHeading(context, l10n.eventDetailLocationLabel),
         const SizedBox(height: SpotDetailUi.detailLabelGap),
-        Container(
-          width: double.infinity,
-          padding: SpotDetailUi.detailCardPadding,
-          decoration: BoxDecoration(
-            color: colors.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
-            border: SpotDetailUi.outlineBorder(colors),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.place_outlined, color: colors.primary, size: 22),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: SelectableText(
-                      hasAddress
-                          ? event.address!.trim()
-                          : '${event.latitude!.toStringAsFixed(5)}, ${event.longitude!.toStringAsFixed(5)}',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyLarge?.copyWith(height: 1.4),
-                    ),
-                  ),
-                ],
-              ),
-              if (hasLocation) ...[
-                const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    onPressed: () =>
-                        _openMap(event.latitude!, event.longitude!),
-                    icon: const Icon(Icons.map_outlined, size: 18),
-                    label: Text(l10n.eventDetailOpenInMaps),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
+        ..._buildDirectLocationSection(context, event, l10n),
       ]);
     }
 
@@ -915,11 +909,243 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     return widgets;
   }
 
-  Future<void> _openMap(double lat, double lng) async {
-    final mapsUri = Uri.parse(
-      'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
-    );
-    await launchUrl(mapsUri, mode: LaunchMode.externalApplication);
+  List<Widget> _buildDirectLocationSection(
+    BuildContext context,
+    ParkourEvent event,
+    AppLocalizations l10n,
+  ) {
+    final hasLocation = event.latitude != null && event.longitude != null;
+    final hasAddress = event.address?.trim().isNotEmpty == true;
+    final colors = Theme.of(context).colorScheme;
+    final widgets = <Widget>[];
+
+    if (hasLocation) {
+      widgets.addAll([
+        Container(
+          height: 200,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
+            border: Border.all(
+              color: colors.outline.withValues(alpha: 0.3),
+            ),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
+            children: [
+              ValueListenableBuilder<bool>(
+                valueListenable: _isSatelliteViewNotifier,
+                builder: (context, isSatellite, child) {
+                  return GoogleMap(
+                    initialCameraPosition: CameraPosition(
+                      target: LatLng(event.latitude!, event.longitude!),
+                      zoom: 16,
+                    ),
+                    mapType: isSatellite ? MapType.hybrid : MapType.normal,
+                    markers: {
+                      Marker(
+                        markerId: MarkerId(event.id ?? 'event'),
+                        position: LatLng(event.latitude!, event.longitude!),
+                        icon:
+                            _eventMapPinIcon ?? BitmapDescriptor.defaultMarker,
+                        anchor: const Offset(0.5, 1.0),
+                        onTap: null,
+                        consumeTapEvents: true,
+                        infoWindow: InfoWindow.noText,
+                      ),
+                    },
+                    zoomControlsEnabled: false,
+                    myLocationButtonEnabled: false,
+                    mapToolbarEnabled: false,
+                    liteModeEnabled: kIsWeb,
+                    compassEnabled: false,
+                    zoomGesturesEnabled: false,
+                    scrollGesturesEnabled: false,
+                    tiltGesturesEnabled: false,
+                    rotateGesturesEnabled: false,
+                    indoorViewEnabled: false,
+                    trafficEnabled: false,
+                  );
+                },
+              ),
+              Positioned.fill(
+                child: PointerInterceptor(
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: _locateEventOnMap,
+                      borderRadius: BorderRadius.circular(
+                        SpotDetailUi.surfaceRadius,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 24,
+                right: 10,
+                child: PointerInterceptor(
+                  child: ValueListenableBuilder<bool>(
+                    valueListenable: _isSatelliteViewNotifier,
+                    builder: (context, isSatellite, child) {
+                      return FloatingActionButton(
+                        onPressed: () {
+                          _isSatelliteViewNotifier.value = !isSatellite;
+                          final searchState = Provider.of<SearchStateService>(
+                            context,
+                            listen: false,
+                          );
+                          searchState.setSatellite(_isSatelliteViewNotifier.value);
+                        },
+                        heroTag: 'eventDetailMapTypeToggleFab',
+                        mini: true,
+                        tooltip: isSatellite
+                            ? l10n.spotDetailMapSwitchToMap
+                            : l10n.spotDetailMapSwitchToSatellite,
+                        child: Icon(isSatellite ? Icons.map : Icons.terrain),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: PointerInterceptor(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.7),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          MobileDetectionService.isMobileDevice
+                              ? Icons.phone_android
+                              : Icons.touch_app,
+                          color: Colors.white,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          l10n.spotDetailMapLocateOnMap,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        LocationInfoBox(
+          latitude: event.latitude!,
+          longitude: event.longitude!,
+          address: hasAddress ? event.address!.trim() : null,
+          countryCode: event.countryCode,
+          onOpenInMaps: () => _openInMaps(event.latitude!, event.longitude!),
+          onCopyAddress: hasAddress
+              ? () => _copyAddressToClipboard(event.address!.trim())
+              : null,
+        ),
+      ]);
+    } else if (hasAddress) {
+      widgets.add(
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: colors.primaryContainer.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: colors.primary.withValues(alpha: 0.2),
+            ),
+          ),
+          child: GestureDetector(
+            onTap: () => _copyAddressToClipboard(event.address!.trim()),
+            child: SelectableText(
+              event.address!.trim(),
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: colors.onSurface,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return widgets;
+  }
+
+  void _locateEventOnMap() {
+    final id = _event?.id;
+    if (id != null && id.isNotEmpty) {
+      context.go('/explore?locateEventId=$id');
+    }
+  }
+
+  Future<void> _openInMaps(double lat, double lng) async {
+    try {
+      final zoom = _searchStateServiceRef?.zoom;
+      final isSatellite = _searchStateServiceRef?.isSatellite ?? false;
+      await UrlService.openLocationInMaps(
+        lat,
+        lng,
+        zoom: zoom,
+        isSatellite: isSatellite,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.spotDetailOpenMapsFailed('$e'),
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _copyAddressToClipboard(String address) async {
+    if (address.isEmpty) return;
+
+    try {
+      await Clipboard.setData(ClipboardData(text: address));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.spotDetailAddressCopiedToClipboard,
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.spotDetailCopyAddressFailed('$e'),
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Future<Map<String, dynamic>?> _showCreateNativeEventConfirmationDialog(
