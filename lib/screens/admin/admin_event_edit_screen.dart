@@ -444,6 +444,39 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
     return auth.isModerator && event.isNativeEvent;
   }
 
+  bool _eventHasNoLocationSet() {
+    final hasAddress = _addressController.text.trim().isNotEmpty;
+    final hasLatitude = _latitudeController.text.trim().isNotEmpty;
+    final hasLongitude = _longitudeController.text.trim().isNotEmpty;
+    return !hasAddress && !hasLatitude && !hasLongitude;
+  }
+
+  Future<void> _applyCityCountryFromFirstLinkedSpotIfNeeded() async {
+    if (!_eventHasNoLocationSet()) return;
+    if (_linkedSpots.isEmpty && _linkedLists.isEmpty) return;
+
+    Spot? sourceSpot;
+    if (_linkedSpots.isNotEmpty) {
+      sourceSpot = _linkedSpots.first;
+    } else {
+      final spotIds = _linkedLists.first.effectiveSpotIds;
+      if (spotIds.isEmpty) return;
+      sourceSpot = await context.read<SpotService>().getSpotById(spotIds.first);
+      if (!mounted) return;
+    }
+
+    final city = sourceSpot?.city?.trim();
+    final countryCode = sourceSpot?.countryCode?.trim().toUpperCase();
+    final hasCity = city != null && city.isNotEmpty;
+    final hasCountryCode = countryCode != null && countryCode.isNotEmpty;
+    if (!hasCity && !hasCountryCode) return;
+
+    setState(() {
+      if (hasCity) _currentCity = city;
+      if (hasCountryCode) _currentCountryCode = countryCode;
+    });
+  }
+
   Future<void> _save() async {
     final l10n = AppLocalizations.of(context)!;
     final auth = context.read<AuthService>();
@@ -457,6 +490,7 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
     }
     if (!await _tryReverseGeocodeAddressIfNeeded()) return;
     if (!await _tryGeocodeCoordinatesIfNeeded()) return;
+    await _applyCityCountryFromFirstLinkedSpotIfNeeded();
 
     setState(() {
       _isSubmitting = true;
