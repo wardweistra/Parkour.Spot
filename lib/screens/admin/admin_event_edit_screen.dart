@@ -350,6 +350,7 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
     final hasLatitudeText = latRaw.isNotEmpty;
     final hasLongitudeText = lngRaw.isNotEmpty;
     final hasAddress = _addressController.text.trim().isNotEmpty;
+    final shouldRequireGeocodeSuccess = force || !hasAddress;
 
     if (!hasLatitudeText && !hasLongitudeText) {
       _currentCity = null;
@@ -383,6 +384,9 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
       final resolvedAddress = details['address']?.trim();
       if (!mounted) return false;
       if (resolvedAddress == null || resolvedAddress.isEmpty) {
+        if (!shouldRequireGeocodeSuccess) {
+          return true;
+        }
         setState(() => _formError = 'Unable to geocode these coordinates');
         return false;
       }
@@ -392,6 +396,9 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
       return true;
     } catch (e) {
       if (!mounted) return false;
+      if (!shouldRequireGeocodeSuccess) {
+        return true;
+      }
       setState(() => _formError = 'Failed to geocode coordinates: $e');
       return false;
     } finally {

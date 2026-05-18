@@ -962,6 +962,7 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
     final hasLatitudeText = latRaw.isNotEmpty;
     final hasLongitudeText = lngRaw.isNotEmpty;
     final hasAddress = _addressController.text.trim().isNotEmpty;
+    final shouldRequireGeocodeSuccess = force || !hasAddress;
 
     if (!hasLatitudeText && !hasLongitudeText) {
       _currentCity = null;
@@ -1013,6 +1014,9 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
       final resolvedAddress = details['address']?.trim();
       if (!mounted) return false;
       if (resolvedAddress == null || resolvedAddress.isEmpty) {
+        if (!shouldRequireGeocodeSuccess) {
+          return true;
+        }
         setState(() {
           _formError = 'Unable to geocode these coordinates';
         });
@@ -1027,6 +1031,9 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
       return true;
     } catch (e) {
       if (!mounted) return false;
+      if (!shouldRequireGeocodeSuccess) {
+        return true;
+      }
       setState(() {
         _formError = 'Failed to geocode coordinates: $e';
       });
