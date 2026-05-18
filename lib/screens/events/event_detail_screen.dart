@@ -22,6 +22,7 @@ import '../../widgets/event_detail_when_block.dart';
 import '../../widgets/event_selection_dialog.dart';
 import '../../widgets/moderator_action_fields.dart';
 import '../../services/url_service.dart';
+import '../../widgets/detail_duplicate_relationship.dart';
 import '../../widgets/detail_external_link_tile.dart';
 import '../../widgets/spot_detail_quick_action_chip.dart';
 import '../../utils/web_meta_utils.dart';
@@ -619,12 +620,11 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         (auth.isAdmin || auth.isModerator);
     final dupId = event.duplicateOf?.trim();
     final hasDupLink = dupId != null && dupId.isNotEmpty;
-    final showDupSection =
-        hasDupLink ||
-        _loadingOriginal ||
-        _originalEvent != null ||
-        _loadingDuplicates ||
-        _duplicateEvents.isNotEmpty;
+    final showDuplicateCallout =
+        hasDupLink || _loadingOriginal || _originalEvent != null;
+    final showLinkedDuplicates =
+        !hasDupLink &&
+        (_loadingDuplicates || _duplicateEvents.isNotEmpty);
 
     final contentInset = SpotDetailUi.contentHorizontalInset(context);
 
@@ -702,17 +702,47 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                             ),
                           ],
                         ),
+                        if (showDuplicateCallout) ...[
+                          const SizedBox(height: SpotDetailUi.detailSubsectionGap),
+                          DetailDuplicateOfCallout(
+                            bannerTitle: l10n.eventDetailDuplicateBannerTitle,
+                            bannerBody: l10n.eventDetailDuplicateBannerBody,
+                            loadingLabel: l10n.spotDetailLoading,
+                            originalFallback:
+                                l10n.eventDetailOriginalEventFallback,
+                            loading: _loadingOriginal,
+                            originalTitle: _originalEvent?.title,
+                            onOpenOriginal: _loadingOriginal
+                                ? null
+                                : () {
+                                    final targetId =
+                                        _originalEvent?.id ?? dupId;
+                                    if (targetId != null &&
+                                        targetId.isNotEmpty) {
+                                      context.push('/event/$targetId');
+                                    }
+                                  },
+                          ),
+                        ],
                         _buildShareActionRow(l10n),
                         const SizedBox(height: SpotDetailUi.detailTitleGap),
                         ..._buildEventMainContent(context, event, l10n),
-                        if (showDupSection) ...[
-                          const SizedBox(height: SpotDetailUi.detailFooterGap),
-                          _buildDuplicateSection(
-                            context,
-                            l10n,
-                            event,
-                            hasDupLink,
-                            dupId,
+                        if (showLinkedDuplicates) ...[
+                          DetailLinkedDuplicatesSection(
+                            heading: l10n.eventDetailLinkedDuplicatesHeading,
+                            loadingLabel: l10n.spotDetailLoading,
+                            loading: _loadingDuplicates,
+                            items: _duplicateEvents
+                                .where((e) => e.id?.trim().isNotEmpty == true)
+                                .map(
+                                  (e) => DetailDuplicateLinkItem(
+                                    id: e.id!,
+                                    title: e.title,
+                                    subtitle: e.eventSourceName?.trim(),
+                                  ),
+                                )
+                                .toList(),
+                            onOpenItem: (id) => context.push('/event/$id'),
                           ),
                         ],
                         const SizedBox(height: SpotDetailUi.detailSectionGap),
@@ -883,138 +913,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     );
 
     return widgets;
-  }
-
-  Widget _buildDuplicateSection(
-    BuildContext context,
-    AppLocalizations l10n,
-    ParkourEvent event,
-    bool hasDupLink,
-    String? dupId,
-  ) {
-    final theme = Theme.of(context);
-    final secondaryColor = theme.colorScheme.secondary;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (hasDupLink || _originalEvent != null || _loadingOriginal)
-          GestureDetector(
-            onTap: _loadingOriginal
-                ? null
-                : () {
-                    final targetId = _originalEvent?.id ?? dupId;
-                    if (targetId != null && targetId.isNotEmpty) {
-                      context.push('/event/$targetId');
-                    }
-                  },
-            child: ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(
-                Icons.copy_all,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              title: Text(l10n.spotDetailDuplicateOf),
-              subtitle: _loadingOriginal
-                  ? Text(l10n.spotDetailLoading)
-                  : Text(
-                      _originalEvent?.title ??
-                          l10n.eventDetailOriginalEventFallback,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-              trailing: Icon(
-                Icons.open_in_new,
-                size: 16,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-          ),
-        if (!hasDupLink && _originalEvent == null && !_loadingOriginal) ...[
-          if (_loadingDuplicates)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(
-                Icons.copy_all,
-                color: Theme.of(context).colorScheme.secondary,
-              ),
-              title: Text(l10n.spotDetailAlsoBasedOn),
-              subtitle: Text(l10n.spotDetailLoading),
-            )
-          else if (_duplicateEvents.isNotEmpty) ...[
-            _detailSectionHeading(context, l10n.spotDetailAlsoBasedOn),
-            const SizedBox(height: SpotDetailUi.detailLabelGap),
-            ..._duplicateEvents.map((dup) {
-              final id = dup.id;
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Material(
-                  color: theme.colorScheme.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(
-                    SpotDetailUi.surfaceRadius,
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: InkWell(
-                    onTap: id == null || id.isEmpty
-                        ? null
-                        : () => context.push('/event/$id'),
-                    child: Container(
-                      width: double.infinity,
-                      padding: SpotDetailUi.detailCardPadding,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(
-                          SpotDetailUi.surfaceRadius,
-                        ),
-                        border: SpotDetailUi.outlineBorder(theme.colorScheme),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.copy_all_outlined,
-                            color: secondaryColor,
-                            size: 22,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  dup.title,
-                                  style: theme.textTheme.titleSmall?.copyWith(
-                                    color: secondaryColor,
-                                  ),
-                                ),
-                                if (dup.eventSourceName?.trim().isNotEmpty ==
-                                    true)
-                                  Text(
-                                    dup.eventSourceName!.trim(),
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: secondaryColor.withValues(
-                                        alpha: 0.7,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                          Icon(
-                            Icons.open_in_new,
-                            size: 18,
-                            color: secondaryColor.withValues(alpha: 0.85),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }),
-          ],
-        ],
-      ],
-    );
   }
 
   Future<void> _openMap(double lat, double lng) async {

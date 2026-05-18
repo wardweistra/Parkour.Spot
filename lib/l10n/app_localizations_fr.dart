@@ -3113,6 +3113,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get eventDetailOriginalEventFallback => 'Événement d’origine';
 
   @override
+  String get eventDetailDuplicateBannerTitle => 'Fiche en double';
+
+  @override
+  String get eventDetailDuplicateBannerBody =>
+      'Cette fiche est marquée comme doublon. Ouvrez l’événement principal pour les détails de référence.';
+
+  @override
+  String get eventDetailLinkedDuplicatesHeading => 'Fiches en double';
+
+  @override
   String get eventDetailMarkDuplicateStaffOnly =>
       'Seule l\'équipe peut gérer les doublons d\'événements.';
 

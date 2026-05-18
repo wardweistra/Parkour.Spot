@@ -3076,6 +3076,16 @@ class AppLocalizationsNl extends AppLocalizations {
   String get eventDetailOriginalEventFallback => 'Bronevent';
 
   @override
+  String get eventDetailDuplicateBannerTitle => 'Dubbele vermelding';
+
+  @override
+  String get eventDetailDuplicateBannerBody =>
+      'Deze vermelding is als duplicaat gemarkeerd. Open het hoofdevenement voor de canonieke details.';
+
+  @override
+  String get eventDetailLinkedDuplicatesHeading => 'Dubbele vermeldingen';
+
+  @override
   String get eventDetailMarkDuplicateStaffOnly =>
       'Alleen teamleden kunnen eventduplicaten beheren.';
 

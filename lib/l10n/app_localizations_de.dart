@@ -3111,6 +3111,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get eventDetailOriginalEventFallback => 'Original-Event';
 
   @override
+  String get eventDetailDuplicateBannerTitle => 'Doppelter Eintrag';
+
+  @override
+  String get eventDetailDuplicateBannerBody =>
+      'Dieser Eintrag ist als Duplikat markiert. Öffne das Haupt-Event für die kanonischen Details.';
+
+  @override
+  String get eventDetailLinkedDuplicatesHeading => 'Duplikat-Einträge';
+
+  @override
   String get eventDetailMarkDuplicateStaffOnly =>
       'Nur Teammitglieder können Event-Duplikate verwalten.';
 

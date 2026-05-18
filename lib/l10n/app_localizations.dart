@@ -5193,6 +5193,24 @@ abstract class AppLocalizations {
   /// **'Original event'**
   String get eventDetailOriginalEventFallback;
 
+  /// Heading when viewing an event marked as a duplicate
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate listing'**
+  String get eventDetailDuplicateBannerTitle;
+
+  /// Explanation on duplicate event detail pages
+  ///
+  /// In en, this message translates to:
+  /// **'This listing is marked as a duplicate. Open the main event for the canonical details.'**
+  String get eventDetailDuplicateBannerBody;
+
+  /// Collapsible section heading for events marked as duplicates of this one
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate listings'**
+  String get eventDetailLinkedDuplicatesHeading;
+
   /// Shown when a non-staff user opens staff-only duplicate action
   ///
   /// In en, this message translates to:

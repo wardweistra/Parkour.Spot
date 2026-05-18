@@ -2913,6 +2913,18 @@
   "@eventDetailOriginalEventFallback": {
     "description": "Event detail: title unknown while loading duplicate original"
   },
+  "eventDetailDuplicateBannerTitle": "Duplicate listing",
+  "@eventDetailDuplicateBannerTitle": {
+    "description": "Heading when viewing an event marked as a duplicate"
+  },
+  "eventDetailDuplicateBannerBody": "This listing is marked as a duplicate. Open the main event for the canonical details.",
+  "@eventDetailDuplicateBannerBody": {
+    "description": "Explanation on duplicate event detail pages"
+  },
+  "eventDetailLinkedDuplicatesHeading": "Duplicate listings",
+  "@eventDetailLinkedDuplicatesHeading": {
+    "description": "Collapsible section heading for events marked as duplicates of this one"
+  },
   "eventDetailMarkDuplicateStaffOnly": "Only staff can manage event duplicates.",
   "@eventDetailMarkDuplicateStaffOnly": {
     "description": "Shown when a non-staff user opens staff-only duplicate action"
