@@ -91,7 +91,8 @@ function pinNeedsCardFieldsEnrichment(pin) {
 }
 
 /**
- * Fills missing pin imageUrls and descriptions from event documents (stale map pins).
+ * Fills missing pin imageUrls and descriptions from event documents
+ * (stale map pins).
  * @param {FirebaseFirestore.Firestore} db
  * @param {Object[]} pins
  * @return {Promise<Object[]>}
