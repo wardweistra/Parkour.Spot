@@ -18,6 +18,8 @@ void main() {
         'websiteUrl': 'https://parkour.spot/events/sunset-jam',
         'startAt': Timestamp.fromDate(startAt),
         'endAt': Timestamp.fromDate(endAt),
+        'isDateOnly': true,
+        'timeZone': 'Europe/Paris',
         'latitude': 52.3702,
         'longitude': 4.8952,
         'address': 'Amsterdam, Netherlands',
@@ -38,6 +40,8 @@ void main() {
       expect(event.websiteUrl, 'https://parkour.spot/events/sunset-jam');
       expect(event.startAt.toUtc(), startAt);
       expect(event.endAt?.toUtc(), endAt);
+      expect(event.isDateOnly, isTrue);
+      expect(event.timeZone, 'Europe/Paris');
       expect(event.latitude, 52.3702);
       expect(event.longitude, 4.8952);
       expect(event.address, 'Amsterdam, Netherlands');
@@ -50,17 +54,20 @@ void main() {
       expect(event.isNativeEvent, isTrue);
     });
 
-    test('fromMap parses duplicateOf and external source for isNativeEvent', () {
-      final event = ParkourEvent.fromMap({
-        'title': 'Synced',
-        'startAt': Timestamp.fromDate(DateTime.utc(2026, 1, 1)),
-        'spotIds': const ['spot-x'],
-        'eventSourceId': 'ics-source',
-        'duplicateOf': 'native-original',
-      });
-      expect(event.duplicateOf, 'native-original');
-      expect(event.isNativeEvent, isFalse);
-    });
+    test(
+      'fromMap parses duplicateOf and external source for isNativeEvent',
+      () {
+        final event = ParkourEvent.fromMap({
+          'title': 'Synced',
+          'startAt': Timestamp.fromDate(DateTime.utc(2026, 1, 1)),
+          'spotIds': const ['spot-x'],
+          'eventSourceId': 'ics-source',
+          'duplicateOf': 'native-original',
+        });
+        expect(event.duplicateOf, 'native-original');
+        expect(event.isNativeEvent, isFalse);
+      },
+    );
 
     test('toFirestore keeps linked spots and trims description', () {
       final event = ParkourEvent(
@@ -71,6 +78,8 @@ void main() {
         websiteUrl: ' https://event.example/info ',
         startAt: DateTime.utc(2026, 6, 1, 14, 0),
         endAt: DateTime.utc(2026, 6, 1, 16, 0),
+        isDateOnly: false,
+        timeZone: 'Europe/Paris',
         latitude: 48.8566,
         longitude: 2.3522,
         address: '  Paris, France ',
@@ -86,6 +95,7 @@ void main() {
       expect(map['description'], 'Meet and train');
       expect(map['imageUrls'], ['https://img.example/event.jpg']);
       expect(map['websiteUrl'], 'https://event.example/info');
+      expect(map['timeZone'], 'Europe/Paris');
       expect(map['spotIds'], ['spot-c', 'spot-d']);
       expect(map['spotListIds'], isEmpty);
       expect(map['startAt'], DateTime.utc(2026, 6, 1, 14, 0));
@@ -96,6 +106,7 @@ void main() {
       expect(map['createdBy'], 'admin-uid');
       expect(map['createdAt'], DateTime.utc(2026, 5, 25, 8, 0));
       expect(map['updatedAt'], DateTime.utc(2026, 5, 25, 9, 0));
+      expect(map.containsKey('isDateOnly'), isFalse);
     });
 
     test('fromMap defaults spotListIds to empty list', () {
@@ -116,6 +127,19 @@ void main() {
       );
       final map = event.toFirestore();
       expect(map['duplicateOf'], 'orig-id');
+    });
+
+    test('toFirestore includes date-only schedule fields when set', () {
+      final event = ParkourEvent(
+        title: 'Holiday Jam',
+        startAt: DateTime.utc(2026, 12, 24),
+        endAt: DateTime.utc(2026, 12, 26, 23, 59, 59, 999),
+        isDateOnly: true,
+        timeZone: 'Europe/Paris',
+      );
+      final map = event.toFirestore();
+      expect(map['isDateOnly'], isTrue);
+      expect(map['timeZone'], 'Europe/Paris');
     });
 
     test('fromMap parses createdFromCreateNative', () {

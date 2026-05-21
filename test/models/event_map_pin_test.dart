@@ -9,6 +9,8 @@ void main() {
         id: 'event-1',
         title: 'City Jam',
         startAt: DateTime.utc(2026, 6, 1, 12),
+        isDateOnly: true,
+        timeZone: 'Europe/Paris',
         latitude: 52.37,
         longitude: 4.89,
         address: 'Amsterdam',
@@ -22,6 +24,8 @@ void main() {
       expect(pin.latitude, 52.37);
       expect(pin.longitude, 4.89);
       expect(pin.title, 'City Jam');
+      expect(pin.isDateOnly, isTrue);
+      expect(pin.timeZone, 'Europe/Paris');
       expect(pin.countryCode, 'NL');
     });
 
@@ -49,10 +53,7 @@ void main() {
         address: 'Somewhere',
       );
 
-      expect(
-        () => EventMapPin.fromParkourEvent(event),
-        throwsArgumentError,
-      );
+      expect(() => EventMapPin.fromParkourEvent(event), throwsArgumentError);
     });
   });
 }

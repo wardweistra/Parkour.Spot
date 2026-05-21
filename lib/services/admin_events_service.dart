@@ -103,6 +103,8 @@ class AdminEventsService extends ChangeNotifier {
     String? websiteUrl,
     required DateTime startAt,
     DateTime? endAt,
+    bool isDateOnly = false,
+    String? timeZone,
     double? latitude,
     double? longitude,
     String? address,
@@ -122,6 +124,8 @@ class AdminEventsService extends ChangeNotifier {
       spotListIds: spotListIds,
       startAt: startAt,
       endAt: endAt,
+      isDateOnly: isDateOnly,
+      timeZone: timeZone,
       latitude: latitude,
       longitude: longitude,
       city: city,
@@ -154,6 +158,8 @@ class AdminEventsService extends ChangeNotifier {
         websiteUrl: normalized.websiteUrl,
         startAt: normalized.startAt,
         endAt: normalized.endAt,
+        isDateOnly: normalized.isDateOnly,
+        timeZone: normalized.timeZone,
         latitude: normalized.latitude,
         longitude: normalized.longitude,
         address: normalized.address,
@@ -202,6 +208,8 @@ class AdminEventsService extends ChangeNotifier {
       spotListIds: sourceEvent.spotListIds,
       startAt: sourceEvent.startAt,
       endAt: sourceEvent.endAt,
+      isDateOnly: sourceEvent.isDateOnly,
+      timeZone: sourceEvent.timeZone,
       latitude: sourceEvent.latitude,
       longitude: sourceEvent.longitude,
       city: sourceEvent.city,
@@ -234,6 +242,8 @@ class AdminEventsService extends ChangeNotifier {
         websiteUrl: normalized.websiteUrl,
         startAt: normalized.startAt,
         endAt: normalized.endAt,
+        isDateOnly: normalized.isDateOnly,
+        timeZone: normalized.timeZone,
         latitude: normalized.latitude,
         longitude: normalized.longitude,
         address: normalized.address,
@@ -270,6 +280,8 @@ class AdminEventsService extends ChangeNotifier {
     String? websiteUrl,
     required DateTime startAt,
     DateTime? endAt,
+    bool isDateOnly = false,
+    String? timeZone,
     double? latitude,
     double? longitude,
     String? address,
@@ -306,6 +318,8 @@ class AdminEventsService extends ChangeNotifier {
       spotListIds: spotListIds,
       startAt: startAt,
       endAt: endAt,
+      isDateOnly: isDateOnly,
+      timeZone: timeZone,
       latitude: latitude,
       longitude: longitude,
       city: city,
@@ -338,6 +352,8 @@ class AdminEventsService extends ChangeNotifier {
         websiteUrl: normalized.websiteUrl,
         startAt: normalized.startAt,
         endAt: normalized.endAt,
+        isDateOnly: normalized.isDateOnly,
+        timeZone: normalized.timeZone,
         latitude: normalized.latitude,
         longitude: normalized.longitude,
         address: normalized.address,
@@ -488,6 +504,8 @@ class AdminEventsService extends ChangeNotifier {
     String? websiteUrl,
     DateTime startAt,
     DateTime? endAt,
+    bool isDateOnly,
+    String? timeZone,
     double? latitude,
     double? longitude,
     String? address,
@@ -503,6 +521,8 @@ class AdminEventsService extends ChangeNotifier {
     String? websiteUrl,
     required DateTime startAt,
     DateTime? endAt,
+    bool isDateOnly = false,
+    String? timeZone,
     double? latitude,
     double? longitude,
     String? address,
@@ -520,6 +540,7 @@ class AdminEventsService extends ChangeNotifier {
     final normalizedAddress = address?.trim();
     final normalizedCity = city?.trim();
     final normalizedCountryCode = countryCode?.trim().toUpperCase();
+    final normalizedTimeZone = timeZone?.trim();
     final normalizedSpotIds = spotIds
         .map((id) => id.trim())
         .where((id) => id.isNotEmpty)
@@ -531,15 +552,35 @@ class AdminEventsService extends ChangeNotifier {
         .toSet()
         .toList();
 
-    if (title.trim().isEmpty) {
+    ({
+      String? error,
+      String title,
+      String? description,
+      List<String> imageUrls,
+      String? websiteUrl,
+      DateTime startAt,
+      DateTime? endAt,
+      bool isDateOnly,
+      String? timeZone,
+      double? latitude,
+      double? longitude,
+      String? address,
+      String? city,
+      String? countryCode,
+      List<String> spotIds,
+      List<String> spotListIds,
+    })
+    invalidResult(String errorMessage) {
       return (
-        error: 'Title is required',
+        error: errorMessage,
         title: '',
         description: null,
         imageUrls: const <String>[],
         websiteUrl: null,
         startAt: startAt.toUtc(),
         endAt: null,
+        isDateOnly: false,
+        timeZone: null,
         latitude: null,
         longitude: null,
         address: null,
@@ -549,136 +590,37 @@ class AdminEventsService extends ChangeNotifier {
         spotListIds: const <String>[],
       );
     }
+
+    if (title.trim().isEmpty) {
+      return invalidResult('Title is required');
+    }
     if (normalizedSpotListIds.length > maxSpotListIds) {
-      return (
-        error: 'At most $maxSpotListIds spot lists can be linked',
-        title: '',
-        description: null,
-        imageUrls: const <String>[],
-        websiteUrl: null,
-        startAt: startAt.toUtc(),
-        endAt: null,
-        latitude: null,
-        longitude: null,
-        address: null,
-        city: null,
-        countryCode: null,
-        spotIds: const <String>[],
-        spotListIds: const <String>[],
-      );
+      return invalidResult('At most $maxSpotListIds spot lists can be linked');
     }
     if (normalizedWebsiteUrl != null &&
         normalizedWebsiteUrl.isNotEmpty &&
         !_isValidHttpUrl(normalizedWebsiteUrl)) {
-      return (
-        error: 'Website URL must be a valid http(s) link',
-        title: '',
-        description: null,
-        imageUrls: const <String>[],
-        websiteUrl: null,
-        startAt: startAt.toUtc(),
-        endAt: null,
-        latitude: null,
-        longitude: null,
-        address: null,
-        city: null,
-        countryCode: null,
-        spotIds: const <String>[],
-        spotListIds: const <String>[],
-      );
+      return invalidResult('Website URL must be a valid http(s) link');
     }
     final hasLatitude = latitude != null;
     final hasLongitude = longitude != null;
     if (hasLatitude != hasLongitude) {
-      return (
-        error: 'Both latitude and longitude are required for event location',
-        title: '',
-        description: null,
-        imageUrls: const <String>[],
-        websiteUrl: null,
-        startAt: startAt.toUtc(),
-        endAt: null,
-        latitude: null,
-        longitude: null,
-        address: null,
-        city: null,
-        countryCode: null,
-        spotIds: const <String>[],
-        spotListIds: const <String>[],
+      return invalidResult(
+        'Both latitude and longitude are required for event location',
       );
     }
     if (latitude != null && (latitude < -90 || latitude > 90)) {
-      return (
-        error: 'Latitude must be between -90 and 90',
-        title: '',
-        description: null,
-        imageUrls: const <String>[],
-        websiteUrl: null,
-        startAt: startAt.toUtc(),
-        endAt: null,
-        latitude: null,
-        longitude: null,
-        address: null,
-        city: null,
-        countryCode: null,
-        spotIds: const <String>[],
-        spotListIds: const <String>[],
-      );
+      return invalidResult('Latitude must be between -90 and 90');
     }
     if (longitude != null && (longitude < -180 || longitude > 180)) {
-      return (
-        error: 'Longitude must be between -180 and 180',
-        title: '',
-        description: null,
-        imageUrls: const <String>[],
-        websiteUrl: null,
-        startAt: startAt.toUtc(),
-        endAt: null,
-        latitude: null,
-        longitude: null,
-        address: null,
-        city: null,
-        countryCode: null,
-        spotIds: const <String>[],
-        spotListIds: const <String>[],
-      );
+      return invalidResult('Longitude must be between -180 and 180');
     }
     if (latitude != null &&
         (normalizedAddress == null || normalizedAddress.isEmpty)) {
-      return (
-        error: 'Address is required when coordinates are provided',
-        title: '',
-        description: null,
-        imageUrls: const <String>[],
-        websiteUrl: null,
-        startAt: startAt.toUtc(),
-        endAt: null,
-        latitude: null,
-        longitude: null,
-        address: null,
-        city: null,
-        countryCode: null,
-        spotIds: const <String>[],
-        spotListIds: const <String>[],
-      );
+      return invalidResult('Address is required when coordinates are provided');
     }
     if (endAt != null && endAt.isBefore(startAt)) {
-      return (
-        error: 'End time cannot be before start time',
-        title: '',
-        description: null,
-        imageUrls: const <String>[],
-        websiteUrl: null,
-        startAt: startAt.toUtc(),
-        endAt: null,
-        latitude: null,
-        longitude: null,
-        address: null,
-        city: null,
-        countryCode: null,
-        spotIds: const <String>[],
-        spotListIds: const <String>[],
-      );
+      return invalidResult('End time cannot be before start time');
     }
 
     return (
@@ -693,6 +635,8 @@ class AdminEventsService extends ChangeNotifier {
           : normalizedWebsiteUrl,
       startAt: startAt.toUtc(),
       endAt: endAt?.toUtc(),
+      isDateOnly: isDateOnly,
+      timeZone: normalizedTimeZone?.isEmpty == true ? null : normalizedTimeZone,
       latitude: latitude,
       longitude: longitude,
       address: normalizedAddress?.isEmpty == true ? null : normalizedAddress,

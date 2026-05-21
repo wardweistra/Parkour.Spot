@@ -44,6 +44,13 @@ function normalizePin(docId, data) {
 
   const endAt = normalizeDate(data.endAt);
   if (endAt) pin.endAt = endAt.toISOString();
+  if (data.isDateOnly === true) {
+    pin.isDateOnly = true;
+  }
+  const timeZone = typeof data.timeZone === "string" ? data.timeZone.trim() : "";
+  if (timeZone.length > 0) {
+    pin.timeZone = timeZone;
+  }
 
   if (kind === "spot") {
     const spotId = typeof data.spotId === "string" ? data.spotId.trim() : "";
@@ -145,10 +152,16 @@ async function enrichPinsWithEventCardFields(db, pins) {
       const countryCode = typeof cardFields.countryCode === "string" ?
         cardFields.countryCode.trim().toUpperCase() :
         "";
+      const timeZone = typeof cardFields.timeZone === "string" ?
+        cardFields.timeZone.trim() :
+        "";
+      const isDateOnly = cardFields.isDateOnly === true;
       if (urls.length === 0 &&
           description.length === 0 &&
           city.length === 0 &&
-          countryCode.length === 0) {
+          countryCode.length === 0 &&
+          timeZone.length === 0 &&
+          !isDateOnly) {
         continue;
       }
       cardFieldsByEventId.set(snap.id, {
@@ -156,6 +169,8 @@ async function enrichPinsWithEventCardFields(db, pins) {
         description: description.length > 0 ? description : undefined,
         city: city.length > 0 ? city : undefined,
         countryCode: countryCode.length > 0 ? countryCode : undefined,
+        timeZone: timeZone.length > 0 ? timeZone : undefined,
+        isDateOnly: isDateOnly || undefined,
       });
     }
   }
@@ -187,6 +202,13 @@ async function enrichPinsWithEventCardFields(db, pins) {
       "";
     if (pinCountryCode.length === 0 && fields.countryCode) {
       updated.countryCode = fields.countryCode;
+    }
+    const pinTimeZone = typeof pin.timeZone === "string" ? pin.timeZone.trim() : "";
+    if (pinTimeZone.length === 0 && fields.timeZone) {
+      updated.timeZone = fields.timeZone;
+    }
+    if (pin.isDateOnly !== true && fields.isDateOnly === true) {
+      updated.isDateOnly = true;
     }
     return updated;
   });

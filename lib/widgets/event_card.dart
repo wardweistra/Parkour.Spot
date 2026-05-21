@@ -10,6 +10,7 @@ import '../services/mobile_detection_service.dart';
 import '../services/snackbar_service.dart';
 import '../services/url_service.dart';
 import '../services/web_share_service.dart';
+import '../utils/event_schedule_utils.dart';
 import 'no_images_placeholder.dart';
 import 'resized_spot_image.dart';
 
@@ -57,11 +58,13 @@ class _EventCardState extends State<EventCard> {
   }
 
   String _formatWhen(BuildContext context) {
-    final local = widget.pin.startAt.toLocal();
-    final localizations = MaterialLocalizations.of(context);
-    final date = localizations.formatMediumDate(local);
-    final time = localizations.formatTimeOfDay(TimeOfDay.fromDateTime(local));
-    return '$date · $time';
+    return EventScheduleUtils.formatSummaryLine(
+      context,
+      startAt: widget.pin.startAt,
+      endAt: widget.pin.endAt,
+      isDateOnly: widget.pin.isDateOnly,
+      timeZone: widget.pin.timeZone,
+    );
   }
 
   @override

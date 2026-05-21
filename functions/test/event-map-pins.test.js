@@ -116,6 +116,8 @@ describe("event-map-pins helpers", () => {
         imageUrls: ["https://example.com/events/jam.jpg"],
         city: "Rotterdam",
         countryCode: "nl",
+        isDateOnly: true,
+        timeZone: "Europe/Paris",
         startAt: futureStart,
         endAt: futureEnd,
         latitude: 51.0,
@@ -134,6 +136,8 @@ describe("event-map-pins helpers", () => {
       );
       expect(pins[0].data.city).toBe("Rotterdam");
       expect(pins[0].data.countryCode).toBe("NL");
+      expect(pins[0].data.isDateOnly).toBe(true);
+      expect(pins[0].data.timeZone).toBe("Europe/Paris");
     });
 
     it("skips spots without valid coordinates", () => {

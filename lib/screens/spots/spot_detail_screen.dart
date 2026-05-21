@@ -37,6 +37,7 @@ import '../../services/spot_training_plan_service.dart';
 import '../../services/feature_access_service.dart';
 import '../../models/spot_list.dart';
 import '../../models/parkour_event.dart';
+import '../../utils/event_schedule_utils.dart';
 import '../../utils/marker_icon_utils.dart';
 import '../../utils/resized_spot_image_provider.dart';
 import '../../widgets/no_images_placeholder.dart';
@@ -2178,7 +2179,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
             // Content using SliverList
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.all(SpotDetailUi.contentHorizontalPadding),
+                padding: const EdgeInsets.all(
+                  SpotDetailUi.contentHorizontalPadding,
+                ),
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(
@@ -2201,9 +2204,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             Expanded(
                               child: SelectableText(
                                 _spot.name,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineMedium,
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.headlineMedium,
                               ),
                             ),
                           ],
@@ -3290,7 +3293,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                           widget.spot.latitude,
                                           widget.spot.longitude,
                                         ),
-                                        icon: _spotMapPinIcon ??
+                                        icon:
+                                            _spotMapPinIcon ??
                                             BitmapDescriptor.defaultMarker,
                                         anchor: const Offset(0.5, 1.0),
                                         onTap: null,
@@ -5053,7 +5057,12 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      _formatUpcomingEventDateTime(event.startAt),
+                      _formatUpcomingEventDateTime(
+                        event.startAt,
+                        endAt: event.endAt,
+                        isDateOnly: event.isDateOnly,
+                        timeZone: event.timeZone,
+                      ),
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
@@ -5071,12 +5080,19 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     );
   }
 
-  String _formatUpcomingEventDateTime(DateTime dateTime) {
-    final local = dateTime.toLocal();
-    final localizations = MaterialLocalizations.of(context);
-    final date = localizations.formatMediumDate(local);
-    final time = localizations.formatTimeOfDay(TimeOfDay.fromDateTime(local));
-    return '$date · $time';
+  String _formatUpcomingEventDateTime(
+    DateTime startAt, {
+    DateTime? endAt,
+    required bool isDateOnly,
+    String? timeZone,
+  }) {
+    return EventScheduleUtils.formatSummaryLine(
+      context,
+      startAt: startAt,
+      endAt: endAt,
+      isDateOnly: isDateOnly,
+      timeZone: timeZone,
+    );
   }
 
   Widget _buildFacilityChip(String facilityKey, String status) {

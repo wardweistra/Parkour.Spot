@@ -154,6 +154,15 @@ function collectLinkedSpotIds(eventData, listsById) {
  */
 function pickEventCardFields(eventData) {
   const fields = {};
+  if (eventData.isDateOnly === true) {
+    fields.isDateOnly = true;
+  }
+  const timeZone = typeof eventData.timeZone === "string" ?
+    eventData.timeZone.trim() :
+    "";
+  if (timeZone.length > 0) {
+    fields.timeZone = timeZone;
+  }
   const description = typeof eventData.description === "string" ?
     eventData.description.trim() :
     "";
