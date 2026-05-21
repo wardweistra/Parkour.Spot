@@ -363,10 +363,15 @@ class AdminEventsService extends ChangeNotifier {
         spotListIds: normalized.spotListIds,
         updatedAt: now,
       );
-      await _firestore
-          .collection('events')
-          .doc(trimmedId)
-          .update(updated.toFirestore());
+      final updateData = updated.toFirestore();
+      updateData['isDateOnly'] = updated.isDateOnly;
+      final trimmedTimeZone = updated.timeZone?.trim();
+      if (trimmedTimeZone == null || trimmedTimeZone.isEmpty) {
+        updateData['timeZone'] = FieldValue.delete();
+      } else {
+        updateData['timeZone'] = trimmedTimeZone;
+      }
+      await _firestore.collection('events').doc(trimmedId).update(updateData);
 
       final index = _events.indexWhere((e) => e.id == trimmedId);
       if (index >= 0) {

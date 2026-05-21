@@ -58,6 +58,16 @@ class EventDetailWhenBlock extends StatelessWidget {
     );
   }
 
+  static String _zoneSuffix(DateTime dateTime, {String? timeZone}) {
+    final normalized = EventScheduleUtils.normalizeTimeZone(timeZone);
+    if (normalized == null) return '';
+    final local = EventScheduleUtils.toDisplayDateTime(
+      dateTime,
+      timeZone: normalized,
+    );
+    return ' ${local.timeZoneName}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -153,6 +163,10 @@ class _SingleMoment extends StatelessWidget {
       dateTime,
       timeZone: timeZone,
     );
+    final zoneSuffix = EventDetailWhenBlock._zoneSuffix(
+      dateTime,
+      timeZone: timeZone,
+    );
 
     final dotTop = _timelinePrimaryDateDotTopInset(
       context,
@@ -185,7 +199,7 @@ class _SingleMoment extends StatelessWidget {
               if (!isDateOnly) ...[
                 const SizedBox(height: 2),
                 Text(
-                  parts.time,
+                  '${parts.time}$zoneSuffix',
                   style: theme.textTheme.bodyLarge?.copyWith(
                     color: colors.onSurfaceVariant,
                   ),
@@ -237,6 +251,10 @@ class _SameDayRange extends StatelessWidget {
       endAt,
       timeZone: timeZone,
     ).time;
+    final zoneSuffix = EventDetailWhenBlock._zoneSuffix(
+      startAt,
+      timeZone: timeZone,
+    );
 
     final dotTop = _timelinePrimaryDateDotTopInset(
       context,
@@ -283,6 +301,7 @@ class _SameDayRange extends StatelessWidget {
                         ),
                       ),
                       TextSpan(text: endTime),
+                      if (zoneSuffix.isNotEmpty) TextSpan(text: zoneSuffix),
                     ],
                   ),
                 ),
@@ -430,6 +449,10 @@ class _TimelineMomentContent extends StatelessWidget {
       dateTime,
       timeZone: timeZone,
     );
+    final zoneSuffix = EventDetailWhenBlock._zoneSuffix(
+      dateTime,
+      timeZone: timeZone,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -453,7 +476,7 @@ class _TimelineMomentContent extends StatelessWidget {
         if (showTime) ...[
           const SizedBox(height: 2),
           Text(
-            parts.time,
+            '${parts.time}$zoneSuffix',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: colors.onSurfaceVariant,
             ),

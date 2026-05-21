@@ -533,7 +533,7 @@ class _EventCard extends StatelessWidget {
                       Chip(
                         avatar: const Icon(Icons.update, size: 16),
                         label: Text(
-                          'Seen: ${_formatUtc(event.externalSyncLastSeenAt!)}',
+                          'Seen: ${_formatUtc(context, event.externalSyncLastSeenAt!)}',
                         ),
                         visualDensity: VisualDensity.compact,
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -542,7 +542,7 @@ class _EventCard extends StatelessWidget {
                       Chip(
                         avatar: const Icon(Icons.edit_calendar, size: 16),
                         label: Text(
-                          'Changed: ${_formatUtc(event.externalSyncLastChangedAt!)}',
+                          'Changed: ${_formatUtc(context, event.externalSyncLastChangedAt!)}',
                         ),
                         visualDensity: VisualDensity.compact,
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -647,6 +647,17 @@ class _EventCard extends StatelessWidget {
     final normalizedTimeZone = EventScheduleUtils.normalizeTimeZone(timeZone);
     final suffix = normalizedTimeZone == null ? '' : ' ${display.timeZoneName}';
     return '$date · $time$suffix';
+  }
+
+  String _formatUtc(BuildContext context, DateTime value) {
+    final localizations = MaterialLocalizations.of(context);
+    final utc = value.toUtc();
+    final date = localizations.formatMediumDate(utc);
+    final time = localizations.formatTimeOfDay(
+      TimeOfDay.fromDateTime(utc),
+      alwaysUse24HourFormat: true,
+    );
+    return '$date $time UTC';
   }
 
   Future<void> _openWebsite(String url) async {

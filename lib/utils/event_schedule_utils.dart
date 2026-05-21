@@ -120,7 +120,7 @@ class EventScheduleUtils {
         ? null
         : toDisplayDateTime(endAt, timeZone: timeZone);
     final sameDay =
-        end != null && isSameCalendarDay(startAt, endAt, timeZone: timeZone);
+        end != null && isSameCalendarDay(startAt, end, timeZone: timeZone);
 
     final startDate = localizations.formatMediumDate(start);
     final endDate = end == null ? null : localizations.formatMediumDate(end);
