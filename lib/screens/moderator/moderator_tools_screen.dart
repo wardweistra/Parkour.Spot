@@ -133,6 +133,18 @@ class ModeratorToolsScreen extends StatelessWidget {
           const SizedBox(height: 8),
           Card(
             child: ListTile(
+              leading: const Icon(Icons.event_note_outlined),
+              title: const Text('Event Report Queue'),
+              subtitle: const Text(
+                'Review user-submitted event proposals and publish approved events',
+              ),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () => context.push('/moderator/event-reports'),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Card(
+            child: ListTile(
               leading: const Icon(Icons.compare_arrows),
               title: const Text('Duplicate Spot Detection'),
               subtitle: const Text(

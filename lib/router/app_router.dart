@@ -27,10 +27,13 @@ import '../screens/admin/device_detection_screen.dart';
 import '../screens/debug/support_debug_screen.dart';
 import '../screens/admin/api_clients_screen.dart';
 import '../screens/moderator/moderator_tools_screen.dart';
+import '../screens/moderator/event_report_queue_screen.dart';
 import '../screens/moderator/spot_report_queue_screen.dart';
+import '../screens/events/add_event_report_screen.dart';
 import '../screens/spots/spot_detail_screen.dart';
 import '../screens/events/event_detail_screen.dart';
 import '../l10n/app_localizations.dart';
+import '../screens/spots/add_spot_screen.dart';
 import '../screens/spots/edit_spot_screen.dart';
 import '../screens/spots/spot_list_detail_screen.dart';
 import '../screens/spots/spot_tracking_list_screen.dart';
@@ -227,6 +230,7 @@ class AppRouter {
         // Routes that require authentication
         final protectedRoutes = [
           '/spots/add',
+          '/events/add',
           '/moderator',
           '/profile/notifications',
         ];
@@ -234,7 +238,8 @@ class AppRouter {
             !isAuthenticated) {
           // Redirect to login with the intended destination
           String redirectTo;
-          if (state.matchedLocation == '/spots/add') {
+          if (state.matchedLocation == '/spots/add' ||
+              state.matchedLocation == '/events/add') {
             redirectTo = '/explore?tab=add';
           } else {
             redirectTo = state.matchedLocation;
@@ -297,10 +302,38 @@ class AppRouter {
             );
           },
         ),
-        // Individual tab routes that redirect to explore with tab parameter
+        // Add forms
         GoRoute(
           path: '/spots/add',
-          redirect: (context, state) => '/explore?tab=add',
+          builder: (context, state) {
+            final latParam = state.uri.queryParameters['lat'];
+            final lngParam = state.uri.queryParameters['lng'];
+            final lat = latParam != null ? double.tryParse(latParam) : null;
+            final lng = lngParam != null ? double.tryParse(lngParam) : null;
+            final initialLocation = (lat != null && lng != null)
+                ? gmaps.LatLng(lat, lng)
+                : null;
+            return AddSpotScreen(initialLocation: initialLocation);
+          },
+        ),
+        GoRoute(
+          path: '/events/add',
+          builder: (context, state) {
+            final latParam = state.uri.queryParameters['lat'];
+            final lngParam = state.uri.queryParameters['lng'];
+            final lat = latParam != null ? double.tryParse(latParam) : null;
+            final lng = lngParam != null ? double.tryParse(lngParam) : null;
+            final initialLocation = (lat != null && lng != null)
+                ? gmaps.LatLng(lat, lng)
+                : null;
+            return AddEventReportScreen(
+              initialLocation: initialLocation,
+              initialSpotId: state.uri.queryParameters['spotId'],
+              initialSpotName: state.uri.queryParameters['spotName'],
+              initialSpotListId: state.uri.queryParameters['spotListId'],
+              initialSpotListName: state.uri.queryParameters['spotListName'],
+            );
+          },
         ),
         GoRoute(
           path: '/profile',
@@ -443,6 +476,10 @@ class AppRouter {
             GoRoute(
               path: 'reports',
               builder: (context, state) => const SpotReportQueueScreen(),
+            ),
+            GoRoute(
+              path: 'event-reports',
+              builder: (context, state) => const EventReportQueueScreen(),
             ),
             GoRoute(
               path: 'duplicate-spots',

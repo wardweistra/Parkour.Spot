@@ -12,7 +12,7 @@ import '../services/user_notification_service.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/pwa_install_prompt.dart';
 import 'spots/search_screen.dart';
-import 'spots/add_spot_screen.dart';
+import 'add/add_hub_screen.dart';
 import 'profile/profile_screen.dart';
 
 // Countries that need "the" article prefix (e.g., "the Netherlands", not "Netherlands")
@@ -359,12 +359,12 @@ class _ExploreScreenState extends State<ExploreScreen> {
         initialLocationQuery: widget.initialLocationQuery,
         initialListId: widget.initialListId,
       ),
-      // Require profile loaded before Add spot (prevents email-as-createdByName race)
+      // Require profile loaded before showing contribution tools.
       authService.isProfileReady
-          ? AddSpotScreen(initialLocation: widget.initialAddSpotLocation)
+          ? const AddHubScreen()
           : authService.isAuthenticated
           ? _buildProfileLoadingScreen(authService)
-          : _buildLoginPromptScreen(Icons.add_location),
+          : _buildLoginPromptScreen(Icons.add),
       // Profile tab is always accessible
       const ProfileScreen(),
     ];
@@ -475,14 +475,14 @@ class _ExploreScreenState extends State<ExploreScreen> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          l10n.exploreSignInToAddSpot,
+                          'Sign in to add spots and events',
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(fontWeight: FontWeight.w600),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          l10n.exploreAddSpotSubtitle,
+                          'Contribute new spots or submit event proposals for moderator review.',
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(
@@ -638,8 +638,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
                       label: l10n.tabExplore,
                     ),
                     BottomNavigationBarItem(
-                      icon: const Icon(Icons.add_location),
-                      label: l10n.tabAddSpot,
+                      icon: const Icon(Icons.add),
+                      label: 'Add',
                     ),
                     BottomNavigationBarItem(
                       icon: _accountBottomNavIcon(context, unread),

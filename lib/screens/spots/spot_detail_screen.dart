@@ -149,6 +149,7 @@ enum _SpotMenuAction {
   suggestPhoto,
   suggestEdit,
   report,
+  createEvent,
   edit,
   delete,
   markAsDuplicate,
@@ -1478,6 +1479,39 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
               ],
             ),
           ),
+          if (authService.isAuthenticated && _spot.id != null)
+            PopupMenuItem<_SpotMenuAction>(
+              value: _SpotMenuAction.createEvent,
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.event_available_outlined,
+                    color: theme.colorScheme.primary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Create event at this spot',
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                      Text(
+                        'Submit a new event proposal linked to this spot',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.6,
+                          ),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
         ];
 
         if (hasStaffAccess && _spot.id != null) {
@@ -1791,6 +1825,19 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         break;
       case _SpotMenuAction.report:
         _showReportSpotDialog();
+        break;
+      case _SpotMenuAction.createEvent:
+        final spotId = _spot.id;
+        if (spotId == null) break;
+        final query = <String, String>{
+          'spotId': spotId,
+          'spotName': _spot.name,
+          'lat': _spot.latitude.toString(),
+          'lng': _spot.longitude.toString(),
+        };
+        context.push(
+          Uri(path: '/events/add', queryParameters: query).toString(),
+        );
         break;
       case _SpotMenuAction.edit:
         final authService = Provider.of<AuthService>(context, listen: false);

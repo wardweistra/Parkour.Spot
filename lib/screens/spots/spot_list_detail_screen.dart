@@ -32,7 +32,7 @@ import '../../l10n/app_localizations.dart';
 import '../../utils/spot_list_localization.dart';
 import '../../utils/relative_date_localization.dart';
 
-enum _ListManageMenuAction { listSettings, organize, delete }
+enum _ListManageMenuAction { listSettings, organize, createEvent, delete }
 
 class SpotListDetailScreen extends StatefulWidget {
   final String listId;
@@ -88,10 +88,10 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       );
       final BitmapDescriptor listSelectedPin =
           await MarkerIconUtils.loadMapPinPng(
-        MarkerIconUtils.mapPinListSelectedAsset,
-        fallbackFill: MarkerIconUtils.mapPinListFallbackFill,
-        logicalHeight: h,
-      );
+            MarkerIconUtils.mapPinListSelectedAsset,
+            fallbackFill: MarkerIconUtils.mapPinListFallbackFill,
+            logicalHeight: h,
+          );
       if (mounted) {
         setState(() {
           _spotHighlightedIcon = listPin;
@@ -790,7 +790,9 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
 
       await Clipboard.setData(ClipboardData(text: text));
 
-      SnackbarService.showClipboardCopied(_l10n.spotListDetailCopiedToClipboard);
+      SnackbarService.showClipboardCopied(
+        _l10n.spotListDetailCopiedToClipboard,
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -811,6 +813,18 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
         break;
       case _ListManageMenuAction.organize:
         _openAdvancedOrganizationScreen();
+        break;
+      case _ListManageMenuAction.createEvent:
+        if (_list == null || _list!.id == null) return;
+        context.push(
+          Uri(
+            path: '/events/add',
+            queryParameters: {
+              'spotListId': _list!.id!,
+              'spotListName': _list!.name,
+            },
+          ).toString(),
+        );
         break;
       case _ListManageMenuAction.delete:
         _deleteList();
@@ -1096,6 +1110,25 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                       ),
                     ),
                     PopupMenuItem<_ListManageMenuAction>(
+                      value: _ListManageMenuAction.createEvent,
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.event_available_outlined,
+                            color: primary,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Create event for this list',
+                              style: theme.textTheme.bodyMedium,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem<_ListManageMenuAction>(
                       value: _ListManageMenuAction.delete,
                       child: Row(
                         children: [
@@ -1139,10 +1172,14 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                 label: _l10n.spotDetailShareTooltip,
                 child: Material(
                   color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
+                  borderRadius: BorderRadius.circular(
+                    SpotDetailUi.surfaceRadius,
+                  ),
                   clipBehavior: Clip.antiAlias,
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
+                    borderRadius: BorderRadius.circular(
+                      SpotDetailUi.surfaceRadius,
+                    ),
                     onTap: _copyListToClipboard,
                     child: SpotDetailQuickActionChip(
                       icon: Icons.share_outlined,
