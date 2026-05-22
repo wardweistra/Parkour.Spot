@@ -7,6 +7,7 @@
  * - A sitemap for spots without country/city (sitemap-unlocated.xml)
  * - A sitemap for public spot lists (sitemap-lists.xml)
  * - A sitemap for public user profiles (sitemap-users.xml)
+ * - A sitemap for public non-duplicate events (sitemap-events.xml)
  * - A sitemap index file (sitemap.xml) that references all sitemaps
  * - Includes URLs for country pages, city pages, and individual spot pages
  */
@@ -146,8 +147,10 @@ async function uploadSitemapToStorage(filename, xmlContent) {
 function isValidSitemapFilename(filename) {
   // sitemap.xml, sitemap-{country}.xml, sitemap-{country}-{n}.xml,
   // sitemap-unlocated.xml, sitemap-unlocated-{n}.xml,
-  // sitemap-lists.xml, sitemap-lists-{n}.xml, sitemap-users.xml, sitemap-users-{n}.xml
-  if (!/^sitemap(-(unlocated(-\d+)?|lists(-\d+)?|users(-\d+)?|[a-z]{2}(-\d+)?))?\.xml$/.test(filename)) {
+  // sitemap-lists.xml, sitemap-lists-{n}.xml,
+  // sitemap-users.xml, sitemap-users-{n}.xml,
+  // sitemap-events.xml, sitemap-events-{n}.xml
+  if (!/^sitemap(-(unlocated(-\d+)?|lists(-\d+)?|users(-\d+)?|events(-\d+)?|[a-z]{2}(-\d+)?))?\.xml$/.test(filename)) {
     return false;
   }
 
@@ -427,6 +430,67 @@ async function generateAllSitemaps() {
     }
   } catch (error) {
     console.error("Error generating sitemap for user profiles:", error);
+  }
+
+  // Generate sitemap for public non-duplicate events
+  try {
+    const eventsSnapshot = await db.collection("events").get();
+    const publicEvents = eventsSnapshot.docs
+        .map((doc) => ({id: doc.id, ...doc.data()}))
+        .filter((event) => {
+          const duplicateOf = typeof event.duplicateOf === "string" ?
+            event.duplicateOf.trim() :
+            "";
+          if (duplicateOf.length > 0) {
+            return false;
+          }
+
+          if (event.isPublic === false || event.isPrivate === true || event.hidden === true) {
+            return false;
+          }
+
+          const visibility = typeof event.visibility === "string" ?
+            event.visibility.trim().toLowerCase() :
+            "";
+          if (visibility.length > 0 && visibility !== "public") {
+            return false;
+          }
+
+          return true;
+        });
+
+    if (publicEvents.length > 0) {
+      const eventUrls = publicEvents.map((event) => ({
+        loc: `${BASE_URL}/event/${event.id}`,
+        lastmod: formatDateToISO(event.updatedAt ?? event.createdAt ?? event.startAt),
+      }));
+
+      if (eventUrls.length <= MAX_URLS_PER_SITEMAP) {
+        const sitemapName = "sitemap-events.xml";
+        const xml = generateSitemapXml(eventUrls);
+        await uploadSitemapToStorage(sitemapName, xml);
+        sitemapIndexEntries.push({
+          loc: `${BASE_URL}/sitemaps/${sitemapName}`,
+          lastmod: now,
+        });
+      } else {
+        let partNumber = 1;
+        for (let i = 0; i < eventUrls.length; i += MAX_URLS_PER_SITEMAP) {
+          const chunk = eventUrls.slice(i, i + MAX_URLS_PER_SITEMAP);
+          const sitemapName = `sitemap-events-${partNumber}.xml`;
+          const xml = generateSitemapXml(chunk);
+          await uploadSitemapToStorage(sitemapName, xml);
+          sitemapIndexEntries.push({
+            loc: `${BASE_URL}/sitemaps/${sitemapName}`,
+            lastmod: now,
+          });
+          partNumber++;
+        }
+      }
+      console.log(`Generated sitemap(s) for public non-duplicate events with ${eventUrls.length} URLs`);
+    }
+  } catch (error) {
+    console.error("Error generating sitemap for public events:", error);
   }
 
   // Generate and upload sitemap index
