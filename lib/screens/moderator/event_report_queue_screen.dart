@@ -240,7 +240,7 @@ class _EventReportQueueScreenState extends State<EventReportQueueScreen> {
       reportId: report.id,
       approverUserId: userId,
       approverName:
-          auth.userProfile?.displayName ?? user.displayName ?? user.email,
+          auth.userProfile?.displayName ?? user?.displayName ?? user?.email,
     );
 
     if (!mounted) return;

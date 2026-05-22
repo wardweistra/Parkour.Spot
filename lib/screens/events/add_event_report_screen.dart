@@ -221,6 +221,13 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
     return '$date · $time';
   }
 
+  String? _effectiveAddressForSubmission() {
+    final trimmed = _address?.trim();
+    if (trimmed != null && trimmed.isNotEmpty) return trimmed;
+    if (_pickedLocation == null) return null;
+    return 'Approx. ${_pickedLocation!.latitude.toStringAsFixed(5)}, ${_pickedLocation!.longitude.toStringAsFixed(5)}';
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (!_hasValidWebsiteUrl()) {
@@ -240,13 +247,12 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
 
     final hasLinkedSpot = _linkedSpotId != null;
     final hasLinkedList = _linkedSpotListId != null;
-    final hasLocation =
-        _pickedLocation != null && (_address?.isNotEmpty ?? false);
+    final hasLocation = _pickedLocation != null;
     if (!hasLinkedSpot && !hasLinkedList && !hasLocation) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Add a location, link a spot, or link a spot list before submitting.',
+            'Add a map location, link a spot, or link a spot list before submitting.',
           ),
         ),
       );
@@ -275,7 +281,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
             isDateOnly: _isDateOnly,
             latitude: _pickedLocation?.latitude,
             longitude: _pickedLocation?.longitude,
-            address: _address,
+            address: _effectiveAddressForSubmission(),
             city: _city,
             countryCode: _countryCode,
             spotIds: _linkedSpotId == null
