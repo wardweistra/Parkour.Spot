@@ -4052,8 +4052,8 @@ function downloadTextFromUrl(url, redirectCount = 0) {
  * @param {string|null|undefined} address
  * @param {Object} options
  * @param {string=} options.googleMapsApiKey
- * @param {Map<string, {latitude: number, longitude: number, city: string|null, countryCode: string|null, address: string|null}|null>=} options.geocodeCache
- * @return {Promise<{latitude: number, longitude: number, city: string|null, countryCode: string|null, address: string|null}|null>}
+ * @param {Map<string, Object|null>=} options.geocodeCache
+ * @return {Promise<Object|null>}
  */
 async function geocodeExternalEventAddress(address, options = {}) {
   const normalizedAddress = typeof address === "string" ? address.trim() : "";
@@ -4113,7 +4113,7 @@ async function geocodeExternalEventAddress(address, options = {}) {
  * @param {Object} parsedEvent
  * @param {Object=} options
  * @param {string=} options.googleMapsApiKey
- * @param {Map<string, {latitude: number, longitude: number, city: string|null, countryCode: string|null, address: string|null}|null>=} options.geocodeCache
+ * @param {Map<string, Object|null>=} options.geocodeCache
  * @return {Promise<Object>}
  */
 async function buildExternalEventCreateData(parsedEvent, options = {}) {
@@ -4169,7 +4169,7 @@ async function buildExternalEventCreateData(parsedEvent, options = {}) {
  * @param {Object} existingData
  * @param {Object=} options
  * @param {string=} options.googleMapsApiKey
- * @param {Map<string, {latitude: number, longitude: number, city: string|null, countryCode: string|null, address: string|null}|null>=} options.geocodeCache
+ * @param {Map<string, Object|null>=} options.geocodeCache
  * @return {Promise<Object>}
  */
 async function buildExternalEventChangedUpdate(

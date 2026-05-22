@@ -47,7 +47,9 @@ function normalizePin(docId, data) {
   if (data.isDateOnly === true) {
     pin.isDateOnly = true;
   }
-  const timeZone = typeof data.timeZone === "string" ? data.timeZone.trim() : "";
+  const timeZone = typeof data.timeZone === "string" ?
+    data.timeZone.trim() :
+    "";
   if (timeZone.length > 0) {
     pin.timeZone = timeZone;
   }
@@ -112,7 +114,8 @@ function pinNeedsCardFieldsEnrichment(pin) {
     "";
   const missingCity = city.length === 0;
   const missingCountryCode = countryCode.length === 0;
-  return missingImages || missingDescription || missingCity || missingCountryCode;
+  return missingImages || missingDescription ||
+      missingCity || missingCountryCode;
 }
 
 /**
@@ -203,7 +206,9 @@ async function enrichPinsWithEventCardFields(db, pins) {
     if (pinCountryCode.length === 0 && fields.countryCode) {
       updated.countryCode = fields.countryCode;
     }
-    const pinTimeZone = typeof pin.timeZone === "string" ? pin.timeZone.trim() : "";
+    const pinTimeZone = typeof pin.timeZone === "string" ?
+      pin.timeZone.trim() :
+      "";
     if (pinTimeZone.length === 0 && fields.timeZone) {
       updated.timeZone = fields.timeZone;
     }

@@ -946,7 +946,7 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: _selectedTimeZone,
+                    initialValue: _selectedTimeZone,
                     decoration: const InputDecoration(
                       labelText: 'Timezone',
                       border: OutlineInputBorder(),

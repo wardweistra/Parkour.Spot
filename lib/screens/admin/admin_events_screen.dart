@@ -1521,7 +1521,7 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
                 Text('Schedule', style: Theme.of(context).textTheme.titleSmall),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: _selectedTimeZone,
+                  initialValue: _selectedTimeZone,
                   decoration: const InputDecoration(
                     labelText: 'Timezone',
                     border: OutlineInputBorder(),
