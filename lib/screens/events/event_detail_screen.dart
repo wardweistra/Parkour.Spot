@@ -337,13 +337,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       tooltip: isAdmin
           ? l10n.eventDetailAdminMenuTooltip
           : l10n.eventDetailStaffMenuTooltip,
-      onSelected: (action) => _onStaffMenu(
-        context,
-        action,
-        event,
-        isAdmin,
-        isModeratorOnly,
-      ),
+      onSelected: (action) =>
+          _onStaffMenu(context, action, event, isAdmin, isModeratorOnly),
       itemBuilder: (ctx) {
         final theme = Theme.of(ctx);
         final items = <PopupMenuEntry<_EventStaffAction>>[
@@ -494,9 +489,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           return;
         }
         if (!isAdmin && !context.read<AuthService>().isModerator) return;
-        final updated = await context.push<bool>(
-          '/admin/events/$id/edit',
-        );
+        final updated = await context.push<bool>('/admin/events/$id/edit');
         if (updated == true && mounted) {
           await _loadEvent();
         }
@@ -660,8 +653,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     final showDuplicateCallout =
         hasDupLink || _loadingOriginal || _originalEvent != null;
     final showLinkedDuplicates =
-        !hasDupLink &&
-        (_loadingDuplicates || _duplicateEvents.isNotEmpty);
+        !hasDupLink && (_loadingDuplicates || _duplicateEvents.isNotEmpty);
 
     final contentInset = SpotDetailUi.contentHorizontalInset(context);
 
@@ -740,7 +732,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                           ],
                         ),
                         if (showDuplicateCallout) ...[
-                          const SizedBox(height: SpotDetailUi.detailSubsectionGap),
+                          const SizedBox(
+                            height: SpotDetailUi.detailSubsectionGap,
+                          ),
                           DetailDuplicateOfCallout(
                             bannerTitle: l10n.eventDetailDuplicateBannerTitle,
                             bannerBody: l10n.eventDetailDuplicateBannerBody,
@@ -827,6 +821,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       EventDetailWhenBlock(
         startAt: event.startAt,
         endAt: event.endAt,
+        isDateOnly: event.isDateOnly,
+        timeZone: event.timeZone,
         startsLabel: l10n.eventDetailStartsLabel,
         endsLabel: l10n.eventDetailEndsLabel,
         todayLabel: l10n.spotDetailDateToday,
@@ -925,9 +921,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           height: 200,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
-            border: Border.all(
-              color: colors.outline.withValues(alpha: 0.3),
-            ),
+            border: Border.all(color: colors.outline.withValues(alpha: 0.3)),
           ),
           clipBehavior: Clip.antiAlias,
           child: Stack(
@@ -994,7 +988,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                             context,
                             listen: false,
                           );
-                          searchState.setSatellite(_isSatelliteViewNotifier.value);
+                          searchState.setSatellite(
+                            _isSatelliteViewNotifier.value,
+                          );
                         },
                         heroTag: 'eventDetailMapTypeToggleFab',
                         mini: true,
@@ -1066,9 +1062,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           decoration: BoxDecoration(
             color: colors.primaryContainer.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: colors.primary.withValues(alpha: 0.2),
-            ),
+            border: Border.all(color: colors.primary.withValues(alpha: 0.2)),
           ),
           child: GestureDetector(
             onTap: () => _copyAddressToClipboard(event.address!.trim()),
@@ -1154,7 +1148,11 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     if (event.isNativeEvent) {
       if (!mounted) return null;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.eventDetailNotExternalSource)),
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.eventDetailNotExternalSource,
+          ),
+        ),
       );
       return null;
     }
@@ -1312,7 +1310,8 @@ class _LinkedSpotListsSection extends StatefulWidget {
   final String emptyLabel;
 
   @override
-  State<_LinkedSpotListsSection> createState() => _LinkedSpotListsSectionState();
+  State<_LinkedSpotListsSection> createState() =>
+      _LinkedSpotListsSectionState();
 }
 
 class _LinkedSpotListsSectionState extends State<_LinkedSpotListsSection> {
@@ -1378,7 +1377,9 @@ class _LinkedSpotListsSectionState extends State<_LinkedSpotListsSection> {
             return Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: InkWell(
-                onTap: listId == null ? null : () => context.push('/list/$listId'),
+                onTap: listId == null
+                    ? null
+                    : () => context.push('/list/$listId'),
                 borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
                 child: Container(
                   width: double.infinity,

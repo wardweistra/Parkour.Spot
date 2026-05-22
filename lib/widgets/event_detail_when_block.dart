@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../constants/spot_detail_ui.dart';
+import '../utils/event_schedule_utils.dart';
 
 /// Start / end schedule for an event detail page (no event icon — title owns that).
 class EventDetailWhenBlock extends StatelessWidget {
@@ -8,6 +9,8 @@ class EventDetailWhenBlock extends StatelessWidget {
     super.key,
     required this.startAt,
     this.endAt,
+    this.isDateOnly = false,
+    this.timeZone,
     required this.startsLabel,
     required this.endsLabel,
     required this.todayLabel,
@@ -15,19 +18,25 @@ class EventDetailWhenBlock extends StatelessWidget {
 
   final DateTime startAt;
   final DateTime? endAt;
+  final bool isDateOnly;
+  final String? timeZone;
   final String startsLabel;
   final String endsLabel;
   final String todayLabel;
 
-  static bool _isSameCalendarDay(DateTime a, DateTime b) {
-    final la = a.toLocal();
-    final lb = b.toLocal();
-    return la.year == lb.year && la.month == lb.month && la.day == lb.day;
+  static bool _isSameCalendarDay(DateTime a, DateTime b, {String? timeZone}) {
+    return EventScheduleUtils.isSameCalendarDay(a, b, timeZone: timeZone);
   }
 
-  static bool _isToday(DateTime dateTime) {
-    final local = dateTime.toLocal();
-    final now = DateTime.now();
+  static bool _isToday(DateTime dateTime, {String? timeZone}) {
+    final local = EventScheduleUtils.toDisplayDateTime(
+      dateTime,
+      timeZone: timeZone,
+    );
+    final now = EventScheduleUtils.toDisplayDateTime(
+      DateTime.now().toUtc(),
+      timeZone: timeZone,
+    );
     return local.year == now.year &&
         local.month == now.month &&
         local.day == now.day;
@@ -35,9 +44,13 @@ class EventDetailWhenBlock extends StatelessWidget {
 
   static ({String date, String time}) _parts(
     BuildContext context,
-    DateTime dateTime,
-  ) {
-    final local = dateTime.toLocal();
+    DateTime dateTime, {
+    String? timeZone,
+  }) {
+    final local = EventScheduleUtils.toDisplayDateTime(
+      dateTime,
+      timeZone: timeZone,
+    );
     final material = MaterialLocalizations.of(context);
     return (
       date: material.formatFullDate(local),
@@ -45,19 +58,38 @@ class EventDetailWhenBlock extends StatelessWidget {
     );
   }
 
+  static String _zoneSuffix(DateTime dateTime, {String? timeZone}) {
+    final normalized = EventScheduleUtils.normalizeTimeZone(timeZone);
+    if (normalized == null) return '';
+    final local = EventScheduleUtils.toDisplayDateTime(
+      dateTime,
+      timeZone: normalized,
+    );
+    return ' ${local.timeZoneName}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final end = endAt;
-    final sameDay = end != null && _isSameCalendarDay(startAt, end);
-    final showToday = _isToday(startAt) || (end != null && _isToday(end));
+    final sameDay =
+        end != null && _isSameCalendarDay(startAt, end, timeZone: timeZone);
+    final showToday =
+        _isToday(startAt, timeZone: timeZone) ||
+        (end != null && _isToday(end, timeZone: timeZone));
 
     final semanticsLabel = end == null
-        ? '${_parts(context, startAt).date}, ${_parts(context, startAt).time}'
+        ? isDateOnly
+              ? _parts(context, startAt, timeZone: timeZone).date
+              : '${_parts(context, startAt, timeZone: timeZone).date}, ${_parts(context, startAt, timeZone: timeZone).time}'
         : sameDay
-        ? '${_parts(context, startAt).date}, ${_parts(context, startAt).time} – ${_parts(context, end).time}'
-        : '${_parts(context, startAt).date} ${_parts(context, startAt).time} – ${_parts(context, end).date} ${_parts(context, end).time}';
+        ? isDateOnly
+              ? _parts(context, startAt, timeZone: timeZone).date
+              : '${_parts(context, startAt, timeZone: timeZone).date}, ${_parts(context, startAt, timeZone: timeZone).time} – ${_parts(context, end, timeZone: timeZone).time}'
+        : isDateOnly
+        ? '${_parts(context, startAt, timeZone: timeZone).date} – ${_parts(context, end, timeZone: timeZone).date}'
+        : '${_parts(context, startAt, timeZone: timeZone).date} ${_parts(context, startAt, timeZone: timeZone).time} – ${_parts(context, end, timeZone: timeZone).date} ${_parts(context, end, timeZone: timeZone).time}';
 
     return Semantics(
       container: true,
@@ -71,29 +103,35 @@ class EventDetailWhenBlock extends StatelessWidget {
           border: SpotDetailUi.outlineBorder(colors),
         ),
         child: end == null
-                ? _SingleMoment(
-                    context: context,
-                    dateTime: startAt,
-                    showToday: showToday,
-                    todayLabel: todayLabel,
-                  )
-                : sameDay
-                ? _SameDayRange(
-                    context: context,
-                    startAt: startAt,
-                    endAt: end,
-                    showToday: showToday,
-                    todayLabel: todayLabel,
-                  )
-                : _MultiDayRange(
-                    context: context,
-                    startAt: startAt,
-                    endAt: end,
-                    startsLabel: startsLabel,
-                    endsLabel: endsLabel,
-                    showToday: showToday,
-                    todayLabel: todayLabel,
-                  ),
+            ? _SingleMoment(
+                context: context,
+                dateTime: startAt,
+                isDateOnly: isDateOnly,
+                timeZone: timeZone,
+                showToday: showToday,
+                todayLabel: todayLabel,
+              )
+            : sameDay
+            ? _SameDayRange(
+                context: context,
+                startAt: startAt,
+                endAt: end,
+                isDateOnly: isDateOnly,
+                timeZone: timeZone,
+                showToday: showToday,
+                todayLabel: todayLabel,
+              )
+            : _MultiDayRange(
+                context: context,
+                startAt: startAt,
+                endAt: end,
+                isDateOnly: isDateOnly,
+                timeZone: timeZone,
+                startsLabel: startsLabel,
+                endsLabel: endsLabel,
+                showToday: showToday,
+                todayLabel: todayLabel,
+              ),
       ),
     );
   }
@@ -103,12 +141,16 @@ class _SingleMoment extends StatelessWidget {
   const _SingleMoment({
     required this.context,
     required this.dateTime,
+    required this.isDateOnly,
+    required this.timeZone,
     required this.showToday,
     required this.todayLabel,
   });
 
   final BuildContext context;
   final DateTime dateTime;
+  final bool isDateOnly;
+  final String? timeZone;
   final bool showToday;
   final String todayLabel;
 
@@ -116,7 +158,15 @@ class _SingleMoment extends StatelessWidget {
   Widget build(BuildContext _) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final parts = EventDetailWhenBlock._parts(context, dateTime);
+    final parts = EventDetailWhenBlock._parts(
+      context,
+      dateTime,
+      timeZone: timeZone,
+    );
+    final zoneSuffix = EventDetailWhenBlock._zoneSuffix(
+      dateTime,
+      timeZone: timeZone,
+    );
 
     final dotTop = _timelinePrimaryDateDotTopInset(
       context,
@@ -146,13 +196,15 @@ class _SingleMoment extends StatelessWidget {
                   height: 1.25,
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                parts.time,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: colors.onSurfaceVariant,
+              if (!isDateOnly) ...[
+                const SizedBox(height: 2),
+                Text(
+                  '${parts.time}$zoneSuffix',
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),
@@ -166,6 +218,8 @@ class _SameDayRange extends StatelessWidget {
     required this.context,
     required this.startAt,
     required this.endAt,
+    required this.isDateOnly,
+    required this.timeZone,
     required this.showToday,
     required this.todayLabel,
   });
@@ -173,6 +227,8 @@ class _SameDayRange extends StatelessWidget {
   final BuildContext context;
   final DateTime startAt;
   final DateTime endAt;
+  final bool isDateOnly;
+  final String? timeZone;
   final bool showToday;
   final String todayLabel;
 
@@ -180,9 +236,25 @@ class _SameDayRange extends StatelessWidget {
   Widget build(BuildContext _) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final dateParts = EventDetailWhenBlock._parts(context, startAt);
-    final startTime = EventDetailWhenBlock._parts(context, startAt).time;
-    final endTime = EventDetailWhenBlock._parts(context, endAt).time;
+    final dateParts = EventDetailWhenBlock._parts(
+      context,
+      startAt,
+      timeZone: timeZone,
+    );
+    final startTime = EventDetailWhenBlock._parts(
+      context,
+      startAt,
+      timeZone: timeZone,
+    ).time;
+    final endTime = EventDetailWhenBlock._parts(
+      context,
+      endAt,
+      timeZone: timeZone,
+    ).time;
+    final zoneSuffix = EventDetailWhenBlock._zoneSuffix(
+      startAt,
+      timeZone: timeZone,
+    );
 
     final dotTop = _timelinePrimaryDateDotTopInset(
       context,
@@ -212,25 +284,28 @@ class _SameDayRange extends StatelessWidget {
                   height: 1.25,
                 ),
               ),
-              const SizedBox(height: 6),
-              Text.rich(
-                TextSpan(
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
-                  children: [
-                    TextSpan(text: startTime),
-                    TextSpan(
-                      text: ' – ',
-                      style: TextStyle(
-                        color: colors.onSurfaceVariant.withValues(alpha: 0.7),
-                        fontWeight: FontWeight.w400,
-                      ),
+              if (!isDateOnly) ...[
+                const SizedBox(height: 6),
+                Text.rich(
+                  TextSpan(
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w500,
                     ),
-                    TextSpan(text: endTime),
-                  ],
+                    children: [
+                      TextSpan(text: startTime),
+                      TextSpan(
+                        text: ' – ',
+                        style: TextStyle(
+                          color: colors.onSurfaceVariant.withValues(alpha: 0.7),
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                      TextSpan(text: endTime),
+                      if (zoneSuffix.isNotEmpty) TextSpan(text: zoneSuffix),
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),
@@ -244,6 +319,8 @@ class _MultiDayRange extends StatelessWidget {
     required this.context,
     required this.startAt,
     required this.endAt,
+    required this.isDateOnly,
+    required this.timeZone,
     required this.startsLabel,
     required this.endsLabel,
     required this.showToday,
@@ -253,6 +330,8 @@ class _MultiDayRange extends StatelessWidget {
   final BuildContext context;
   final DateTime startAt;
   final DateTime endAt;
+  final bool isDateOnly;
+  final String? timeZone;
   final String startsLabel;
   final String endsLabel;
   final bool showToday;
@@ -265,8 +344,11 @@ class _MultiDayRange extends StatelessWidget {
     const lineWidth = 2.0;
     const lineLeft = (dotSize - lineWidth) / 2;
 
-    final blockHeight = _timelineMomentBlockHeight(context);
-    final dotTopInset = _timelineDotTopInset(context);
+    final blockHeight = _timelineMomentBlockHeight(
+      context,
+      showTime: !isDateOnly,
+    );
+    final dotTopInset = _timelineDotTopInset(context, showTime: !isDateOnly);
     final momentGap = SpotDetailUi.timelineMomentGap;
     final railHeight = 2 * blockHeight + momentGap;
     final lineTop = dotTopInset + dotSize;
@@ -321,12 +403,16 @@ class _MultiDayRange extends StatelessWidget {
                     context: context,
                     label: startsLabel,
                     dateTime: startAt,
+                    showTime: !isDateOnly,
+                    timeZone: timeZone,
                   ),
                   SizedBox(height: momentGap),
                   _TimelineMomentContent(
                     context: context,
                     label: endsLabel,
                     dateTime: endAt,
+                    showTime: !isDateOnly,
+                    timeZone: timeZone,
                   ),
                 ],
               ),
@@ -344,17 +430,29 @@ class _TimelineMomentContent extends StatelessWidget {
     required this.context,
     required this.label,
     required this.dateTime,
+    required this.showTime,
+    required this.timeZone,
   });
 
   final BuildContext context;
   final String label;
   final DateTime dateTime;
+  final bool showTime;
+  final String? timeZone;
 
   @override
   Widget build(BuildContext _) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final parts = EventDetailWhenBlock._parts(context, dateTime);
+    final parts = EventDetailWhenBlock._parts(
+      context,
+      dateTime,
+      timeZone: timeZone,
+    );
+    final zoneSuffix = EventDetailWhenBlock._zoneSuffix(
+      dateTime,
+      timeZone: timeZone,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -375,20 +473,25 @@ class _TimelineMomentContent extends StatelessWidget {
             height: 1.25,
           ),
         ),
-        const SizedBox(height: 2),
-        Text(
-          parts.time,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: colors.onSurfaceVariant,
+        if (showTime) ...[
+          const SizedBox(height: 2),
+          Text(
+            '${parts.time}$zoneSuffix',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colors.onSurfaceVariant,
+            ),
           ),
-        ),
+        ],
       ],
     );
   }
 }
 
 /// Height of one [_TimelineMomentContent] block (label + date + time).
-double _timelineMomentBlockHeight(BuildContext context) {
+double _timelineMomentBlockHeight(
+  BuildContext context, {
+  required bool showTime,
+}) {
   final theme = Theme.of(context);
   final direction = Directionality.of(context);
   final labelStyle = theme.textTheme.labelSmall!.copyWith(
@@ -404,6 +507,9 @@ double _timelineMomentBlockHeight(BuildContext context) {
   final labelHeight = _measureTextHeight('STARTS', labelStyle, direction);
   const gap = 4.0;
   final dateHeight = _measureTextHeight('Sun', dateStyle, direction);
+  if (!showTime) {
+    return labelHeight + gap + dateHeight;
+  }
   final timeHeight = _measureTextHeight('0:00', timeStyle, direction);
   return labelHeight + gap + dateHeight + timeHeight;
 }
@@ -414,7 +520,9 @@ double _todayChipBlockHeight(BuildContext context) {
   const gapBelowChip = 6.0;
   final theme = Theme.of(context);
   final direction = Directionality.of(context);
-  final chipStyle = theme.textTheme.labelSmall!.copyWith(fontWeight: FontWeight.w700);
+  final chipStyle = theme.textTheme.labelSmall!.copyWith(
+    fontWeight: FontWeight.w700,
+  );
   final chipTextHeight = _measureTextHeight('Today', chipStyle, direction);
   return chipTextHeight + chipVerticalPadding * 2 + gapBelowChip;
 }
@@ -436,7 +544,7 @@ double _timelinePrimaryDateDotTopInset(
 }
 
 /// Offset from the top of a [_TimelineMomentContent] to the top of its dot.
-double _timelineDotTopInset(BuildContext context) {
+double _timelineDotTopInset(BuildContext context, {required bool showTime}) {
   final theme = Theme.of(context);
   final labelStyle = theme.textTheme.labelSmall!.copyWith(
     fontWeight: FontWeight.w700,
@@ -451,9 +559,10 @@ double _timelineDotTopInset(BuildContext context) {
   final direction = Directionality.of(context);
   final labelHeight = _measureTextHeight('STARTS', labelStyle, direction);
   const gap = 4.0;
-  final dateRowHeight =
-      _measureTextHeight('Sun', dateStyle, direction) +
-      _measureTextHeight('0:00', timeStyle, direction);
+  final dateRowHeight = showTime
+      ? _measureTextHeight('Sun', dateStyle, direction) +
+            _measureTextHeight('0:00', timeStyle, direction)
+      : _measureTextHeight('Sun', dateStyle, direction);
   const dotSize = _TimelineDot.size;
   return labelHeight + gap + (dateRowHeight - dotSize) / 2;
 }

@@ -8,6 +8,8 @@ class ParkourEvent {
   final String? websiteUrl;
   final DateTime startAt;
   final DateTime? endAt;
+  final bool isDateOnly;
+  final String? timeZone;
   final double? latitude;
   final double? longitude;
   final String? address;
@@ -40,6 +42,8 @@ class ParkourEvent {
     this.websiteUrl,
     required this.startAt,
     this.endAt,
+    this.isDateOnly = false,
+    this.timeZone,
     this.latitude,
     this.longitude,
     this.address,
@@ -79,6 +83,8 @@ class ParkourEvent {
       endAt: data['endAt'] is Timestamp
           ? (data['endAt'] as Timestamp).toDate()
           : null,
+      isDateOnly: data['isDateOnly'] == true,
+      timeZone: data['timeZone'] as String?,
       latitude: (data['latitude'] as num?)?.toDouble(),
       longitude: (data['longitude'] as num?)?.toDouble(),
       address: data['address'] as String?,
@@ -132,6 +138,8 @@ class ParkourEvent {
       websiteUrl: data['websiteUrl'] as String?,
       startAt: parseDate(data['startAt']) ?? DateTime.now().toUtc(),
       endAt: parseDate(data['endAt']),
+      isDateOnly: data['isDateOnly'] == true,
+      timeZone: data['timeZone'] as String?,
       latitude: (data['latitude'] as num?)?.toDouble(),
       longitude: (data['longitude'] as num?)?.toDouble(),
       address: data['address'] as String?,
@@ -168,6 +176,9 @@ class ParkourEvent {
         'websiteUrl': websiteUrl!.trim(),
       'startAt': startAt.toUtc(),
       if (endAt != null) 'endAt': endAt!.toUtc(),
+      if (isDateOnly) 'isDateOnly': true,
+      if (timeZone != null && timeZone!.trim().isNotEmpty)
+        'timeZone': timeZone!.trim(),
       if (latitude != null) 'latitude': latitude,
       if (longitude != null) 'longitude': longitude,
       if (address != null && address!.trim().isNotEmpty)
@@ -209,6 +220,8 @@ class ParkourEvent {
     Object? websiteUrl = _unset,
     DateTime? startAt,
     Object? endAt = _unset,
+    bool? isDateOnly,
+    Object? timeZone = _unset,
     Object? latitude = _unset,
     Object? longitude = _unset,
     Object? address = _unset,
@@ -239,6 +252,10 @@ class ParkourEvent {
           : websiteUrl as String?,
       startAt: startAt ?? this.startAt,
       endAt: identical(endAt, _unset) ? this.endAt : endAt as DateTime?,
+      isDateOnly: isDateOnly ?? this.isDateOnly,
+      timeZone: identical(timeZone, _unset)
+          ? this.timeZone
+          : timeZone as String?,
       latitude: identical(latitude, _unset)
           ? this.latitude
           : latitude as double?,

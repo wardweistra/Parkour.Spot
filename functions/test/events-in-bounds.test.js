@@ -45,6 +45,8 @@ describe("events-in-bounds helpers", () => {
         title: " Jam ",
         startAt: futureStart,
         endAt: futureEnd,
+        isDateOnly: true,
+        timeZone: "Europe/Paris",
         city: "Utrecht",
         countryCode: "nl",
       });
@@ -57,6 +59,8 @@ describe("events-in-bounds helpers", () => {
         title: "Jam",
         startAt: futureStart.toISOString(),
         endAt: futureEnd.toISOString(),
+        isDateOnly: true,
+        timeZone: "Europe/Paris",
         city: "Utrecht",
         countryCode: "NL",
       });

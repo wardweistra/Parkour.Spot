@@ -14,6 +14,8 @@ class EventMapPin {
   final String title;
   final DateTime startAt;
   final DateTime? endAt;
+  final bool isDateOnly;
+  final String? timeZone;
   final String? spotId;
   final String? description;
   final List<String> imageUrls;
@@ -29,6 +31,8 @@ class EventMapPin {
     required this.title,
     required this.startAt,
     this.endAt,
+    this.isDateOnly = false,
+    this.timeZone,
     this.spotId,
     this.description,
     this.imageUrls = const [],
@@ -53,6 +57,8 @@ class EventMapPin {
       endAt: data['endAt'] is String
           ? DateTime.parse(data['endAt'] as String)
           : null,
+      isDateOnly: data['isDateOnly'] == true,
+      timeZone: data['timeZone'] as String?,
       spotId: data['spotId'] as String?,
       description: data['description'] as String?,
       imageUrls: data['imageUrls'] is List
@@ -88,6 +94,8 @@ class EventMapPin {
       title: event.title,
       startAt: event.startAt,
       endAt: event.endAt,
+      isDateOnly: event.isDateOnly,
+      timeZone: event.timeZone,
       spotId: event.spotIds.isNotEmpty ? event.spotIds.first : null,
       description: event.description,
       imageUrls: event.imageUrls,
@@ -118,6 +126,8 @@ class EventMapPin {
       title: (data['title'] as String?) ?? 'Event',
       startAt: parseDate(data['startAt']),
       endAt: data['endAt'] != null ? parseDate(data['endAt']) : null,
+      isDateOnly: data['isDateOnly'] == true,
+      timeZone: data['timeZone'] as String?,
       spotId: data['spotId'] as String?,
       description: data['description'] as String?,
       imageUrls: data['imageUrls'] is List

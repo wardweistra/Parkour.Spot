@@ -3,7 +3,6 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../l10n/app_localizations.dart';
@@ -15,6 +14,7 @@ import '../../services/auth_service.dart';
 import '../../services/geocoding_service.dart';
 import '../../services/spot_list_service.dart';
 import '../../services/spot_service.dart';
+import '../../utils/event_schedule_utils.dart';
 import '../../utils/image_preparation.dart';
 import '../../widgets/spot_form/image_section.dart';
 import '../../widgets/spot_list_selection_dialog.dart';
@@ -30,6 +30,8 @@ class AdminEventEditScreen extends StatefulWidget {
 }
 
 class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
+  static const String _localTimeZoneValue = '__local__';
+
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
@@ -42,6 +44,9 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
   ParkourEvent? _event;
   DateTime _startAt = DateTime.now().toUtc();
   DateTime? _endAt;
+  bool _isDateOnly = false;
+  String _selectedTimeZone = _localTimeZoneValue;
+  late final List<String> _timeZoneOptions;
   bool _isLoading = true;
   bool _isSubmitting = false;
   bool _isGeocoding = false;
@@ -56,6 +61,10 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
   @override
   void initState() {
     super.initState();
+    _timeZoneOptions = <String>[
+      _localTimeZoneValue,
+      ...EventScheduleUtils.availableTimeZoneIds(),
+    ];
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadEvent());
   }
 
@@ -115,6 +124,8 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
       _currentCountryCode = event.countryCode;
       _startAt = event.startAt.toUtc();
       _endAt = event.endAt?.toUtc();
+      _isDateOnly = event.isDateOnly;
+      _selectedTimeZone = _selectionForTimeZone(event.timeZone);
       _linkedSpots
         ..clear()
         ..addAll(spots);
@@ -128,8 +139,64 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
     });
   }
 
+  String _selectionForTimeZone(String? timeZone) {
+    final normalized = EventScheduleUtils.normalizeTimeZone(timeZone);
+    return normalized ?? _localTimeZoneValue;
+  }
+
+  String? get _effectiveTimeZone {
+    if (_selectedTimeZone == _localTimeZoneValue) return null;
+    return EventScheduleUtils.normalizeTimeZone(_selectedTimeZone);
+  }
+
+  DateTime _displayInSelectedTimeZone(DateTime value) {
+    return EventScheduleUtils.toDisplayDateTime(
+      value,
+      timeZone: _effectiveTimeZone,
+    );
+  }
+
+  String _timeZoneLabel(String value) {
+    if (value == _localTimeZoneValue) {
+      return 'Viewer local timezone (legacy)';
+    }
+    return EventScheduleUtils.formatTimeZoneLabel(
+      value,
+      referenceUtc: _startAt,
+    );
+  }
+
   Future<void> _pickStartAt() async {
-    final value = await _pickDateTime(context, initial: _startAt);
+    if (_isDateOnly) {
+      final initialDate = _displayInSelectedTimeZone(_startAt);
+      final selectedDate = await showDatePicker(
+        context: context,
+        initialDate: DateTime(
+          initialDate.year,
+          initialDate.month,
+          initialDate.day,
+        ),
+        firstDate: DateTime(2020),
+        lastDate: DateTime(2100),
+      );
+      if (selectedDate == null) return;
+      final value = EventScheduleUtils.dateStartToUtc(
+        selectedDate,
+        timeZone: _effectiveTimeZone,
+      );
+      setState(() {
+        _startAt = value;
+        if (_endAt != null && _endAt!.isBefore(_startAt)) {
+          _endAt = null;
+        }
+      });
+      return;
+    }
+    final value = await _pickDateTime(
+      context,
+      initial: _startAt,
+      timeZone: _effectiveTimeZone,
+    );
     if (value == null) return;
     setState(() {
       _startAt = value.toUtc();
@@ -140,8 +207,33 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
   }
 
   Future<void> _pickEndAt() async {
+    if (_isDateOnly) {
+      final initialDateTime = _displayInSelectedTimeZone(_endAt ?? _startAt);
+      final selectedDate = await showDatePicker(
+        context: context,
+        initialDate: DateTime(
+          initialDateTime.year,
+          initialDateTime.month,
+          initialDateTime.day,
+        ),
+        firstDate: DateTime(2020),
+        lastDate: DateTime(2100),
+      );
+      if (selectedDate == null) return;
+      setState(
+        () => _endAt = EventScheduleUtils.dateEndToUtc(
+          selectedDate,
+          timeZone: _effectiveTimeZone,
+        ),
+      );
+      return;
+    }
     final initial = _endAt ?? _startAt.add(const Duration(hours: 2));
-    final value = await _pickDateTime(context, initial: initial);
+    final value = await _pickDateTime(
+      context,
+      initial: initial,
+      timeZone: _effectiveTimeZone,
+    );
     if (value == null) return;
     setState(() => _endAt = value.toUtc());
   }
@@ -383,8 +475,7 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
           .geocodeCoordinatesDetails(latitude, longitude);
       final resolvedAddress = details['address']?.trim();
       final resolvedCity = details['city']?.trim();
-      final resolvedCountryCode =
-          details['countryCode']?.trim().toUpperCase();
+      final resolvedCountryCode = details['countryCode']?.trim().toUpperCase();
       if (!mounted) return false;
 
       if (force) {
@@ -484,7 +575,23 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
 
     final eventsService = context.read<AdminEventsService>();
     if (!_formKey.currentState!.validate()) return;
-    if (_endAt != null && _endAt!.isBefore(_startAt)) {
+    final timeZone = _effectiveTimeZone;
+    DateTime normalizedStartAt = _startAt;
+    DateTime? normalizedEndAt = _endAt;
+    if (_isDateOnly) {
+      final startDate = _displayInSelectedTimeZone(_startAt);
+      normalizedStartAt = EventScheduleUtils.dateStartToUtc(
+        startDate,
+        timeZone: timeZone,
+      );
+      final endDate = _displayInSelectedTimeZone(_endAt ?? _startAt);
+      normalizedEndAt = EventScheduleUtils.dateEndToUtc(
+        endDate,
+        timeZone: timeZone,
+      );
+    }
+    if (normalizedEndAt != null &&
+        normalizedEndAt.isBefore(normalizedStartAt)) {
       setState(() => _formError = 'End time cannot be before start time');
       return;
     }
@@ -524,8 +631,10 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
       description: _descriptionController.text.trim(),
       imageUrls: [..._existingImageUrls, ...uploadedImageUrls],
       websiteUrl: _websiteController.text.trim(),
-      startAt: _startAt,
-      endAt: _endAt,
+      startAt: normalizedStartAt,
+      endAt: normalizedEndAt,
+      isDateOnly: _isDateOnly,
+      timeZone: timeZone,
       latitude: double.tryParse(_latitudeController.text.trim()),
       longitude: double.tryParse(_longitudeController.text.trim()),
       address: _addressController.text.trim(),
@@ -831,15 +940,65 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
                   const SizedBox(height: 16),
                   _buildLinkedListsSection(l10n),
                   const SizedBox(height: 16),
+                  Text(
+                    'Schedule',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: _selectedTimeZone,
+                    decoration: const InputDecoration(
+                      labelText: 'Timezone',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: _timeZoneOptions
+                        .map(
+                          (value) => DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(
+                              _timeZoneLabel(value),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: _isSubmitting
+                        ? null
+                        : (value) {
+                            if (value == null) return;
+                            setState(() => _selectedTimeZone = value);
+                          },
+                  ),
+                  const SizedBox(height: 8),
+                  SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Date only (no times)'),
+                    subtitle: const Text(
+                      'Display this event everywhere without times',
+                    ),
+                    value: _isDateOnly,
+                    onChanged: _isSubmitting
+                        ? null
+                        : (value) {
+                            setState(() => _isDateOnly = value);
+                          },
+                  ),
+                  const SizedBox(height: 8),
                   _AdminEventDateField(
-                    label: 'Start (UTC)',
+                    label: _isDateOnly ? 'Start date' : 'Start date & time',
                     value: _startAt,
+                    isDateOnly: _isDateOnly,
+                    timeZone: _effectiveTimeZone,
                     onPick: _pickStartAt,
                   ),
                   const SizedBox(height: 8),
                   _AdminEventDateField(
-                    label: 'End (UTC, optional)',
+                    label: _isDateOnly
+                        ? 'End date (optional)'
+                        : 'End date & time (optional)',
                     value: _endAt,
+                    isDateOnly: _isDateOnly,
+                    timeZone: _effectiveTimeZone,
                     onPick: _pickEndAt,
                     onClear: _endAt == null
                         ? null
@@ -978,9 +1137,7 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
       ),
       child: Text(
         hasValue ? trimmed : 'Not set',
-        style: hasValue
-            ? null
-            : TextStyle(color: Theme.of(context).hintColor),
+        style: hasValue ? null : TextStyle(color: Theme.of(context).hintColor),
       ),
     );
   }
@@ -988,10 +1145,15 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
   Future<DateTime?> _pickDateTime(
     BuildContext context, {
     required DateTime initial,
+    String? timeZone,
   }) async {
+    final displayInitial = EventScheduleUtils.toDisplayDateTime(
+      initial,
+      timeZone: timeZone,
+    );
     final selectedDate = await showDatePicker(
       context: context,
-      initialDate: initial.toLocal(),
+      initialDate: displayInitial,
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
     );
@@ -999,17 +1161,20 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
 
     final selectedTime = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay.fromDateTime(initial.toLocal()),
+      initialTime: TimeOfDay.fromDateTime(displayInitial),
     );
     if (selectedTime == null) return null;
 
-    return DateTime(
-      selectedDate.year,
-      selectedDate.month,
-      selectedDate.day,
-      selectedTime.hour,
-      selectedTime.minute,
-    ).toUtc();
+    return EventScheduleUtils.localDateTimeToUtc(
+      DateTime(
+        selectedDate.year,
+        selectedDate.month,
+        selectedDate.day,
+        selectedTime.hour,
+        selectedTime.minute,
+      ),
+      timeZone: timeZone,
+    );
   }
 }
 
@@ -1017,12 +1182,16 @@ class _AdminEventDateField extends StatelessWidget {
   const _AdminEventDateField({
     required this.label,
     required this.value,
+    required this.isDateOnly,
+    required this.timeZone,
     required this.onPick,
     this.onClear,
   });
 
   final String label;
   final DateTime? value;
+  final bool isDateOnly;
+  final String? timeZone;
   final VoidCallback onPick;
   final VoidCallback? onClear;
 
@@ -1030,7 +1199,12 @@ class _AdminEventDateField extends StatelessWidget {
   Widget build(BuildContext context) {
     final display = value == null
         ? 'Not set'
-        : '${DateFormat.yMMMd().add_Hm().format(value!.toUtc())} UTC';
+        : EventScheduleUtils.formatSummaryLine(
+            context,
+            startAt: value!,
+            isDateOnly: isDateOnly,
+            timeZone: timeZone,
+          );
 
     return Row(
       children: [
