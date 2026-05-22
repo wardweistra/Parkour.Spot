@@ -9,7 +9,6 @@ import '../models/spot.dart';
 import '../models/rating.dart';
 import '../utils/image_preparation.dart';
 import '../utils/image_url_utils.dart';
-import '../utils/agent_debug_log.dart';
 import 'audit_log_service.dart';
 
 class SpotService extends ChangeNotifier {
@@ -23,89 +22,29 @@ class SpotService extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  void _agentDebugLog({
-    required String hypothesisId,
-    required String location,
-    required String message,
-    required Map<String, dynamic> data,
-  }) {
-    appendAgentDebugLogEntry({
-      'hypothesisId': hypothesisId,
-      'location': location,
-      'message': message,
-      'data': data,
-      'timestamp': DateTime.now().millisecondsSinceEpoch,
-    });
-  }
-
   // Get a single spot by ID
   Future<Spot?> getSpotById(
     String spotId, {
     bool throwOnFetchError = false,
   }) async {
-    String outcome = 'started';
-    bool? docExists;
-    bool? fromCache;
-    bool retriedServerRead = false;
-    String? errorType;
-    String? errorCode;
-    // #region agent log
-    _agentDebugLog(
-      hypothesisId: 'C',
-      location: 'spot_service.dart:getSpotById:entry',
-      message: 'getSpotById called',
-      data: {
-        'spotId': spotId,
-        'spotIdLength': spotId.length,
-        'throwOnFetchError': throwOnFetchError,
-      },
-    );
-    // #endregion
     try {
       var doc = await _firestore.collection('spots').doc(spotId).get();
       if (throwOnFetchError && !doc.exists && doc.metadata.isFromCache) {
-        retriedServerRead = true;
         doc = await _firestore
             .collection('spots')
             .doc(spotId)
             .get(const GetOptions(source: Source.server));
       }
-      docExists = doc.exists;
-      fromCache = doc.metadata.isFromCache;
       if (doc.exists) {
-        outcome = 'found';
         return Spot.fromFirestore(doc);
       }
-      outcome = 'missing';
       return null;
     } catch (e) {
-      outcome = 'exception';
-      errorType = e.runtimeType.toString();
-      if (e is FirebaseException) {
-        errorCode = e.code;
-      }
       debugPrint('Error fetching spot by ID: $e');
       if (throwOnFetchError) {
         rethrow;
       }
       return null;
-    } finally {
-      // #region agent log
-      _agentDebugLog(
-        hypothesisId: 'A',
-        location: 'spot_service.dart:getSpotById:outcome',
-        message: 'getSpotById finished',
-        data: {
-          'spotId': spotId,
-          'outcome': outcome,
-          'docExists': docExists,
-          'fromCache': fromCache,
-          'retriedServerRead': retriedServerRead,
-          'errorType': errorType,
-          'errorCode': errorCode,
-        },
-      );
-      // #endregion
     }
   }
 
