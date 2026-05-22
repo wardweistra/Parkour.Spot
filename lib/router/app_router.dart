@@ -703,7 +703,7 @@ class _SpotDetailRouteState extends State<SpotDetailRoute> {
     _spotFuture = Provider.of<SpotService>(
       context,
       listen: false,
-    ).getSpotById(widget.spotId);
+    ).getSpotById(widget.spotId, throwOnFetchError: true);
   }
 
   @override
@@ -713,7 +713,7 @@ class _SpotDetailRouteState extends State<SpotDetailRoute> {
       _spotFuture = Provider.of<SpotService>(
         context,
         listen: false,
-      ).getSpotById(widget.spotId);
+      ).getSpotById(widget.spotId, throwOnFetchError: true);
     }
   }
 

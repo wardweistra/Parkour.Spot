@@ -152,7 +152,10 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
     final admin = context.read<AdminEventsService>();
     try {
-      final e = await admin.getEventById(widget.eventId);
+      final e = await admin.getEventById(
+        widget.eventId,
+        throwOnFetchError: true,
+      );
       if (!mounted) return;
       if (e == null) {
         setState(() {

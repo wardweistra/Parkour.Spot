@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
 import '../models/parkour_event.dart';
+import '../utils/agent_debug_log.dart';
 import '../utils/image_preparation.dart';
 
 class AdminEventsService extends ChangeNotifier {
@@ -34,6 +35,21 @@ class AdminEventsService extends ChangeNotifier {
   bool get isLoadingMore => _isLoadingMore;
   bool get hasMore => _hasMore;
   String? get error => _error;
+
+  void _agentDebugLog({
+    required String hypothesisId,
+    required String location,
+    required String message,
+    required Map<String, dynamic> data,
+  }) {
+    appendAgentDebugLogEntry({
+      'hypothesisId': hypothesisId,
+      'location': location,
+      'message': message,
+      'data': data,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    });
+  }
 
   Future<void> fetchEvents({
     bool forceRefresh = false,
@@ -427,16 +443,76 @@ class AdminEventsService extends ChangeNotifier {
     return imageUrls;
   }
 
-  Future<ParkourEvent?> getEventById(String eventId) async {
+  Future<ParkourEvent?> getEventById(
+    String eventId, {
+    bool throwOnFetchError = false,
+  }) async {
+    String outcome = 'started';
+    bool? docExists;
+    bool? hasData;
+    bool? fromCache;
+    bool retriedServerRead = false;
+    String? errorType;
+    String? errorCode;
+    // #region agent log
+    _agentDebugLog(
+      hypothesisId: 'C',
+      location: 'admin_events_service.dart:getEventById:entry',
+      message: 'getEventById called',
+      data: {
+        'eventId': eventId,
+        'eventIdLength': eventId.length,
+        'throwOnFetchError': throwOnFetchError,
+      },
+    );
+    // #endregion
     try {
-      final doc = await _firestore.collection('events').doc(eventId).get();
+      var doc = await _firestore.collection('events').doc(eventId).get();
+      if (throwOnFetchError && !doc.exists && doc.metadata.isFromCache) {
+        retriedServerRead = true;
+        doc = await _firestore
+            .collection('events')
+            .doc(eventId)
+            .get(const GetOptions(source: Source.server));
+      }
+      docExists = doc.exists;
+      hasData = doc.data() != null;
+      fromCache = doc.metadata.isFromCache;
       if (!doc.exists || doc.data() == null) {
+        outcome = 'missing';
         return null;
       }
+      outcome = 'found';
       return ParkourEvent.fromFirestore(doc);
     } catch (e, st) {
+      outcome = 'exception';
+      errorType = e.runtimeType.toString();
+      if (e is FirebaseException) {
+        errorCode = e.code;
+      }
       debugPrint('AdminEventsService.getEventById error: $e\n$st');
+      if (throwOnFetchError) {
+        rethrow;
+      }
       return null;
+    } finally {
+      // #region agent log
+      _agentDebugLog(
+        hypothesisId: 'A',
+        location: 'admin_events_service.dart:getEventById:outcome',
+        message: 'getEventById finished',
+        data: {
+          'eventId': eventId,
+          'outcome': outcome,
+          'docExists': docExists,
+          'hasData': hasData,
+          'fromCache': fromCache,
+          'retriedServerRead': retriedServerRead,
+          'errorType': errorType,
+          'errorCode': errorCode,
+        },
+      );
+      // #endregion
     }
   }
 

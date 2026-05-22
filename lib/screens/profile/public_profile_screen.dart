@@ -110,6 +110,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     _profileFuture = userProfileService.getUserProfile(
       widget.userIdOrUsername,
       currentUserId: currentUserId,
+      throwOnFetchError: true,
     );
     // Force a rebuild to show the new data
     if (mounted) {
@@ -1585,6 +1586,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           _profileFuture = userProfileService.getUserProfile(
             widget.userIdOrUsername,
             currentUserId: currentUserId,
+            throwOnFetchError: true,
           );
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -1691,6 +1693,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           _profileFuture = userProfileService.getUserProfile(
             widget.userIdOrUsername,
             currentUserId: currentUserId,
+            throwOnFetchError: true,
           );
 
           ScaffoldMessenger.of(context).showSnackBar(
