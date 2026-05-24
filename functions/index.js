@@ -9949,6 +9949,8 @@ exports.regenerateApiClientKey = onCall({region: "europe-west1"}, async (request
  * Handles requests for:
  * - /sitemap.xml (sitemap index)
  * - /sitemaps/sitemap-{country}.xml (country sitemaps)
+ * - /sitemaps/sitemap-unlocated.xml, /sitemaps/sitemap-lists.xml,
+ *   /sitemaps/sitemap-users.xml, /sitemaps/sitemap-events.xml
  */
 exports.serveSitemap = onRequest(
     {
@@ -9972,8 +9974,10 @@ exports.serveSitemap = onRequest(
           // Validate filename to prevent path traversal attacks
           // sitemap.xml, sitemap-{country}.xml, sitemap-{country}-{n}.xml,
           // sitemap-unlocated.xml, sitemap-unlocated-{n}.xml,
-          // sitemap-lists.xml, sitemap-lists-{n}.xml, sitemap-users.xml, sitemap-users-{n}.xml
-          if (!/^sitemap(-(unlocated(-\d+)?|lists(-\d+)?|users(-\d+)?|[a-z]{2}(-\d+)?))?\.xml$/.test(sitemapName)) {
+          // sitemap-lists.xml, sitemap-lists-{n}.xml,
+          // sitemap-users.xml, sitemap-users-{n}.xml,
+          // sitemap-events.xml, sitemap-events-{n}.xml
+          if (!/^sitemap(-(unlocated(-\d+)?|lists(-\d+)?|users(-\d+)?|events(-\d+)?|[a-z]{2}(-\d+)?))?\.xml$/.test(sitemapName)) {
             res.status(400).send("Invalid sitemap filename");
             return;
           }
