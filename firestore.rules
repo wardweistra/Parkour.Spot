@@ -511,6 +511,12 @@ service cloud.firestore {
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isModerator == true);
     }
 
+    // Event reports - authenticated users can submit, moderators/admins can review.
+    match /eventReports/{reportId} {
+      allow create: if request.auth != null;
+      allow read, update, delete: if requestingUserIsStaff();
+    }
+
     // Comments collection - users can read all comments, authenticated users can create, owners can edit/delete
     match /comments/{commentId} {
       allow read: if true;

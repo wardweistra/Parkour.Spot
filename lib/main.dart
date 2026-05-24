@@ -16,6 +16,7 @@ import 'package:parkour_spot/services/auth_service.dart';
 import 'package:parkour_spot/services/event_map_service.dart';
 import 'package:parkour_spot/services/spot_service.dart';
 import 'package:parkour_spot/services/spot_report_service.dart';
+import 'package:parkour_spot/services/event_report_service.dart';
 import 'package:parkour_spot/services/sync_source_service.dart';
 import 'package:parkour_spot/services/api_client_service.dart';
 import 'package:parkour_spot/services/search_state_service.dart';
@@ -199,6 +200,7 @@ class ParkourSpotApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => GeocodingService()),
         ChangeNotifierProvider(create: (_) => JumpflixService()),
         Provider(create: (_) => SpotReportService()),
+        Provider(create: (_) => EventReportService()),
         ChangeNotifierProxyProvider<AuthService, SpotListService>(
           create: (context) {
             final authService = Provider.of<AuthService>(

@@ -1516,7 +1516,8 @@ class SearchScreenState extends State<SearchScreen>
                               ..add(key);
                           }
                         });
-                        if (_mapController != null) _loadMapDataForCurrentView();
+                        if (_mapController != null)
+                          _loadMapDataForCurrentView();
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(
@@ -1831,7 +1832,8 @@ class SearchScreenState extends State<SearchScreen>
                               ..add(key);
                           }
                         });
-                        if (_mapController != null) _loadMapDataForCurrentView();
+                        if (_mapController != null)
+                          _loadMapDataForCurrentView();
                       },
                       child: _buildAttributeChip(
                         label: label,
@@ -1866,7 +1868,8 @@ class SearchScreenState extends State<SearchScreen>
                             _goodFor = List<String>.from(_goodFor)..add(key);
                           }
                         });
-                        if (_mapController != null) _loadMapDataForCurrentView();
+                        if (_mapController != null)
+                          _loadMapDataForCurrentView();
                       },
                       child: _buildAttributeChip(
                         label: label,
@@ -2168,16 +2171,14 @@ class SearchScreenState extends State<SearchScreen>
           : _selectedSpot?.name == spot.name;
       final bool isHighlighted =
           spot.id != null && _highlightedSpotIds.contains(spot.id);
-      final eventPin =
-          spot.id != null ? _eventPinBySpotId[spot.id!] : null;
+      final eventPin = spot.id != null ? _eventPinBySpotId[spot.id!] : null;
       final bool hasEvent = eventPin != null;
 
       BitmapDescriptor icon;
       if (hasEvent && !isSelected && !isHighlighted) {
         icon = _eventIcon ?? BitmapDescriptor.defaultMarker;
       } else if (isSelected && isHighlighted) {
-        icon =
-            _spotSelectedHighlightedIcon ?? BitmapDescriptor.defaultMarker;
+        icon = _spotSelectedHighlightedIcon ?? BitmapDescriptor.defaultMarker;
       } else if (isSelected && hasEvent) {
         icon = _eventSelectedIcon ?? BitmapDescriptor.defaultMarker;
       } else if (isSelected) {
@@ -2228,9 +2229,8 @@ class SearchScreenState extends State<SearchScreen>
           ? 'event_venue_${pin.eventId}'
           : 'event_spot_${pin.id}';
       final isSelected = _selectedEventPin?.id == pin.id;
-      final icon = (isSelected
-              ? (_eventSelectedIcon ?? _eventIcon)
-              : _eventIcon) ??
+      final icon =
+          (isSelected ? (_eventSelectedIcon ?? _eventIcon) : _eventIcon) ??
           BitmapDescriptor.defaultMarker;
 
       pending.add(
@@ -2335,29 +2335,28 @@ class SearchScreenState extends State<SearchScreen>
       );
       final BitmapDescriptor normalSelectedPin =
           await MarkerIconUtils.loadMapPinPng(
-        MarkerIconUtils.mapPinNormalSelectedAsset,
-        fallbackFill: MarkerIconUtils.mapPinNormalFallbackFill,
-        logicalHeight: browsePinHeight,
-      );
+            MarkerIconUtils.mapPinNormalSelectedAsset,
+            fallbackFill: MarkerIconUtils.mapPinNormalFallbackFill,
+            logicalHeight: browsePinHeight,
+          );
       final BitmapDescriptor listSelectedPin =
           await MarkerIconUtils.loadMapPinPng(
-        MarkerIconUtils.mapPinListSelectedAsset,
-        fallbackFill: MarkerIconUtils.mapPinListFallbackFill,
-        logicalHeight: browsePinHeight,
-      );
+            MarkerIconUtils.mapPinListSelectedAsset,
+            fallbackFill: MarkerIconUtils.mapPinListFallbackFill,
+            logicalHeight: browsePinHeight,
+          );
       final BitmapDescriptor addPin = await MarkerIconUtils.loadMapPinPng(
         MarkerIconUtils.mapPinAddAsset,
         fallbackFill: MarkerIconUtils.mapPinAddFallbackFill,
         logicalHeight: browsePinHeight,
       );
-      final BitmapDescriptor eventPin =
-          await MarkerIconUtils.loadEventMapPin(
+      final BitmapDescriptor eventPin = await MarkerIconUtils.loadEventMapPin(
         logicalHeight: browsePinHeight,
       );
       final BitmapDescriptor eventSelectedPin =
           await MarkerIconUtils.loadEventSelectedMapPin(
-        logicalHeight: browsePinHeight,
-      );
+            logicalHeight: browsePinHeight,
+          );
       if (mounted) {
         setState(() {
           _spotDefaultIcon = normalPin;
@@ -2695,10 +2694,7 @@ class SearchScreenState extends State<SearchScreen>
     }
   }
 
-  Future<void> _selectEventPin(
-    EventMapPin pin, {
-    bool focusMap = true,
-  }) async {
+  Future<void> _selectEventPin(EventMapPin pin, {bool focusMap = true}) async {
     if (_isBottomSheetOpen) {
       await _bottomSheetAnimationController.reverse();
       if (mounted) {
@@ -2710,8 +2706,9 @@ class SearchScreenState extends State<SearchScreen>
 
     if (focusMap && _mapController != null) {
       const double desiredZoom = 15.0;
-      final double targetZoom =
-          _lastKnownZoom < desiredZoom ? desiredZoom : _lastKnownZoom;
+      final double targetZoom = _lastKnownZoom < desiredZoom
+          ? desiredZoom
+          : _lastKnownZoom;
       await _mapController!.animateCamera(
         CameraUpdate.newLatLng(LatLng(pin.latitude, pin.longitude)),
       );
@@ -2902,8 +2899,9 @@ class SearchScreenState extends State<SearchScreen>
       maxWidth: maxWidth,
       onTapWithImageIndex: (imageIndex) {
         final path = '/event/${pin.eventId}';
-        final navigationUrl =
-            imageIndex > 0 ? '$path?imageIndex=$imageIndex' : path;
+        final navigationUrl = imageIndex > 0
+            ? '$path?imageIndex=$imageIndex'
+            : path;
         context.push(navigationUrl);
       },
       onClose: () {
@@ -2923,8 +2921,9 @@ class SearchScreenState extends State<SearchScreen>
           CameraUpdate.newLatLng(LatLng(pin.latitude, pin.longitude)),
         );
         final path = '/event/${pin.eventId}';
-        final navigationUrl =
-            imageIndex > 0 ? '$path?imageIndex=$imageIndex' : path;
+        final navigationUrl = imageIndex > 0
+            ? '$path?imageIndex=$imageIndex'
+            : path;
         context.push(navigationUrl);
       },
       onLocate: () => _locateEvent(pin),
@@ -2975,10 +2974,9 @@ class SearchScreenState extends State<SearchScreen>
           Icon(
             Icons.event_busy,
             size: 64,
-            color: Theme.of(context)
-                .colorScheme
-                .onSurface
-                .withValues(alpha: 0.5),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 16),
           Text(
@@ -2990,10 +2988,9 @@ class SearchScreenState extends State<SearchScreen>
             l10n.exploreNoEventsAreaHint,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.7),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.7),
             ),
           ),
         ],
@@ -3001,8 +2998,7 @@ class SearchScreenState extends State<SearchScreen>
     );
   }
 
-  int _exploreSpotCountForHeader() =>
-      _totalSpotsInView ?? _visibleSpots.length;
+  int _exploreSpotCountForHeader() => _totalSpotsInView ?? _visibleSpots.length;
 
   int _exploreEventCountForHeader() => _visibleEvents.length;
 
@@ -3802,8 +3798,9 @@ class SearchScreenState extends State<SearchScreen>
                               spot: _selectedSpot!,
                               variant: SpotCardVariant.overlay,
                               showCheckInPresence: true,
-                              upcomingEventPin:
-                                  _upcomingEventPinForSpot(_selectedSpot!),
+                              upcomingEventPin: _upcomingEventPinForSpot(
+                                _selectedSpot!,
+                              ),
                               maxWidth: 400,
                               spotListId:
                                   (_selectedSpot!.id != null &&
@@ -3861,8 +3858,9 @@ class SearchScreenState extends State<SearchScreen>
                                 spot: _selectedSpot!,
                                 variant: SpotCardVariant.overlay,
                                 showCheckInPresence: true,
-                                upcomingEventPin:
-                                    _upcomingEventPinForSpot(_selectedSpot!),
+                                upcomingEventPin: _upcomingEventPinForSpot(
+                                  _selectedSpot!,
+                                ),
                                 maxWidth: double.infinity,
                                 spotListId:
                                     (_selectedSpot!.id != null &&
@@ -3957,7 +3955,7 @@ class SearchScreenState extends State<SearchScreen>
                             ),
                     ),
 
-                  // Add Spot Button (when long press is detected)
+                  // Add actions (when long press is detected)
                   if (_longPressedLocation != null &&
                       _selectedSpot == null &&
                       _selectedEventPin == null &&
@@ -4001,9 +3999,7 @@ class SearchScreenState extends State<SearchScreen>
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Text(
-                                          AppLocalizations.of(
-                                            context,
-                                          )!.exploreAddSpotHereTitle,
+                                          'Add at this location',
                                           style: Theme.of(
                                             context,
                                           ).textTheme.titleMedium,
@@ -4033,9 +4029,8 @@ class SearchScreenState extends State<SearchScreen>
                                                 final location =
                                                     _longPressedLocation!;
                                                 final addSpotUri = Uri(
-                                                  path: '/explore',
+                                                  path: '/spots/add',
                                                   queryParameters: {
-                                                    'tab': 'add',
                                                     'lat': location.latitude
                                                         .toString(),
                                                     'lng': location.longitude
@@ -4055,7 +4050,7 @@ class SearchScreenState extends State<SearchScreen>
                                                   _markers = _rebuildMarkers();
                                                 });
 
-                                                // Require profile loaded before add spot (prevents email-as-createdByName)
+                                                // Require profile loaded before navigating to add forms.
                                                 if (!authService
                                                     .isAuthenticated) {
                                                   context.go(
@@ -4075,7 +4070,6 @@ class SearchScreenState extends State<SearchScreen>
                                                     ),
                                                   );
                                                 } else {
-                                                  // Navigate to Add Spot tab (preserves bottom navigation).
                                                   context.go(
                                                     addSpotUri.toString(),
                                                   );
@@ -4084,11 +4078,62 @@ class SearchScreenState extends State<SearchScreen>
                                               icon: const ReliableIcon(
                                                 icon: Icons.add_location,
                                               ),
-                                              label: Text(
-                                                AppLocalizations.of(
-                                                  context,
-                                                )!.tabAddSpot,
+                                              label: Text('Add spot'),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            ElevatedButton.icon(
+                                              onPressed: () {
+                                                final location =
+                                                    _longPressedLocation!;
+                                                final addEventUri = Uri(
+                                                  path: '/events/add',
+                                                  queryParameters: {
+                                                    'lat': location.latitude
+                                                        .toString(),
+                                                    'lng': location.longitude
+                                                        .toString(),
+                                                  },
+                                                );
+                                                final authService =
+                                                    Provider.of<AuthService>(
+                                                      context,
+                                                      listen: false,
+                                                    );
+
+                                                setState(() {
+                                                  _longPressedLocation = null;
+                                                  _longPressHandled = false;
+                                                  _markers = _rebuildMarkers();
+                                                });
+
+                                                if (!authService
+                                                    .isAuthenticated) {
+                                                  context.go(
+                                                    '/login?redirectTo=${Uri.encodeComponent(addEventUri.toString())}',
+                                                  );
+                                                } else if (!authService
+                                                    .isProfileReady) {
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text(
+                                                        AppLocalizations.of(
+                                                          context,
+                                                        )!.exploreLoadingProfile,
+                                                      ),
+                                                    ),
+                                                  );
+                                                } else {
+                                                  context.go(
+                                                    addEventUri.toString(),
+                                                  );
+                                                }
+                                              },
+                                              icon: const ReliableIcon(
+                                                icon: Icons.event_available,
                                               ),
+                                              label: const Text('Add event'),
                                             ),
                                           ],
                                         ),
@@ -4161,30 +4206,28 @@ class SearchScreenState extends State<SearchScreen>
                                           ),
                                           child: Builder(
                                             builder: (context) {
-                                              final l10n =
-                                                  AppLocalizations.of(
-                                                    context,
-                                                  )!;
+                                              final l10n = AppLocalizations.of(
+                                                context,
+                                              )!;
                                               return ExploreBottomSheetHeader(
                                                 mode: _exploreListMode,
                                                 spotsLabel: l10n
                                                     .exploreSpotCountShort(
-                                                  _exploreSpotCountForHeader(),
-                                                ),
+                                                      _exploreSpotCountForHeader(),
+                                                    ),
                                                 eventsLabel: l10n
                                                     .exploreEventCountShort(
-                                                  _exploreEventCountForHeader(),
-                                                ),
+                                                      _exploreEventCountForHeader(),
+                                                    ),
                                                 spotsDetailSuffix:
                                                     _exploreListMode ==
-                                                            ExploreBottomSheetHeader
-                                                                .modeSpots
-                                                        ? _exploreSpotsSegmentSuffix(
-                                                            l10n,
-                                                          )
-                                                        : null,
-                                                isSheetOpen:
-                                                    _isBottomSheetOpen,
+                                                        ExploreBottomSheetHeader
+                                                            .modeSpots
+                                                    ? _exploreSpotsSegmentSuffix(
+                                                        l10n,
+                                                      )
+                                                    : null,
+                                                isSheetOpen: _isBottomSheetOpen,
                                                 onModeChanged: (mode) {
                                                   setState(() {
                                                     _exploreListMode = mode;
@@ -4201,67 +4244,25 @@ class SearchScreenState extends State<SearchScreen>
                                           Expanded(
                                             child: _exploreListMode == 'events'
                                                 ? (_visibleEvents.isEmpty
-                                                    ? _buildExploreEventsEmptyState(
-                                                        context,
-                                                      )
-                                                    : _buildEventsList())
+                                                      ? _buildExploreEventsEmptyState(
+                                                          context,
+                                                        )
+                                                      : _buildEventsList())
                                                 : (_visibleSpots.isEmpty
-                                                ? Center(
-                                                    child: Column(
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .center,
-                                                      children: [
-                                                        Icon(
-                                                          _searchQuery
-                                                                  .isNotEmpty
-                                                              ? Icons.search_off
-                                                              : Icons
-                                                                    .location_off,
-                                                          size: 64,
-                                                          color:
-                                                              Theme.of(context)
-                                                                  .colorScheme
-                                                                  .onSurface
-                                                                  .withValues(
-                                                                    alpha: 0.5,
-                                                                  ),
-                                                        ),
-                                                        const SizedBox(
-                                                          height: 16,
-                                                        ),
-                                                        Text(
-                                                          _searchQuery
-                                                                  .isNotEmpty
-                                                              ? AppLocalizations.of(
-                                                                  context,
-                                                                )!.exploreNoSpotsSearch
-                                                              : AppLocalizations.of(
-                                                                  context,
-                                                                )!.exploreNoSpotsArea,
-                                                          style:
-                                                              Theme.of(context)
-                                                                  .textTheme
-                                                                  .headlineSmall,
-                                                        ),
-                                                        const SizedBox(
-                                                          height: 8,
-                                                        ),
-                                                        Text(
-                                                          _searchQuery
-                                                                  .isNotEmpty
-                                                              ? AppLocalizations.of(
-                                                                  context,
-                                                                )!.exploreNoSpotsSearchHint
-                                                              : AppLocalizations.of(
-                                                                  context,
-                                                                )!.exploreNoSpotsMapHint,
-                                                          textAlign:
-                                                              TextAlign.center,
-                                                          style: Theme.of(context)
-                                                              .textTheme
-                                                              .bodyMedium
-                                                              ?.copyWith(
+                                                      ? Center(
+                                                          child: Column(
+                                                            mainAxisAlignment:
+                                                                MainAxisAlignment
+                                                                    .center,
+                                                            children: [
+                                                              Icon(
+                                                                _searchQuery
+                                                                        .isNotEmpty
+                                                                    ? Icons
+                                                                          .search_off
+                                                                    : Icons
+                                                                          .location_off,
+                                                                size: 64,
                                                                 color:
                                                                     Theme.of(
                                                                           context,
@@ -4270,14 +4271,57 @@ class SearchScreenState extends State<SearchScreen>
                                                                         .onSurface
                                                                         .withValues(
                                                                           alpha:
-                                                                              0.7,
+                                                                              0.5,
                                                                         ),
                                                               ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  )
-                                                : _buildSpotsList()),
+                                                              const SizedBox(
+                                                                height: 16,
+                                                              ),
+                                                              Text(
+                                                                _searchQuery
+                                                                        .isNotEmpty
+                                                                    ? AppLocalizations.of(
+                                                                        context,
+                                                                      )!.exploreNoSpotsSearch
+                                                                    : AppLocalizations.of(
+                                                                        context,
+                                                                      )!.exploreNoSpotsArea,
+                                                                style: Theme.of(
+                                                                  context,
+                                                                ).textTheme.headlineSmall,
+                                                              ),
+                                                              const SizedBox(
+                                                                height: 8,
+                                                              ),
+                                                              Text(
+                                                                _searchQuery
+                                                                        .isNotEmpty
+                                                                    ? AppLocalizations.of(
+                                                                        context,
+                                                                      )!.exploreNoSpotsSearchHint
+                                                                    : AppLocalizations.of(
+                                                                        context,
+                                                                      )!.exploreNoSpotsMapHint,
+                                                                textAlign:
+                                                                    TextAlign
+                                                                        .center,
+                                                                style: Theme.of(context)
+                                                                    .textTheme
+                                                                    .bodyMedium
+                                                                    ?.copyWith(
+                                                                      color: Theme.of(context)
+                                                                          .colorScheme
+                                                                          .onSurface
+                                                                          .withValues(
+                                                                            alpha:
+                                                                                0.7,
+                                                                          ),
+                                                                    ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        )
+                                                      : _buildSpotsList()),
                                           ),
                                       ],
                                     ),
