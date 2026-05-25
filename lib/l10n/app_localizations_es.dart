@@ -3125,6 +3125,16 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get eventDetailEventSpotLocationsLabel => 'Ubicaciones del evento';
+
+  @override
+  String get eventDetailNoEventSpotLocations =>
+      'Spots del evento no encontrados.';
+
+  @override
+  String get eventDetailEventSpotViewDetails => 'Ver spot';
+
+  @override
   String get adminEventEditTitle => 'Editar evento';
 
   @override

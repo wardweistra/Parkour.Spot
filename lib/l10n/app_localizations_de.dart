@@ -3148,6 +3148,15 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get eventDetailEventSpotLocationsLabel => 'Event-Standorte';
+
+  @override
+  String get eventDetailNoEventSpotLocations => 'Event-Spots nicht gefunden.';
+
+  @override
+  String get eventDetailEventSpotViewDetails => 'Spot ansehen';
+
+  @override
   String get adminEventEditTitle => 'Event bearbeiten';
 
   @override

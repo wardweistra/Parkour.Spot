@@ -30,6 +30,7 @@ import '../../services/url_service.dart';
 import '../../widgets/detail_duplicate_relationship.dart';
 import '../../widgets/detail_external_link_tile.dart';
 import '../../widgets/spot_detail_quick_action_chip.dart';
+import '../../widgets/resized_spot_image.dart';
 import '../../utils/web_meta_utils.dart';
 
 /// Event detail page; loads the document from Firestore by [eventId].
@@ -859,12 +860,15 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     }
 
     if (hasLinkedSpots) {
+      final spotsHeading = hasLinkedSpotLists
+          ? l10n.eventDetailEventSpotLocationsLabel
+          : l10n.eventDetailEventSpotsLabel;
       widgets.addAll([
-        _detailSectionHeading(context, l10n.eventDetailLinkedSpotsLabel),
+        _detailSectionHeading(context, spotsHeading),
         const SizedBox(height: SpotDetailUi.detailLabelGap),
         _LinkedSpotsSection(
           spotIds: event.spotIds,
-          emptyLabel: l10n.eventDetailNoLinkedSpots,
+          emptyLabel: l10n.eventDetailNoEventSpotLocations,
         ),
       ]);
     }
@@ -1586,6 +1590,7 @@ class _LinkedSpotsSectionState extends State<_LinkedSpotsSection> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return FutureBuilder<List<Spot>>(
       future: _spotsFuture,
@@ -1615,73 +1620,166 @@ class _LinkedSpotsSectionState extends State<_LinkedSpotsSection> {
           );
         }
         return Column(
-          children: List.generate(spots.length, (i) {
-            final spot = spots[i];
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: spots.asMap().entries.map((entry) {
+            final index = entry.key;
+            final spot = entry.value;
             return Padding(
               padding: EdgeInsets.only(
-                top: i > 0 ? SpotDetailUi.detailSubsectionGap : 0,
+                top: index > 0 ? SpotDetailUi.detailSubsectionGap : 0,
               ),
-              child: Material(
-                color: colors.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
-                clipBehavior: Clip.antiAlias,
-                child: InkWell(
-                  onTap: spot.id == null
-                      ? null
-                      : () => context.push('/spot/${spot.id}'),
-                  child: Container(
-                    width: double.infinity,
-                    padding: SpotDetailUi.detailCardPadding,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(
-                        SpotDetailUi.surfaceRadius,
-                      ),
-                      border: SpotDetailUi.outlineBorder(colors),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.place_outlined,
-                          color: colors.primary,
-                          size: 22,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                spot.name,
-                                style: Theme.of(context).textTheme.titleSmall,
-                              ),
-                              if ((spot.address ?? spot.city)?.isNotEmpty ==
-                                  true)
-                                Text(
-                                  spot.address ?? spot.city ?? '',
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(
-                                        color: colors.onSurface.withValues(
-                                          alpha: 0.65,
-                                        ),
-                                      ),
-                                ),
-                            ],
-                          ),
-                        ),
-                        Icon(
-                          Icons.chevron_right,
-                          size: 20,
-                          color: colors.onSurface.withValues(alpha: 0.5),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+              child: _EventLinkedSpotCard(spot: spot, l10n: l10n),
             );
-          }),
+          }).toList(),
         );
       },
+    );
+  }
+}
+
+class _EventLinkedSpotCard extends StatelessWidget {
+  const _EventLinkedSpotCard({required this.spot, required this.l10n});
+
+  final Spot spot;
+  final AppLocalizations l10n;
+
+  String? _locationLine() {
+    final address = spot.address?.trim();
+    if (address != null && address.isNotEmpty) return address;
+
+    final city = spot.city?.trim();
+    final country = spot.countryCode?.trim().toUpperCase();
+    if (city != null &&
+        city.isNotEmpty &&
+        country != null &&
+        country.isNotEmpty) {
+      return '$city, $country';
+    }
+    if (city != null && city.isNotEmpty) return city;
+    if (country != null && country.isNotEmpty) return country;
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final spotId = spot.id;
+    final description = spot.description.trim();
+    final locationLine = _locationLine();
+    final imageUrl = spot.imageUrls?.isNotEmpty == true
+        ? spot.imageUrls!.first
+        : null;
+
+    return Container(
+      width: double.infinity,
+      padding: SpotDetailUi.detailCardPadding,
+      decoration: BoxDecoration(
+        color: colors.primaryContainer.withValues(alpha: 0.22),
+        borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
+        border: Border.all(color: colors.primary.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (imageUrl != null)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: SizedBox(
+                    width: 72,
+                    height: 72,
+                    child: ResizedSpotImage(
+                      imageUrl: imageUrl,
+                      fit: BoxFit.cover,
+                      width: 72,
+                      height: 72,
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: colors.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.place_outlined,
+                    color: colors.primary,
+                    size: 28,
+                  ),
+                ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      spot.name,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (locationLine != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        locationLine,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colors.onSurface.withValues(alpha: 0.7),
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (description.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              description,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: colors.onSurface.withValues(alpha: 0.8),
+                height: 1.4,
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+          if (spotId != null) ...[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                FilledButton.tonalIcon(
+                  onPressed: () {
+                    final url = UrlService.generateNavigationUrl(
+                      spotId,
+                      countryCode: spot.countryCode,
+                      city: spot.city,
+                    );
+                    context.push(url);
+                  },
+                  icon: const Icon(Icons.open_in_new, size: 18),
+                  label: Text(l10n.eventDetailEventSpotViewDetails),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () =>
+                      context.go('/explore?locateSpotId=$spotId'),
+                  icon: const Icon(Icons.map_outlined, size: 18),
+                  label: Text(l10n.eventDetailEventSpotListSeeOnMap),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

@@ -2966,6 +2966,18 @@
       }
     }
   },
+  "eventDetailEventSpotLocationsLabel": "Event locations",
+  "@eventDetailEventSpotLocationsLabel": {
+    "description": "Section heading for individually linked event spots when a spot list is also present"
+  },
+  "eventDetailNoEventSpotLocations": "Event spots not found.",
+  "@eventDetailNoEventSpotLocations": {
+    "description": "Empty state when directly linked event spot ids do not resolve"
+  },
+  "eventDetailEventSpotViewDetails": "View spot",
+  "@eventDetailEventSpotViewDetails": {
+    "description": "Open a directly linked event spot detail page"
+  },
   "adminEventEditTitle": "Edit event",
   "@adminEventEditTitle": {
     "description": "Title for admin edit event screen"

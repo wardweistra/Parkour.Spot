@@ -5265,6 +5265,24 @@ abstract class AppLocalizations {
   /// **'+ {count} more'**
   String eventDetailEventSpotListMoreSpots(int count);
 
+  /// Section heading for individually linked event spots when a spot list is also present
+  ///
+  /// In en, this message translates to:
+  /// **'Event locations'**
+  String get eventDetailEventSpotLocationsLabel;
+
+  /// Empty state when directly linked event spot ids do not resolve
+  ///
+  /// In en, this message translates to:
+  /// **'Event spots not found.'**
+  String get eventDetailNoEventSpotLocations;
+
+  /// Open a directly linked event spot detail page
+  ///
+  /// In en, this message translates to:
+  /// **'View spot'**
+  String get eventDetailEventSpotViewDetails;
+
   /// Title for admin edit event screen
   ///
   /// In en, this message translates to:
