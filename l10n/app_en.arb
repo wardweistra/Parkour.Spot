@@ -2422,6 +2422,14 @@
       }
     }
   },
+  "detailUpcomingEventLabel": "Upcoming event",
+  "@detailUpcomingEventLabel": {
+    "description": "Heading for linked upcoming event callout on spot or list detail"
+  },
+  "detailUpcomingEventOpen": "Open",
+  "@detailUpcomingEventOpen": {
+    "description": "Button to open linked upcoming event detail page"
+  },
   "publicProfilePageTitle": "Profile",
   "@publicProfilePageTitle": {
     "description": "Page title for public profile screen"

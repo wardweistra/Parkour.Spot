@@ -2734,6 +2734,12 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get detailUpcomingEventLabel => 'Bevorstehendes Event';
+
+  @override
+  String get detailUpcomingEventOpen => 'Öffnen';
+
+  @override
   String get publicProfilePageTitle => 'Profil';
 
   @override

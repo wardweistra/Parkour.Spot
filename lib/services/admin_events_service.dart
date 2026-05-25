@@ -441,11 +441,33 @@ class AdminEventsService extends ChangeNotifier {
   }
 
   Future<ParkourEvent?> getNextUpcomingEventForSpot(String spotId) async {
+    return _getNextUpcomingEvent(
+      field: 'spotIds',
+      id: spotId,
+      logLabel: 'getNextUpcomingEventForSpot',
+    );
+  }
+
+  Future<ParkourEvent?> getNextUpcomingEventForSpotList(
+    String spotListId,
+  ) async {
+    return _getNextUpcomingEvent(
+      field: 'spotListIds',
+      id: spotListId,
+      logLabel: 'getNextUpcomingEventForSpotList',
+    );
+  }
+
+  Future<ParkourEvent?> _getNextUpcomingEvent({
+    required String field,
+    required String id,
+    required String logLabel,
+  }) async {
     try {
       final now = DateTime.now().toUtc();
       final snapshot = await _firestore
           .collection('events')
-          .where('spotIds', arrayContains: spotId)
+          .where(field, arrayContains: id)
           .limit(100)
           .get();
       final events = <ParkourEvent>[];
@@ -461,7 +483,7 @@ class AdminEventsService extends ChangeNotifier {
           }
         } catch (e) {
           debugPrint(
-            'AdminEventsService.getNextUpcomingEventForSpot skipping malformed event ${doc.id}: $e',
+            'AdminEventsService.$logLabel skipping malformed event ${doc.id}: $e',
           );
         }
       }
@@ -469,9 +491,7 @@ class AdminEventsService extends ChangeNotifier {
       if (events.isEmpty) return null;
       return events.first;
     } catch (e, st) {
-      debugPrint(
-        'AdminEventsService.getNextUpcomingEventForSpot error: $e\n$st',
-      );
+      debugPrint('AdminEventsService.$logLabel error: $e\n$st');
       return null;
     }
   }

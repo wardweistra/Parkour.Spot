@@ -4551,6 +4551,18 @@ abstract class AppLocalizations {
   /// **'A curated list of {count, plural, one{1 parkour spot} other{{count} parkour spots}} on Parkour·Spot'**
   String spotListDetailMetaDescriptionFallback(int count);
 
+  /// Heading for linked upcoming event callout on spot or list detail
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming event'**
+  String get detailUpcomingEventLabel;
+
+  /// Button to open linked upcoming event detail page
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get detailUpcomingEventOpen;
+
   /// Page title for public profile screen
   ///
   /// In en, this message translates to:

@@ -2721,6 +2721,12 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get detailUpcomingEventLabel => 'Próximo evento';
+
+  @override
+  String get detailUpcomingEventOpen => 'Abrir';
+
+  @override
   String get publicProfilePageTitle => 'Perfil';
 
   @override

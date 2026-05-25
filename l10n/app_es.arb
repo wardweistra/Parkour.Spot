@@ -707,6 +707,8 @@
   "spotListDetailPageTitle": "Lista de spots",
   "spotListDetailListNotFound": "Lista no encontrada",
   "spotListDetailMetaDescriptionFallback": "Una lista curada de {count, plural, one{1 spot de parkour} other{{count} spots de parkour}} en Parkour·Spot",
+  "detailUpcomingEventLabel": "Próximo evento",
+  "detailUpcomingEventOpen": "Abrir",
   "publicProfilePageTitle": "Perfil",
   "publicProfileShareProfileTooltip": "Compartir perfil",
   "publicProfileErrorLoadingProfile": "Error al cargar el perfil",

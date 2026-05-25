@@ -7,6 +7,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import '../../models/spot_list.dart';
 import '../../models/spot.dart';
+import '../../models/parkour_event.dart';
 import '../../services/spot_list_service.dart';
 import '../../services/spot_service.dart';
 import '../../services/auth_service.dart';
@@ -21,10 +22,12 @@ import '../../utils/map_bounds_utils.dart';
 import '../../services/url_service.dart';
 import '../../services/web_share_service.dart';
 import '../../services/user_profile_service.dart';
+import '../../services/admin_events_service.dart';
 import '../../constants/spot_detail_ui.dart';
 import '../../widgets/page_scaffold.dart';
 import '../../widgets/spot_detail_quick_action_chip.dart';
 import '../../widgets/spot_list_save_button.dart';
+import '../../widgets/linked_upcoming_event_panel.dart';
 import '../../widgets/detail_external_link_tile.dart';
 import 'package:flutter/services.dart';
 import 'spot_list_advanced_organization_screen.dart';
@@ -57,6 +60,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
   Spot? _selectedSpot; // Currently selected/highlighted spot
   final ScrollController _scrollController = ScrollController();
   String? _creatorName;
+  Future<ParkourEvent?>? _linkedEventFuture;
 
   @override
   void initState() {
@@ -126,6 +130,14 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     setState(() {
       _list = list;
     });
+
+    final eventsService = Provider.of<AdminEventsService>(
+      context,
+      listen: false,
+    );
+    _linkedEventFuture = eventsService.getNextUpcomingEventForSpotList(
+      widget.listId,
+    );
 
     // Load creator display name
     if (list.createdBy.isNotEmpty) {
@@ -1311,6 +1323,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
             // Map showing all spots
             if (_spots.isNotEmpty) _buildMap(),
             _buildListActionsRow(),
+            LinkedUpcomingEventPanel(eventFuture: _linkedEventFuture),
             // List info header
             if (_list!.description != null && _list!.description!.isNotEmpty)
               Container(
