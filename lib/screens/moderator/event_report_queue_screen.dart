@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../models/event_report.dart';
 import '../../services/auth_service.dart';
 import '../../services/event_report_service.dart';
+import '../../utils/event_schedule_utils.dart';
 import '../../widgets/page_scaffold.dart';
 
 class EventReportQueueScreen extends StatefulWidget {
@@ -348,25 +349,13 @@ class _EventReportCard extends StatelessWidget {
   }
 
   String _scheduleSummary(BuildContext context) {
-    final localizations = MaterialLocalizations.of(context);
-    final localStart = report.startAt.toLocal();
-    final startDate = localizations.formatMediumDate(localStart);
-    if (report.isDateOnly) {
-      if (report.endAt == null) return startDate;
-      final endDate = localizations.formatMediumDate(report.endAt!.toLocal());
-      return '$startDate – $endDate';
-    }
-    final startTime = localizations.formatTimeOfDay(
-      TimeOfDay.fromDateTime(localStart),
+    return EventScheduleUtils.formatSummaryLine(
+      context,
+      startAt: report.startAt,
+      endAt: report.endAt,
+      isDateOnly: report.isDateOnly,
+      timeZone: report.timeZone,
     );
-    if (report.endAt == null) return '$startDate · $startTime';
-    final localEnd = report.endAt!.toLocal();
-    final endDate = localizations.formatMediumDate(localEnd);
-    final endTime = localizations.formatTimeOfDay(
-      TimeOfDay.fromDateTime(localEnd),
-    );
-    if (startDate == endDate) return '$startDate · $startTime – $endTime';
-    return '$startDate $startTime – $endDate $endTime';
   }
 
   @override

@@ -15,6 +15,7 @@ import '../../services/auth_service.dart';
 import '../../services/geocoding_service.dart';
 import '../../services/spot_list_service.dart';
 import '../../services/spot_service.dart';
+import '../../utils/browser_timezone_utils.dart';
 import '../../utils/event_schedule_utils.dart';
 import '../../utils/image_preparation.dart';
 import '../../widgets/spot_list_selection_dialog.dart';
@@ -843,7 +844,7 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
   DateTime _startAt = DateTime.now().toUtc().add(const Duration(hours: 1));
   DateTime? _endAt;
   bool _isDateOnly = false;
-  String _selectedTimeZone = 'UTC';
+  late String _selectedTimeZone;
   late final List<String> _timeZoneOptions;
   bool _isSubmitting = false;
   bool _isGeocoding = false;
@@ -858,6 +859,7 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
   @override
   void initState() {
     super.initState();
+    _selectedTimeZone = detectIanaTimeZone();
     _timeZoneOptions = <String>[
       _localTimeZoneValue,
       ...EventScheduleUtils.availableTimeZoneIds(),

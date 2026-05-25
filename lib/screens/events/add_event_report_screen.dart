@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/event_report_service.dart';
 import '../../services/geocoding_service.dart';
+import '../../utils/browser_timezone_utils.dart';
+import '../../utils/event_schedule_utils.dart';
 import '../spots/location_picker_screen.dart';
 
 class AddEventReportScreen extends StatefulWidget {
@@ -38,6 +40,8 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
   bool _isDateOnly = false;
   DateTime _startAt = DateTime.now().toUtc().add(const Duration(hours: 1));
   DateTime? _endAt;
+  late String _selectedTimeZone;
+  late final List<String> _timeZoneOptions;
 
   LatLng? _pickedLocation;
   String? _address;
@@ -53,6 +57,8 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedTimeZone = detectIanaTimeZone();
+    _timeZoneOptions = EventScheduleUtils.availableTimeZoneIds();
     _pickedLocation = widget.initialLocation;
     _linkedSpotId = widget.initialSpotId;
     _linkedSpotName = widget.initialSpotName;
@@ -71,6 +77,20 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
     _descriptionController.dispose();
     _websiteController.dispose();
     super.dispose();
+  }
+
+  DateTime _displayInSelectedTimeZone(DateTime value) {
+    return EventScheduleUtils.toDisplayDateTime(
+      value,
+      timeZone: _selectedTimeZone,
+    );
+  }
+
+  String _timeZoneLabel(String value) {
+    return EventScheduleUtils.formatTimeZoneLabel(
+      value,
+      referenceUtc: _startAt,
+    );
   }
 
   Future<void> _geocodeLocation(LatLng location) async {
@@ -114,23 +134,25 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
   }
 
   Future<void> _pickStartDateTime() async {
-    final localStart = _startAt.toLocal();
-    final pickedDate = await showDatePicker(
-      context: context,
-      initialDate: localStart,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 3650)),
-    );
-    if (pickedDate == null || !mounted) return;
-
     if (_isDateOnly) {
-      final newStart = DateTime(
-        pickedDate.year,
-        pickedDate.month,
-        pickedDate.day,
-      ).toUtc();
+      final initialDate = _displayInSelectedTimeZone(_startAt);
+      final pickedDate = await showDatePicker(
+        context: context,
+        initialDate: DateTime(
+          initialDate.year,
+          initialDate.month,
+          initialDate.day,
+        ),
+        firstDate: DateTime.now().subtract(const Duration(days: 365)),
+        lastDate: DateTime.now().add(const Duration(days: 3650)),
+      );
+      if (pickedDate == null || !mounted) return;
+      final value = EventScheduleUtils.dateStartToUtc(
+        pickedDate,
+        timeZone: _selectedTimeZone,
+      );
       setState(() {
-        _startAt = newStart;
+        _startAt = value;
         if (_endAt != null && _endAt!.isBefore(_startAt)) {
           _endAt = _startAt;
         }
@@ -138,22 +160,10 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
       return;
     }
 
-    final pickedTime = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(localStart),
-    );
-    if (pickedTime == null || !mounted) return;
-
-    final localDateTime = DateTime(
-      pickedDate.year,
-      pickedDate.month,
-      pickedDate.day,
-      pickedTime.hour,
-      pickedTime.minute,
-    );
-    final utcDateTime = localDateTime.toUtc();
+    final value = await _pickDateTime(initial: _startAt);
+    if (value == null || !mounted) return;
     setState(() {
-      _startAt = utcDateTime;
+      _startAt = value;
       if (_endAt != null && _endAt!.isBefore(_startAt)) {
         _endAt = _startAt.add(const Duration(hours: 1));
       }
@@ -161,45 +171,61 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
   }
 
   Future<void> _pickEndDateTime() async {
-    final localInitial = (_endAt ?? _startAt).toLocal();
-    final pickedDate = await showDatePicker(
-      context: context,
-      initialDate: localInitial,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 3650)),
-    );
-    if (pickedDate == null || !mounted) return;
-
     if (_isDateOnly) {
-      final endDay = DateTime(
-        pickedDate.year,
-        pickedDate.month,
-        pickedDate.day,
-        23,
-        59,
-        59,
-      ).toUtc();
+      final initialDateTime = _displayInSelectedTimeZone(_endAt ?? _startAt);
+      final pickedDate = await showDatePicker(
+        context: context,
+        initialDate: DateTime(
+          initialDateTime.year,
+          initialDateTime.month,
+          initialDateTime.day,
+        ),
+        firstDate: DateTime.now().subtract(const Duration(days: 365)),
+        lastDate: DateTime.now().add(const Duration(days: 3650)),
+      );
+      if (pickedDate == null || !mounted) return;
       setState(() {
-        _endAt = endDay;
+        _endAt = EventScheduleUtils.dateEndToUtc(
+          pickedDate,
+          timeZone: _selectedTimeZone,
+        );
       });
       return;
     }
 
+    final value = await _pickDateTime(initial: _endAt ?? _startAt);
+    if (value == null || !mounted) return;
+    setState(() {
+      _endAt = value;
+    });
+  }
+
+  Future<DateTime?> _pickDateTime({required DateTime initial}) async {
+    final displayInitial = _displayInSelectedTimeZone(initial);
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: displayInitial,
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
+    );
+    if (pickedDate == null || !mounted) return null;
+
     final pickedTime = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay.fromDateTime(localInitial),
+      initialTime: TimeOfDay.fromDateTime(displayInitial),
     );
-    if (pickedTime == null || !mounted) return;
-    final localDateTime = DateTime(
-      pickedDate.year,
-      pickedDate.month,
-      pickedDate.day,
-      pickedTime.hour,
-      pickedTime.minute,
+    if (pickedTime == null || !mounted) return null;
+
+    return EventScheduleUtils.localDateTimeToUtc(
+      DateTime(
+        pickedDate.year,
+        pickedDate.month,
+        pickedDate.day,
+        pickedTime.hour,
+        pickedTime.minute,
+      ),
+      timeZone: _selectedTimeZone,
     );
-    setState(() {
-      _endAt = localDateTime.toUtc();
-    });
   }
 
   bool _hasValidWebsiteUrl() {
@@ -212,13 +238,12 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
   }
 
   String _formatDateTime(DateTime value) {
-    final local = value.toLocal();
-    final date = MaterialLocalizations.of(context).formatMediumDate(local);
-    if (_isDateOnly) return date;
-    final time = MaterialLocalizations.of(
+    return EventScheduleUtils.formatSummaryLine(
       context,
-    ).formatTimeOfDay(TimeOfDay.fromDateTime(local));
-    return '$date · $time';
+      startAt: value,
+      isDateOnly: _isDateOnly,
+      timeZone: _selectedTimeZone,
+    );
   }
 
   String? _effectiveAddressForSubmission() {
@@ -238,7 +263,23 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
       );
       return;
     }
-    if (_endAt != null && _endAt!.isBefore(_startAt)) {
+
+    var normalizedStartAt = _startAt;
+    var normalizedEndAt = _endAt;
+    if (_isDateOnly) {
+      final startDate = _displayInSelectedTimeZone(_startAt);
+      normalizedStartAt = EventScheduleUtils.dateStartToUtc(
+        startDate,
+        timeZone: _selectedTimeZone,
+      );
+      final endDate = _displayInSelectedTimeZone(_endAt ?? _startAt);
+      normalizedEndAt = EventScheduleUtils.dateEndToUtc(
+        endDate,
+        timeZone: _selectedTimeZone,
+      );
+    }
+
+    if (normalizedEndAt != null && normalizedEndAt.isBefore(normalizedStartAt)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('End time cannot be before start time.')),
       );
@@ -276,9 +317,10 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
             websiteUrl: _websiteController.text.trim().isEmpty
                 ? null
                 : _websiteController.text.trim(),
-            startAt: _startAt,
-            endAt: _endAt,
+            startAt: normalizedStartAt,
+            endAt: normalizedEndAt,
             isDateOnly: _isDateOnly,
+            timeZone: _selectedTimeZone,
             latitude: _pickedLocation?.latitude,
             longitude: _pickedLocation?.longitude,
             address: _effectiveAddressForSubmission(),
@@ -398,6 +440,31 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
                   _isDateOnly = value;
                 });
               },
+            ),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              initialValue: _selectedTimeZone,
+              decoration: const InputDecoration(
+                labelText: 'Timezone',
+                border: OutlineInputBorder(),
+              ),
+              items: _timeZoneOptions
+                  .map(
+                    (value) => DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(
+                        _timeZoneLabel(value),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  )
+                  .toList(),
+              onChanged: _isSubmitting
+                  ? null
+                  : (value) {
+                      if (value == null) return;
+                      setState(() => _selectedTimeZone = value);
+                    },
             ),
             const SizedBox(height: 8),
             ListTile(
