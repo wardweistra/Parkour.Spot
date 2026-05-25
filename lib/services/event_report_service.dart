@@ -1,13 +1,25 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 
 import '../models/event_report.dart';
+import '../utils/image_preparation.dart';
 
 class EventReportService {
-  EventReportService({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+  EventReportService({
+    FirebaseFirestore? firestore,
+    FirebaseStorage? storage,
+  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+        _storage = storage ?? FirebaseStorage.instance;
 
   final FirebaseFirestore _firestore;
+  final FirebaseStorage _storage;
+
+  static const int maxSuggestedPhotos = 20;
+  static const String eventSuggestionsPrefix = 'eventSuggestions/';
+  static const String eventRejectedPrefix = 'eventRejected/';
+  static const String eventsPrefix = 'events/';
 
   static const List<String> statuses = <String>[
     'New',
@@ -15,6 +27,33 @@ class EventReportService {
     'Approved',
     'Rejected',
   ];
+
+  /// Upload photos to [eventSuggestions/] (staging; does not trigger resize extension).
+  Future<List<String>> uploadSuggestedEventPhotos(
+    List<Uint8List> photoBytesList,
+  ) async {
+    if (photoBytesList.isEmpty) return const <String>[];
+    if (photoBytesList.length > maxSuggestedPhotos) {
+      throw StateError('At most $maxSuggestedPhotos photos allowed.');
+    }
+
+    final photoUrls = <String>[];
+    for (var i = 0; i < photoBytesList.length; i++) {
+      final prepared = await prepareImageForUpload(photoBytesList[i]);
+      final ext = _extensionForContentType(prepared.contentType);
+      final fileName =
+          '$eventSuggestionsPrefix${DateTime.now().millisecondsSinceEpoch}_web_image_$i$ext';
+      final ref = _storage.ref().child(fileName);
+
+      final uploadTask = ref.putData(
+        prepared.bytes,
+        SettableMetadata(contentType: prepared.contentType),
+      );
+      final snapshot = await uploadTask;
+      photoUrls.add(await snapshot.ref.getDownloadURL());
+    }
+    return photoUrls;
+  }
 
   Future<bool> submitEventReport({
     required String title,
@@ -36,6 +75,7 @@ class EventReportService {
     String? reporterUserId,
     String? reporterName,
     String? reporterEmail,
+    List<String> suggestedPhotoUrls = const <String>[],
   }) async {
     final trimmedTitle = title.trim();
     if (trimmedTitle.isEmpty) return false;
@@ -51,6 +91,11 @@ class EventReportService {
         .where((id) => id.isNotEmpty)
         .toSet()
         .toList();
+    final normalizedPhotoUrls = suggestedPhotoUrls
+        .map((url) => url.trim())
+        .where((url) => url.isNotEmpty)
+        .take(maxSuggestedPhotos)
+        .toList(growable: false);
 
     try {
       await _firestore.collection('eventReports').add({
@@ -85,6 +130,8 @@ class EventReportService {
           'reporterName': reporterName.trim(),
         if (reporterEmail != null && reporterEmail.trim().isNotEmpty)
           'reporterEmail': reporterEmail.trim(),
+        if (normalizedPhotoUrls.isNotEmpty)
+          'suggestedPhotoUrls': normalizedPhotoUrls,
         'status': statuses.first,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
@@ -129,23 +176,45 @@ class EventReportService {
     String? moderatorNotes,
   }) async {
     try {
+      final reportRef = _firestore.collection('eventReports').doc(reportId);
+      final snapshot = await reportRef.get();
+      if (!snapshot.exists || snapshot.data() == null) {
+        return null;
+      }
+
+      final report = EventReport.fromSnapshot(snapshot);
+      if (report.status == 'Approved' && report.approvedEventId != null) {
+        return report.approvedEventId;
+      }
+
+      List<String>? promotedImageUrls;
+      if (report.suggestedPhotoUrls.isNotEmpty) {
+        promotedImageUrls = await _promoteSuggestedEventPhotos(
+          report.suggestedPhotoUrls,
+        );
+        if (promotedImageUrls == null || promotedImageUrls.isEmpty) {
+          debugPrint('Failed to promote suggested event photos');
+          return null;
+        }
+      }
+
       final result = await _firestore.runTransaction<String?>((
         transaction,
       ) async {
-        final reportRef = _firestore.collection('eventReports').doc(reportId);
-        final snapshot = await transaction.get(reportRef);
-        if (!snapshot.exists || snapshot.data() == null) {
+        final txSnapshot = await transaction.get(reportRef);
+        if (!txSnapshot.exists || txSnapshot.data() == null) {
           throw StateError('Event report not found');
         }
 
-        final report = EventReport.fromSnapshot(snapshot);
-        if (report.status == 'Approved' && report.approvedEventId != null) {
-          return report.approvedEventId;
+        final txReport = EventReport.fromSnapshot(txSnapshot);
+        if (txReport.status == 'Approved' && txReport.approvedEventId != null) {
+          return txReport.approvedEventId;
         }
 
         final eventData = _buildEventData(
-          report: report,
+          report: txReport,
           approverUserId: approverUserId,
+          imageUrls: promotedImageUrls,
         );
         if (eventData == null) {
           throw StateError('Invalid event report data');
@@ -161,6 +230,8 @@ class EventReportService {
             'reviewedByName': approverName.trim(),
           if (moderatorNotes != null && moderatorNotes.trim().isNotEmpty)
             'moderatorNotes': moderatorNotes.trim(),
+          if (promotedImageUrls != null && promotedImageUrls.isNotEmpty)
+            'suggestedPhotoUrls': <String>[],
           'reviewedAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
         });
@@ -180,13 +251,29 @@ class EventReportService {
     String? moderatorNotes,
   }) async {
     try {
-      await _firestore.collection('eventReports').doc(reportId).update({
+      final reportRef = _firestore.collection('eventReports').doc(reportId);
+      final snapshot = await reportRef.get();
+      if (!snapshot.exists || snapshot.data() == null) {
+        return false;
+      }
+
+      final report = EventReport.fromSnapshot(snapshot);
+      var rejectedUrls = const <String>[];
+      if (report.suggestedPhotoUrls.isNotEmpty) {
+        rejectedUrls = await _moveEventPhotosToRejected(report.suggestedPhotoUrls);
+      }
+
+      await reportRef.update({
         'status': 'Rejected',
         'reviewedBy': reviewerUserId,
         if (reviewerName != null && reviewerName.trim().isNotEmpty)
           'reviewedByName': reviewerName.trim(),
         if (moderatorNotes != null && moderatorNotes.trim().isNotEmpty)
           'moderatorNotes': moderatorNotes.trim(),
+        if (rejectedUrls.isNotEmpty) ...{
+          'rejectedPhotoUrls': rejectedUrls,
+          'suggestedPhotoUrls': <String>[],
+        },
         'reviewedAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
@@ -209,9 +296,151 @@ class EventReportService {
         );
   }
 
+  /// Move staging photos from [eventSuggestions/] to [events/] with resize.
+  Future<List<String>?> _promoteSuggestedEventPhotos(
+    List<String> photoUrls,
+  ) async {
+    final finalPhotoUrls = <String>[];
+
+    for (final photoUrl in photoUrls) {
+      try {
+        await Future<void>.delayed(Duration.zero);
+
+        final filePath = _storagePathFromUrl(
+          photoUrl,
+          expectedPrefix: eventSuggestionsPrefix,
+        );
+        if (filePath == null) {
+          debugPrint('Invalid event suggestion photo URL: $photoUrl');
+          continue;
+        }
+
+        final suggestedPath = filePath.replaceFirst(
+          eventSuggestionsPrefix,
+          eventsPrefix,
+        );
+        final baseName = suggestedPath.split('.').first;
+        final newPath = '$baseName.jpg';
+
+        final sourceRef = _storage.ref().child(filePath);
+        final destRef = _storage.ref().child(newPath);
+
+        final response = await http.get(Uri.parse(photoUrl));
+        if (response.statusCode != 200 || response.bodyBytes.isEmpty) {
+          debugPrint('Failed to fetch event suggestion photo: ${response.statusCode}');
+          continue;
+        }
+
+        final rawBytes = Uint8List.fromList(response.bodyBytes);
+        await Future<void>.delayed(Duration.zero);
+        final resizedBytes = resizeImageForSpotUpload(rawBytes);
+        if (resizedBytes == null || resizedBytes.isEmpty) {
+          debugPrint('Failed to resize event suggestion photo: $photoUrl');
+          continue;
+        }
+
+        await destRef.putData(
+          resizedBytes,
+          SettableMetadata(contentType: 'image/jpeg'),
+        );
+        final newUrl = await destRef.getDownloadURL();
+        finalPhotoUrls.add(newUrl);
+        await sourceRef.delete();
+      } catch (e) {
+        debugPrint('Error promoting event photo $photoUrl: $e');
+      }
+    }
+
+    if (finalPhotoUrls.isEmpty) {
+      return null;
+    }
+    return finalPhotoUrls;
+  }
+
+  Future<List<String>> _moveEventPhotosToRejected(List<String> photoUrls) async {
+    final rejectedUrls = <String>[];
+
+    for (final photoUrl in photoUrls) {
+      try {
+        final filePath = _storagePathFromUrl(
+          photoUrl,
+          expectedPrefix: eventSuggestionsPrefix,
+        );
+        if (filePath == null) continue;
+
+        final newPath = filePath.replaceFirst(
+          eventSuggestionsPrefix,
+          eventRejectedPrefix,
+        );
+        final sourceRef = _storage.ref().child(filePath);
+        final destRef = _storage.ref().child(newPath);
+
+        final data = await sourceRef.getData();
+        if (data != null) {
+          final metadata = await sourceRef.getMetadata();
+          final contentType = metadata.contentType ?? 'image/jpeg';
+
+          await destRef.putData(
+            data,
+            SettableMetadata(contentType: contentType),
+          );
+          rejectedUrls.add(await destRef.getDownloadURL());
+          await sourceRef.delete();
+        }
+      } catch (e) {
+        debugPrint('Error moving event photo to rejected $photoUrl: $e');
+      }
+    }
+
+    return rejectedUrls;
+  }
+
+  String? _storagePathFromUrl(String photoUrl, {required String expectedPrefix}) {
+    try {
+      final uri = Uri.parse(photoUrl);
+      String? filePath;
+
+      if (uri.pathSegments.contains('o')) {
+        final oIndex = uri.pathSegments.indexOf('o');
+        if (oIndex != -1 && oIndex + 1 < uri.pathSegments.length) {
+          filePath = Uri.decodeComponent(uri.pathSegments[oIndex + 1]);
+        }
+      } else if (uri.host.contains('storage.googleapis.com')) {
+        final prefixSegment = expectedPrefix.replaceAll('/', '');
+        final pathIndex = uri.pathSegments.indexOf(prefixSegment);
+        if (pathIndex != -1) {
+          filePath = uri.pathSegments.sublist(pathIndex).join('/');
+        }
+      }
+
+      if (filePath != null && filePath.startsWith(expectedPrefix)) {
+        return filePath;
+      }
+    } catch (e) {
+      debugPrint('Error parsing storage path from URL: $e');
+    }
+    return null;
+  }
+
+  String _extensionForContentType(String contentType) {
+    switch (contentType) {
+      case 'image/jpeg':
+        return '.jpg';
+      case 'image/png':
+        return '.png';
+      case 'image/gif':
+        return '.gif';
+      case 'image/webp':
+        return '.webp';
+      default:
+        return '.jpg';
+    }
+  }
+
   Map<String, dynamic>? _buildEventData({
     required EventReport report,
     required String approverUserId,
+    List<String>? imageUrls,
   }) {
     final title = report.title.trim();
     if (title.isEmpty) return null;
@@ -236,6 +465,11 @@ class EventReportService {
 
     final hasLatLng = report.latitude != null && report.longitude != null;
     final hasAddress = report.address?.trim().isNotEmpty == true;
+    final normalizedImageUrls = imageUrls
+        ?.map((url) => url.trim())
+        .where((url) => url.isNotEmpty)
+        .take(maxSuggestedPhotos)
+        .toList();
 
     return <String, dynamic>{
       'title': title,
@@ -259,6 +493,8 @@ class EventReportService {
       },
       'spotIds': normalizedSpotIds,
       'spotListIds': normalizedSpotListIds,
+      if (normalizedImageUrls != null && normalizedImageUrls.isNotEmpty)
+        'imageUrls': normalizedImageUrls,
       'createdBy': approverUserId,
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),

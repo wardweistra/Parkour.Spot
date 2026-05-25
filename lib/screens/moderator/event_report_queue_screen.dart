@@ -435,6 +435,40 @@ class _EventReportCard extends StatelessWidget {
                 ),
               ),
             ],
+            if (report.suggestedPhotoUrls.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Suggested photos',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: theme.colorScheme.secondary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: report.suggestedPhotoUrls.map((photoUrl) {
+                  return Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: theme.colorScheme.outline),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        photoUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => const Center(
+                          child: Icon(Icons.broken_image_outlined),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
             if (report.moderatorNotes?.isNotEmpty ?? false) ...[
               const SizedBox(height: 12),
               Text(

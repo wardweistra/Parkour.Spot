@@ -29,6 +29,8 @@ class EventReport {
     this.approvedEventId,
     this.reviewedBy,
     this.reviewedByName,
+    this.suggestedPhotoUrls = const <String>[],
+    this.rejectedPhotoUrls = const <String>[],
     this.createdAt,
     this.updatedAt,
     this.reviewedAt,
@@ -59,6 +61,8 @@ class EventReport {
   final String? approvedEventId;
   final String? reviewedBy;
   final String? reviewedByName;
+  final List<String> suggestedPhotoUrls;
+  final List<String> rejectedPhotoUrls;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final DateTime? reviewedAt;
@@ -120,6 +124,8 @@ class EventReport {
       approvedEventId: data['approvedEventId'] as String?,
       reviewedBy: data['reviewedBy'] as String?,
       reviewedByName: data['reviewedByName'] as String?,
+      suggestedPhotoUrls: parseStringList(data['suggestedPhotoUrls']),
+      rejectedPhotoUrls: parseStringList(data['rejectedPhotoUrls']),
       createdAt: parseDate(data['createdAt']),
       updatedAt: parseDate(data['updatedAt']),
       reviewedAt: parseDate(data['reviewedAt']),

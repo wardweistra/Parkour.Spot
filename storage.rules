@@ -11,6 +11,19 @@ service firebase.storage {
     );
   }
 
+  function requestingUserIsStaff() {
+    return request.auth != null && (
+      request.auth.token.admin == true ||
+      (
+        firestore.exists(/databases/(default)/documents/users/$(request.auth.uid)) &&
+        (
+          firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
+          firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.isModerator == true
+        )
+      )
+    );
+  }
+
   match /b/{bucket}/o {
     // Spots images - anyone can read, authenticated users can upload
     match /spots/{allPaths=**} {
@@ -35,6 +48,18 @@ service firebase.storage {
       allow write: if request.auth != null;
       allow delete: if request.auth != null; // Allow deletion for cleanup
     }
+
+    // Staging for user-submitted event photos (moderated before publish)
+    match /eventSuggestions/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Rejected event photo suggestions
+    match /eventRejected/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
     
     // User profile pictures - users can only manage their own
     match /users/{userId}/{allPaths=**} {
@@ -48,10 +73,10 @@ service firebase.storage {
       allow write: if request.auth != null;
     }
 
-    // Event images - public read, admin write (matches Firestore events collection)
+    // Event images - public read, staff write (moderator approval moves + admin callable)
     match /events/{allPaths=**} {
       allow read: if true;
-      allow write: if requestingUserIsAdmin();
+      allow write: if requestingUserIsStaff();
     }
     
     // Jumpflix thumbnails - public read, only Cloud Functions write

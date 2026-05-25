@@ -1,6 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../services/auth_service.dart';
@@ -8,7 +11,9 @@ import '../../services/event_report_service.dart';
 import '../../services/geocoding_service.dart';
 import '../../utils/browser_timezone_utils.dart';
 import '../../utils/event_schedule_utils.dart';
+import '../../utils/image_preparation.dart';
 import '../../widgets/page_scaffold.dart';
+import '../../widgets/spot_form/image_section.dart';
 import '../spots/location_picker_screen.dart';
 
 class AddEventReportScreen extends StatefulWidget {
@@ -54,6 +59,8 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
   String? _linkedSpotName;
   String? _linkedSpotListId;
   String? _linkedSpotListName;
+
+  final List<Uint8List?> _selectedImageBytes = [];
 
   @override
   void initState() {
@@ -254,6 +261,98 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
     return 'Approx. ${_pickedLocation!.latitude.toStringAsFixed(5)}, ${_pickedLocation!.longitude.toStringAsFixed(5)}';
   }
 
+  Future<void> _pickImagesFromGallery() async {
+    try {
+      final picker = ImagePicker();
+      final pickedFiles = await picker.pickMultiImage(
+        maxWidth: 2048,
+        maxHeight: 2048,
+        imageQuality: 85,
+      );
+
+      if (pickedFiles.isNotEmpty) {
+        var added = 0;
+        for (final pickedFile in pickedFiles) {
+          try {
+            final bytes = await pickedFile.readAsBytes();
+            final prepared = await prepareImageForUpload(bytes);
+            _selectedImageBytes.add(prepared.bytes);
+            added++;
+          } on ImagePreparationException catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+              );
+            }
+          }
+        }
+        if (added > 0 && mounted) setState(() {});
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e is ImagePreparationException
+                  ? e.message
+                  : 'Could not pick images. Please try again.',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _takePhoto() async {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 2048,
+        maxHeight: 2048,
+        imageQuality: 85,
+      );
+
+      if (pickedFile != null) {
+        final bytes = await pickedFile.readAsBytes();
+        final prepared = await prepareImageForUpload(bytes);
+        setState(() => _selectedImageBytes.add(prepared.bytes));
+      }
+    } on ImagePreparationException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not take photo. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _removeImageAt(int index) {
+    setState(() {
+      if (index < _selectedImageBytes.length) {
+        _selectedImageBytes.removeAt(index);
+      }
+    });
+  }
+
+  void _reorderSelectedImage(int oldIndex, int newIndex) {
+    setState(() {
+      if (newIndex > oldIndex) newIndex -= 1;
+      final item = _selectedImageBytes.removeAt(oldIndex);
+      _selectedImageBytes.insert(newIndex, item);
+    });
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (!_hasValidWebsiteUrl()) {
@@ -310,9 +409,44 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
 
     setState(() => _isSubmitting = true);
     try {
-      final success = await context
-          .read<EventReportService>()
-          .submitEventReport(
+      final eventReportService = context.read<EventReportService>();
+      List<String> suggestedPhotoUrls = const <String>[];
+      final imageBytes = _selectedImageBytes
+          .whereType<Uint8List>()
+          .toList(growable: false);
+
+      if (imageBytes.isNotEmpty) {
+        if (imageBytes.length > EventReportService.maxSuggestedPhotos) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'At most ${EventReportService.maxSuggestedPhotos} photos allowed.',
+              ),
+            ),
+          );
+          return;
+        }
+        try {
+          suggestedPhotoUrls =
+              await eventReportService.uploadSuggestedEventPhotos(imageBytes);
+        } catch (e) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                e is ImagePreparationException
+                    ? e.message
+                    : 'Could not upload photos. Please try again.',
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+      }
+
+      final success = await eventReportService.submitEventReport(
             title: _titleController.text,
             description: _descriptionController.text,
             websiteUrl: _websiteController.text.trim().isEmpty
@@ -341,6 +475,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
                 user.displayName ??
                 user.email,
             reporterEmail: user.email,
+            suggestedPhotoUrls: suggestedPhotoUrls,
           );
 
       if (!mounted) return;
@@ -431,6 +566,18 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
               ),
               keyboardType: TextInputType.url,
               autocorrect: false,
+            ),
+            const SizedBox(height: 16),
+            SpotImageSection(
+              selectedImageBytes: _selectedImageBytes,
+              existingImageUrls: const <String>[],
+              onPickFromGallery: _pickImagesFromGallery,
+              onTakePhoto: _takePhoto,
+              onRemoveSelectedAt: _removeImageAt,
+              onRemoveExistingAt: (_) {},
+              onReorderSelected: _reorderSelectedImage,
+              sectionTitle: 'Event photos (optional)',
+              showRequiredIndicator: false,
             ),
             const SizedBox(height: 16),
             SwitchListTile(

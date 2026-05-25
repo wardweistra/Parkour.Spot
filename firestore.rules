@@ -513,7 +513,17 @@ service cloud.firestore {
 
     // Event reports - authenticated users can submit, moderators/admins can review.
     match /eventReports/{reportId} {
-      allow create: if request.auth != null;
+      function eventReportPhotoUrlsOk(data) {
+        return (
+          !('suggestedPhotoUrls' in data) ||
+          (data.suggestedPhotoUrls is list && data.suggestedPhotoUrls.size() <= 20)
+        ) && (
+          !('rejectedPhotoUrls' in data) ||
+          (data.rejectedPhotoUrls is list && data.rejectedPhotoUrls.size() <= 20)
+        );
+      }
+
+      allow create: if request.auth != null && eventReportPhotoUrlsOk(request.resource.data);
       allow read, update, delete: if requestingUserIsStaff();
     }
 
