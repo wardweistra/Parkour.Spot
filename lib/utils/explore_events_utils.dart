@@ -1,4 +1,64 @@
 import '../models/event_map_pin.dart';
+import 'event_schedule_utils.dart';
+
+/// Events in one calendar month (display timezone), for Explore list sectioning.
+class ExploreEventsMonthGroup {
+  final DateTime monthStart;
+  final List<EventMapPin> events;
+
+  const ExploreEventsMonthGroup({
+    required this.monthStart,
+    required this.events,
+  });
+}
+
+DateTime _monthStartForPin(EventMapPin pin) {
+  final display = EventScheduleUtils.toDisplayDateTime(
+    pin.startAt,
+    timeZone: pin.timeZone,
+  );
+  return DateTime(display.year, display.month);
+}
+
+/// Groups pre-sorted [events] by display month of [EventMapPin.startAt].
+List<ExploreEventsMonthGroup> groupExploreEventsByMonth(
+  List<EventMapPin> events,
+) {
+  if (events.isEmpty) return const [];
+
+  final groups = <ExploreEventsMonthGroup>[];
+  DateTime? currentMonth;
+  var currentEvents = <EventMapPin>[];
+
+  void flush() {
+    final month = currentMonth;
+    if (month == null || currentEvents.isEmpty) return;
+    groups.add(
+      ExploreEventsMonthGroup(
+        monthStart: month,
+        events: List.unmodifiable(currentEvents),
+      ),
+    );
+  }
+
+  for (final pin in events) {
+    final monthStart = _monthStartForPin(pin);
+    if (currentMonth == null) {
+      currentMonth = monthStart;
+      currentEvents = [pin];
+      continue;
+    }
+    if (monthStart == currentMonth) {
+      currentEvents.add(pin);
+      continue;
+    }
+    flush();
+    currentMonth = monthStart;
+    currentEvents = [pin];
+  }
+  flush();
+  return groups;
+}
 
 /// Earliest [EventMapPin] per [spotId] for spot-card badges.
 Map<String, EventMapPin> eventPinsBySpotId(Iterable<EventMapPin> pins) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart' show toBeginningOfSentenceCase;
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
@@ -2931,6 +2932,7 @@ class SearchScreenState extends State<SearchScreen>
   }
 
   Widget _buildEventsList() {
+    final groups = groupExploreEventsByMonth(_visibleEvents);
     final screenWidth = MediaQuery.of(context).size.width;
     final useGrid = screenWidth >= 600;
 
@@ -2938,28 +2940,73 @@ class SearchScreenState extends State<SearchScreen>
       const maxCrossAxisExtent = 480.0;
       const mainAxisExtent = 440.0;
 
-      return GridView.builder(
-        padding: const EdgeInsets.all(16),
-        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: maxCrossAxisExtent,
-          mainAxisExtent: mainAxisExtent,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-        ),
-        itemCount: _visibleEvents.length,
-        itemBuilder: (context, index) {
-          return _buildEventCard(_visibleEvents[index]);
-        },
+      return CustomScrollView(
+        slivers: [
+          for (var i = 0; i < groups.length; i++) ...[
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(16, i == 0 ? 16 : 0, 16, 0),
+                child: _ExploreEventMonthHeader(
+                  monthStart: groups[i].monthStart,
+                  isFirst: i == 0,
+                ),
+              ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverGrid(
+                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: maxCrossAxisExtent,
+                  mainAxisExtent: mainAxisExtent,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                ),
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) =>
+                      _buildEventCard(groups[i].events[index]),
+                  childCount: groups[i].events.length,
+                ),
+              ),
+            ),
+          ],
+          const SliverToBoxAdapter(child: SizedBox(height: 16)),
+        ],
       );
+    }
+
+    final entries = <({bool isHeader, DateTime? monthStart, bool isFirst, EventMapPin? pin})>[];
+    for (var i = 0; i < groups.length; i++) {
+      final group = groups[i];
+      entries.add((
+        isHeader: true,
+        monthStart: group.monthStart,
+        isFirst: i == 0,
+        pin: null,
+      ));
+      for (final pin in group.events) {
+        entries.add((
+          isHeader: false,
+          monthStart: null,
+          isFirst: false,
+          pin: pin,
+        ));
+      }
     }
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: _visibleEvents.length,
+      itemCount: entries.length,
       itemBuilder: (context, index) {
+        final entry = entries[index];
+        if (entry.isHeader) {
+          return _ExploreEventMonthHeader(
+            monthStart: entry.monthStart!,
+            isFirst: entry.isFirst,
+          );
+        }
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: _buildEventCard(_visibleEvents[index]),
+          child: _buildEventCard(entry.pin!),
         );
       },
     );
@@ -4686,6 +4733,34 @@ class SearchScreenState extends State<SearchScreen>
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ExploreEventMonthHeader extends StatelessWidget {
+  const _ExploreEventMonthHeader({
+    required this.monthStart,
+    required this.isFirst,
+  });
+
+  final DateTime monthStart;
+  final bool isFirst;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final localeName = Localizations.localeOf(context).toLanguageTag();
+    final raw = MaterialLocalizations.of(context).formatMonthYear(monthStart);
+    final label = toBeginningOfSentenceCase(raw, localeName);
+    return Padding(
+      padding: EdgeInsets.only(top: isFirst ? 0 : 20, bottom: 8),
+      child: Text(
+        label,
+        style: theme.textTheme.titleSmall?.copyWith(
+          fontWeight: FontWeight.w600,
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
         ),
       ),
     );
