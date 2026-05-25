@@ -112,11 +112,11 @@ abstract class AppLocalizations {
   /// **'Explore'**
   String get tabExplore;
 
-  /// Bottom navigation: submit a new spot
+  /// Bottom navigation: add spot or event
   ///
   /// In en, this message translates to:
-  /// **'Add Spot'**
-  String get tabAddSpot;
+  /// **'Add'**
+  String get tabAdd;
 
   /// Bottom navigation: profile and settings
   ///
@@ -934,11 +934,65 @@ abstract class AppLocalizations {
   /// **'Share your favorite parkour spots with the community'**
   String get exploreAddSpotSubtitle;
 
-  /// Add spot tab: sign-in prompt title
+  /// Add tab: sign-in prompt title
   ///
   /// In en, this message translates to:
-  /// **'Sign in to add a spot'**
+  /// **'Sign in to add spots and events'**
   String get exploreSignInToAddSpot;
+
+  /// Add tab: sign-in prompt supporting text
+  ///
+  /// In en, this message translates to:
+  /// **'Contribute new spots or submit event proposals for moderator review.'**
+  String get exploreSignInToAddSubtitle;
+
+  /// Add tab hub: main heading
+  ///
+  /// In en, this message translates to:
+  /// **'What do you want to add?'**
+  String get addHubHeading;
+
+  /// Add tab hub: supporting text
+  ///
+  /// In en, this message translates to:
+  /// **'Spots are published immediately. Events are reviewed by moderators first.'**
+  String get addHubSubtitle;
+
+  /// Add tab hub: spot card title
+  ///
+  /// In en, this message translates to:
+  /// **'Add spot'**
+  String get addHubSpotTitle;
+
+  /// Add tab hub: spot card description
+  ///
+  /// In en, this message translates to:
+  /// **'Share a new training spot with photos and details.'**
+  String get addHubSpotDescription;
+
+  /// Add tab hub: spot card action
+  ///
+  /// In en, this message translates to:
+  /// **'Create spot'**
+  String get addHubSpotButton;
+
+  /// Add tab hub: event card title
+  ///
+  /// In en, this message translates to:
+  /// **'Add event'**
+  String get addHubEventTitle;
+
+  /// Add tab hub: event card description
+  ///
+  /// In en, this message translates to:
+  /// **'Submit an event proposal. Moderators approve or reject it.'**
+  String get addHubEventDescription;
+
+  /// Add tab hub: event card action
+  ///
+  /// In en, this message translates to:
+  /// **'Create event'**
+  String get addHubEventButton;
 
   /// Shown while profile loads before add spot
   ///
@@ -1461,6 +1515,204 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Getting address...'**
   String get addSpotGettingAddress;
+
+  /// Add event page: app bar title
+  ///
+  /// In en, this message translates to:
+  /// **'Add event'**
+  String get addEventTitle;
+
+  /// Add event page: moderation info banner
+  ///
+  /// In en, this message translates to:
+  /// **'Event proposals are reviewed by moderators before they become public.'**
+  String get addEventModerationNotice;
+
+  /// Add event page: title field label
+  ///
+  /// In en, this message translates to:
+  /// **'Event title'**
+  String get addEventTitleLabel;
+
+  /// Add event page: title validation empty
+  ///
+  /// In en, this message translates to:
+  /// **'Title is required.'**
+  String get addEventTitleRequired;
+
+  /// Add event page: title validation length
+  ///
+  /// In en, this message translates to:
+  /// **'Title is too long.'**
+  String get addEventTitleTooLong;
+
+  /// Add event page: description field label
+  ///
+  /// In en, this message translates to:
+  /// **'Description (optional)'**
+  String get addEventDescriptionLabel;
+
+  /// Add event page: description validation length
+  ///
+  /// In en, this message translates to:
+  /// **'Description is too long.'**
+  String get addEventDescriptionTooLong;
+
+  /// Add event page: website field label
+  ///
+  /// In en, this message translates to:
+  /// **'Website URL (optional)'**
+  String get addEventWebsiteLabel;
+
+  /// Add event page: website field placeholder
+  ///
+  /// In en, this message translates to:
+  /// **'https://example.com'**
+  String get addEventWebsiteHint;
+
+  /// Add event page: photos section title
+  ///
+  /// In en, this message translates to:
+  /// **'Event photos (optional)'**
+  String get addEventPhotosSectionTitle;
+
+  /// Add event page: all-day toggle
+  ///
+  /// In en, this message translates to:
+  /// **'All-day event'**
+  String get addEventAllDay;
+
+  /// Add event page: timezone field label
+  ///
+  /// In en, this message translates to:
+  /// **'Timezone'**
+  String get addEventTimezoneLabel;
+
+  /// Add event page: start date/time row
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get addEventStartLabel;
+
+  /// Add event page: end date/time row
+  ///
+  /// In en, this message translates to:
+  /// **'End (optional)'**
+  String get addEventEndLabel;
+
+  /// Add event page: end time not chosen
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get addEventEndNotSet;
+
+  /// Add event page: clear end time button
+  ///
+  /// In en, this message translates to:
+  /// **'Clear end'**
+  String get addEventClearEndTooltip;
+
+  /// Add event page: spot/list linking section
+  ///
+  /// In en, this message translates to:
+  /// **'Linking'**
+  String get addEventLinkingSectionTitle;
+
+  /// Add event page: linked spot chip
+  ///
+  /// In en, this message translates to:
+  /// **'Spot: {name}'**
+  String addEventLinkedSpotLabel(String name);
+
+  /// Add event page: linked spot list chip
+  ///
+  /// In en, this message translates to:
+  /// **'Spot list: {name}'**
+  String addEventLinkedSpotListLabel(String name);
+
+  /// Add event page: no map location chosen
+  ///
+  /// In en, this message translates to:
+  /// **'Location not set'**
+  String get addEventLocationNotSet;
+
+  /// Add event page: map location helper text
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a location on the map (optional when linked spot/list exists).'**
+  String get addEventPickLocationHint;
+
+  /// Add event page: clear map location button
+  ///
+  /// In en, this message translates to:
+  /// **'Clear location'**
+  String get addEventClearLocationTooltip;
+
+  /// Add event page: open map picker button
+  ///
+  /// In en, this message translates to:
+  /// **'Pick location'**
+  String get addEventPickLocationTooltip;
+
+  /// Add event page: fallback address from coordinates
+  ///
+  /// In en, this message translates to:
+  /// **'Approx. {latitude}, {longitude}'**
+  String addEventApproxCoordinates(String latitude, String longitude);
+
+  /// Add event page: submit in progress
+  ///
+  /// In en, this message translates to:
+  /// **'Submitting...'**
+  String get addEventSubmitting;
+
+  /// Add event page: primary submit
+  ///
+  /// In en, this message translates to:
+  /// **'Submit for review'**
+  String get addEventSubmitButton;
+
+  /// Add event page: website validation
+  ///
+  /// In en, this message translates to:
+  /// **'Website URL must be a valid http(s) URL.'**
+  String get addEventWebsiteInvalid;
+
+  /// Add event page: schedule validation
+  ///
+  /// In en, this message translates to:
+  /// **'End time cannot be before start time.'**
+  String get addEventEndBeforeStart;
+
+  /// Add event page: location/link validation
+  ///
+  /// In en, this message translates to:
+  /// **'Add a map location, link a spot, or link a spot list before submitting.'**
+  String get addEventNeedLocationOrLink;
+
+  /// Add event page: photo count validation
+  ///
+  /// In en, this message translates to:
+  /// **'At most {count} photos allowed.'**
+  String addEventMaxPhotos(int count);
+
+  /// Add event page: photo upload error
+  ///
+  /// In en, this message translates to:
+  /// **'Could not upload photos. Please try again.'**
+  String get addEventUploadPhotosFailed;
+
+  /// Add event page: submit failed
+  ///
+  /// In en, this message translates to:
+  /// **'Could not submit event proposal.'**
+  String get addEventSubmitFailed;
+
+  /// Add event page: submit succeeded
+  ///
+  /// In en, this message translates to:
+  /// **'Event submitted to the moderator queue.'**
+  String get addEventSubmitSuccess;
 
   /// Placeholder when a spot or event has no photos yet (cards, detail carousel)
   ///

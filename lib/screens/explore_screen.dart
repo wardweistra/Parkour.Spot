@@ -475,14 +475,14 @@ class _ExploreScreenState extends State<ExploreScreen> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Sign in to add spots and events',
+                          l10n.exploreSignInToAddSpot,
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(fontWeight: FontWeight.w600),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Contribute new spots or submit event proposals for moderator review.',
+                          l10n.exploreSignInToAddSubtitle,
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(
@@ -639,7 +639,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     ),
                     BottomNavigationBarItem(
                       icon: const Icon(Icons.add),
-                      label: 'Add',
+                      label: l10n.tabAdd,
                     ),
                     BottomNavigationBarItem(
                       icon: _accountBottomNavIcon(context, unread),

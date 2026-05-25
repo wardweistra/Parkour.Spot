@@ -12,7 +12,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get tabExplore => 'Verkennen';
 
   @override
-  String get tabAddSpot => 'Spot toevoegen';
+  String get tabAdd => 'Toevoegen';
 
   @override
   String get tabAccount => 'Account';
@@ -503,7 +503,39 @@ class AppLocalizationsNl extends AppLocalizations {
       'Deel je favoriete parkour-spots met de community';
 
   @override
-  String get exploreSignInToAddSpot => 'Log in om een spot toe te voegen';
+  String get exploreSignInToAddSpot =>
+      'Log in om spots en evenementen toe te voegen';
+
+  @override
+  String get exploreSignInToAddSubtitle =>
+      'Draag nieuwe spots bij of dien evenementvoorstellen in ter beoordeling door moderators.';
+
+  @override
+  String get addHubHeading => 'Wat wil je toevoegen?';
+
+  @override
+  String get addHubSubtitle =>
+      'Spots worden direct gepubliceerd. Evenementen worden eerst beoordeeld door moderators.';
+
+  @override
+  String get addHubSpotTitle => 'Spot toevoegen';
+
+  @override
+  String get addHubSpotDescription =>
+      'Deel een nieuwe trainingspot met foto\'s en details.';
+
+  @override
+  String get addHubSpotButton => 'Spot aanmaken';
+
+  @override
+  String get addHubEventTitle => 'Evenement toevoegen';
+
+  @override
+  String get addHubEventDescription =>
+      'Dien een evenementvoorstel in. Moderators keuren het goed of af.';
+
+  @override
+  String get addHubEventButton => 'Evenement aanmaken';
 
   @override
   String get exploreLoadingProfile => 'Profiel laden…';
@@ -807,6 +839,121 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get addSpotGettingAddress => 'Adres ophalen…';
+
+  @override
+  String get addEventTitle => 'Evenement toevoegen';
+
+  @override
+  String get addEventModerationNotice =>
+      'Evenementvoorstellen worden beoordeeld door moderators voordat ze openbaar worden.';
+
+  @override
+  String get addEventTitleLabel => 'Evenementtitel';
+
+  @override
+  String get addEventTitleRequired => 'Titel is verplicht.';
+
+  @override
+  String get addEventTitleTooLong => 'Titel is te lang.';
+
+  @override
+  String get addEventDescriptionLabel => 'Beschrijving (optioneel)';
+
+  @override
+  String get addEventDescriptionTooLong => 'Beschrijving is te lang.';
+
+  @override
+  String get addEventWebsiteLabel => 'Website-URL (optioneel)';
+
+  @override
+  String get addEventWebsiteHint => 'https://example.com';
+
+  @override
+  String get addEventPhotosSectionTitle => 'Evenementfoto\'s (optioneel)';
+
+  @override
+  String get addEventAllDay => 'Hele-dag-evenement';
+
+  @override
+  String get addEventTimezoneLabel => 'Tijdzone';
+
+  @override
+  String get addEventStartLabel => 'Start';
+
+  @override
+  String get addEventEndLabel => 'Einde (optioneel)';
+
+  @override
+  String get addEventEndNotSet => 'Niet ingesteld';
+
+  @override
+  String get addEventClearEndTooltip => 'Einde wissen';
+
+  @override
+  String get addEventLinkingSectionTitle => 'Koppeling';
+
+  @override
+  String addEventLinkedSpotLabel(String name) {
+    return 'Spot: $name';
+  }
+
+  @override
+  String addEventLinkedSpotListLabel(String name) {
+    return 'Spotlijst: $name';
+  }
+
+  @override
+  String get addEventLocationNotSet => 'Locatie niet ingesteld';
+
+  @override
+  String get addEventPickLocationHint =>
+      'Kies een locatie op de kaart (optioneel wanneer spot/lijst gekoppeld is).';
+
+  @override
+  String get addEventClearLocationTooltip => 'Locatie wissen';
+
+  @override
+  String get addEventPickLocationTooltip => 'Locatie kiezen';
+
+  @override
+  String addEventApproxCoordinates(String latitude, String longitude) {
+    return 'Ca. $latitude, $longitude';
+  }
+
+  @override
+  String get addEventSubmitting => 'Indienen…';
+
+  @override
+  String get addEventSubmitButton => 'Indienen ter beoordeling';
+
+  @override
+  String get addEventWebsiteInvalid =>
+      'Website-URL moet een geldige http(s)-URL zijn.';
+
+  @override
+  String get addEventEndBeforeStart =>
+      'Eindtijd mag niet vóór starttijd liggen.';
+
+  @override
+  String get addEventNeedLocationOrLink =>
+      'Voeg een kaartlocatie toe, koppel een spot of spotlijst voordat je indient.';
+
+  @override
+  String addEventMaxPhotos(int count) {
+    return 'Maximaal $count foto\'s toegestaan.';
+  }
+
+  @override
+  String get addEventUploadPhotosFailed =>
+      'Foto\'s konden niet worden geüpload. Probeer het opnieuw.';
+
+  @override
+  String get addEventSubmitFailed =>
+      'Evenementvoorstel kon niet worden ingediend.';
+
+  @override
+  String get addEventSubmitSuccess =>
+      'Evenement ingediend in de moderatorwachtrij.';
 
   @override
   String get noImagesYet => 'Nog geen afbeeldingen';

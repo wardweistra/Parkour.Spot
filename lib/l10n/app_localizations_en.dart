@@ -12,7 +12,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tabExplore => 'Explore';
 
   @override
-  String get tabAddSpot => 'Add Spot';
+  String get tabAdd => 'Add';
 
   @override
   String get tabAccount => 'Account';
@@ -504,7 +504,38 @@ class AppLocalizationsEn extends AppLocalizations {
       'Share your favorite parkour spots with the community';
 
   @override
-  String get exploreSignInToAddSpot => 'Sign in to add a spot';
+  String get exploreSignInToAddSpot => 'Sign in to add spots and events';
+
+  @override
+  String get exploreSignInToAddSubtitle =>
+      'Contribute new spots or submit event proposals for moderator review.';
+
+  @override
+  String get addHubHeading => 'What do you want to add?';
+
+  @override
+  String get addHubSubtitle =>
+      'Spots are published immediately. Events are reviewed by moderators first.';
+
+  @override
+  String get addHubSpotTitle => 'Add spot';
+
+  @override
+  String get addHubSpotDescription =>
+      'Share a new training spot with photos and details.';
+
+  @override
+  String get addHubSpotButton => 'Create spot';
+
+  @override
+  String get addHubEventTitle => 'Add event';
+
+  @override
+  String get addHubEventDescription =>
+      'Submit an event proposal. Moderators approve or reject it.';
+
+  @override
+  String get addHubEventButton => 'Create event';
 
   @override
   String get exploreLoadingProfile => 'Loading your profile…';
@@ -805,6 +836,118 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addSpotGettingAddress => 'Getting address...';
+
+  @override
+  String get addEventTitle => 'Add event';
+
+  @override
+  String get addEventModerationNotice =>
+      'Event proposals are reviewed by moderators before they become public.';
+
+  @override
+  String get addEventTitleLabel => 'Event title';
+
+  @override
+  String get addEventTitleRequired => 'Title is required.';
+
+  @override
+  String get addEventTitleTooLong => 'Title is too long.';
+
+  @override
+  String get addEventDescriptionLabel => 'Description (optional)';
+
+  @override
+  String get addEventDescriptionTooLong => 'Description is too long.';
+
+  @override
+  String get addEventWebsiteLabel => 'Website URL (optional)';
+
+  @override
+  String get addEventWebsiteHint => 'https://example.com';
+
+  @override
+  String get addEventPhotosSectionTitle => 'Event photos (optional)';
+
+  @override
+  String get addEventAllDay => 'All-day event';
+
+  @override
+  String get addEventTimezoneLabel => 'Timezone';
+
+  @override
+  String get addEventStartLabel => 'Start';
+
+  @override
+  String get addEventEndLabel => 'End (optional)';
+
+  @override
+  String get addEventEndNotSet => 'Not set';
+
+  @override
+  String get addEventClearEndTooltip => 'Clear end';
+
+  @override
+  String get addEventLinkingSectionTitle => 'Linking';
+
+  @override
+  String addEventLinkedSpotLabel(String name) {
+    return 'Spot: $name';
+  }
+
+  @override
+  String addEventLinkedSpotListLabel(String name) {
+    return 'Spot list: $name';
+  }
+
+  @override
+  String get addEventLocationNotSet => 'Location not set';
+
+  @override
+  String get addEventPickLocationHint =>
+      'Pick a location on the map (optional when linked spot/list exists).';
+
+  @override
+  String get addEventClearLocationTooltip => 'Clear location';
+
+  @override
+  String get addEventPickLocationTooltip => 'Pick location';
+
+  @override
+  String addEventApproxCoordinates(String latitude, String longitude) {
+    return 'Approx. $latitude, $longitude';
+  }
+
+  @override
+  String get addEventSubmitting => 'Submitting...';
+
+  @override
+  String get addEventSubmitButton => 'Submit for review';
+
+  @override
+  String get addEventWebsiteInvalid =>
+      'Website URL must be a valid http(s) URL.';
+
+  @override
+  String get addEventEndBeforeStart => 'End time cannot be before start time.';
+
+  @override
+  String get addEventNeedLocationOrLink =>
+      'Add a map location, link a spot, or link a spot list before submitting.';
+
+  @override
+  String addEventMaxPhotos(int count) {
+    return 'At most $count photos allowed.';
+  }
+
+  @override
+  String get addEventUploadPhotosFailed =>
+      'Could not upload photos. Please try again.';
+
+  @override
+  String get addEventSubmitFailed => 'Could not submit event proposal.';
+
+  @override
+  String get addEventSubmitSuccess => 'Event submitted to the moderator queue.';
 
   @override
   String get noImagesYet => 'No images yet';

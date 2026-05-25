@@ -12,6 +12,7 @@ import '../../services/geocoding_service.dart';
 import '../../utils/browser_timezone_utils.dart';
 import '../../utils/event_schedule_utils.dart';
 import '../../utils/image_preparation.dart';
+import '../../l10n/app_localizations.dart';
 import '../../widgets/page_scaffold.dart';
 import '../../widgets/spot_form/image_section.dart';
 import '../spots/location_picker_screen.dart';
@@ -258,7 +259,11 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
     final trimmed = _address?.trim();
     if (trimmed != null && trimmed.isNotEmpty) return trimmed;
     if (_pickedLocation == null) return null;
-    return 'Approx. ${_pickedLocation!.latitude.toStringAsFixed(5)}, ${_pickedLocation!.longitude.toStringAsFixed(5)}';
+    final l10n = AppLocalizations.of(context)!;
+    return l10n.addEventApproxCoordinates(
+      _pickedLocation!.latitude.toStringAsFixed(5),
+      _pickedLocation!.longitude.toStringAsFixed(5),
+    );
   }
 
   Future<void> _pickImagesFromGallery() async {
@@ -290,12 +295,13 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               e is ImagePreparationException
                   ? e.message
-                  : 'Could not pick images. Please try again.',
+                  : l10n.addSpotPickImagesFailed,
             ),
             backgroundColor: Colors.red,
           ),
@@ -327,9 +333,10 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not take photo. Please try again.'),
+          SnackBar(
+            content: Text(l10n.addSpotTakePhotoFailed),
             backgroundColor: Colors.red,
           ),
         );
@@ -355,11 +362,10 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    final l10n = AppLocalizations.of(context)!;
     if (!_hasValidWebsiteUrl()) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Website URL must be a valid http(s) URL.'),
-        ),
+        SnackBar(content: Text(l10n.addEventWebsiteInvalid)),
       );
       return;
     }
@@ -381,7 +387,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
 
     if (normalizedEndAt != null && normalizedEndAt.isBefore(normalizedStartAt)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('End time cannot be before start time.')),
+        SnackBar(content: Text(l10n.addEventEndBeforeStart)),
       );
       return;
     }
@@ -391,11 +397,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
     final hasLocation = _pickedLocation != null;
     if (!hasLinkedSpot && !hasLinkedList && !hasLocation) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Add a map location, link a spot, or link a spot list before submitting.',
-          ),
-        ),
+        SnackBar(content: Text(l10n.addEventNeedLocationOrLink)),
       );
       return;
     }
@@ -421,7 +423,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'At most ${EventReportService.maxSuggestedPhotos} photos allowed.',
+                l10n.addEventMaxPhotos(EventReportService.maxSuggestedPhotos),
               ),
             ),
           );
@@ -437,7 +439,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
               content: Text(
                 e is ImagePreparationException
                     ? e.message
-                    : 'Could not upload photos. Please try again.',
+                    : l10n.addEventUploadPhotosFailed,
               ),
               backgroundColor: Colors.red,
             ),
@@ -481,14 +483,14 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
       if (!mounted) return;
       if (!success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not submit event proposal.')),
+          SnackBar(content: Text(l10n.addEventSubmitFailed)),
         );
         return;
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Event submitted to the moderator queue.'),
+        SnackBar(
+          content: Text(l10n.addEventSubmitSuccess),
           backgroundColor: Colors.green,
         ),
       );
@@ -507,9 +509,10 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     return PageScaffold(
-      title: 'Add event',
+      title: l10n.addEventTitle,
       body: Form(
         key: _formKey,
         child: Column(
@@ -519,7 +522,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Text(
-                  'Event proposals are reviewed by moderators before they become public.',
+                  l10n.addEventModerationNotice,
                   style: theme.textTheme.bodyMedium,
                 ),
               ),
@@ -527,31 +530,31 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _titleController,
-              decoration: const InputDecoration(
-                labelText: 'Event title',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.addEventTitleLabel,
+                border: const OutlineInputBorder(),
               ),
               textCapitalization: TextCapitalization.words,
               validator: (value) {
                 final trimmed = value?.trim() ?? '';
-                if (trimmed.isEmpty) return 'Title is required.';
-                if (trimmed.length > 200) return 'Title is too long.';
+                if (trimmed.isEmpty) return l10n.addEventTitleRequired;
+                if (trimmed.length > 200) return l10n.addEventTitleTooLong;
                 return null;
               },
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Description (optional)',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.addEventDescriptionLabel,
+                border: const OutlineInputBorder(),
               ),
               maxLines: 4,
               textCapitalization: TextCapitalization.sentences,
               validator: (value) {
                 final trimmed = value?.trim() ?? '';
                 if (trimmed.length > 2000) {
-                  return 'Description is too long.';
+                  return l10n.addEventDescriptionTooLong;
                 }
                 return null;
               },
@@ -559,10 +562,10 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _websiteController,
-              decoration: const InputDecoration(
-                labelText: 'Website URL (optional)',
-                hintText: 'https://example.com',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.addEventWebsiteLabel,
+                hintText: l10n.addEventWebsiteHint,
+                border: const OutlineInputBorder(),
               ),
               keyboardType: TextInputType.url,
               autocorrect: false,
@@ -576,13 +579,13 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
               onRemoveSelectedAt: _removeImageAt,
               onRemoveExistingAt: (_) {},
               onReorderSelected: _reorderSelectedImage,
-              sectionTitle: 'Event photos (optional)',
+              sectionTitle: l10n.addEventPhotosSectionTitle,
               showRequiredIndicator: false,
             ),
             const SizedBox(height: 16),
             SwitchListTile(
               value: _isDateOnly,
-              title: const Text('All-day event'),
+              title: Text(l10n.addEventAllDay),
               onChanged: (value) {
                 setState(() {
                   _isDateOnly = value;
@@ -592,9 +595,9 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               initialValue: _selectedTimeZone,
-              decoration: const InputDecoration(
-                labelText: 'Timezone',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.addEventTimezoneLabel,
+                border: const OutlineInputBorder(),
               ),
               items: _timeZoneOptions
                   .map(
@@ -617,16 +620,16 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
             const SizedBox(height: 8),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Start'),
+              title: Text(l10n.addEventStartLabel),
               subtitle: Text(_formatDateTime(_startAt)),
               trailing: const Icon(Icons.edit_calendar),
               onTap: _pickStartDateTime,
             ),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('End (optional)'),
+              title: Text(l10n.addEventEndLabel),
               subtitle: Text(
-                _endAt == null ? 'Not set' : _formatDateTime(_endAt!),
+                _endAt == null ? l10n.addEventEndNotSet : _formatDateTime(_endAt!),
               ),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -634,7 +637,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
                   if (_endAt != null)
                     IconButton(
                       icon: const Icon(Icons.clear),
-                      tooltip: 'Clear end',
+                      tooltip: l10n.addEventClearEndTooltip,
                       onPressed: () => setState(() => _endAt = null),
                     ),
                   const Icon(Icons.edit_calendar),
@@ -643,15 +646,17 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
               onTap: _pickEndDateTime,
             ),
             const Divider(height: 24),
-            Text('Linking', style: theme.textTheme.titleMedium),
+            Text(l10n.addEventLinkingSectionTitle, style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
             if (_linkedSpotId != null)
               Chip(
                 avatar: const Icon(Icons.location_on_outlined, size: 18),
                 label: Text(
-                  _linkedSpotName?.isNotEmpty == true
-                      ? 'Spot: ${_linkedSpotName!}'
-                      : 'Spot: $_linkedSpotId',
+                  l10n.addEventLinkedSpotLabel(
+                    _linkedSpotName?.isNotEmpty == true
+                        ? _linkedSpotName!
+                        : _linkedSpotId!,
+                  ),
                 ),
                 onDeleted: () {
                   setState(() {
@@ -666,9 +671,11 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
                 child: Chip(
                   avatar: const Icon(Icons.list_alt_outlined, size: 18),
                   label: Text(
-                    _linkedSpotListName?.isNotEmpty == true
-                        ? 'Spot list: ${_linkedSpotListName!}'
-                        : 'Spot list: $_linkedSpotListId',
+                    l10n.addEventLinkedSpotListLabel(
+                      _linkedSpotListName?.isNotEmpty == true
+                          ? _linkedSpotListName!
+                          : _linkedSpotListId!,
+                    ),
                   ),
                   onDeleted: () {
                     setState(() {
@@ -684,22 +691,22 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
                 leading: const Icon(Icons.map_outlined),
                 title: Text(
                   _pickedLocation == null
-                      ? 'Location not set'
+                      ? l10n.addEventLocationNotSet
                       : '${_pickedLocation!.latitude.toStringAsFixed(5)}, ${_pickedLocation!.longitude.toStringAsFixed(5)}',
                 ),
                 subtitle: Text(
                   _isGeocoding
-                      ? 'Loading address...'
+                      ? l10n.addSpotGettingAddress
                       : (_address?.isNotEmpty ?? false)
                       ? _address!
-                      : 'Pick a location on the map (optional when linked spot/list exists).',
+                      : l10n.addEventPickLocationHint,
                 ),
                 trailing: Wrap(
                   spacing: 4,
                   children: [
                     if (_pickedLocation != null)
                       IconButton(
-                        tooltip: 'Clear location',
+                        tooltip: l10n.addEventClearLocationTooltip,
                         onPressed: () {
                           setState(() {
                             _pickedLocation = null;
@@ -711,7 +718,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
                         icon: const Icon(Icons.clear),
                       ),
                     IconButton(
-                      tooltip: 'Pick location',
+                      tooltip: l10n.addEventPickLocationTooltip,
                       onPressed: _pickLocationOnMap,
                       icon: const Icon(Icons.edit_location_alt_outlined),
                     ),
@@ -730,7 +737,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
                     )
                   : const Icon(Icons.send_outlined),
               label: Text(
-                _isSubmitting ? 'Submitting...' : 'Submit for review',
+                _isSubmitting ? l10n.addEventSubmitting : l10n.addEventSubmitButton,
               ),
             ),
           ],

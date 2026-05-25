@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/app_localizations.dart';
+
 class AddHubScreen extends StatelessWidget {
   const AddHubScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
@@ -21,12 +24,12 @@ class AddHubScreen extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             children: [
               Text(
-                'What do you want to add?',
+                l10n.addHubHeading,
                 style: theme.textTheme.headlineSmall,
               ),
               const SizedBox(height: 8),
               Text(
-                'Spots are published immediately. Events are reviewed by moderators first.',
+                l10n.addHubSubtitle,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
@@ -38,17 +41,17 @@ class AddHubScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Add spot', style: theme.textTheme.titleLarge),
+                      Text(l10n.addHubSpotTitle, style: theme.textTheme.titleLarge),
                       const SizedBox(height: 8),
                       Text(
-                        'Share a new training spot with photos and details.',
+                        l10n.addHubSpotDescription,
                         style: theme.textTheme.bodyMedium,
                       ),
                       const SizedBox(height: 16),
                       FilledButton.icon(
                         onPressed: () => context.push('/spots/add'),
                         icon: const Icon(Icons.add_location_alt_outlined),
-                        label: const Text('Create spot'),
+                        label: Text(l10n.addHubSpotButton),
                       ),
                     ],
                   ),
@@ -61,17 +64,17 @@ class AddHubScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Add event', style: theme.textTheme.titleLarge),
+                      Text(l10n.addHubEventTitle, style: theme.textTheme.titleLarge),
                       const SizedBox(height: 8),
                       Text(
-                        'Submit an event proposal. Moderators approve or reject it.',
+                        l10n.addHubEventDescription,
                         style: theme.textTheme.bodyMedium,
                       ),
                       const SizedBox(height: 16),
                       FilledButton.icon(
                         onPressed: () => context.push('/events/add'),
                         icon: const Icon(Icons.event_available_outlined),
-                        label: const Text('Create event'),
+                        label: Text(l10n.addHubEventButton),
                       ),
                     ],
                   ),

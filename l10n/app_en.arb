@@ -4,9 +4,9 @@
   "@tabExplore": {
     "description": "Bottom navigation: map and search tab"
   },
-  "tabAddSpot": "Add Spot",
-  "@tabAddSpot": {
-    "description": "Bottom navigation: submit a new spot"
+  "tabAdd": "Add",
+  "@tabAdd": {
+    "description": "Bottom navigation: add spot or event"
   },
   "tabAccount": "Account",
   "@tabAccount": {
@@ -628,9 +628,45 @@
   "@exploreAddSpotSubtitle": {
     "description": "Add spot tab: supporting text when not signed in"
   },
-  "exploreSignInToAddSpot": "Sign in to add a spot",
+  "exploreSignInToAddSpot": "Sign in to add spots and events",
   "@exploreSignInToAddSpot": {
-    "description": "Add spot tab: sign-in prompt title"
+    "description": "Add tab: sign-in prompt title"
+  },
+  "exploreSignInToAddSubtitle": "Contribute new spots or submit event proposals for moderator review.",
+  "@exploreSignInToAddSubtitle": {
+    "description": "Add tab: sign-in prompt supporting text"
+  },
+  "addHubHeading": "What do you want to add?",
+  "@addHubHeading": {
+    "description": "Add tab hub: main heading"
+  },
+  "addHubSubtitle": "Spots are published immediately. Events are reviewed by moderators first.",
+  "@addHubSubtitle": {
+    "description": "Add tab hub: supporting text"
+  },
+  "addHubSpotTitle": "Add spot",
+  "@addHubSpotTitle": {
+    "description": "Add tab hub: spot card title"
+  },
+  "addHubSpotDescription": "Share a new training spot with photos and details.",
+  "@addHubSpotDescription": {
+    "description": "Add tab hub: spot card description"
+  },
+  "addHubSpotButton": "Create spot",
+  "@addHubSpotButton": {
+    "description": "Add tab hub: spot card action"
+  },
+  "addHubEventTitle": "Add event",
+  "@addHubEventTitle": {
+    "description": "Add tab hub: event card title"
+  },
+  "addHubEventDescription": "Submit an event proposal. Moderators approve or reject it.",
+  "@addHubEventDescription": {
+    "description": "Add tab hub: event card description"
+  },
+  "addHubEventButton": "Create event",
+  "@addHubEventButton": {
+    "description": "Add tab hub: event card action"
   },
   "exploreLoadingProfile": "Loading your profile…",
   "@exploreLoadingProfile": {
@@ -1010,6 +1046,161 @@
   "addSpotGettingAddress": "Getting address...",
   "@addSpotGettingAddress": {
     "description": "While reverse-geocoding coordinates"
+  },
+  "addEventTitle": "Add event",
+  "@addEventTitle": {
+    "description": "Add event page: app bar title"
+  },
+  "addEventModerationNotice": "Event proposals are reviewed by moderators before they become public.",
+  "@addEventModerationNotice": {
+    "description": "Add event page: moderation info banner"
+  },
+  "addEventTitleLabel": "Event title",
+  "@addEventTitleLabel": {
+    "description": "Add event page: title field label"
+  },
+  "addEventTitleRequired": "Title is required.",
+  "@addEventTitleRequired": {
+    "description": "Add event page: title validation empty"
+  },
+  "addEventTitleTooLong": "Title is too long.",
+  "@addEventTitleTooLong": {
+    "description": "Add event page: title validation length"
+  },
+  "addEventDescriptionLabel": "Description (optional)",
+  "@addEventDescriptionLabel": {
+    "description": "Add event page: description field label"
+  },
+  "addEventDescriptionTooLong": "Description is too long.",
+  "@addEventDescriptionTooLong": {
+    "description": "Add event page: description validation length"
+  },
+  "addEventWebsiteLabel": "Website URL (optional)",
+  "@addEventWebsiteLabel": {
+    "description": "Add event page: website field label"
+  },
+  "addEventWebsiteHint": "https://example.com",
+  "@addEventWebsiteHint": {
+    "description": "Add event page: website field placeholder"
+  },
+  "addEventPhotosSectionTitle": "Event photos (optional)",
+  "@addEventPhotosSectionTitle": {
+    "description": "Add event page: photos section title"
+  },
+  "addEventAllDay": "All-day event",
+  "@addEventAllDay": {
+    "description": "Add event page: all-day toggle"
+  },
+  "addEventTimezoneLabel": "Timezone",
+  "@addEventTimezoneLabel": {
+    "description": "Add event page: timezone field label"
+  },
+  "addEventStartLabel": "Start",
+  "@addEventStartLabel": {
+    "description": "Add event page: start date/time row"
+  },
+  "addEventEndLabel": "End (optional)",
+  "@addEventEndLabel": {
+    "description": "Add event page: end date/time row"
+  },
+  "addEventEndNotSet": "Not set",
+  "@addEventEndNotSet": {
+    "description": "Add event page: end time not chosen"
+  },
+  "addEventClearEndTooltip": "Clear end",
+  "@addEventClearEndTooltip": {
+    "description": "Add event page: clear end time button"
+  },
+  "addEventLinkingSectionTitle": "Linking",
+  "@addEventLinkingSectionTitle": {
+    "description": "Add event page: spot/list linking section"
+  },
+  "addEventLinkedSpotLabel": "Spot: {name}",
+  "@addEventLinkedSpotLabel": {
+    "description": "Add event page: linked spot chip",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addEventLinkedSpotListLabel": "Spot list: {name}",
+  "@addEventLinkedSpotListLabel": {
+    "description": "Add event page: linked spot list chip",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addEventLocationNotSet": "Location not set",
+  "@addEventLocationNotSet": {
+    "description": "Add event page: no map location chosen"
+  },
+  "addEventPickLocationHint": "Pick a location on the map (optional when linked spot/list exists).",
+  "@addEventPickLocationHint": {
+    "description": "Add event page: map location helper text"
+  },
+  "addEventClearLocationTooltip": "Clear location",
+  "@addEventClearLocationTooltip": {
+    "description": "Add event page: clear map location button"
+  },
+  "addEventPickLocationTooltip": "Pick location",
+  "@addEventPickLocationTooltip": {
+    "description": "Add event page: open map picker button"
+  },
+  "addEventApproxCoordinates": "Approx. {latitude}, {longitude}",
+  "@addEventApproxCoordinates": {
+    "description": "Add event page: fallback address from coordinates",
+    "placeholders": {
+      "latitude": {
+        "type": "String"
+      },
+      "longitude": {
+        "type": "String"
+      }
+    }
+  },
+  "addEventSubmitting": "Submitting...",
+  "@addEventSubmitting": {
+    "description": "Add event page: submit in progress"
+  },
+  "addEventSubmitButton": "Submit for review",
+  "@addEventSubmitButton": {
+    "description": "Add event page: primary submit"
+  },
+  "addEventWebsiteInvalid": "Website URL must be a valid http(s) URL.",
+  "@addEventWebsiteInvalid": {
+    "description": "Add event page: website validation"
+  },
+  "addEventEndBeforeStart": "End time cannot be before start time.",
+  "@addEventEndBeforeStart": {
+    "description": "Add event page: schedule validation"
+  },
+  "addEventNeedLocationOrLink": "Add a map location, link a spot, or link a spot list before submitting.",
+  "@addEventNeedLocationOrLink": {
+    "description": "Add event page: location/link validation"
+  },
+  "addEventMaxPhotos": "At most {count} photos allowed.",
+  "@addEventMaxPhotos": {
+    "description": "Add event page: photo count validation",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addEventUploadPhotosFailed": "Could not upload photos. Please try again.",
+  "@addEventUploadPhotosFailed": {
+    "description": "Add event page: photo upload error"
+  },
+  "addEventSubmitFailed": "Could not submit event proposal.",
+  "@addEventSubmitFailed": {
+    "description": "Add event page: submit failed"
+  },
+  "addEventSubmitSuccess": "Event submitted to the moderator queue.",
+  "@addEventSubmitSuccess": {
+    "description": "Add event page: submit succeeded"
   },
   "noImagesYet": "No images yet",
   "@noImagesYet": {

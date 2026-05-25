@@ -12,7 +12,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tabExplore => 'Explorer';
 
   @override
-  String get tabAddSpot => 'Ajouter un spot';
+  String get tabAdd => 'Ajouter';
 
   @override
   String get tabAccount => 'Compte';
@@ -509,7 +509,39 @@ class AppLocalizationsFr extends AppLocalizations {
       'Partagez vos spots de parkour préférés avec la communauté';
 
   @override
-  String get exploreSignInToAddSpot => 'Connectez-vous pour ajouter un spot';
+  String get exploreSignInToAddSpot =>
+      'Connectez-vous pour ajouter des spots et des événements';
+
+  @override
+  String get exploreSignInToAddSubtitle =>
+      'Contribuez avec de nouveaux spots ou soumettez des propositions d\'événements pour examen par les modérateurs.';
+
+  @override
+  String get addHubHeading => 'Que voulez-vous ajouter ?';
+
+  @override
+  String get addHubSubtitle =>
+      'Les spots sont publiés immédiatement. Les événements sont d\'abord examinés par les modérateurs.';
+
+  @override
+  String get addHubSpotTitle => 'Ajouter un spot';
+
+  @override
+  String get addHubSpotDescription =>
+      'Partagez un nouveau spot d\'entraînement avec photos et détails.';
+
+  @override
+  String get addHubSpotButton => 'Créer un spot';
+
+  @override
+  String get addHubEventTitle => 'Ajouter un événement';
+
+  @override
+  String get addHubEventDescription =>
+      'Soumettez une proposition d\'événement. Les modérateurs l\'approuvent ou la rejettent.';
+
+  @override
+  String get addHubEventButton => 'Créer un événement';
 
   @override
   String get exploreLoadingProfile => 'Chargement du profil…';
@@ -817,6 +849,122 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get addSpotGettingAddress => 'Récupération de l’adresse…';
+
+  @override
+  String get addEventTitle => 'Ajouter un événement';
+
+  @override
+  String get addEventModerationNotice =>
+      'Les propositions d\'événements sont examinées par les modérateurs avant d\'être rendues publiques.';
+
+  @override
+  String get addEventTitleLabel => 'Titre de l\'événement';
+
+  @override
+  String get addEventTitleRequired => 'Le titre est obligatoire.';
+
+  @override
+  String get addEventTitleTooLong => 'Le titre est trop long.';
+
+  @override
+  String get addEventDescriptionLabel => 'Description (facultatif)';
+
+  @override
+  String get addEventDescriptionTooLong => 'La description est trop longue.';
+
+  @override
+  String get addEventWebsiteLabel => 'URL du site web (facultatif)';
+
+  @override
+  String get addEventWebsiteHint => 'https://example.com';
+
+  @override
+  String get addEventPhotosSectionTitle =>
+      'Photos de l\'événement (facultatif)';
+
+  @override
+  String get addEventAllDay => 'Événement sur toute la journée';
+
+  @override
+  String get addEventTimezoneLabel => 'Fuseau horaire';
+
+  @override
+  String get addEventStartLabel => 'Début';
+
+  @override
+  String get addEventEndLabel => 'Fin (facultatif)';
+
+  @override
+  String get addEventEndNotSet => 'Non défini';
+
+  @override
+  String get addEventClearEndTooltip => 'Effacer la fin';
+
+  @override
+  String get addEventLinkingSectionTitle => 'Liaison';
+
+  @override
+  String addEventLinkedSpotLabel(String name) {
+    return 'Spot : $name';
+  }
+
+  @override
+  String addEventLinkedSpotListLabel(String name) {
+    return 'Liste de spots : $name';
+  }
+
+  @override
+  String get addEventLocationNotSet => 'Emplacement non défini';
+
+  @override
+  String get addEventPickLocationHint =>
+      'Choisissez un emplacement sur la carte (facultatif si un spot/liste est lié).';
+
+  @override
+  String get addEventClearLocationTooltip => 'Effacer l\'emplacement';
+
+  @override
+  String get addEventPickLocationTooltip => 'Choisir un emplacement';
+
+  @override
+  String addEventApproxCoordinates(String latitude, String longitude) {
+    return 'Environ $latitude, $longitude';
+  }
+
+  @override
+  String get addEventSubmitting => 'Envoi…';
+
+  @override
+  String get addEventSubmitButton => 'Soumettre pour examen';
+
+  @override
+  String get addEventWebsiteInvalid =>
+      'L\'URL du site web doit être une URL http(s) valide.';
+
+  @override
+  String get addEventEndBeforeStart =>
+      'L\'heure de fin ne peut pas être antérieure à l\'heure de début.';
+
+  @override
+  String get addEventNeedLocationOrLink =>
+      'Ajoutez un emplacement sur la carte, liez un spot ou une liste de spots avant de soumettre.';
+
+  @override
+  String addEventMaxPhotos(int count) {
+    return 'Maximum $count photos autorisées.';
+  }
+
+  @override
+  String get addEventUploadPhotosFailed =>
+      'Impossible de téléverser les photos. Veuillez réessayer.';
+
+  @override
+  String get addEventSubmitFailed =>
+      'Impossible de soumettre la proposition d\'événement.';
+
+  @override
+  String get addEventSubmitSuccess =>
+      'Événement soumis à la file d\'attente des modérateurs.';
 
   @override
   String get noImagesYet => 'Pas encore d’images';
