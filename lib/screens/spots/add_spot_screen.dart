@@ -23,6 +23,7 @@ import '../../utils/map_recentering_mixin.dart';
 import '../../utils/image_preparation.dart';
 import '../../config/app_config.dart';
 import '../../l10n/app_localizations.dart';
+import '../../widgets/page_scaffold.dart';
 
 class AddSpotScreen extends StatefulWidget {
   final LatLng? initialLocation;
@@ -532,24 +533,13 @@ class _AddSpotScreenState extends State<AddSpotScreen>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Scaffold(
-      appBar: AppBar(
-        title: const SizedBox.shrink(),
-        toolbarHeight: 0,
-        elevation: 0,
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        foregroundColor: Theme.of(context).colorScheme.onSurface,
-      ),
+    return PageScaffold(
+      title: l10n.exploreAddSpotTitle,
       body: Form(
         key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1200),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
                   // Location Section
                   SpotLocationSection(
                     currentLocation: _pickedLocation != null
@@ -689,9 +679,6 @@ class _AddSpotScreenState extends State<AddSpotScreen>
                     icon: Icons.add_location,
                   ),
                 ],
-              ),
-            ),
-          ),
         ),
       ),
     );

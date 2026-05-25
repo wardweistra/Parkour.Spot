@@ -8,6 +8,7 @@ import '../../services/event_report_service.dart';
 import '../../services/geocoding_service.dart';
 import '../../utils/browser_timezone_utils.dart';
 import '../../utils/event_schedule_utils.dart';
+import '../../widgets/page_scaffold.dart';
 import '../spots/location_picker_screen.dart';
 
 class AddEventReportScreen extends StatefulWidget {
@@ -372,12 +373,12 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
-      appBar: AppBar(title: const Text('Add event')),
+    return PageScaffold(
+      title: 'Add event',
       body: Form(
         key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Card(
               child: Padding(
