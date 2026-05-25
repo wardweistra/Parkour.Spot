@@ -12,14 +12,16 @@ import '../../utils/location_permission_utils.dart';
 import '../../utils/marker_icon_utils.dart';
 import '../../l10n/app_localizations.dart';
 
+enum LocationPickerUsageTip { addSpot, addEvent }
+
 class LocationPickerScreen extends StatefulWidget {
   final LatLng? initialLocation;
-  final bool showUsageTip;
+  final LocationPickerUsageTip? usageTip;
 
   const LocationPickerScreen({
     super.key,
     this.initialLocation,
-    this.showUsageTip = false,
+    this.usageTip,
   });
 
   @override
@@ -127,9 +129,17 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       zoom: widget.initialLocation != null ? 16 : 10,
     );
 
-    final tipText = MobileDetectionService.isMobileDevice
-        ? l10n.addSpotTipLongPressMobile
-        : l10n.addSpotTipRightClickDesktop;
+    final tipText = switch (widget.usageTip) {
+      LocationPickerUsageTip.addSpot =>
+        MobileDetectionService.isMobileDevice
+            ? l10n.addSpotTipLongPressMobile
+            : l10n.addSpotTipRightClickDesktop,
+      LocationPickerUsageTip.addEvent =>
+        MobileDetectionService.isMobileDevice
+            ? l10n.addEventTipLongPressMobile
+            : l10n.addEventTipRightClickDesktop,
+      null => null,
+    };
 
     return Scaffold(
       appBar: PreferredSize(
@@ -169,7 +179,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (widget.showUsageTip)
+          if (tipText != null)
             Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: _kMaxContentWidth),

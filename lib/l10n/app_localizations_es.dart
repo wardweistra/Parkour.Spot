@@ -797,6 +797,14 @@ class AppLocalizationsEs extends AppLocalizations {
       'Consejo: también puedes añadir spots desde el mapa Explorar haciendo clic derecho en un lugar.';
 
   @override
+  String get addEventTipLongPressMobile =>
+      'Consejo: también puedes añadir eventos desde el mapa Explorar manteniendo pulsado un lugar.';
+
+  @override
+  String get addEventTipRightClickDesktop =>
+      'Consejo: también puedes añadir eventos desde el mapa Explorar haciendo clic derecho en un lugar.';
+
+  @override
   String get addSpotUseThisLocation => 'Usar esta ubicación';
 
   @override

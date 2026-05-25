@@ -1432,6 +1432,18 @@ abstract class AppLocalizations {
   /// **'Tip: You can also add spots from the Explore map by right-clicking on any location.'**
   String get addSpotTipRightClickDesktop;
 
+  /// Event location picker hint on mobile
+  ///
+  /// In en, this message translates to:
+  /// **'Tip: You can also add events from the Explore map by long-pressing on any location.'**
+  String get addEventTipLongPressMobile;
+
+  /// Event location picker hint on desktop web
+  ///
+  /// In en, this message translates to:
+  /// **'Tip: You can also add events from the Explore map by right-clicking on any location.'**
+  String get addEventTipRightClickDesktop;
+
   /// Location picker: confirm FAB
   ///
   /// In en, this message translates to:

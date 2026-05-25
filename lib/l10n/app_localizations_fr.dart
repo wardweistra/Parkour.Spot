@@ -802,6 +802,14 @@ class AppLocalizationsFr extends AppLocalizations {
       'Astuce : vous pouvez aussi ajouter des spots depuis la carte Explorer en cliquant droit sur un lieu.';
 
   @override
+  String get addEventTipLongPressMobile =>
+      'Astuce : vous pouvez aussi ajouter des événements depuis la carte Explorer en appuyant longuement sur un lieu.';
+
+  @override
+  String get addEventTipRightClickDesktop =>
+      'Astuce : vous pouvez aussi ajouter des événements depuis la carte Explorer en cliquant droit sur un lieu.';
+
+  @override
   String get addSpotUseThisLocation => 'Utiliser cet emplacement';
 
   @override

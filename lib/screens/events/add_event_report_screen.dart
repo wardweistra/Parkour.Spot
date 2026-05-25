@@ -130,7 +130,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
       MaterialPageRoute(
         builder: (_) => LocationPickerScreen(
           initialLocation: _pickedLocation,
-          showUsageTip: true,
+          usageTip: LocationPickerUsageTip.addEvent,
         ),
       ),
     );

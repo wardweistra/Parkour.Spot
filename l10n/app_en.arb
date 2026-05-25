@@ -991,6 +991,14 @@
   "@addSpotTipRightClickDesktop": {
     "description": "Location picker hint on desktop web"
   },
+  "addEventTipLongPressMobile": "Tip: You can also add events from the Explore map by long-pressing on any location.",
+  "@addEventTipLongPressMobile": {
+    "description": "Event location picker hint on mobile"
+  },
+  "addEventTipRightClickDesktop": "Tip: You can also add events from the Explore map by right-clicking on any location.",
+  "@addEventTipRightClickDesktop": {
+    "description": "Event location picker hint on desktop web"
+  },
   "addSpotUseThisLocation": "Use this location",
   "@addSpotUseThisLocation": {
     "description": "Location picker: confirm FAB"

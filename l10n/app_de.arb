@@ -180,6 +180,8 @@
   "addSpotPickLocationAppBarTitle": "Ort wählen",
   "addSpotTipLongPressMobile": "Tipp: Du kannst Spots auch auf der Explore-Karte per langem Tippen auf einen Ort hinzufügen.",
   "addSpotTipRightClickDesktop": "Tipp: Du kannst Spots auch auf der Explore-Karte per Rechtsklick auf einen Ort hinzufügen.",
+  "addEventTipLongPressMobile": "Tipp: Du kannst Events auch auf der Explore-Karte per langem Tippen auf einen Ort hinzufügen.",
+  "addEventTipRightClickDesktop": "Tipp: Du kannst Events auch auf der Explore-Karte per Rechtsklick auf einen Ort hinzufügen.",
   "addSpotUseThisLocation": "Diesen Ort verwenden",
   "addSpotDirectionsTooltip": "Route",
   "addSpotGettingAddress": "Adresse wird geladen…",

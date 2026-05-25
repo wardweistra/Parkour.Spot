@@ -349,7 +349,7 @@ class _AddSpotScreenState extends State<AddSpotScreen>
                       _currentPosition!.longitude,
                     )
                   : null),
-          showUsageTip: true,
+          usageTip: LocationPickerUsageTip.addSpot,
         ),
       ),
     );

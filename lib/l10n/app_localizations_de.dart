@@ -802,6 +802,14 @@ class AppLocalizationsDe extends AppLocalizations {
       'Tipp: Du kannst Spots auch auf der Explore-Karte per Rechtsklick auf einen Ort hinzufügen.';
 
   @override
+  String get addEventTipLongPressMobile =>
+      'Tipp: Du kannst Events auch auf der Explore-Karte per langem Tippen auf einen Ort hinzufügen.';
+
+  @override
+  String get addEventTipRightClickDesktop =>
+      'Tipp: Du kannst Events auch auf der Explore-Karte per Rechtsklick auf einen Ort hinzufügen.';
+
+  @override
   String get addSpotUseThisLocation => 'Diesen Ort verwenden';
 
   @override

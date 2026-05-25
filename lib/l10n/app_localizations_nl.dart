@@ -792,6 +792,14 @@ class AppLocalizationsNl extends AppLocalizations {
       'Tip: je kunt ook spots toevoegen vanaf de Verkennen-kaart door ergens rechts te klikken.';
 
   @override
+  String get addEventTipLongPressMobile =>
+      'Tip: je kunt ook evenementen toevoegen vanaf de Verkennen-kaart door lang op een plek te drukken.';
+
+  @override
+  String get addEventTipRightClickDesktop =>
+      'Tip: je kunt ook evenementen toevoegen vanaf de Verkennen-kaart door ergens rechts te klikken.';
+
+  @override
   String get addSpotUseThisLocation => 'Deze locatie gebruiken';
 
   @override

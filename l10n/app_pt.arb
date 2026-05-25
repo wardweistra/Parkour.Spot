@@ -180,6 +180,8 @@
   "addSpotPickLocationAppBarTitle": "Escolher localização",
   "addSpotTipLongPressMobile": "Dica: também podes adicionar spots a partir do mapa Explorar com toque longo num local.",
   "addSpotTipRightClickDesktop": "Dica: também podes adicionar spots a partir do mapa Explorar com clique direito num local.",
+  "addEventTipLongPressMobile": "Dica: também podes adicionar eventos a partir do mapa Explorar com toque longo num local.",
+  "addEventTipRightClickDesktop": "Dica: também podes adicionar eventos a partir do mapa Explorar com clique direito num local.",
   "addSpotUseThisLocation": "Usar esta localização",
   "addSpotDirectionsTooltip": "Direções",
   "addSpotGettingAddress": "A obter morada…",

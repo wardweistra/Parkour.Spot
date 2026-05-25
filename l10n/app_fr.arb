@@ -180,6 +180,8 @@
   "addSpotPickLocationAppBarTitle": "Choisir l’emplacement",
   "addSpotTipLongPressMobile": "Astuce : vous pouvez aussi ajouter des spots depuis la carte Explorer en appuyant longuement sur un lieu.",
   "addSpotTipRightClickDesktop": "Astuce : vous pouvez aussi ajouter des spots depuis la carte Explorer en cliquant droit sur un lieu.",
+  "addEventTipLongPressMobile": "Astuce : vous pouvez aussi ajouter des événements depuis la carte Explorer en appuyant longuement sur un lieu.",
+  "addEventTipRightClickDesktop": "Astuce : vous pouvez aussi ajouter des événements depuis la carte Explorer en cliquant droit sur un lieu.",
   "addSpotUseThisLocation": "Utiliser cet emplacement",
   "addSpotDirectionsTooltip": "Itinéraire",
   "addSpotGettingAddress": "Récupération de l’adresse…",
