@@ -2941,6 +2941,31 @@
   "@eventDetailNoLinkedSpotLists": {
     "description": "Empty state when linked spot list ids do not resolve"
   },
+  "eventDetailEventSpotsLabel": "Spots for this event",
+  "@eventDetailEventSpotsLabel": {
+    "description": "Section heading for the event spot list map"
+  },
+  "eventDetailNoEventSpots": "Event spot list not found.",
+  "@eventDetailNoEventSpots": {
+    "description": "Empty state when the event spot list id does not resolve"
+  },
+  "eventDetailEventSpotListViewAll": "View spot list",
+  "@eventDetailEventSpotListViewAll": {
+    "description": "Open the full event spot list detail page"
+  },
+  "eventDetailEventSpotListSeeOnMap": "See on map",
+  "@eventDetailEventSpotListSeeOnMap": {
+    "description": "Highlight the event spot list on Explore"
+  },
+  "eventDetailEventSpotListMoreSpots": "+ {count} more",
+  "@eventDetailEventSpotListMoreSpots": {
+    "description": "How many additional spots are in the event list beyond the preview",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "adminEventEditTitle": "Edit event",
   "@adminEventEditTitle": {
     "description": "Title for admin edit event screen"

@@ -3098,6 +3098,24 @@ class AppLocalizationsNl extends AppLocalizations {
       'Geen gekoppelde spotlijsten gevonden.';
 
   @override
+  String get eventDetailEventSpotsLabel => 'Spots voor dit evenement';
+
+  @override
+  String get eventDetailNoEventSpots =>
+      'Spotlijst voor evenement niet gevonden.';
+
+  @override
+  String get eventDetailEventSpotListViewAll => 'Spotlijst bekijken';
+
+  @override
+  String get eventDetailEventSpotListSeeOnMap => 'Op kaart bekijken';
+
+  @override
+  String eventDetailEventSpotListMoreSpots(int count) {
+    return '+ $count extra';
+  }
+
+  @override
   String get adminEventEditTitle => 'Evenement bewerken';
 
   @override

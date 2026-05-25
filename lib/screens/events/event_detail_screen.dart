@@ -874,11 +874,11 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         widgets.add(const SizedBox(height: SpotDetailUi.detailSectionGap));
       }
       widgets.addAll([
-        _detailSectionHeading(context, l10n.eventDetailLinkedSpotListsLabel),
+        _detailSectionHeading(context, l10n.eventDetailEventSpotsLabel),
         const SizedBox(height: SpotDetailUi.detailLabelGap),
         _LinkedSpotListsSection(
           spotListIds: event.spotListIds,
-          emptyLabel: l10n.eventDetailNoLinkedSpotLists,
+          emptyLabel: l10n.eventDetailNoEventSpots,
         ),
       ]);
     }
@@ -1300,6 +1300,18 @@ enum _EventStaffAction {
   removeDuplicate,
 }
 
+class _EventSpotListPreview {
+  const _EventSpotListPreview({
+    required this.list,
+    required this.previewSpots,
+    required this.totalSpotCount,
+  });
+
+  final SpotList list;
+  final List<Spot> previewSpots;
+  final int totalSpotCount;
+}
+
 class _LinkedSpotListsSection extends StatefulWidget {
   const _LinkedSpotListsSection({
     required this.spotListIds,
@@ -1315,35 +1327,58 @@ class _LinkedSpotListsSection extends StatefulWidget {
 }
 
 class _LinkedSpotListsSectionState extends State<_LinkedSpotListsSection> {
-  Future<List<SpotList>>? _listsFuture;
+  static const int _previewSpotLimit = 4;
+
+  Future<List<_EventSpotListPreview>>? _listsFuture;
 
   @override
   void initState() {
     super.initState();
-    _listsFuture = _loadLists();
+    _listsFuture = _loadListPreviews();
   }
 
   @override
   void didUpdateWidget(covariant _LinkedSpotListsSection oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.spotListIds.join(',') != widget.spotListIds.join(',')) {
-      _listsFuture = _loadLists();
+      _listsFuture = _loadListPreviews();
     }
   }
 
-  Future<List<SpotList>> _loadLists() async {
+  Future<List<_EventSpotListPreview>> _loadListPreviews() async {
     final spotListService = context.read<SpotListService>();
+    final spotService = context.read<SpotService>();
     final lists = await Future.wait(
       widget.spotListIds.map(spotListService.getSpotListById),
     );
-    return lists.whereType<SpotList>().toList();
+
+    final previews = <_EventSpotListPreview>[];
+    for (final list in lists.whereType<SpotList>()) {
+      final spotIds = list.effectiveSpotIds;
+      final previewSpots = <Spot>[];
+      for (final spotId in spotIds.take(_previewSpotLimit)) {
+        final spot = await spotService.getSpotById(spotId);
+        if (spot != null) {
+          previewSpots.add(spot);
+        }
+      }
+      previews.add(
+        _EventSpotListPreview(
+          list: list,
+          previewSpots: previewSpots,
+          totalSpotCount: spotIds.length,
+        ),
+      );
+    }
+    return previews;
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
-    return FutureBuilder<List<SpotList>>(
+    return FutureBuilder<List<_EventSpotListPreview>>(
       future: _listsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -1358,8 +1393,8 @@ class _LinkedSpotListsSectionState extends State<_LinkedSpotListsSection> {
             ),
           );
         }
-        final lists = snapshot.data ?? const <SpotList>[];
-        if (lists.isEmpty) {
+        final previews = snapshot.data ?? const <_EventSpotListPreview>[];
+        if (previews.isEmpty) {
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
@@ -1372,62 +1407,143 @@ class _LinkedSpotListsSectionState extends State<_LinkedSpotListsSection> {
         }
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: lists.map((list) {
-            final listId = list.id;
+          children: previews.asMap().entries.map((entry) {
+            final index = entry.key;
+            final preview = entry.value;
             return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: InkWell(
-                onTap: listId == null
-                    ? null
-                    : () => context.push('/list/$listId'),
-                borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
-                child: Container(
-                  width: double.infinity,
-                  padding: SpotDetailUi.detailCardPadding,
-                  decoration: BoxDecoration(
-                    color: colors.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(
-                      SpotDetailUi.surfaceRadius,
-                    ),
-                    border: SpotDetailUi.outlineBorder(colors),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.list, color: colors.primary, size: 22),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              list.name,
-                              style: Theme.of(context).textTheme.titleSmall,
-                            ),
-                            Text(
-                              '${list.visibility.label} · ${list.spotCount} spots',
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: colors.onSurface.withValues(
-                                      alpha: 0.65,
-                                    ),
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (listId != null)
-                        Icon(
-                          Icons.chevron_right,
-                          color: colors.onSurface.withValues(alpha: 0.5),
-                        ),
-                    ],
-                  ),
-                ),
+              padding: EdgeInsets.only(
+                top: index > 0 ? SpotDetailUi.detailSubsectionGap : 0,
               ),
+              child: _EventSpotListCard(preview: preview, l10n: l10n),
             );
           }).toList(),
         );
       },
+    );
+  }
+}
+
+class _EventSpotListCard extends StatelessWidget {
+  const _EventSpotListCard({required this.preview, required this.l10n});
+
+  final _EventSpotListPreview preview;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final list = preview.list;
+    final listId = list.id;
+    final description = list.description?.trim();
+    final remainingSpots = preview.totalSpotCount - preview.previewSpots.length;
+
+    return Container(
+      width: double.infinity,
+      padding: SpotDetailUi.detailCardPadding,
+      decoration: BoxDecoration(
+        color: colors.primaryContainer.withValues(alpha: 0.22),
+        borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
+        border: Border.all(color: colors.primary.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.map_outlined, color: colors.primary, size: 24),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      list.name,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      l10n.exploreSpotCountShort(preview.totalSpotCount),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colors.onSurface.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (description != null && description.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              description,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: colors.onSurface.withValues(alpha: 0.8),
+                height: 1.4,
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+          if (preview.previewSpots.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            ...preview.previewSpots.map(
+              (spot) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.place_outlined,
+                      size: 16,
+                      color: colors.primary.withValues(alpha: 0.85),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        spot.name,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (remainingSpots > 0)
+              Padding(
+                padding: const EdgeInsets.only(left: 24, top: 2),
+                child: Text(
+                  l10n.eventDetailEventSpotListMoreSpots(remainingSpots),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colors.onSurface.withValues(alpha: 0.65),
+                  ),
+                ),
+              ),
+          ],
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              if (listId != null)
+                FilledButton.tonalIcon(
+                  onPressed: () => context.push('/list/$listId'),
+                  icon: const Icon(Icons.list_alt_outlined, size: 18),
+                  label: Text(l10n.eventDetailEventSpotListViewAll),
+                ),
+              if (listId != null)
+                OutlinedButton.icon(
+                  onPressed: () => context.go('/explore?listId=$listId'),
+                  icon: const Icon(Icons.map_outlined, size: 18),
+                  label: Text(l10n.eventDetailEventSpotListSeeOnMap),
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

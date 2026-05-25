@@ -3115,6 +3115,24 @@ class AppLocalizationsPt extends AppLocalizations {
       'Nenhuma lista de spots ligada encontrada.';
 
   @override
+  String get eventDetailEventSpotsLabel => 'Spots deste evento';
+
+  @override
+  String get eventDetailNoEventSpots =>
+      'Lista de spots do evento não encontrada.';
+
+  @override
+  String get eventDetailEventSpotListViewAll => 'Ver lista de spots';
+
+  @override
+  String get eventDetailEventSpotListSeeOnMap => 'Ver no mapa';
+
+  @override
+  String eventDetailEventSpotListMoreSpots(int count) {
+    return '+ $count mais';
+  }
+
+  @override
   String get adminEventEditTitle => 'Editar evento';
 
   @override
