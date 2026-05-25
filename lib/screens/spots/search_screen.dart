@@ -141,11 +141,14 @@ class _AutocompleteOverlayContentState
                 final option = optionsList[index];
                 final optionType = option['optionType'] as String? ?? 'place';
                 final isSpotSuggestion = optionType == 'spot';
+                final isEventSuggestion = optionType == 'event';
                 final description = option['description'] as String? ?? '';
                 final secondary = option['secondary'] as String?;
                 final isSelected = currentSelection == index;
                 final leadingIcon = isSpotSuggestion
                     ? (isSelected ? Icons.place : Icons.place_outlined)
+                    : isEventSuggestion
+                    ? (isSelected ? Icons.event : Icons.event_outlined)
                     : (isSelected ? Icons.public : Icons.public_outlined);
 
                 return Container(
@@ -858,6 +861,29 @@ class SearchScreenState extends State<SearchScreen>
     return '${spot.latitude.toStringAsFixed(4)}, ${spot.longitude.toStringAsFixed(4)}';
   }
 
+  String _formatEventSuggestionLocation(Map<String, dynamic> event) {
+    final city = (event['city'] as String?)?.trim();
+    final trimmedCountryCode = (event['countryCode'] as String?)?.trim();
+    final countryCode =
+        trimmedCountryCode != null && trimmedCountryCode.isNotEmpty
+        ? trimmedCountryCode.toUpperCase()
+        : null;
+
+    if (city != null &&
+        city.isNotEmpty &&
+        countryCode != null &&
+        countryCode.isNotEmpty) {
+      return '$city, $countryCode';
+    }
+    if (city != null && city.isNotEmpty) {
+      return city;
+    }
+    if (countryCode != null && countryCode.isNotEmpty) {
+      return countryCode;
+    }
+    return '';
+  }
+
   Future<void> _selectSpotSuggestion(Map<String, dynamic> suggestion) async {
     final spot = suggestion['spot'];
     if (spot is! Spot) return;
@@ -884,6 +910,29 @@ class SearchScreenState extends State<SearchScreen>
     }
   }
 
+  Future<void> _selectEventSuggestion(Map<String, dynamic> suggestion) async {
+    final eventId = suggestion['eventId'] as String?;
+    if (eventId == null || eventId.isEmpty) return;
+
+    final description = suggestion['description'] as String? ?? '';
+    final controllerToUpdate = _autocompleteController ?? _searchController;
+    setState(() {
+      controllerToUpdate.text = description;
+      controllerToUpdate.selection = TextSelection.fromPosition(
+        TextPosition(offset: controllerToUpdate.text.length),
+      );
+      _searchQuery = description;
+      _isSearchingLocation = false;
+    });
+
+    if (_autocompleteFocusNode != null && _autocompleteFocusNode!.hasFocus) {
+      _autocompleteFocusNode!.unfocus();
+    }
+
+    _lastAutocompleteSpotSelection = DateTime.now();
+    await _locateEventById(eventId);
+  }
+
   /// Load full spot details in background and update the card when available.
   void _loadFullSpotInBackground(String spotId) {
     _spotServiceRef ??= Provider.of<SpotService>(context, listen: false);
@@ -903,10 +952,14 @@ class SearchScreenState extends State<SearchScreen>
       await _selectSpotSuggestion(option);
       return;
     }
+    if (optionType == 'event') {
+      await _selectEventSuggestion(option);
+      return;
+    }
     await _selectPlaceSuggestion(option);
   }
 
-  /// Fetches autocomplete options from both geocoding and spot search (Future.wait).
+  /// Fetches autocomplete options from geocoding, spot search, and event search.
   Future<List<Map<String, dynamic>>> _buildAutocompleteOptions(
     String query,
   ) async {
@@ -931,6 +984,10 @@ class SearchScreenState extends State<SearchScreen>
     try {
       final geocoding = Provider.of<GeocodingService>(context, listen: false);
       final spotService = Provider.of<SpotService>(context, listen: false);
+      final eventsService = Provider.of<AdminEventsService>(
+        context,
+        listen: false,
+      );
       final shouldSearchSpotTitles = trimmedQuery.length >= 2;
 
       final results = await Future.wait([
@@ -944,12 +1001,16 @@ class SearchScreenState extends State<SearchScreen>
         shouldSearchSpotTitles
             ? spotService.searchSpotsByTitle(query: trimmedQuery, limit: 6)
             : Future.value(<Spot>[]),
+        shouldSearchSpotTitles
+            ? eventsService.searchEventsByTitle(query: trimmedQuery, limit: 6)
+            : Future.value(<Map<String, dynamic>>[]),
       ]);
 
       if (!mounted) return [];
 
       final locationSuggestions = results[0] as List<Map<String, dynamic>>;
       final matchingSpots = results[1] as List<Spot>;
+      final matchingEvents = results[2] as List<Map<String, dynamic>>;
 
       final combinedOptions = <Map<String, dynamic>>[
         ...locationSuggestions.map(
@@ -964,6 +1025,19 @@ class SearchScreenState extends State<SearchScreen>
           'description': spot.name,
           'secondary': _formatSpotSuggestionLocation(spot),
           'spot': spot,
+        });
+      }
+
+      for (final event in matchingEvents) {
+        final eventId = event['id'] as String?;
+        final title = (event['title'] as String?)?.trim() ?? '';
+        if (eventId == null || eventId.isEmpty || title.isEmpty) continue;
+        final secondary = _formatEventSuggestionLocation(event);
+        combinedOptions.add({
+          'optionType': 'event',
+          'description': title,
+          if (secondary.isNotEmpty) 'secondary': secondary,
+          'eventId': eventId,
         });
       }
 
@@ -2408,8 +2482,9 @@ class SearchScreenState extends State<SearchScreen>
         context,
         listen: false,
       );
-      final linkedEventFuture =
-          eventsService.getNextUpcomingEventForSpotList(listId);
+      final linkedEventFuture = eventsService.getNextUpcomingEventForSpotList(
+        listId,
+      );
 
       setState(() {
         _selectedList = list;
@@ -2976,8 +3051,7 @@ class SearchScreenState extends State<SearchScreen>
                   mainAxisSpacing: 12,
                 ),
                 delegate: SliverChildBuilderDelegate(
-                  (context, index) =>
-                      _buildEventCard(groups[i].events[index]),
+                  (context, index) => _buildEventCard(groups[i].events[index]),
                   childCount: groups[i].events.length,
                 ),
               ),
@@ -2988,7 +3062,15 @@ class SearchScreenState extends State<SearchScreen>
       );
     }
 
-    final entries = <({bool isHeader, DateTime? monthStart, bool isFirst, EventMapPin? pin})>[];
+    final entries =
+        <
+          ({
+            bool isHeader,
+            DateTime? monthStart,
+            bool isFirst,
+            EventMapPin? pin,
+          })
+        >[];
     for (var i = 0; i < groups.length; i++) {
       final group = groups[i];
       entries.add((

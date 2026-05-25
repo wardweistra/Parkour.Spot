@@ -69,14 +69,25 @@ function cleanUndefinedValues(obj) {
 }
 
 /**
- * Builds unique search words from spot name: split, lowercase, remove punctuation
- * and stop words. Full words only (no prefixes) - used for spotSearchTerms collection.
- * @param {string} name - Spot name
+ * Builds unique search words from one or more text fields: split, lowercase,
+ * remove punctuation and stop words. Full words only (no prefixes).
+ * Used for spot/event search term collections.
+ * @param {...(string|Array<string>)} values - Text values to index.
  * @return {string[]}
  */
-function buildSpotSearchWords(name) {
-  if (!name || typeof name !== "string") return [];
-  const normalized = name
+function buildSpotSearchWords(...values) {
+  if (!Array.isArray(values) || values.length === 0) return [];
+  const normalizedInput = values
+      .flatMap((value) => {
+        if (Array.isArray(value)) return value;
+        return [value];
+      })
+      .filter((value) => typeof value === "string")
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0)
+      .join(" ");
+  if (!normalizedInput) return [];
+  const normalized = normalizedInput
       .replace(/[\s\p{P}\p{S}]/gu, " ")
       .split(/\s+/)
       .map((w) => w.toLowerCase().replace(/[^\p{L}\p{N}]/gu, ""))

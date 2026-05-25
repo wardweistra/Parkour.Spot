@@ -40,6 +40,12 @@ describe("buildSpotSearchWords", () => {
     expect(buildSpotSearchWords("")).toEqual([]);
     expect(buildSpotSearchWords(null)).toEqual([]);
   });
+  it("indexes words across multiple text fields", () => {
+    const words = buildSpotSearchWords("Mauer Park", "Berlin");
+    expect(words).toContain("mauer");
+    expect(words).toContain("park");
+    expect(words).toContain("berlin");
+  });
 });
 
 describe("normalizeStringArray", () => {

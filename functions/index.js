@@ -93,6 +93,7 @@ const {
   buildDescription,
   getSearchQueryTokens,
   spotSearchTermDocId,
+  eventSearchTermDocId,
   cleanDescription,
   extractYoutubeVideoIdsFromDescription,
   extractImageUrls,
@@ -113,6 +114,7 @@ const {
   deleteEventMapPins,
   materializeEventMapPins,
   rematerializeEventsForSpotList,
+  isEventPast,
 } = require("./lib/event-map-pins");
 const {executeEventsInBoundsQuery} = require("./lib/events-in-bounds");
 
@@ -1280,7 +1282,8 @@ exports.onSpotCreated = onDocumentCreated(
       const spotId = event.params.spotId;
       const spotData = event.data.data();
       const name = typeof spotData?.name === "string" ? spotData.name : "";
-      const words = buildSpotSearchWords(name);
+      const city = typeof spotData?.city === "string" ? spotData.city : "";
+      const words = buildSpotSearchWords(name, city);
       if (words.length > 0) {
         const batch = db.batch();
         for (const term of words) {
@@ -1401,14 +1404,16 @@ exports.onSpotUpdated = onDocumentUpdated(
 
       const nameBefore = typeof beforeData?.name === "string" ? beforeData.name : "";
       const nameAfter = typeof afterData?.name === "string" ? afterData.name : "";
-      if (nameBefore === nameAfter) return;
+      const cityBefore = typeof beforeData?.city === "string" ? beforeData.city : "";
+      const cityAfter = typeof afterData?.city === "string" ? afterData.city : "";
+      if (nameBefore === nameAfter && cityBefore === cityAfter) return;
       const termsSnapshot = await db.collection("spotSearchTerms")
           .where("spotId", "==", spotId)
           .get();
       const batch = db.batch();
       termsSnapshot.docs.forEach((doc) => batch.delete(doc.ref));
       if (termsSnapshot.size > 0) await batch.commit();
-      const words = buildSpotSearchWords(nameAfter);
+      const words = buildSpotSearchWords(nameAfter, cityAfter);
       if (words.length === 0) return;
       const writeBatch = db.batch();
       for (const term of words) {
@@ -1435,6 +1440,60 @@ exports.onSpotDeleted = onDocumentDeleted(
       console.log("Removed spot search terms:", {spotId, count: termsSnapshot.size});
     },
 );
+
+/**
+ * Build event autocomplete index terms from title + city.
+ * @param {Object} eventData
+ * @return {string[]}
+ */
+function buildEventSearchWords(eventData) {
+  const title = typeof eventData?.title === "string" ? eventData.title : "";
+  const city = typeof eventData?.city === "string" ? eventData.city : "";
+  return buildSpotSearchWords(title, city);
+}
+
+/**
+ * Replace event search terms for a single event.
+ * @param {string} eventId
+ * @param {Object} eventData
+ * @return {Promise<number>} Number of terms written
+ */
+async function replaceEventSearchTerms(eventId, eventData) {
+  const termsSnapshot = await db.collection("eventSearchTerms")
+      .where("eventId", "==", eventId)
+      .get();
+  if (!termsSnapshot.empty) {
+    const deleteBatch = db.batch();
+    termsSnapshot.docs.forEach((doc) => deleteBatch.delete(doc.ref));
+    await deleteBatch.commit();
+  }
+
+  const terms = buildEventSearchWords(eventData);
+  if (terms.length === 0) return 0;
+  const writeBatch = db.batch();
+  for (const term of terms) {
+    const ref = db.collection("eventSearchTerms").doc(eventSearchTermDocId(eventId, term));
+    writeBatch.set(ref, {term, eventId});
+  }
+  await writeBatch.commit();
+  return terms.length;
+}
+
+/**
+ * Remove all event search terms for a single event.
+ * @param {string} eventId
+ * @return {Promise<number>} Number of terms deleted
+ */
+async function removeEventSearchTerms(eventId) {
+  const termsSnapshot = await db.collection("eventSearchTerms")
+      .where("eventId", "==", eventId)
+      .get();
+  if (termsSnapshot.empty) return 0;
+  const batch = db.batch();
+  termsSnapshot.docs.forEach((doc) => batch.delete(doc.ref));
+  await batch.commit();
+  return termsSnapshot.size;
+}
 
 
 /**
@@ -4856,10 +4915,19 @@ exports.onEventWritten = onDocumentWritten(
       const eventId = event.params.eventId;
       try {
         if (!event.data || !event.data.after.exists) {
+          const removedCount = await removeEventSearchTerms(eventId);
           await deleteEventMapPins(db, eventId);
+          console.log("Removed event search terms:", {eventId, count: removedCount});
           return;
         }
-        await materializeEventMapPins(db, eventId, event.data.after.data() || {});
+        const eventData = event.data.after.data() || {};
+        const termsWritten = await replaceEventSearchTerms(eventId, eventData);
+        await materializeEventMapPins(db, eventId, eventData);
+        console.log("Indexed event search terms:", {
+          eventId,
+          title: typeof eventData.title === "string" ? eventData.title.slice(0, 40) : "",
+          termsWritten,
+        });
       } catch (err) {
         console.error("onEventWritten error", {eventId, err});
         throw err;
@@ -5990,7 +6058,8 @@ exports.backfillSpotNameLower = onCall(
           for (const doc of snapshot.docs) {
             const data = doc.data();
             const name = typeof data.name === "string" ? data.name.trim() : "";
-            const words = buildSpotSearchWords(name);
+            const city = typeof data.city === "string" ? data.city.trim() : "";
+            const words = buildSpotSearchWords(name, city);
             for (const term of words) {
               if (termsCount >= BATCH_LIMIT) {
                 await termsBatch.commit();
@@ -6017,6 +6086,65 @@ exports.backfillSpotNameLower = onCall(
       } catch (error) {
         console.error("Error in backfillSpotNameLower:", error);
         throw new Error(`Failed to backfill: ${error.message}`);
+      }
+    },
+);
+
+// One-time backfill: populate eventSearchTerms for all existing events.
+// Admin only.
+exports.backfillEventSearchTerms = onCall(
+    {region: "europe-west1", memory: "256MiB", timeoutSeconds: 540},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const BATCH_SIZE = 250;
+        let lastDoc = null;
+        let totalProcessed = 0;
+        let searchTermsWritten = 0;
+        let hasMore = true;
+        while (hasMore) {
+          let query = db.collection("events").limit(BATCH_SIZE);
+          if (lastDoc) {
+            query = query.startAfter(lastDoc);
+          }
+          const snapshot = await query.get();
+          if (snapshot.empty) {
+            hasMore = false;
+            break;
+          }
+          let termsBatch = db.batch();
+          let termsCount = 0;
+          const BATCH_LIMIT = 450;
+          for (const doc of snapshot.docs) {
+            const data = doc.data();
+            const words = buildEventSearchWords(data);
+            for (const term of words) {
+              if (termsCount >= BATCH_LIMIT) {
+                await termsBatch.commit();
+                termsBatch = db.batch();
+                termsCount = 0;
+              }
+              const ref = db.collection("eventSearchTerms")
+                  .doc(eventSearchTermDocId(doc.id, term));
+              termsBatch.set(ref, {term, eventId: doc.id});
+              termsCount++;
+              searchTermsWritten++;
+            }
+          }
+          if (termsCount > 0) await termsBatch.commit();
+          totalProcessed += snapshot.size;
+          lastDoc = snapshot.docs[snapshot.docs.length - 1];
+          hasMore = snapshot.size === BATCH_SIZE;
+          console.log(`Event terms backfill: ${totalProcessed} events, ${searchTermsWritten} terms`);
+        }
+        return {
+          success: true,
+          message: "Event search terms backfill completed",
+          stats: {totalProcessed, searchTermsWritten},
+        };
+      } catch (error) {
+        console.error("Error in backfillEventSearchTerms:", error);
+        throw new Error(`Failed to backfill event search terms: ${error.message}`);
       }
     },
 );
@@ -6205,6 +6333,108 @@ async function executeSearchSpotsByTitle(params) {
   return {success: true, spots};
 }
 
+/**
+ * Shared search-by-title logic for events autocomplete.
+ * @param {Object} params - Params object.
+ * @param {string} params.query - Search query.
+ * @param {number=} params.limit - Max results (default 20).
+ * @return {Promise<Object>}
+ */
+async function executeSearchEventsByTitle(params) {
+  const {query, limit = 20} = params || {};
+  if (!query || typeof query !== "string") {
+    return {success: false, error: "query is required"};
+  }
+
+  const tokens = getSearchQueryTokens(query);
+  if (tokens.length === 0) {
+    return {success: true, events: []};
+  }
+
+  const parsedLimit = Number(limit);
+  const maxResults = Number.isFinite(parsedLimit) ?
+    Math.max(1, Math.min(Math.floor(parsedLimit), 100)) :
+    20;
+
+  const eventIdToMatchCount = new Map();
+  for (const token of tokens) {
+    const queryEnd = token + "\uf8ff";
+    const termsSnapshot = await db.collection("eventSearchTerms")
+        .where("term", ">=", token)
+        .where("term", "<", queryEnd)
+        .limit(200)
+        .get();
+    termsSnapshot.docs.forEach((doc) => {
+      const eventId = doc.data().eventId;
+      if (!eventId) return;
+      const prev = eventIdToMatchCount.get(eventId) || 0;
+      eventIdToMatchCount.set(eventId, prev + 1);
+    });
+  }
+
+  let eventIds;
+  const eventsWithAll = [...eventIdToMatchCount.entries()]
+      .filter(([, count]) => count === tokens.length)
+      .map(([id]) => id);
+  if (eventsWithAll.length > 0) {
+    eventIds = eventsWithAll;
+  } else {
+    eventIds = [...eventIdToMatchCount.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([id]) => id);
+  }
+
+  if (eventIds.length === 0) {
+    return {success: true, events: []};
+  }
+
+  const eventsToFetch = eventIds.slice(0, 80);
+  const eventRefs = eventsToFetch.map((id) => db.collection("events").doc(id));
+  const eventDocs = await db.getAll(...eventRefs);
+  const matches = [];
+  eventDocs.forEach((doc) => {
+    if (!doc.exists) return;
+    const data = doc.data();
+    if (data.duplicateOf) return;
+    if (isEventPast(data)) return;
+    const title = typeof data.title === "string" ? data.title.trim() : "";
+    if (!title) return;
+    const city = typeof data.city === "string" ? data.city.trim() : null;
+    const countryCode = typeof data.countryCode === "string" ?
+      data.countryCode.trim().toUpperCase() :
+      null;
+    const startAtDate = data.startAt &&
+      typeof data.startAt.toDate === "function" ?
+      data.startAt.toDate() :
+      null;
+    const startAt = formatDateToISO(data.startAt) || null;
+    matches.push({
+      id: doc.id,
+      title,
+      city,
+      countryCode,
+      startAt,
+      startAtMillis: startAtDate ? startAtDate.getTime() : Number.MAX_SAFE_INTEGER,
+      matchCount: eventIdToMatchCount.get(doc.id) || 0,
+    });
+  });
+
+  matches.sort((a, b) => {
+    if (a.matchCount !== b.matchCount) return b.matchCount - a.matchCount;
+    if (a.startAtMillis !== b.startAtMillis) return a.startAtMillis - b.startAtMillis;
+    return String(a.title).localeCompare(String(b.title));
+  });
+
+  const events = matches.slice(0, maxResults).map((event) => ({
+    id: event.id,
+    title: event.title,
+    city: event.city,
+    countryCode: event.countryCode,
+    startAt: event.startAt,
+  }));
+  return {success: true, events};
+}
+
 // Spot title search for Explore autocomplete.
 // Multi-word: query each token, intersect results. Rank by match count, then spot ranking.
 exports.searchSpotsByTitle = onCall(
@@ -6226,6 +6456,21 @@ exports.searchSpotsByTitle = onCall(
         return {success: true, spots};
       } catch (error) {
         console.error("Error in searchSpotsByTitle:", error);
+        return {success: false, error: error.message};
+      }
+    },
+);
+
+// Event title + city search for Explore autocomplete.
+exports.searchEventsByTitle = onCall(
+    {region: "europe-west1", memory: "256MiB", timeoutSeconds: 10},
+    async (request) => {
+      try {
+        const result = await executeSearchEventsByTitle(request.data || {});
+        if (!result.success) return {success: false, error: result.error};
+        return {success: true, events: result.events || []};
+      } catch (error) {
+        console.error("Error in searchEventsByTitle:", error);
         return {success: false, error: error.message};
       }
     },
