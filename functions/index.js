@@ -4138,6 +4138,8 @@ async function buildExternalEventCreateData(parsedEvent, options = {}) {
   if (parsedEvent.websiteUrl) createData.websiteUrl = parsedEvent.websiteUrl;
   if (parsedEvent.address) createData.address = parsedEvent.address;
   if (parsedEvent.endAt) createData.endAt = parsedEvent.endAt;
+  if (parsedEvent.isDateOnly === true) createData.isDateOnly = true;
+  if (parsedEvent.timeZone) createData.timeZone = parsedEvent.timeZone;
   if (parsedEvent.externalEventRecurrenceId) {
     createData.externalEventRecurrenceId = parsedEvent.externalEventRecurrenceId;
   }
@@ -4195,6 +4197,16 @@ async function buildExternalEventChangedUpdate(
   updateData.endAt = parsedEvent.endAt || FieldValue.delete();
   updateData.externalEventRecurrenceId =
     parsedEvent.externalEventRecurrenceId || FieldValue.delete();
+  if (parsedEvent.isDateOnly === true) {
+    updateData.isDateOnly = true;
+  } else {
+    updateData.isDateOnly = FieldValue.delete();
+  }
+  if (parsedEvent.timeZone) {
+    updateData.timeZone = parsedEvent.timeZone;
+  } else {
+    updateData.timeZone = FieldValue.delete();
+  }
 
   const addressChanged = hasExternalEventAddressChanged(
       existingData,

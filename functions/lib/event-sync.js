@@ -74,6 +74,296 @@ function nullableStringEqual(left, right) {
 }
 
 /**
+ * @param {string} timeZone
+ * @return {boolean}
+ */
+function isValidIanaTimeZone(timeZone) {
+  try {
+    // eslint-disable-next-line new-cap
+    Intl.DateTimeFormat(undefined, {timeZone});
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+/**
+ * @param {*} raw
+ * @return {string|null}
+ */
+function normalizeImportedTimeZone(raw) {
+  const trimmed = toNonEmptyString(raw);
+  if (!trimmed) return null;
+  if (trimmed === "Etc/UTC" || trimmed === "UTC") return null;
+  return isValidIanaTimeZone(trimmed) ? trimmed : null;
+}
+
+/**
+ * @param {Object} parsedCalendar
+ * @return {string|null}
+ */
+function extractCalendarTimeZone(parsedCalendar) {
+  for (const value of Object.values(parsedCalendar)) {
+    if (!value || value.type !== "VCALENDAR") continue;
+    const fromWr = normalizeImportedTimeZone(value["WR-TIMEZONE"]);
+    if (fromWr) return fromWr;
+  }
+  return null;
+}
+
+/**
+ * Unfolds RFC 5545 line continuations (leading space/tab).
+ * @param {string} block
+ * @return {string}
+ */
+function unfoldIcsBlock(block) {
+  return block.replace(/\r\n/g, "\n").replace(/\n[ \t]/g, "");
+}
+
+/**
+ * @param {string} icsText
+ * @return {Map<string, string>}
+ */
+function buildUidToIcsBlockMap(icsText) {
+  const map = new Map();
+  const normalized = icsText.replace(/\r\n/g, "\n");
+  const re = /BEGIN:VEVENT\n([\s\S]*?)END:VEVENT/g;
+  let match;
+  while ((match = re.exec(normalized)) !== null) {
+    const block = unfoldIcsBlock(match[1]);
+    const uidMatch = /^UID:(.+)$/m.exec(block);
+    if (!uidMatch) continue;
+    const uid = uidMatch[1].trim();
+    if (uid.length > 0) map.set(uid, block);
+  }
+  return map;
+}
+
+/**
+ * @param {string} ymd - YYYYMMDD
+ * @return {{year: number, month: number, day: number}|null}
+ */
+function parseYmd(ymd) {
+  if (!/^\d{8}$/.test(ymd)) return null;
+  const year = Number(ymd.slice(0, 4));
+  const month = Number(ymd.slice(4, 6));
+  const day = Number(ymd.slice(6, 8));
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  return {year, month, day};
+}
+
+/**
+ * @param {string} icsBlock
+ * @return {Object|null}
+ */
+function extractValueDatesFromIcsBlock(icsBlock) {
+  const startMatch =
+    /^DTSTART(?:;[^:\r\n]*)?:(\d{8})/m.exec(icsBlock);
+  if (!startMatch) return null;
+  const startYmd = startMatch[1];
+  const endMatch = /^DTEND(?:;[^:\r\n]*)?:(\d{8})/m.exec(icsBlock);
+  return {
+    startYmd,
+    endYmdExclusive: endMatch ? endMatch[1] : null,
+  };
+}
+
+/**
+ * @param {number} utcMs
+ * @param {string} timeZone
+ * @return {Object}
+ */
+function getZonedWallClock(utcMs, timeZone) {
+  // eslint-disable-next-line new-cap
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+  /** @type {Record<string, string>} */
+  const parts = {};
+  for (const part of formatter.formatToParts(new Date(utcMs))) {
+    if (part.type !== "literal") parts[part.type] = part.value;
+  }
+  return {
+    year: Number(parts.year),
+    month: Number(parts.month),
+    day: Number(parts.day),
+    hour: Number(parts.hour),
+    minute: Number(parts.minute),
+    second: Number(parts.second),
+  };
+}
+
+/**
+ * Wall-clock in [timeZone] to UTC (mirrors Dart localDateTimeToUtc).
+ * @param {number} year
+ * @param {number} month
+ * @param {number} day
+ * @param {number} hour
+ * @param {number} minute
+ * @param {number} second
+ * @param {number} millisecond
+ * @param {string} timeZone
+ * @return {Date}
+ */
+function localDateTimeToUtc(
+    year,
+    month,
+    day,
+    hour,
+    minute,
+    second,
+    millisecond,
+    timeZone,
+) {
+  const targetMs = Date.UTC(
+      year,
+      month - 1,
+      day,
+      hour,
+      minute,
+      second,
+      millisecond,
+  );
+  let utcMs = targetMs;
+  for (let i = 0; i < 6; i++) {
+    const wall = getZonedWallClock(utcMs, timeZone);
+    const wallMs = Date.UTC(
+        wall.year,
+        wall.month - 1,
+        wall.day,
+        wall.hour,
+        wall.minute,
+        wall.second,
+        0,
+    );
+    const diff = targetMs - wallMs;
+    if (diff === 0) break;
+    utcMs += diff;
+  }
+  return new Date(utcMs);
+}
+
+/**
+ * @param {number} year
+ * @param {number} month
+ * @param {number} day
+ * @param {string} timeZone
+ * @return {Date}
+ */
+function dateStartToUtc(year, month, day, timeZone) {
+  return localDateTimeToUtc(year, month, day, 0, 0, 0, 0, timeZone);
+}
+
+/**
+ * @param {number} year
+ * @param {number} month
+ * @param {number} day
+ * @param {string} timeZone
+ * @return {Date}
+ */
+function dateEndToUtc(year, month, day, timeZone) {
+  const nextDay = new Date(Date.UTC(year, month - 1, day));
+  nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+  const startOfNextDay = dateStartToUtc(
+      nextDay.getUTCFullYear(),
+      nextDay.getUTCMonth() + 1,
+      nextDay.getUTCDate(),
+      timeZone,
+  );
+  return new Date(startOfNextDay.getTime() - 1);
+}
+
+/**
+ * @param {{year: number, month: number, day: number}} ymd
+ * @return {{year: number, month: number, day: number}}
+ */
+function subtractOneCalendarDay(ymd) {
+  const date = new Date(Date.UTC(ymd.year, ymd.month - 1, ymd.day));
+  date.setUTCDate(date.getUTCDate() - 1);
+  return {
+    year: date.getUTCFullYear(),
+    month: date.getUTCMonth() + 1,
+    day: date.getUTCDate(),
+  };
+}
+
+/**
+ * @param {string} endYmdExclusive - YYYYMMDD (ICS exclusive DTEND)
+ * @return {{year: number, month: number, day: number}|null}
+ */
+function endInclusiveFromExclusive(endYmdExclusive) {
+  const parsed = parseYmd(endYmdExclusive);
+  if (!parsed) return null;
+  return subtractOneCalendarDay(parsed);
+}
+
+/**
+ * @param {string} icsBlock
+ * @param {string} calendarTimeZone
+ * @return {Object|null}
+ */
+function normalizeAllDaySchedule(icsBlock, calendarTimeZone) {
+  const dates = extractValueDatesFromIcsBlock(icsBlock);
+  if (!dates) return null;
+  const startParts = parseYmd(dates.startYmd);
+  if (!startParts) return null;
+
+  const startAt = dateStartToUtc(
+      startParts.year,
+      startParts.month,
+      startParts.day,
+      calendarTimeZone,
+  );
+
+  let endAt = null;
+  if (dates.endYmdExclusive) {
+    const endInclusive = endInclusiveFromExclusive(dates.endYmdExclusive);
+    if (endInclusive) {
+      endAt = dateEndToUtc(
+          endInclusive.year,
+          endInclusive.month,
+          endInclusive.day,
+          calendarTimeZone,
+      );
+    }
+  }
+
+  return {
+    startAt,
+    endAt,
+    isDateOnly: true,
+    timeZone: calendarTimeZone,
+  };
+}
+
+/**
+ * @param {*} value
+ * @return {string|null}
+ */
+function extractEventTimeZoneFromNodeIcal(value) {
+  const start = value && value.start;
+  if (!start || typeof start !== "object") return null;
+  const tz = start.tz;
+  if (typeof tz === "string") return normalizeImportedTimeZone(tz);
+  return null;
+}
+
+/**
+ * @param {*} data
+ * @return {boolean}
+ */
+function normalizeIsDateOnly(data) {
+  return data && data.isDateOnly === true;
+}
+
+/**
  * Compares a stored Firestore timestamp-like field against a Date value.
  * @param {*} storedValue
  * @param {Date|null} incomingDate
@@ -250,6 +540,14 @@ function hasExternalEventContentChanges(existingData, incomingData) {
   ) {
     return true;
   }
+  if (
+    normalizeIsDateOnly(existingData) !== normalizeIsDateOnly(incomingData)
+  ) {
+    return true;
+  }
+  if (!nullableStringEqual(existingData.timeZone, incomingData.timeZone)) {
+    return true;
+  }
   return false;
 }
 
@@ -312,6 +610,8 @@ function shouldGeocodeExternalEventAddress(existingData, incomingData) {
 function parseExternalEventsFromIcs(icsText, {sourceId, sourceName}) {
   const parsedCalendar = ical.sync.parseICS(icsText);
   const parsedEvents = [];
+  const calendarTimeZone = extractCalendarTimeZone(parsedCalendar);
+  const uidToIcsBlock = buildUidToIcsBlockMap(icsText);
 
   for (const value of Object.values(parsedCalendar)) {
     if (!value || value.type !== "VEVENT") continue;
@@ -319,7 +619,47 @@ function parseExternalEventsFromIcs(icsText, {sourceId, sourceName}) {
     const uid = toNonEmptyString(value.uid);
     if (!uid) continue;
 
-    const startAt = normalizeDate(value.start);
+    const isAllDay = value.datetype === "date";
+    let startAt = null;
+    let endAt = null;
+    let isDateOnly = false;
+    let timeZone = null;
+
+    if (isAllDay) {
+      if (!calendarTimeZone) {
+        console.warn(
+            `Skipping all-day ICS event "${value.summary || uid}": ` +
+            "calendar has no valid X-WR-TIMEZONE",
+        );
+        continue;
+      }
+      const icsBlock = uidToIcsBlock.get(uid);
+      if (!icsBlock) {
+        console.warn(
+            `Skipping all-day ICS event "${value.summary || uid}": ` +
+            "VEVENT block not found in raw ICS",
+        );
+        continue;
+      }
+      const schedule = normalizeAllDaySchedule(icsBlock, calendarTimeZone);
+      if (!schedule) {
+        console.warn(
+            `Skipping all-day ICS event "${value.summary || uid}": ` +
+            "could not parse VALUE=DATE bounds",
+        );
+        continue;
+      }
+      startAt = schedule.startAt;
+      endAt = schedule.endAt;
+      isDateOnly = schedule.isDateOnly;
+      timeZone = schedule.timeZone;
+    } else {
+      startAt = normalizeDate(value.start);
+      endAt = normalizeDate(value.end);
+      isDateOnly = false;
+      timeZone = extractEventTimeZoneFromNodeIcal(value);
+    }
+
     if (!startAt) continue;
 
     const recurrenceId = normalizeRecurrenceId(value.recurrenceid);
@@ -341,19 +681,22 @@ function parseExternalEventsFromIcs(icsText, {sourceId, sourceName}) {
             lastUrlInDescription,
         );
 
-    parsedEvents.push({
+    const eventPayload = {
       title: toNonEmptyString(value.summary) || "Untitled event",
       description: toNonEmptyString(descriptionAfterUrlRemoval),
       websiteUrl,
       address: toNonEmptyString(value.location),
       startAt,
-      endAt: normalizeDate(value.end),
+      endAt,
+      isDateOnly,
       eventSourceId: sourceId,
       eventSourceName: sourceName,
       externalEventUid: uid,
       externalEventRecurrenceId: recurrenceId,
       externalEventKey: buildExternalEventKey(uid, recurrenceId),
-    });
+    };
+    if (timeZone) eventPayload.timeZone = timeZone;
+    parsedEvents.push(eventPayload);
   }
 
   return parsedEvents;
@@ -361,10 +704,16 @@ function parseExternalEventsFromIcs(icsText, {sourceId, sourceName}) {
 
 module.exports = {
   buildExternalEventKey,
+  buildUidToIcsBlockMap,
+  dateEndToUtc,
+  dateStartToUtc,
   extractLastHttpUrlFromDescription,
+  extractValueDatesFromIcsBlock,
   hasExternalEventAddressChanged,
   hasExternalEventContentChanges,
+  normalizeAllDaySchedule,
   normalizeImportedEventDescription,
+  normalizeImportedTimeZone,
   parseExternalEventsFromIcs,
   normalizeRecurrenceId,
   removeExtractedWebsiteUrlFromDescription,

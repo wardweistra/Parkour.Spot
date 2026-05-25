@@ -1,9 +1,12 @@
 const {
   buildExternalEventKey,
+  dateEndToUtc,
+  dateStartToUtc,
   extractLastHttpUrlFromDescription,
   hasExternalEventAddressChanged,
   hasExternalEventContentChanges,
   normalizeImportedEventDescription,
+  normalizeImportedTimeZone,
   parseExternalEventsFromIcs,
   removeExtractedWebsiteUrlFromDescription,
   shouldGeocodeExternalEventAddress,
@@ -55,6 +58,33 @@ describe("event-sync helpers", () => {
       expect(
           hasExternalEventContentChanges(existing, incomingWithoutDescription),
       ).toBe(false);
+    });
+
+    it("detects isDateOnly changes", () => {
+      const existing = {...incoming, isDateOnly: false};
+      const withAllDay = {...incoming, isDateOnly: true};
+      expect(hasExternalEventContentChanges(existing, withAllDay)).toBe(true);
+    });
+
+    it("detects timeZone changes", () => {
+      const existing = {...incoming};
+      const withZone = {...incoming, timeZone: "America/New_York"};
+      expect(hasExternalEventContentChanges(existing, withZone)).toBe(true);
+    });
+  });
+
+  describe("schedule timezone helpers", () => {
+    it("normalizes imported timezone ids", () => {
+      expect(normalizeImportedTimeZone("Europe/Paris")).toBe("Europe/Paris");
+      expect(normalizeImportedTimeZone("Etc/UTC")).toBeNull();
+      expect(normalizeImportedTimeZone("Invalid/Zone")).toBeNull();
+    });
+
+    it("date start/end match same-day boundaries in America/New_York", () => {
+      const startUtc = dateStartToUtc(2026, 8, 2, "America/New_York");
+      const endUtc = dateEndToUtc(2026, 8, 2, "America/New_York");
+      expect(startUtc.toISOString()).toBe("2026-08-02T04:00:00.000Z");
+      expect(endUtc.toISOString()).toBe("2026-08-03T03:59:59.999Z");
     });
   });
 
@@ -228,6 +258,105 @@ describe("event-sync helpers", () => {
       expect(events).toHaveLength(1);
       expect(events[0].websiteUrl).toBe("https://newer.example/b");
       expect(events[0].description).toBe("Line1\nLine2 old");
+    });
+
+    it("parses VALUE=DATE all-day events with calendar timezone", () => {
+      const icsText = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "X-WR-TIMEZONE:America/New_York",
+        "BEGIN:VEVENT",
+        "UID:national@example.com",
+        "DTSTART;VALUE=DATE:20260626",
+        "DTEND;VALUE=DATE:20260629",
+        "SUMMARY:2026 USPK National Championship",
+        "LOCATION:HUB Parkour Training Center",
+        "END:VEVENT",
+        "END:VCALENDAR",
+      ].join("\r\n");
+
+      const events = parseExternalEventsFromIcs(icsText, {
+        sourceId: "uspk",
+        sourceName: "USPK",
+      });
+
+      expect(events).toHaveLength(1);
+      expect(events[0].isDateOnly).toBe(true);
+      expect(events[0].timeZone).toBe("America/New_York");
+      expect(events[0].startAt.toISOString()).toBe("2026-06-26T04:00:00.000Z");
+      expect(events[0].endAt.toISOString()).toBe("2026-06-29T03:59:59.999Z");
+    });
+
+    it("parses timed UTC events without isDateOnly or timeZone", () => {
+      const icsText = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "X-WR-TIMEZONE:America/New_York",
+        "BEGIN:VEVENT",
+        "UID:timed@example.com",
+        "DTSTART:20260512T180000Z",
+        "DTEND:20260512T200000Z",
+        "SUMMARY:Timed UTC",
+        "END:VEVENT",
+        "END:VCALENDAR",
+      ].join("\r\n");
+
+      const events = parseExternalEventsFromIcs(icsText, {
+        sourceId: "s",
+        sourceName: "S",
+      });
+
+      expect(events).toHaveLength(1);
+      expect(events[0].isDateOnly).toBe(false);
+      expect(events[0].timeZone).toBeUndefined();
+      expect(events[0].startAt.toISOString()).toBe("2026-05-12T18:00:00.000Z");
+      expect(events[0].endAt.toISOString()).toBe("2026-05-12T20:00:00.000Z");
+    });
+
+    it("unfolds folded ICS lines when extracting VALUE=DATE", () => {
+      const icsText = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "X-WR-TIMEZONE:America/New_York",
+        "BEGIN:VEVENT",
+        "UID:folded@example.com",
+        "DTSTART;VALUE=DATE:20250301",
+        "DTEND;VALUE=DATE:20250302",
+        "DESCRIPTION:Long line that folds\r\n next line",
+        "SUMMARY:Folded event",
+        "END:VEVENT",
+        "END:VCALENDAR",
+      ].join("\r\n");
+
+      const events = parseExternalEventsFromIcs(icsText, {
+        sourceId: "s",
+        sourceName: "S",
+      });
+
+      expect(events).toHaveLength(1);
+      expect(events[0].isDateOnly).toBe(true);
+      expect(events[0].startAt.toISOString()).toBe("2025-03-01T05:00:00.000Z");
+    });
+
+    it("skips all-day events when calendar timezone is missing", () => {
+      const icsText = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "BEGIN:VEVENT",
+        "UID:allday@example.com",
+        "DTSTART;VALUE=DATE:20260626",
+        "DTEND;VALUE=DATE:20260627",
+        "SUMMARY:No TZ calendar",
+        "END:VEVENT",
+        "END:VCALENDAR",
+      ].join("\r\n");
+
+      const events = parseExternalEventsFromIcs(icsText, {
+        sourceId: "s",
+        sourceName: "S",
+      });
+
+      expect(events).toHaveLength(0);
     });
   });
 });
