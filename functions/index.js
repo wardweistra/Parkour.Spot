@@ -6112,7 +6112,6 @@ exports.backfillSpotNameLower = onCall(
         let searchTermsDeleted = 0;
         if (purge) {
           searchTermsDeleted = await purgeSearchTermsCollection(db, "spotSearchTerms");
-          console.log("Backfill spotSearchTerms purge:", {searchTermsDeleted});
         }
 
         const BATCH_SIZE = 250;
@@ -6185,7 +6184,6 @@ exports.backfillEventSearchTerms = onCall(
         let searchTermsDeleted = 0;
         if (purge) {
           searchTermsDeleted = await purgeSearchTermsCollection(db, "eventSearchTerms");
-          console.log("Backfill eventSearchTerms purge:", {searchTermsDeleted});
         }
 
         const BATCH_SIZE = 250;
@@ -6355,9 +6353,6 @@ async function executeSearchSpotsByTitle(params) {
 
   const tokens = getSearchQueryTokens(query);
   if (tokens.length === 0) {
-    console.log("searchSpotsByTitle: no tokens after normalization", {
-      query: query.slice(0, 80),
-    });
     return {success: true, spots: []};
   }
 
@@ -6370,55 +6365,27 @@ async function executeSearchSpotsByTitle(params) {
   for (const token of tokens) {
     tokenResults.push(await querySpotIdsForSearchToken(db, token));
   }
-  const tokenQueryStats = tokenResults.map((r) => ({
-    token: r.token,
-    termDocs: r.termDocs,
-    uniqueSpotIds: r.spotIds.size,
-    hitLimit: r.hitLimit,
-    missingSpotId: r.missingSpotId,
-  }));
 
   const hasTerm = (spotId, token) => spotHasSearchTerm(db, spotId, token);
-  const {spotIdToMatchCount, refined} = await buildSpotIdMatchCounts(
+  const {spotIdToMatchCount} = await buildSpotIdMatchCounts(
       tokens,
       tokenResults,
       hasTerm,
   );
 
-  let {spotIds, useFullTokenMatchOnly, spotsWithAll} = pickSpotIdsForTitleSearch(
+  let {spotIds, useFullTokenMatchOnly} = pickSpotIdsForTitleSearch(
       spotIdToMatchCount,
       tokens.length,
   );
 
-  const matchCountSummary = [...spotIdToMatchCount.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 15)
-      .map(([spotId, count]) => ({spotId, count}));
-
-  console.log("searchSpotsByTitle:", {
-    query: query.slice(0, 80),
-    tokens,
-    tokenQueryStats,
-    refined,
-    uniqueSpotIds: spotIdToMatchCount.size,
-    requiredTokenCount: tokens.length,
-    spotsWithAllCount: spotsWithAll.length,
-    spotsWithAllIds: spotsWithAll.slice(0, 20),
-    useFullTokenMatchOnly,
-    topMatchCounts: matchCountSummary,
-  });
-
   if (spotIds.length === 0) {
-    console.log("searchSpotsByTitle: no spotIds after term matching", {
-      query: query.slice(0, 80),
-    });
     return {success: true, spots: []};
   }
 
   const fetchVisibleMatches = async (idsToFetch) => {
     const spotRefs = idsToFetch.map((id) => db.collection("spots").doc(id));
     const spotDocs = await db.getAll(...spotRefs);
-    const {matches, filteredOut, canonicalFromDuplicate} = collectSpotMatchResults(
+    const {matches, canonicalFromDuplicate} = collectSpotMatchResults(
         spotDocs,
         spotIdToMatchCount,
     );
@@ -6428,47 +6395,19 @@ async function executeSearchSpotsByTitle(params) {
         canonicalFromDuplicate,
         seenIds,
     );
-    return {
-      matches: [...matches, ...resolved],
-      filteredOut,
-      resolvedCanonicalCount: resolved.length,
-    };
+    return [...matches, ...resolved];
   };
 
   let spotsToFetch = spotIds.slice(0, 60);
-  let {matches, filteredOut, resolvedCanonicalCount} = await fetchVisibleMatches(
-      spotsToFetch,
-  );
+  let matches = await fetchVisibleMatches(spotsToFetch);
 
   if (matches.length === 0 && useFullTokenMatchOnly) {
     spotIds = [...spotIdToMatchCount.entries()]
         .sort((a, b) => b[1] - a[1])
         .map(([id]) => id);
-    useFullTokenMatchOnly = false;
     spotsToFetch = spotIds.slice(0, 60);
-    const fallback = await fetchVisibleMatches(spotsToFetch);
-    matches = fallback.matches;
-    filteredOut = [...filteredOut, ...fallback.filteredOut];
-    resolvedCanonicalCount = fallback.resolvedCanonicalCount;
-    console.log("searchSpotsByTitle: fallback to partial matches", {
-      query: query.slice(0, 80),
-      spotsToFetch: spotsToFetch.length,
-    });
+    matches = await fetchVisibleMatches(spotsToFetch);
   }
-
-  console.log("searchSpotsByTitle: spot fetch", {
-    query: query.slice(0, 80),
-    spotIdsToFetch: spotsToFetch.length,
-    matchedVisible: matches.length,
-    resolvedCanonicalCount,
-    filteredOutCount: filteredOut.length,
-    filteredOut: filteredOut.slice(0, 25),
-    returnedNames: matches.slice(0, maxResults).map((s) => ({
-      id: s.id,
-      name: String(s.name).slice(0, 60),
-      matchCount: s.matchCount,
-    })),
-  });
 
   // Sort by match count (most tokens first), then ranking, then name
   matches.sort((a, b) => {
