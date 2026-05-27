@@ -394,7 +394,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                                 l10n.profileModeratorToolsTitle,
                                 l10n.profileModeratorToolsSubtitle,
                                 () {
-                                  context.push('/moderator');
+                                  // Use go (not push) so Explore/SearchScreen dispose and
+                                  // release Firestore listeners before moderator flows.
+                                  context.go('/moderator');
                                 },
                               ),
                             ],
@@ -405,7 +407,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                 l10n.profileAdminToolsTitle,
                                 l10n.profileAdminToolsSubtitle,
                                 () {
-                                  context.push('/admin');
+                                  context.go('/admin');
                                 },
                               ),
                             ],

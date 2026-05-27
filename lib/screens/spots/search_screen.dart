@@ -334,6 +334,7 @@ class SearchScreenState extends State<SearchScreen>
       false; // Flag to track if long press was successfully handled
   String? _spotIdToLocate; // Spot ID to locate from query parameter
   String? _eventIdToLocate; // Event ID to locate from query parameter
+  String? _locateSpotInFlight; // Prevents overlapping locate-by-id work
   Timer? _locationPollingTimer; // Timer for polling user location periodically
   // Spot list highlighting
   String? _selectedListId; // Currently selected spot list ID
@@ -2746,17 +2747,25 @@ class SearchScreenState extends State<SearchScreen>
   }
 
   Future<void> _locateSpotById(String spotId) async {
+    if (_locateSpotInFlight == spotId) return;
+    _locateSpotInFlight = spotId;
+
     // Wait for spot service to be available
     _spotServiceRef ??= Provider.of<SpotService>(context, listen: false);
 
-    if (_spotServiceRef == null) return;
+    if (_spotServiceRef == null) {
+      _locateSpotInFlight = null;
+      return;
+    }
 
     try {
       final spot = await _spotServiceRef!.getSpotById(spotId);
       if (spot != null && mounted) {
         await _locateSpot(spot);
         // Clear the query parameter from URL after successful location
-        if (mounted) {
+        if (mounted &&
+            GoRouterState.of(context).uri.queryParameters['locateSpotId'] !=
+                null) {
           context.go('/explore');
         }
       }
@@ -2764,6 +2773,10 @@ class SearchScreenState extends State<SearchScreen>
       // Ignore errors - spot might not be found or service not ready
       if (mounted) {
         debugPrint('Failed to locate spot $spotId: $e');
+      }
+    } finally {
+      if (_locateSpotInFlight == spotId) {
+        _locateSpotInFlight = null;
       }
     }
   }

@@ -31,6 +31,8 @@ class ExploreScreen extends StatefulWidget {
   final int initialTab;
   final String? initialLocationQuery;
   final String? initialListId;
+  final String? initialLocateSpotId;
+  final String? initialLocateEventId;
   final LatLng? initialAddSpotLocation;
 
   const ExploreScreen({
@@ -38,6 +40,8 @@ class ExploreScreen extends StatefulWidget {
     this.initialTab = 0,
     this.initialLocationQuery,
     this.initialListId,
+    this.initialLocateSpotId,
+    this.initialLocateEventId,
     this.initialAddSpotLocation,
   });
 
@@ -110,9 +114,11 @@ class _ExploreScreenState extends State<ExploreScreen> {
           }
         });
       }
-    } else if (widget.initialTab == 0) {
-      // Defer to avoid setState/markNeedsBuild during build - onMapTabActivated
-      // updates SearchStateService and calls setState, which cannot run mid-frame.
+    } else if (widget.initialTab == 0 &&
+        _mapFocusParamsChanged(oldWidget) &&
+        _hasMapFocusParams(widget)) {
+      // Re-activate only when a new map focus intent arrives (locate/list), not
+      // when locateSpotId is cleared after a successful locate (avoids listener churn).
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _searchKey.currentState?.onMapTabActivated();
       });
@@ -122,6 +128,18 @@ class _ExploreScreenState extends State<ExploreScreen> {
         if (mounted) _updateDocumentMeta();
       });
     }
+  }
+
+  bool _hasMapFocusParams(ExploreScreen w) {
+    return (w.initialListId?.isNotEmpty ?? false) ||
+        (w.initialLocateSpotId?.isNotEmpty ?? false) ||
+        (w.initialLocateEventId?.isNotEmpty ?? false);
+  }
+
+  bool _mapFocusParamsChanged(ExploreScreen oldWidget) {
+    return widget.initialListId != oldWidget.initialListId ||
+        widget.initialLocateSpotId != oldWidget.initialLocateSpotId ||
+        widget.initialLocateEventId != oldWidget.initialLocateEventId;
   }
 
   @override

@@ -12,6 +12,9 @@ class SpotReportService {
   final FirebaseFirestore _firestore;
   final AuditLogService _auditLogService = AuditLogService();
 
+  /// Shared listener for all UI subscribers (avoids duplicate Firestore targets).
+  Stream<List<SpotReport>>? _spotReportsStream;
+
   /// Default categories shown to the user when reporting a spot.
   static const List<String> defaultCategories = <String>[
     'Spot closed or removed',
@@ -336,13 +339,15 @@ class SpotReportService {
 
   /// Streams all spot reports ordered by creation time.
   Stream<List<SpotReport>> watchSpotReports() {
-    return _firestore
+    return _spotReportsStream ??= _firestore
         .collection('spotReports')
         .orderBy('createdAt', descending: false)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => SpotReport.fromSnapshot(doc))
-            .toList(growable: false));
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => SpotReport.fromSnapshot(doc))
+              .toList(growable: false),
+        );
   }
 
   /// Gets all spot reports for a specific spot.

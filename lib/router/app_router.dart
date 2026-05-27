@@ -298,6 +298,8 @@ class AppRouter {
               initialTab: initialTab,
               initialLocationQuery: locationQuery,
               initialListId: listId,
+              initialLocateSpotId: state.uri.queryParameters['locateSpotId'],
+              initialLocateEventId: state.uri.queryParameters['locateEventId'],
               initialAddSpotLocation: initialAddSpotLocation,
             );
           },

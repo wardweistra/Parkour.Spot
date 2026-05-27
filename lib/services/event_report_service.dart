@@ -284,8 +284,10 @@ class EventReportService {
     }
   }
 
+  Stream<List<EventReport>>? _eventReportsStream;
+
   Stream<List<EventReport>> watchEventReports() {
-    return _firestore
+    return _eventReportsStream ??= _firestore
         .collection('eventReports')
         .orderBy('createdAt', descending: true)
         .snapshots()

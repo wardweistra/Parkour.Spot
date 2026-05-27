@@ -14,6 +14,10 @@ class UserNotificationService extends ChangeNotifier {
 
   String? get error => _error;
 
+  /// Shared Firestore listener for all UI subscribers (explore nav + profile tab).
+  Stream<List<UserNotification>>? _notificationsStream;
+  String? _notificationsStreamUid;
+
   String? get _uid => _authService.currentUser?.uid;
 
   CollectionReference<Map<String, dynamic>>? get _notificationsCollection {
@@ -23,11 +27,18 @@ class UserNotificationService extends ChangeNotifier {
   }
 
   Stream<List<UserNotification>> watchNotifications() {
+    final uid = _uid;
     final collection = _notificationsCollection;
     if (collection == null) {
+      _notificationsStream = null;
+      _notificationsStreamUid = null;
       return Stream<List<UserNotification>>.value(const []);
     }
-    return collection
+    if (_notificationsStream != null && _notificationsStreamUid == uid) {
+      return _notificationsStream!;
+    }
+    _notificationsStreamUid = uid;
+    _notificationsStream = collection
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map(
@@ -35,6 +46,7 @@ class UserNotificationService extends ChangeNotifier {
               .map(UserNotification.fromFirestore)
               .toList(growable: false),
         );
+    return _notificationsStream!;
   }
 
   Stream<int> watchUnreadCount() {
