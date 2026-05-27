@@ -287,9 +287,11 @@ class _EventReportQueueScreenState extends State<EventReportQueueScreen> {
       ),
     );
     if (rejected != true) return;
+    if (!mounted) return;
 
     setState(() => _busyReportIds.add(report.id));
     final auth = context.read<AuthService>();
+    final eventReportService = context.read<EventReportService>();
     final user = auth.currentUser;
     final reviewerUserId = user?.uid;
     if (reviewerUserId == null) {
@@ -297,7 +299,7 @@ class _EventReportQueueScreenState extends State<EventReportQueueScreen> {
       return;
     }
 
-    final ok = await context.read<EventReportService>().rejectReport(
+    final ok = await eventReportService.rejectReport(
       reportId: report.id,
       reviewerUserId: reviewerUserId,
       reviewerName:
