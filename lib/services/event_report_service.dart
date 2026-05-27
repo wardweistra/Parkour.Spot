@@ -536,6 +536,28 @@ class EventReportService {
       updates['imageUrls'] = existingImageUrls;
     }
 
+    final reporterUserId = report.reporterUserId?.trim();
+    final reporterUserName = report.reporterName?.trim();
+    if (reporterUserId != null &&
+        reporterUserId.isNotEmpty &&
+        reporterUserName != null &&
+        reporterUserName.isNotEmpty) {
+      final contributors = (existingEventData['contributors'] is Iterable)
+          ? (existingEventData['contributors'] as Iterable)
+                .whereType<Map>()
+                .map((e) => Map<String, String>.from(e))
+                .toList(growable: true)
+          : <Map<String, String>>[];
+      final exists = contributors.any((c) => c['userId'] == reporterUserId);
+      if (!exists) {
+        contributors.add(<String, String>{
+          'userId': reporterUserId,
+          'userName': reporterUserName,
+        });
+      }
+      updates['contributors'] = contributors;
+    }
+
     return updates;
   }
 
