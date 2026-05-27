@@ -644,6 +644,7 @@ class SearchScreenState extends State<SearchScreen>
     _cameraMoveDebounce?.cancel();
     _longPressTimer?.cancel();
     _locationPollingTimer?.cancel();
+    _mapController = null;
     _searchController.dispose();
     _searchFocusNode.dispose();
     _bottomSheetAnimationController.dispose();
@@ -1248,7 +1249,7 @@ class SearchScreenState extends State<SearchScreen>
 
   // Load spots and event pins for the current map view.
   Future<void> _loadMapDataForCurrentView() async {
-    if (_mapController == null) {
+    if (_mapController == null || !mounted) {
       return;
     }
 
@@ -1324,8 +1325,10 @@ class SearchScreenState extends State<SearchScreen>
       _eventPinBySpotId = eventPinsBySpotId(_loadedEventPins);
       _visibleEvents = dedupePinsByEventId(_loadedEventPins);
 
+      if (!mounted) return;
       _updateVisibleSpots();
     } catch (e) {
+      if (!mounted) return;
       debugPrint('Error loading map data for current view: $e');
     } finally {
       if (mounted) {
@@ -1338,6 +1341,7 @@ class SearchScreenState extends State<SearchScreen>
   }
 
   void _updateVisibleSpots() {
+    if (!mounted) return;
     setState(() {
       _visibleSpots = _loadedSpots;
       _markers = _rebuildMarkers();
@@ -2610,7 +2614,9 @@ class SearchScreenState extends State<SearchScreen>
     // Debounce loading spots to avoid too many requests while user is panning
     _cameraMoveDebounce?.cancel();
     _cameraMoveDebounce = Timer(const Duration(milliseconds: 1000), () {
-      _loadMapDataForCurrentView();
+      if (mounted) {
+        _loadMapDataForCurrentView();
+      }
     });
   }
 
@@ -3339,6 +3345,7 @@ class SearchScreenState extends State<SearchScreen>
 
                       // Load spots for the current view after a short delay to ensure map is ready
                       Future.delayed(const Duration(milliseconds: 500), () {
+                        if (!mounted || _mapController == null) return;
                         _loadMapDataForCurrentView();
 
                         // If we have a spot ID to locate, locate it after spots are loaded
@@ -3347,7 +3354,7 @@ class SearchScreenState extends State<SearchScreen>
                           _spotIdToLocate =
                               null; // Clear before attempting to locate
                           Future.delayed(const Duration(milliseconds: 300), () {
-                            _locateSpotById(spotId);
+                            if (mounted) _locateSpotById(spotId);
                           });
                         }
 
@@ -3356,7 +3363,7 @@ class SearchScreenState extends State<SearchScreen>
                           _eventIdToLocate =
                               null; // Clear before attempting to locate
                           Future.delayed(const Duration(milliseconds: 300), () {
-                            _locateEventById(eventId);
+                            if (mounted) _locateEventById(eventId);
                           });
                         }
                       });
