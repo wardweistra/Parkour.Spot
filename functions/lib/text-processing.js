@@ -67,6 +67,16 @@ function spotSearchTermDocId(spotId, term) {
 }
 
 /**
+ * Deterministic doc ID for eventSearchTerms collection
+ * @param {string} eventId
+ * @param {string} term
+ * @return {string}
+ */
+function eventSearchTermDocId(eventId, term) {
+  return `${eventId}_${term}`;
+}
+
+/**
  * Cleans HTML from description text
  * @param {string} description - The description text to clean
  * @return {string} The cleaned description text
@@ -228,6 +238,7 @@ module.exports = {
   normalizeSearchQuery,
   getSearchQueryTokens,
   spotSearchTermDocId,
+  eventSearchTermDocId,
   cleanDescription,
   extractYoutubeVideoIdsFromDescription,
   extractImageUrls,

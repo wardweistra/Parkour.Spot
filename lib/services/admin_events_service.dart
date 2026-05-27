@@ -440,6 +440,47 @@ class AdminEventsService extends ChangeNotifier {
     }
   }
 
+  Future<List<Map<String, dynamic>>> searchEventsByTitle({
+    required String query,
+    int limit = 6,
+  }) async {
+    final trimmedQuery = query.trim();
+    if (trimmedQuery.isEmpty) return <Map<String, dynamic>>[];
+
+    try {
+      final callable = _functions.httpsCallable('searchEventsByTitle');
+      final result = await callable.call<Map<String, dynamic>>({
+        'query': trimmedQuery,
+        'limit': limit,
+      });
+      final data = result.data;
+      if (data['success'] != true) {
+        return <Map<String, dynamic>>[];
+      }
+      final items = data['events'] as List<dynamic>? ?? <dynamic>[];
+      return items
+          .whereType<Map<String, dynamic>>()
+          .map(
+            (item) => <String, dynamic>{
+              'id': item['id'] as String?,
+              'title': item['title'] as String? ?? '',
+              'city': item['city'] as String?,
+              'countryCode': item['countryCode'] as String?,
+              'startAt': item['startAt'] as String?,
+            },
+          )
+          .where(
+            (event) =>
+                (event['id'] as String?)?.isNotEmpty == true &&
+                (event['title'] as String).trim().isNotEmpty,
+          )
+          .toList();
+    } catch (e, st) {
+      debugPrint('AdminEventsService.searchEventsByTitle error: $e\n$st');
+      return <Map<String, dynamic>>[];
+    }
+  }
+
   Future<ParkourEvent?> getNextUpcomingEventForSpot(String spotId) async {
     return _getNextUpcomingEvent(
       field: 'spotIds',

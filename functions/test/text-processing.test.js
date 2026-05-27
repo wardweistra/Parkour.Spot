@@ -3,6 +3,7 @@ const {
   normalizeSearchQuery,
   getSearchQueryTokens,
   spotSearchTermDocId,
+  eventSearchTermDocId,
   cleanDescription,
   extractYoutubeVideoIdsFromDescription,
   extractImageUrls,
@@ -46,6 +47,12 @@ describe("getSearchQueryTokens", () => {
 describe("spotSearchTermDocId", () => {
   it("returns deterministic id", () => {
     expect(spotSearchTermDocId("spot1", "amsterdam")).toBe("spot1_amsterdam");
+  });
+});
+
+describe("eventSearchTermDocId", () => {
+  it("returns deterministic id", () => {
+    expect(eventSearchTermDocId("event1", "amsterdam")).toBe("event1_amsterdam");
   });
 });
 
