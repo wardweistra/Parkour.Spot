@@ -1,8 +1,11 @@
+import 'dart:typed_data';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:provider/provider.dart';
 
@@ -18,7 +21,9 @@ import '../../services/snackbar_service.dart';
 import '../../services/spot_service.dart';
 import '../../services/search_state_service.dart';
 import '../../services/mobile_detection_service.dart';
+import '../../services/event_report_service.dart';
 import '../../utils/marker_icon_utils.dart';
+import '../../utils/image_preparation.dart';
 import '../../widgets/location_info_box.dart';
 import '../../services/web_share_service.dart';
 import '../../widgets/detail_image_carousel.dart';
@@ -269,6 +274,79 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     }
   }
 
+  String? _eventSuggestionBlockedReason(
+    ParkourEvent event,
+    AppLocalizations l10n,
+  ) {
+    final duplicateOf = event.duplicateOf?.trim();
+    if (duplicateOf != null && duplicateOf.isNotEmpty) {
+      return l10n.eventDetailCannotSuggestForDuplicate;
+    }
+    if (!event.isNativeEvent) {
+      return l10n.eventDetailCannotSuggestForExternal;
+    }
+    if (event.id == null || event.id!.trim().isEmpty) {
+      return l10n.eventDetailUnableSuggestNow;
+    }
+    return null;
+  }
+
+  Future<void> _showSuggestPhotoDialog() async {
+    final event = _event;
+    if (event == null || !mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    final blockedReason = _eventSuggestionBlockedReason(event, l10n);
+    if (blockedReason != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(blockedReason), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    final submitted = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => _SuggestEventPhotoDialog(event: event),
+    );
+    if (!mounted) return;
+    if (submitted == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.eventDetailThanksPhotoSuggestion),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
+  Future<void> _showSuggestEditDialog() async {
+    final event = _event;
+    if (event == null || !mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    final blockedReason = _eventSuggestionBlockedReason(event, l10n);
+    if (blockedReason != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(blockedReason), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    final submitted = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => _SuggestEventEditDialog(event: event),
+    );
+    if (!mounted) return;
+    if (submitted == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.eventDetailThanksEditSuggestion),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
   Widget _buildShareActionRow(AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.only(top: 6, bottom: 2),
@@ -298,6 +376,62 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                         context,
                       ).colorScheme.onSurface.withValues(alpha: 0.75),
                       label: l10n.spotDetailQuickActionShare,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Tooltip(
+              message: l10n.eventDetailQuickActionSuggestPhoto,
+              child: Semantics(
+                button: true,
+                label: l10n.eventDetailQuickActionSuggestPhoto,
+                child: Material(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(
+                    SpotDetailUi.surfaceRadius,
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(
+                      SpotDetailUi.surfaceRadius,
+                    ),
+                    onTap: _showSuggestPhotoDialog,
+                    child: SpotDetailQuickActionChip(
+                      icon: Icons.add_photo_alternate_outlined,
+                      iconColor: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.75),
+                      label: l10n.eventDetailQuickActionSuggestPhoto,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Tooltip(
+              message: l10n.eventDetailQuickActionSuggestEdit,
+              child: Semantics(
+                button: true,
+                label: l10n.eventDetailQuickActionSuggestEdit,
+                child: Material(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(
+                    SpotDetailUi.surfaceRadius,
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(
+                      SpotDetailUi.surfaceRadius,
+                    ),
+                    onTap: _showSuggestEditDialog,
+                    child: SpotDetailQuickActionChip(
+                      icon: Icons.edit_note_outlined,
+                      iconColor: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.75),
+                      label: l10n.eventDetailQuickActionSuggestEdit,
                     ),
                   ),
                 ),
@@ -1297,6 +1431,512 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   }
 }
 
+class _SuggestEventPhotoDialog extends StatefulWidget {
+  const _SuggestEventPhotoDialog({required this.event});
+
+  final ParkourEvent event;
+
+  @override
+  State<_SuggestEventPhotoDialog> createState() =>
+      _SuggestEventPhotoDialogState();
+}
+
+class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
+  final TextEditingController _emailController = TextEditingController();
+  final List<Uint8List> _selectedImageBytes = <Uint8List>[];
+  bool _submitting = false;
+  String? _error;
+
+  static final RegExp _emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+
+  @override
+  void initState() {
+    super.initState();
+    final auth = context.read<AuthService>();
+    _emailController.text = auth.currentUser?.email?.trim() ?? '';
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  bool _validEmail(String value) => _emailRegex.hasMatch(value);
+
+  Future<void> _pickImagesFromGallery() async {
+    try {
+      final picker = ImagePicker();
+      final pickedFiles = await picker.pickMultiImage(
+        maxWidth: 2048,
+        maxHeight: 2048,
+        imageQuality: 85,
+      );
+      if (pickedFiles.isEmpty || !mounted) return;
+
+      for (final pickedFile in pickedFiles) {
+        if (_selectedImageBytes.length >=
+            EventReportService.maxSuggestedPhotos) {
+          break;
+        }
+        final bytes = await pickedFile.readAsBytes();
+        final prepared = await prepareImageForUpload(bytes);
+        _selectedImageBytes.add(prepared.bytes);
+      }
+      if (mounted) setState(() {});
+    } on ImagePreparationException catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.message);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = '$e');
+    }
+  }
+
+  Future<void> _takePhoto() async {
+    try {
+      if (_selectedImageBytes.length >= EventReportService.maxSuggestedPhotos) {
+        return;
+      }
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 2048,
+        maxHeight: 2048,
+        imageQuality: 85,
+      );
+      if (pickedFile == null || !mounted) return;
+      final bytes = await pickedFile.readAsBytes();
+      final prepared = await prepareImageForUpload(bytes);
+      setState(() => _selectedImageBytes.add(prepared.bytes));
+    } on ImagePreparationException catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.message);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = '$e');
+    }
+  }
+
+  Future<void> _submit() async {
+    final l10n = AppLocalizations.of(context)!;
+    final email = _emailController.text.trim();
+    if (!_validEmail(email)) {
+      setState(() => _error = l10n.spotDetailEmailInvalid);
+      return;
+    }
+    if (_selectedImageBytes.isEmpty) {
+      setState(() => _error = l10n.eventDetailSuggestPhotosPickRequired);
+      return;
+    }
+
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+
+    try {
+      final eventService = context.read<EventReportService>();
+      final auth = context.read<AuthService>();
+      final uploadedUrls = await eventService.uploadSuggestedEventPhotos(
+        _selectedImageBytes,
+      );
+      final ok = await eventService.submitEventPhotoSuggestion(
+        targetEventId: widget.event.id!,
+        targetEventTitle: widget.event.title,
+        startAt: widget.event.startAt,
+        endAt: widget.event.endAt,
+        isDateOnly: widget.event.isDateOnly,
+        timeZone: widget.event.timeZone,
+        existingSpotIds: widget.event.spotIds,
+        existingSpotListIds: widget.event.spotListIds,
+        suggestedPhotoUrls: uploadedUrls,
+        reporterUserId: auth.currentUser?.uid,
+        reporterName:
+            auth.userProfile?.displayName ??
+            auth.currentUser?.displayName ??
+            auth.currentUser?.email,
+        reporterEmail: email,
+      );
+
+      if (!mounted) return;
+      if (!ok) {
+        setState(() => _error = l10n.eventDetailSuggestPhotosSubmitFailed);
+        return;
+      }
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = l10n.eventDetailSuggestPhotosSubmitError('$e'));
+    } finally {
+      if (mounted) {
+        setState(() => _submitting = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    return AlertDialog(
+      title: Text(l10n.eventDetailSuggestPhotosTitle),
+      content: SizedBox(
+        width: 520,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.eventDetailSuggestPhotosIntro),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                enabled: !_submitting,
+                decoration: InputDecoration(
+                  labelText: l10n.spotDetailReportEmailLabel,
+                  helperText: l10n.spotDetailSuggestPhotosEmailHelper,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              if (_selectedImageBytes.isNotEmpty)
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: List.generate(_selectedImageBytes.length, (index) {
+                    final bytes = _selectedImageBytes[index];
+                    return Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.memory(
+                            bytes,
+                            width: 96,
+                            height: 96,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        Positioned(
+                          top: 4,
+                          right: 4,
+                          child: Material(
+                            color: Colors.black.withValues(alpha: 0.5),
+                            borderRadius: BorderRadius.circular(16),
+                            child: InkWell(
+                              onTap: _submitting
+                                  ? null
+                                  : () => setState(
+                                      () => _selectedImageBytes.removeAt(index),
+                                    ),
+                              borderRadius: BorderRadius.circular(16),
+                              child: const Padding(
+                                padding: EdgeInsets.all(2),
+                                child: Icon(
+                                  Icons.close,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  }),
+                ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _submitting ? null : _pickImagesFromGallery,
+                      icon: const Icon(Icons.photo_library_outlined),
+                      label: Text(l10n.addSpotGalleryButton),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _submitting ? null : _takePhoto,
+                      icon: const Icon(Icons.photo_camera_outlined),
+                      label: Text(l10n.addSpotCameraButton),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                l10n.addEventMaxPhotos(EventReportService.maxSuggestedPhotos),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: 10),
+                Text(
+                  _error!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _submitting
+              ? null
+              : () => Navigator.of(context).pop(false),
+          child: Text(l10n.profileCancel),
+        ),
+        FilledButton(
+          onPressed: _submitting ? null : _submit,
+          child: _submitting
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text(l10n.spotDetailSubmit),
+        ),
+      ],
+    );
+  }
+}
+
+class _SuggestEventEditDialog extends StatefulWidget {
+  const _SuggestEventEditDialog({required this.event});
+
+  final ParkourEvent event;
+
+  @override
+  State<_SuggestEventEditDialog> createState() =>
+      _SuggestEventEditDialogState();
+}
+
+class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
+  final TextEditingController _emailController = TextEditingController();
+  late final TextEditingController _titleController;
+  late final TextEditingController _descriptionController;
+  late final TextEditingController _websiteController;
+  bool _submitting = false;
+  String? _error;
+
+  static final RegExp _emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+
+  @override
+  void initState() {
+    super.initState();
+    final auth = context.read<AuthService>();
+    _emailController.text = auth.currentUser?.email?.trim() ?? '';
+    _titleController = TextEditingController(text: widget.event.title.trim());
+    _descriptionController = TextEditingController(
+      text: widget.event.description?.trim() ?? '',
+    );
+    _websiteController = TextEditingController(
+      text: widget.event.websiteUrl?.trim() ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _titleController.dispose();
+    _descriptionController.dispose();
+    _websiteController.dispose();
+    super.dispose();
+  }
+
+  bool _validEmail(String value) => _emailRegex.hasMatch(value);
+
+  bool _validWebsite(String value) {
+    final parsed = Uri.tryParse(value);
+    return parsed != null &&
+        parsed.hasAuthority &&
+        (parsed.scheme == 'http' || parsed.scheme == 'https');
+  }
+
+  Future<void> _submit() async {
+    final l10n = AppLocalizations.of(context)!;
+    final email = _emailController.text.trim();
+    if (!_validEmail(email)) {
+      setState(() => _error = l10n.spotDetailEmailInvalid);
+      return;
+    }
+
+    final title = _titleController.text.trim();
+    if (title.isEmpty) {
+      setState(() => _error = l10n.addEventTitleRequired);
+      return;
+    }
+    final description = _descriptionController.text.trim();
+    final website = _websiteController.text.trim();
+    if (website.isNotEmpty && !_validWebsite(website)) {
+      setState(() => _error = l10n.addEventWebsiteInvalid);
+      return;
+    }
+
+    final originalTitle = widget.event.title.trim();
+    final originalDescription = widget.event.description?.trim() ?? '';
+    final originalWebsite = widget.event.websiteUrl?.trim() ?? '';
+
+    final suggestedTitle = title != originalTitle ? title : null;
+    final suggestedDescription =
+        description.isNotEmpty && description != originalDescription
+        ? description
+        : null;
+    final suggestedWebsiteUrl = website.isNotEmpty && website != originalWebsite
+        ? website
+        : null;
+
+    if (suggestedTitle == null &&
+        suggestedDescription == null &&
+        suggestedWebsiteUrl == null) {
+      setState(() => _error = l10n.eventDetailSuggestEditNoChanges);
+      return;
+    }
+
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+
+    try {
+      final auth = context.read<AuthService>();
+      final ok = await context
+          .read<EventReportService>()
+          .submitEventEditSuggestion(
+            targetEventId: widget.event.id!,
+            targetEventTitle: widget.event.title,
+            startAt: widget.event.startAt,
+            endAt: widget.event.endAt,
+            isDateOnly: widget.event.isDateOnly,
+            timeZone: widget.event.timeZone,
+            existingSpotIds: widget.event.spotIds,
+            existingSpotListIds: widget.event.spotListIds,
+            suggestedTitle: suggestedTitle,
+            suggestedDescription: suggestedDescription,
+            suggestedWebsiteUrl: suggestedWebsiteUrl,
+            reporterUserId: auth.currentUser?.uid,
+            reporterName:
+                auth.userProfile?.displayName ??
+                auth.currentUser?.displayName ??
+                auth.currentUser?.email,
+            reporterEmail: email,
+          );
+
+      if (!mounted) return;
+      if (!ok) {
+        setState(() => _error = l10n.eventDetailSuggestEditSubmitFailed);
+        return;
+      }
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = l10n.eventDetailSuggestEditSubmitError('$e'));
+    } finally {
+      if (mounted) {
+        setState(() => _submitting = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    return AlertDialog(
+      title: Text(l10n.eventDetailSuggestEditTitle),
+      content: SizedBox(
+        width: 520,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.eventDetailSuggestEditIntro),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                enabled: !_submitting,
+                decoration: InputDecoration(
+                  labelText: l10n.spotDetailReportEmailLabel,
+                  helperText: l10n.spotDetailSuggestEditEmailHelper,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _titleController,
+                enabled: !_submitting,
+                textCapitalization: TextCapitalization.words,
+                decoration: InputDecoration(
+                  labelText: l10n.addEventTitleLabel,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _descriptionController,
+                enabled: !_submitting,
+                maxLines: 4,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: InputDecoration(
+                  labelText: l10n.addEventDescriptionLabel,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _websiteController,
+                enabled: !_submitting,
+                keyboardType: TextInputType.url,
+                decoration: InputDecoration(
+                  labelText: l10n.addEventWebsiteLabel,
+                  hintText: l10n.addEventWebsiteHint,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: 10),
+                Text(
+                  _error!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _submitting
+              ? null
+              : () => Navigator.of(context).pop(false),
+          child: Text(l10n.profileCancel),
+        ),
+        FilledButton(
+          onPressed: _submitting ? null : _submit,
+          child: _submitting
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text(l10n.spotDetailSubmit),
+        ),
+      ],
+    );
+  }
+}
+
 enum _EventStaffAction {
   editEvent,
   createNativeEvent,
@@ -1770,8 +2410,7 @@ class _EventLinkedSpotCard extends StatelessWidget {
                   label: Text(l10n.eventDetailEventSpotViewDetails),
                 ),
                 OutlinedButton.icon(
-                  onPressed: () =>
-                      context.go('/explore?locateSpotId=$spotId'),
+                  onPressed: () => context.go('/explore?locateSpotId=$spotId'),
                   icon: const Icon(Icons.map_outlined, size: 18),
                   label: Text(l10n.eventDetailEventSpotListSeeOnMap),
                 ),

@@ -3370,4 +3370,70 @@ class AppLocalizationsFr extends AppLocalizations {
   String eventDetailShareFailed(String error) {
     return 'Échec du partage de l’événement : $error';
   }
+
+  @override
+  String get eventDetailQuickActionSuggestPhoto => 'Suggérer une photo';
+
+  @override
+  String get eventDetailQuickActionSuggestEdit => 'Suggérer une modification';
+
+  @override
+  String get eventDetailUnableSuggestNow =>
+      'Impossible de suggérer des modifications pour cet événement pour le moment.';
+
+  @override
+  String get eventDetailCannotSuggestForDuplicate =>
+      'Impossible de suggérer des modifications pour un événement en doublon.';
+
+  @override
+  String get eventDetailCannotSuggestForExternal =>
+      'Impossible de suggérer des modifications pour un événement externe. Créez d’abord un événement natif.';
+
+  @override
+  String get eventDetailThanksPhotoSuggestion =>
+      'Merci ! Votre suggestion de photos a été soumise pour examen.';
+
+  @override
+  String get eventDetailThanksEditSuggestion =>
+      'Merci ! Votre suggestion de modification a été soumise pour examen.';
+
+  @override
+  String get eventDetailSuggestPhotosTitle => 'Suggérer des photos';
+
+  @override
+  String get eventDetailSuggestPhotosIntro =>
+      'Ajoutez des photos pour cet événement. Les modérateurs examineront votre suggestion.';
+
+  @override
+  String get eventDetailSuggestPhotosPickRequired =>
+      'Ajoutez au moins une photo.';
+
+  @override
+  String get eventDetailSuggestPhotosSubmitFailed =>
+      'Échec de l’envoi de la suggestion de photo. Réessayez.';
+
+  @override
+  String eventDetailSuggestPhotosSubmitError(String error) {
+    return 'Erreur lors de l’envoi de la suggestion de photo : $error';
+  }
+
+  @override
+  String get eventDetailSuggestEditTitle => 'Suggérer une modification';
+
+  @override
+  String get eventDetailSuggestEditIntro =>
+      'Proposez des modifications pour cet événement. Les modérateurs examineront votre suggestion.';
+
+  @override
+  String get eventDetailSuggestEditNoChanges =>
+      'Veuillez suggérer au moins une modification.';
+
+  @override
+  String get eventDetailSuggestEditSubmitFailed =>
+      'Échec de l’envoi de la suggestion de modification. Réessayez.';
+
+  @override
+  String eventDetailSuggestEditSubmitError(String error) {
+    return 'Erreur lors de l’envoi de la suggestion de modification : $error';
+  }
 }
