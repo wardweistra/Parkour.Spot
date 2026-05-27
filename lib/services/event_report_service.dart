@@ -538,10 +538,7 @@ class EventReportService {
 
     final reporterUserId = report.reporterUserId?.trim();
     final reporterUserName = report.reporterName?.trim();
-    if (reporterUserId != null &&
-        reporterUserId.isNotEmpty &&
-        reporterUserName != null &&
-        reporterUserName.isNotEmpty) {
+    if (reporterUserId != null && reporterUserId.isNotEmpty) {
       final contributors = (existingEventData['contributors'] is Iterable)
           ? (existingEventData['contributors'] as Iterable)
                 .whereType<Map>()
@@ -550,9 +547,13 @@ class EventReportService {
           : <Map<String, String>>[];
       final exists = contributors.any((c) => c['userId'] == reporterUserId);
       if (!exists) {
+        final contributorName =
+            (reporterUserName != null && reporterUserName.isNotEmpty)
+            ? reporterUserName
+            : reporterUserId;
         contributors.add(<String, String>{
           'userId': reporterUserId,
-          'userName': reporterUserName,
+          'userName': contributorName,
         });
       }
       updates['contributors'] = contributors;
