@@ -7,11 +7,9 @@ import '../models/event_report.dart';
 import '../utils/image_preparation.dart';
 
 class EventReportService {
-  EventReportService({
-    FirebaseFirestore? firestore,
-    FirebaseStorage? storage,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _storage = storage ?? FirebaseStorage.instance;
+  EventReportService({FirebaseFirestore? firestore, FirebaseStorage? storage})
+    : _firestore = firestore ?? FirebaseFirestore.instance,
+      _storage = storage ?? FirebaseStorage.instance;
 
   final FirebaseFirestore _firestore;
   final FirebaseStorage _storage;
@@ -260,7 +258,9 @@ class EventReportService {
       final report = EventReport.fromSnapshot(snapshot);
       var rejectedUrls = const <String>[];
       if (report.suggestedPhotoUrls.isNotEmpty) {
-        rejectedUrls = await _moveEventPhotosToRejected(report.suggestedPhotoUrls);
+        rejectedUrls = await _moveEventPhotosToRejected(
+          report.suggestedPhotoUrls,
+        );
       }
 
       await reportRef.update({
@@ -329,7 +329,9 @@ class EventReportService {
 
         final response = await http.get(Uri.parse(photoUrl));
         if (response.statusCode != 200 || response.bodyBytes.isEmpty) {
-          debugPrint('Failed to fetch event suggestion photo: ${response.statusCode}');
+          debugPrint(
+            'Failed to fetch event suggestion photo: ${response.statusCode}',
+          );
           continue;
         }
 
@@ -359,7 +361,9 @@ class EventReportService {
     return finalPhotoUrls;
   }
 
-  Future<List<String>> _moveEventPhotosToRejected(List<String> photoUrls) async {
+  Future<List<String>> _moveEventPhotosToRejected(
+    List<String> photoUrls,
+  ) async {
     final rejectedUrls = <String>[];
 
     for (final photoUrl in photoUrls) {
@@ -397,7 +401,10 @@ class EventReportService {
     return rejectedUrls;
   }
 
-  String? _storagePathFromUrl(String photoUrl, {required String expectedPrefix}) {
+  String? _storagePathFromUrl(
+    String photoUrl, {
+    required String expectedPrefix,
+  }) {
     try {
       final uri = Uri.parse(photoUrl);
       String? filePath;
@@ -472,6 +479,10 @@ class EventReportService {
         .where((url) => url.isNotEmpty)
         .take(maxSuggestedPhotos)
         .toList();
+    final createdBy = resolveEventCreatedBy(
+      reporterUserId: report.reporterUserId,
+      approverUserId: approverUserId,
+    );
 
     return <String, dynamic>{
       'title': title,
@@ -497,9 +508,21 @@ class EventReportService {
       'spotListIds': normalizedSpotListIds,
       if (normalizedImageUrls != null && normalizedImageUrls.isNotEmpty)
         'imageUrls': normalizedImageUrls,
-      'createdBy': approverUserId,
+      'createdBy': createdBy,
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     };
+  }
+
+  @visibleForTesting
+  static String resolveEventCreatedBy({
+    String? reporterUserId,
+    required String approverUserId,
+  }) {
+    final normalizedReporterId = reporterUserId?.trim();
+    if (normalizedReporterId != null && normalizedReporterId.isNotEmpty) {
+      return normalizedReporterId;
+    }
+    return approverUserId;
   }
 }
