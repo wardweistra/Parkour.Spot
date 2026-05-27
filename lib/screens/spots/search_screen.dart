@@ -1521,8 +1521,9 @@ class SearchScreenState extends State<SearchScreen>
                               ..add(key);
                           }
                         });
-                        if (_mapController != null)
+                        if (_mapController != null) {
                           _loadMapDataForCurrentView();
+                        }
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(
@@ -1837,8 +1838,9 @@ class SearchScreenState extends State<SearchScreen>
                               ..add(key);
                           }
                         });
-                        if (_mapController != null)
+                        if (_mapController != null) {
                           _loadMapDataForCurrentView();
+                        }
                       },
                       child: _buildAttributeChip(
                         label: label,
@@ -1873,8 +1875,9 @@ class SearchScreenState extends State<SearchScreen>
                             _goodFor = List<String>.from(_goodFor)..add(key);
                           }
                         });
-                        if (_mapController != null)
+                        if (_mapController != null) {
                           _loadMapDataForCurrentView();
+                        }
                       },
                       child: _buildAttributeChip(
                         label: label,
