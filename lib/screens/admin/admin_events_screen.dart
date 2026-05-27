@@ -16,6 +16,7 @@ import '../../services/geocoding_service.dart';
 import '../../services/spot_list_service.dart';
 import '../../services/spot_service.dart';
 import '../../utils/browser_timezone_utils.dart';
+import '../../utils/search_index_backfill_message.dart';
 import '../../utils/event_schedule_utils.dart';
 import '../../utils/image_preparation.dart';
 import '../../widgets/spot_list_selection_dialog.dart';
@@ -145,25 +146,44 @@ class _AdminEventsScreenState extends State<AdminEventsScreen> {
   }
 
   Future<void> _backfillEventSearchTerms() async {
+    var purgeTerms = false;
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Backfill Event Name Search'),
-        content: const Text(
-          'Populates eventSearchTerms for all events (Explore autocomplete). '
-          'Run once after deploying search changes. This may take a few minutes '
-          'for large databases.',
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Backfill Event Name Search'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Populates eventSearchTerms for upcoming events (Explore autocomplete). '
+                'This may take a few minutes for large databases.',
+              ),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: purgeTerms,
+                onChanged: (v) => setState(() => purgeTerms = v ?? false),
+                title: const Text('Purge existing terms first'),
+                subtitle: const Text(
+                  'Deletes all eventSearchTerms, then rebuilds only for events '
+                  'shown on the map (not duplicates or past).',
+                ),
+                controlAffinity: ListTileControlAffinity.leading,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Run'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Run'),
-          ),
-        ],
       ),
     );
     if (confirm != true || !mounted) return;
@@ -190,15 +210,20 @@ class _AdminEventsScreenState extends State<AdminEventsScreen> {
     );
 
     try {
-      final result = await eventsService.backfillEventSearchTerms();
+      final result = await eventsService.backfillEventSearchTerms(purge: purgeTerms);
       progressNavigator.pop();
       if (!mounted) return;
 
       if (result != null && result['success'] == true) {
         final stats = result['stats'] as Map<String, dynamic>?;
         final msg = stats != null
-            ? 'Backfill completed. Events: ${stats['totalProcessed']}, '
-                'Terms: ${stats['searchTermsWritten']}'
+            ? formatSearchIndexBackfillMessage(
+                entityLabel: 'Events',
+                totalProcessed: stats['totalProcessed'],
+                searchTermsWritten: stats['searchTermsWritten'],
+                searchTermsDeleted: stats['searchTermsDeleted'],
+                purged: stats['purged'] == true,
+              )
             : 'Backfill completed';
         scaffoldMessenger.showSnackBar(
           SnackBar(content: Text(msg), backgroundColor: Colors.green),

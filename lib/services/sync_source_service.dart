@@ -656,7 +656,7 @@ class SyncSourceService extends ChangeNotifier {
 
   /// One-time backfill: populates spotSearchTerms for all spots (Explore autocomplete).
   /// Run once after deploying searchSpotsByTitle changes.
-  Future<Map<String, dynamic>?> backfillSpotNameLower() async {
+  Future<Map<String, dynamic>?> backfillSpotNameLower({bool purge = false}) async {
     try {
       final callable = _functions.httpsCallable(
         'backfillSpotNameLower',
@@ -664,7 +664,7 @@ class SyncSourceService extends ChangeNotifier {
           timeout: const Duration(minutes: 9),
         ),
       );
-      final result = await callable.call({});
+      final result = await callable.call({'purge': purge});
       final d = result.data;
       if (d == null) return null;
       return _callableResponseAsMap(d);

@@ -869,14 +869,14 @@ class AdminEventsService extends ChangeNotifier {
   }
 
   /// Populates [eventSearchTerms] for all events (Explore autocomplete).
-  Future<Map<String, dynamic>?> backfillEventSearchTerms() async {
+  Future<Map<String, dynamic>?> backfillEventSearchTerms({bool purge = false}) async {
     _error = null;
     try {
       final callable = _functions.httpsCallable(
         'backfillEventSearchTerms',
         options: HttpsCallableOptions(timeout: const Duration(minutes: 9)),
       );
-      final result = await callable.call({});
+      final result = await callable.call({'purge': purge});
       final data = result.data;
       if (data is Map) {
         return Map<String, dynamic>.from(data);

@@ -10,6 +10,7 @@ import '../../constants/spot_attributes.dart';
 import '../../services/auth_service.dart';
 import '../../services/sync_source_service.dart';
 import '../../utils/image_preparation.dart';
+import '../../utils/search_index_backfill_message.dart';
 import '../../widgets/spot_form/attributes_section.dart';
 
 /// Material [Chip] / [ActionChip] labels use theme label styles that read as semi-bold.
@@ -1614,24 +1615,44 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
   }
 
   Future<void> _backfillSpotNameLower(BuildContext context) async {
+    var purgeTerms = false;
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (c) => AlertDialog(
-        title: const Text('Backfill Spot Name Search'),
-        content: const Text(
-          'Populates spotSearchTerms for all spots (Explore autocomplete). '
-          'Run once after deploying. This may take a few minutes for large databases.',
+      builder: (c) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Backfill Spot Name Search'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Populates spotSearchTerms for visible spots (Explore autocomplete). '
+                'This may take a few minutes for large databases.',
+              ),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: purgeTerms,
+                onChanged: (v) => setState(() => purgeTerms = v ?? false),
+                title: const Text('Purge existing terms first'),
+                subtitle: const Text(
+                  'Deletes all spotSearchTerms, then rebuilds only for spots '
+                  'shown on the map (not hidden or duplicates).',
+                ),
+                controlAffinity: ListTileControlAffinity.leading,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(c, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(c, true),
+              child: const Text('Run'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(c, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(c, true),
-            child: const Text('Run'),
-          ),
-        ],
       ),
     );
     if (confirm != true || !mounted) return;
@@ -1655,13 +1676,19 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
       },
     );
     try {
-      final result = await syncService.backfillSpotNameLower();
+      final result = await syncService.backfillSpotNameLower(purge: purgeTerms);
       navigator.pop();
       if (mounted) {
         if (result != null && result['success'] == true) {
           final stats = result['stats'] as Map<String, dynamic>?;
           final msg = stats != null
-              ? 'Backfill completed. Spots: ${stats['totalProcessed']}, Terms: ${stats['searchTermsWritten']}'
+              ? formatSearchIndexBackfillMessage(
+                  entityLabel: 'Spots',
+                  totalProcessed: stats['totalProcessed'],
+                  searchTermsWritten: stats['searchTermsWritten'],
+                  searchTermsDeleted: stats['searchTermsDeleted'],
+                  purged: stats['purged'] == true,
+                )
               : 'Backfill completed';
           scaffoldMessenger.showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.green));
         } else {

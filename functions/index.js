@@ -99,6 +99,17 @@ const {
   extractImageUrls,
 } = require("./lib/text-processing");
 const {
+  pickSpotIdsForTitleSearch,
+  buildSpotIdMatchCounts,
+  spotHasSearchTerm,
+  querySpotIdsForSearchToken,
+  collectSpotMatchResults,
+  fetchCanonicalSpotsFromDuplicates,
+  isSpotSearchIndexEligible,
+  isEventSearchIndexEligible,
+  purgeSearchTermsCollection,
+} = require("./lib/spot-search");
+const {
   detectImportFormat,
   generateImageHash,
 } = require("./lib/import-helpers");
@@ -1275,23 +1286,54 @@ exports.onRatingDeleted = onDocumentDeleted(
     },
 );
 
+/**
+ * @param {string} spotId
+ * @return {Promise<void>}
+ */
+async function deleteSpotSearchTermsForSpot(spotId) {
+  const termsSnapshot = await db.collection("spotSearchTerms")
+      .where("spotId", "==", spotId)
+      .get();
+  if (termsSnapshot.empty) return;
+  const batch = db.batch();
+  termsSnapshot.docs.forEach((doc) => batch.delete(doc.ref));
+  await batch.commit();
+}
+
+/**
+ * @param {string} spotId
+ * @param {Object} spotData
+ * @return {Promise<number>} Number of terms written.
+ */
+async function writeSpotSearchTermsForSpot(spotId, spotData) {
+  if (!isSpotSearchIndexEligible(spotData)) return 0;
+  const name = typeof spotData?.name === "string" ? spotData.name : "";
+  const city = typeof spotData?.city === "string" ? spotData.city : "";
+  const words = buildSpotSearchWords(name, city);
+  if (words.length === 0) return 0;
+  const batch = db.batch();
+  for (const term of words) {
+    const ref = db.collection("spotSearchTerms").doc(spotSearchTermDocId(spotId, term));
+    batch.set(ref, {term, spotId});
+  }
+  await batch.commit();
+  return words.length;
+}
+
 // Trigger when a new spot is created - index words in spotSearchTerms
 exports.onSpotCreated = onDocumentCreated(
     {document: "spots/{spotId}", region: "europe-west1"},
     async (event) => {
       const spotId = event.params.spotId;
       const spotData = event.data.data();
-      const name = typeof spotData?.name === "string" ? spotData.name : "";
-      const city = typeof spotData?.city === "string" ? spotData.city : "";
-      const words = buildSpotSearchWords(name, city);
-      if (words.length > 0) {
-        const batch = db.batch();
-        for (const term of words) {
-          const ref = db.collection("spotSearchTerms").doc(spotSearchTermDocId(spotId, term));
-          batch.set(ref, {term, spotId});
-        }
-        await batch.commit();
-        console.log("Indexed spot search terms:", {spotId, name: name.slice(0, 40), wordCount: words.length});
+      const wordCount = await writeSpotSearchTermsForSpot(spotId, spotData);
+      if (wordCount > 0) {
+        const spotName = typeof spotData?.name === "string" ? spotData.name : "";
+        console.log("Indexed spot search terms:", {
+          spotId,
+          name: spotName.slice(0, 40),
+          wordCount,
+        });
       }
       try {
         await fanOutNearbyNewSpotNotifications({db, FieldValue, spotId, spotData});
@@ -1406,22 +1448,49 @@ exports.onSpotUpdated = onDocumentUpdated(
       const nameAfter = typeof afterData?.name === "string" ? afterData.name : "";
       const cityBefore = typeof beforeData?.city === "string" ? beforeData.city : "";
       const cityAfter = typeof afterData?.city === "string" ? afterData.city : "";
-      if (nameBefore === nameAfter && cityBefore === cityAfter) return;
-      const termsSnapshot = await db.collection("spotSearchTerms")
-          .where("spotId", "==", spotId)
-          .get();
-      const batch = db.batch();
-      termsSnapshot.docs.forEach((doc) => batch.delete(doc.ref));
-      if (termsSnapshot.size > 0) await batch.commit();
-      const words = buildSpotSearchWords(nameAfter, cityAfter);
-      if (words.length === 0) return;
-      const writeBatch = db.batch();
-      for (const term of words) {
-        const ref = db.collection("spotSearchTerms").doc(spotSearchTermDocId(spotId, term));
-        writeBatch.set(ref, {term, spotId});
+
+      const beforeHidden = beforeData?.hidden === true;
+      const afterHidden = afterData?.hidden === true;
+
+      if (beforeDup !== afterDup) {
+        await deleteSpotSearchTermsForSpot(spotId);
+        if (!afterDup) {
+          const wordCount = await writeSpotSearchTermsForSpot(spotId, afterData);
+          if (wordCount > 0) {
+            console.log("Indexed spot search terms after duplicate cleared:", {
+              spotId,
+              name: nameAfter.slice(0, 40),
+              wordCount,
+            });
+          }
+        } else {
+          console.log("Removed spot search terms for duplicate:", {spotId, duplicateOf: afterDup});
+        }
       }
-      await writeBatch.commit();
-      console.log("Reindexed spot search terms:", {spotId, name: nameAfter.slice(0, 40), wordCount: words.length});
+
+      if (beforeHidden !== afterHidden) {
+        await deleteSpotSearchTermsForSpot(spotId);
+        if (!afterHidden) {
+          const wordCount = await writeSpotSearchTermsForSpot(spotId, afterData);
+          if (wordCount > 0) {
+            console.log("Indexed spot search terms after unhide:", {
+              spotId,
+              name: nameAfter.slice(0, 40),
+              wordCount,
+            });
+          }
+        } else {
+          console.log("Removed spot search terms for hidden spot:", {spotId});
+        }
+      }
+
+      if (nameBefore === nameAfter && cityBefore === cityAfter) return;
+
+      await deleteSpotSearchTermsForSpot(spotId);
+      const wordCount = await writeSpotSearchTermsForSpot(spotId, afterData);
+      if (wordCount > 0) {
+        console.log("Reindexed spot search terms:", {spotId, name: nameAfter.slice(0, 40), wordCount});
+      }
     },
 );
 
@@ -1467,6 +1536,8 @@ async function replaceEventSearchTerms(eventId, eventData) {
     termsSnapshot.docs.forEach((doc) => deleteBatch.delete(doc.ref));
     await deleteBatch.commit();
   }
+
+  if (!isEventSearchIndexEligible(eventData)) return 0;
 
   const terms = buildEventSearchWords(eventData);
   if (terms.length === 0) return 0;
@@ -6037,6 +6108,13 @@ exports.backfillSpotNameLower = onCall(
     async (request) => {
       try {
         await ensureAdmin(request);
+        const purge = request.data?.purge === true;
+        let searchTermsDeleted = 0;
+        if (purge) {
+          searchTermsDeleted = await purgeSearchTermsCollection(db, "spotSearchTerms");
+          console.log("Backfill spotSearchTerms purge:", {searchTermsDeleted});
+        }
+
         const BATCH_SIZE = 250;
         let lastDoc = null;
         let totalProcessed = 0;
@@ -6057,6 +6135,7 @@ exports.backfillSpotNameLower = onCall(
           const BATCH_LIMIT = 450;
           for (const doc of snapshot.docs) {
             const data = doc.data();
+            if (!isSpotSearchIndexEligible(data)) continue;
             const name = typeof data.name === "string" ? data.name.trim() : "";
             const city = typeof data.city === "string" ? data.city.trim() : "";
             const words = buildSpotSearchWords(name, city);
@@ -6081,7 +6160,12 @@ exports.backfillSpotNameLower = onCall(
         return {
           success: true,
           message: "Backfill completed",
-          stats: {totalProcessed, searchTermsWritten},
+          stats: {
+            totalProcessed,
+            searchTermsWritten,
+            searchTermsDeleted,
+            purged: purge,
+          },
         };
       } catch (error) {
         console.error("Error in backfillSpotNameLower:", error);
@@ -6097,6 +6181,13 @@ exports.backfillEventSearchTerms = onCall(
     async (request) => {
       try {
         await ensureAdmin(request);
+        const purge = request.data?.purge === true;
+        let searchTermsDeleted = 0;
+        if (purge) {
+          searchTermsDeleted = await purgeSearchTermsCollection(db, "eventSearchTerms");
+          console.log("Backfill eventSearchTerms purge:", {searchTermsDeleted});
+        }
+
         const BATCH_SIZE = 250;
         let lastDoc = null;
         let totalProcessed = 0;
@@ -6117,6 +6208,7 @@ exports.backfillEventSearchTerms = onCall(
           const BATCH_LIMIT = 450;
           for (const doc of snapshot.docs) {
             const data = doc.data();
+            if (!isEventSearchIndexEligible(data)) continue;
             const words = buildEventSearchWords(data);
             for (const term of words) {
               if (termsCount >= BATCH_LIMIT) {
@@ -6140,7 +6232,12 @@ exports.backfillEventSearchTerms = onCall(
         return {
           success: true,
           message: "Event search terms backfill completed",
-          stats: {totalProcessed, searchTermsWritten},
+          stats: {
+            totalProcessed,
+            searchTermsWritten,
+            searchTermsDeleted,
+            purged: purge,
+          },
         };
       } catch (error) {
         console.error("Error in backfillEventSearchTerms:", error);
@@ -6258,6 +6355,9 @@ async function executeSearchSpotsByTitle(params) {
 
   const tokens = getSearchQueryTokens(query);
   if (tokens.length === 0) {
+    console.log("searchSpotsByTitle: no tokens after normalization", {
+      query: query.slice(0, 80),
+    });
     return {success: true, spots: []};
   }
 
@@ -6266,52 +6366,108 @@ async function executeSearchSpotsByTitle(params) {
     Math.max(1, Math.min(Math.floor(parsedLimit), 100)) :
     20;
 
-  const spotIdToMatchCount = new Map();
+  const tokenResults = [];
   for (const token of tokens) {
-    const queryEnd = token + "\uf8ff";
-    const termsSnapshot = await db.collection("spotSearchTerms")
-        .where("term", ">=", token)
-        .where("term", "<", queryEnd)
-        .limit(200)
-        .get();
-    termsSnapshot.docs.forEach((doc) => {
-      const spotId = doc.data().spotId;
-      if (!spotId) return;
-      const prev = spotIdToMatchCount.get(spotId) || 0;
-      spotIdToMatchCount.set(spotId, prev + 1);
-    });
+    tokenResults.push(await querySpotIdsForSearchToken(db, token));
   }
+  const tokenQueryStats = tokenResults.map((r) => ({
+    token: r.token,
+    termDocs: r.termDocs,
+    uniqueSpotIds: r.spotIds.size,
+    hitLimit: r.hitLimit,
+    missingSpotId: r.missingSpotId,
+  }));
 
-  let spotIds;
-  const spotsWithAll = [...spotIdToMatchCount.entries()]
-      .filter(([, count]) => count === tokens.length)
-      .map(([id]) => id);
-  if (spotsWithAll.length > 0) {
-    spotIds = spotsWithAll;
-  } else {
-    spotIds = [...spotIdToMatchCount.entries()]
-        .sort((a, b) => b[1] - a[1])
-        .map(([id]) => id);
-  }
+  const hasTerm = (spotId, token) => spotHasSearchTerm(db, spotId, token);
+  const {spotIdToMatchCount, refined} = await buildSpotIdMatchCounts(
+      tokens,
+      tokenResults,
+      hasTerm,
+  );
+
+  let {spotIds, useFullTokenMatchOnly, spotsWithAll} = pickSpotIdsForTitleSearch(
+      spotIdToMatchCount,
+      tokens.length,
+  );
+
+  const matchCountSummary = [...spotIdToMatchCount.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 15)
+      .map(([spotId, count]) => ({spotId, count}));
+
+  console.log("searchSpotsByTitle:", {
+    query: query.slice(0, 80),
+    tokens,
+    tokenQueryStats,
+    refined,
+    uniqueSpotIds: spotIdToMatchCount.size,
+    requiredTokenCount: tokens.length,
+    spotsWithAllCount: spotsWithAll.length,
+    spotsWithAllIds: spotsWithAll.slice(0, 20),
+    useFullTokenMatchOnly,
+    topMatchCounts: matchCountSummary,
+  });
 
   if (spotIds.length === 0) {
+    console.log("searchSpotsByTitle: no spotIds after term matching", {
+      query: query.slice(0, 80),
+    });
     return {success: true, spots: []};
   }
 
-  const spotsToFetch = spotIds.slice(0, 60);
-  const spotRefs = spotsToFetch.map((id) => db.collection("spots").doc(id));
-  const spotDocs = await db.getAll(...spotRefs);
-  const matches = [];
-  spotDocs.forEach((doc) => {
-    if (!doc.exists) return;
-    const data = doc.data();
-    if (data.duplicateOf || data.hidden) return;
-    const name = typeof data.name === "string" ? data.name.trim() : "";
-    if (!name) return;
-    const ranking = typeof data.ranking === "number" ? data.ranking : 0;
-    const matchCount = spotIdToMatchCount.get(doc.id) || 0;
-    const spot = {id: doc.id, ...data, ranking, matchCount};
-    matches.push(spot);
+  const fetchVisibleMatches = async (idsToFetch) => {
+    const spotRefs = idsToFetch.map((id) => db.collection("spots").doc(id));
+    const spotDocs = await db.getAll(...spotRefs);
+    const {matches, filteredOut, canonicalFromDuplicate} = collectSpotMatchResults(
+        spotDocs,
+        spotIdToMatchCount,
+    );
+    const seenIds = new Set(matches.map((s) => s.id));
+    const resolved = await fetchCanonicalSpotsFromDuplicates(
+        db,
+        canonicalFromDuplicate,
+        seenIds,
+    );
+    return {
+      matches: [...matches, ...resolved],
+      filteredOut,
+      resolvedCanonicalCount: resolved.length,
+    };
+  };
+
+  let spotsToFetch = spotIds.slice(0, 60);
+  let {matches, filteredOut, resolvedCanonicalCount} = await fetchVisibleMatches(
+      spotsToFetch,
+  );
+
+  if (matches.length === 0 && useFullTokenMatchOnly) {
+    spotIds = [...spotIdToMatchCount.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([id]) => id);
+    useFullTokenMatchOnly = false;
+    spotsToFetch = spotIds.slice(0, 60);
+    const fallback = await fetchVisibleMatches(spotsToFetch);
+    matches = fallback.matches;
+    filteredOut = [...filteredOut, ...fallback.filteredOut];
+    resolvedCanonicalCount = fallback.resolvedCanonicalCount;
+    console.log("searchSpotsByTitle: fallback to partial matches", {
+      query: query.slice(0, 80),
+      spotsToFetch: spotsToFetch.length,
+    });
+  }
+
+  console.log("searchSpotsByTitle: spot fetch", {
+    query: query.slice(0, 80),
+    spotIdsToFetch: spotsToFetch.length,
+    matchedVisible: matches.length,
+    resolvedCanonicalCount,
+    filteredOutCount: filteredOut.length,
+    filteredOut: filteredOut.slice(0, 25),
+    returnedNames: matches.slice(0, maxResults).map((s) => ({
+      id: s.id,
+      name: String(s.name).slice(0, 60),
+      matchCount: s.matchCount,
+    })),
   });
 
   // Sort by match count (most tokens first), then ranking, then name
