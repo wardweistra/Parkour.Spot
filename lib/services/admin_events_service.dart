@@ -868,6 +868,28 @@ class AdminEventsService extends ChangeNotifier {
     }
   }
 
+  /// Populates [eventSearchTerms] for all events (Explore autocomplete).
+  Future<Map<String, dynamic>?> backfillEventSearchTerms() async {
+    _error = null;
+    try {
+      final callable = _functions.httpsCallable(
+        'backfillEventSearchTerms',
+        options: HttpsCallableOptions(timeout: const Duration(minutes: 9)),
+      );
+      final result = await callable.call({});
+      final data = result.data;
+      if (data is Map) {
+        return Map<String, dynamic>.from(data);
+      }
+      return null;
+    } catch (e, st) {
+      _error = 'Failed to backfill event search terms: $e';
+      debugPrint('AdminEventsService.backfillEventSearchTerms error: $e\n$st');
+      notifyListeners();
+      return null;
+    }
+  }
+
   /// Materializes [eventMapPins] for all events or a single event (admin callable).
   Future<Map<String, dynamic>?> backfillEventMapPins({String? eventId}) async {
     _error = null;

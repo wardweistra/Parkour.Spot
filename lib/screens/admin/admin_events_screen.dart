@@ -144,6 +144,87 @@ class _AdminEventsScreenState extends State<AdminEventsScreen> {
     );
   }
 
+  Future<void> _backfillEventSearchTerms() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Backfill Event Name Search'),
+        content: const Text(
+          'Populates eventSearchTerms for all events (Explore autocomplete). '
+          'Run once after deploying search changes. This may take a few minutes '
+          'for large databases.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Run'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+
+    final eventsService = context.read<AdminEventsService>();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    late NavigatorState progressNavigator;
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        progressNavigator = Navigator.of(dialogContext);
+        return const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Backfilling eventSearchTerms...'),
+            ],
+          ),
+        );
+      },
+    );
+
+    try {
+      final result = await eventsService.backfillEventSearchTerms();
+      progressNavigator.pop();
+      if (!mounted) return;
+
+      if (result != null && result['success'] == true) {
+        final stats = result['stats'] as Map<String, dynamic>?;
+        final msg = stats != null
+            ? 'Backfill completed. Events: ${stats['totalProcessed']}, '
+                'Terms: ${stats['searchTermsWritten']}'
+            : 'Backfill completed';
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text(msg), backgroundColor: Colors.green),
+        );
+      } else {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.red,
+            content: Text(
+              eventsService.error ?? 'Event search terms backfill failed',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      progressNavigator.pop();
+      if (!mounted) return;
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          content: Text('Event search terms backfill failed: $e'),
+        ),
+      );
+    }
+  }
+
   Future<void> _runBackfillEventMapPins({String? eventId}) async {
     final eventsService = context.read<AdminEventsService>();
     final scaffoldMessenger = ScaffoldMessenger.of(context);
@@ -294,6 +375,11 @@ class _AdminEventsScreenState extends State<AdminEventsScreen> {
           },
         ),
         actions: [
+          IconButton(
+            tooltip: 'Backfill event name search (eventSearchTerms)',
+            icon: const Icon(Icons.search),
+            onPressed: _backfillEventSearchTerms,
+          ),
           IconButton(
             tooltip: 'Backfill event map pins',
             icon: const Icon(Icons.map_outlined),
