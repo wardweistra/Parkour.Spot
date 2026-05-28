@@ -3,10 +3,12 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../models/event_report.dart';
 import '../../services/auth_service.dart';
 import '../../services/event_report_service.dart';
 import '../../utils/event_schedule_utils.dart';
+import '../../widgets/event_suggestion_approval_dialog.dart';
 import '../../widgets/page_scaffold.dart';
 
 class EventReportQueueScreen extends StatefulWidget {
@@ -226,6 +228,13 @@ class _EventReportQueueScreenState extends State<EventReportQueueScreen> {
 
   Future<void> _approve(EventReport report) async {
     if (_busyReportIds.contains(report.id)) return;
+
+    if (report.isSuggestionForExistingEvent) {
+      await _approveSuggestion(report);
+      return;
+    }
+
+    if (!mounted) return;
     setState(() => _busyReportIds.add(report.id));
     final auth = context.read<AuthService>();
     final user = auth.currentUser;
@@ -251,10 +260,31 @@ class _EventReportQueueScreenState extends State<EventReportQueueScreen> {
         content: Text(
           eventId == null
               ? 'Could not approve this event report.'
-              : report.isSuggestionForExistingEvent
-              ? 'Approved and applied to event $eventId.'
               : 'Approved and published as event $eventId.',
         ),
+      ),
+    );
+  }
+
+  Future<void> _approveSuggestion(EventReport report) async {
+    if (_busyReportIds.contains(report.id)) return;
+    setState(() => _busyReportIds.add(report.id));
+
+    final approvedEventId = await showDialog<String?>(
+      context: context,
+      builder: (dialogContext) =>
+          EventSuggestionApprovalDialog(report: report),
+    );
+
+    if (!mounted) return;
+    setState(() => _busyReportIds.remove(report.id));
+
+    if (approvedEventId == null) return;
+
+    final l10n = AppLocalizations.of(context)!;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(l10n.eventSuggestionApprovalSuccess(approvedEventId)),
       ),
     );
   }
@@ -380,11 +410,39 @@ class _EventReportCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(report.title, style: theme.textTheme.titleMedium),
+            if (isSuggestion && report.targetEventId?.trim().isNotEmpty == true)
+              InkWell(
+                onTap: () => context.push('/event/${report.targetEventId!.trim()}'),
+                borderRadius: BorderRadius.circular(4),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          report.title,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Icon(
+                        Icons.open_in_new,
+                        size: 18,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              Text(report.title, style: theme.textTheme.titleMedium),
             if (isSuggestion) ...[
               const SizedBox(height: 4),
               Text(
-                'Suggestion for event: ${report.targetEventTitle?.trim().isNotEmpty == true ? report.targetEventTitle!.trim() : report.targetEventId!}',
+                'Suggestion for existing event',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.primary,
                   fontWeight: FontWeight.w600,

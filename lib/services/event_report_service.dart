@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/event_report.dart';
+import '../utils/event_suggestion_utils.dart';
 import '../utils/image_preparation.dart';
 
 class EventReportService {
@@ -263,6 +264,7 @@ class EventReportService {
     required String approverUserId,
     String? approverName,
     String? moderatorNotes,
+    String? targetEventIdOverride,
   }) async {
     try {
       final reportRef = _firestore.collection('eventReports').doc(reportId);
@@ -305,15 +307,39 @@ class EventReportService {
             txTargetEventId != null && txTargetEventId.isNotEmpty;
 
         if (txIsSuggestionForExistingEvent) {
-          final eventRef = _firestore.collection('events').doc(txTargetEventId);
+          final resolvedTargetEventId =
+              targetEventIdOverride?.trim().isNotEmpty == true
+              ? targetEventIdOverride!.trim()
+              : txTargetEventId;
+          final eventRef = _firestore
+              .collection('events')
+              .doc(resolvedTargetEventId);
           final eventSnapshot = await transaction.get(eventRef);
           if (!eventSnapshot.exists || eventSnapshot.data() == null) {
             throw StateError('Target event not found');
           }
 
+          final eventData = eventSnapshot.data()!;
+          if (!isNativeEventData(eventData)) {
+            debugPrint(
+              'Cannot approve event suggestion: target event '
+              '$resolvedTargetEventId is from an external source',
+            );
+            return null;
+          }
+
+          final duplicateOf = eventData['duplicateOf'];
+          if (duplicateOf is String && duplicateOf.trim().isNotEmpty) {
+            debugPrint(
+              'Cannot approve event suggestion: target event '
+              '$resolvedTargetEventId is a duplicate',
+            );
+            return null;
+          }
+
           final updates = _buildExistingEventSuggestionUpdate(
             report: txReport,
-            existingEventData: eventSnapshot.data()!,
+            existingEventData: eventData,
             promotedImageUrls: promotedImageUrls,
           );
           if (updates == null) {
@@ -327,7 +353,7 @@ class EventReportService {
 
           transaction.update(reportRef, {
             'status': 'Approved',
-            'approvedEventId': txTargetEventId,
+            'approvedEventId': resolvedTargetEventId,
             'reviewedBy': approverUserId,
             if (approverName != null && approverName.trim().isNotEmpty)
               'reviewedByName': approverName.trim(),
@@ -338,7 +364,7 @@ class EventReportService {
             'reviewedAt': FieldValue.serverTimestamp(),
             'updatedAt': FieldValue.serverTimestamp(),
           });
-          return txTargetEventId;
+          return resolvedTargetEventId;
         }
 
         final eventData = _buildEventData(

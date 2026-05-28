@@ -3316,5 +3316,112 @@
         "type": "String"
       }
     }
+  },
+  "eventSuggestionApprovalTitle": "Review event suggestion",
+  "@eventSuggestionApprovalTitle": {
+    "description": "Dialog title for reviewing event photo/edit suggestions"
+  },
+  "eventSuggestionCannotApproveExternalTitle": "Cannot approve suggestion",
+  "@eventSuggestionCannotApproveExternalTitle": {
+    "description": "Warning title when target event is from an external source"
+  },
+  "eventSuggestionCannotApproveExternalBody": "The selected event is from an external source ({sourceName}). Suggestions can only be approved for native events.\n\nTo approve this suggestion, first create a native event from the event details menu.",
+  "@eventSuggestionCannotApproveExternalBody": {
+    "description": "Warning body when target event is from an external source",
+    "placeholders": {
+      "sourceName": {
+        "type": "String"
+      }
+    }
+  },
+  "eventSuggestionCannotApproveDuplicateTitle": "Cannot approve suggestion",
+  "@eventSuggestionCannotApproveDuplicateTitle": {
+    "description": "Warning title when target event is a duplicate"
+  },
+  "eventSuggestionCannotApproveDuplicateBody": "The selected event is a duplicate of another event. Suggestions can only be approved for the native original event.\n\nPlease select the original event below.",
+  "@eventSuggestionCannotApproveDuplicateBody": {
+    "description": "Warning body when target event is a duplicate"
+  },
+  "eventSuggestionTargetEventLabel": "Target event",
+  "@eventSuggestionTargetEventLabel": {
+    "description": "Label for target event selection in approval dialog"
+  },
+  "eventSuggestionCurrentEventLabel": "Reported event: {title}",
+  "@eventSuggestionCurrentEventLabel": {
+    "description": "Radio label for the reported event in approval dialog",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "eventSuggestionOriginalEventLabel": "Original event: {title}",
+  "@eventSuggestionOriginalEventLabel": {
+    "description": "Radio label for the original event in approval dialog",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "eventSuggestionReportedEventDuplicateSubtitle": "The reported event (duplicate of {title})",
+  "@eventSuggestionReportedEventDuplicateSubtitle": {
+    "description": "Subtitle when reported event is a duplicate",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "eventSuggestionReportedEventExternalSubtitle": "The reported event (from {sourceName})",
+  "@eventSuggestionReportedEventExternalSubtitle": {
+    "description": "Subtitle when reported event is from an external source",
+    "placeholders": {
+      "sourceName": {
+        "type": "String"
+      }
+    }
+  },
+  "eventSuggestionReportedEventSubtitle": "The reported event",
+  "@eventSuggestionReportedEventSubtitle": {
+    "description": "Default subtitle for reported event target option"
+  },
+  "eventSuggestionOriginalEventExternalSubtitle": "The original event (from {sourceName})",
+  "@eventSuggestionOriginalEventExternalSubtitle": {
+    "description": "Subtitle when original event is from an external source",
+    "placeholders": {
+      "sourceName": {
+        "type": "String"
+      }
+    }
+  },
+  "eventSuggestionOriginalEventRecommendedSubtitle": "The original event (recommended)",
+  "@eventSuggestionOriginalEventRecommendedSubtitle": {
+    "description": "Subtitle when original event is native and recommended"
+  },
+  "eventSuggestionModeratorNotesLabel": "Comment (optional)",
+  "@eventSuggestionModeratorNotesLabel": {
+    "description": "Label for optional moderator notes in event suggestion approval"
+  },
+  "eventSuggestionModeratorNotesHint": "Document why you approved or rejected this suggestion...",
+  "@eventSuggestionModeratorNotesHint": {
+    "description": "Hint for optional moderator notes in event suggestion approval"
+  },
+  "eventSuggestionApproveButton": "Approve suggestion",
+  "@eventSuggestionApproveButton": {
+    "description": "Confirm button in event suggestion approval dialog"
+  },
+  "eventSuggestionApprovalFailed": "Could not approve this event suggestion.",
+  "@eventSuggestionApprovalFailed": {
+    "description": "Generic failure when event suggestion approval fails"
+  },
+  "eventSuggestionApprovalSuccess": "Approved and applied to event {eventId}.",
+  "@eventSuggestionApprovalSuccess": {
+    "description": "Success message after approving an event suggestion",
+    "placeholders": {
+      "eventId": {
+        "type": "String"
+      }
+    }
   }
 }

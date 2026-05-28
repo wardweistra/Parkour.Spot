@@ -20,6 +20,7 @@ import '../../services/spot_service.dart';
 import '../../services/search_state_service.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../services/event_report_service.dart';
+import '../../utils/event_suggestion_utils.dart';
 import '../../utils/marker_icon_utils.dart';
 import '../../utils/image_preparation.dart';
 import '../../widgets/location_info_box.dart';
@@ -276,17 +277,12 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     ParkourEvent event,
     AppLocalizations l10n,
   ) {
-    final duplicateOf = event.duplicateOf?.trim();
-    if (duplicateOf != null && duplicateOf.isNotEmpty) {
-      return l10n.eventDetailCannotSuggestForDuplicate;
-    }
-    if (!event.isNativeEvent) {
-      return l10n.eventDetailCannotSuggestForExternal;
-    }
-    if (event.id == null || event.id!.trim().isEmpty) {
-      return l10n.eventDetailUnableSuggestNow;
-    }
-    return null;
+    return switch (eventSuggestionBlockedReasonKey(event)) {
+      'eventDetailCannotSuggestForDuplicate' =>
+        l10n.eventDetailCannotSuggestForDuplicate,
+      'eventDetailUnableSuggestNow' => l10n.eventDetailUnableSuggestNow,
+      _ => null,
+    };
   }
 
   Future<void> _showSuggestPhotoDialog() async {

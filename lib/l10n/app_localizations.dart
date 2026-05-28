@@ -5726,6 +5726,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Error submitting edit suggestion: {error}'**
   String eventDetailSuggestEditSubmitError(String error);
+
+  /// Dialog title for reviewing event photo/edit suggestions
+  ///
+  /// In en, this message translates to:
+  /// **'Review event suggestion'**
+  String get eventSuggestionApprovalTitle;
+
+  /// Warning title when target event is from an external source
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot approve suggestion'**
+  String get eventSuggestionCannotApproveExternalTitle;
+
+  /// Warning body when target event is from an external source
+  ///
+  /// In en, this message translates to:
+  /// **'The selected event is from an external source ({sourceName}). Suggestions can only be approved for native events.\n\nTo approve this suggestion, first create a native event from the event details menu.'**
+  String eventSuggestionCannotApproveExternalBody(String sourceName);
+
+  /// Warning title when target event is a duplicate
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot approve suggestion'**
+  String get eventSuggestionCannotApproveDuplicateTitle;
+
+  /// Warning body when target event is a duplicate
+  ///
+  /// In en, this message translates to:
+  /// **'The selected event is a duplicate of another event. Suggestions can only be approved for the native original event.\n\nPlease select the original event below.'**
+  String get eventSuggestionCannotApproveDuplicateBody;
+
+  /// Label for target event selection in approval dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Target event'**
+  String get eventSuggestionTargetEventLabel;
+
+  /// Radio label for the reported event in approval dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Reported event: {title}'**
+  String eventSuggestionCurrentEventLabel(String title);
+
+  /// Radio label for the original event in approval dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Original event: {title}'**
+  String eventSuggestionOriginalEventLabel(String title);
+
+  /// Subtitle when reported event is a duplicate
+  ///
+  /// In en, this message translates to:
+  /// **'The reported event (duplicate of {title})'**
+  String eventSuggestionReportedEventDuplicateSubtitle(String title);
+
+  /// Subtitle when reported event is from an external source
+  ///
+  /// In en, this message translates to:
+  /// **'The reported event (from {sourceName})'**
+  String eventSuggestionReportedEventExternalSubtitle(String sourceName);
+
+  /// Default subtitle for reported event target option
+  ///
+  /// In en, this message translates to:
+  /// **'The reported event'**
+  String get eventSuggestionReportedEventSubtitle;
+
+  /// Subtitle when original event is from an external source
+  ///
+  /// In en, this message translates to:
+  /// **'The original event (from {sourceName})'**
+  String eventSuggestionOriginalEventExternalSubtitle(String sourceName);
+
+  /// Subtitle when original event is native and recommended
+  ///
+  /// In en, this message translates to:
+  /// **'The original event (recommended)'**
+  String get eventSuggestionOriginalEventRecommendedSubtitle;
+
+  /// Label for optional moderator notes in event suggestion approval
+  ///
+  /// In en, this message translates to:
+  /// **'Comment (optional)'**
+  String get eventSuggestionModeratorNotesLabel;
+
+  /// Hint for optional moderator notes in event suggestion approval
+  ///
+  /// In en, this message translates to:
+  /// **'Document why you approved or rejected this suggestion...'**
+  String get eventSuggestionModeratorNotesHint;
+
+  /// Confirm button in event suggestion approval dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Approve suggestion'**
+  String get eventSuggestionApproveButton;
+
+  /// Generic failure when event suggestion approval fails
+  ///
+  /// In en, this message translates to:
+  /// **'Could not approve this event suggestion.'**
+  String get eventSuggestionApprovalFailed;
+
+  /// Success message after approving an event suggestion
+  ///
+  /// In en, this message translates to:
+  /// **'Approved and applied to event {eventId}.'**
+  String eventSuggestionApprovalSuccess(String eventId);
 }
 
 class _AppLocalizationsDelegate

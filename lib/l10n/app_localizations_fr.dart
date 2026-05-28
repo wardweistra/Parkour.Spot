@@ -3436,4 +3436,78 @@ class AppLocalizationsFr extends AppLocalizations {
   String eventDetailSuggestEditSubmitError(String error) {
     return 'Erreur lors de l’envoi de la suggestion de modification : $error';
   }
+
+  @override
+  String get eventSuggestionApprovalTitle => 'Review event suggestion';
+
+  @override
+  String get eventSuggestionCannotApproveExternalTitle =>
+      'Cannot approve suggestion';
+
+  @override
+  String eventSuggestionCannotApproveExternalBody(String sourceName) {
+    return 'The selected event is from an external source ($sourceName). Suggestions can only be approved for native events.\n\nTo approve this suggestion, first create a native event from the event details menu.';
+  }
+
+  @override
+  String get eventSuggestionCannotApproveDuplicateTitle =>
+      'Cannot approve suggestion';
+
+  @override
+  String get eventSuggestionCannotApproveDuplicateBody =>
+      'The selected event is a duplicate of another event. Suggestions can only be approved for the native original event.\n\nPlease select the original event below.';
+
+  @override
+  String get eventSuggestionTargetEventLabel => 'Target event';
+
+  @override
+  String eventSuggestionCurrentEventLabel(String title) {
+    return 'Reported event: $title';
+  }
+
+  @override
+  String eventSuggestionOriginalEventLabel(String title) {
+    return 'Original event: $title';
+  }
+
+  @override
+  String eventSuggestionReportedEventDuplicateSubtitle(String title) {
+    return 'The reported event (duplicate of $title)';
+  }
+
+  @override
+  String eventSuggestionReportedEventExternalSubtitle(String sourceName) {
+    return 'The reported event (from $sourceName)';
+  }
+
+  @override
+  String get eventSuggestionReportedEventSubtitle => 'The reported event';
+
+  @override
+  String eventSuggestionOriginalEventExternalSubtitle(String sourceName) {
+    return 'The original event (from $sourceName)';
+  }
+
+  @override
+  String get eventSuggestionOriginalEventRecommendedSubtitle =>
+      'The original event (recommended)';
+
+  @override
+  String get eventSuggestionModeratorNotesLabel => 'Comment (optional)';
+
+  @override
+  String get eventSuggestionModeratorNotesHint =>
+      'Document why you approved or rejected this suggestion...';
+
+  @override
+  String get eventSuggestionApproveButton => 'Approve suggestion';
+
+  @override
+  String get eventSuggestionApprovalFailed =>
+      'Could not approve this event suggestion.';
+
+  @override
+  String eventSuggestionApprovalSuccess(String eventId) {
+    return 'Approved and applied to event $eventId.';
+  }
 }
