@@ -680,6 +680,10 @@ class EventReportService {
         .where((url) => url.isNotEmpty)
         .take(maxSuggestedPhotos)
         .toList();
+    final createdBy = resolveEventCreatedBy(
+      reporterUserId: report.reporterUserId,
+      approverUserId: approverUserId,
+    );
 
     return <String, dynamic>{
       'title': title,
@@ -705,9 +709,21 @@ class EventReportService {
       'spotListIds': normalizedSpotListIds,
       if (normalizedImageUrls != null && normalizedImageUrls.isNotEmpty)
         'imageUrls': normalizedImageUrls,
-      'createdBy': approverUserId,
+      'createdBy': createdBy,
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     };
+  }
+
+  @visibleForTesting
+  static String resolveEventCreatedBy({
+    String? reporterUserId,
+    required String approverUserId,
+  }) {
+    final normalizedReporterId = reporterUserId?.trim();
+    if (normalizedReporterId != null && normalizedReporterId.isNotEmpty) {
+      return normalizedReporterId;
+    }
+    return approverUserId;
   }
 }

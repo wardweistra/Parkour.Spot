@@ -333,13 +333,19 @@ class SpotService extends ChangeNotifier {
       List<Map<String, String>> contributors = List.from(
         updatedSpot.contributors ?? [],
       );
-      if (reporterUserId != null && reporterUserName != null) {
-        final exists = contributors.any((c) => c['userId'] == reporterUserId);
+      final resolvedContributor = resolveSuggestionContributor(
+        reporterUserId: reporterUserId,
+        reporterUserName: reporterUserName,
+        approverUserId: moderatorUserId,
+        approverUserName: moderatorUserName,
+      );
+      if (resolvedContributor != null) {
+        final contributorUserId = resolvedContributor['userId']!;
+        final exists = contributors.any(
+          (c) => c['userId'] == contributorUserId,
+        );
         if (!exists) {
-          contributors.add({
-            'userId': reporterUserId,
-            'userName': reporterUserName,
-          });
+          contributors.add(resolvedContributor);
         }
       }
 
@@ -789,17 +795,23 @@ class SpotService extends ChangeNotifier {
         }
       }
 
-      // Update contributors list
+      // Update contributors list (credit suggester first, fallback to approver)
       List<Map<String, String>> updatedContributors = List.from(
         targetSpot.contributors ?? [],
       );
-      if (userId != null && userName != null) {
-        // Check if contributor already exists
+      final resolvedContributor = resolveSuggestionContributor(
+        reporterUserId: userId,
+        reporterUserName: userName,
+        approverUserId: approvedByUserId,
+        approverUserName: approvedByUserName,
+      );
+      if (resolvedContributor != null) {
+        final contributorUserId = resolvedContributor['userId']!;
         final contributorExists = updatedContributors.any(
-          (c) => c['userId'] == userId,
+          (c) => c['userId'] == contributorUserId,
         );
         if (!contributorExists) {
-          updatedContributors.add({'userId': userId, 'userName': userName});
+          updatedContributors.add(resolvedContributor);
         }
       }
 
@@ -841,6 +853,40 @@ class SpotService extends ChangeNotifier {
       notifyListeners();
       return null;
     }
+  }
+
+  @visibleForTesting
+  static Map<String, String>? resolveSuggestionContributor({
+    String? reporterUserId,
+    String? reporterUserName,
+    String? approverUserId,
+    String? approverUserName,
+  }) {
+    final normalizedReporterUserId = reporterUserId?.trim();
+    final normalizedReporterUserName = reporterUserName?.trim();
+    final normalizedApproverUserId = approverUserId?.trim();
+    final normalizedApproverUserName = approverUserName?.trim();
+
+    final hasReporter =
+        normalizedReporterUserId != null && normalizedReporterUserId.isNotEmpty;
+    final selectedUserId = hasReporter
+        ? normalizedReporterUserId
+        : normalizedApproverUserId;
+
+    if (selectedUserId == null || selectedUserId.isEmpty) {
+      return null;
+    }
+
+    final selectedUserName = hasReporter
+        ? normalizedReporterUserName
+        : normalizedApproverUserName;
+
+    return <String, String>{
+      'userId': selectedUserId,
+      'userName': (selectedUserName != null && selectedUserName.isNotEmpty)
+          ? selectedUserName
+          : selectedUserId,
+    };
   }
 
   // Move photos from /suggestions/ to /rejected/ path (used when rejecting photo suggestions)
