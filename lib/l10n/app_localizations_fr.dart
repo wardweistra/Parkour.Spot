@@ -216,39 +216,39 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get profilePushNotificationsThisDeviceTitle =>
-      'Push notifications on this browser/device';
+      'Notifications push sur ce navigateur/cet appareil';
 
   @override
   String get profilePushNotificationsUnsupported =>
-      'Push notifications are not supported on this browser.';
+      'Les notifications push ne sont pas prises en charge par ce navigateur.';
 
   @override
   String get profilePushNotificationsLoading =>
-      'Checking push notification status for this device...';
+      'Vérification de l’état des notifications push sur cet appareil…';
 
   @override
   String get profilePushNotificationsPermissionDenied =>
-      'Push permission is blocked in your browser settings for this site.';
+      'L’autorisation push est bloquée dans les paramètres du navigateur pour ce site.';
 
   @override
   String get profilePushNotificationsPermissionNotDetermined =>
-      'Turn this on to ask for permission and subscribe this browser.';
+      'Activez cette option pour demander l’autorisation et abonner ce navigateur.';
 
   @override
   String get profilePushNotificationsEnabled =>
-      'This browser is subscribed and can receive push alerts.';
+      'Ce navigateur est abonné et peut recevoir des alertes push.';
 
   @override
   String get profilePushNotificationsPermissionGrantedButOff =>
-      'Permission is granted, but this browser is currently unsubscribed.';
+      'L’autorisation est accordée, mais ce navigateur n’est pas abonné actuellement.';
 
   @override
   String get profilePushNotificationsUnknown =>
-      'Push status is currently unavailable. Try again shortly.';
+      'L’état push est indisponible pour le moment. Réessayez bientôt.';
 
   @override
   String get profilePushNotificationsError =>
-      'We couldn\'t update push notifications on this browser. Please try again.';
+      'Impossible de mettre à jour les notifications push sur ce navigateur. Réessayez.';
 
   @override
   String get profileLocationAlertsDescription =>
@@ -3475,76 +3475,77 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get eventSuggestionApprovalTitle => 'Review event suggestion';
+  String get eventSuggestionApprovalTitle =>
+      'Examiner la suggestion d’événement';
 
   @override
   String get eventSuggestionCannotApproveExternalTitle =>
-      'Cannot approve suggestion';
+      'Impossible d’approuver la suggestion';
 
   @override
   String eventSuggestionCannotApproveExternalBody(String sourceName) {
-    return 'The selected event is from an external source ($sourceName). Suggestions can only be approved for native events.\n\nTo approve this suggestion, first create a native event from the event details menu.';
+    return 'L’événement sélectionné provient d’une source externe ($sourceName). Les suggestions ne peuvent être approuvées que pour les événements natifs.\n\nPour approuver cette suggestion, créez d’abord un événement natif depuis le menu de l’événement.';
   }
 
   @override
   String get eventSuggestionCannotApproveDuplicateTitle =>
-      'Cannot approve suggestion';
+      'Impossible d’approuver la suggestion';
 
   @override
   String get eventSuggestionCannotApproveDuplicateBody =>
-      'The selected event is a duplicate of another event. Suggestions can only be approved for the native original event.\n\nPlease select the original event below.';
+      'L’événement sélectionné est un doublon d’un autre événement. Les suggestions ne peuvent être approuvées que pour l’événement original natif.\n\nVeuillez sélectionner l’événement original ci-dessous.';
 
   @override
-  String get eventSuggestionTargetEventLabel => 'Target event';
+  String get eventSuggestionTargetEventLabel => 'Événement cible';
 
   @override
   String eventSuggestionCurrentEventLabel(String title) {
-    return 'Reported event: $title';
+    return 'Événement signalé : $title';
   }
 
   @override
   String eventSuggestionOriginalEventLabel(String title) {
-    return 'Original event: $title';
+    return 'Événement d’origine : $title';
   }
 
   @override
   String eventSuggestionReportedEventDuplicateSubtitle(String title) {
-    return 'The reported event (duplicate of $title)';
+    return 'L’événement signalé (doublon de $title)';
   }
 
   @override
   String eventSuggestionReportedEventExternalSubtitle(String sourceName) {
-    return 'The reported event (from $sourceName)';
+    return 'L’événement signalé (de $sourceName)';
   }
 
   @override
-  String get eventSuggestionReportedEventSubtitle => 'The reported event';
+  String get eventSuggestionReportedEventSubtitle => 'L’événement signalé';
 
   @override
   String eventSuggestionOriginalEventExternalSubtitle(String sourceName) {
-    return 'The original event (from $sourceName)';
+    return 'L’événement d’origine (de $sourceName)';
   }
 
   @override
   String get eventSuggestionOriginalEventRecommendedSubtitle =>
-      'The original event (recommended)';
+      'L’événement d’origine (recommandé)';
 
   @override
-  String get eventSuggestionModeratorNotesLabel => 'Comment (optional)';
+  String get eventSuggestionModeratorNotesLabel => 'Commentaire (optionnel)';
 
   @override
   String get eventSuggestionModeratorNotesHint =>
-      'Document why you approved or rejected this suggestion...';
+      'Documentez pourquoi vous avez approuvé ou rejeté cette suggestion…';
 
   @override
-  String get eventSuggestionApproveButton => 'Approve suggestion';
+  String get eventSuggestionApproveButton => 'Approuver la suggestion';
 
   @override
   String get eventSuggestionApprovalFailed =>
-      'Could not approve this event suggestion.';
+      'Impossible d’approuver cette suggestion d’événement.';
 
   @override
   String eventSuggestionApprovalSuccess(String eventId) {
-    return 'Approved and applied to event $eventId.';
+    return 'Approuvée et appliquée à l’événement $eventId.';
   }
 }

@@ -218,39 +218,39 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get profilePushNotificationsThisDeviceTitle =>
-      'Push notifications on this browser/device';
+      'Notificações push neste navegador/dispositivo';
 
   @override
   String get profilePushNotificationsUnsupported =>
-      'Push notifications are not supported on this browser.';
+      'As notificações push não são suportadas neste navegador.';
 
   @override
   String get profilePushNotificationsLoading =>
-      'Checking push notification status for this device...';
+      'A verificar o estado das notificações push neste dispositivo…';
 
   @override
   String get profilePushNotificationsPermissionDenied =>
-      'Push permission is blocked in your browser settings for this site.';
+      'A permissão push está bloqueada nas definições do navegador para este site.';
 
   @override
   String get profilePushNotificationsPermissionNotDetermined =>
-      'Turn this on to ask for permission and subscribe this browser.';
+      'Ativa isto para pedir permissão e subscrever este navegador.';
 
   @override
   String get profilePushNotificationsEnabled =>
-      'This browser is subscribed and can receive push alerts.';
+      'Este navegador está subscrito e pode receber alertas push.';
 
   @override
   String get profilePushNotificationsPermissionGrantedButOff =>
-      'Permission is granted, but this browser is currently unsubscribed.';
+      'A permissão foi concedida, mas este navegador não está subscrito de momento.';
 
   @override
   String get profilePushNotificationsUnknown =>
-      'Push status is currently unavailable. Try again shortly.';
+      'O estado push não está disponível agora. Tenta novamente em breve.';
 
   @override
   String get profilePushNotificationsError =>
-      'We couldn\'t update push notifications on this browser. Please try again.';
+      'Não foi possível atualizar as notificações push neste navegador. Tenta novamente.';
 
   @override
   String get profileLocationAlertsDescription =>
@@ -3387,142 +3387,142 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get eventDetailQuickActionSuggestPhoto => 'Suggest photo';
+  String get eventDetailQuickActionSuggestPhoto => 'Sugerir foto';
 
   @override
-  String get eventDetailQuickActionSuggestEdit => 'Suggest an edit';
+  String get eventDetailQuickActionSuggestEdit => 'Sugerir edição';
 
   @override
   String get eventDetailUnableSuggestNow =>
-      'Unable to suggest changes for this event right now.';
+      'Não é possível sugerir alterações para este evento neste momento.';
 
   @override
   String get eventDetailCannotSuggestForDuplicate =>
-      'Cannot suggest changes for duplicate events.';
+      'Não é possível sugerir alterações para eventos duplicados.';
 
   @override
   String get eventDetailCannotSuggestForExternal =>
-      'Cannot suggest changes for externally sourced events. Create a native event first.';
+      'Não é possível sugerir alterações para eventos de fontes externas. Cria primeiro um evento nativo.';
 
   @override
   String get eventDetailThanksPhotoSuggestion =>
-      'Thanks! Your photo suggestion has been submitted for review.';
+      'Obrigado! A tua sugestão de fotos foi enviada para revisão.';
 
   @override
   String get eventDetailThanksEditSuggestion =>
-      'Thanks! Your edit suggestion has been submitted for review.';
+      'Obrigado! A tua sugestão de edição foi enviada para revisão.';
 
   @override
-  String get eventDetailSuggestPhotosTitle => 'Suggest photos';
+  String get eventDetailSuggestPhotosTitle => 'Sugerir fotos';
 
   @override
   String get eventDetailSuggestPhotosIntro =>
-      'Upload photos for this event. Moderators will review your suggestion.';
+      'Carrega fotos para este evento. Os moderadores vão rever a tua sugestão.';
 
   @override
   String get eventDetailSuggestPhotosPickRequired =>
-      'Please add at least one photo.';
+      'Adiciona pelo menos uma foto.';
 
   @override
   String get eventDetailSuggestPhotosSubmitFailed =>
-      'Failed to submit photo suggestion. Please try again.';
+      'Não foi possível enviar a sugestão de fotos. Tenta novamente.';
 
   @override
   String eventDetailSuggestPhotosSubmitError(String error) {
-    return 'Error submitting photo suggestion: $error';
+    return 'Erro ao enviar sugestão de fotos: $error';
   }
 
   @override
-  String get eventDetailSuggestEditTitle => 'Suggest an edit';
+  String get eventDetailSuggestEditTitle => 'Sugerir edição';
 
   @override
   String get eventDetailSuggestEditIntro =>
-      'Propose updates to this event. Moderators will review your suggestion.';
+      'Propõe atualizações para este evento. Os moderadores vão rever a tua sugestão.';
 
   @override
   String get eventDetailSuggestEditNoChanges =>
-      'Please suggest at least one change.';
+      'Sugere pelo menos uma alteração.';
 
   @override
   String get eventDetailSuggestEditSubmitFailed =>
-      'Failed to submit edit suggestion. Please try again.';
+      'Não foi possível enviar a sugestão de edição. Tenta novamente.';
 
   @override
   String eventDetailSuggestEditSubmitError(String error) {
-    return 'Error submitting edit suggestion: $error';
+    return 'Erro ao enviar sugestão de edição: $error';
   }
 
   @override
-  String get eventSuggestionApprovalTitle => 'Review event suggestion';
+  String get eventSuggestionApprovalTitle => 'Rever sugestão de evento';
 
   @override
   String get eventSuggestionCannotApproveExternalTitle =>
-      'Cannot approve suggestion';
+      'Não é possível aprovar a sugestão';
 
   @override
   String eventSuggestionCannotApproveExternalBody(String sourceName) {
-    return 'The selected event is from an external source ($sourceName). Suggestions can only be approved for native events.\n\nTo approve this suggestion, first create a native event from the event details menu.';
+    return 'O evento selecionado provém de uma fonte externa ($sourceName). As sugestões só podem ser aprovadas para eventos nativos.\n\nPara aprovar esta sugestão, cria primeiro um evento nativo a partir do menu do evento.';
   }
 
   @override
   String get eventSuggestionCannotApproveDuplicateTitle =>
-      'Cannot approve suggestion';
+      'Não é possível aprovar a sugestão';
 
   @override
   String get eventSuggestionCannotApproveDuplicateBody =>
-      'The selected event is a duplicate of another event. Suggestions can only be approved for the native original event.\n\nPlease select the original event below.';
+      'O evento selecionado é um duplicado de outro evento. As sugestões só podem ser aprovadas para o evento original nativo.\n\nSeleciona o evento original abaixo.';
 
   @override
-  String get eventSuggestionTargetEventLabel => 'Target event';
+  String get eventSuggestionTargetEventLabel => 'Evento alvo';
 
   @override
   String eventSuggestionCurrentEventLabel(String title) {
-    return 'Reported event: $title';
+    return 'Evento reportado: $title';
   }
 
   @override
   String eventSuggestionOriginalEventLabel(String title) {
-    return 'Original event: $title';
+    return 'Evento original: $title';
   }
 
   @override
   String eventSuggestionReportedEventDuplicateSubtitle(String title) {
-    return 'The reported event (duplicate of $title)';
+    return 'O evento reportado (duplicado de $title)';
   }
 
   @override
   String eventSuggestionReportedEventExternalSubtitle(String sourceName) {
-    return 'The reported event (from $sourceName)';
+    return 'O evento reportado (de $sourceName)';
   }
 
   @override
-  String get eventSuggestionReportedEventSubtitle => 'The reported event';
+  String get eventSuggestionReportedEventSubtitle => 'O evento reportado';
 
   @override
   String eventSuggestionOriginalEventExternalSubtitle(String sourceName) {
-    return 'The original event (from $sourceName)';
+    return 'O evento original (de $sourceName)';
   }
 
   @override
   String get eventSuggestionOriginalEventRecommendedSubtitle =>
-      'The original event (recommended)';
+      'O evento original (recomendado)';
 
   @override
-  String get eventSuggestionModeratorNotesLabel => 'Comment (optional)';
+  String get eventSuggestionModeratorNotesLabel => 'Comentário (opcional)';
 
   @override
   String get eventSuggestionModeratorNotesHint =>
-      'Document why you approved or rejected this suggestion...';
+      'Documenta por que motivo aprovaste ou rejeitaste esta sugestão…';
 
   @override
-  String get eventSuggestionApproveButton => 'Approve suggestion';
+  String get eventSuggestionApproveButton => 'Aprovar sugestão';
 
   @override
   String get eventSuggestionApprovalFailed =>
-      'Could not approve this event suggestion.';
+      'Não foi possível aprovar esta sugestão de evento.';
 
   @override
   String eventSuggestionApprovalSuccess(String eventId) {
-    return 'Approved and applied to event $eventId.';
+    return 'Aprovada e aplicada ao evento $eventId.';
   }
 }
