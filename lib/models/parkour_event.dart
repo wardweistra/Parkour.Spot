@@ -27,6 +27,7 @@ class ParkourEvent {
   final String? externalEventKey;
   final DateTime? externalSyncLastSeenAt;
   final DateTime? externalSyncLastChangedAt;
+  final List<Map<String, String>> contributors;
 
   /// When set, this event is a duplicate of the canonical native event [duplicateOf].
   final String? duplicateOf;
@@ -61,6 +62,7 @@ class ParkourEvent {
     this.externalEventKey,
     this.externalSyncLastSeenAt,
     this.externalSyncLastChangedAt,
+    this.contributors = const <Map<String, String>>[],
     this.duplicateOf,
     this.createdFromCreateNative = false,
   });
@@ -114,6 +116,11 @@ class ParkourEvent {
       externalSyncLastChangedAt: data['externalSyncLastChangedAt'] is Timestamp
           ? (data['externalSyncLastChangedAt'] as Timestamp).toDate()
           : null,
+      contributors: data['contributors'] is List
+          ? (data['contributors'] as List)
+                .map((e) => Map<String, String>.from(e as Map))
+                .toList()
+          : const <Map<String, String>>[],
       duplicateOf: data['duplicateOf'] as String?,
       createdFromCreateNative: data['createdFromCreateNative'] == true,
     );
@@ -161,6 +168,11 @@ class ParkourEvent {
       externalEventKey: data['externalEventKey'] as String?,
       externalSyncLastSeenAt: parseDate(data['externalSyncLastSeenAt']),
       externalSyncLastChangedAt: parseDate(data['externalSyncLastChangedAt']),
+      contributors: data['contributors'] is List
+          ? (data['contributors'] as List)
+                .map((e) => Map<String, String>.from(e as Map))
+                .toList()
+          : const <Map<String, String>>[],
       duplicateOf: data['duplicateOf'] as String?,
       createdFromCreateNative: data['createdFromCreateNative'] == true,
     );
@@ -206,6 +218,7 @@ class ParkourEvent {
         'externalSyncLastSeenAt': externalSyncLastSeenAt!.toUtc(),
       if (externalSyncLastChangedAt != null)
         'externalSyncLastChangedAt': externalSyncLastChangedAt!.toUtc(),
+      if (contributors.isNotEmpty) 'contributors': contributors,
       if (duplicateOf != null && duplicateOf!.trim().isNotEmpty)
         'duplicateOf': duplicateOf!.trim(),
       if (createdFromCreateNative) 'createdFromCreateNative': true,
@@ -239,6 +252,7 @@ class ParkourEvent {
     Object? externalEventKey = _unset,
     Object? externalSyncLastSeenAt = _unset,
     Object? externalSyncLastChangedAt = _unset,
+    List<Map<String, String>>? contributors,
     Object? duplicateOf = _unset,
     bool? createdFromCreateNative,
   }) {
@@ -299,6 +313,7 @@ class ParkourEvent {
       externalSyncLastChangedAt: identical(externalSyncLastChangedAt, _unset)
           ? this.externalSyncLastChangedAt
           : externalSyncLastChangedAt as DateTime?,
+      contributors: contributors ?? this.contributors,
       duplicateOf: identical(duplicateOf, _unset)
           ? this.duplicateOf
           : duplicateOf as String?,

@@ -5624,6 +5624,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to share event: {error}'**
   String eventDetailShareFailed(String error);
+
+  /// Quick action label for suggesting event photos
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest photo'**
+  String get eventDetailQuickActionSuggestPhoto;
+
+  /// Quick action label for suggesting event edits
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest an edit'**
+  String get eventDetailQuickActionSuggestEdit;
+
+  /// Shown when event suggestion cannot open
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to suggest changes for this event right now.'**
+  String get eventDetailUnableSuggestNow;
+
+  /// Shown when trying to suggest on duplicate events
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot suggest changes for duplicate events.'**
+  String get eventDetailCannotSuggestForDuplicate;
+
+  /// Shown when trying to suggest on external events
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot suggest changes for externally sourced events. Create a native event first.'**
+  String get eventDetailCannotSuggestForExternal;
+
+  /// Success message after submitting event photo suggestion
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks! Your photo suggestion has been submitted for review.'**
+  String get eventDetailThanksPhotoSuggestion;
+
+  /// Success message after submitting event edit suggestion
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks! Your edit suggestion has been submitted for review.'**
+  String get eventDetailThanksEditSuggestion;
+
+  /// Dialog title for event photo suggestions
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest photos'**
+  String get eventDetailSuggestPhotosTitle;
+
+  /// Dialog intro for event photo suggestions
+  ///
+  /// In en, this message translates to:
+  /// **'Upload photos for this event. Moderators will review your suggestion.'**
+  String get eventDetailSuggestPhotosIntro;
+
+  /// Validation when no photos selected for event photo suggestion
+  ///
+  /// In en, this message translates to:
+  /// **'Please add at least one photo.'**
+  String get eventDetailSuggestPhotosPickRequired;
+
+  /// General failure message for event photo suggestion submit
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to submit photo suggestion. Please try again.'**
+  String get eventDetailSuggestPhotosSubmitFailed;
+
+  /// Error detail for event photo suggestion submit
+  ///
+  /// In en, this message translates to:
+  /// **'Error submitting photo suggestion: {error}'**
+  String eventDetailSuggestPhotosSubmitError(String error);
+
+  /// Dialog title for event edit suggestions
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest an edit'**
+  String get eventDetailSuggestEditTitle;
+
+  /// Dialog intro for event edit suggestions
+  ///
+  /// In en, this message translates to:
+  /// **'Propose updates to this event. Moderators will review your suggestion.'**
+  String get eventDetailSuggestEditIntro;
+
+  /// Validation when no edit fields changed
+  ///
+  /// In en, this message translates to:
+  /// **'Please suggest at least one change.'**
+  String get eventDetailSuggestEditNoChanges;
+
+  /// General failure message for event edit suggestion submit
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to submit edit suggestion. Please try again.'**
+  String get eventDetailSuggestEditSubmitFailed;
+
+  /// Error detail for event edit suggestion submit
+  ///
+  /// In en, this message translates to:
+  /// **'Error submitting edit suggestion: {error}'**
+  String eventDetailSuggestEditSubmitError(String error);
 }
 
 class _AppLocalizationsDelegate

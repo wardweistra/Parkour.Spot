@@ -44,7 +44,7 @@ class _EventReportQueueScreenState extends State<EventReportQueueScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Review user-submitted event proposals and decide whether to publish them.',
+            'Review user-submitted event proposals and suggestions.',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
             ),
@@ -251,6 +251,8 @@ class _EventReportQueueScreenState extends State<EventReportQueueScreen> {
         content: Text(
           eventId == null
               ? 'Could not approve this event report.'
+              : report.isSuggestionForExistingEvent
+              ? 'Approved and applied to event $eventId.'
               : 'Approved and published as event $eventId.',
         ),
       ),
@@ -285,9 +287,11 @@ class _EventReportQueueScreenState extends State<EventReportQueueScreen> {
       ),
     );
     if (rejected != true) return;
+    if (!mounted) return;
 
     setState(() => _busyReportIds.add(report.id));
     final auth = context.read<AuthService>();
+    final eventReportService = context.read<EventReportService>();
     final user = auth.currentUser;
     final reviewerUserId = user?.uid;
     if (reviewerUserId == null) {
@@ -295,7 +299,7 @@ class _EventReportQueueScreenState extends State<EventReportQueueScreen> {
       return;
     }
 
-    final ok = await context.read<EventReportService>().rejectReport(
+    final ok = await eventReportService.rejectReport(
       reportId: report.id,
       reviewerUserId: reviewerUserId,
       reviewerName:
@@ -363,6 +367,8 @@ class _EventReportCard extends StatelessWidget {
     final theme = Theme.of(context);
     final color = _statusColor(theme);
     final canReview = report.status == 'New' || report.status == 'Reviewing';
+    final isSuggestion = report.isSuggestionForExistingEvent;
+    final hasSuggestedEdits = report.hasSuggestedEdits;
     return Card(
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
@@ -375,6 +381,16 @@ class _EventReportCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(report.title, style: theme.textTheme.titleMedium),
+            if (isSuggestion) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Suggestion for event: ${report.targetEventTitle?.trim().isNotEmpty == true ? report.targetEventTitle!.trim() : report.targetEventId!}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
             const SizedBox(height: 8),
             Wrap(
               spacing: 12,
@@ -420,6 +436,16 @@ class _EventReportCard extends StatelessWidget {
                     icon: Icons.map_outlined,
                     label: report.locationSummary!,
                   ),
+                if (isSuggestion)
+                  _metaChip(
+                    context,
+                    icon: hasSuggestedEdits
+                        ? Icons.edit_note_outlined
+                        : Icons.add_photo_alternate_outlined,
+                    label: hasSuggestedEdits
+                        ? 'Edit suggestion'
+                        : 'Photo suggestion',
+                  ),
               ],
             ),
             if (report.description?.isNotEmpty ?? false) ...[
@@ -434,6 +460,26 @@ class _EventReportCard extends StatelessWidget {
                   color: theme.colorScheme.primary,
                 ),
               ),
+            ],
+            if (hasSuggestedEdits) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Suggested edits',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: theme.colorScheme.secondary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              if (report.suggestedTitle?.isNotEmpty ?? false)
+                Text('Title: ${report.suggestedTitle!}'),
+              if (report.suggestedDescription?.isNotEmpty ?? false) ...[
+                const SizedBox(height: 4),
+                Text('Description: ${report.suggestedDescription!}'),
+              ],
+              if (report.suggestedWebsiteUrl?.isNotEmpty ?? false) ...[
+                const SizedBox(height: 4),
+                Text('Website: ${report.suggestedWebsiteUrl!}'),
+              ],
             ],
             if (report.suggestedPhotoUrls.isNotEmpty) ...[
               const SizedBox(height: 12),
@@ -460,9 +506,10 @@ class _EventReportCard extends StatelessWidget {
                       child: Image.network(
                         photoUrl,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => const Center(
-                          child: Icon(Icons.broken_image_outlined),
-                        ),
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Center(
+                              child: Icon(Icons.broken_image_outlined),
+                            ),
                       ),
                     ),
                   );
@@ -500,7 +547,11 @@ class _EventReportCard extends StatelessWidget {
                       child: FilledButton.icon(
                         onPressed: onApprove,
                         icon: const Icon(Icons.check_circle_outline),
-                        label: const Text('Approve & publish'),
+                        label: Text(
+                          isSuggestion
+                              ? 'Approve suggestion'
+                              : 'Approve & publish',
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -518,7 +569,11 @@ class _EventReportCard extends StatelessWidget {
                   onPressed: () =>
                       context.push('/event/${report.approvedEventId}'),
                   icon: const Icon(Icons.open_in_new),
-                  label: const Text('Open published event'),
+                  label: Text(
+                    isSuggestion
+                        ? 'Open updated event'
+                        : 'Open published event',
+                  ),
                 ),
               ] else if (report.status == 'Rejected') ...[
                 OutlinedButton.icon(

@@ -28,6 +28,9 @@ void main() {
         'createdBy': 'admin-uid',
         'createdAt': Timestamp.fromDate(createdAt),
         'updatedAt': Timestamp.fromDate(updatedAt),
+        'contributors': [
+          {'userId': 'user-1', 'userName': 'Alice'},
+        ],
       });
 
       expect(event.id, 'event-1');
@@ -50,6 +53,9 @@ void main() {
       expect(event.createdBy, 'admin-uid');
       expect(event.createdAt?.toUtc(), createdAt);
       expect(event.updatedAt?.toUtc(), updatedAt);
+      expect(event.contributors, [
+        {'userId': 'user-1', 'userName': 'Alice'},
+      ]);
       expect(event.duplicateOf, isNull);
       expect(event.isNativeEvent, isTrue);
     });
@@ -140,6 +146,20 @@ void main() {
       final map = event.toFirestore();
       expect(map['isDateOnly'], isTrue);
       expect(map['timeZone'], 'Europe/Paris');
+    });
+
+    test('toFirestore includes contributors when present', () {
+      final event = ParkourEvent(
+        title: 'Contributed event',
+        startAt: DateTime.utc(2026, 7, 10, 12, 0),
+        contributors: const [
+          {'userId': 'user-2', 'userName': 'Bob'},
+        ],
+      );
+      final map = event.toFirestore();
+      expect(map['contributors'], [
+        {'userId': 'user-2', 'userName': 'Bob'},
+      ]);
     });
 
     test('fromMap parses createdFromCreateNative', () {

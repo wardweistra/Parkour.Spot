@@ -3330,4 +3330,70 @@ class AppLocalizationsNl extends AppLocalizations {
   String eventDetailShareFailed(String error) {
     return 'Delen mislukt: $error';
   }
+
+  @override
+  String get eventDetailQuickActionSuggestPhoto => 'Suggest photo';
+
+  @override
+  String get eventDetailQuickActionSuggestEdit => 'Suggest an edit';
+
+  @override
+  String get eventDetailUnableSuggestNow =>
+      'Unable to suggest changes for this event right now.';
+
+  @override
+  String get eventDetailCannotSuggestForDuplicate =>
+      'Cannot suggest changes for duplicate events.';
+
+  @override
+  String get eventDetailCannotSuggestForExternal =>
+      'Cannot suggest changes for externally sourced events. Create a native event first.';
+
+  @override
+  String get eventDetailThanksPhotoSuggestion =>
+      'Thanks! Your photo suggestion has been submitted for review.';
+
+  @override
+  String get eventDetailThanksEditSuggestion =>
+      'Thanks! Your edit suggestion has been submitted for review.';
+
+  @override
+  String get eventDetailSuggestPhotosTitle => 'Suggest photos';
+
+  @override
+  String get eventDetailSuggestPhotosIntro =>
+      'Upload photos for this event. Moderators will review your suggestion.';
+
+  @override
+  String get eventDetailSuggestPhotosPickRequired =>
+      'Please add at least one photo.';
+
+  @override
+  String get eventDetailSuggestPhotosSubmitFailed =>
+      'Failed to submit photo suggestion. Please try again.';
+
+  @override
+  String eventDetailSuggestPhotosSubmitError(String error) {
+    return 'Error submitting photo suggestion: $error';
+  }
+
+  @override
+  String get eventDetailSuggestEditTitle => 'Suggest an edit';
+
+  @override
+  String get eventDetailSuggestEditIntro =>
+      'Propose updates to this event. Moderators will review your suggestion.';
+
+  @override
+  String get eventDetailSuggestEditNoChanges =>
+      'Please suggest at least one change.';
+
+  @override
+  String get eventDetailSuggestEditSubmitFailed =>
+      'Failed to submit edit suggestion. Please try again.';
+
+  @override
+  String eventDetailSuggestEditSubmitError(String error) {
+    return 'Error submitting edit suggestion: $error';
+  }
 }

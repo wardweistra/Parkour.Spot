@@ -60,15 +60,14 @@ class _EventDetailProvenanceLineState extends State<EventDetailProvenanceLine> {
     }
     setState(() => _loadingCreator = true);
     try {
-      final profile = await context
-          .read<UserProfileService>()
-          .getUserProfile(createdBy);
+      final profile = await context.read<UserProfileService>().getUserProfile(
+        createdBy,
+      );
       if (!mounted) return;
       final displayName = profile?.displayName?.trim();
       final username = profile?.username?.trim();
       setState(() {
-        _creatorDisplayName =
-            (displayName != null && displayName.isNotEmpty)
+        _creatorDisplayName = (displayName != null && displayName.isNotEmpty)
             ? displayName
             : (username != null && username.isNotEmpty)
             ? username
@@ -114,6 +113,7 @@ class _EventDetailProvenanceLineState extends State<EventDetailProvenanceLine> {
         !_event.createdFromCreateNative &&
         createdBy != null &&
         createdBy.isNotEmpty;
+    final hasContributors = _event.contributors.isNotEmpty;
     final hasSource =
         !_event.isNativeEvent &&
         ((_event.eventSourceId?.trim().isNotEmpty ?? false) ||
@@ -123,10 +123,19 @@ class _EventDetailProvenanceLineState extends State<EventDetailProvenanceLine> {
         _event.updatedAt != null &&
         (_event.createdAt == null || _event.updatedAt != _event.createdAt);
     return hasCreator ||
+        hasContributors ||
         hasSource ||
         hasCreatedDate ||
         hasUpdatedDate ||
         _loadingCreator;
+  }
+
+  String _trimLeadingContributorPrefix(String value) {
+    final trimmed = value.trimLeft();
+    if (trimmed.startsWith(',')) {
+      return trimmed.substring(1).trimLeft();
+    }
+    return trimmed;
   }
 
   @override
@@ -154,7 +163,9 @@ class _EventDetailProvenanceLineState extends State<EventDetailProvenanceLine> {
             : SpotDetailUi.detailSectionGap,
       ),
       child: widget.footerStyle
-          ? RichText(text: TextSpan(style: textStyle, children: spans))
+          ? RichText(
+              text: TextSpan(style: textStyle, children: spans),
+            )
           : Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -186,6 +197,9 @@ class _EventDetailProvenanceLineState extends State<EventDetailProvenanceLine> {
     final spans = <TextSpan>[];
     var hasPreviousContent = false;
     final createdById = _event.createdBy?.trim();
+    final willHaveUpdatedDate =
+        _event.updatedAt != null &&
+        (_event.createdAt == null || _event.updatedAt != _event.createdAt);
 
     if (_event.isNativeEvent &&
         !_event.createdFromCreateNative &&
@@ -226,10 +240,7 @@ class _EventDetailProvenanceLineState extends State<EventDetailProvenanceLine> {
 
       hasPreviousContent = true;
     } else if (_event.isNativeEvent && _event.createdAt != null) {
-      final createdDateText = formatRelativeDateInDays(
-        _event.createdAt!,
-        l10n,
-      );
+      final createdDateText = formatRelativeDateInDays(_event.createdAt!, l10n);
       spans.add(
         TextSpan(
           text: l10n.eventDetailEventCreatedOnDate(createdDateText),
@@ -243,8 +254,7 @@ class _EventDetailProvenanceLineState extends State<EventDetailProvenanceLine> {
       final sourceName =
           _event.eventSourceName?.trim() ?? l10n.spotDetailUnknownSource;
       final sourceId = _event.eventSourceId?.trim();
-      final canOpenSourceDetails =
-          sourceId != null && sourceId.isNotEmpty;
+      final canOpenSourceDetails = sourceId != null && sourceId.isNotEmpty;
 
       if (hasPreviousContent) {
         spans.add(TextSpan(text: ' / ', style: textStyle));
@@ -278,6 +288,54 @@ class _EventDetailProvenanceLineState extends State<EventDetailProvenanceLine> {
               : null,
         ),
       );
+      hasPreviousContent = true;
+    }
+
+    final filteredContributors = _event.contributors.where((c) {
+      final userId = c['userId']?.trim();
+      return userId == null || userId != createdById;
+    }).toList();
+    if (filteredContributors.isNotEmpty) {
+      final improvedByPrefix = hasPreviousContent
+          ? (willHaveUpdatedDate
+                ? l10n.spotDetailImprovedByAfterComma
+                : l10n.spotDetailImprovedByAfterAnd)
+          : _trimLeadingContributorPrefix(l10n.spotDetailImprovedByAfterComma);
+      spans.add(TextSpan(text: improvedByPrefix, style: textStyle));
+
+      for (var i = 0; i < filteredContributors.length; i++) {
+        final contributor = filteredContributors[i];
+        final userName = contributor['userName']?.trim();
+        final userId = contributor['userId']?.trim();
+        final label = userName != null && userName.isNotEmpty
+            ? userName
+            : l10n.spotDetailUnknownUser;
+
+        if (i > 0) {
+          spans.add(
+            TextSpan(
+              text: i == filteredContributors.length - 1
+                  ? l10n.spotDetailListJoinAnd
+                  : l10n.spotDetailListJoinComma,
+              style: textStyle,
+            ),
+          );
+        }
+
+        if (userId != null && userId.isNotEmpty) {
+          spans.add(
+            TextSpan(
+              text: label,
+              style: textStyle?.copyWith(color: theme.colorScheme.primary),
+              recognizer: TapGestureRecognizer()
+                ..onTap = () => _navigateToUserProfile(userId),
+            ),
+          );
+        } else {
+          spans.add(TextSpan(text: label, style: textStyle));
+        }
+      }
+
       hasPreviousContent = true;
     }
 

@@ -917,5 +917,22 @@
   "eventDetailRemoveDuplicateConfirmBody": "Retirer le statut de doublon pour cet événement ? Il ne pointera plus vers un autre événement comme original.",
   "eventDetailRemoveDuplicateSuccess": "Statut de doublon retiré.",
   "eventDetailCopiedToClipboard": "Événement copié dans le presse-papiers !",
-  "eventDetailShareFailed": "Échec du partage de l’événement : {error}"
+  "eventDetailShareFailed": "Échec du partage de l’événement : {error}",
+  "eventDetailQuickActionSuggestPhoto": "Suggérer une photo",
+  "eventDetailQuickActionSuggestEdit": "Suggérer une modification",
+  "eventDetailUnableSuggestNow": "Impossible de suggérer des modifications pour cet événement pour le moment.",
+  "eventDetailCannotSuggestForDuplicate": "Impossible de suggérer des modifications pour un événement en doublon.",
+  "eventDetailCannotSuggestForExternal": "Impossible de suggérer des modifications pour un événement externe. Créez d’abord un événement natif.",
+  "eventDetailThanksPhotoSuggestion": "Merci ! Votre suggestion de photos a été soumise pour examen.",
+  "eventDetailThanksEditSuggestion": "Merci ! Votre suggestion de modification a été soumise pour examen.",
+  "eventDetailSuggestPhotosTitle": "Suggérer des photos",
+  "eventDetailSuggestPhotosIntro": "Ajoutez des photos pour cet événement. Les modérateurs examineront votre suggestion.",
+  "eventDetailSuggestPhotosPickRequired": "Ajoutez au moins une photo.",
+  "eventDetailSuggestPhotosSubmitFailed": "Échec de l’envoi de la suggestion de photo. Réessayez.",
+  "eventDetailSuggestPhotosSubmitError": "Erreur lors de l’envoi de la suggestion de photo : {error}",
+  "eventDetailSuggestEditTitle": "Suggérer une modification",
+  "eventDetailSuggestEditIntro": "Proposez des modifications pour cet événement. Les modérateurs examineront votre suggestion.",
+  "eventDetailSuggestEditNoChanges": "Veuillez suggérer au moins une modification.",
+  "eventDetailSuggestEditSubmitFailed": "Échec de l’envoi de la suggestion de modification. Réessayez.",
+  "eventDetailSuggestEditSubmitError": "Erreur lors de l’envoi de la suggestion de modification : {error}"
 }

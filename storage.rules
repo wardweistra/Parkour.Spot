@@ -52,7 +52,10 @@ service firebase.storage {
     // Staging for user-submitted event photos (moderated before publish)
     match /eventSuggestions/{allPaths=**} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if request.auth != null
+        || (request.resource.size > 0
+            && request.resource.size < 10 * 1024 * 1024
+            && request.resource.contentType.matches('image/.*'));
     }
 
     // Rejected event photo suggestions

@@ -22,6 +22,8 @@ class EventReport {
     this.spotListIds = const <String>[],
     this.linkedSpotName,
     this.linkedSpotListName,
+    this.targetEventId,
+    this.targetEventTitle,
     this.reporterUserId,
     this.reporterName,
     this.reporterEmail,
@@ -29,6 +31,9 @@ class EventReport {
     this.approvedEventId,
     this.reviewedBy,
     this.reviewedByName,
+    this.suggestedTitle,
+    this.suggestedDescription,
+    this.suggestedWebsiteUrl,
     this.suggestedPhotoUrls = const <String>[],
     this.rejectedPhotoUrls = const <String>[],
     this.createdAt,
@@ -53,6 +58,8 @@ class EventReport {
   final List<String> spotListIds;
   final String? linkedSpotName;
   final String? linkedSpotListName;
+  final String? targetEventId;
+  final String? targetEventTitle;
   final String? reporterUserId;
   final String? reporterName;
   final String? reporterEmail;
@@ -61,6 +68,9 @@ class EventReport {
   final String? approvedEventId;
   final String? reviewedBy;
   final String? reviewedByName;
+  final String? suggestedTitle;
+  final String? suggestedDescription;
+  final String? suggestedWebsiteUrl;
   final List<String> suggestedPhotoUrls;
   final List<String> rejectedPhotoUrls;
   final DateTime? createdAt;
@@ -116,6 +126,8 @@ class EventReport {
       spotListIds: parseStringList(data['spotListIds']),
       linkedSpotName: data['linkedSpotName'] as String?,
       linkedSpotListName: data['linkedSpotListName'] as String?,
+      targetEventId: data['targetEventId'] as String?,
+      targetEventTitle: data['targetEventTitle'] as String?,
       reporterUserId: data['reporterUserId'] as String?,
       reporterName: data['reporterName'] as String?,
       reporterEmail: data['reporterEmail'] as String?,
@@ -124,12 +136,26 @@ class EventReport {
       approvedEventId: data['approvedEventId'] as String?,
       reviewedBy: data['reviewedBy'] as String?,
       reviewedByName: data['reviewedByName'] as String?,
+      suggestedTitle: data['suggestedTitle'] as String?,
+      suggestedDescription: data['suggestedDescription'] as String?,
+      suggestedWebsiteUrl: data['suggestedWebsiteUrl'] as String?,
       suggestedPhotoUrls: parseStringList(data['suggestedPhotoUrls']),
       rejectedPhotoUrls: parseStringList(data['rejectedPhotoUrls']),
       createdAt: parseDate(data['createdAt']),
       updatedAt: parseDate(data['updatedAt']),
       reviewedAt: parseDate(data['reviewedAt']),
     );
+  }
+
+  bool get isSuggestionForExistingEvent {
+    final id = targetEventId?.trim();
+    return id != null && id.isNotEmpty;
+  }
+
+  bool get hasSuggestedEdits {
+    return (suggestedTitle?.trim().isNotEmpty ?? false) ||
+        (suggestedDescription?.trim().isNotEmpty ?? false) ||
+        (suggestedWebsiteUrl?.trim().isNotEmpty ?? false);
   }
 
   String? get locationSummary {
