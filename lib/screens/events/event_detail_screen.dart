@@ -345,7 +345,14 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     }
   }
 
-  Widget _buildShareActionRow(AppLocalizations l10n) {
+  Widget _buildShareActionRow(
+    AppLocalizations l10n,
+    ParkourEvent event,
+    bool hasDupLink,
+    bool isAdmin,
+    bool isModeratorOnly,
+    bool hasStaffAccess,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(top: 6, bottom: 2),
       child: SingleChildScrollView(
@@ -380,63 +387,242 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               ),
             ),
             const SizedBox(width: 8),
-            Tooltip(
-              message: l10n.eventDetailQuickActionSuggestPhoto,
-              child: Semantics(
-                button: true,
-                label: l10n.eventDetailQuickActionSuggestPhoto,
-                child: Material(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(
-                    SpotDetailUi.surfaceRadius,
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(
-                      SpotDetailUi.surfaceRadius,
-                    ),
-                    onTap: _showSuggestPhotoDialog,
-                    child: SpotDetailQuickActionChip(
-                      icon: Icons.add_photo_alternate_outlined,
-                      iconColor: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.75),
-                      label: l10n.eventDetailQuickActionSuggestPhoto,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Tooltip(
-              message: l10n.eventDetailQuickActionSuggestEdit,
-              child: Semantics(
-                button: true,
-                label: l10n.eventDetailQuickActionSuggestEdit,
-                child: Material(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(
-                    SpotDetailUi.surfaceRadius,
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(
-                      SpotDetailUi.surfaceRadius,
-                    ),
-                    onTap: _showSuggestEditDialog,
-                    child: SpotDetailQuickActionChip(
-                      icon: Icons.edit_note_outlined,
-                      iconColor: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.75),
-                      label: l10n.eventDetailQuickActionSuggestEdit,
-                    ),
-                  ),
-                ),
-              ),
+            _eventEditMenuButton(
+              l10n: l10n,
+              event: event,
+              hasDupLink: hasDupLink,
+              isAdmin: isAdmin,
+              isModeratorOnly: isModeratorOnly,
+              hasStaffAccess: hasStaffAccess,
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _eventEditMenuButton({
+    required AppLocalizations l10n,
+    required ParkourEvent event,
+    required bool hasDupLink,
+    required bool isAdmin,
+    required bool isModeratorOnly,
+    required bool hasStaffAccess,
+  }) {
+    final theme = Theme.of(context);
+    final isExternalEvent = !event.isNativeEvent;
+    final shouldDisableEdit = isExternalEvent && isModeratorOnly;
+    final suggestionBlockedReason = _eventSuggestionBlockedReason(event, l10n);
+    final canSuggest = suggestionBlockedReason == null;
+
+    return PopupMenuButton<_EventEditMenuAction>(
+      position: PopupMenuPosition.under,
+      tooltip: l10n.spotDetailEditReportTooltip,
+      borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
+      splashRadius: 20,
+      onSelected: (action) =>
+          _onEditMenuAction(context, action, event, isAdmin, isModeratorOnly),
+      itemBuilder: (ctx) {
+        final localTheme = Theme.of(ctx);
+        final items = <PopupMenuEntry<_EventEditMenuAction>>[
+          PopupMenuItem<_EventEditMenuAction>(
+            value: _EventEditMenuAction.suggestPhoto,
+            enabled: canSuggest,
+            child: Row(
+              children: [
+                Icon(
+                  Icons.add_photo_alternate_outlined,
+                  color: canSuggest
+                      ? localTheme.colorScheme.primary
+                      : localTheme.colorScheme.onSurface.withValues(
+                          alpha: 0.38,
+                        ),
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        l10n.eventDetailQuickActionSuggestPhoto,
+                        style: localTheme.textTheme.bodyMedium?.copyWith(
+                          color: canSuggest
+                              ? null
+                              : localTheme.colorScheme.onSurface.withValues(
+                                  alpha: 0.38,
+                                ),
+                        ),
+                      ),
+                      Text(
+                        canSuggest
+                            ? l10n.eventDetailSuggestPhotosIntro
+                            : suggestionBlockedReason,
+                        style: localTheme.textTheme.bodySmall?.copyWith(
+                          color: localTheme.colorScheme.onSurface.withValues(
+                            alpha: 0.6,
+                          ),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          PopupMenuItem<_EventEditMenuAction>(
+            value: _EventEditMenuAction.suggestEdit,
+            enabled: canSuggest,
+            child: Row(
+              children: [
+                Icon(
+                  Icons.edit_note_outlined,
+                  color: canSuggest
+                      ? localTheme.colorScheme.primary
+                      : localTheme.colorScheme.onSurface.withValues(
+                          alpha: 0.38,
+                        ),
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        l10n.eventDetailQuickActionSuggestEdit,
+                        style: localTheme.textTheme.bodyMedium?.copyWith(
+                          color: canSuggest
+                              ? null
+                              : localTheme.colorScheme.onSurface.withValues(
+                                  alpha: 0.38,
+                                ),
+                        ),
+                      ),
+                      Text(
+                        canSuggest
+                            ? l10n.eventDetailSuggestEditIntro
+                            : suggestionBlockedReason,
+                        style: localTheme.textTheme.bodySmall?.copyWith(
+                          color: localTheme.colorScheme.onSurface.withValues(
+                            alpha: 0.6,
+                          ),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ];
+
+        if (hasStaffAccess) {
+          items.add(const PopupMenuDivider());
+          items.add(
+            PopupMenuItem<_EventEditMenuAction>(
+              value: _EventEditMenuAction.editEvent,
+              enabled: !shouldDisableEdit,
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.edit,
+                    color: shouldDisableEdit
+                        ? localTheme.colorScheme.onSurface.withValues(
+                            alpha: 0.38,
+                          )
+                        : localTheme.colorScheme.primary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          l10n.eventDetailAdminEditEvent,
+                          style: localTheme.textTheme.bodyMedium?.copyWith(
+                            color: shouldDisableEdit
+                                ? localTheme.colorScheme.onSurface.withValues(
+                                    alpha: 0.38,
+                                  )
+                                : null,
+                          ),
+                        ),
+                        Text(
+                          shouldDisableEdit
+                              ? l10n.eventDetailMenuEditEventSubtitleNative
+                              : l10n.eventDetailMenuEditEventSubtitleMod,
+                          style: localTheme.textTheme.bodySmall?.copyWith(
+                            color: localTheme.colorScheme.onSurface.withValues(
+                              alpha: 0.6,
+                            ),
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+
+          if (isExternalEvent) {
+            items.add(
+              PopupMenuItem<_EventEditMenuAction>(
+                value: _EventEditMenuAction.createNativeEvent,
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.add_circle_outline,
+                      color: localTheme.colorScheme.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(child: Text(l10n.eventDetailMenuCreateNative)),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          items.add(
+            PopupMenuItem<_EventEditMenuAction>(
+              value: _EventEditMenuAction.markDuplicate,
+              enabled: !hasDupLink,
+              child: Text(
+                l10n.spotDetailMenuMarkDuplicate,
+                style: TextStyle(
+                  color: hasDupLink
+                      ? localTheme.colorScheme.onSurface.withValues(alpha: 0.38)
+                      : null,
+                ),
+              ),
+            ),
+          );
+
+          if (hasDupLink) {
+            items.add(
+              PopupMenuItem<_EventEditMenuAction>(
+                value: _EventEditMenuAction.removeDuplicate,
+                child: Text(l10n.spotDetailMenuRemoveDuplicateStatus),
+              ),
+            );
+          }
+        }
+
+        return items;
+      },
+      child: SpotDetailQuickActionChip(
+        icon: Icons.edit_outlined,
+        iconColor: theme.colorScheme.onSurface.withValues(alpha: 0.75),
+        label: l10n.spotDetailQuickActionEdit,
       ),
     );
   }
@@ -457,122 +643,57 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     );
   }
 
-  Widget _staffMenuButton(
-    AppLocalizations l10n,
+  Future<void> _onEditMenuAction(
+    BuildContext context,
+    _EventEditMenuAction action,
     ParkourEvent event,
-    bool hasDupLink,
     bool isAdmin,
     bool isModeratorOnly,
-  ) {
-    final isExternalEvent = !event.isNativeEvent;
-    final shouldDisableEdit = isExternalEvent && isModeratorOnly;
-    return PopupMenuButton<_EventStaffAction>(
-      tooltip: isAdmin
-          ? l10n.eventDetailAdminMenuTooltip
-          : l10n.eventDetailStaffMenuTooltip,
-      onSelected: (action) =>
-          _onStaffMenu(context, action, event, isAdmin, isModeratorOnly),
-      itemBuilder: (ctx) {
-        final theme = Theme.of(ctx);
-        final items = <PopupMenuEntry<_EventStaffAction>>[
-          PopupMenuItem(
-            value: _EventStaffAction.editEvent,
-            enabled: !shouldDisableEdit,
-            child: Row(
-              children: [
-                Icon(
-                  Icons.edit,
-                  color: shouldDisableEdit
-                      ? theme.colorScheme.onSurface.withValues(alpha: 0.38)
-                      : theme.colorScheme.primary,
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        l10n.eventDetailAdminEditEvent,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: shouldDisableEdit
-                              ? theme.colorScheme.onSurface.withValues(
-                                  alpha: 0.38,
-                                )
-                              : null,
-                        ),
-                      ),
-                      Text(
-                        shouldDisableEdit
-                            ? l10n.eventDetailMenuEditEventSubtitleNative
-                            : l10n.eventDetailMenuEditEventSubtitleMod,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.6,
-                          ),
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ];
-        if (isExternalEvent) {
-          items.add(
-            PopupMenuItem(
-              value: _EventStaffAction.createNativeEvent,
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.add_circle_outline,
-                    color: theme.colorScheme.primary,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(child: Text(l10n.eventDetailMenuCreateNative)),
-                ],
-              ),
-            ),
-          );
-        }
-        items.add(
-          PopupMenuItem(
-            value: _EventStaffAction.markDuplicate,
-            enabled: !hasDupLink,
-            child: Text(
-              l10n.spotDetailMenuMarkDuplicate,
-              style: TextStyle(
-                color: hasDupLink
-                    ? theme.colorScheme.onSurface.withValues(alpha: 0.38)
-                    : null,
-              ),
-            ),
-          ),
+  ) async {
+    switch (action) {
+      case _EventEditMenuAction.suggestPhoto:
+        await _showSuggestPhotoDialog();
+        return;
+      case _EventEditMenuAction.suggestEdit:
+        await _showSuggestEditDialog();
+        return;
+      case _EventEditMenuAction.editEvent:
+        await _onStaffMenu(
+          context,
+          _EventStaffAction.editEvent,
+          event,
+          isAdmin,
+          isModeratorOnly,
         );
-        if (hasDupLink) {
-          items.add(
-            PopupMenuItem(
-              value: _EventStaffAction.removeDuplicate,
-              child: Text(l10n.spotDetailMenuRemoveDuplicateStatus),
-            ),
-          );
-        }
-        return items;
-      },
-      icon: Container(
-        width: SpotDetailUi.appBarButtonSize,
-        height: SpotDetailUi.appBarButtonSize,
-        decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.5),
-          shape: BoxShape.circle,
-        ),
-        child: const Icon(Icons.more_vert, color: Colors.white, size: 22),
-      ),
-    );
+        return;
+      case _EventEditMenuAction.createNativeEvent:
+        await _onStaffMenu(
+          context,
+          _EventStaffAction.createNativeEvent,
+          event,
+          isAdmin,
+          isModeratorOnly,
+        );
+        return;
+      case _EventEditMenuAction.markDuplicate:
+        await _onStaffMenu(
+          context,
+          _EventStaffAction.markDuplicate,
+          event,
+          isAdmin,
+          isModeratorOnly,
+        );
+        return;
+      case _EventEditMenuAction.removeDuplicate:
+        await _onStaffMenu(
+          context,
+          _EventStaffAction.removeDuplicate,
+          event,
+          isAdmin,
+          isModeratorOnly,
+        );
+        return;
+    }
   }
 
   Future<void> _onStaffMenu(
@@ -808,19 +929,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                 padding: EdgeInsets.only(left: contentInset),
                 child: _backButton(),
               ),
-              actions: [
-                if (hasStaffAccess)
-                  Padding(
-                    padding: EdgeInsets.only(right: contentInset),
-                    child: _staffMenuButton(
-                      l10n,
-                      event,
-                      hasDupLink,
-                      isAdmin,
-                      isModeratorOnly,
-                    ),
-                  ),
-              ],
+              actions: const [],
               flexibleSpace: FlexibleSpaceBar(
                 background: DetailImageCarousel(
                   key: _carouselKey,
@@ -888,7 +997,14 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                                   },
                           ),
                         ],
-                        _buildShareActionRow(l10n),
+                        _buildShareActionRow(
+                          l10n,
+                          event,
+                          hasDupLink,
+                          isAdmin,
+                          isModeratorOnly,
+                          hasStaffAccess,
+                        ),
                         const SizedBox(height: SpotDetailUi.detailTitleGap),
                         ..._buildEventMainContent(context, event, l10n),
                         if (showLinkedDuplicates) ...[
@@ -1451,7 +1567,8 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
   void initState() {
     super.initState();
     final auth = context.read<AuthService>();
-    _emailController.text = auth.currentUser?.email?.trim() ?? '';
+    _emailController.text =
+        auth.userProfile?.email.trim() ?? auth.currentUser?.email?.trim() ?? '';
   }
 
   @override
@@ -1518,10 +1635,18 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
 
   Future<void> _submit() async {
     final l10n = AppLocalizations.of(context)!;
-    final email = _emailController.text.trim();
-    if (!_validEmail(email)) {
-      setState(() => _error = l10n.spotDetailEmailInvalid);
-      return;
+    final auth = context.read<AuthService>();
+    final isLoggedIn = auth.isAuthenticated && auth.userProfile != null;
+    final trimmedEmail = _emailController.text.trim();
+    if (!isLoggedIn) {
+      if (trimmedEmail.isEmpty) {
+        setState(() => _error = l10n.spotDetailEmailRequired);
+        return;
+      }
+      if (!_validEmail(trimmedEmail)) {
+        setState(() => _error = l10n.spotDetailEmailInvalid);
+        return;
+      }
     }
     if (_selectedImageBytes.isEmpty) {
       setState(() => _error = l10n.eventDetailSuggestPhotosPickRequired);
@@ -1535,10 +1660,14 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
 
     try {
       final eventService = context.read<EventReportService>();
-      final auth = context.read<AuthService>();
       final uploadedUrls = await eventService.uploadSuggestedEventPhotos(
         _selectedImageBytes,
       );
+      final contactEmail = isLoggedIn
+          ? (trimmedEmail.isNotEmpty
+                ? trimmedEmail
+                : auth.userProfile!.email.trim())
+          : trimmedEmail;
       final ok = await eventService.submitEventPhotoSuggestion(
         targetEventId: widget.event.id!,
         targetEventTitle: widget.event.title,
@@ -1554,7 +1683,7 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
             auth.userProfile?.displayName ??
             auth.currentUser?.displayName ??
             auth.currentUser?.email,
-        reporterEmail: email,
+        reporterEmail: contactEmail.isEmpty ? null : contactEmail,
       );
 
       if (!mounted) return;
@@ -1577,6 +1706,8 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final auth = context.read<AuthService>();
+    final isLoggedIn = auth.isAuthenticated && auth.userProfile != null;
     return AlertDialog(
       title: Text(l10n.eventDetailSuggestPhotosTitle),
       content: SizedBox(
@@ -1588,16 +1719,65 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
             children: [
               Text(l10n.eventDetailSuggestPhotosIntro),
               const SizedBox(height: 12),
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                enabled: !_submitting,
-                decoration: InputDecoration(
-                  labelText: l10n.spotDetailReportEmailLabel,
-                  helperText: l10n.spotDetailSuggestPhotosEmailHelper,
-                  border: const OutlineInputBorder(),
+              if (!isLoggedIn) ...[
+                TextField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  onChanged: (_) {
+                    if (_error != null) {
+                      setState(() => _error = null);
+                    }
+                  },
+                  enabled: !_submitting,
+                  decoration: InputDecoration(
+                    labelText: l10n.spotDetailReportEmailLabel,
+                    hintText: l10n.spotDetailReportEmailLabel,
+                    helperText: l10n.spotDetailSuggestPhotosEmailHelper,
+                    border: const OutlineInputBorder(),
+                  ),
                 ),
-              ),
+              ] else ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.2,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: theme.colorScheme.outlineVariant.withValues(
+                        alpha: 0.5,
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.mail,
+                        size: 18,
+                        color: theme.colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _emailController.text.isNotEmpty
+                              ? l10n.spotDetailReportReachOutAt(
+                                  _emailController.text,
+                                )
+                              : l10n.spotDetailReportReachOutAccount,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.7,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
               if (_selectedImageBytes.isNotEmpty)
                 Wrap(
@@ -1730,7 +1910,8 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
   void initState() {
     super.initState();
     final auth = context.read<AuthService>();
-    _emailController.text = auth.currentUser?.email?.trim() ?? '';
+    _emailController.text =
+        auth.userProfile?.email.trim() ?? auth.currentUser?.email?.trim() ?? '';
     _titleController = TextEditingController(text: widget.event.title.trim());
     _descriptionController = TextEditingController(
       text: widget.event.description?.trim() ?? '',
@@ -1760,10 +1941,18 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
 
   Future<void> _submit() async {
     final l10n = AppLocalizations.of(context)!;
-    final email = _emailController.text.trim();
-    if (!_validEmail(email)) {
-      setState(() => _error = l10n.spotDetailEmailInvalid);
-      return;
+    final auth = context.read<AuthService>();
+    final isLoggedIn = auth.isAuthenticated && auth.userProfile != null;
+    final trimmedEmail = _emailController.text.trim();
+    if (!isLoggedIn) {
+      if (trimmedEmail.isEmpty) {
+        setState(() => _error = l10n.spotDetailEmailRequired);
+        return;
+      }
+      if (!_validEmail(trimmedEmail)) {
+        setState(() => _error = l10n.spotDetailEmailInvalid);
+        return;
+      }
     }
 
     final title = _titleController.text.trim();
@@ -1804,7 +1993,11 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
     });
 
     try {
-      final auth = context.read<AuthService>();
+      final contactEmail = isLoggedIn
+          ? (trimmedEmail.isNotEmpty
+                ? trimmedEmail
+                : auth.userProfile!.email.trim())
+          : trimmedEmail;
       final ok = await context
           .read<EventReportService>()
           .submitEventEditSuggestion(
@@ -1824,7 +2017,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
                 auth.userProfile?.displayName ??
                 auth.currentUser?.displayName ??
                 auth.currentUser?.email,
-            reporterEmail: email,
+            reporterEmail: contactEmail.isEmpty ? null : contactEmail,
           );
 
       if (!mounted) return;
@@ -1847,6 +2040,8 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final auth = context.read<AuthService>();
+    final isLoggedIn = auth.isAuthenticated && auth.userProfile != null;
     return AlertDialog(
       title: Text(l10n.eventDetailSuggestEditTitle),
       content: SizedBox(
@@ -1858,16 +2053,65 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
             children: [
               Text(l10n.eventDetailSuggestEditIntro),
               const SizedBox(height: 12),
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                enabled: !_submitting,
-                decoration: InputDecoration(
-                  labelText: l10n.spotDetailReportEmailLabel,
-                  helperText: l10n.spotDetailSuggestEditEmailHelper,
-                  border: const OutlineInputBorder(),
+              if (!isLoggedIn) ...[
+                TextField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  onChanged: (_) {
+                    if (_error != null) {
+                      setState(() => _error = null);
+                    }
+                  },
+                  enabled: !_submitting,
+                  decoration: InputDecoration(
+                    labelText: l10n.spotDetailReportEmailLabel,
+                    hintText: l10n.spotDetailReportEmailLabel,
+                    helperText: l10n.spotDetailSuggestEditEmailHelper,
+                    border: const OutlineInputBorder(),
+                  ),
                 ),
-              ),
+              ] else ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.2,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: theme.colorScheme.outlineVariant.withValues(
+                        alpha: 0.5,
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.mail,
+                        size: 18,
+                        color: theme.colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _emailController.text.isNotEmpty
+                              ? l10n.spotDetailReportReachOutAt(
+                                  _emailController.text,
+                                )
+                              : l10n.spotDetailReportReachOutAccount,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.7,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
               TextField(
                 controller: _titleController,
@@ -1936,6 +2180,15 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
 }
 
 enum _EventStaffAction {
+  editEvent,
+  createNativeEvent,
+  markDuplicate,
+  removeDuplicate,
+}
+
+enum _EventEditMenuAction {
+  suggestPhoto,
+  suggestEdit,
   editEvent,
   createNativeEvent,
   markDuplicate,
