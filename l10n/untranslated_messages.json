@@ -8,7 +8,24 @@
     "profilePushNotificationsEnabled",
     "profilePushNotificationsPermissionGrantedButOff",
     "profilePushNotificationsUnknown",
-    "profilePushNotificationsError"
+    "profilePushNotificationsError",
+    "eventDetailQuickActionSuggestPhoto",
+    "eventDetailQuickActionSuggestEdit",
+    "eventDetailUnableSuggestNow",
+    "eventDetailCannotSuggestForDuplicate",
+    "eventDetailCannotSuggestForExternal",
+    "eventDetailThanksPhotoSuggestion",
+    "eventDetailThanksEditSuggestion",
+    "eventDetailSuggestPhotosTitle",
+    "eventDetailSuggestPhotosIntro",
+    "eventDetailSuggestPhotosPickRequired",
+    "eventDetailSuggestPhotosSubmitFailed",
+    "eventDetailSuggestPhotosSubmitError",
+    "eventDetailSuggestEditTitle",
+    "eventDetailSuggestEditIntro",
+    "eventDetailSuggestEditNoChanges",
+    "eventDetailSuggestEditSubmitFailed",
+    "eventDetailSuggestEditSubmitError"
   ],
 
   "es": [
@@ -20,7 +37,24 @@
     "profilePushNotificationsEnabled",
     "profilePushNotificationsPermissionGrantedButOff",
     "profilePushNotificationsUnknown",
-    "profilePushNotificationsError"
+    "profilePushNotificationsError",
+    "eventDetailQuickActionSuggestPhoto",
+    "eventDetailQuickActionSuggestEdit",
+    "eventDetailUnableSuggestNow",
+    "eventDetailCannotSuggestForDuplicate",
+    "eventDetailCannotSuggestForExternal",
+    "eventDetailThanksPhotoSuggestion",
+    "eventDetailThanksEditSuggestion",
+    "eventDetailSuggestPhotosTitle",
+    "eventDetailSuggestPhotosIntro",
+    "eventDetailSuggestPhotosPickRequired",
+    "eventDetailSuggestPhotosSubmitFailed",
+    "eventDetailSuggestPhotosSubmitError",
+    "eventDetailSuggestEditTitle",
+    "eventDetailSuggestEditIntro",
+    "eventDetailSuggestEditNoChanges",
+    "eventDetailSuggestEditSubmitFailed",
+    "eventDetailSuggestEditSubmitError"
   ],
 
   "fr": [
@@ -46,7 +80,24 @@
     "profilePushNotificationsUnknown",
     "profilePushNotificationsError",
     "spotTrainingPlanTooltipPublicUntil",
-    "spotTrainingPlanTooltipPrivateUntil"
+    "spotTrainingPlanTooltipPrivateUntil",
+    "eventDetailQuickActionSuggestPhoto",
+    "eventDetailQuickActionSuggestEdit",
+    "eventDetailUnableSuggestNow",
+    "eventDetailCannotSuggestForDuplicate",
+    "eventDetailCannotSuggestForExternal",
+    "eventDetailThanksPhotoSuggestion",
+    "eventDetailThanksEditSuggestion",
+    "eventDetailSuggestPhotosTitle",
+    "eventDetailSuggestPhotosIntro",
+    "eventDetailSuggestPhotosPickRequired",
+    "eventDetailSuggestPhotosSubmitFailed",
+    "eventDetailSuggestPhotosSubmitError",
+    "eventDetailSuggestEditTitle",
+    "eventDetailSuggestEditIntro",
+    "eventDetailSuggestEditNoChanges",
+    "eventDetailSuggestEditSubmitFailed",
+    "eventDetailSuggestEditSubmitError"
   ],
 
   "pt": [
@@ -58,6 +109,23 @@
     "profilePushNotificationsEnabled",
     "profilePushNotificationsPermissionGrantedButOff",
     "profilePushNotificationsUnknown",
-    "profilePushNotificationsError"
+    "profilePushNotificationsError",
+    "eventDetailQuickActionSuggestPhoto",
+    "eventDetailQuickActionSuggestEdit",
+    "eventDetailUnableSuggestNow",
+    "eventDetailCannotSuggestForDuplicate",
+    "eventDetailCannotSuggestForExternal",
+    "eventDetailThanksPhotoSuggestion",
+    "eventDetailThanksEditSuggestion",
+    "eventDetailSuggestPhotosTitle",
+    "eventDetailSuggestPhotosIntro",
+    "eventDetailSuggestPhotosPickRequired",
+    "eventDetailSuggestPhotosSubmitFailed",
+    "eventDetailSuggestPhotosSubmitError",
+    "eventDetailSuggestEditTitle",
+    "eventDetailSuggestEditIntro",
+    "eventDetailSuggestEditNoChanges",
+    "eventDetailSuggestEditSubmitFailed",
+    "eventDetailSuggestEditSubmitError"
   ]
 }

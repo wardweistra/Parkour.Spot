@@ -70,9 +70,14 @@ class EventReportService {
     List<String> spotListIds = const <String>[],
     String? linkedSpotName,
     String? linkedSpotListName,
+    String? targetEventId,
+    String? targetEventTitle,
     String? reporterUserId,
     String? reporterName,
     String? reporterEmail,
+    String? suggestedTitle,
+    String? suggestedDescription,
+    String? suggestedWebsiteUrl,
     List<String> suggestedPhotoUrls = const <String>[],
   }) async {
     final trimmedTitle = title.trim();
@@ -94,6 +99,11 @@ class EventReportService {
         .where((url) => url.isNotEmpty)
         .take(maxSuggestedPhotos)
         .toList(growable: false);
+    final normalizedTargetEventId = targetEventId?.trim();
+    final normalizedTargetEventTitle = targetEventTitle?.trim();
+    final normalizedSuggestedTitle = suggestedTitle?.trim();
+    final normalizedSuggestedDescription = suggestedDescription?.trim();
+    final normalizedSuggestedWebsiteUrl = suggestedWebsiteUrl?.trim();
 
     try {
       await _firestore.collection('eventReports').add({
@@ -122,12 +132,27 @@ class EventReportService {
           'linkedSpotName': linkedSpotName.trim(),
         if (linkedSpotListName != null && linkedSpotListName.trim().isNotEmpty)
           'linkedSpotListName': linkedSpotListName.trim(),
+        if (normalizedTargetEventId != null &&
+            normalizedTargetEventId.isNotEmpty)
+          'targetEventId': normalizedTargetEventId,
+        if (normalizedTargetEventTitle != null &&
+            normalizedTargetEventTitle.isNotEmpty)
+          'targetEventTitle': normalizedTargetEventTitle,
         if (reporterUserId != null && reporterUserId.isNotEmpty)
           'reporterUserId': reporterUserId,
         if (reporterName != null && reporterName.trim().isNotEmpty)
           'reporterName': reporterName.trim(),
         if (reporterEmail != null && reporterEmail.trim().isNotEmpty)
           'reporterEmail': reporterEmail.trim(),
+        if (normalizedSuggestedTitle != null &&
+            normalizedSuggestedTitle.isNotEmpty)
+          'suggestedTitle': normalizedSuggestedTitle,
+        if (normalizedSuggestedDescription != null &&
+            normalizedSuggestedDescription.isNotEmpty)
+          'suggestedDescription': normalizedSuggestedDescription,
+        if (normalizedSuggestedWebsiteUrl != null &&
+            normalizedSuggestedWebsiteUrl.isNotEmpty)
+          'suggestedWebsiteUrl': normalizedSuggestedWebsiteUrl,
         if (normalizedPhotoUrls.isNotEmpty)
           'suggestedPhotoUrls': normalizedPhotoUrls,
         'status': statuses.first,
@@ -139,6 +164,72 @@ class EventReportService {
       debugPrint('Error submitting event report: $e');
       return false;
     }
+  }
+
+  Future<bool> submitEventPhotoSuggestion({
+    required String targetEventId,
+    required String targetEventTitle,
+    required DateTime startAt,
+    DateTime? endAt,
+    bool isDateOnly = false,
+    String? timeZone,
+    List<String> existingSpotIds = const <String>[],
+    List<String> existingSpotListIds = const <String>[],
+    List<String> suggestedPhotoUrls = const <String>[],
+    String? reporterUserId,
+    String? reporterName,
+    String? reporterEmail,
+  }) async {
+    return submitEventReport(
+      title: targetEventTitle,
+      startAt: startAt,
+      endAt: endAt,
+      isDateOnly: isDateOnly,
+      timeZone: timeZone,
+      spotIds: existingSpotIds,
+      spotListIds: existingSpotListIds,
+      targetEventId: targetEventId,
+      targetEventTitle: targetEventTitle,
+      reporterUserId: reporterUserId,
+      reporterName: reporterName,
+      reporterEmail: reporterEmail,
+      suggestedPhotoUrls: suggestedPhotoUrls,
+    );
+  }
+
+  Future<bool> submitEventEditSuggestion({
+    required String targetEventId,
+    required String targetEventTitle,
+    required DateTime startAt,
+    DateTime? endAt,
+    bool isDateOnly = false,
+    String? timeZone,
+    List<String> existingSpotIds = const <String>[],
+    List<String> existingSpotListIds = const <String>[],
+    String? suggestedTitle,
+    String? suggestedDescription,
+    String? suggestedWebsiteUrl,
+    String? reporterUserId,
+    String? reporterName,
+    String? reporterEmail,
+  }) async {
+    return submitEventReport(
+      title: targetEventTitle,
+      startAt: startAt,
+      endAt: endAt,
+      isDateOnly: isDateOnly,
+      timeZone: timeZone,
+      spotIds: existingSpotIds,
+      spotListIds: existingSpotListIds,
+      targetEventId: targetEventId,
+      targetEventTitle: targetEventTitle,
+      reporterUserId: reporterUserId,
+      reporterName: reporterName,
+      reporterEmail: reporterEmail,
+      suggestedTitle: suggestedTitle,
+      suggestedDescription: suggestedDescription,
+      suggestedWebsiteUrl: suggestedWebsiteUrl,
+    );
   }
 
   Future<bool> updateReportStatus({
@@ -207,6 +298,47 @@ class EventReportService {
         final txReport = EventReport.fromSnapshot(txSnapshot);
         if (txReport.status == 'Approved' && txReport.approvedEventId != null) {
           return txReport.approvedEventId;
+        }
+
+        final txTargetEventId = txReport.targetEventId?.trim();
+        final txIsSuggestionForExistingEvent =
+            txTargetEventId != null && txTargetEventId.isNotEmpty;
+
+        if (txIsSuggestionForExistingEvent) {
+          final eventRef = _firestore.collection('events').doc(txTargetEventId);
+          final eventSnapshot = await transaction.get(eventRef);
+          if (!eventSnapshot.exists || eventSnapshot.data() == null) {
+            throw StateError('Target event not found');
+          }
+
+          final updates = _buildExistingEventSuggestionUpdate(
+            report: txReport,
+            existingEventData: eventSnapshot.data()!,
+            promotedImageUrls: promotedImageUrls,
+          );
+          if (updates == null) {
+            throw StateError('Invalid existing event suggestion payload');
+          }
+
+          if (updates.isNotEmpty) {
+            updates['updatedAt'] = FieldValue.serverTimestamp();
+            transaction.update(eventRef, updates);
+          }
+
+          transaction.update(reportRef, {
+            'status': 'Approved',
+            'approvedEventId': txTargetEventId,
+            'reviewedBy': approverUserId,
+            if (approverName != null && approverName.trim().isNotEmpty)
+              'reviewedByName': approverName.trim(),
+            if (moderatorNotes != null && moderatorNotes.trim().isNotEmpty)
+              'moderatorNotes': moderatorNotes.trim(),
+            if (promotedImageUrls != null && promotedImageUrls.isNotEmpty)
+              'suggestedPhotoUrls': <String>[],
+            'reviewedAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+          return txTargetEventId;
         }
 
         final eventData = _buildEventData(
@@ -359,6 +491,75 @@ class EventReportService {
       return null;
     }
     return finalPhotoUrls;
+  }
+
+  Map<String, dynamic>? _buildExistingEventSuggestionUpdate({
+    required EventReport report,
+    required Map<String, dynamic> existingEventData,
+    List<String>? promotedImageUrls,
+  }) {
+    final updates = <String, dynamic>{};
+
+    final suggestedTitle = report.suggestedTitle?.trim();
+    if (suggestedTitle != null && suggestedTitle.isNotEmpty) {
+      updates['title'] = suggestedTitle;
+    }
+
+    final suggestedDescription = report.suggestedDescription?.trim();
+    if (suggestedDescription != null && suggestedDescription.isNotEmpty) {
+      updates['description'] = suggestedDescription;
+    }
+
+    final suggestedWebsiteUrl = report.suggestedWebsiteUrl?.trim();
+    if (suggestedWebsiteUrl != null && suggestedWebsiteUrl.isNotEmpty) {
+      updates['websiteUrl'] = suggestedWebsiteUrl;
+    }
+
+    if (promotedImageUrls != null && promotedImageUrls.isNotEmpty) {
+      final existingImageUrls = (existingEventData['imageUrls'] is Iterable)
+          ? (existingEventData['imageUrls'] as Iterable)
+                .whereType<String>()
+                .where((url) => url.trim().isNotEmpty)
+                .toList(growable: true)
+          : <String>[];
+      for (final url in promotedImageUrls) {
+        if (!existingImageUrls.contains(url)) {
+          existingImageUrls.add(url);
+        }
+      }
+      if (existingImageUrls.length > maxSuggestedPhotos) {
+        debugPrint(
+          'Existing event already has too many photos (${existingImageUrls.length})',
+        );
+        return null;
+      }
+      updates['imageUrls'] = existingImageUrls;
+    }
+
+    final reporterUserId = report.reporterUserId?.trim();
+    final reporterUserName = report.reporterName?.trim();
+    if (reporterUserId != null && reporterUserId.isNotEmpty) {
+      final contributors = (existingEventData['contributors'] is Iterable)
+          ? (existingEventData['contributors'] as Iterable)
+                .whereType<Map>()
+                .map((e) => Map<String, String>.from(e))
+                .toList(growable: true)
+          : <Map<String, String>>[];
+      final exists = contributors.any((c) => c['userId'] == reporterUserId);
+      if (!exists) {
+        final contributorName =
+            (reporterUserName != null && reporterUserName.isNotEmpty)
+            ? reporterUserName
+            : reporterUserId;
+        contributors.add(<String, String>{
+          'userId': reporterUserId,
+          'userName': contributorName,
+        });
+      }
+      updates['contributors'] = contributors;
+    }
+
+    return updates;
   }
 
   Future<List<String>> _moveEventPhotosToRejected(

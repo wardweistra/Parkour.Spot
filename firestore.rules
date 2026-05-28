@@ -523,7 +523,7 @@ service cloud.firestore {
         );
       }
 
-      allow create: if request.auth != null && eventReportPhotoUrlsOk(request.resource.data);
+      allow create: if eventReportPhotoUrlsOk(request.resource.data);
       allow read, update, delete: if requestingUserIsStaff();
     }
 

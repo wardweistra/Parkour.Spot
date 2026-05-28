@@ -3238,5 +3238,83 @@
         "type": "String"
       }
     }
+  },
+  "eventDetailQuickActionSuggestPhoto": "Suggest photo",
+  "@eventDetailQuickActionSuggestPhoto": {
+    "description": "Quick action label for suggesting event photos"
+  },
+  "eventDetailQuickActionSuggestEdit": "Suggest an edit",
+  "@eventDetailQuickActionSuggestEdit": {
+    "description": "Quick action label for suggesting event edits"
+  },
+  "eventDetailUnableSuggestNow": "Unable to suggest changes for this event right now.",
+  "@eventDetailUnableSuggestNow": {
+    "description": "Shown when event suggestion cannot open"
+  },
+  "eventDetailCannotSuggestForDuplicate": "Cannot suggest changes for duplicate events.",
+  "@eventDetailCannotSuggestForDuplicate": {
+    "description": "Shown when trying to suggest on duplicate events"
+  },
+  "eventDetailCannotSuggestForExternal": "Cannot suggest changes for externally sourced events. Create a native event first.",
+  "@eventDetailCannotSuggestForExternal": {
+    "description": "Shown when trying to suggest on external events"
+  },
+  "eventDetailThanksPhotoSuggestion": "Thanks! Your photo suggestion has been submitted for review.",
+  "@eventDetailThanksPhotoSuggestion": {
+    "description": "Success message after submitting event photo suggestion"
+  },
+  "eventDetailThanksEditSuggestion": "Thanks! Your edit suggestion has been submitted for review.",
+  "@eventDetailThanksEditSuggestion": {
+    "description": "Success message after submitting event edit suggestion"
+  },
+  "eventDetailSuggestPhotosTitle": "Suggest photos",
+  "@eventDetailSuggestPhotosTitle": {
+    "description": "Dialog title for event photo suggestions"
+  },
+  "eventDetailSuggestPhotosIntro": "Upload photos for this event. Moderators will review your suggestion.",
+  "@eventDetailSuggestPhotosIntro": {
+    "description": "Dialog intro for event photo suggestions"
+  },
+  "eventDetailSuggestPhotosPickRequired": "Please add at least one photo.",
+  "@eventDetailSuggestPhotosPickRequired": {
+    "description": "Validation when no photos selected for event photo suggestion"
+  },
+  "eventDetailSuggestPhotosSubmitFailed": "Failed to submit photo suggestion. Please try again.",
+  "@eventDetailSuggestPhotosSubmitFailed": {
+    "description": "General failure message for event photo suggestion submit"
+  },
+  "eventDetailSuggestPhotosSubmitError": "Error submitting photo suggestion: {error}",
+  "@eventDetailSuggestPhotosSubmitError": {
+    "description": "Error detail for event photo suggestion submit",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "eventDetailSuggestEditTitle": "Suggest an edit",
+  "@eventDetailSuggestEditTitle": {
+    "description": "Dialog title for event edit suggestions"
+  },
+  "eventDetailSuggestEditIntro": "Propose updates to this event. Moderators will review your suggestion.",
+  "@eventDetailSuggestEditIntro": {
+    "description": "Dialog intro for event edit suggestions"
+  },
+  "eventDetailSuggestEditNoChanges": "Please suggest at least one change.",
+  "@eventDetailSuggestEditNoChanges": {
+    "description": "Validation when no edit fields changed"
+  },
+  "eventDetailSuggestEditSubmitFailed": "Failed to submit edit suggestion. Please try again.",
+  "@eventDetailSuggestEditSubmitFailed": {
+    "description": "General failure message for event edit suggestion submit"
+  },
+  "eventDetailSuggestEditSubmitError": "Error submitting edit suggestion: {error}",
+  "@eventDetailSuggestEditSubmitError": {
+    "description": "Error detail for event edit suggestion submit",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   }
 }
