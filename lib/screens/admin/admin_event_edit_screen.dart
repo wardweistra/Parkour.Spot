@@ -392,6 +392,11 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
     final hasLatitudeText = latRaw.isNotEmpty;
     final hasLongitudeText = lngRaw.isNotEmpty;
 
+    // Linked spots supply map pins; do not refill venue coordinates on save.
+    if (_hasLinkedSpotLocation() && !hasLatitudeText && !hasLongitudeText) {
+      return true;
+    }
+
     if (hasLatitudeText && hasLongitudeText && !force) return true;
     if (hasLatitudeText != hasLongitudeText) {
       setState(() => _formError = 'Both latitude and longitude are required');
@@ -540,6 +545,22 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
     final hasLatitude = _latitudeController.text.trim().isNotEmpty;
     final hasLongitude = _longitudeController.text.trim().isNotEmpty;
     return !hasAddress && !hasLatitude && !hasLongitude;
+  }
+
+  bool _hasLinkedSpotLocation() =>
+      _linkedSpots.isNotEmpty || _linkedLists.isNotEmpty;
+
+  bool _eventHasVenueLocationSet() => !_eventHasNoLocationSet();
+
+  void _clearEventLocation() {
+    setState(() {
+      _latitudeController.clear();
+      _longitudeController.clear();
+      _addressController.clear();
+      _currentCity = null;
+      _currentCountryCode = null;
+      _formError = null;
+    });
   }
 
   Future<void> _applyCityCountryFromFirstLinkedSpotIfNeeded() async {
@@ -816,10 +837,33 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Text(
-                    'Event location',
-                    style: Theme.of(context).textTheme.titleSmall,
+                  Row(
+                    children: [
+                      Text(
+                        'Event location',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      const Spacer(),
+                      TextButton.icon(
+                        onPressed: (_isSubmitting || _isGeocoding) ||
+                                !_eventHasVenueLocationSet()
+                            ? null
+                            : _clearEventLocation,
+                        icon: const Icon(Icons.location_off_outlined),
+                        label: const Text('Clear location'),
+                      ),
+                    ],
                   ),
+                  if (_hasLinkedSpotLocation()) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'This event is linked to a spot. Clear the event location '
+                      'so the map only shows the spot pin.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 8),
                   Row(
                     children: [

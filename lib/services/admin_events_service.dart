@@ -371,6 +371,7 @@ class AdminEventsService extends ChangeNotifier {
       } else {
         updateData['timeZone'] = trimmedTimeZone;
       }
+      _applyFieldDeletesForClearedEventLocation(updateData, updated);
       await _firestore.collection('events').doc(trimmedId).update(updateData);
 
       final index = _events.indexWhere((e) => e.id == trimmedId);
@@ -681,8 +682,11 @@ class AdminEventsService extends ChangeNotifier {
     if (longitude != null && (longitude < -180 || longitude > 180)) {
       return invalidResult('Longitude must be between -180 and 180');
     }
+    final hasLinkedSpotLocation =
+        normalizedSpotIds.isNotEmpty || normalizedSpotListIds.isNotEmpty;
     if (latitude != null &&
-        (normalizedAddress == null || normalizedAddress.isEmpty)) {
+        (normalizedAddress == null || normalizedAddress.isEmpty) &&
+        !hasLinkedSpotLocation) {
       return invalidResult('Address is required when coordinates are provided');
     }
     if (endAt != null && endAt.isBefore(startAt)) {
@@ -719,6 +723,28 @@ class AdminEventsService extends ChangeNotifier {
     final uri = Uri.tryParse(value);
     if (uri == null || uri.host.isEmpty) return false;
     return uri.scheme == 'http' || uri.scheme == 'https';
+  }
+
+  /// [toFirestore] omits null location fields; Firestore [update] would keep old values.
+  void _applyFieldDeletesForClearedEventLocation(
+    Map<String, dynamic> updateData,
+    ParkourEvent updated,
+  ) {
+    if (updated.latitude == null) {
+      updateData['latitude'] = FieldValue.delete();
+    }
+    if (updated.longitude == null) {
+      updateData['longitude'] = FieldValue.delete();
+    }
+    if (updated.address == null) {
+      updateData['address'] = FieldValue.delete();
+    }
+    if (updated.city == null) {
+      updateData['city'] = FieldValue.delete();
+    }
+    if (updated.countryCode == null) {
+      updateData['countryCode'] = FieldValue.delete();
+    }
   }
 
   /// Events that point to [eventId] as their canonical native original.
