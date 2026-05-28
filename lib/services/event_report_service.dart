@@ -79,6 +79,8 @@ class EventReportService {
     String? suggestedTitle,
     String? suggestedDescription,
     String? suggestedWebsiteUrl,
+    DateTime? suggestedStartAt,
+    DateTime? suggestedEndAt,
     List<String> suggestedPhotoUrls = const <String>[],
   }) async {
     final trimmedTitle = title.trim();
@@ -105,6 +107,13 @@ class EventReportService {
     final normalizedSuggestedTitle = suggestedTitle?.trim();
     final normalizedSuggestedDescription = suggestedDescription?.trim();
     final normalizedSuggestedWebsiteUrl = suggestedWebsiteUrl?.trim();
+    final normalizedSuggestedStartAt = suggestedStartAt?.toUtc();
+    final normalizedSuggestedEndAt = suggestedEndAt?.toUtc();
+    if (normalizedSuggestedStartAt != null &&
+        normalizedSuggestedEndAt != null &&
+        normalizedSuggestedEndAt.isBefore(normalizedSuggestedStartAt)) {
+      return false;
+    }
 
     try {
       await _firestore.collection('eventReports').add({
@@ -154,6 +163,10 @@ class EventReportService {
         if (normalizedSuggestedWebsiteUrl != null &&
             normalizedSuggestedWebsiteUrl.isNotEmpty)
           'suggestedWebsiteUrl': normalizedSuggestedWebsiteUrl,
+        if (normalizedSuggestedStartAt != null)
+          'suggestedStartAt': Timestamp.fromDate(normalizedSuggestedStartAt),
+        if (normalizedSuggestedEndAt != null)
+          'suggestedEndAt': Timestamp.fromDate(normalizedSuggestedEndAt),
         if (normalizedPhotoUrls.isNotEmpty)
           'suggestedPhotoUrls': normalizedPhotoUrls,
         'status': statuses.first,
@@ -210,6 +223,8 @@ class EventReportService {
     String? suggestedTitle,
     String? suggestedDescription,
     String? suggestedWebsiteUrl,
+    DateTime? suggestedStartAt,
+    DateTime? suggestedEndAt,
     String? reporterUserId,
     String? reporterName,
     String? reporterEmail,
@@ -230,6 +245,8 @@ class EventReportService {
       suggestedTitle: suggestedTitle,
       suggestedDescription: suggestedDescription,
       suggestedWebsiteUrl: suggestedWebsiteUrl,
+      suggestedStartAt: suggestedStartAt,
+      suggestedEndAt: suggestedEndAt,
     );
   }
 
@@ -539,6 +556,44 @@ class EventReportService {
     final suggestedWebsiteUrl = report.suggestedWebsiteUrl?.trim();
     if (suggestedWebsiteUrl != null && suggestedWebsiteUrl.isNotEmpty) {
       updates['websiteUrl'] = suggestedWebsiteUrl;
+    }
+
+    if (report.suggestedStartAt != null) {
+      updates['startAt'] = Timestamp.fromDate(report.suggestedStartAt!.toUtc());
+    }
+
+    if (report.suggestedEndAt != null) {
+      final effectiveStartAt = (updates['startAt'] is Timestamp)
+          ? (updates['startAt'] as Timestamp).toDate()
+          : (existingEventData['startAt'] is Timestamp)
+          ? (existingEventData['startAt'] as Timestamp).toDate()
+          : null;
+      final suggestedEndAt = report.suggestedEndAt!.toUtc();
+      if (effectiveStartAt != null &&
+          suggestedEndAt.isBefore(effectiveStartAt)) {
+        debugPrint('Suggested event end time is before start time');
+        return null;
+      }
+      updates['endAt'] = Timestamp.fromDate(suggestedEndAt);
+    }
+
+    final effectiveStartAt = (updates['startAt'] is Timestamp)
+        ? (updates['startAt'] as Timestamp).toDate()
+        : (existingEventData['startAt'] is Timestamp)
+        ? (existingEventData['startAt'] as Timestamp).toDate()
+        : null;
+    final effectiveEndAt = (updates['endAt'] is Timestamp)
+        ? (updates['endAt'] as Timestamp).toDate()
+        : (existingEventData['endAt'] is Timestamp)
+        ? (existingEventData['endAt'] as Timestamp).toDate()
+        : null;
+    if (effectiveStartAt != null &&
+        effectiveEndAt != null &&
+        effectiveEndAt.isBefore(effectiveStartAt)) {
+      debugPrint(
+        'Existing event end time would become invalid after suggestion',
+      );
+      return null;
     }
 
     if (promotedImageUrls != null && promotedImageUrls.isNotEmpty) {

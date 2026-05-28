@@ -20,6 +20,7 @@ import '../../services/spot_service.dart';
 import '../../services/search_state_service.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../services/event_report_service.dart';
+import '../../utils/event_schedule_utils.dart';
 import '../../utils/event_suggestion_utils.dart';
 import '../../utils/marker_icon_utils.dart';
 import '../../utils/image_preparation.dart';
@@ -408,12 +409,14 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     required bool isPhoto,
   }) {
     return switch (eventSuggestionBlockedReasonKey(event)) {
-      null => isPhoto
-          ? l10n.eventDetailMenuSuggestPhotoSubtitleYes
-          : l10n.eventDetailMenuSuggestEditSubtitleYes,
-      'eventDetailCannotSuggestForDuplicate' => isPhoto
-          ? l10n.eventDetailMenuSuggestPhotoSubtitleNo
-          : l10n.eventDetailMenuSuggestEditSubtitleNo,
+      null =>
+        isPhoto
+            ? l10n.eventDetailMenuSuggestPhotoSubtitleYes
+            : l10n.eventDetailMenuSuggestEditSubtitleYes,
+      'eventDetailCannotSuggestForDuplicate' =>
+        isPhoto
+            ? l10n.eventDetailMenuSuggestPhotoSubtitleNo
+            : l10n.eventDetailMenuSuggestEditSubtitleNo,
       _ => l10n.eventDetailMenuSuggestBlockedUnavailable,
     };
   }
@@ -1816,6 +1819,8 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
   late final TextEditingController _websiteController;
+  late DateTime _suggestedStartAt;
+  DateTime? _suggestedEndAt;
   bool _submitting = false;
   String? _error;
 
@@ -1834,6 +1839,8 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
     _websiteController = TextEditingController(
       text: widget.event.websiteUrl?.trim() ?? '',
     );
+    _suggestedStartAt = widget.event.startAt;
+    _suggestedEndAt = widget.event.endAt;
   }
 
   @override
@@ -1852,6 +1859,125 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
     return parsed != null &&
         parsed.hasAuthority &&
         (parsed.scheme == 'http' || parsed.scheme == 'https');
+  }
+
+  DateTime _displayInEventTimeZone(DateTime value) {
+    return EventScheduleUtils.toDisplayDateTime(
+      value,
+      timeZone: widget.event.timeZone,
+    );
+  }
+
+  String _formatDateTime(DateTime value) {
+    return EventScheduleUtils.formatSummaryLine(
+      context,
+      startAt: value,
+      isDateOnly: widget.event.isDateOnly,
+      timeZone: widget.event.timeZone,
+    );
+  }
+
+  Future<DateTime?> _pickDateTime({required DateTime initial}) async {
+    final displayInitial = _displayInEventTimeZone(initial);
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: displayInitial,
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
+    );
+    if (pickedDate == null || !mounted) return null;
+
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(displayInitial),
+    );
+    if (pickedTime == null || !mounted) return null;
+
+    return EventScheduleUtils.localDateTimeToUtc(
+      DateTime(
+        pickedDate.year,
+        pickedDate.month,
+        pickedDate.day,
+        pickedTime.hour,
+        pickedTime.minute,
+      ),
+      timeZone: widget.event.timeZone,
+    );
+  }
+
+  Future<void> _pickStartDateTime() async {
+    if (widget.event.isDateOnly) {
+      final initialDate = _displayInEventTimeZone(_suggestedStartAt);
+      final pickedDate = await showDatePicker(
+        context: context,
+        initialDate: DateTime(
+          initialDate.year,
+          initialDate.month,
+          initialDate.day,
+        ),
+        firstDate: DateTime.now().subtract(const Duration(days: 365)),
+        lastDate: DateTime.now().add(const Duration(days: 3650)),
+      );
+      if (pickedDate == null || !mounted) return;
+      final pickedStart = EventScheduleUtils.dateStartToUtc(
+        pickedDate,
+        timeZone: widget.event.timeZone,
+      );
+      setState(() {
+        _suggestedStartAt = pickedStart;
+        if (_suggestedEndAt != null && _suggestedEndAt!.isBefore(pickedStart)) {
+          _suggestedEndAt = pickedStart;
+        }
+        _error = null;
+      });
+      return;
+    }
+
+    final value = await _pickDateTime(initial: _suggestedStartAt);
+    if (value == null || !mounted) return;
+    setState(() {
+      _suggestedStartAt = value;
+      if (_suggestedEndAt != null && _suggestedEndAt!.isBefore(value)) {
+        _suggestedEndAt = value.add(const Duration(hours: 1));
+      }
+      _error = null;
+    });
+  }
+
+  Future<void> _pickEndDateTime() async {
+    if (widget.event.isDateOnly) {
+      final initialDate = _displayInEventTimeZone(
+        _suggestedEndAt ?? _suggestedStartAt,
+      );
+      final pickedDate = await showDatePicker(
+        context: context,
+        initialDate: DateTime(
+          initialDate.year,
+          initialDate.month,
+          initialDate.day,
+        ),
+        firstDate: DateTime.now().subtract(const Duration(days: 365)),
+        lastDate: DateTime.now().add(const Duration(days: 3650)),
+      );
+      if (pickedDate == null || !mounted) return;
+      setState(() {
+        _suggestedEndAt = EventScheduleUtils.dateEndToUtc(
+          pickedDate,
+          timeZone: widget.event.timeZone,
+        );
+        _error = null;
+      });
+      return;
+    }
+
+    final value = await _pickDateTime(
+      initial: _suggestedEndAt ?? _suggestedStartAt,
+    );
+    if (value == null || !mounted) return;
+    setState(() {
+      _suggestedEndAt = value;
+      _error = null;
+    });
   }
 
   Future<void> _submit() async {
@@ -1894,10 +2020,33 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
     final suggestedWebsiteUrl = website.isNotEmpty && website != originalWebsite
         ? website
         : null;
+    final suggestedStartAt =
+        !_suggestedStartAt.toUtc().isAtSameMomentAs(
+          widget.event.startAt.toUtc(),
+        )
+        ? _suggestedStartAt.toUtc()
+        : null;
+    final suggestedEndAt =
+        (_suggestedEndAt != null &&
+            !(widget.event.endAt != null &&
+                _suggestedEndAt!.toUtc().isAtSameMomentAs(
+                  widget.event.endAt!.toUtc(),
+                )))
+        ? _suggestedEndAt!.toUtc()
+        : null;
+
+    final effectiveStartAt = suggestedStartAt ?? widget.event.startAt.toUtc();
+    final effectiveEndAt = suggestedEndAt ?? widget.event.endAt?.toUtc();
+    if (effectiveEndAt != null && effectiveEndAt.isBefore(effectiveStartAt)) {
+      setState(() => _error = l10n.addEventEndBeforeStart);
+      return;
+    }
 
     if (suggestedTitle == null &&
         suggestedDescription == null &&
-        suggestedWebsiteUrl == null) {
+        suggestedWebsiteUrl == null &&
+        suggestedStartAt == null &&
+        suggestedEndAt == null) {
       setState(() => _error = l10n.eventDetailSuggestEditNoChanges);
       return;
     }
@@ -1927,6 +2076,8 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
             suggestedTitle: suggestedTitle,
             suggestedDescription: suggestedDescription,
             suggestedWebsiteUrl: suggestedWebsiteUrl,
+            suggestedStartAt: suggestedStartAt,
+            suggestedEndAt: suggestedEndAt,
             reporterUserId: auth.currentUser?.uid,
             reporterName:
                 auth.userProfile?.displayName ??
@@ -2053,10 +2204,40 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
                 controller: _websiteController,
                 enabled: !_submitting,
                 keyboardType: TextInputType.url,
+                onChanged: (_) {
+                  if (_error != null) {
+                    setState(() => _error = null);
+                  }
+                },
                 decoration: InputDecoration(
                   labelText: l10n.addEventWebsiteLabel,
                   hintText: l10n.addEventWebsiteHint,
                   border: const OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 10),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.play_arrow_outlined),
+                title: Text(l10n.addEventStartLabel),
+                subtitle: Text(_formatDateTime(_suggestedStartAt)),
+                trailing: TextButton(
+                  onPressed: _submitting ? null : _pickStartDateTime,
+                  child: Text(l10n.spotDetailQuickActionEdit),
+                ),
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.stop_outlined),
+                title: Text(l10n.addEventEndLabel),
+                subtitle: Text(
+                  _suggestedEndAt == null
+                      ? l10n.addEventEndNotSet
+                      : _formatDateTime(_suggestedEndAt!),
+                ),
+                trailing: TextButton(
+                  onPressed: _submitting ? null : _pickEndDateTime,
+                  child: Text(l10n.spotDetailQuickActionEdit),
                 ),
               ),
               if (_error != null) ...[

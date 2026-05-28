@@ -34,6 +34,8 @@ class EventReport {
     this.suggestedTitle,
     this.suggestedDescription,
     this.suggestedWebsiteUrl,
+    this.suggestedStartAt,
+    this.suggestedEndAt,
     this.suggestedPhotoUrls = const <String>[],
     this.rejectedPhotoUrls = const <String>[],
     this.createdAt,
@@ -71,6 +73,8 @@ class EventReport {
   final String? suggestedTitle;
   final String? suggestedDescription;
   final String? suggestedWebsiteUrl;
+  final DateTime? suggestedStartAt;
+  final DateTime? suggestedEndAt;
   final List<String> suggestedPhotoUrls;
   final List<String> rejectedPhotoUrls;
   final DateTime? createdAt;
@@ -139,6 +143,8 @@ class EventReport {
       suggestedTitle: data['suggestedTitle'] as String?,
       suggestedDescription: data['suggestedDescription'] as String?,
       suggestedWebsiteUrl: data['suggestedWebsiteUrl'] as String?,
+      suggestedStartAt: parseDate(data['suggestedStartAt']),
+      suggestedEndAt: parseDate(data['suggestedEndAt']),
       suggestedPhotoUrls: parseStringList(data['suggestedPhotoUrls']),
       rejectedPhotoUrls: parseStringList(data['rejectedPhotoUrls']),
       createdAt: parseDate(data['createdAt']),
@@ -155,7 +161,9 @@ class EventReport {
   bool get hasSuggestedEdits {
     return (suggestedTitle?.trim().isNotEmpty ?? false) ||
         (suggestedDescription?.trim().isNotEmpty ?? false) ||
-        (suggestedWebsiteUrl?.trim().isNotEmpty ?? false);
+        (suggestedWebsiteUrl?.trim().isNotEmpty ?? false) ||
+        suggestedStartAt != null ||
+        suggestedEndAt != null;
   }
 
   String? get locationSummary {

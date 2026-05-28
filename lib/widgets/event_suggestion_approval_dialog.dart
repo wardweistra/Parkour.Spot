@@ -7,12 +7,10 @@ import '../models/parkour_event.dart';
 import '../services/admin_events_service.dart';
 import '../services/auth_service.dart';
 import '../services/event_report_service.dart';
+import '../utils/event_schedule_utils.dart';
 
 class EventSuggestionApprovalDialog extends StatefulWidget {
-  const EventSuggestionApprovalDialog({
-    super.key,
-    required this.report,
-  });
+  const EventSuggestionApprovalDialog({super.key, required this.report});
 
   final EventReport report;
 
@@ -54,8 +52,10 @@ class _EventSuggestionApprovalDialogState
     }
 
     try {
-      final adminEventsService =
-          Provider.of<AdminEventsService>(context, listen: false);
+      final adminEventsService = Provider.of<AdminEventsService>(
+        context,
+        listen: false,
+      );
       final currentEvent = await adminEventsService.getEventById(targetEventId);
       if (currentEvent == null || !mounted) {
         if (mounted) setState(() => _isLoading = false);
@@ -129,14 +129,18 @@ class _EventSuggestionApprovalDialogState
 
     try {
       final authService = Provider.of<AuthService>(context, listen: false);
-      final reportService =
-          Provider.of<EventReportService>(context, listen: false);
+      final reportService = Provider.of<EventReportService>(
+        context,
+        listen: false,
+      );
       final user = authService.currentUser;
       final userId = user?.uid;
       if (userId == null) {
         if (mounted) {
           setState(() {
-            _error = AppLocalizations.of(context)!.eventSuggestionApprovalFailed;
+            _error = AppLocalizations.of(
+              context,
+            )!.eventSuggestionApprovalFailed;
             _isApproving = false;
           });
         }
@@ -147,7 +151,8 @@ class _EventSuggestionApprovalDialogState
       final approvedEventId = await reportService.approveReport(
         reportId: widget.report.id,
         approverUserId: userId,
-        approverName: authService.userProfile?.displayName ??
+        approverName:
+            authService.userProfile?.displayName ??
             user?.displayName ??
             user?.email,
         moderatorNotes: notes.isEmpty ? null : notes,
@@ -174,6 +179,15 @@ class _EventSuggestionApprovalDialogState
         });
       }
     }
+  }
+
+  String _formatSuggestedDateTime(DateTime value) {
+    return EventScheduleUtils.formatSummaryLine(
+      context,
+      startAt: value,
+      isDateOnly: widget.report.isDateOnly,
+      timeZone: widget.report.timeZone,
+    );
   }
 
   Widget _buildWarningBanner({
@@ -241,8 +255,7 @@ class _EventSuggestionApprovalDialogState
       );
     }
 
-    final sourceName =
-        targetEvent.eventSourceName?.trim().isNotEmpty == true
+    final sourceName = targetEvent.eventSourceName?.trim().isNotEmpty == true
         ? targetEvent.eventSourceName!.trim()
         : 'external source';
 
@@ -266,7 +279,9 @@ class _EventSuggestionApprovalDialogState
                 _buildWarningBanner(
                   theme: theme,
                   title: l10n.eventSuggestionCannotApproveExternalTitle,
-                  body: l10n.eventSuggestionCannotApproveExternalBody(sourceName),
+                  body: l10n.eventSuggestionCannotApproveExternalBody(
+                    sourceName,
+                  ),
                 ),
                 const SizedBox(height: 16),
               ],
@@ -289,7 +304,8 @@ class _EventSuggestionApprovalDialogState
                 RadioGroup<String>(
                   groupValue: _targetEventId,
                   onChanged: (String? value) {
-                    final isCurrentDisabled = _isApproving ||
+                    final isCurrentDisabled =
+                        _isApproving ||
                         (_currentEvent?.duplicateOf?.trim().isNotEmpty ??
                             false) ||
                         !_currentEvent!.isNativeEvent;
@@ -323,7 +339,9 @@ class _EventSuggestionApprovalDialogState
                                 )
                               : !_currentEvent!.isNativeEvent
                               ? l10n.eventSuggestionReportedEventExternalSubtitle(
-                                  _currentEvent!.eventSourceName?.trim().isNotEmpty ==
+                                  _currentEvent!.eventSourceName
+                                              ?.trim()
+                                              .isNotEmpty ==
                                           true
                                       ? _currentEvent!.eventSourceName!.trim()
                                       : sourceName,
@@ -331,7 +349,8 @@ class _EventSuggestionApprovalDialogState
                               : l10n.eventSuggestionReportedEventSubtitle,
                         ),
                         value: widget.report.targetEventId!,
-                        enabled: !_isApproving &&
+                        enabled:
+                            !_isApproving &&
                             !(_currentEvent?.duplicateOf?.trim().isNotEmpty ??
                                 false) &&
                             _currentEvent!.isNativeEvent,
@@ -346,7 +365,9 @@ class _EventSuggestionApprovalDialogState
                         subtitle: Text(
                           !_originalEvent!.isNativeEvent
                               ? l10n.eventSuggestionOriginalEventExternalSubtitle(
-                                  _originalEvent!.eventSourceName?.trim().isNotEmpty ==
+                                  _originalEvent!.eventSourceName
+                                              ?.trim()
+                                              .isNotEmpty ==
                                           true
                                       ? _originalEvent!.eventSourceName!.trim()
                                       : sourceName,
@@ -371,8 +392,11 @@ class _EventSuggestionApprovalDialogState
                 ),
                 const SizedBox(height: 8),
                 if (report.suggestedTitle?.trim().isNotEmpty ?? false)
-                  Text('${l10n.eventDetailSuggestEditTitle}: ${report.suggestedTitle!}'),
-                if (report.suggestedDescription?.trim().isNotEmpty ?? false) ...[
+                  Text(
+                    '${l10n.eventDetailSuggestEditTitle}: ${report.suggestedTitle!}',
+                  ),
+                if (report.suggestedDescription?.trim().isNotEmpty ??
+                    false) ...[
                   const SizedBox(height: 4),
                   Text(report.suggestedDescription!),
                 ],
@@ -383,6 +407,18 @@ class _EventSuggestionApprovalDialogState
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.primary,
                     ),
+                  ),
+                ],
+                if (report.suggestedStartAt != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    '${l10n.eventDetailStartsLabel}: ${_formatSuggestedDateTime(report.suggestedStartAt!)}',
+                  ),
+                ],
+                if (report.suggestedEndAt != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    '${l10n.eventDetailEndsLabel}: ${_formatSuggestedDateTime(report.suggestedEndAt!)}',
                   ),
                 ],
                 const SizedBox(height: 12),
@@ -457,7 +493,9 @@ class _EventSuggestionApprovalDialogState
       ),
       actions: [
         TextButton(
-          onPressed: _isApproving ? null : () => Navigator.of(context).pop(null),
+          onPressed: _isApproving
+              ? null
+              : () => Navigator.of(context).pop(null),
           child: const Text('Cancel'),
         ),
         FilledButton(
