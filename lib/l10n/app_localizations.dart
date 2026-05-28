@@ -2108,7 +2108,7 @@ abstract class AppLocalizations {
   /// No description provided for @spotDetailMenuLoginSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Sign in first to link edits to your account'**
+  /// **'Sign in to continue'**
   String get spotDetailMenuLoginSubtitle;
 
   /// No description provided for @spotDetailMenuFlagDuplicate.
@@ -2216,8 +2216,14 @@ abstract class AppLocalizations {
   /// No description provided for @spotDetailMenuRemoveDuplicateStatus.
   ///
   /// In en, this message translates to:
-  /// **'Remove duplicate status'**
+  /// **'Remove duplicate'**
   String get spotDetailMenuRemoveDuplicateStatus;
+
+  /// No description provided for @spotDetailMenuRemoveDuplicateSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore original listing'**
+  String get spotDetailMenuRemoveDuplicateSubtitle;
 
   /// No description provided for @spotDetailMenuCreateNative.
   ///
@@ -2225,17 +2231,47 @@ abstract class AppLocalizations {
   /// **'Create native spot'**
   String get spotDetailMenuCreateNative;
 
+  /// No description provided for @spotDetailMenuCreateNativeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy from external source'**
+  String get spotDetailMenuCreateNativeSubtitle;
+
+  /// No description provided for @spotDetailMenuCreateEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Create event'**
+  String get spotDetailMenuCreateEvent;
+
+  /// No description provided for @spotDetailMenuCreateEventSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'At this spot'**
+  String get spotDetailMenuCreateEventSubtitle;
+
   /// No description provided for @spotDetailMenuHideSpot.
   ///
   /// In en, this message translates to:
   /// **'Hide spot'**
   String get spotDetailMenuHideSpot;
 
+  /// No description provided for @spotDetailMenuHideSpotSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide from public view'**
+  String get spotDetailMenuHideSpotSubtitle;
+
   /// No description provided for @spotDetailMenuUnhideSpot.
   ///
   /// In en, this message translates to:
   /// **'Unhide spot'**
   String get spotDetailMenuUnhideSpot;
+
+  /// No description provided for @spotDetailMenuUnhideSpotSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show in app again'**
+  String get spotDetailMenuUnhideSpotSubtitle;
 
   /// No description provided for @spotDetailMenuDeleteSpot.
   ///
@@ -5432,6 +5468,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create native event'**
   String get eventDetailMenuCreateNative;
+
+  /// Subtitle for create native event menu item
+  ///
+  /// In en, this message translates to:
+  /// **'Copy from external source'**
+  String get eventDetailMenuCreateNativeSubtitle;
+
+  /// Subtitle on enabled suggest photo menu item
+  ///
+  /// In en, this message translates to:
+  /// **'Submit photos for this event'**
+  String get eventDetailMenuSuggestPhotoSubtitleYes;
+
+  /// Subtitle on disabled suggest photo menu item
+  ///
+  /// In en, this message translates to:
+  /// **'Not available for duplicates'**
+  String get eventDetailMenuSuggestPhotoSubtitleNo;
+
+  /// Subtitle on enabled suggest edit menu item
+  ///
+  /// In en, this message translates to:
+  /// **'Propose changes to this event'**
+  String get eventDetailMenuSuggestEditSubtitleYes;
+
+  /// Subtitle on disabled suggest edit menu item
+  ///
+  /// In en, this message translates to:
+  /// **'Not available for duplicates'**
+  String get eventDetailMenuSuggestEditSubtitleNo;
+
+  /// Short subtitle when suggestions are temporarily blocked
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable right now'**
+  String get eventDetailMenuSuggestBlockedUnavailable;
 
   /// Confirmation dialog title for create native event
   ///

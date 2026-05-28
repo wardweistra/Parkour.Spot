@@ -1248,8 +1248,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get spotDetailMenuLogin => 'Connexion';
 
   @override
-  String get spotDetailMenuLoginSubtitle =>
-      'Connectez-vous d’abord pour lier les modifications à votre compte';
+  String get spotDetailMenuLoginSubtitle => 'Connectez-vous pour continuer';
 
   @override
   String get spotDetailMenuFlagDuplicate => 'Marquer comme doublon';
@@ -1311,17 +1310,36 @@ class AppLocalizationsFr extends AppLocalizations {
   String get spotDetailMenuMarkDuplicateSubtitleMod => 'Modérateurs uniquement';
 
   @override
-  String get spotDetailMenuRemoveDuplicateStatus =>
-      'Retirer le statut de doublon';
+  String get spotDetailMenuRemoveDuplicateStatus => 'Retirer le doublon';
+
+  @override
+  String get spotDetailMenuRemoveDuplicateSubtitle =>
+      'Restaurer la fiche d’origine';
 
   @override
   String get spotDetailMenuCreateNative => 'Créer un spot natif';
 
   @override
+  String get spotDetailMenuCreateNativeSubtitle =>
+      'Copier depuis une source externe';
+
+  @override
+  String get spotDetailMenuCreateEvent => 'Créer un événement';
+
+  @override
+  String get spotDetailMenuCreateEventSubtitle => 'À ce spot';
+
+  @override
   String get spotDetailMenuHideSpot => 'Masquer le spot';
 
   @override
+  String get spotDetailMenuHideSpotSubtitle => 'Masquer du public';
+
+  @override
   String get spotDetailMenuUnhideSpot => 'Afficher le spot';
+
+  @override
+  String get spotDetailMenuUnhideSpotSubtitle => 'Afficher dans l’app';
 
   @override
   String get spotDetailMenuDeleteSpot => 'Supprimer le spot';
@@ -3246,6 +3264,30 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get eventDetailMenuCreateNative => 'Créer un événement natif';
+
+  @override
+  String get eventDetailMenuCreateNativeSubtitle =>
+      'Copier depuis une source externe';
+
+  @override
+  String get eventDetailMenuSuggestPhotoSubtitleYes =>
+      'Envoyer des photos pour cet événement';
+
+  @override
+  String get eventDetailMenuSuggestPhotoSubtitleNo =>
+      'Indisponible pour les doublons';
+
+  @override
+  String get eventDetailMenuSuggestEditSubtitleYes =>
+      'Proposer des changements pour cet événement';
+
+  @override
+  String get eventDetailMenuSuggestEditSubtitleNo =>
+      'Indisponible pour les doublons';
+
+  @override
+  String get eventDetailMenuSuggestBlockedUnavailable =>
+      'Indisponible pour le moment';
 
   @override
   String get eventDetailCreateNativeDialogTitle => 'Créer un événement natif';

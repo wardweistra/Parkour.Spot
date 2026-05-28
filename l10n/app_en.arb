@@ -1507,7 +1507,7 @@
   },
   "spotDetailMoreActionsTooltip": "More actions",
   "spotDetailMenuLogin": "Login",
-  "spotDetailMenuLoginSubtitle": "Sign in first to link edits to your account",
+  "spotDetailMenuLoginSubtitle": "Sign in to continue",
   "spotDetailMenuFlagDuplicate": "Flag as duplicate",
   "spotDetailMenuFlagDuplicateSubtitleYes": "This spot is a duplicate",
   "spotDetailMenuFlagDuplicateSubtitleNo": "Already marked as duplicate",
@@ -1525,10 +1525,16 @@
   "spotDetailMenuMarkDuplicate": "Mark as duplicate",
   "spotDetailMenuMarkDuplicateSubtitleDup": "Already marked as duplicate",
   "spotDetailMenuMarkDuplicateSubtitleMod": "Moderator only",
-  "spotDetailMenuRemoveDuplicateStatus": "Remove duplicate status",
+  "spotDetailMenuRemoveDuplicateStatus": "Remove duplicate",
+  "spotDetailMenuRemoveDuplicateSubtitle": "Restore original listing",
   "spotDetailMenuCreateNative": "Create native spot",
+  "spotDetailMenuCreateNativeSubtitle": "Copy from external source",
+  "spotDetailMenuCreateEvent": "Create event",
+  "spotDetailMenuCreateEventSubtitle": "At this spot",
   "spotDetailMenuHideSpot": "Hide spot",
+  "spotDetailMenuHideSpotSubtitle": "Hide from public view",
   "spotDetailMenuUnhideSpot": "Unhide spot",
+  "spotDetailMenuUnhideSpotSubtitle": "Show in app again",
   "spotDetailMenuDeleteSpot": "Delete spot",
   "spotDetailMenuDeleteSubtitleAdmin": "Admin only",
   "spotDetailMenuTriggerResize": "Trigger image resize",
@@ -3085,6 +3091,30 @@
   "eventDetailMenuCreateNative": "Create native event",
   "@eventDetailMenuCreateNative": {
     "description": "Staff menu item to create a native copy of an external event"
+  },
+  "eventDetailMenuCreateNativeSubtitle": "Copy from external source",
+  "@eventDetailMenuCreateNativeSubtitle": {
+    "description": "Subtitle for create native event menu item"
+  },
+  "eventDetailMenuSuggestPhotoSubtitleYes": "Submit photos for this event",
+  "@eventDetailMenuSuggestPhotoSubtitleYes": {
+    "description": "Subtitle on enabled suggest photo menu item"
+  },
+  "eventDetailMenuSuggestPhotoSubtitleNo": "Not available for duplicates",
+  "@eventDetailMenuSuggestPhotoSubtitleNo": {
+    "description": "Subtitle on disabled suggest photo menu item"
+  },
+  "eventDetailMenuSuggestEditSubtitleYes": "Propose changes to this event",
+  "@eventDetailMenuSuggestEditSubtitleYes": {
+    "description": "Subtitle on enabled suggest edit menu item"
+  },
+  "eventDetailMenuSuggestEditSubtitleNo": "Not available for duplicates",
+  "@eventDetailMenuSuggestEditSubtitleNo": {
+    "description": "Subtitle on disabled suggest edit menu item"
+  },
+  "eventDetailMenuSuggestBlockedUnavailable": "Unavailable right now",
+  "@eventDetailMenuSuggestBlockedUnavailable": {
+    "description": "Short subtitle when suggestions are temporarily blocked"
   },
   "eventDetailCreateNativeDialogTitle": "Create native event",
   "@eventDetailCreateNativeDialogTitle": {

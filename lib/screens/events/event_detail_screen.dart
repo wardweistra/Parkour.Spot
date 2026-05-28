@@ -25,6 +25,7 @@ import '../../utils/marker_icon_utils.dart';
 import '../../utils/image_preparation.dart';
 import '../../widgets/location_info_box.dart';
 import '../../services/web_share_service.dart';
+import '../../widgets/detail_action_menu_item.dart';
 import '../../widgets/detail_image_carousel.dart';
 import '../../widgets/event_detail_provenance_line.dart';
 import '../../widgets/event_detail_when_block.dart';
@@ -355,6 +356,15 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
+            _eventEditMenuButton(
+              l10n: l10n,
+              event: event,
+              hasDupLink: hasDupLink,
+              isAdmin: isAdmin,
+              isModeratorOnly: isModeratorOnly,
+              hasStaffAccess: hasStaffAccess,
+            ),
+            const SizedBox(width: 8),
             Tooltip(
               message: l10n.spotDetailShareTooltip,
               child: Semantics(
@@ -382,19 +392,26 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                 ),
               ),
             ),
-            const SizedBox(width: 8),
-            _eventEditMenuButton(
-              l10n: l10n,
-              event: event,
-              hasDupLink: hasDupLink,
-              isAdmin: isAdmin,
-              isModeratorOnly: isModeratorOnly,
-              hasStaffAccess: hasStaffAccess,
-            ),
           ],
         ),
       ),
     );
+  }
+
+  String _eventMenuSuggestSubtitle(
+    AppLocalizations l10n,
+    ParkourEvent event, {
+    required bool isPhoto,
+  }) {
+    return switch (eventSuggestionBlockedReasonKey(event)) {
+      null => isPhoto
+          ? l10n.eventDetailMenuSuggestPhotoSubtitleYes
+          : l10n.eventDetailMenuSuggestEditSubtitleYes,
+      'eventDetailCannotSuggestForDuplicate' => isPhoto
+          ? l10n.eventDetailMenuSuggestPhotoSubtitleNo
+          : l10n.eventDetailMenuSuggestEditSubtitleNo,
+      _ => l10n.eventDetailMenuSuggestBlockedUnavailable,
+    };
   }
 
   Widget _eventEditMenuButton({
@@ -410,6 +427,16 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     final shouldDisableEdit = isExternalEvent && isModeratorOnly;
     final suggestionBlockedReason = _eventSuggestionBlockedReason(event, l10n);
     final canSuggest = suggestionBlockedReason == null;
+    final suggestPhotoSubtitle = _eventMenuSuggestSubtitle(
+      l10n,
+      event,
+      isPhoto: true,
+    );
+    final suggestEditSubtitle = _eventMenuSuggestSubtitle(
+      l10n,
+      event,
+      isPhoto: false,
+    );
 
     return PopupMenuButton<_EventEditMenuAction>(
       position: PopupMenuPosition.under,
@@ -419,100 +446,25 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       onSelected: (action) =>
           _onEditMenuAction(context, action, event, isAdmin, isModeratorOnly),
       itemBuilder: (ctx) {
-        final localTheme = Theme.of(ctx);
         final items = <PopupMenuEntry<_EventEditMenuAction>>[
           PopupMenuItem<_EventEditMenuAction>(
             value: _EventEditMenuAction.suggestPhoto,
             enabled: canSuggest,
-            child: Row(
-              children: [
-                Icon(
-                  Icons.add_photo_alternate_outlined,
-                  color: canSuggest
-                      ? localTheme.colorScheme.primary
-                      : localTheme.colorScheme.onSurface.withValues(
-                          alpha: 0.38,
-                        ),
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        l10n.eventDetailQuickActionSuggestPhoto,
-                        style: localTheme.textTheme.bodyMedium?.copyWith(
-                          color: canSuggest
-                              ? null
-                              : localTheme.colorScheme.onSurface.withValues(
-                                  alpha: 0.38,
-                                ),
-                        ),
-                      ),
-                      Text(
-                        canSuggest
-                            ? l10n.eventDetailSuggestPhotosIntro
-                            : suggestionBlockedReason,
-                        style: localTheme.textTheme.bodySmall?.copyWith(
-                          color: localTheme.colorScheme.onSurface.withValues(
-                            alpha: 0.6,
-                          ),
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+            child: DetailActionMenuItem(
+              icon: Icons.add_photo_alternate_outlined,
+              title: l10n.eventDetailQuickActionSuggestPhoto,
+              subtitle: suggestPhotoSubtitle,
+              enabled: canSuggest,
             ),
           ),
           PopupMenuItem<_EventEditMenuAction>(
             value: _EventEditMenuAction.suggestEdit,
             enabled: canSuggest,
-            child: Row(
-              children: [
-                Icon(
-                  Icons.edit_note_outlined,
-                  color: canSuggest
-                      ? localTheme.colorScheme.primary
-                      : localTheme.colorScheme.onSurface.withValues(
-                          alpha: 0.38,
-                        ),
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        l10n.eventDetailQuickActionSuggestEdit,
-                        style: localTheme.textTheme.bodyMedium?.copyWith(
-                          color: canSuggest
-                              ? null
-                              : localTheme.colorScheme.onSurface.withValues(
-                                  alpha: 0.38,
-                                ),
-                        ),
-                      ),
-                      Text(
-                        canSuggest
-                            ? l10n.eventDetailSuggestEditIntro
-                            : suggestionBlockedReason,
-                        style: localTheme.textTheme.bodySmall?.copyWith(
-                          color: localTheme.colorScheme.onSurface.withValues(
-                            alpha: 0.6,
-                          ),
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+            child: DetailActionMenuItem(
+              icon: Icons.edit_note_outlined,
+              title: l10n.eventDetailQuickActionSuggestEdit,
+              subtitle: suggestEditSubtitle,
+              enabled: canSuggest,
             ),
           ),
         ];
@@ -523,48 +475,13 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             PopupMenuItem<_EventEditMenuAction>(
               value: _EventEditMenuAction.editEvent,
               enabled: !shouldDisableEdit,
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.edit,
-                    color: shouldDisableEdit
-                        ? localTheme.colorScheme.onSurface.withValues(
-                            alpha: 0.38,
-                          )
-                        : localTheme.colorScheme.primary,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          l10n.eventDetailAdminEditEvent,
-                          style: localTheme.textTheme.bodyMedium?.copyWith(
-                            color: shouldDisableEdit
-                                ? localTheme.colorScheme.onSurface.withValues(
-                                    alpha: 0.38,
-                                  )
-                                : null,
-                          ),
-                        ),
-                        Text(
-                          shouldDisableEdit
-                              ? l10n.eventDetailMenuEditEventSubtitleNative
-                              : l10n.eventDetailMenuEditEventSubtitleMod,
-                          style: localTheme.textTheme.bodySmall?.copyWith(
-                            color: localTheme.colorScheme.onSurface.withValues(
-                              alpha: 0.6,
-                            ),
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              child: DetailActionMenuItem(
+                icon: Icons.edit,
+                title: l10n.eventDetailAdminEditEvent,
+                subtitle: shouldDisableEdit
+                    ? l10n.eventDetailMenuEditEventSubtitleNative
+                    : l10n.eventDetailMenuEditEventSubtitleMod,
+                enabled: !shouldDisableEdit,
               ),
             ),
           );
@@ -573,16 +490,10 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             items.add(
               PopupMenuItem<_EventEditMenuAction>(
                 value: _EventEditMenuAction.createNativeEvent,
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.add_circle_outline,
-                      color: localTheme.colorScheme.primary,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(child: Text(l10n.eventDetailMenuCreateNative)),
-                  ],
+                child: DetailActionMenuItem(
+                  icon: Icons.add_circle_outline,
+                  title: l10n.eventDetailMenuCreateNative,
+                  subtitle: l10n.eventDetailMenuCreateNativeSubtitle,
                 ),
               ),
             );
@@ -592,13 +503,13 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             PopupMenuItem<_EventEditMenuAction>(
               value: _EventEditMenuAction.markDuplicate,
               enabled: !hasDupLink,
-              child: Text(
-                l10n.spotDetailMenuMarkDuplicate,
-                style: TextStyle(
-                  color: hasDupLink
-                      ? localTheme.colorScheme.onSurface.withValues(alpha: 0.38)
-                      : null,
-                ),
+              child: DetailActionMenuItem(
+                icon: Icons.copy_all,
+                title: l10n.spotDetailMenuMarkDuplicate,
+                subtitle: hasDupLink
+                    ? l10n.spotDetailMenuMarkDuplicateSubtitleDup
+                    : l10n.spotDetailMenuMarkDuplicateSubtitleMod,
+                enabled: !hasDupLink,
               ),
             ),
           );
@@ -607,7 +518,11 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             items.add(
               PopupMenuItem<_EventEditMenuAction>(
                 value: _EventEditMenuAction.removeDuplicate,
-                child: Text(l10n.spotDetailMenuRemoveDuplicateStatus),
+                child: DetailActionMenuItem(
+                  icon: Icons.clear,
+                  title: l10n.spotDetailMenuRemoveDuplicateStatus,
+                  subtitle: l10n.spotDetailMenuRemoveDuplicateSubtitle,
+                ),
               ),
             );
           }

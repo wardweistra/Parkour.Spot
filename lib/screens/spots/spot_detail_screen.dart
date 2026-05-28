@@ -1495,11 +1495,11 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Create event at this spot',
+                        l10n.spotDetailMenuCreateEvent,
                         style: theme.textTheme.bodyMedium,
                       ),
                       Text(
-                        'Submit a new event proposal linked to this spot',
+                        l10n.spotDetailMenuCreateEventSubtitle,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurface.withValues(
                             alpha: 0.6,
@@ -1635,7 +1635,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                           style: theme.textTheme.bodyMedium,
                         ),
                         Text(
-                          l10n.spotDetailMenuMarkDuplicateSubtitleMod,
+                          l10n.spotDetailMenuRemoveDuplicateSubtitle,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurface.withValues(
                               alpha: 0.6,
@@ -1669,7 +1669,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                           style: theme.textTheme.bodyMedium,
                         ),
                         Text(
-                          l10n.spotDetailMenuMarkDuplicateSubtitleMod,
+                          l10n.spotDetailMenuCreateNativeSubtitle,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurface.withValues(
                               alpha: 0.6,
@@ -1703,7 +1703,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         style: theme.textTheme.bodyMedium,
                       ),
                       Text(
-                        l10n.spotDetailMenuMarkDuplicateSubtitleMod,
+                        _spot.hidden
+                            ? l10n.spotDetailMenuUnhideSpotSubtitle
+                            : l10n.spotDetailMenuHideSpotSubtitle,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurface.withValues(
                             alpha: 0.6,

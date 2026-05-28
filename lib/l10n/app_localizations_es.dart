@@ -1240,8 +1240,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get spotDetailMenuLogin => 'Iniciar sesión';
 
   @override
-  String get spotDetailMenuLoginSubtitle =>
-      'Inicia sesión primero para vincular cambios a tu cuenta';
+  String get spotDetailMenuLoginSubtitle => 'Inicia sesión para continuar';
 
   @override
   String get spotDetailMenuFlagDuplicate => 'Marcar como duplicado';
@@ -1303,17 +1302,35 @@ class AppLocalizationsEs extends AppLocalizations {
   String get spotDetailMenuMarkDuplicateSubtitleMod => 'Solo moderadores';
 
   @override
-  String get spotDetailMenuRemoveDuplicateStatus =>
-      'Quitar estado de duplicado';
+  String get spotDetailMenuRemoveDuplicateStatus => 'Quitar duplicado';
+
+  @override
+  String get spotDetailMenuRemoveDuplicateSubtitle =>
+      'Restaurar listado original';
 
   @override
   String get spotDetailMenuCreateNative => 'Crear spot nativo';
 
   @override
+  String get spotDetailMenuCreateNativeSubtitle => 'Copiar de fuente externa';
+
+  @override
+  String get spotDetailMenuCreateEvent => 'Crear evento';
+
+  @override
+  String get spotDetailMenuCreateEventSubtitle => 'En este spot';
+
+  @override
   String get spotDetailMenuHideSpot => 'Ocultar spot';
 
   @override
+  String get spotDetailMenuHideSpotSubtitle => 'Ocultar del público';
+
+  @override
   String get spotDetailMenuUnhideSpot => 'Mostrar spot';
+
+  @override
+  String get spotDetailMenuUnhideSpotSubtitle => 'Mostrar en la app';
 
   @override
   String get spotDetailMenuDeleteSpot => 'Eliminar spot';
@@ -3218,6 +3235,28 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get eventDetailMenuCreateNative => 'Crear evento nativo';
+
+  @override
+  String get eventDetailMenuCreateNativeSubtitle => 'Copiar de fuente externa';
+
+  @override
+  String get eventDetailMenuSuggestPhotoSubtitleYes =>
+      'Enviar fotos para este evento';
+
+  @override
+  String get eventDetailMenuSuggestPhotoSubtitleNo =>
+      'No disponible para duplicados';
+
+  @override
+  String get eventDetailMenuSuggestEditSubtitleYes =>
+      'Proponer cambios en este evento';
+
+  @override
+  String get eventDetailMenuSuggestEditSubtitleNo =>
+      'No disponible para duplicados';
+
+  @override
+  String get eventDetailMenuSuggestBlockedUnavailable => 'No disponible ahora';
 
   @override
   String get eventDetailCreateNativeDialogTitle => 'Crear evento nativo';
