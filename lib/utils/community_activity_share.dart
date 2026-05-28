@@ -5,6 +5,7 @@ import '../l10n/app_localizations.dart';
 import '../services/snackbar_service.dart';
 import '../services/url_service.dart';
 import '../services/web_share_service.dart';
+import 'share_link_text.dart';
 
 /// URL and display-name context for sharing from the Community dialog (spot detail).
 class CommunitySpotShareContext {
@@ -43,7 +44,7 @@ Future<void> shareCommunitySpotMessage(
       city: shareContext.city,
     );
     final outcome = await WebShareService.tryShareLink(
-      text: narrativeLine,
+      text: ShareLinkText.shareLabel(ShareLinkKind.spot, narrativeLine),
       url: url,
     );
     if (outcome == WebShareOutcome.shared ||
@@ -52,7 +53,11 @@ Future<void> shareCommunitySpotMessage(
     }
     await Clipboard.setData(
       ClipboardData(
-        text: l10n.spotCardShareClipboardText(narrativeLine, url),
+        text: ShareLinkText.clipboardText(
+          ShareLinkKind.spot,
+          narrativeLine,
+          url,
+        ),
       ),
     );
     SnackbarService.showClipboardCopied(

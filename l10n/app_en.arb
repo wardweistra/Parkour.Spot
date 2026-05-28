@@ -1231,19 +1231,6 @@
       }
     }
   },
-  "spotCardShareClipboardText": "{name} 👉 {url}",
-  "@spotCardShareClipboardText": {
-    "description": "Clipboard text when native share unavailable",
-    "placeholders": {
-      "name": {
-        "type": "String",
-        "example": "Spot name"
-      },
-      "url": {
-        "type": "String"
-      }
-    }
-  },
   "spotCardRemovedFromSource": "Removed from source",
   "@spotCardRemovedFromSource": {
     "description": "Badge when external source dropped the spot"

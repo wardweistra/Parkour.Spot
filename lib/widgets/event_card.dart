@@ -10,6 +10,7 @@ import '../services/mobile_detection_service.dart';
 import '../services/snackbar_service.dart';
 import '../services/url_service.dart';
 import '../services/web_share_service.dart';
+import '../utils/share_link_text.dart';
 import '../utils/event_schedule_utils.dart';
 import 'no_images_placeholder.dart';
 import 'resized_spot_image.dart';
@@ -515,9 +516,12 @@ class _EventCardState extends State<EventCard> {
       final l10n = AppLocalizations.of(context)!;
       final url = UrlService.generateEventUrl(widget.pin.eventId);
       final label = widget.pin.title.trim();
-      final text = l10n.spotCardShareClipboardText(label, url);
+      final text = ShareLinkText.clipboardText(ShareLinkKind.event, label, url);
 
-      final outcome = await WebShareService.tryShareLink(text: label, url: url);
+      final outcome = await WebShareService.tryShareLink(
+        text: ShareLinkText.shareLabel(ShareLinkKind.event, label),
+        url: url,
+      );
       if (outcome == WebShareOutcome.shared ||
           outcome == WebShareOutcome.cancelled) {
         return;

@@ -156,7 +156,7 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
     final trimmed = input.trim();
     if (trimmed.isEmpty) return null;
 
-    // First, try to find URLs within the text (for cases like "Barbican - Fountains 👉 https://parkour.spot/...")
+    // First, try to find URLs within the text (for cases like "📍 Barbican https://parkour.spot/...")
     // Pattern to match http://, https://, or relative paths starting with /
     // Matches URLs until whitespace, common punctuation, or end of string
     final urlPattern = RegExp(

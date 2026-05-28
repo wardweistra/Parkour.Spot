@@ -985,11 +985,6 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String spotCardShareClipboardText(String name, String url) {
-    return '$name 👉 $url';
-  }
-
-  @override
   String get spotCardRemovedFromSource => 'Aus Quelle entfernt';
 
   @override

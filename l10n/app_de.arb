@@ -233,7 +233,6 @@
   "spotCardRemoveFromListTooltip": "Aus Liste entfernen",
   "spotCardCopiedToClipboard": "Spot in die Zwischenablage kopiert!",
   "spotCardShareFailed": "Spot konnte nicht geteilt werden: {error}",
-  "spotCardShareClipboardText": "{name} 👉 {url}",
   "spotCardRemovedFromSource": "Aus Quelle entfernt",
   "spotCheckInUnnamedPerson": "Diese Person",
   "spotCheckInTooltipPublic": "{name} ist gerade hier bis {time}",

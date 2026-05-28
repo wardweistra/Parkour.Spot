@@ -1750,12 +1750,6 @@ abstract class AppLocalizations {
   /// **'Failed to share spot: {error}'**
   String spotCardShareFailed(String error);
 
-  /// Clipboard text when native share unavailable
-  ///
-  /// In en, this message translates to:
-  /// **'{name} 👉 {url}'**
-  String spotCardShareClipboardText(String name, String url);
-
   /// Badge when external source dropped the spot
   ///
   /// In en, this message translates to:

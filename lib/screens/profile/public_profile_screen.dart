@@ -11,6 +11,7 @@ import '../../services/auth_service.dart';
 import '../../services/profile_picture_service.dart';
 import '../../services/url_service.dart';
 import '../../services/web_share_service.dart';
+import '../../utils/share_link_text.dart';
 import '../../services/snackbar_service.dart';
 import '../../models/user.dart' as app_user;
 import '../../models/spot_list.dart';
@@ -1739,10 +1740,16 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   ) async {
     try {
       final url = UrlService.generateUserProfileUrl(userIdOrUsername);
-      final text = '$displayName 👉 $url';
+      final text = ShareLinkText.clipboardText(
+        ShareLinkKind.profile,
+        displayName,
+        url,
+      );
 
-      final outcome =
-          await WebShareService.tryShareLink(text: displayName, url: url);
+      final outcome = await WebShareService.tryShareLink(
+        text: ShareLinkText.shareLabel(ShareLinkKind.profile, displayName),
+        url: url,
+      );
       if (outcome == WebShareOutcome.shared ||
           outcome == WebShareOutcome.cancelled) {
         return;

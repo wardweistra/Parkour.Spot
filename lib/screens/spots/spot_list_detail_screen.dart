@@ -21,6 +21,7 @@ import '../../utils/web_meta_utils.dart';
 import '../../utils/map_bounds_utils.dart';
 import '../../services/url_service.dart';
 import '../../services/web_share_service.dart';
+import '../../utils/share_link_text.dart';
 import '../../services/user_profile_service.dart';
 import '../../services/admin_events_service.dart';
 import '../../constants/spot_detail_ui.dart';
@@ -792,9 +793,12 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       const baseUrl = 'https://parkour.spot';
       final url = '$baseUrl/list/${_list!.id}';
       final label = _list!.name.trim();
-      final text = '$label 👉 $url';
+      final text = ShareLinkText.clipboardText(ShareLinkKind.list, label, url);
 
-      final outcome = await WebShareService.tryShareLink(text: label, url: url);
+      final outcome = await WebShareService.tryShareLink(
+        text: ShareLinkText.shareLabel(ShareLinkKind.list, label),
+        url: url,
+      );
       if (outcome == WebShareOutcome.shared ||
           outcome == WebShareOutcome.cancelled) {
         return;

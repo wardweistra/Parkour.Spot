@@ -265,7 +265,6 @@
   "spotCardRemoveFromListTooltip": "Uit lijst verwijderen",
   "spotCardCopiedToClipboard": "Spot gekopieerd naar klembord!",
   "spotCardShareFailed": "Spot delen mislukt: {error}",
-  "spotCardShareClipboardText": "{name} 👉 {url}",
   "spotCardRemovedFromSource": "Verwijderd uit bron",
   "spotCheckInUnnamedPerson": "Deze persoon",
   "spotCheckInTooltipPublic": "{name} is nu hier tot {time}",

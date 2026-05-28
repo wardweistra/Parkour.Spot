@@ -18,6 +18,7 @@ import '../../services/admin_events_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/url_service.dart';
 import '../../services/web_share_service.dart';
+import '../../utils/share_link_text.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../services/search_state_service.dart';
 import '../../widgets/source_details_dialog.dart';
@@ -909,9 +910,12 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         city: widget.spot.city,
       );
       final label = widget.spot.name.trim();
-      final text = l10n.spotCardShareClipboardText(label, url);
+      final text = ShareLinkText.clipboardText(ShareLinkKind.spot, label, url);
 
-      final outcome = await WebShareService.tryShareLink(text: label, url: url);
+      final outcome = await WebShareService.tryShareLink(
+        text: ShareLinkText.shareLabel(ShareLinkKind.spot, label),
+        url: url,
+      );
       if (outcome == WebShareOutcome.shared ||
           outcome == WebShareOutcome.cancelled) {
         return;

@@ -25,6 +25,7 @@ import '../../utils/marker_icon_utils.dart';
 import '../../utils/image_preparation.dart';
 import '../../widgets/location_info_box.dart';
 import '../../services/web_share_service.dart';
+import '../../utils/share_link_text.dart';
 import '../../widgets/detail_action_menu_item.dart';
 import '../../widgets/detail_image_carousel.dart';
 import '../../widgets/event_detail_provenance_line.dart';
@@ -249,9 +250,12 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       final l10n = AppLocalizations.of(context)!;
       final url = UrlService.generateEventUrl(id);
       final label = event!.title.trim();
-      final text = l10n.spotCardShareClipboardText(label, url);
+      final text = ShareLinkText.clipboardText(ShareLinkKind.event, label, url);
 
-      final outcome = await WebShareService.tryShareLink(text: label, url: url);
+      final outcome = await WebShareService.tryShareLink(
+        text: ShareLinkText.shareLabel(ShareLinkKind.event, label),
+        url: url,
+      );
       if (outcome == WebShareOutcome.shared ||
           outcome == WebShareOutcome.cancelled) {
         return;

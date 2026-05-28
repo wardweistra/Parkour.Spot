@@ -26,8 +26,8 @@ class WebShareService {
   /// Invokes Web Share when `kIsWeb` and the browser reports a mobile user agent.
   /// (Touch desktops and short windows use [WebShareOutcome.fallback] so clipboard
   /// copy and snackbars still run.)
-  /// [text] must not include [url]—callers use the same label as in the clipboard
-  /// line, while the clipboard string itself remains `text 👉 url`.
+  /// [text] must not include [url]—callers pass [ShareLinkText.shareLabel] while
+  /// the clipboard string uses [ShareLinkText.clipboardText].
   static Future<WebShareOutcome> tryShareLink({
     required String text,
     required String url,
