@@ -1568,9 +1568,7 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
     super.initState();
     final auth = context.read<AuthService>();
     _emailController.text =
-        auth.userProfile?.email?.trim() ??
-        auth.currentUser?.email?.trim() ??
-        '';
+        auth.userProfile?.email.trim() ?? auth.currentUser?.email?.trim() ?? '';
   }
 
   @override
@@ -1668,9 +1666,7 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
       final contactEmail = isLoggedIn
           ? (trimmedEmail.isNotEmpty
                 ? trimmedEmail
-                : auth.userProfile?.email?.trim() ??
-                      auth.currentUser?.email?.trim() ??
-                      '')
+                : auth.userProfile!.email.trim())
           : trimmedEmail;
       final ok = await eventService.submitEventPhotoSuggestion(
         targetEventId: widget.event.id!,
@@ -1915,9 +1911,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
     super.initState();
     final auth = context.read<AuthService>();
     _emailController.text =
-        auth.userProfile?.email?.trim() ??
-        auth.currentUser?.email?.trim() ??
-        '';
+        auth.userProfile?.email.trim() ?? auth.currentUser?.email?.trim() ?? '';
     _titleController = TextEditingController(text: widget.event.title.trim());
     _descriptionController = TextEditingController(
       text: widget.event.description?.trim() ?? '',
@@ -2002,9 +1996,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
       final contactEmail = isLoggedIn
           ? (trimmedEmail.isNotEmpty
                 ? trimmedEmail
-                : auth.userProfile?.email?.trim() ??
-                      auth.currentUser?.email?.trim() ??
-                      '')
+                : auth.userProfile!.email.trim())
           : trimmedEmail;
       final ok = await context
           .read<EventReportService>()
