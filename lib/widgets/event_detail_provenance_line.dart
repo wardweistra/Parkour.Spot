@@ -291,9 +291,14 @@ class _EventDetailProvenanceLineState extends State<EventDetailProvenanceLine> {
       hasPreviousContent = true;
     }
 
+    // Match spot provenance: when creator is hidden (create-native), keep them
+    // in contributors so attribution still appears on the line.
+    final contributorCreatedById = _event.createdFromCreateNative
+        ? null
+        : createdById;
     final filteredContributors = _event.contributors.where((c) {
       final userId = c['userId']?.trim();
-      return userId == null || userId != createdById;
+      return userId == null || userId != contributorCreatedById;
     }).toList();
     if (filteredContributors.isNotEmpty) {
       final improvedByPrefix = hasPreviousContent
