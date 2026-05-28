@@ -458,7 +458,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                       Text(
                         canSuggest
                             ? l10n.eventDetailSuggestPhotosIntro
-                            : suggestionBlockedReason!,
+                            : suggestionBlockedReason,
                         style: localTheme.textTheme.bodySmall?.copyWith(
                           color: localTheme.colorScheme.onSurface.withValues(
                             alpha: 0.6,
@@ -505,7 +505,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                       Text(
                         canSuggest
                             ? l10n.eventDetailSuggestEditIntro
-                            : suggestionBlockedReason!,
+                            : suggestionBlockedReason,
                         style: localTheme.textTheme.bodySmall?.copyWith(
                           color: localTheme.colorScheme.onSurface.withValues(
                             alpha: 0.6,
@@ -1567,7 +1567,10 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
   void initState() {
     super.initState();
     final auth = context.read<AuthService>();
-    _emailController.text = auth.currentUser?.email?.trim() ?? '';
+    _emailController.text =
+        auth.userProfile?.email?.trim() ??
+        auth.currentUser?.email?.trim() ??
+        '';
   }
 
   @override
@@ -1634,10 +1637,18 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
 
   Future<void> _submit() async {
     final l10n = AppLocalizations.of(context)!;
-    final email = _emailController.text.trim();
-    if (!_validEmail(email)) {
-      setState(() => _error = l10n.spotDetailEmailInvalid);
-      return;
+    final auth = context.read<AuthService>();
+    final isLoggedIn = auth.isAuthenticated && auth.userProfile != null;
+    final trimmedEmail = _emailController.text.trim();
+    if (!isLoggedIn) {
+      if (trimmedEmail.isEmpty) {
+        setState(() => _error = l10n.spotDetailEmailRequired);
+        return;
+      }
+      if (!_validEmail(trimmedEmail)) {
+        setState(() => _error = l10n.spotDetailEmailInvalid);
+        return;
+      }
     }
     if (_selectedImageBytes.isEmpty) {
       setState(() => _error = l10n.eventDetailSuggestPhotosPickRequired);
@@ -1651,10 +1662,16 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
 
     try {
       final eventService = context.read<EventReportService>();
-      final auth = context.read<AuthService>();
       final uploadedUrls = await eventService.uploadSuggestedEventPhotos(
         _selectedImageBytes,
       );
+      final contactEmail = isLoggedIn
+          ? (trimmedEmail.isNotEmpty
+                ? trimmedEmail
+                : auth.userProfile?.email?.trim() ??
+                      auth.currentUser?.email?.trim() ??
+                      '')
+          : trimmedEmail;
       final ok = await eventService.submitEventPhotoSuggestion(
         targetEventId: widget.event.id!,
         targetEventTitle: widget.event.title,
@@ -1670,7 +1687,7 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
             auth.userProfile?.displayName ??
             auth.currentUser?.displayName ??
             auth.currentUser?.email,
-        reporterEmail: email,
+        reporterEmail: contactEmail.isEmpty ? null : contactEmail,
       );
 
       if (!mounted) return;
@@ -1693,6 +1710,8 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final auth = context.read<AuthService>();
+    final isLoggedIn = auth.isAuthenticated && auth.userProfile != null;
     return AlertDialog(
       title: Text(l10n.eventDetailSuggestPhotosTitle),
       content: SizedBox(
@@ -1704,16 +1723,65 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
             children: [
               Text(l10n.eventDetailSuggestPhotosIntro),
               const SizedBox(height: 12),
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                enabled: !_submitting,
-                decoration: InputDecoration(
-                  labelText: l10n.spotDetailReportEmailLabel,
-                  helperText: l10n.spotDetailSuggestPhotosEmailHelper,
-                  border: const OutlineInputBorder(),
+              if (!isLoggedIn) ...[
+                TextField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  onChanged: (_) {
+                    if (_error != null) {
+                      setState(() => _error = null);
+                    }
+                  },
+                  enabled: !_submitting,
+                  decoration: InputDecoration(
+                    labelText: l10n.spotDetailReportEmailLabel,
+                    hintText: l10n.spotDetailReportEmailLabel,
+                    helperText: l10n.spotDetailSuggestPhotosEmailHelper,
+                    border: const OutlineInputBorder(),
+                  ),
                 ),
-              ),
+              ] else ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.2,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: theme.colorScheme.outlineVariant.withValues(
+                        alpha: 0.5,
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.mail,
+                        size: 18,
+                        color: theme.colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _emailController.text.isNotEmpty
+                              ? l10n.spotDetailReportReachOutAt(
+                                  _emailController.text,
+                                )
+                              : l10n.spotDetailReportReachOutAccount,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.7,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
               if (_selectedImageBytes.isNotEmpty)
                 Wrap(
@@ -1846,7 +1914,10 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
   void initState() {
     super.initState();
     final auth = context.read<AuthService>();
-    _emailController.text = auth.currentUser?.email?.trim() ?? '';
+    _emailController.text =
+        auth.userProfile?.email?.trim() ??
+        auth.currentUser?.email?.trim() ??
+        '';
     _titleController = TextEditingController(text: widget.event.title.trim());
     _descriptionController = TextEditingController(
       text: widget.event.description?.trim() ?? '',
@@ -1876,10 +1947,18 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
 
   Future<void> _submit() async {
     final l10n = AppLocalizations.of(context)!;
-    final email = _emailController.text.trim();
-    if (!_validEmail(email)) {
-      setState(() => _error = l10n.spotDetailEmailInvalid);
-      return;
+    final auth = context.read<AuthService>();
+    final isLoggedIn = auth.isAuthenticated && auth.userProfile != null;
+    final trimmedEmail = _emailController.text.trim();
+    if (!isLoggedIn) {
+      if (trimmedEmail.isEmpty) {
+        setState(() => _error = l10n.spotDetailEmailRequired);
+        return;
+      }
+      if (!_validEmail(trimmedEmail)) {
+        setState(() => _error = l10n.spotDetailEmailInvalid);
+        return;
+      }
     }
 
     final title = _titleController.text.trim();
@@ -1920,7 +1999,13 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
     });
 
     try {
-      final auth = context.read<AuthService>();
+      final contactEmail = isLoggedIn
+          ? (trimmedEmail.isNotEmpty
+                ? trimmedEmail
+                : auth.userProfile?.email?.trim() ??
+                      auth.currentUser?.email?.trim() ??
+                      '')
+          : trimmedEmail;
       final ok = await context
           .read<EventReportService>()
           .submitEventEditSuggestion(
@@ -1940,7 +2025,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
                 auth.userProfile?.displayName ??
                 auth.currentUser?.displayName ??
                 auth.currentUser?.email,
-            reporterEmail: email,
+            reporterEmail: contactEmail.isEmpty ? null : contactEmail,
           );
 
       if (!mounted) return;
@@ -1963,6 +2048,8 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final auth = context.read<AuthService>();
+    final isLoggedIn = auth.isAuthenticated && auth.userProfile != null;
     return AlertDialog(
       title: Text(l10n.eventDetailSuggestEditTitle),
       content: SizedBox(
@@ -1974,16 +2061,65 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
             children: [
               Text(l10n.eventDetailSuggestEditIntro),
               const SizedBox(height: 12),
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                enabled: !_submitting,
-                decoration: InputDecoration(
-                  labelText: l10n.spotDetailReportEmailLabel,
-                  helperText: l10n.spotDetailSuggestEditEmailHelper,
-                  border: const OutlineInputBorder(),
+              if (!isLoggedIn) ...[
+                TextField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  onChanged: (_) {
+                    if (_error != null) {
+                      setState(() => _error = null);
+                    }
+                  },
+                  enabled: !_submitting,
+                  decoration: InputDecoration(
+                    labelText: l10n.spotDetailReportEmailLabel,
+                    hintText: l10n.spotDetailReportEmailLabel,
+                    helperText: l10n.spotDetailSuggestEditEmailHelper,
+                    border: const OutlineInputBorder(),
+                  ),
                 ),
-              ),
+              ] else ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.2,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: theme.colorScheme.outlineVariant.withValues(
+                        alpha: 0.5,
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.mail,
+                        size: 18,
+                        color: theme.colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _emailController.text.isNotEmpty
+                              ? l10n.spotDetailReportReachOutAt(
+                                  _emailController.text,
+                                )
+                              : l10n.spotDetailReportReachOutAccount,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.7,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
               TextField(
                 controller: _titleController,
