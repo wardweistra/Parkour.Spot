@@ -633,6 +633,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
           const PwaInstallPrompt(),
           SafeArea(
             child: StreamBuilder<int>(
+              initialData: Provider.of<UserNotificationService>(
+                context,
+                listen: false,
+              ).unreadCount,
               stream: Provider.of<UserNotificationService>(
                 context,
                 listen: false,

@@ -363,6 +363,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             StreamBuilder<int>(
+                              initialData: Provider.of<UserNotificationService>(
+                                context,
+                                listen: false,
+                              ).unreadCount,
                               stream: Provider.of<UserNotificationService>(
                                 context,
                                 listen: false,

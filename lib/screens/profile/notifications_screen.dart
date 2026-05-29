@@ -34,10 +34,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final notificationService = context.watch<UserNotificationService>();
+    final notificationService = context.read<UserNotificationService>();
 
     return StreamBuilder<List<UserNotification>>(
       key: ValueKey(_streamRetryGeneration),
+      initialData: notificationService.latestNotifications,
       stream: notificationService.watchNotifications(),
       builder: (context, snapshot) {
         return PageScaffold(

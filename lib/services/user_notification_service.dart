@@ -1,8 +1,57 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
 import '../models/user_notification.dart';
 import 'auth_service.dart';
+
+/// Forwards [source] to a broadcast stream and replays the latest event to late
+/// subscribers (Firestore snapshot streams do not replay by default).
+Stream<T> _replayLatest<T>(
+  Stream<T> source, {
+  void Function(T value)? onValue,
+}) {
+  T? lastValue;
+  Object? lastError;
+  StackTrace? lastStackTrace;
+  var hasEvent = false;
+  StreamSubscription<T>? subscription;
+  late final StreamController<T> controller;
+
+  controller = StreamController<T>.broadcast(
+    onListen: () {
+      subscription ??= source.listen(
+        (value) {
+          lastValue = value;
+          lastError = null;
+          hasEvent = true;
+          onValue?.call(value);
+          if (!controller.isClosed) {
+            controller.add(value);
+          }
+        },
+        onError: (Object error, StackTrace stackTrace) {
+          lastError = error;
+          lastStackTrace = stackTrace;
+          hasEvent = true;
+          if (!controller.isClosed) {
+            controller.addError(error, stackTrace);
+          }
+        },
+      );
+      if (hasEvent) {
+        if (lastError != null) {
+          controller.addError(lastError!, lastStackTrace);
+        } else {
+          controller.add(lastValue as T);
+        }
+      }
+    },
+  );
+
+  return controller.stream;
+}
 
 class UserNotificationService extends ChangeNotifier {
   UserNotificationService(this._authService);
@@ -16,7 +65,25 @@ class UserNotificationService extends ChangeNotifier {
 
   /// Shared Firestore listener for all UI subscribers (explore nav + profile tab).
   Stream<List<UserNotification>>? _notificationsStream;
+  Stream<int>? _unreadCountStream;
   String? _notificationsStreamUid;
+  String? _unreadCountStreamUid;
+  List<UserNotification>? _latestNotifications;
+
+  /// Last successfully loaded inbox; used as [StreamBuilder.initialData].
+  List<UserNotification>? get latestNotifications => _latestNotifications;
+
+  /// Unread count derived from [latestNotifications]; used as [StreamBuilder.initialData].
+  int get unreadCount =>
+      _latestNotifications?.where((n) => !n.read).length ?? 0;
+
+  void _clearNotificationStreams() {
+    _notificationsStream = null;
+    _unreadCountStream = null;
+    _notificationsStreamUid = null;
+    _unreadCountStreamUid = null;
+    _latestNotifications = null;
+  }
 
   String? get _uid => _authService.currentUser?.uid;
 
@@ -30,29 +97,44 @@ class UserNotificationService extends ChangeNotifier {
     final uid = _uid;
     final collection = _notificationsCollection;
     if (collection == null) {
-      _notificationsStream = null;
-      _notificationsStreamUid = null;
+      _clearNotificationStreams();
       return Stream<List<UserNotification>>.value(const []);
     }
     if (_notificationsStream != null && _notificationsStreamUid == uid) {
       return _notificationsStream!;
     }
     _notificationsStreamUid = uid;
-    _notificationsStream = collection
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
-              .map(UserNotification.fromFirestore)
-              .toList(growable: false),
-        );
+    _unreadCountStream = null;
+    _unreadCountStreamUid = null;
+    _notificationsStream = _replayLatest(
+      collection
+          .orderBy('createdAt', descending: true)
+          .snapshots()
+          .map(
+            (snapshot) => snapshot.docs
+                .map(UserNotification.fromFirestore)
+                .toList(growable: false),
+          ),
+      onValue: (items) => _latestNotifications = items,
+    );
     return _notificationsStream!;
   }
 
   Stream<int> watchUnreadCount() {
-    return watchNotifications().map(
-      (items) => items.where((n) => !n.read).length,
-    );
+    final uid = _uid;
+    if (uid == null) {
+      return Stream<int>.value(0);
+    }
+    final notificationsStream = watchNotifications();
+    if (_unreadCountStream == null || _unreadCountStreamUid != uid) {
+      _unreadCountStreamUid = uid;
+      _unreadCountStream = _replayLatest(
+        notificationsStream.map(
+          (items) => items.where((n) => !n.read).length,
+        ),
+      );
+    }
+    return _unreadCountStream!;
   }
 
   Future<bool> markAsRead(String notificationId) async {
