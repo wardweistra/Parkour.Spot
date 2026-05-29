@@ -79,6 +79,8 @@ class EventReportService {
     String? suggestedTitle,
     String? suggestedDescription,
     String? suggestedWebsiteUrl,
+    bool? suggestedIsDateOnly,
+    String? suggestedTimeZone,
     DateTime? suggestedStartAt,
     DateTime? suggestedEndAt,
     List<String> suggestedPhotoUrls = const <String>[],
@@ -107,6 +109,7 @@ class EventReportService {
     final normalizedSuggestedTitle = suggestedTitle?.trim();
     final normalizedSuggestedDescription = suggestedDescription?.trim();
     final normalizedSuggestedWebsiteUrl = suggestedWebsiteUrl?.trim();
+    final normalizedSuggestedTimeZone = suggestedTimeZone?.trim();
     final normalizedSuggestedStartAt = suggestedStartAt?.toUtc();
     final normalizedSuggestedEndAt = suggestedEndAt?.toUtc();
     if (normalizedSuggestedStartAt != null &&
@@ -163,6 +166,11 @@ class EventReportService {
         if (normalizedSuggestedWebsiteUrl != null &&
             normalizedSuggestedWebsiteUrl.isNotEmpty)
           'suggestedWebsiteUrl': normalizedSuggestedWebsiteUrl,
+        if (suggestedIsDateOnly != null)
+          'suggestedIsDateOnly': suggestedIsDateOnly,
+        if (normalizedSuggestedTimeZone != null &&
+            normalizedSuggestedTimeZone.isNotEmpty)
+          'suggestedTimeZone': normalizedSuggestedTimeZone,
         if (normalizedSuggestedStartAt != null)
           'suggestedStartAt': Timestamp.fromDate(normalizedSuggestedStartAt),
         if (normalizedSuggestedEndAt != null)
@@ -223,6 +231,8 @@ class EventReportService {
     String? suggestedTitle,
     String? suggestedDescription,
     String? suggestedWebsiteUrl,
+    bool? suggestedIsDateOnly,
+    String? suggestedTimeZone,
     DateTime? suggestedStartAt,
     DateTime? suggestedEndAt,
     String? reporterUserId,
@@ -245,6 +255,8 @@ class EventReportService {
       suggestedTitle: suggestedTitle,
       suggestedDescription: suggestedDescription,
       suggestedWebsiteUrl: suggestedWebsiteUrl,
+      suggestedIsDateOnly: suggestedIsDateOnly,
+      suggestedTimeZone: suggestedTimeZone,
       suggestedStartAt: suggestedStartAt,
       suggestedEndAt: suggestedEndAt,
     );
@@ -556,6 +568,15 @@ class EventReportService {
     final suggestedWebsiteUrl = report.suggestedWebsiteUrl?.trim();
     if (suggestedWebsiteUrl != null && suggestedWebsiteUrl.isNotEmpty) {
       updates['websiteUrl'] = suggestedWebsiteUrl;
+    }
+
+    if (report.suggestedIsDateOnly != null) {
+      updates['isDateOnly'] = report.suggestedIsDateOnly;
+    }
+
+    final suggestedTimeZone = report.suggestedTimeZone?.trim();
+    if (suggestedTimeZone != null && suggestedTimeZone.isNotEmpty) {
+      updates['timeZone'] = suggestedTimeZone;
     }
 
     if (report.suggestedStartAt != null) {

@@ -409,6 +409,18 @@ class _EventSuggestionApprovalDialogState
                     ),
                   ),
                 ],
+                if (report.suggestedIsDateOnly != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    '${l10n.addEventAllDay}: ${report.suggestedIsDateOnly! ? 'Yes' : 'No'}',
+                  ),
+                ],
+                if (report.suggestedTimeZone?.trim().isNotEmpty ?? false) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    '${l10n.addEventTimezoneLabel}: ${report.suggestedTimeZone!}',
+                  ),
+                ],
                 if (report.suggestedStartAt != null) ...[
                   const SizedBox(height: 4),
                   Text(

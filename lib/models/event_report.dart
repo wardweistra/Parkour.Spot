@@ -34,6 +34,8 @@ class EventReport {
     this.suggestedTitle,
     this.suggestedDescription,
     this.suggestedWebsiteUrl,
+    this.suggestedIsDateOnly,
+    this.suggestedTimeZone,
     this.suggestedStartAt,
     this.suggestedEndAt,
     this.suggestedPhotoUrls = const <String>[],
@@ -73,6 +75,8 @@ class EventReport {
   final String? suggestedTitle;
   final String? suggestedDescription;
   final String? suggestedWebsiteUrl;
+  final bool? suggestedIsDateOnly;
+  final String? suggestedTimeZone;
   final DateTime? suggestedStartAt;
   final DateTime? suggestedEndAt;
   final List<String> suggestedPhotoUrls;
@@ -143,6 +147,10 @@ class EventReport {
       suggestedTitle: data['suggestedTitle'] as String?,
       suggestedDescription: data['suggestedDescription'] as String?,
       suggestedWebsiteUrl: data['suggestedWebsiteUrl'] as String?,
+      suggestedIsDateOnly: data['suggestedIsDateOnly'] is bool
+          ? data['suggestedIsDateOnly'] as bool
+          : null,
+      suggestedTimeZone: data['suggestedTimeZone'] as String?,
       suggestedStartAt: parseDate(data['suggestedStartAt']),
       suggestedEndAt: parseDate(data['suggestedEndAt']),
       suggestedPhotoUrls: parseStringList(data['suggestedPhotoUrls']),
@@ -162,6 +170,8 @@ class EventReport {
     return (suggestedTitle?.trim().isNotEmpty ?? false) ||
         (suggestedDescription?.trim().isNotEmpty ?? false) ||
         (suggestedWebsiteUrl?.trim().isNotEmpty ?? false) ||
+        suggestedIsDateOnly != null ||
+        (suggestedTimeZone?.trim().isNotEmpty ?? false) ||
         suggestedStartAt != null ||
         suggestedEndAt != null;
   }
