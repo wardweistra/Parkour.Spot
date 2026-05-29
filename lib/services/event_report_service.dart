@@ -119,7 +119,7 @@ class EventReportService {
     }
 
     try {
-      await _firestore.collection('eventReports').add({
+      final reportData = <String, dynamic>{
         'title': trimmedTitle,
         if (description != null && description.trim().isNotEmpty)
           'description': description.trim(),
@@ -166,8 +166,6 @@ class EventReportService {
         if (normalizedSuggestedWebsiteUrl != null &&
             normalizedSuggestedWebsiteUrl.isNotEmpty)
           'suggestedWebsiteUrl': normalizedSuggestedWebsiteUrl,
-        if (suggestedIsDateOnly != null)
-          'suggestedIsDateOnly': suggestedIsDateOnly,
         if (normalizedSuggestedTimeZone != null &&
             normalizedSuggestedTimeZone.isNotEmpty)
           'suggestedTimeZone': normalizedSuggestedTimeZone,
@@ -180,7 +178,11 @@ class EventReportService {
         'status': statuses.first,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
-      });
+      };
+      if (suggestedIsDateOnly != null) {
+        reportData['suggestedIsDateOnly'] = suggestedIsDateOnly;
+      }
+      await _firestore.collection('eventReports').add(reportData);
       return true;
     } catch (e) {
       debugPrint('Error submitting event report: $e');
