@@ -272,8 +272,7 @@ class _EventReportQueueScreenState extends State<EventReportQueueScreen> {
 
     final approvedEventId = await showDialog<String?>(
       context: context,
-      builder: (dialogContext) =>
-          EventSuggestionApprovalDialog(report: report),
+      builder: (dialogContext) => EventSuggestionApprovalDialog(report: report),
     );
 
     if (!mounted) return;
@@ -392,9 +391,19 @@ class _EventReportCard extends StatelessWidget {
     );
   }
 
+  String _formatSuggestedDateTime(BuildContext context, DateTime value) {
+    return EventScheduleUtils.formatSummaryLine(
+      context,
+      startAt: value,
+      isDateOnly: report.isDateOnly,
+      timeZone: report.timeZone,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final color = _statusColor(theme);
     final canReview = report.status == 'New' || report.status == 'Reviewing';
     final isSuggestion = report.isSuggestionForExistingEvent;
@@ -412,7 +421,8 @@ class _EventReportCard extends StatelessWidget {
           children: [
             if (isSuggestion && report.targetEventId?.trim().isNotEmpty == true)
               InkWell(
-                onTap: () => context.push('/event/${report.targetEventId!.trim()}'),
+                onTap: () =>
+                    context.push('/event/${report.targetEventId!.trim()}'),
                 borderRadius: BorderRadius.circular(4),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
@@ -537,6 +547,30 @@ class _EventReportCard extends StatelessWidget {
               if (report.suggestedWebsiteUrl?.isNotEmpty ?? false) ...[
                 const SizedBox(height: 4),
                 Text('Website: ${report.suggestedWebsiteUrl!}'),
+              ],
+              if (report.suggestedIsDateOnly != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  '${l10n.addEventAllDay}: ${report.suggestedIsDateOnly! ? 'Yes' : 'No'}',
+                ),
+              ],
+              if (report.suggestedTimeZone?.trim().isNotEmpty ?? false) ...[
+                const SizedBox(height: 4),
+                Text(
+                  '${l10n.addEventTimezoneLabel}: ${report.suggestedTimeZone!}',
+                ),
+              ],
+              if (report.suggestedStartAt != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  '${l10n.eventDetailStartsLabel}: ${_formatSuggestedDateTime(context, report.suggestedStartAt!)}',
+                ),
+              ],
+              if (report.suggestedEndAt != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  '${l10n.eventDetailEndsLabel}: ${_formatSuggestedDateTime(context, report.suggestedEndAt!)}',
+                ),
               ],
             ],
             if (report.suggestedPhotoUrls.isNotEmpty) ...[

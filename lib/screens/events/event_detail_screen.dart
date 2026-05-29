@@ -20,6 +20,8 @@ import '../../services/spot_service.dart';
 import '../../services/search_state_service.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../services/event_report_service.dart';
+import '../../utils/browser_timezone_utils.dart';
+import '../../utils/event_schedule_utils.dart';
 import '../../utils/event_suggestion_utils.dart';
 import '../../utils/marker_icon_utils.dart';
 import '../../utils/image_preparation.dart';
@@ -408,12 +410,14 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     required bool isPhoto,
   }) {
     return switch (eventSuggestionBlockedReasonKey(event)) {
-      null => isPhoto
-          ? l10n.eventDetailMenuSuggestPhotoSubtitleYes
-          : l10n.eventDetailMenuSuggestEditSubtitleYes,
-      'eventDetailCannotSuggestForDuplicate' => isPhoto
-          ? l10n.eventDetailMenuSuggestPhotoSubtitleNo
-          : l10n.eventDetailMenuSuggestEditSubtitleNo,
+      null =>
+        isPhoto
+            ? l10n.eventDetailMenuSuggestPhotoSubtitleYes
+            : l10n.eventDetailMenuSuggestEditSubtitleYes,
+      'eventDetailCannotSuggestForDuplicate' =>
+        isPhoto
+            ? l10n.eventDetailMenuSuggestPhotoSubtitleNo
+            : l10n.eventDetailMenuSuggestEditSubtitleNo,
       _ => l10n.eventDetailMenuSuggestBlockedUnavailable,
     };
   }
@@ -1816,6 +1820,14 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
   late final TextEditingController _websiteController;
+  late final List<String> _timeZoneOptions;
+  late final String _originalTimeZoneSelection;
+  String? _originalNormalizedTimeZone;
+  bool _timeZoneDirty = false;
+  late bool _suggestedIsDateOnly;
+  late String _selectedTimeZone;
+  late DateTime _suggestedStartAt;
+  DateTime? _suggestedEndAt;
   bool _submitting = false;
   String? _error;
 
@@ -1834,6 +1846,19 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
     _websiteController = TextEditingController(
       text: widget.event.websiteUrl?.trim() ?? '',
     );
+    _timeZoneOptions = EventScheduleUtils.availableTimeZoneIds();
+    _originalNormalizedTimeZone = EventScheduleUtils.normalizeTimeZone(
+      widget.event.timeZone,
+    );
+    _originalTimeZoneSelection =
+        _originalNormalizedTimeZone ?? detectIanaTimeZone();
+    _selectedTimeZone = _originalTimeZoneSelection;
+    if (!_timeZoneOptions.contains(_selectedTimeZone)) {
+      _timeZoneOptions.insert(0, _selectedTimeZone);
+    }
+    _suggestedIsDateOnly = widget.event.isDateOnly;
+    _suggestedStartAt = widget.event.startAt;
+    _suggestedEndAt = widget.event.endAt;
   }
 
   @override
@@ -1852,6 +1877,132 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
     return parsed != null &&
         parsed.hasAuthority &&
         (parsed.scheme == 'http' || parsed.scheme == 'https');
+  }
+
+  DateTime _displayInEventTimeZone(DateTime value) {
+    return EventScheduleUtils.toDisplayDateTime(
+      value,
+      timeZone: _selectedTimeZone,
+    );
+  }
+
+  String _timeZoneLabel(String value) {
+    return EventScheduleUtils.formatTimeZoneLabel(
+      value,
+      referenceUtc: _suggestedStartAt,
+    );
+  }
+
+  String _formatDateTime(DateTime value) {
+    return EventScheduleUtils.formatSummaryLine(
+      context,
+      startAt: value,
+      isDateOnly: _suggestedIsDateOnly,
+      timeZone: _selectedTimeZone,
+    );
+  }
+
+  Future<DateTime?> _pickDateTime({required DateTime initial}) async {
+    final displayInitial = _displayInEventTimeZone(initial);
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: displayInitial,
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
+    );
+    if (pickedDate == null || !mounted) return null;
+
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(displayInitial),
+    );
+    if (pickedTime == null || !mounted) return null;
+
+    return EventScheduleUtils.localDateTimeToUtc(
+      DateTime(
+        pickedDate.year,
+        pickedDate.month,
+        pickedDate.day,
+        pickedTime.hour,
+        pickedTime.minute,
+      ),
+      timeZone: _selectedTimeZone,
+    );
+  }
+
+  Future<void> _pickStartDateTime() async {
+    if (_suggestedIsDateOnly) {
+      final initialDate = _displayInEventTimeZone(_suggestedStartAt);
+      final pickedDate = await showDatePicker(
+        context: context,
+        initialDate: DateTime(
+          initialDate.year,
+          initialDate.month,
+          initialDate.day,
+        ),
+        firstDate: DateTime.now().subtract(const Duration(days: 365)),
+        lastDate: DateTime.now().add(const Duration(days: 3650)),
+      );
+      if (pickedDate == null || !mounted) return;
+      final pickedStart = EventScheduleUtils.dateStartToUtc(
+        pickedDate,
+        timeZone: _selectedTimeZone,
+      );
+      setState(() {
+        _suggestedStartAt = pickedStart;
+        if (_suggestedEndAt != null && _suggestedEndAt!.isBefore(pickedStart)) {
+          _suggestedEndAt = pickedStart;
+        }
+        _error = null;
+      });
+      return;
+    }
+
+    final value = await _pickDateTime(initial: _suggestedStartAt);
+    if (value == null || !mounted) return;
+    setState(() {
+      _suggestedStartAt = value;
+      if (_suggestedEndAt != null && _suggestedEndAt!.isBefore(value)) {
+        _suggestedEndAt = value.add(const Duration(hours: 1));
+      }
+      _error = null;
+    });
+  }
+
+  Future<void> _pickEndDateTime() async {
+    if (_suggestedIsDateOnly) {
+      final initialDate = _displayInEventTimeZone(
+        _suggestedEndAt ?? _suggestedStartAt,
+      );
+      final pickedDate = await showDatePicker(
+        context: context,
+        initialDate: DateTime(
+          initialDate.year,
+          initialDate.month,
+          initialDate.day,
+        ),
+        firstDate: DateTime.now().subtract(const Duration(days: 365)),
+        lastDate: DateTime.now().add(const Duration(days: 3650)),
+      );
+      if (pickedDate == null || !mounted) return;
+      setState(() {
+        _suggestedEndAt = EventScheduleUtils.dateEndToUtc(
+          pickedDate,
+          timeZone: _selectedTimeZone,
+        );
+        _error = null;
+      });
+      return;
+    }
+
+    final value = await _pickDateTime(
+      initial: _suggestedEndAt ?? _suggestedStartAt,
+    );
+    if (value == null || !mounted) return;
+    setState(() {
+      _suggestedEndAt = value;
+      _error = null;
+    });
   }
 
   Future<void> _submit() async {
@@ -1885,6 +2036,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
     final originalTitle = widget.event.title.trim();
     final originalDescription = widget.event.description?.trim() ?? '';
     final originalWebsite = widget.event.websiteUrl?.trim() ?? '';
+    final originalTimeZone = _originalNormalizedTimeZone;
 
     final suggestedTitle = title != originalTitle ? title : null;
     final suggestedDescription =
@@ -1894,10 +2046,69 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
     final suggestedWebsiteUrl = website.isNotEmpty && website != originalWebsite
         ? website
         : null;
+    final suggestedIsDateOnly = _suggestedIsDateOnly != widget.event.isDateOnly
+        ? _suggestedIsDateOnly
+        : null;
+    final suggestedTimeZone =
+        _timeZoneDirty && _selectedTimeZone != originalTimeZone
+        ? _selectedTimeZone
+        : null;
+
+    var normalizedSuggestedStartAt = _suggestedStartAt.toUtc();
+    var normalizedSuggestedEndAt = _suggestedEndAt?.toUtc();
+    final effectiveIsDateOnly = suggestedIsDateOnly ?? widget.event.isDateOnly;
+    final effectiveTimeZone =
+        suggestedTimeZone ?? originalTimeZone ?? _originalTimeZoneSelection;
+    if (effectiveIsDateOnly) {
+      final displayStart = EventScheduleUtils.toDisplayDateTime(
+        normalizedSuggestedStartAt,
+        timeZone: effectiveTimeZone,
+      );
+      normalizedSuggestedStartAt = EventScheduleUtils.dateStartToUtc(
+        displayStart,
+        timeZone: effectiveTimeZone,
+      );
+      if (normalizedSuggestedEndAt != null) {
+        final displayEnd = EventScheduleUtils.toDisplayDateTime(
+          normalizedSuggestedEndAt,
+          timeZone: effectiveTimeZone,
+        );
+        normalizedSuggestedEndAt = EventScheduleUtils.dateEndToUtc(
+          displayEnd,
+          timeZone: effectiveTimeZone,
+        );
+      }
+    }
+
+    final suggestedStartAt =
+        !normalizedSuggestedStartAt.isAtSameMomentAs(
+          widget.event.startAt.toUtc(),
+        )
+        ? normalizedSuggestedStartAt
+        : null;
+    final suggestedEndAt =
+        (normalizedSuggestedEndAt != null &&
+            !(widget.event.endAt != null &&
+                normalizedSuggestedEndAt.isAtSameMomentAs(
+                  widget.event.endAt!.toUtc(),
+                )))
+        ? normalizedSuggestedEndAt
+        : null;
+
+    final effectiveStartAt = suggestedStartAt ?? widget.event.startAt.toUtc();
+    final effectiveEndAt = suggestedEndAt ?? widget.event.endAt?.toUtc();
+    if (effectiveEndAt != null && effectiveEndAt.isBefore(effectiveStartAt)) {
+      setState(() => _error = l10n.addEventEndBeforeStart);
+      return;
+    }
 
     if (suggestedTitle == null &&
         suggestedDescription == null &&
-        suggestedWebsiteUrl == null) {
+        suggestedWebsiteUrl == null &&
+        suggestedIsDateOnly == null &&
+        suggestedTimeZone == null &&
+        suggestedStartAt == null &&
+        suggestedEndAt == null) {
       setState(() => _error = l10n.eventDetailSuggestEditNoChanges);
       return;
     }
@@ -1927,6 +2138,10 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
             suggestedTitle: suggestedTitle,
             suggestedDescription: suggestedDescription,
             suggestedWebsiteUrl: suggestedWebsiteUrl,
+            suggestedIsDateOnly: suggestedIsDateOnly,
+            suggestedTimeZone: suggestedTimeZone,
+            suggestedStartAt: suggestedStartAt,
+            suggestedEndAt: suggestedEndAt,
             reporterUserId: auth.currentUser?.uid,
             reporterName:
                 auth.userProfile?.displayName ??
@@ -2053,10 +2268,83 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
                 controller: _websiteController,
                 enabled: !_submitting,
                 keyboardType: TextInputType.url,
+                onChanged: (_) {
+                  if (_error != null) {
+                    setState(() => _error = null);
+                  }
+                },
                 decoration: InputDecoration(
                   labelText: l10n.addEventWebsiteLabel,
                   hintText: l10n.addEventWebsiteHint,
                   border: const OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 10),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _suggestedIsDateOnly,
+                title: Text(l10n.addEventAllDay),
+                onChanged: _submitting
+                    ? null
+                    : (value) {
+                        setState(() {
+                          _suggestedIsDateOnly = value;
+                          _error = null;
+                        });
+                      },
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                initialValue: _selectedTimeZone,
+                decoration: InputDecoration(
+                  labelText: l10n.addEventTimezoneLabel,
+                  border: const OutlineInputBorder(),
+                ),
+                items: _timeZoneOptions
+                    .map(
+                      (value) => DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(
+                          _timeZoneLabel(value),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    )
+                    .toList(),
+                onChanged: _submitting
+                    ? null
+                    : (value) {
+                        if (value == null) return;
+                        setState(() {
+                          _selectedTimeZone = value;
+                          _timeZoneDirty = true;
+                          _error = null;
+                        });
+                      },
+              ),
+              const SizedBox(height: 10),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.play_arrow_outlined),
+                title: Text(l10n.addEventStartLabel),
+                subtitle: Text(_formatDateTime(_suggestedStartAt)),
+                trailing: TextButton(
+                  onPressed: _submitting ? null : _pickStartDateTime,
+                  child: Text(l10n.spotDetailQuickActionEdit),
+                ),
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.stop_outlined),
+                title: Text(l10n.addEventEndLabel),
+                subtitle: Text(
+                  _suggestedEndAt == null
+                      ? l10n.addEventEndNotSet
+                      : _formatDateTime(_suggestedEndAt!),
+                ),
+                trailing: TextButton(
+                  onPressed: _submitting ? null : _pickEndDateTime,
+                  child: Text(l10n.spotDetailQuickActionEdit),
                 ),
               ),
               if (_error != null) ...[
