@@ -676,6 +676,47 @@
   "@exploreSearchHint": {
     "description": "Map search field placeholder"
   },
+  "explorePickerTitleSpots": "Choose spots",
+  "@explorePickerTitleSpots": {
+    "description": "Explore entity picker: title when choosing spots"
+  },
+  "explorePickerTitleEvents": "Choose event",
+  "@explorePickerTitleEvents": {
+    "description": "Explore entity picker: title when choosing an event"
+  },
+  "explorePickerTitleSpotsAndEvents": "Choose spot or event",
+  "@explorePickerTitleSpotsAndEvents": {
+    "description": "Explore entity picker: title when choosing spot or event"
+  },
+  "explorePickerSearchHintEvents": "Search location or event…",
+  "@explorePickerSearchHintEvents": {
+    "description": "Explore entity picker: search placeholder for events mode"
+  },
+  "explorePickerConfirmSelect": "Select",
+  "@explorePickerConfirmSelect": {
+    "description": "Explore entity picker: confirm single selection"
+  },
+  "explorePickerConfirmAdd": "Add",
+  "@explorePickerConfirmAdd": {
+    "description": "Explore entity picker: add to multi selection"
+  },
+  "explorePickerAlreadyAdded": "Added",
+  "@explorePickerAlreadyAdded": {
+    "description": "Explore entity picker: entity already in selection"
+  },
+  "explorePickerDone": "Done ({count})",
+  "@explorePickerDone": {
+    "description": "Explore entity picker: finish multi selection",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "explorePickerLoading": "Loading map…",
+  "@explorePickerLoading": {
+    "description": "Explore entity picker: loading indicator"
+  },
   "exploreFilterBy": "Filter by",
   "@exploreFilterBy": {
     "description": "Filters: section label"
@@ -1114,6 +1155,10 @@
   "addEventLinkingSectionTitle": "Linking",
   "@addEventLinkingSectionTitle": {
     "description": "Add event page: spot/list linking section"
+  },
+  "addEventLinkSpotButton": "Link spot",
+  "@addEventLinkSpotButton": {
+    "description": "Add event page: open map picker to link spots"
   },
   "addEventLinkedSpotLabel": "Spot: {name}",
   "@addEventLinkedSpotLabel": {

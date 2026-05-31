@@ -544,6 +544,35 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exploreSearchHint => 'Search location or spot…';
 
   @override
+  String get explorePickerTitleSpots => 'Choose spots';
+
+  @override
+  String get explorePickerTitleEvents => 'Choose event';
+
+  @override
+  String get explorePickerTitleSpotsAndEvents => 'Choose spot or event';
+
+  @override
+  String get explorePickerSearchHintEvents => 'Search location or event…';
+
+  @override
+  String get explorePickerConfirmSelect => 'Select';
+
+  @override
+  String get explorePickerConfirmAdd => 'Add';
+
+  @override
+  String get explorePickerAlreadyAdded => 'Added';
+
+  @override
+  String explorePickerDone(int count) {
+    return 'Done ($count)';
+  }
+
+  @override
+  String get explorePickerLoading => 'Loading map…';
+
+  @override
   String get exploreFilterBy => 'Filter by';
 
   @override
@@ -888,6 +917,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addEventLinkingSectionTitle => 'Linking';
+
+  @override
+  String get addEventLinkSpotButton => 'Link spot';
 
   @override
   String addEventLinkedSpotLabel(String name) {

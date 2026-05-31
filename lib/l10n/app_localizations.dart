@@ -1006,6 +1006,60 @@ abstract class AppLocalizations {
   /// **'Search location or spot…'**
   String get exploreSearchHint;
 
+  /// Explore entity picker: title when choosing spots
+  ///
+  /// In en, this message translates to:
+  /// **'Choose spots'**
+  String get explorePickerTitleSpots;
+
+  /// Explore entity picker: title when choosing an event
+  ///
+  /// In en, this message translates to:
+  /// **'Choose event'**
+  String get explorePickerTitleEvents;
+
+  /// Explore entity picker: title when choosing spot or event
+  ///
+  /// In en, this message translates to:
+  /// **'Choose spot or event'**
+  String get explorePickerTitleSpotsAndEvents;
+
+  /// Explore entity picker: search placeholder for events mode
+  ///
+  /// In en, this message translates to:
+  /// **'Search location or event…'**
+  String get explorePickerSearchHintEvents;
+
+  /// Explore entity picker: confirm single selection
+  ///
+  /// In en, this message translates to:
+  /// **'Select'**
+  String get explorePickerConfirmSelect;
+
+  /// Explore entity picker: add to multi selection
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get explorePickerConfirmAdd;
+
+  /// Explore entity picker: entity already in selection
+  ///
+  /// In en, this message translates to:
+  /// **'Added'**
+  String get explorePickerAlreadyAdded;
+
+  /// Explore entity picker: finish multi selection
+  ///
+  /// In en, this message translates to:
+  /// **'Done ({count})'**
+  String explorePickerDone(int count);
+
+  /// Explore entity picker: loading indicator
+  ///
+  /// In en, this message translates to:
+  /// **'Loading map…'**
+  String get explorePickerLoading;
+
   /// Filters: section label
   ///
   /// In en, this message translates to:
@@ -1617,6 +1671,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Linking'**
   String get addEventLinkingSectionTitle;
+
+  /// Add event page: open map picker to link spots
+  ///
+  /// In en, this message translates to:
+  /// **'Link spot'**
+  String get addEventLinkSpotButton;
 
   /// Add event page: linked spot chip
   ///

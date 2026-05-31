@@ -6,6 +6,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
+import '../../models/spot.dart';
 import '../../services/auth_service.dart';
 import '../../services/event_report_service.dart';
 import '../../services/geocoding_service.dart';
@@ -13,6 +14,8 @@ import '../../utils/browser_timezone_utils.dart';
 import '../../utils/event_schedule_utils.dart';
 import '../../utils/image_preparation.dart';
 import '../../l10n/app_localizations.dart';
+import '../../widgets/explore_entity_picker/explore_entity_picker_config.dart';
+import '../../widgets/explore_entity_picker/explore_entity_picker_screen.dart';
 import '../../widgets/page_scaffold.dart';
 import '../../widgets/spot_form/image_section.dart';
 import '../spots/location_picker_screen.dart';
@@ -56,8 +59,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
   String? _countryCode;
   bool _isGeocoding = false;
 
-  String? _linkedSpotId;
-  String? _linkedSpotName;
+  List<Spot> _linkedSpots = [];
   String? _linkedSpotListId;
   String? _linkedSpotListName;
 
@@ -69,8 +71,17 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
     _selectedTimeZone = detectIanaTimeZone();
     _timeZoneOptions = EventScheduleUtils.availableTimeZoneIds();
     _pickedLocation = widget.initialLocation;
-    _linkedSpotId = widget.initialSpotId;
-    _linkedSpotName = widget.initialSpotName;
+    if (widget.initialSpotId != null) {
+      _linkedSpots = [
+        Spot(
+          id: widget.initialSpotId,
+          name: widget.initialSpotName ?? widget.initialSpotId!,
+          description: '',
+          latitude: widget.initialLocation?.latitude ?? 0,
+          longitude: widget.initialLocation?.longitude ?? 0,
+        ),
+      ];
+    }
     _linkedSpotListId = widget.initialSpotListId;
     _linkedSpotListName = widget.initialSpotListName;
     if (_pickedLocation != null) {
@@ -124,6 +135,26 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
         setState(() => _isGeocoding = false);
       }
     }
+  }
+
+  Future<void> _linkSpotsOnMap() async {
+    final result = await ExploreEntityPickerScreen.show(
+      context,
+      config: ExploreEntityPickerConfig(
+        mode: ExploreEntityPickerMode.spotsOnly,
+        allowMultiple: true,
+        preselectedSpotIds: _linkedSpots
+            .map((spot) => spot.id)
+            .whereType<String>()
+            .toSet(),
+        preselectedSpots: _linkedSpots,
+        initialCenter: _pickedLocation,
+      ),
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      _linkedSpots = List<Spot>.from(result.spots);
+    });
   }
 
   Future<void> _pickLocationOnMap() async {
@@ -392,7 +423,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
       return;
     }
 
-    final hasLinkedSpot = _linkedSpotId != null;
+    final hasLinkedSpot = _linkedSpots.isNotEmpty;
     final hasLinkedList = _linkedSpotListId != null;
     final hasLocation = _pickedLocation != null;
     if (!hasLinkedSpot && !hasLinkedList && !hasLocation) {
@@ -463,13 +494,16 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
             address: _effectiveAddressForSubmission(),
             city: _city,
             countryCode: _countryCode,
-            spotIds: _linkedSpotId == null
-                ? const <String>[]
-                : <String>[_linkedSpotId!],
+            spotIds: _linkedSpots
+                .map((spot) => spot.id)
+                .whereType<String>()
+                .toList(),
             spotListIds: _linkedSpotListId == null
                 ? const <String>[]
                 : <String>[_linkedSpotListId!],
-            linkedSpotName: _linkedSpotName,
+            linkedSpotName: _linkedSpots.isEmpty
+                ? null
+                : _linkedSpots.map((spot) => spot.name).join(', '),
             linkedSpotListName: _linkedSpotListName,
             reporterUserId: user.uid,
             reporterName:
@@ -648,23 +682,43 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
             const Divider(height: 24),
             Text(l10n.addEventLinkingSectionTitle, style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
-            if (_linkedSpotId != null)
-              Chip(
-                avatar: const Icon(Icons.location_on_outlined, size: 18),
-                label: Text(
-                  l10n.addEventLinkedSpotLabel(
-                    _linkedSpotName?.isNotEmpty == true
-                        ? _linkedSpotName!
-                        : _linkedSpotId!,
-                  ),
+            Row(
+              children: [
+                FilledButton.icon(
+                  onPressed: _isSubmitting ? null : _linkSpotsOnMap,
+                  icon: const Icon(Icons.add_location_alt_outlined),
+                  label: Text(l10n.addEventLinkSpotButton),
                 ),
-                onDeleted: () {
-                  setState(() {
-                    _linkedSpotId = null;
-                    _linkedSpotName = null;
-                  });
-                },
+              ],
+            ),
+            if (_linkedSpots.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: _linkedSpots
+                    .map(
+                      (spot) => Chip(
+                        avatar: const Icon(Icons.location_on_outlined, size: 18),
+                        label: Text(
+                          l10n.addEventLinkedSpotLabel(
+                            spot.name.isNotEmpty
+                                ? spot.name
+                                : (spot.id ?? ''),
+                          ),
+                        ),
+                        onDeleted: _isSubmitting
+                            ? null
+                            : () => setState(
+                                () => _linkedSpots.removeWhere(
+                                  (s) => s.id == spot.id,
+                                ),
+                              ),
+                      ),
+                    )
+                    .toList(),
               ),
+            ],
             if (_linkedSpotListId != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8),

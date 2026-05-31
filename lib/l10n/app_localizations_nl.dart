@@ -544,6 +544,35 @@ class AppLocalizationsNl extends AppLocalizations {
   String get exploreSearchHint => 'Zoek locatie of spot…';
 
   @override
+  String get explorePickerTitleSpots => 'Spots kiezen';
+
+  @override
+  String get explorePickerTitleEvents => 'Event kiezen';
+
+  @override
+  String get explorePickerTitleSpotsAndEvents => 'Spot of event kiezen';
+
+  @override
+  String get explorePickerSearchHintEvents => 'Zoek locatie of event…';
+
+  @override
+  String get explorePickerConfirmSelect => 'Selecteren';
+
+  @override
+  String get explorePickerConfirmAdd => 'Toevoegen';
+
+  @override
+  String get explorePickerAlreadyAdded => 'Toegevoegd';
+
+  @override
+  String explorePickerDone(int count) {
+    return 'Klaar ($count)';
+  }
+
+  @override
+  String get explorePickerLoading => 'Kaart laden…';
+
+  @override
   String get exploreFilterBy => 'Filteren op';
 
   @override
@@ -891,6 +920,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get addEventLinkingSectionTitle => 'Koppeling';
+
+  @override
+  String get addEventLinkSpotButton => 'Spot koppelen';
 
   @override
   String addEventLinkedSpotLabel(String name) {
