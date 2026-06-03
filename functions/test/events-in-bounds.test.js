@@ -97,7 +97,7 @@ describe("events-in-bounds helpers", () => {
       expect(pin?.description).toBe("Community jam");
     });
 
-    it("includes resized imageUrls when present on pin data", () => {
+    it("includes original imageUrls when present on pin data", () => {
       const original =
         "https://storage.googleapis.com/bucket/events/photo.jpg";
       const pin = normalizePin("evt1_venue", {
@@ -109,9 +109,7 @@ describe("events-in-bounds helpers", () => {
         startAt: futureStart,
         imageUrls: [original],
       });
-      expect(pin?.imageUrls).toEqual([
-        "https://storage.googleapis.com/bucket/events/resized/photo_1200x1200.webp",
-      ]);
+      expect(pin?.imageUrls).toEqual([original]);
     });
   });
 
@@ -150,7 +148,7 @@ describe("events-in-bounds helpers", () => {
 
       const enriched = await enrichPinsWithEventCardFields(db, pins);
       expect(enriched[0].imageUrls).toEqual([
-        "https://storage.googleapis.com/bucket/events/resized/jam_1200x1200.webp",
+        "https://storage.googleapis.com/bucket/events/jam.jpg",
       ]);
     });
 

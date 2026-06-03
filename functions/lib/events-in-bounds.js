@@ -1,6 +1,5 @@
 const {normalizeDate, isEventPast, pickEventCardFields} =
   require("./event-map-pins");
-const {getResizedImageUrlForApi} = require("./url-helpers");
 
 /** Max pins fetched for exact distinct eventId count. */
 const EXACT_EVENT_COUNT_PIN_CAP = 500;
@@ -87,6 +86,9 @@ function normalizePin(docId, data) {
 }
 
 /**
+ * Trims and caps event image URLs for Explore pins.
+ * Unlike the public REST API, we do not rewrite to resized paths here — same as
+ * getTopSpotsInBounds — so the client can fall back to originals via ResizedSpotImage.
  * @param {unknown} rawUrls
  * @return {string[]}
  */
@@ -94,7 +96,7 @@ function normalizeImageUrls(rawUrls) {
   if (!Array.isArray(rawUrls)) return [];
   return rawUrls
       .filter((url) => typeof url === "string" && url.trim().length > 0)
-      .map((url) => getResizedImageUrlForApi(url.trim()))
+      .map((url) => url.trim())
       .slice(0, 10);
 }
 
