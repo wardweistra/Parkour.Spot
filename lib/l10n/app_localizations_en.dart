@@ -544,7 +544,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exploreSearchHint => 'Search location or spot…';
 
   @override
-  String get explorePickerTitleSpots => 'Choose spots';
+  String get explorePickerTitleLocation => 'Pick location';
+
+  @override
+  String get explorePickerTitleSpots => 'Choose spot';
 
   @override
   String get explorePickerTitleEvents => 'Choose event';

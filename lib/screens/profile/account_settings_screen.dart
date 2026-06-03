@@ -11,7 +11,8 @@ import '../../services/user_locations_of_interest_service.dart';
 import '../../services/web_push_subscription_service.dart';
 import '../../utils/location_permission_utils.dart';
 import '../../widgets/page_scaffold.dart';
-import '../spots/location_picker_screen.dart';
+import '../../widgets/explore_entity_picker/explore_entity_picker_config.dart';
+import '../../widgets/explore_entity_picker/explore_entity_picker_screen.dart';
 
 class AccountSettingsScreen extends StatelessWidget {
   const AccountSettingsScreen({super.key});
@@ -637,29 +638,28 @@ class AccountSettingsScreen extends StatelessWidget {
                             dialogContext,
                             listen: false,
                           );
-                          final result = await Navigator.of(dialogContext)
-                              .push<LatLng?>(
-                                MaterialPageRoute(
-                                  fullscreenDialog: true,
-                                  builder: (context) => LocationPickerScreen(
-                                    initialLocation:
-                                        initialLat != null && initialLng != null
-                                        ? LatLng(initialLat, initialLng)
-                                        : null,
-                                  ),
-                                ),
-                              );
-                          if (result != null) {
+                          final result = await ExploreEntityPickerScreen.show(
+                            dialogContext,
+                            config: ExploreEntityPickerConfig(
+                              mode: ExploreEntityPickerMode.locationOnly,
+                              initialLocation:
+                                  initialLat != null && initialLng != null
+                                  ? LatLng(initialLat, initialLng)
+                                  : null,
+                            ),
+                          );
+                          final picked = result?.location;
+                          if (picked != null) {
                             setDialogState(() {
-                              selectedLat = result.latitude;
-                              selectedLng = result.longitude;
+                              selectedLat = picked.latitude;
+                              selectedLng = picked.longitude;
                               validationError = null;
                               selectedAddress = null;
                             });
                             final details = await geo
                                 .geocodeCoordinatesDetailsSilently(
-                                  result.latitude,
-                                  result.longitude,
+                                  picked.latitude,
+                                  picked.longitude,
                                 );
                             if (!dialogContext.mounted) return;
                             setDialogState(() {

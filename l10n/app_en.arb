@@ -676,9 +676,13 @@
   "@exploreSearchHint": {
     "description": "Map search field placeholder"
   },
-  "explorePickerTitleSpots": "Choose spots",
+  "explorePickerTitleLocation": "Pick location",
+  "@explorePickerTitleLocation": {
+    "description": "Explore entity picker: title when choosing a map location"
+  },
+  "explorePickerTitleSpots": "Choose spot",
   "@explorePickerTitleSpots": {
-    "description": "Explore entity picker: title when choosing spots"
+    "description": "Explore entity picker: title when choosing a spot"
   },
   "explorePickerTitleEvents": "Choose event",
   "@explorePickerTitleEvents": {

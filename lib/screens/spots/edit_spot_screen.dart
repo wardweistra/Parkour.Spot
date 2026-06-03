@@ -17,7 +17,8 @@ import '../../widgets/moderator_action_fields.dart';
 import '../../widgets/spot_form/location_section.dart';
 import '../../widgets/spot_form/image_section.dart';
 import '../../widgets/spot_form/attributes_section.dart';
-import '../../screens/spots/location_picker_screen.dart';
+import '../../widgets/explore_entity_picker/explore_entity_picker_config.dart';
+import '../../widgets/explore_entity_picker/explore_entity_picker_screen.dart';
 import '../../utils/map_recentering_mixin.dart';
 import '../../utils/location_permission_utils.dart';
 import '../../utils/image_preparation.dart';
@@ -265,22 +266,22 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
   }
 
   Future<void> _pickOnMap() async {
-    final result = await Navigator.push<LatLng>(
+    final result = await ExploreEntityPickerScreen.show(
       context,
-      MaterialPageRoute(
-        builder: (context) => LocationPickerScreen(
-          initialLocation: _currentLocation,
-        ),
+      config: ExploreEntityPickerConfig(
+        mode: ExploreEntityPickerMode.locationOnly,
+        initialLocation: _currentLocation,
       ),
     );
 
-    if (result != null && mounted) {
+    final picked = result?.location;
+    if (picked != null && mounted) {
       setState(() {
-        _currentLocation = result;
+        _currentLocation = picked;
       });
       // Center the map on the new picked location with a small delay to ensure controller is ready
-      centerMapOnLocationWithDelay(result);
-      await _geocodeLocation(result.latitude, result.longitude);
+      centerMapOnLocationWithDelay(picked);
+      await _geocodeLocation(picked.latitude, picked.longitude);
     }
   }
 

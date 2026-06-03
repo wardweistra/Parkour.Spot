@@ -17,7 +17,8 @@ import '../../widgets/spot_form/location_section.dart';
 import '../../widgets/spot_form/image_section.dart';
 import '../../widgets/spot_form/attributes_section.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'location_picker_screen.dart';
+import '../../widgets/explore_entity_picker/explore_entity_picker_config.dart';
+import '../../widgets/explore_entity_picker/explore_entity_picker_screen.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/map_recentering_mixin.dart';
 import '../../utils/image_preparation.dart';
@@ -337,33 +338,33 @@ class _AddSpotScreenState extends State<AddSpotScreen>
   }
 
   Future<void> _pickLocationOnMap() async {
-    final result = await Navigator.push<LatLng>(
+    final result = await ExploreEntityPickerScreen.show(
       context,
-      MaterialPageRoute(
-        builder: (context) => LocationPickerScreen(
-          initialLocation:
-              _pickedLocation ??
-              (_currentPosition != null
-                  ? LatLng(
-                      _currentPosition!.latitude,
-                      _currentPosition!.longitude,
-                    )
-                  : null),
-          usageTip: LocationPickerUsageTip.addSpot,
-        ),
+      config: ExploreEntityPickerConfig(
+        mode: ExploreEntityPickerMode.locationOnly,
+        initialLocation:
+            _pickedLocation ??
+            (_currentPosition != null
+                ? LatLng(
+                    _currentPosition!.latitude,
+                    _currentPosition!.longitude,
+                  )
+                : null),
+        usageTip: LocationPickerUsageTip.addSpot,
       ),
     );
 
-    if (result != null) {
+    final picked = result?.location;
+    if (picked != null) {
       setState(() {
-        _pickedLocation = result;
+        _pickedLocation = picked;
         // Clear current position so map shows picked location instead
         _currentPosition = null;
       });
       // Center the map on the new picked location with a small delay to ensure controller is ready
-      centerMapOnLocationWithDelay(result);
+      centerMapOnLocationWithDelay(picked);
       // Geocode the new coordinates to get address
-      _geocodeLocation(result.latitude, result.longitude);
+      _geocodeLocation(picked.latitude, picked.longitude);
     }
   }
 

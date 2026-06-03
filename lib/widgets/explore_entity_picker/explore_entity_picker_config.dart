@@ -1,29 +1,35 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-import '../../models/spot.dart';
+enum ExploreEntityPickerMode {
+  locationOnly,
+  spotsOnly,
+  eventsOnly,
+  spotsAndEvents,
+}
 
-enum ExploreEntityPickerMode { spotsOnly, eventsOnly, spotsAndEvents }
+enum LocationPickerUsageTip { addSpot, addEvent }
 
 class ExploreEntityPickerConfig {
   const ExploreEntityPickerConfig({
     required this.mode,
-    this.allowMultiple = false,
     this.excludeSpotIds = const {},
     this.excludeEventIds = const {},
-    this.preselectedSpotIds = const {},
-    this.preselectedSpots = const [],
+    this.initialLocation,
     this.initialCenter,
+    this.usageTip,
     this.allowExternalSources = false,
   });
 
   final ExploreEntityPickerMode mode;
-  final bool allowMultiple;
   final Set<String> excludeSpotIds;
   final Set<String> excludeEventIds;
-  final Set<String> preselectedSpotIds;
-  final List<Spot> preselectedSpots;
+  final LatLng? initialLocation;
   final LatLng? initialCenter;
+  final LocationPickerUsageTip? usageTip;
   final bool allowExternalSources;
+
+  bool get includesLocationPin =>
+      mode == ExploreEntityPickerMode.locationOnly;
 
   bool get includesSpots =>
       mode == ExploreEntityPickerMode.spotsOnly ||

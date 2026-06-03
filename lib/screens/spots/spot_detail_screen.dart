@@ -29,7 +29,8 @@ import '../../constants/spot_attributes.dart';
 import '../../constants/spot_detail_ui.dart';
 import '../../services/geocoding_service.dart';
 import '../../widgets/spot_form/attributes_section.dart';
-import 'location_picker_screen.dart';
+import '../../widgets/explore_entity_picker/explore_entity_picker_config.dart';
+import '../../widgets/explore_entity_picker/explore_entity_picker_screen.dart';
 import '../../services/snackbar_service.dart';
 import '../../services/spot_list_service.dart';
 import '../../services/spot_tracking_service.dart';
@@ -7137,17 +7138,20 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
 
   Future<void> _pickLocation() async {
     final initial = LatLng(widget.spot.latitude, widget.spot.longitude);
-    final result = await Navigator.of(context).push<LatLng>(
-      MaterialPageRoute(
-        builder: (context) => LocationPickerScreen(initialLocation: initial),
+    final result = await ExploreEntityPickerScreen.show(
+      context,
+      config: ExploreEntityPickerConfig(
+        mode: ExploreEntityPickerMode.locationOnly,
+        initialLocation: initial,
       ),
     );
-    if (result != null && mounted) {
+    final picked = result?.location;
+    if (picked != null && mounted) {
       setState(() {
-        _suggestedLatLng = result;
+        _suggestedLatLng = picked;
         _isGeocoding = true;
       });
-      _geocodeLocation(result.latitude, result.longitude);
+      _geocodeLocation(picked.latitude, picked.longitude);
     }
   }
 

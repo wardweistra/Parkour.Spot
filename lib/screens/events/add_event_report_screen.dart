@@ -18,7 +18,6 @@ import '../../widgets/explore_entity_picker/explore_entity_picker_config.dart';
 import '../../widgets/explore_entity_picker/explore_entity_picker_screen.dart';
 import '../../widgets/page_scaffold.dart';
 import '../../widgets/spot_form/image_section.dart';
-import '../spots/location_picker_screen.dart';
 
 class AddEventReportScreen extends StatefulWidget {
   const AddEventReportScreen({
@@ -142,35 +141,31 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
       context,
       config: ExploreEntityPickerConfig(
         mode: ExploreEntityPickerMode.spotsOnly,
-        allowMultiple: true,
-        preselectedSpotIds: _linkedSpots
-            .map((spot) => spot.id)
-            .whereType<String>()
-            .toSet(),
-        preselectedSpots: _linkedSpots,
         initialCenter: _pickedLocation,
       ),
     );
     if (result == null || !mounted) return;
-    setState(() {
-      _linkedSpots = List<Spot>.from(result.spots);
-    });
+    final spot = result.spot;
+    if (spot == null) return;
+    if (_linkedSpots.any((s) => s.id == spot.id)) return;
+    setState(() => _linkedSpots.add(spot));
   }
 
   Future<void> _pickLocationOnMap() async {
-    final picked = await Navigator.of(context).push<LatLng>(
-      MaterialPageRoute(
-        builder: (_) => LocationPickerScreen(
-          initialLocation: _pickedLocation,
-          usageTip: LocationPickerUsageTip.addEvent,
-        ),
+    final result = await ExploreEntityPickerScreen.show(
+      context,
+      config: ExploreEntityPickerConfig(
+        mode: ExploreEntityPickerMode.locationOnly,
+        initialLocation: _pickedLocation,
+        usageTip: LocationPickerUsageTip.addEvent,
       ),
     );
-    if (picked == null || !mounted) return;
+    final latLng = result?.location;
+    if (latLng == null || !mounted) return;
     setState(() {
-      _pickedLocation = picked;
+      _pickedLocation = latLng;
     });
-    await _geocodeLocation(picked);
+    await _geocodeLocation(latLng);
   }
 
   Future<void> _pickStartDateTime() async {

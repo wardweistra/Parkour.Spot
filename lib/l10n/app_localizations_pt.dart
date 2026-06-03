@@ -549,7 +549,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get exploreSearchHint => 'Pesquisar localização ou spot…';
 
   @override
-  String get explorePickerTitleSpots => 'Escolher spots';
+  String get explorePickerTitleLocation => 'Escolher localização';
+
+  @override
+  String get explorePickerTitleSpots => 'Escolher spot';
 
   @override
   String get explorePickerTitleEvents => 'Escolher evento';

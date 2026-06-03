@@ -1006,10 +1006,16 @@ abstract class AppLocalizations {
   /// **'Search location or spot…'**
   String get exploreSearchHint;
 
-  /// Explore entity picker: title when choosing spots
+  /// Explore entity picker: title when choosing a map location
   ///
   /// In en, this message translates to:
-  /// **'Choose spots'**
+  /// **'Pick location'**
+  String get explorePickerTitleLocation;
+
+  /// Explore entity picker: title when choosing a spot
+  ///
+  /// In en, this message translates to:
+  /// **'Choose spot'**
   String get explorePickerTitleSpots;
 
   /// Explore entity picker: title when choosing an event
