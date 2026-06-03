@@ -179,3 +179,13 @@ List<String> getResizedImageUrlCandidates(String originalUrl) {
 String getResizedImageUrl(String originalUrl) {
   return getResizedImageUrlCandidates(originalUrl).first;
 }
+
+/// Same transform as [getResizedImageUrlForApi] in functions/lib/url-helpers.js
+/// (spots API `GET /api/v1/spots` responses).
+String getResizedImageUrlForApi(String originalUrl) =>
+    getResizedImageUrl(originalUrl);
+
+/// Expected resized download URL for [sizeSuffix] (e.g. `1200x1200`, `1200x630`).
+/// Returns null when [originalUrl] is not a resizable Firebase Storage URL.
+String? getExpectedResizedImageUrl(String originalUrl, String sizeSuffix) =>
+    _toResizedUrl(originalUrl, sizeSuffix);

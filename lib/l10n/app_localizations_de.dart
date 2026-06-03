@@ -1384,6 +1384,78 @@ class AppLocalizationsDe extends AppLocalizations {
       'Neu skalierte Versionen erzeugen';
 
   @override
+  String get spotDetailMenuImageUrls => 'Bild-URL-Übersicht';
+
+  @override
+  String get spotDetailMenuImageUrlsSubtitle =>
+      'Original, skaliert und API-URLs';
+
+  @override
+  String adminImageUrlsDialogTitle(String entityLabel) {
+    return 'Bild-URLs — $entityLabel';
+  }
+
+  @override
+  String get adminImageUrlsEmpty => 'Keine Bilder anzuzeigen.';
+
+  @override
+  String adminImageUrlsImageIndex(int index, int total) {
+    return 'Bild $index von $total';
+  }
+
+  @override
+  String get adminImageUrlsLabelFirestore => 'Firestore (Original)';
+
+  @override
+  String get adminImageUrlsLabel1200x1200 => 'Erwartet 1200×1200';
+
+  @override
+  String get adminImageUrlsLabel1200x630 => 'Erwartet 1200×630';
+
+  @override
+  String get adminImageUrlsLabelActualDownload =>
+      'Tatsächliche Download-URL (skaliert)';
+
+  @override
+  String get adminImageUrlsLabelSpotsApi => 'Spots-API-URL';
+
+  @override
+  String get adminImageUrlsStatusExists => 'Vorhanden';
+
+  @override
+  String get adminImageUrlsStatusMissing => 'Fehlt';
+
+  @override
+  String get adminImageUrlsStatusNotApplicable =>
+      'Kein skalierbares Firebase-Storage-Bild.';
+
+  @override
+  String get adminImageUrlsPreviewOriginal => 'Original';
+
+  @override
+  String get adminImageUrlsPreview1200 => '1200×1200';
+
+  @override
+  String get adminImageUrlsPreview630 => '1200×630';
+
+  @override
+  String get adminImageUrlsCopyRow => 'URL kopieren';
+
+  @override
+  String get adminImageUrlsCopyAll => 'Alles kopieren';
+
+  @override
+  String get adminImageUrlsCopiedToClipboard => 'In Zwischenablage kopiert';
+
+  @override
+  String get adminImageUrlsApiFootnote =>
+      'Die Spots-API liefert die API-URL auch ohne skalierte Datei; Clients können bis zum Resize eine 404 erhalten.';
+
+  @override
+  String get adminImageUrlsEventApiFootnote =>
+      'Es gibt keine Events-API. Die Spots-API-URL nutzt dieselbe 1200×1200-Transformation wie bei Spot-imageUrls.';
+
+  @override
   String get spotDetailExternalSourceCannotEdit =>
       'Spots aus externen Quellen können nicht bearbeitet werden. Erstelle zuerst einen nativen Spot über „Als Duplikat markieren“ → „Nativen Spot erstellen“.';
 

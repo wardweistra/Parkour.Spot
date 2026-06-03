@@ -28,6 +28,7 @@ import '../../utils/image_preparation.dart';
 import '../../widgets/location_info_box.dart';
 import '../../services/web_share_service.dart';
 import '../../utils/share_link_text.dart';
+import '../../widgets/admin/admin_image_urls_overview_dialog.dart';
 import '../../widgets/detail_action_menu_item.dart';
 import '../../widgets/detail_image_carousel.dart';
 import '../../widgets/event_detail_provenance_line.dart';
@@ -534,6 +535,19 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               ),
             );
           }
+
+          if (isAdmin && event.imageUrls.isNotEmpty) {
+            items.add(
+              PopupMenuItem<_EventEditMenuAction>(
+                value: _EventEditMenuAction.viewImageUrls,
+                child: DetailActionMenuItem(
+                  icon: Icons.photo_library_outlined,
+                  title: l10n.spotDetailMenuImageUrls,
+                  subtitle: l10n.spotDetailMenuImageUrlsSubtitle,
+                ),
+              ),
+            );
+          }
         }
 
         return items;
@@ -610,6 +624,15 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           event,
           isAdmin,
           isModeratorOnly,
+        );
+        return;
+      case _EventEditMenuAction.viewImageUrls:
+        if (event.imageUrls.isEmpty) return;
+        await showAdminImageUrlsOverviewDialog(
+          context,
+          imageUrls: event.imageUrls,
+          entityLabel: event.title,
+          showSpotsApiUrls: true,
         );
         return;
     }
@@ -2396,6 +2419,7 @@ enum _EventEditMenuAction {
   createNativeEvent,
   markDuplicate,
   removeDuplicate,
+  viewImageUrls,
 }
 
 class _EventSpotListPreview {

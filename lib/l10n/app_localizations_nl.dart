@@ -1372,6 +1372,78 @@ class AppLocalizationsNl extends AppLocalizations {
       'Opnieuw verkleinde versies maken';
 
   @override
+  String get spotDetailMenuImageUrls => 'Overzicht afbeeldings-URL\'s';
+
+  @override
+  String get spotDetailMenuImageUrlsSubtitle =>
+      'Origineel, verkleind en API-URL\'s';
+
+  @override
+  String adminImageUrlsDialogTitle(String entityLabel) {
+    return 'Afbeeldings-URL\'s — $entityLabel';
+  }
+
+  @override
+  String get adminImageUrlsEmpty => 'Geen afbeeldingen om te tonen.';
+
+  @override
+  String adminImageUrlsImageIndex(int index, int total) {
+    return 'Afbeelding $index van $total';
+  }
+
+  @override
+  String get adminImageUrlsLabelFirestore => 'Firestore (origineel)';
+
+  @override
+  String get adminImageUrlsLabel1200x1200 => 'Verwacht 1200×1200';
+
+  @override
+  String get adminImageUrlsLabel1200x630 => 'Verwacht 1200×630';
+
+  @override
+  String get adminImageUrlsLabelActualDownload =>
+      'Werkelijke download-URL verkleind';
+
+  @override
+  String get adminImageUrlsLabelSpotsApi => 'Spots API-URL';
+
+  @override
+  String get adminImageUrlsStatusExists => 'Aanwezig';
+
+  @override
+  String get adminImageUrlsStatusMissing => 'Ontbreekt';
+
+  @override
+  String get adminImageUrlsStatusNotApplicable =>
+      'Geen verkleinbare Firebase Storage-afbeelding.';
+
+  @override
+  String get adminImageUrlsPreviewOriginal => 'Origineel';
+
+  @override
+  String get adminImageUrlsPreview1200 => '1200×1200';
+
+  @override
+  String get adminImageUrlsPreview630 => '1200×630';
+
+  @override
+  String get adminImageUrlsCopyRow => 'URL kopiëren';
+
+  @override
+  String get adminImageUrlsCopyAll => 'Alles kopiëren';
+
+  @override
+  String get adminImageUrlsCopiedToClipboard => 'Gekopieerd naar klembord';
+
+  @override
+  String get adminImageUrlsApiFootnote =>
+      'De spots API geeft de Spots API-URL terug ook als het verkleinde bestand ontbreekt; clients kunnen een 404 krijgen tot de resize klaar is.';
+
+  @override
+  String get adminImageUrlsEventApiFootnote =>
+      'Er is geen events API. De Spots API-URL gebruikt dezelfde 1200×1200-transform als voor spot imageUrls.';
+
+  @override
   String get spotDetailExternalSourceCannotEdit =>
       'Spots van externe bronnen kunnen niet worden bewerkt. Maak eerst een native spot via ‘Markeer als duplicaat’ → ‘Native spot aanmaken’.';
 

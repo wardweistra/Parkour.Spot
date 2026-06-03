@@ -1575,6 +1575,51 @@
   "spotDetailMenuDeleteSubtitleAdmin": "Admin only",
   "spotDetailMenuTriggerResize": "Trigger image resize",
   "spotDetailMenuTriggerResizeSubtitle": "Re-create resized versions",
+  "spotDetailMenuImageUrls": "Image URLs overview",
+  "@spotDetailMenuImageUrls": {
+    "description": "Admin spot/event detail menu: open image URL diagnostics"
+  },
+  "spotDetailMenuImageUrlsSubtitle": "Original, resized, and API URLs",
+  "@spotDetailMenuImageUrlsSubtitle": {
+    "description": "Admin spot/event detail menu subtitle for image URL diagnostics"
+  },
+  "adminImageUrlsDialogTitle": "Image URLs — {entityLabel}",
+  "@adminImageUrlsDialogTitle": {
+    "description": "Admin image URL overview dialog title",
+    "placeholders": {
+      "entityLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "adminImageUrlsEmpty": "No images to show.",
+  "adminImageUrlsImageIndex": "Image {index} of {total}",
+  "@adminImageUrlsImageIndex": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "adminImageUrlsLabelFirestore": "Firestore (original)",
+  "adminImageUrlsLabel1200x1200": "Expected 1200×1200",
+  "adminImageUrlsLabel1200x630": "Expected 1200×630",
+  "adminImageUrlsLabelActualDownload": "Actual resized download URL",
+  "adminImageUrlsLabelSpotsApi": "Spots API URL",
+  "adminImageUrlsStatusExists": "Exists",
+  "adminImageUrlsStatusMissing": "Missing",
+  "adminImageUrlsStatusNotApplicable": "Not a resizable Firebase Storage image.",
+  "adminImageUrlsPreviewOriginal": "Original",
+  "adminImageUrlsPreview1200": "1200×1200",
+  "adminImageUrlsPreview630": "1200×630",
+  "adminImageUrlsCopyRow": "Copy URL",
+  "adminImageUrlsCopyAll": "Copy all",
+  "adminImageUrlsCopiedToClipboard": "Copied to clipboard",
+  "adminImageUrlsApiFootnote": "The spots API returns the Spots API URL even when the resized file is missing; clients may get a 404 until resize completes.",
+  "adminImageUrlsEventApiFootnote": "There is no events API. The Spots API URL row shows the same 1200×1200 transform used for spot imageUrls.",
   "spotDetailExternalSourceCannotEdit": "Spots from external sources cannot be edited. Please create a native spot first using “Mark as Duplicate” → “Create Native Spot”.",
   "spotDetailOk": "OK",
   "spotDetailUnableEditNow": "Unable to edit this spot right now.",

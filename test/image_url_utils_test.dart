@@ -88,6 +88,23 @@ void main() {
     });
   });
 
+  group('getResizedImageUrlForApi', () {
+    test('matches getResizedImageUrl for spots and events URLs', () {
+      const spotsUrl =
+          'https://firebasestorage.googleapis.com/v0/b/bucket/o/spots%2Fphoto.jpg';
+      const eventsUrl =
+          'https://firebasestorage.googleapis.com/v0/b/bucket/o/events%2Fphoto.jpg';
+      const externalUrl = 'https://example.com/image.jpg';
+
+      expect(getResizedImageUrlForApi(spotsUrl), getResizedImageUrl(spotsUrl));
+      expect(getResizedImageUrlForApi(eventsUrl), getResizedImageUrl(eventsUrl));
+      expect(
+        getResizedImageUrlForApi(externalUrl),
+        getResizedImageUrl(externalUrl),
+      );
+    });
+  });
+
   group('events image URLs', () {
     test('converts firebasestorage events URL to resized', () {
       const url =

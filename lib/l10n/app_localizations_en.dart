@@ -1362,6 +1362,77 @@ class AppLocalizationsEn extends AppLocalizations {
       'Re-create resized versions';
 
   @override
+  String get spotDetailMenuImageUrls => 'Image URLs overview';
+
+  @override
+  String get spotDetailMenuImageUrlsSubtitle =>
+      'Original, resized, and API URLs';
+
+  @override
+  String adminImageUrlsDialogTitle(String entityLabel) {
+    return 'Image URLs — $entityLabel';
+  }
+
+  @override
+  String get adminImageUrlsEmpty => 'No images to show.';
+
+  @override
+  String adminImageUrlsImageIndex(int index, int total) {
+    return 'Image $index of $total';
+  }
+
+  @override
+  String get adminImageUrlsLabelFirestore => 'Firestore (original)';
+
+  @override
+  String get adminImageUrlsLabel1200x1200 => 'Expected 1200×1200';
+
+  @override
+  String get adminImageUrlsLabel1200x630 => 'Expected 1200×630';
+
+  @override
+  String get adminImageUrlsLabelActualDownload => 'Actual resized download URL';
+
+  @override
+  String get adminImageUrlsLabelSpotsApi => 'Spots API URL';
+
+  @override
+  String get adminImageUrlsStatusExists => 'Exists';
+
+  @override
+  String get adminImageUrlsStatusMissing => 'Missing';
+
+  @override
+  String get adminImageUrlsStatusNotApplicable =>
+      'Not a resizable Firebase Storage image.';
+
+  @override
+  String get adminImageUrlsPreviewOriginal => 'Original';
+
+  @override
+  String get adminImageUrlsPreview1200 => '1200×1200';
+
+  @override
+  String get adminImageUrlsPreview630 => '1200×630';
+
+  @override
+  String get adminImageUrlsCopyRow => 'Copy URL';
+
+  @override
+  String get adminImageUrlsCopyAll => 'Copy all';
+
+  @override
+  String get adminImageUrlsCopiedToClipboard => 'Copied to clipboard';
+
+  @override
+  String get adminImageUrlsApiFootnote =>
+      'The spots API returns the Spots API URL even when the resized file is missing; clients may get a 404 until resize completes.';
+
+  @override
+  String get adminImageUrlsEventApiFootnote =>
+      'There is no events API. The Spots API URL row shows the same 1200×1200 transform used for spot imageUrls.';
+
+  @override
   String get spotDetailExternalSourceCannotEdit =>
       'Spots from external sources cannot be edited. Please create a native spot first using “Mark as Duplicate” → “Create Native Spot”.';
 

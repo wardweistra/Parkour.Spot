@@ -2357,6 +2357,132 @@ abstract class AppLocalizations {
   /// **'Re-create resized versions'**
   String get spotDetailMenuTriggerResizeSubtitle;
 
+  /// Admin spot/event detail menu: open image URL diagnostics
+  ///
+  /// In en, this message translates to:
+  /// **'Image URLs overview'**
+  String get spotDetailMenuImageUrls;
+
+  /// Admin spot/event detail menu subtitle for image URL diagnostics
+  ///
+  /// In en, this message translates to:
+  /// **'Original, resized, and API URLs'**
+  String get spotDetailMenuImageUrlsSubtitle;
+
+  /// Admin image URL overview dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Image URLs — {entityLabel}'**
+  String adminImageUrlsDialogTitle(String entityLabel);
+
+  /// No description provided for @adminImageUrlsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No images to show.'**
+  String get adminImageUrlsEmpty;
+
+  /// No description provided for @adminImageUrlsImageIndex.
+  ///
+  /// In en, this message translates to:
+  /// **'Image {index} of {total}'**
+  String adminImageUrlsImageIndex(int index, int total);
+
+  /// No description provided for @adminImageUrlsLabelFirestore.
+  ///
+  /// In en, this message translates to:
+  /// **'Firestore (original)'**
+  String get adminImageUrlsLabelFirestore;
+
+  /// No description provided for @adminImageUrlsLabel1200x1200.
+  ///
+  /// In en, this message translates to:
+  /// **'Expected 1200×1200'**
+  String get adminImageUrlsLabel1200x1200;
+
+  /// No description provided for @adminImageUrlsLabel1200x630.
+  ///
+  /// In en, this message translates to:
+  /// **'Expected 1200×630'**
+  String get adminImageUrlsLabel1200x630;
+
+  /// No description provided for @adminImageUrlsLabelActualDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Actual resized download URL'**
+  String get adminImageUrlsLabelActualDownload;
+
+  /// No description provided for @adminImageUrlsLabelSpotsApi.
+  ///
+  /// In en, this message translates to:
+  /// **'Spots API URL'**
+  String get adminImageUrlsLabelSpotsApi;
+
+  /// No description provided for @adminImageUrlsStatusExists.
+  ///
+  /// In en, this message translates to:
+  /// **'Exists'**
+  String get adminImageUrlsStatusExists;
+
+  /// No description provided for @adminImageUrlsStatusMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing'**
+  String get adminImageUrlsStatusMissing;
+
+  /// No description provided for @adminImageUrlsStatusNotApplicable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not a resizable Firebase Storage image.'**
+  String get adminImageUrlsStatusNotApplicable;
+
+  /// No description provided for @adminImageUrlsPreviewOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'Original'**
+  String get adminImageUrlsPreviewOriginal;
+
+  /// No description provided for @adminImageUrlsPreview1200.
+  ///
+  /// In en, this message translates to:
+  /// **'1200×1200'**
+  String get adminImageUrlsPreview1200;
+
+  /// No description provided for @adminImageUrlsPreview630.
+  ///
+  /// In en, this message translates to:
+  /// **'1200×630'**
+  String get adminImageUrlsPreview630;
+
+  /// No description provided for @adminImageUrlsCopyRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy URL'**
+  String get adminImageUrlsCopyRow;
+
+  /// No description provided for @adminImageUrlsCopyAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy all'**
+  String get adminImageUrlsCopyAll;
+
+  /// No description provided for @adminImageUrlsCopiedToClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied to clipboard'**
+  String get adminImageUrlsCopiedToClipboard;
+
+  /// No description provided for @adminImageUrlsApiFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'The spots API returns the Spots API URL even when the resized file is missing; clients may get a 404 until resize completes.'**
+  String get adminImageUrlsApiFootnote;
+
+  /// No description provided for @adminImageUrlsEventApiFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'There is no events API. The Spots API URL row shows the same 1200×1200 transform used for spot imageUrls.'**
+  String get adminImageUrlsEventApiFootnote;
+
   /// No description provided for @spotDetailExternalSourceCannotEdit.
   ///
   /// In en, this message translates to:

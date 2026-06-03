@@ -21,6 +21,7 @@ import '../../services/web_share_service.dart';
 import '../../utils/share_link_text.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../services/search_state_service.dart';
+import '../../widgets/admin/admin_image_urls_overview_dialog.dart';
 import '../../widgets/source_details_dialog.dart';
 import '../../widgets/spot_selection_dialog.dart';
 import '../../widgets/moderator_action_fields.dart';
@@ -159,6 +160,7 @@ enum _SpotMenuAction {
   toggleHide,
   removeDuplicateStatus,
   triggerResize,
+  viewImageUrls,
 }
 
 enum _SpotSaveMenuAction {
@@ -1765,6 +1767,40 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
               _spot.imageUrls!.isNotEmpty) {
             items.add(
               PopupMenuItem<_SpotMenuAction>(
+                value: _SpotMenuAction.viewImageUrls,
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.photo_library_outlined,
+                      color: theme.colorScheme.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          l10n.spotDetailMenuImageUrls,
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                        Text(
+                          l10n.spotDetailMenuImageUrlsSubtitle,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.6,
+                            ),
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+            items.add(
+              PopupMenuItem<_SpotMenuAction>(
                 value: _SpotMenuAction.triggerResize,
                 child: Row(
                   children: [
@@ -1937,6 +1973,16 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         break;
       case _SpotMenuAction.triggerResize:
         _triggerResizeForSpot();
+        break;
+      case _SpotMenuAction.viewImageUrls:
+        final urls = _spot.imageUrls;
+        if (urls == null || urls.isEmpty) break;
+        await showAdminImageUrlsOverviewDialog(
+          context,
+          imageUrls: urls,
+          entityLabel: _spot.name,
+          showSpotsApiUrls: true,
+        );
         break;
     }
   }

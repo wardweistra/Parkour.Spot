@@ -1376,6 +1376,78 @@ class AppLocalizationsEs extends AppLocalizations {
       'Volver a crear versiones redimensionadas';
 
   @override
+  String get spotDetailMenuImageUrls => 'Resumen de URL de imágenes';
+
+  @override
+  String get spotDetailMenuImageUrlsSubtitle =>
+      'Original, redimensionada y URL de API';
+
+  @override
+  String adminImageUrlsDialogTitle(String entityLabel) {
+    return 'URL de imágenes — $entityLabel';
+  }
+
+  @override
+  String get adminImageUrlsEmpty => 'No hay imágenes que mostrar.';
+
+  @override
+  String adminImageUrlsImageIndex(int index, int total) {
+    return 'Imagen $index de $total';
+  }
+
+  @override
+  String get adminImageUrlsLabelFirestore => 'Firestore (original)';
+
+  @override
+  String get adminImageUrlsLabel1200x1200 => '1200×1200 esperado';
+
+  @override
+  String get adminImageUrlsLabel1200x630 => '1200×630 esperado';
+
+  @override
+  String get adminImageUrlsLabelActualDownload =>
+      'URL de descarga redimensionada';
+
+  @override
+  String get adminImageUrlsLabelSpotsApi => 'URL API Spots';
+
+  @override
+  String get adminImageUrlsStatusExists => 'Existe';
+
+  @override
+  String get adminImageUrlsStatusMissing => 'Falta';
+
+  @override
+  String get adminImageUrlsStatusNotApplicable =>
+      'No es una imagen redimensionable de Firebase Storage.';
+
+  @override
+  String get adminImageUrlsPreviewOriginal => 'Original';
+
+  @override
+  String get adminImageUrlsPreview1200 => '1200×1200';
+
+  @override
+  String get adminImageUrlsPreview630 => '1200×630';
+
+  @override
+  String get adminImageUrlsCopyRow => 'Copiar URL';
+
+  @override
+  String get adminImageUrlsCopyAll => 'Copiar todo';
+
+  @override
+  String get adminImageUrlsCopiedToClipboard => 'Copiado al portapapeles';
+
+  @override
+  String get adminImageUrlsApiFootnote =>
+      'La API de spots devuelve la URL de API aunque falte el archivo redimensionado; los clientes pueden recibir 404 hasta que termine el resize.';
+
+  @override
+  String get adminImageUrlsEventApiFootnote =>
+      'No hay API de eventos. La URL API Spots usa la misma transformación 1200×1200 que imageUrls de spots.';
+
+  @override
   String get spotDetailExternalSourceCannotEdit =>
       'Los spots de fuentes externas no se pueden editar. Crea primero un spot nativo con «Marcar como duplicado» → «Crear spot nativo».';
 
