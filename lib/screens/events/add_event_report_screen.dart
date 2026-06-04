@@ -144,6 +144,9 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
         if (address != null && address.isNotEmpty) {
           _locationAddressController.text = address;
           _resolvedAddressInput = address;
+        } else {
+          _locationAddressController.clear();
+          _resolvedAddressInput = null;
         }
       });
     } catch (_) {
@@ -183,6 +186,11 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
     if (latLng == null || !mounted) return;
     setState(() {
       _pickedLocation = latLng;
+      _address = null;
+      _city = null;
+      _countryCode = null;
+      _resolvedAddressInput = null;
+      _locationAddressController.clear();
     });
     await _geocodeLocation(latLng);
   }
