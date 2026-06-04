@@ -406,7 +406,7 @@ class _PreviewTile extends StatelessWidget {
                         Image.network(
                           url!,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => ColoredBox(
+                          errorBuilder: (_, _, _) => ColoredBox(
                             color: theme.colorScheme.surfaceContainerHighest,
                             child: Icon(
                               Icons.broken_image_outlined,
