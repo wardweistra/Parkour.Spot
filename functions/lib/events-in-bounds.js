@@ -88,7 +88,8 @@ function normalizePin(docId, data) {
 /**
  * Trims and caps event image URLs for Explore pins.
  * Unlike the public REST API, we do not rewrite to resized paths here — same as
- * getTopSpotsInBounds — so the client can fall back to originals via ResizedSpotImage.
+ * getTopSpotsInBounds — so the client can fall back to originals via
+ * ResizedSpotImage.
  * @param {unknown} rawUrls
  * @return {string[]}
  */
