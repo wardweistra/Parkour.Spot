@@ -938,6 +938,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addEventLocationNotSet => 'Location not set';
 
   @override
+  String get addEventLocationSectionTitle => 'Location';
+
+  @override
+  String get addEventLocationSectionHint =>
+      'Add one or more spots and/or one exact event location.';
+
+  @override
+  String get addEventAddressLabel => 'Exact address (optional)';
+
+  @override
+  String get addEventAddressHint => 'Street, number, city';
+
+  @override
+  String get addEventUseAddressButton => 'Use address';
+
+  @override
+  String get addEventPickLocationButton => 'Pick on map';
+
+  @override
+  String get addEventClearAddressTooltip => 'Clear address';
+
+  @override
+  String get addEventAddressRequiredToResolve =>
+      'Enter an address to search for.';
+
+  @override
+  String get addEventAddressNotFound =>
+      'Could not find coordinates for this address.';
+
+  @override
   String get addEventPickLocationHint =>
       'Pick a location on the map (optional when linked spot/list exists).';
 

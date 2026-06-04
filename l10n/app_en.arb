@@ -1186,6 +1186,42 @@
   "@addEventLocationNotSet": {
     "description": "Add event page: no map location chosen"
   },
+  "addEventLocationSectionTitle": "Location",
+  "@addEventLocationSectionTitle": {
+    "description": "Add event page: location section title"
+  },
+  "addEventLocationSectionHint": "Add one or more spots and/or one exact event location.",
+  "@addEventLocationSectionHint": {
+    "description": "Add event page: explains spots and venue location can both be set"
+  },
+  "addEventAddressLabel": "Exact address (optional)",
+  "@addEventAddressLabel": {
+    "description": "Add event page: address input label"
+  },
+  "addEventAddressHint": "Street, number, city",
+  "@addEventAddressHint": {
+    "description": "Add event page: address input hint"
+  },
+  "addEventUseAddressButton": "Use address",
+  "@addEventUseAddressButton": {
+    "description": "Add event page: geocode typed address button"
+  },
+  "addEventPickLocationButton": "Pick on map",
+  "@addEventPickLocationButton": {
+    "description": "Add event page: open location picker button"
+  },
+  "addEventClearAddressTooltip": "Clear address",
+  "@addEventClearAddressTooltip": {
+    "description": "Add event page: clear typed address button tooltip"
+  },
+  "addEventAddressRequiredToResolve": "Enter an address to search for.",
+  "@addEventAddressRequiredToResolve": {
+    "description": "Add event page: validation when resolving an empty address"
+  },
+  "addEventAddressNotFound": "Could not find coordinates for this address.",
+  "@addEventAddressNotFound": {
+    "description": "Add event page: typed address geocoding failed"
+  },
   "addEventPickLocationHint": "Pick a location on the map (optional when linked spot/list exists).",
   "@addEventPickLocationHint": {
     "description": "Add event page: map location helper text"

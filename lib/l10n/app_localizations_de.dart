@@ -950,6 +950,36 @@ class AppLocalizationsDe extends AppLocalizations {
   String get addEventLocationNotSet => 'Standort nicht festgelegt';
 
   @override
+  String get addEventLocationSectionTitle => 'Ort';
+
+  @override
+  String get addEventLocationSectionHint =>
+      'Füge einen oder mehrere Spots und/oder einen genauen Event-Ort hinzu.';
+
+  @override
+  String get addEventAddressLabel => 'Genaue Adresse (optional)';
+
+  @override
+  String get addEventAddressHint => 'Straße, Hausnummer, Stadt';
+
+  @override
+  String get addEventUseAddressButton => 'Adresse verwenden';
+
+  @override
+  String get addEventPickLocationButton => 'Auf Karte wählen';
+
+  @override
+  String get addEventClearAddressTooltip => 'Adresse löschen';
+
+  @override
+  String get addEventAddressRequiredToResolve =>
+      'Gib eine Adresse ein, die gesucht werden soll.';
+
+  @override
+  String get addEventAddressNotFound =>
+      'Für diese Adresse konnten keine Koordinaten gefunden werden.';
+
+  @override
   String get addEventPickLocationHint =>
       'Wähle einen Standort auf der Karte (optional, wenn Spot/Liste verknüpft ist).';
 

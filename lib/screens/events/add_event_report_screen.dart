@@ -1,9 +1,11 @@
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/spot.dart';
@@ -13,9 +15,11 @@ import '../../services/geocoding_service.dart';
 import '../../utils/browser_timezone_utils.dart';
 import '../../utils/event_schedule_utils.dart';
 import '../../utils/image_preparation.dart';
+import '../../utils/marker_icon_utils.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/explore_entity_picker/explore_entity_picker_config.dart';
 import '../../widgets/explore_entity_picker/explore_entity_picker_screen.dart';
+import '../../widgets/location_info_box.dart';
 import '../../widgets/page_scaffold.dart';
 import '../../widgets/spot_form/image_section.dart';
 
@@ -44,6 +48,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _websiteController = TextEditingController();
+  final _locationAddressController = TextEditingController();
 
   bool _isSubmitting = false;
   bool _isDateOnly = false;
@@ -57,6 +62,8 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
   String? _city;
   String? _countryCode;
   bool _isGeocoding = false;
+  String? _resolvedAddressInput;
+  BitmapDescriptor? _locationPinIcon;
 
   List<Spot> _linkedSpots = [];
   String? _linkedSpotListId;
@@ -83,6 +90,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
     }
     _linkedSpotListId = widget.initialSpotListId;
     _linkedSpotListName = widget.initialSpotListName;
+    _loadLocationPinIcon();
     if (_pickedLocation != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _geocodeLocation(_pickedLocation!);
@@ -95,7 +103,13 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
     _titleController.dispose();
     _descriptionController.dispose();
     _websiteController.dispose();
+    _locationAddressController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadLocationPinIcon() async {
+    final icon = await MarkerIconUtils.loadNormalSelectedMapPin();
+    if (mounted) setState(() => _locationPinIcon = icon);
   }
 
   DateTime _displayInSelectedTimeZone(DateTime value) {
@@ -126,6 +140,11 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
         _address = result['address'];
         _city = result['city'];
         _countryCode = result['countryCode'];
+        final address = _address?.trim();
+        if (address != null && address.isNotEmpty) {
+          _locationAddressController.text = address;
+          _resolvedAddressInput = address;
+        }
       });
     } catch (_) {
       // Best-effort reverse geocoding.
@@ -166,6 +185,84 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
       _pickedLocation = latLng;
     });
     await _geocodeLocation(latLng);
+  }
+
+  bool _typedAddressNeedsResolution() {
+    final typed = _locationAddressController.text.trim();
+    if (typed.isEmpty) return false;
+    return typed != _resolvedAddressInput || _pickedLocation == null;
+  }
+
+  Future<bool> _resolveTypedAddress() async {
+    final l10n = AppLocalizations.of(context)!;
+    final typedAddress = _locationAddressController.text.trim();
+    if (typedAddress.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.addEventAddressRequiredToResolve)),
+      );
+      return false;
+    }
+
+    setState(() => _isGeocoding = true);
+    try {
+      final geocodingService = context.read<GeocodingService>();
+      final coords = await geocodingService.reverseGeocodeAddress(typedAddress);
+      if (!mounted) return false;
+      if (coords == null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.addEventAddressNotFound)));
+        return false;
+      }
+      final latitude = coords['latitude'];
+      final longitude = coords['longitude'];
+      if (latitude == null || longitude == null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.addEventAddressNotFound)));
+        return false;
+      }
+
+      final details = await geocodingService.geocodeCoordinatesDetails(
+        latitude,
+        longitude,
+      );
+      if (!mounted) return false;
+
+      final resolvedAddress = details['address']?.trim();
+      final acceptedAddress = resolvedAddress?.isNotEmpty == true
+          ? resolvedAddress!
+          : typedAddress;
+      setState(() {
+        _pickedLocation = LatLng(latitude, longitude);
+        _address = acceptedAddress;
+        _city = details['city'];
+        _countryCode = details['countryCode'];
+        _locationAddressController.text = acceptedAddress;
+        _resolvedAddressInput = acceptedAddress;
+      });
+      return true;
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.addEventAddressNotFound)));
+      }
+      return false;
+    } finally {
+      if (mounted) setState(() => _isGeocoding = false);
+    }
+  }
+
+  void _clearLocation() {
+    setState(() {
+      _pickedLocation = null;
+      _address = null;
+      _city = null;
+      _countryCode = null;
+      _resolvedAddressInput = null;
+      _locationAddressController.clear();
+    });
   }
 
   Future<void> _pickStartDateTime() async {
@@ -390,9 +487,9 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
     if (!_formKey.currentState!.validate()) return;
     final l10n = AppLocalizations.of(context)!;
     if (!_hasValidWebsiteUrl()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.addEventWebsiteInvalid)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.addEventWebsiteInvalid)));
       return;
     }
 
@@ -411,20 +508,26 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
       );
     }
 
-    if (normalizedEndAt != null && normalizedEndAt.isBefore(normalizedStartAt)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.addEventEndBeforeStart)),
-      );
+    if (normalizedEndAt != null &&
+        normalizedEndAt.isBefore(normalizedStartAt)) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.addEventEndBeforeStart)));
       return;
     }
+
+    if (_typedAddressNeedsResolution() && !await _resolveTypedAddress()) {
+      return;
+    }
+    if (!mounted) return;
 
     final hasLinkedSpot = _linkedSpots.isNotEmpty;
     final hasLinkedList = _linkedSpotListId != null;
     final hasLocation = _pickedLocation != null;
     if (!hasLinkedSpot && !hasLinkedList && !hasLocation) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.addEventNeedLocationOrLink)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.addEventNeedLocationOrLink)));
       return;
     }
 
@@ -439,9 +542,9 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
     try {
       final eventReportService = context.read<EventReportService>();
       List<String> suggestedPhotoUrls = const <String>[];
-      final imageBytes = _selectedImageBytes
-          .whereType<Uint8List>()
-          .toList(growable: false);
+      final imageBytes = _selectedImageBytes.whereType<Uint8List>().toList(
+        growable: false,
+      );
 
       if (imageBytes.isNotEmpty) {
         if (imageBytes.length > EventReportService.maxSuggestedPhotos) {
@@ -456,8 +559,8 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
           return;
         }
         try {
-          suggestedPhotoUrls =
-              await eventReportService.uploadSuggestedEventPhotos(imageBytes);
+          suggestedPhotoUrls = await eventReportService
+              .uploadSuggestedEventPhotos(imageBytes);
         } catch (e) {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
@@ -475,45 +578,45 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
       }
 
       final success = await eventReportService.submitEventReport(
-            title: _titleController.text,
-            description: _descriptionController.text,
-            websiteUrl: _websiteController.text.trim().isEmpty
-                ? null
-                : _websiteController.text.trim(),
-            startAt: normalizedStartAt,
-            endAt: normalizedEndAt,
-            isDateOnly: _isDateOnly,
-            timeZone: _selectedTimeZone,
-            latitude: _pickedLocation?.latitude,
-            longitude: _pickedLocation?.longitude,
-            address: _effectiveAddressForSubmission(),
-            city: _city,
-            countryCode: _countryCode,
-            spotIds: _linkedSpots
-                .map((spot) => spot.id)
-                .whereType<String>()
-                .toList(),
-            spotListIds: _linkedSpotListId == null
-                ? const <String>[]
-                : <String>[_linkedSpotListId!],
-            linkedSpotName: _linkedSpots.isEmpty
-                ? null
-                : _linkedSpots.map((spot) => spot.name).join(', '),
-            linkedSpotListName: _linkedSpotListName,
-            reporterUserId: user.uid,
-            reporterName:
-                authService.userProfile?.displayName ??
-                user.displayName ??
-                user.email,
-            reporterEmail: user.email,
-            suggestedPhotoUrls: suggestedPhotoUrls,
-          );
+        title: _titleController.text,
+        description: _descriptionController.text,
+        websiteUrl: _websiteController.text.trim().isEmpty
+            ? null
+            : _websiteController.text.trim(),
+        startAt: normalizedStartAt,
+        endAt: normalizedEndAt,
+        isDateOnly: _isDateOnly,
+        timeZone: _selectedTimeZone,
+        latitude: _pickedLocation?.latitude,
+        longitude: _pickedLocation?.longitude,
+        address: _effectiveAddressForSubmission(),
+        city: _city,
+        countryCode: _countryCode,
+        spotIds: _linkedSpots
+            .map((spot) => spot.id)
+            .whereType<String>()
+            .toList(),
+        spotListIds: _linkedSpotListId == null
+            ? const <String>[]
+            : <String>[_linkedSpotListId!],
+        linkedSpotName: _linkedSpots.isEmpty
+            ? null
+            : _linkedSpots.map((spot) => spot.name).join(', '),
+        linkedSpotListName: _linkedSpotListName,
+        reporterUserId: user.uid,
+        reporterName:
+            authService.userProfile?.displayName ??
+            user.displayName ??
+            user.email,
+        reporterEmail: user.email,
+        suggestedPhotoUrls: suggestedPhotoUrls,
+      );
 
       if (!mounted) return;
       if (!success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.addEventSubmitFailed)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.addEventSubmitFailed)));
         return;
       }
 
@@ -534,6 +637,199 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
         setState(() => _isSubmitting = false);
       }
     }
+  }
+
+  Widget _buildLocationSection(AppLocalizations l10n, ThemeData theme) {
+    final pickedLocation = _pickedLocation;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.addEventLocationSectionTitle,
+              style: theme.textTheme.titleMedium,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              l10n.addEventLocationSectionHint,
+              style: theme.textTheme.bodySmall,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _locationAddressController,
+              decoration: InputDecoration(
+                labelText: l10n.addEventAddressLabel,
+                hintText: l10n.addEventAddressHint,
+                border: const OutlineInputBorder(),
+                suffixIcon: _locationAddressController.text.trim().isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: l10n.addEventClearAddressTooltip,
+                        onPressed: _isSubmitting || _isGeocoding
+                            ? null
+                            : () {
+                                setState(() {
+                                  _locationAddressController.clear();
+                                  _address = null;
+                                  _resolvedAddressInput = null;
+                                });
+                              },
+                        icon: const Icon(Icons.clear),
+                      ),
+              ),
+              enabled: !_isSubmitting && !_isGeocoding,
+              keyboardType: TextInputType.streetAddress,
+              textInputAction: TextInputAction.search,
+              onChanged: (value) {
+                setState(() {
+                  if (value.trim().isEmpty) {
+                    _address = null;
+                    _resolvedAddressInput = null;
+                  }
+                });
+              },
+              onFieldSubmitted: (_) {
+                if (!_isSubmitting && !_isGeocoding) _resolveTypedAddress();
+              },
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: _isSubmitting || _isGeocoding
+                      ? null
+                      : _resolveTypedAddress,
+                  icon: _isGeocoding
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.search),
+                  label: Text(l10n.addEventUseAddressButton),
+                ),
+                FilledButton.icon(
+                  onPressed: _isSubmitting || _isGeocoding
+                      ? null
+                      : _pickLocationOnMap,
+                  icon: const Icon(Icons.edit_location_alt_outlined),
+                  label: Text(l10n.addEventPickLocationButton),
+                ),
+                if (pickedLocation != null)
+                  TextButton.icon(
+                    onPressed: _isSubmitting || _isGeocoding
+                        ? null
+                        : _clearLocation,
+                    icon: const Icon(Icons.clear),
+                    label: Text(l10n.addEventClearLocationTooltip),
+                  ),
+              ],
+            ),
+            if (pickedLocation == null) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Icon(
+                    Icons.map_outlined,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(l10n.addEventLocationNotSet)),
+                ],
+              ),
+            ] else ...[
+              const SizedBox(height: 16),
+              _buildLocationPreviewMap(pickedLocation, l10n, theme),
+              const SizedBox(height: 16),
+              LocationInfoBox(
+                latitude: pickedLocation.latitude,
+                longitude: pickedLocation.longitude,
+                address: _address,
+                countryCode: _countryCode,
+                isGeocoding: _isGeocoding,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLocationPreviewMap(
+    LatLng location,
+    AppLocalizations l10n,
+    ThemeData theme,
+  ) {
+    return Container(
+      height: 200,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.3),
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          GoogleMap(
+            key: ValueKey(
+              'event_location_${location.latitude}_${location.longitude}',
+            ),
+            initialCameraPosition: CameraPosition(target: location, zoom: 16),
+            markers: {
+              Marker(
+                markerId: const MarkerId('selected_event_location'),
+                position: location,
+                icon: _locationPinIcon ?? BitmapDescriptor.defaultMarker,
+                anchor: const Offset(0.5, 1.0),
+                infoWindow: InfoWindow.noText,
+              ),
+            },
+            zoomControlsEnabled: false,
+            myLocationButtonEnabled: false,
+            mapToolbarEnabled: false,
+            liteModeEnabled: kIsWeb,
+            compassEnabled: false,
+            zoomGesturesEnabled: false,
+            scrollGesturesEnabled: false,
+            tiltGesturesEnabled: false,
+            rotateGesturesEnabled: false,
+            onTap: (_) => _pickLocationOnMap(),
+          ),
+          Positioned(
+            top: 8,
+            right: 8,
+            child: PointerInterceptor(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.7),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.touch_app, color: Colors.white, size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      l10n.addSpotPickLocationHint,
+                      style: const TextStyle(color: Colors.white, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -658,7 +954,9 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
               contentPadding: EdgeInsets.zero,
               title: Text(l10n.addEventEndLabel),
               subtitle: Text(
-                _endAt == null ? l10n.addEventEndNotSet : _formatDateTime(_endAt!),
+                _endAt == null
+                    ? l10n.addEventEndNotSet
+                    : _formatDateTime(_endAt!),
               ),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -675,7 +973,10 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
               onTap: _pickEndDateTime,
             ),
             const Divider(height: 24),
-            Text(l10n.addEventLinkingSectionTitle, style: theme.textTheme.titleMedium),
+            Text(
+              l10n.addEventLinkingSectionTitle,
+              style: theme.textTheme.titleMedium,
+            ),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -694,12 +995,13 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
                 children: _linkedSpots
                     .map(
                       (spot) => Chip(
-                        avatar: const Icon(Icons.location_on_outlined, size: 18),
+                        avatar: const Icon(
+                          Icons.location_on_outlined,
+                          size: 18,
+                        ),
                         label: Text(
                           l10n.addEventLinkedSpotLabel(
-                            spot.name.isNotEmpty
-                                ? spot.name
-                                : (spot.id ?? ''),
+                            spot.name.isNotEmpty ? spot.name : (spot.id ?? ''),
                           ),
                         ),
                         onDeleted: _isSubmitting
@@ -735,46 +1037,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
                 ),
               ),
             const SizedBox(height: 12),
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.map_outlined),
-                title: Text(
-                  _pickedLocation == null
-                      ? l10n.addEventLocationNotSet
-                      : '${_pickedLocation!.latitude.toStringAsFixed(5)}, ${_pickedLocation!.longitude.toStringAsFixed(5)}',
-                ),
-                subtitle: Text(
-                  _isGeocoding
-                      ? l10n.addSpotGettingAddress
-                      : (_address?.isNotEmpty ?? false)
-                      ? _address!
-                      : l10n.addEventPickLocationHint,
-                ),
-                trailing: Wrap(
-                  spacing: 4,
-                  children: [
-                    if (_pickedLocation != null)
-                      IconButton(
-                        tooltip: l10n.addEventClearLocationTooltip,
-                        onPressed: () {
-                          setState(() {
-                            _pickedLocation = null;
-                            _address = null;
-                            _city = null;
-                            _countryCode = null;
-                          });
-                        },
-                        icon: const Icon(Icons.clear),
-                      ),
-                    IconButton(
-                      tooltip: l10n.addEventPickLocationTooltip,
-                      onPressed: _pickLocationOnMap,
-                      icon: const Icon(Icons.edit_location_alt_outlined),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            _buildLocationSection(l10n, theme),
             const SizedBox(height: 24),
             FilledButton.icon(
               onPressed: _isSubmitting ? null : _submit,
@@ -786,7 +1049,9 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
                     )
                   : const Icon(Icons.send_outlined),
               label: Text(
-                _isSubmitting ? l10n.addEventSubmitting : l10n.addEventSubmitButton,
+                _isSubmitting
+                    ? l10n.addEventSubmitting
+                    : l10n.addEventSubmitButton,
               ),
             ),
           ],
