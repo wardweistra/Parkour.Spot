@@ -8,6 +8,10 @@ void main() {
       DateTime? suggestedEndAt,
       bool? suggestedIsDateOnly,
       String? suggestedTimeZone,
+      List<String>? suggestedSpotIds,
+      double? suggestedLatitude,
+      double? suggestedLongitude,
+      bool suggestedLocationRemoved = false,
     }) {
       return EventReport(
         id: 'report-1',
@@ -18,6 +22,10 @@ void main() {
         suggestedTimeZone: suggestedTimeZone,
         suggestedStartAt: suggestedStartAt,
         suggestedEndAt: suggestedEndAt,
+        suggestedSpotIds: suggestedSpotIds,
+        suggestedLatitude: suggestedLatitude,
+        suggestedLongitude: suggestedLongitude,
+        suggestedLocationRemoved: suggestedLocationRemoved,
       );
     }
 
@@ -51,6 +59,27 @@ void main() {
       final report = buildReport();
 
       expect(report.hasSuggestedEdits, isFalse);
+    });
+
+    test('returns true when suggested linked spots are set', () {
+      final report = buildReport(suggestedSpotIds: const <String>[]);
+
+      expect(report.hasSuggestedEdits, isTrue);
+    });
+
+    test('returns true when suggested venue location is set', () {
+      final report = buildReport(
+        suggestedLatitude: 52.1,
+        suggestedLongitude: 4.3,
+      );
+
+      expect(report.hasSuggestedEdits, isTrue);
+    });
+
+    test('returns true when suggested venue location is removed', () {
+      final report = buildReport(suggestedLocationRemoved: true);
+
+      expect(report.hasSuggestedEdits, isTrue);
     });
   });
 }

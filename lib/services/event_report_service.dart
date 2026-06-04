@@ -83,6 +83,13 @@ class EventReportService {
     String? suggestedTimeZone,
     DateTime? suggestedStartAt,
     DateTime? suggestedEndAt,
+    List<String>? suggestedSpotIds,
+    double? suggestedLatitude,
+    double? suggestedLongitude,
+    String? suggestedAddress,
+    String? suggestedCity,
+    String? suggestedCountryCode,
+    bool suggestedLocationRemoved = false,
     List<String> suggestedPhotoUrls = const <String>[],
   }) async {
     final trimmedTitle = title.trim();
@@ -104,6 +111,13 @@ class EventReportService {
         .where((url) => url.isNotEmpty)
         .take(maxSuggestedPhotos)
         .toList(growable: false);
+    final normalizedSuggestedSpotIds =
+        suggestedSpotIds
+            ?.map((id) => id.trim())
+            .where((id) => id.isNotEmpty)
+            .toSet()
+            .toList(growable: false)
+          ?..sort();
     final normalizedTargetEventId = targetEventId?.trim();
     final normalizedTargetEventTitle = targetEventTitle?.trim();
     final normalizedSuggestedTitle = suggestedTitle?.trim();
@@ -173,6 +187,18 @@ class EventReportService {
           'suggestedStartAt': Timestamp.fromDate(normalizedSuggestedStartAt),
         if (normalizedSuggestedEndAt != null)
           'suggestedEndAt': Timestamp.fromDate(normalizedSuggestedEndAt),
+        if (suggestedLatitude != null && suggestedLongitude != null) ...{
+          'suggestedLatitude': suggestedLatitude,
+          'suggestedLongitude': suggestedLongitude,
+          if (suggestedAddress != null && suggestedAddress.trim().isNotEmpty)
+            'suggestedAddress': suggestedAddress.trim(),
+          if (suggestedCity != null && suggestedCity.trim().isNotEmpty)
+            'suggestedCity': suggestedCity.trim(),
+          if (suggestedCountryCode != null &&
+              suggestedCountryCode.trim().isNotEmpty)
+            'suggestedCountryCode': suggestedCountryCode.trim().toUpperCase(),
+        },
+        if (suggestedLocationRemoved) 'suggestedLocationRemoved': true,
         if (normalizedPhotoUrls.isNotEmpty)
           'suggestedPhotoUrls': normalizedPhotoUrls,
         'status': statuses.first,
@@ -181,6 +207,9 @@ class EventReportService {
       };
       if (suggestedIsDateOnly != null) {
         reportData['suggestedIsDateOnly'] = suggestedIsDateOnly;
+      }
+      if (normalizedSuggestedSpotIds != null) {
+        reportData['suggestedSpotIds'] = normalizedSuggestedSpotIds;
       }
       await _firestore.collection('eventReports').add(reportData);
       return true;
@@ -237,6 +266,13 @@ class EventReportService {
     String? suggestedTimeZone,
     DateTime? suggestedStartAt,
     DateTime? suggestedEndAt,
+    List<String>? suggestedSpotIds,
+    double? suggestedLatitude,
+    double? suggestedLongitude,
+    String? suggestedAddress,
+    String? suggestedCity,
+    String? suggestedCountryCode,
+    bool suggestedLocationRemoved = false,
     String? reporterUserId,
     String? reporterName,
     String? reporterEmail,
@@ -261,6 +297,13 @@ class EventReportService {
       suggestedTimeZone: suggestedTimeZone,
       suggestedStartAt: suggestedStartAt,
       suggestedEndAt: suggestedEndAt,
+      suggestedSpotIds: suggestedSpotIds,
+      suggestedLatitude: suggestedLatitude,
+      suggestedLongitude: suggestedLongitude,
+      suggestedAddress: suggestedAddress,
+      suggestedCity: suggestedCity,
+      suggestedCountryCode: suggestedCountryCode,
+      suggestedLocationRemoved: suggestedLocationRemoved,
     );
   }
 
@@ -550,7 +593,20 @@ class EventReportService {
     return finalPhotoUrls;
   }
 
-  Map<String, dynamic>? _buildExistingEventSuggestionUpdate({
+  @visibleForTesting
+  static Map<String, dynamic>? buildExistingEventSuggestionUpdateForTest({
+    required EventReport report,
+    required Map<String, dynamic> existingEventData,
+    List<String>? promotedImageUrls,
+  }) {
+    return _buildExistingEventSuggestionUpdate(
+      report: report,
+      existingEventData: existingEventData,
+      promotedImageUrls: promotedImageUrls,
+    );
+  }
+
+  static Map<String, dynamic>? _buildExistingEventSuggestionUpdate({
     required EventReport report,
     required Map<String, dynamic> existingEventData,
     List<String>? promotedImageUrls,
@@ -598,6 +654,38 @@ class EventReportService {
         return null;
       }
       updates['endAt'] = Timestamp.fromDate(suggestedEndAt);
+    }
+
+    if (report.suggestedSpotIds != null) {
+      updates['spotIds'] =
+          report.suggestedSpotIds!
+              .map((id) => id.trim())
+              .where((id) => id.isNotEmpty)
+              .toSet()
+              .toList(growable: false)
+            ..sort();
+    }
+
+    if (report.suggestedLocationRemoved) {
+      updates['latitude'] = FieldValue.delete();
+      updates['longitude'] = FieldValue.delete();
+      updates['address'] = FieldValue.delete();
+      updates['city'] = FieldValue.delete();
+      updates['countryCode'] = FieldValue.delete();
+    } else if (report.suggestedLatitude != null &&
+        report.suggestedLongitude != null) {
+      updates['latitude'] = report.suggestedLatitude;
+      updates['longitude'] = report.suggestedLongitude;
+      final address = report.suggestedAddress?.trim();
+      final city = report.suggestedCity?.trim();
+      final countryCode = report.suggestedCountryCode?.trim().toUpperCase();
+      updates['address'] = address?.isNotEmpty == true
+          ? address
+          : FieldValue.delete();
+      updates['city'] = city?.isNotEmpty == true ? city : FieldValue.delete();
+      updates['countryCode'] = countryCode?.isNotEmpty == true
+          ? countryCode
+          : FieldValue.delete();
     }
 
     final effectiveStartAt = (updates['startAt'] is Timestamp)

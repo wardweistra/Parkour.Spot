@@ -38,6 +38,13 @@ class EventReport {
     this.suggestedTimeZone,
     this.suggestedStartAt,
     this.suggestedEndAt,
+    this.suggestedSpotIds,
+    this.suggestedLatitude,
+    this.suggestedLongitude,
+    this.suggestedAddress,
+    this.suggestedCity,
+    this.suggestedCountryCode,
+    this.suggestedLocationRemoved = false,
     this.suggestedPhotoUrls = const <String>[],
     this.rejectedPhotoUrls = const <String>[],
     this.createdAt,
@@ -79,6 +86,13 @@ class EventReport {
   final String? suggestedTimeZone;
   final DateTime? suggestedStartAt;
   final DateTime? suggestedEndAt;
+  final List<String>? suggestedSpotIds;
+  final double? suggestedLatitude;
+  final double? suggestedLongitude;
+  final String? suggestedAddress;
+  final String? suggestedCity;
+  final String? suggestedCountryCode;
+  final bool suggestedLocationRemoved;
   final List<String> suggestedPhotoUrls;
   final List<String> rejectedPhotoUrls;
   final DateTime? createdAt;
@@ -103,6 +117,15 @@ class EventReport {
     }
 
     List<String> parseStringList(dynamic raw) {
+      if (raw is Iterable) {
+        return raw.whereType<String>().toList(growable: false);
+      }
+      return const <String>[];
+    }
+
+    List<String>? parseNullableStringList(String field) {
+      if (!data.containsKey(field)) return null;
+      final raw = data[field];
       if (raw is Iterable) {
         return raw.whereType<String>().toList(growable: false);
       }
@@ -153,6 +176,13 @@ class EventReport {
       suggestedTimeZone: data['suggestedTimeZone'] as String?,
       suggestedStartAt: parseDate(data['suggestedStartAt']),
       suggestedEndAt: parseDate(data['suggestedEndAt']),
+      suggestedSpotIds: parseNullableStringList('suggestedSpotIds'),
+      suggestedLatitude: parseDouble(data['suggestedLatitude']),
+      suggestedLongitude: parseDouble(data['suggestedLongitude']),
+      suggestedAddress: data['suggestedAddress'] as String?,
+      suggestedCity: data['suggestedCity'] as String?,
+      suggestedCountryCode: data['suggestedCountryCode'] as String?,
+      suggestedLocationRemoved: data['suggestedLocationRemoved'] == true,
       suggestedPhotoUrls: parseStringList(data['suggestedPhotoUrls']),
       rejectedPhotoUrls: parseStringList(data['rejectedPhotoUrls']),
       createdAt: parseDate(data['createdAt']),
@@ -173,7 +203,10 @@ class EventReport {
         suggestedIsDateOnly != null ||
         (suggestedTimeZone?.trim().isNotEmpty ?? false) ||
         suggestedStartAt != null ||
-        suggestedEndAt != null;
+        suggestedEndAt != null ||
+        suggestedSpotIds != null ||
+        (suggestedLatitude != null && suggestedLongitude != null) ||
+        suggestedLocationRemoved;
   }
 
   String? get locationSummary {
