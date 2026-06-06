@@ -214,16 +214,16 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
     setState(() => _isGeocoding = true);
     try {
       final geocodingService = context.read<GeocodingService>();
-      final coords = await geocodingService.reverseGeocodeAddress(typedAddress);
+      final result = await geocodingService.reverseGeocodeAddress(typedAddress);
       if (!mounted) return false;
-      if (coords == null) {
+      if (result == null) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(l10n.addEventAddressNotFound)));
         return false;
       }
-      final latitude = coords['latitude'];
-      final longitude = coords['longitude'];
+      final latitude = result['latitude'] as double?;
+      final longitude = result['longitude'] as double?;
       if (latitude == null || longitude == null) {
         ScaffoldMessenger.of(
           context,
@@ -231,21 +231,15 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
         return false;
       }
 
-      final details = await geocodingService.geocodeCoordinatesDetails(
-        latitude,
-        longitude,
-      );
-      if (!mounted) return false;
-
-      final resolvedAddress = details['address']?.trim();
-      final acceptedAddress = resolvedAddress?.isNotEmpty == true
-          ? resolvedAddress!
-          : typedAddress;
+      final formattedAddress = (result['address'] as String?)?.trim();
+      final acceptedAddress = typedAddress.isNotEmpty
+          ? typedAddress
+          : (formattedAddress?.isNotEmpty == true ? formattedAddress! : '');
       setState(() {
         _pickedLocation = LatLng(latitude, longitude);
         _address = acceptedAddress;
-        _city = details['city'];
-        _countryCode = details['countryCode'];
+        _city = result['city'] as String?;
+        _countryCode = result['countryCode'] as String?;
         _locationAddressController.text = acceptedAddress;
         _resolvedAddressInput = acceptedAddress;
       });

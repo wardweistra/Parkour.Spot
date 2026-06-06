@@ -137,9 +137,11 @@ class GeocodingService extends ChangeNotifier {
     }
   }
 
-  /// Reverse geocodes an address to coordinates
-  /// Returns null if reverse geocoding fails
-  Future<Map<String, double>?> reverseGeocodeAddress(String address) async {
+  /// Forward-geocodes an address to coordinates and metadata from the same result.
+  ///
+  /// Returns a map with `latitude`, `longitude`, and optionally `address`,
+  /// `city`, and `countryCode`. Returns null if geocoding fails.
+  Future<Map<String, dynamic>?> reverseGeocodeAddress(String address) async {
     try {
       _isLoading = true;
       _error = null;
@@ -152,8 +154,11 @@ class GeocodingService extends ChangeNotifier {
 
       if (result.data['success'] == true) {
         return {
-          'latitude': result.data['latitude'] as double,
-          'longitude': result.data['longitude'] as double,
+          'latitude': (result.data['latitude'] as num).toDouble(),
+          'longitude': (result.data['longitude'] as num).toDouble(),
+          'address': result.data['address'] as String?,
+          'city': result.data['city'] as String?,
+          'countryCode': result.data['countryCode'] as String?,
         };
       } else {
         _error = result.data['error'] ?? 'Failed to reverse geocode address';

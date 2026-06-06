@@ -2090,28 +2090,23 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
     });
     try {
       final geocodingService = context.read<GeocodingService>();
-      final coords = await geocodingService.reverseGeocodeAddress(typedAddress);
+      final result = await geocodingService.reverseGeocodeAddress(typedAddress);
       if (!mounted) return false;
-      final latitude = coords?['latitude'];
-      final longitude = coords?['longitude'];
+      final latitude = result?['latitude'] as double?;
+      final longitude = result?['longitude'] as double?;
       if (latitude == null || longitude == null) {
         setState(() => _error = l10n.addEventAddressNotFound);
         return false;
       }
-      final details = await geocodingService.geocodeCoordinatesDetails(
-        latitude,
-        longitude,
-      );
-      if (!mounted) return false;
-      final resolvedAddress = details['address']?.trim();
-      final acceptedAddress = resolvedAddress?.isNotEmpty == true
-          ? resolvedAddress!
-          : typedAddress;
+      final formattedAddress = (result?['address'] as String?)?.trim();
+      final acceptedAddress = typedAddress.isNotEmpty
+          ? typedAddress
+          : (formattedAddress?.isNotEmpty == true ? formattedAddress! : '');
       setState(() {
         _suggestedLocation = LatLng(latitude, longitude);
         _suggestedAddress = acceptedAddress;
-        _suggestedCity = details['city'];
-        _suggestedCountryCode = details['countryCode'];
+        _suggestedCity = result?['city'] as String?;
+        _suggestedCountryCode = result?['countryCode'] as String?;
         _locationAddressController.text = acceptedAddress;
         _resolvedAddressInput = acceptedAddress;
         _locationCleared = false;

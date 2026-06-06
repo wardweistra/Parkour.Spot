@@ -6746,7 +6746,7 @@ exports.placeDetails = onCall(
     },
 );
 
-// Reverse geocoding function to convert address to coordinates
+// Forward-geocode an address string to coordinates and address metadata.
 exports.reverseGeocodeAddress = onCall(
     {region: "europe-west1", secrets: ["GOOGLE_MAPS_API_KEY"]},
     async (request) => {
@@ -6757,48 +6757,26 @@ exports.reverseGeocodeAddress = onCall(
           throw new Error("address is required");
         }
 
-        // Use Google Maps Geocoding API
         const apiKey = process.env.GOOGLE_MAPS_API_KEY;
         if (!apiKey) {
           throw new Error("Google Maps API key not configured");
         }
 
-        const encodedAddress = encodeURIComponent(address);
-        const geocodingUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&key=${apiKey}`;
-
-        const response = await new Promise((resolve, reject) => {
-          https
-              .get(geocodingUrl, (res) => {
-                let data = "";
-                res.on("data", (chunk) => (data += chunk));
-                res.on("end", () => {
-                  try {
-                    resolve(JSON.parse(data));
-                  } catch (e) {
-                    reject(e);
-                  }
-                });
-              })
-              .on("error", reject);
-        });
-
-        if (
-          response.status === "OK" &&
-        response.results &&
-        response.results.length > 0
-        ) {
-          const location = response.results[0].geometry.location;
+        const result = await reverseGeocodeAddress(address, apiKey);
+        if (result.success) {
           return {
             success: true,
-            latitude: location.lat,
-            longitude: location.lng,
-          };
-        } else {
-          return {
-            success: false,
-            error: response.error_message || "No coordinates found for address",
+            latitude: result.latitude,
+            longitude: result.longitude,
+            address: result.formattedAddress,
+            city: result.city,
+            countryCode: result.countryCode,
           };
         }
+        return {
+          success: false,
+          error: result.error || "No coordinates found for address",
+        };
       } catch (error) {
         console.error("Error reverse geocoding address:", error);
         return {
