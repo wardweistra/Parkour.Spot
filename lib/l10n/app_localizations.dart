@@ -6146,6 +6146,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Approved and applied to event {eventId}.'**
   String eventSuggestionApprovalSuccess(String eventId);
+
+  /// Section title listing fields the user proposed changing on an event
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested changes'**
+  String get eventSuggestionChangedFieldsTitle;
+
+  /// Label when a user suggests removing the event location
+  ///
+  /// In en, this message translates to:
+  /// **'Remove location'**
+  String get eventSuggestionLocationRemoved;
+
+  /// Count of spots proposed in an event edit suggestion
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No linked spots} =1{1 linked spot} other{{count} linked spots}}'**
+  String eventSuggestionLinkedSpotsCount(int count);
 }
 
 class _AppLocalizationsDelegate

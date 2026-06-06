@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'location_review_map.dart';
 import '../models/spot.dart';
 import '../models/spot_report.dart';
 import '../constants/spot_attributes.dart';
@@ -9,8 +9,6 @@ import '../services/spot_service.dart';
 import '../services/spot_report_service.dart';
 import '../services/auth_service.dart';
 import '../services/geocoding_service.dart';
-import '../utils/marker_icon_utils.dart';
-
 /// Dialog for moderators to accept or reject individual edit suggestions from a spot report.
 class EditSuggestionApprovalDialog extends StatefulWidget {
   final SpotReport report;
@@ -35,9 +33,6 @@ class _EditSuggestionApprovalDialogState
   Spot? _originalSpot;
   String? _targetSpotId;
   bool _isLoading = true;
-  bool _isSatelliteView = false;
-  BitmapDescriptor? _locationReviewCurrentPinIcon;
-  BitmapDescriptor? _locationReviewSuggestedPinIcon;
   final TextEditingController _notesController = TextEditingController();
 
   Spot? get _targetSpot {
@@ -67,29 +62,6 @@ class _EditSuggestionApprovalDialogState
     super.initState();
     _initAccepted();
     _loadSpots();
-    if (widget.report.suggestedLatitude != null &&
-        widget.report.suggestedLongitude != null) {
-      _loadLocationReviewMapIcons();
-    }
-  }
-
-  Future<void> _loadLocationReviewMapIcons() async {
-    final double h = MarkerIconUtils.mapPinSingleSpotLogicalHeight;
-    final BitmapDescriptor current = await MarkerIconUtils.loadMapPinPng(
-      MarkerIconUtils.mapPinNormalAsset,
-      fallbackFill: MarkerIconUtils.mapPinNormalFallbackFill,
-      logicalHeight: h,
-    );
-    final BitmapDescriptor suggested = await MarkerIconUtils.loadMapPinPng(
-      MarkerIconUtils.mapPinNormalSelectedAsset,
-      fallbackFill: MarkerIconUtils.mapPinNormalFallbackFill,
-      logicalHeight: h,
-    );
-    if (!mounted) return;
-    setState(() {
-      _locationReviewCurrentPinIcon = current;
-      _locationReviewSuggestedPinIcon = suggested;
-    });
   }
 
   @override
@@ -677,43 +649,13 @@ class _EditSuggestionApprovalDialogState
                         ),
                       ),
                       const SizedBox(height: 8),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: SizedBox(
-                          height: 280,
-                          child: Stack(
-                            children: [
-                              _buildLocationReviewMap(
-                                context,
-                                current: LatLng(spot.latitude, spot.longitude),
-                                suggested: LatLng(
-                                  report.suggestedLatitude!,
-                                  report.suggestedLongitude!,
-                                ),
-                              ),
-                              Positioned(
-                                bottom: 8,
-                                right: 8,
-                                child: FloatingActionButton(
-                                  onPressed: () {
-                                    setState(() =>
-                                        _isSatelliteView = !_isSatelliteView);
-                                  },
-                                  heroTag: 'mapTypeToggle',
-                                  mini: true,
-                                  tooltip: _isSatelliteView
-                                      ? 'Switch to Map'
-                                      : 'Switch to Hybrid',
-                                  child: Icon(
-                                    _isSatelliteView
-                                        ? Icons.map
-                                        : Icons.terrain,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                      LocationReviewMap(
+                        current: LatLng(spot.latitude, spot.longitude),
+                        suggested: LatLng(
+                          report.suggestedLatitude!,
+                          report.suggestedLongitude!,
                         ),
+                        height: 280,
                       ),
                       const SizedBox(height: 8),
                       Row(
@@ -891,67 +833,6 @@ class _EditSuggestionApprovalDialogState
               : Text(_isRejectAll() ? 'Submit Review' : 'Apply Selected'),
         ),
       ],
-    );
-  }
-
-  Widget _buildLocationReviewMap(
-    BuildContext context, {
-    required LatLng current,
-    required LatLng suggested,
-  }) {
-    final midLat = (current.latitude + suggested.latitude) / 2;
-    final midLng = (current.longitude + suggested.longitude) / 2;
-    final latSpan = (current.latitude - suggested.latitude).abs();
-    final lngSpan = (current.longitude - suggested.longitude).abs();
-    final span = (latSpan > lngSpan ? latSpan : lngSpan) * 111000;
-    int zoom = 16;
-    if (span > 500) zoom = 14;
-    if (span > 2000) zoom = 12;
-    if (span > 5000) zoom = 11;
-    if (span > 10000) zoom = 10;
-
-    return GoogleMap(
-      initialCameraPosition: CameraPosition(
-        target: LatLng(midLat, midLng),
-        zoom: zoom.toDouble(),
-      ),
-      mapType: _isSatelliteView ? MapType.hybrid : MapType.normal,
-      markers: {
-        Marker(
-          markerId: const MarkerId('current'),
-          position: current,
-          infoWindow: const InfoWindow(
-            title: 'Current',
-            snippet: 'Existing location',
-          ),
-          icon: _locationReviewCurrentPinIcon ??
-              BitmapDescriptor.defaultMarker,
-          anchor: const Offset(0.5, 1.0),
-          zIndexInt: 0,
-        ),
-        Marker(
-          markerId: const MarkerId('suggested'),
-          position: suggested,
-          infoWindow: const InfoWindow(
-            title: 'Suggested',
-            snippet: 'Proposed location',
-          ),
-          icon: _locationReviewSuggestedPinIcon ??
-              BitmapDescriptor.defaultMarker,
-          anchor: const Offset(0.5, 1.0),
-          zIndexInt: 1,
-        ),
-      },
-      zoomControlsEnabled: false,
-      myLocationButtonEnabled: false,
-      mapToolbarEnabled: false,
-      webCameraControlEnabled: false,
-      liteModeEnabled: kIsWeb,
-      compassEnabled: false,
-      zoomGesturesEnabled: true,
-      scrollGesturesEnabled: true,
-      tiltGesturesEnabled: false,
-      rotateGesturesEnabled: true,
     );
   }
 

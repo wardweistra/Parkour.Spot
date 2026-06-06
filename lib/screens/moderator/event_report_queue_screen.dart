@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -8,6 +9,8 @@ import '../../models/event_report.dart';
 import '../../services/auth_service.dart';
 import '../../services/event_report_service.dart';
 import '../../utils/event_schedule_utils.dart';
+import '../../widgets/location_review_map.dart';
+import '../../widgets/event_suggested_edits_summary.dart';
 import '../../widgets/event_suggestion_approval_dialog.dart';
 import '../../widgets/page_scaffold.dart';
 
@@ -391,19 +394,9 @@ class _EventReportCard extends StatelessWidget {
     );
   }
 
-  String _formatSuggestedDateTime(BuildContext context, DateTime value) {
-    return EventScheduleUtils.formatSummaryLine(
-      context,
-      startAt: value,
-      isDateOnly: report.isDateOnly,
-      timeZone: report.timeZone,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context)!;
     final color = _statusColor(theme);
     final canReview = report.status == 'New' || report.status == 'Reviewing';
     final isSuggestion = report.isSuggestionForExistingEvent;
@@ -531,47 +524,28 @@ class _EventReportCard extends StatelessWidget {
             ],
             if (hasSuggestedEdits) ...[
               const SizedBox(height: 12),
+              EventSuggestedEditsSummary(
+                report: report,
+                compactMap: true,
+              ),
+            ],
+            if (!isSuggestion &&
+                report.latitude != null &&
+                report.longitude != null) ...[
+              const SizedBox(height: 12),
               Text(
-                'Suggested edits',
+                'Proposed location',
                 style: theme.textTheme.titleSmall?.copyWith(
                   color: theme.colorScheme.secondary,
                 ),
               ),
               const SizedBox(height: 8),
-              if (report.suggestedTitle?.isNotEmpty ?? false)
-                Text('Title: ${report.suggestedTitle!}'),
-              if (report.suggestedDescription?.isNotEmpty ?? false) ...[
-                const SizedBox(height: 4),
-                Text('Description: ${report.suggestedDescription!}'),
-              ],
-              if (report.suggestedWebsiteUrl?.isNotEmpty ?? false) ...[
-                const SizedBox(height: 4),
-                Text('Website: ${report.suggestedWebsiteUrl!}'),
-              ],
-              if (report.suggestedIsDateOnly != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  '${l10n.addEventAllDay}: ${report.suggestedIsDateOnly! ? 'Yes' : 'No'}',
-                ),
-              ],
-              if (report.suggestedTimeZone?.trim().isNotEmpty ?? false) ...[
-                const SizedBox(height: 4),
-                Text(
-                  '${l10n.addEventTimezoneLabel}: ${report.suggestedTimeZone!}',
-                ),
-              ],
-              if (report.suggestedStartAt != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  '${l10n.eventDetailStartsLabel}: ${_formatSuggestedDateTime(context, report.suggestedStartAt!)}',
-                ),
-              ],
-              if (report.suggestedEndAt != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  '${l10n.eventDetailEndsLabel}: ${_formatSuggestedDateTime(context, report.suggestedEndAt!)}',
-                ),
-              ],
+              LocationReviewMap(
+                suggested: LatLng(report.latitude!, report.longitude!),
+                height: 180,
+                showSatelliteToggle: false,
+                interactive: false,
+              ),
             ],
             if (report.suggestedPhotoUrls.isNotEmpty) ...[
               const SizedBox(height: 12),

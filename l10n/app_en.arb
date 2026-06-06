@@ -3570,5 +3570,22 @@
         "type": "String"
       }
     }
+  },
+  "eventSuggestionChangedFieldsTitle": "Suggested changes",
+  "@eventSuggestionChangedFieldsTitle": {
+    "description": "Section title listing fields the user proposed changing on an event"
+  },
+  "eventSuggestionLocationRemoved": "Remove location",
+  "@eventSuggestionLocationRemoved": {
+    "description": "Label when a user suggests removing the event location"
+  },
+  "eventSuggestionLinkedSpotsCount": "{count, plural, =0{No linked spots} =1{1 linked spot} other{{count} linked spots}}",
+  "@eventSuggestionLinkedSpotsCount": {
+    "description": "Count of spots proposed in an event edit suggestion",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

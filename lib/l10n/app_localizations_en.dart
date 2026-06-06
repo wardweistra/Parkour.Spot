@@ -3618,4 +3618,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String eventSuggestionApprovalSuccess(String eventId) {
     return 'Approved and applied to event $eventId.';
   }
+
+  @override
+  String get eventSuggestionChangedFieldsTitle => 'Suggested changes';
+
+  @override
+  String get eventSuggestionLocationRemoved => 'Remove location';
+
+  @override
+  String eventSuggestionLinkedSpotsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count linked spots',
+      one: '1 linked spot',
+      zero: 'No linked spots',
+    );
+    return '$_temp0';
+  }
 }

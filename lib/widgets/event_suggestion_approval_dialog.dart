@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
@@ -7,7 +8,7 @@ import '../models/parkour_event.dart';
 import '../services/admin_events_service.dart';
 import '../services/auth_service.dart';
 import '../services/event_report_service.dart';
-import '../utils/event_schedule_utils.dart';
+import 'event_suggested_edits_summary.dart';
 
 class EventSuggestionApprovalDialog extends StatefulWidget {
   const EventSuggestionApprovalDialog({super.key, required this.report});
@@ -181,13 +182,11 @@ class _EventSuggestionApprovalDialogState
     }
   }
 
-  String _formatSuggestedDateTime(DateTime value) {
-    return EventScheduleUtils.formatSummaryLine(
-      context,
-      startAt: value,
-      isDateOnly: widget.report.isDateOnly,
-      timeZone: widget.report.timeZone,
-    );
+  LatLng? _currentLocationForMap(ParkourEvent event) {
+    if (event.latitude != null && event.longitude != null) {
+      return LatLng(event.latitude!, event.longitude!);
+    }
+    return null;
   }
 
   Widget _buildWarningBanner({
@@ -384,76 +383,11 @@ class _EventSuggestionApprovalDialogState
                 const SizedBox(height: 16),
               ],
               if (report.hasSuggestedEdits) ...[
-                Text(
-                  l10n.eventDetailQuickActionSuggestEdit,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    color: theme.colorScheme.secondary,
-                  ),
+                EventSuggestedEditsSummary(
+                  report: report,
+                  sectionTitle: l10n.eventDetailQuickActionSuggestEdit,
+                  currentLocation: _currentLocationForMap(targetEvent),
                 ),
-                const SizedBox(height: 8),
-                if (report.suggestedTitle?.trim().isNotEmpty ?? false)
-                  Text(
-                    '${l10n.eventDetailSuggestEditTitle}: ${report.suggestedTitle!}',
-                  ),
-                if (report.suggestedDescription?.trim().isNotEmpty ??
-                    false) ...[
-                  const SizedBox(height: 4),
-                  Text(report.suggestedDescription!),
-                ],
-                if (report.suggestedWebsiteUrl?.trim().isNotEmpty ?? false) ...[
-                  const SizedBox(height: 4),
-                  SelectableText(
-                    report.suggestedWebsiteUrl!,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                ],
-                if (report.suggestedIsDateOnly != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    '${l10n.addEventAllDay}: ${report.suggestedIsDateOnly! ? 'Yes' : 'No'}',
-                  ),
-                ],
-                if (report.suggestedTimeZone?.trim().isNotEmpty ?? false) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    '${l10n.addEventTimezoneLabel}: ${report.suggestedTimeZone!}',
-                  ),
-                ],
-                if (report.suggestedStartAt != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    '${l10n.eventDetailStartsLabel}: ${_formatSuggestedDateTime(report.suggestedStartAt!)}',
-                  ),
-                ],
-                if (report.suggestedEndAt != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    '${l10n.eventDetailEndsLabel}: ${_formatSuggestedDateTime(report.suggestedEndAt!)}',
-                  ),
-                ],
-                if (report.suggestedSpotIds != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    '${l10n.addEventLinkingSectionTitle}: ${report.suggestedSpotIds!.length} ${report.suggestedSpotIds!.length == 1 ? 'spot' : 'spots'}',
-                  ),
-                ],
-                if (report.suggestedLocationRemoved) ...[
-                  const SizedBox(height: 4),
-                  Text('${l10n.addEventLocationSectionTitle}: removed'),
-                ] else if (report.suggestedLatitude != null &&
-                    report.suggestedLongitude != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    '${l10n.addEventLocationSectionTitle}: ${report.suggestedLatitude!.toStringAsFixed(5)}, ${report.suggestedLongitude!.toStringAsFixed(5)}',
-                  ),
-                  if (report.suggestedAddress?.trim().isNotEmpty ?? false)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(report.suggestedAddress!.trim()),
-                    ),
-                ],
                 const SizedBox(height: 12),
               ],
               if (report.suggestedPhotoUrls.isNotEmpty) ...[

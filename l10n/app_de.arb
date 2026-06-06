@@ -1014,5 +1014,8 @@
   "eventSuggestionModeratorNotesHint": "Dokumentiere, warum du diesen Vorschlag genehmigt oder abgelehnt hast…",
   "eventSuggestionApproveButton": "Vorschlag genehmigen",
   "eventSuggestionApprovalFailed": "Dieser Event-Vorschlag konnte nicht genehmigt werden.",
-  "eventSuggestionApprovalSuccess": "Genehmigt und auf Event {eventId} angewendet."
+  "eventSuggestionApprovalSuccess": "Genehmigt und auf Event {eventId} angewendet.",
+  "eventSuggestionChangedFieldsTitle": "Vorgeschlagene Änderungen",
+  "eventSuggestionLocationRemoved": "Standort entfernen",
+  "eventSuggestionLinkedSpotsCount": "{count, plural, =0{Keine verknüpften Spots} =1{1 verknüpfter Spot} other{{count} verknüpfte Spots}}"
 }

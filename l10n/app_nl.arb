@@ -1013,5 +1013,8 @@
   "eventSuggestionModeratorNotesHint": "Documenteer waarom je dit voorstel hebt goedgekeurd of afgewezen…",
   "eventSuggestionApproveButton": "Voorstel goedkeuren",
   "eventSuggestionApprovalFailed": "Dit evenementvoorstel kon niet worden goedgekeurd.",
-  "eventSuggestionApprovalSuccess": "Goedgekeurd en toegepast op evenement {eventId}."
+  "eventSuggestionApprovalSuccess": "Goedgekeurd en toegepast op evenement {eventId}.",
+  "eventSuggestionChangedFieldsTitle": "Voorgestelde wijzigingen",
+  "eventSuggestionLocationRemoved": "Locatie verwijderen",
+  "eventSuggestionLinkedSpotsCount": "{count, plural, =0{Geen gekoppelde spots} =1{1 gekoppelde spot} other{{count} gekoppelde spots}}"
 }

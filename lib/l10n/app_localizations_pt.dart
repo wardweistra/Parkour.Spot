@@ -3664,4 +3664,22 @@ class AppLocalizationsPt extends AppLocalizations {
   String eventSuggestionApprovalSuccess(String eventId) {
     return 'Aprovada e aplicada ao evento $eventId.';
   }
+
+  @override
+  String get eventSuggestionChangedFieldsTitle => 'Alterações sugeridas';
+
+  @override
+  String get eventSuggestionLocationRemoved => 'Remover localização';
+
+  @override
+  String eventSuggestionLinkedSpotsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count spots associados',
+      one: '1 spot associado',
+      zero: 'Sem spots associados',
+    );
+    return '$_temp0';
+  }
 }

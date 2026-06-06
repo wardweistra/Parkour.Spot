@@ -1013,5 +1013,8 @@
   "eventSuggestionModeratorNotesHint": "Documentez pourquoi vous avez approuvé ou rejeté cette suggestion…",
   "eventSuggestionApproveButton": "Approuver la suggestion",
   "eventSuggestionApprovalFailed": "Impossible d’approuver cette suggestion d’événement.",
-  "eventSuggestionApprovalSuccess": "Approuvée et appliquée à l’événement {eventId}."
+  "eventSuggestionApprovalSuccess": "Approuvée et appliquée à l’événement {eventId}.",
+  "eventSuggestionChangedFieldsTitle": "Modifications suggérées",
+  "eventSuggestionLocationRemoved": "Supprimer l’emplacement",
+  "eventSuggestionLinkedSpotsCount": "{count, plural, =0{Aucun spot lié} =1{1 spot lié} other{{count} spots liés}}"
 }
