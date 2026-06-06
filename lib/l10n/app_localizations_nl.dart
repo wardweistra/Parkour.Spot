@@ -941,6 +941,36 @@ class AppLocalizationsNl extends AppLocalizations {
   String get addEventLocationNotSet => 'Locatie niet ingesteld';
 
   @override
+  String get addEventLocationSectionTitle => 'Locatie';
+
+  @override
+  String get addEventLocationSectionHint =>
+      'Voeg een of meer spots en/of een exacte eventlocatie toe.';
+
+  @override
+  String get addEventAddressLabel => 'Exact adres (optioneel)';
+
+  @override
+  String get addEventAddressHint => 'Straat, huisnummer, plaats';
+
+  @override
+  String get addEventUseAddressButton => 'Adres gebruiken';
+
+  @override
+  String get addEventPickLocationButton => 'Kies op kaart';
+
+  @override
+  String get addEventClearAddressTooltip => 'Adres wissen';
+
+  @override
+  String get addEventAddressRequiredToResolve =>
+      'Voer een adres in om te zoeken.';
+
+  @override
+  String get addEventAddressNotFound =>
+      'Geen coördinaten gevonden voor dit adres.';
+
+  @override
   String get addEventPickLocationHint =>
       'Kies een locatie op de kaart (optioneel wanneer spot/lijst gekoppeld is).';
 

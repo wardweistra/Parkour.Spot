@@ -433,6 +433,27 @@ class _EventSuggestionApprovalDialogState
                     '${l10n.eventDetailEndsLabel}: ${_formatSuggestedDateTime(report.suggestedEndAt!)}',
                   ),
                 ],
+                if (report.suggestedSpotIds != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    '${l10n.addEventLinkingSectionTitle}: ${report.suggestedSpotIds!.length} ${report.suggestedSpotIds!.length == 1 ? 'spot' : 'spots'}',
+                  ),
+                ],
+                if (report.suggestedLocationRemoved) ...[
+                  const SizedBox(height: 4),
+                  Text('${l10n.addEventLocationSectionTitle}: removed'),
+                ] else if (report.suggestedLatitude != null &&
+                    report.suggestedLongitude != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    '${l10n.addEventLocationSectionTitle}: ${report.suggestedLatitude!.toStringAsFixed(5)}, ${report.suggestedLongitude!.toStringAsFixed(5)}',
+                  ),
+                  if (report.suggestedAddress?.trim().isNotEmpty ?? false)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(report.suggestedAddress!.trim()),
+                    ),
+                ],
                 const SizedBox(height: 12),
               ],
               if (report.suggestedPhotoUrls.isNotEmpty) ...[

@@ -1702,6 +1702,60 @@ abstract class AppLocalizations {
   /// **'Location not set'**
   String get addEventLocationNotSet;
 
+  /// Add event page: location section title
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get addEventLocationSectionTitle;
+
+  /// Add event page: explains spots and venue location can both be set
+  ///
+  /// In en, this message translates to:
+  /// **'Add one or more spots and/or one exact event location.'**
+  String get addEventLocationSectionHint;
+
+  /// Add event page: address input label
+  ///
+  /// In en, this message translates to:
+  /// **'Exact address (optional)'**
+  String get addEventAddressLabel;
+
+  /// Add event page: address input hint
+  ///
+  /// In en, this message translates to:
+  /// **'Street, number, city'**
+  String get addEventAddressHint;
+
+  /// Add event page: geocode typed address button
+  ///
+  /// In en, this message translates to:
+  /// **'Use address'**
+  String get addEventUseAddressButton;
+
+  /// Add event page: open location picker button
+  ///
+  /// In en, this message translates to:
+  /// **'Pick on map'**
+  String get addEventPickLocationButton;
+
+  /// Add event page: clear typed address button tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Clear address'**
+  String get addEventClearAddressTooltip;
+
+  /// Add event page: validation when resolving an empty address
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an address to search for.'**
+  String get addEventAddressRequiredToResolve;
+
+  /// Add event page: typed address geocoding failed
+  ///
+  /// In en, this message translates to:
+  /// **'Could not find coordinates for this address.'**
+  String get addEventAddressNotFound;
+
   /// Add event page: map location helper text
   ///
   /// In en, this message translates to:
