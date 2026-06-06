@@ -112,7 +112,8 @@ service cloud.firestore {
       function eventCreateShape() {
         return request.auth != null &&
           request.resource.data.createdBy is string &&
-          request.resource.data.createdBy == request.auth.uid &&
+          (request.resource.data.createdBy == request.auth.uid ||
+            requestingUserIsStaff()) &&
           request.resource.data.createdAt is timestamp &&
           eventUpdatedAtOk(request.resource.data) &&
           eventCommonShape(request.resource.data);
