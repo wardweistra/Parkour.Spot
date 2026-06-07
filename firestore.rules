@@ -599,13 +599,15 @@ service cloud.firestore {
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isModerator == true);
       // Only Cloud Functions (with admin privileges) can create/delete
       allow create, delete: if false;
-      // Moderators and admins can update the collapsedPairs field for UI preferences
+      // Moderators and admins can update review and resolution metadata
       allow update: if request.auth != null &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isModerator == true) &&
         // Ensure collapsedPairs is a list if present
-        (!('collapsedPairs' in request.resource.data) || request.resource.data.collapsedPairs is list);
+        (!('collapsedPairs' in request.resource.data) || request.resource.data.collapsedPairs is list) &&
+        // Pair resolution details are stored as a map keyed by pair index
+        (!('pairResolutions' in request.resource.data) || request.resource.data.pairResolutions is map);
     }
 
     // UserActivityMetrics collection - only admins can read, only Cloud Functions can write
