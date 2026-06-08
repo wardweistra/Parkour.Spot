@@ -9207,10 +9207,9 @@ exports.testCalculateUserActivityMetrics = onCall(
 );
 
 /**
-/**
  * Moderator function to find potential duplicate spots within ~50m of each other
- * Compares spots from one source against spots from other sources
- * Filters by matching country code and city, then calculates actual distance
+ * Compares spots from one source against spots from other sources using geo bounds,
+ * then calculates actual distance
  */
 exports.findDuplicateSpots = onCall(
     {
@@ -9259,16 +9258,9 @@ exports.findDuplicateSpots = onCall(
           const sourceSpot = sourceSpotDoc.data();
           const sourceLat = sourceSpot.latitude;
           const sourceLon = sourceSpot.longitude;
-          const sourceCountryCode = sourceSpot.countryCode;
-          const sourceCity = sourceSpot.city;
 
-          // Skip spots without valid coordinates, country code, or city
-          if (
-            typeof sourceLat !== "number" ||
-            typeof sourceLon !== "number" ||
-            !sourceCountryCode ||
-            !sourceCity
-          ) {
+          // Skip spots without valid coordinates
+          if (typeof sourceLat !== "number" || typeof sourceLon !== "number") {
             spotsSkipped++;
             continue;
           }
@@ -9292,8 +9284,6 @@ exports.findDuplicateSpots = onCall(
           const buildQuery = (lngMin, lngMax) => {
             const query = db
                 .collection("spots")
-                .where("countryCode", "==", sourceCountryCode)
-                .where("city", "==", sourceCity)
                 .where("duplicateOf", "==", null)
                 .where("hidden", "==", false)
                 .where("latitude", ">=", bounds.minLat)
@@ -9359,8 +9349,8 @@ exports.findDuplicateSpots = onCall(
                   latitude: sourceLat,
                   longitude: sourceLon,
                   address: sourceSpot.address,
-                  city: sourceCity,
-                  countryCode: sourceCountryCode,
+                  city: sourceSpot.city,
+                  countryCode: sourceSpot.countryCode,
                   spotSource: sourceSpot.spotSource,
                   spotSourceName: sourceSpot.spotSourceName,
                   hasImages: (sourceSpot.imageUrls || []).length > 0,
