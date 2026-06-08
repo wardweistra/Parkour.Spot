@@ -1,0 +1,282 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-08T00:00:00.000Z",
+  "title": "Design System: ParkourSpot",
+  "extensions": {
+    "colorMeta": {
+      "seed": {
+        "role": "primary",
+        "displayName": "Coastal Teal Seed",
+        "canonical": "oklch(58% 0.12 220)",
+        "tonalRamp": [
+          "oklch(18% 0.04 220)",
+          "oklch(28% 0.06 220)",
+          "oklch(38% 0.08 220)",
+          "oklch(48% 0.10 220)",
+          "oklch(58% 0.12 220)",
+          "oklch(68% 0.10 220)",
+          "oklch(78% 0.08 220)",
+          "oklch(92% 0.04 220)"
+        ]
+      },
+      "primary": {
+        "role": "primary",
+        "displayName": "Training Teal",
+        "canonical": "oklch(42% 0.08 220)",
+        "tonalRamp": [
+          "oklch(15% 0.03 220)",
+          "oklch(22% 0.05 220)",
+          "oklch(30% 0.06 220)",
+          "oklch(38% 0.07 220)",
+          "oklch(42% 0.08 220)",
+          "oklch(55% 0.09 220)",
+          "oklch(70% 0.08 220)",
+          "oklch(88% 0.04 220)"
+        ]
+      },
+      "primary-container": {
+        "role": "primary",
+        "displayName": "Mist Container",
+        "canonical": "oklch(92% 0.04 220)",
+        "tonalRamp": [
+          "oklch(20% 0.05 220)",
+          "oklch(30% 0.06 220)",
+          "oklch(40% 0.07 220)",
+          "oklch(50% 0.08 220)",
+          "oklch(60% 0.07 220)",
+          "oklch(72% 0.06 220)",
+          "oklch(84% 0.05 220)",
+          "oklch(92% 0.04 220)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Atlas Surface",
+        "canonical": "oklch(98% 0.01 220)",
+        "tonalRamp": [
+          "oklch(12% 0.01 220)",
+          "oklch(18% 0.01 220)",
+          "oklch(25% 0.01 220)",
+          "oklch(35% 0.01 220)",
+          "oklch(50% 0.01 220)",
+          "oklch(70% 0.01 220)",
+          "oklch(88% 0.01 220)",
+          "oklch(98% 0.01 220)"
+        ]
+      },
+      "on-surface": {
+        "role": "neutral",
+        "displayName": "Ink Body",
+        "canonical": "oklch(22% 0.01 220)",
+        "tonalRamp": [
+          "oklch(12% 0.01 220)",
+          "oklch(18% 0.01 220)",
+          "oklch(22% 0.01 220)",
+          "oklch(30% 0.01 220)",
+          "oklch(45% 0.01 220)",
+          "oklch(60% 0.01 220)",
+          "oklch(75% 0.01 220)",
+          "oklch(90% 0.01 220)"
+        ]
+      },
+      "surface-container-highest": {
+        "role": "neutral",
+        "displayName": "Shelf High",
+        "canonical": "oklch(90% 0.01 220)",
+        "tonalRamp": [
+          "oklch(20% 0.01 220)",
+          "oklch(28% 0.01 220)",
+          "oklch(36% 0.01 220)",
+          "oklch(48% 0.01 220)",
+          "oklch(60% 0.01 220)",
+          "oklch(72% 0.01 220)",
+          "oklch(82% 0.01 220)",
+          "oklch(90% 0.01 220)"
+        ]
+      },
+      "error": {
+        "role": "semantic",
+        "displayName": "Alert Red",
+        "canonical": "oklch(50% 0.20 25)",
+        "tonalRamp": [
+          "oklch(18% 0.08 25)",
+          "oklch(28% 0.12 25)",
+          "oklch(38% 0.16 25)",
+          "oklch(45% 0.18 25)",
+          "oklch(50% 0.20 25)",
+          "oklch(62% 0.16 25)",
+          "oklch(75% 0.10 25)",
+          "oklch(90% 0.04 25)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Splash and rare hero spot titles."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Page titles in PageScaffold and preview panel names."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Card titles, comparison option labels, section headers."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Descriptions, forms, intro copy. Target 65-75ch where width allows."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Buttons, chips, grid labels, field labels."
+      }
+    },
+    "shadows": [
+      {
+        "name": "button-rest",
+        "value": "0 1px 3px rgba(23, 28, 31, 0.18), 0 1px 2px rgba(23, 28, 31, 0.12)",
+        "purpose": "Filled CustomButton at rest (elevation 2)."
+      },
+      {
+        "name": "card-list",
+        "value": "0 1px 3px rgba(23, 28, 31, 0.16), 0 2px 6px rgba(23, 28, 31, 0.10)",
+        "purpose": "SpotCard and EventCard in list variant over explore content."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-standard",
+        "value": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Default Material state transitions for buttons and chips."
+      },
+      {
+        "name": "duration-short",
+        "value": "200ms",
+        "purpose": "Hover and focus feedback on interactive controls."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "compact",
+        "value": "600px"
+      },
+      {
+        "name": "content-max",
+        "value": "1200px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main call to action across forms, auth, and resolution flows.",
+      "html": "<button class=\"ds-btn-primary\" type=\"button\">Save spot</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; min-height: 56px; padding: 16px 24px; border: none; border-radius: 12px; background: #186584; color: #FFFFFF; font-family: Fredoka, system-ui, sans-serif; font-size: 16px; font-weight: 600; line-height: 1.4; cursor: pointer; box-shadow: 0 1px 3px rgba(23, 28, 31, 0.18), 0 1px 2px rgba(23, 28, 31, 0.12); transition: background 200ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-primary:hover { background: #004D67; } .ds-btn-primary:focus-visible { outline: 2px solid #186584; outline-offset: 2px; } .ds-btn-primary:active { box-shadow: none; } .ds-btn-primary:disabled { background: #DFE3E7; color: rgba(23, 28, 31, 0.78); cursor: not-allowed; box-shadow: none; }"
+    },
+    {
+      "name": "Outlined Button",
+      "kind": "button",
+      "refersTo": "button-outlined",
+      "description": "Secondary actions that should not compete with the primary fill.",
+      "html": "<button class=\"ds-btn-outlined\" type=\"button\">Cancel</button>",
+      "css": ".ds-btn-outlined { display: inline-flex; align-items: center; justify-content: center; min-height: 56px; padding: 16px 24px; border: 2px solid #186584; border-radius: 12px; background: transparent; color: #186584; font-family: Fredoka, system-ui, sans-serif; font-size: 16px; font-weight: 600; line-height: 1.4; cursor: pointer; transition: background 200ms cubic-bezier(0.4, 0, 0.2, 1), color 200ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-outlined:hover { background: rgba(193, 232, 255, 0.35); } .ds-btn-outlined:focus-visible { outline: 2px solid #186584; outline-offset: 2px; } .ds-btn-outlined:disabled { border-color: #C0C7CD; color: rgba(23, 28, 31, 0.78); cursor: not-allowed; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Standard outlined filled input for auth, spot forms, and moderator notes.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Spot name</span><input class=\"ds-input\" type=\"text\" placeholder=\"e.g. Riverside wall\" /></label>",
+      "css": ".ds-field { display: flex; flex-direction: column; gap: 6px; font-family: Fredoka, system-ui, sans-serif; } .ds-field-label { font-size: 14px; font-weight: 500; color: rgba(23, 28, 31, 0.7); } .ds-input { width: 100%; box-sizing: border-box; padding: 16px; border: 1px solid rgba(113, 120, 125, 0.5); border-radius: 12px; background: #F6FAFE; color: #171C1F; font-family: inherit; font-size: 16px; line-height: 1.5; transition: border-color 200ms cubic-bezier(0.4, 0, 0.2, 1), border-width 200ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-input::placeholder { color: rgba(23, 28, 31, 0.5); } .ds-input:hover { border-color: #71787D; } .ds-input:focus { outline: none; border: 2px solid #186584; padding: 15px; } .ds-input:disabled { background: #DFE3E7; color: rgba(23, 28, 31, 0.5); cursor: not-allowed; }"
+    },
+    {
+      "name": "Quick Action Chip",
+      "kind": "chip",
+      "refersTo": "quick-action-chip",
+      "description": "Save, edit, and share actions on spot detail; compact but 40px min height.",
+      "html": "<button class=\"ds-chip-quick\" type=\"button\"><svg class=\"ds-chip-icon\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\"><path d=\"M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z\" fill=\"#186584\"/></svg><span>Save</span></button>",
+      "css": ".ds-chip-quick { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 8px 12px; border: 1px solid rgba(113, 120, 125, 0.35); border-radius: 12px; background: rgba(223, 227, 231, 0.45); color: #171C1F; font-family: Fredoka, system-ui, sans-serif; font-size: 14px; font-weight: 600; line-height: 1.4; cursor: pointer; transition: background 200ms cubic-bezier(0.4, 0, 0.2, 1), border-color 200ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-chip-quick:hover { background: rgba(223, 227, 231, 0.75); border-color: #71787D; } .ds-chip-quick:focus-visible { outline: 2px solid #186584; outline-offset: 2px; } .ds-chip-icon { flex-shrink: 0; }"
+    },
+    {
+      "name": "Feature Chip",
+      "kind": "chip",
+      "refersTo": "quick-action-chip",
+      "description": "Spot attribute tags on detail; primary-tinted wash.",
+      "html": "<span class=\"ds-chip-feature\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\"><path d=\"M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z\" fill=\"#186584\"/></svg>Wall run</span>",
+      "css": ".ds-chip-feature { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px; background: rgba(193, 232, 255, 0.1); color: #004D67; font-family: Fredoka, system-ui, sans-serif; font-size: 13px; font-weight: 400; line-height: 1.3; }"
+    },
+    {
+      "name": "Spot List Card",
+      "kind": "card",
+      "refersTo": "spot-card",
+      "description": "Explore list result card; photo-forward with light elevation.",
+      "html": "<article class=\"ds-card-spot\"><div class=\"ds-card-spot-media\"></div><div class=\"ds-card-spot-body\"><h3 class=\"ds-card-spot-title\">Canal wall</h3><p class=\"ds-card-spot-meta\">Amsterdam · 4.6 ★</p></div></article>",
+      "css": ".ds-card-spot { border-radius: 12px; background: #F6FAFE; color: #171C1F; overflow: hidden; box-shadow: 0 1px 3px rgba(23, 28, 31, 0.16), 0 2px 6px rgba(23, 28, 31, 0.10); font-family: Fredoka, system-ui, sans-serif; } .ds-card-spot-media { height: 160px; background: linear-gradient(135deg, #DFE3E7, #F0F4F8); } .ds-card-spot-body { padding: 12px 16px 16px; } .ds-card-spot-title { margin: 0 0 4px; font-size: 18px; font-weight: 600; line-height: 1.3; } .ds-card-spot-meta { margin: 0; font-size: 14px; color: #40484D; line-height: 1.4; }"
+    },
+    {
+      "name": "Page App Bar",
+      "kind": "nav",
+      "refersTo": "button-outlined",
+      "description": "PageScaffold toolbar: flat, centered content, back navigation.",
+      "html": "<header class=\"ds-appbar\"><div class=\"ds-appbar-inner\"><button class=\"ds-appbar-back\" type=\"button\" aria-label=\"Back\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\"><path d=\"M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z\" fill=\"#171C1F\"/></svg></button><h1 class=\"ds-appbar-title\">Resolve Duplicate Cluster</h1></div></header>",
+      "css": ".ds-appbar { background: #F6FAFE; border-bottom: 1px solid #C0C7CD; font-family: Fredoka, system-ui, sans-serif; } .ds-appbar-inner { display: flex; align-items: center; gap: 8px; max-width: 1200px; margin: 0 auto; padding: 12px 16px; } .ds-appbar-back { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border: none; border-radius: 8px; background: transparent; cursor: pointer; transition: background 200ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-appbar-back:hover { background: #F0F4F8; } .ds-appbar-back:focus-visible { outline: 2px solid #186584; outline-offset: 2px; } .ds-appbar-title { margin: 0; font-size: 20px; font-weight: 600; line-height: 1.25; color: #171C1F; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Community Atlas",
+    "overview": "ParkourSpot is a map-first community tool used at home and on the move. The visual system should feel like a trustworthy atlas the community owns: warm enough to invite contribution, clear enough to read outdoors, energetic without hype. Material 3 provides the scaffolding; Fredoka gives the product a friendly, sport-native voice; the #007FA8 seed anchors every accent to cool coastal teal that reads as water, sky, and open movement rather than corporate SaaS blue.\n\nHierarchy comes from tonal surfaces (surface, surfaceContainerLow, surfaceContainerHighest) and typographic weight, not decorative chrome. Maps, photos, ratings, and spot metadata stay scannable. Admin and moderator surfaces inherit the same vocabulary so trust carries through every task.\n\nThe system explicitly rejects cold corporate product aesthetics, extractive paywall patterns, and artificial scarcity cues. It should never feel like an outside company \"about\" parkour. Core discovery stays visually open.",
+    "keyCharacteristics": [
+      "Material 3 with ColorScheme.fromSeed (#007FA8), light and dark themes following system preference",
+      "Single type family (Fredoka) across display through label roles",
+      "12px radius on primary interactive surfaces; 8px on compact nested elements",
+      "Tonal layering over heavy shadow stacks",
+      "56px primary touch targets; 40px minimum for compact chips and app bar controls",
+      "1200px max content width, 16px page padding, centered on wide viewports",
+      "Semantic color from Theme.of(context).colorScheme; one-off colors only for true semantics"
+    ],
+    "rules": [
+      {
+        "name": "The One Accent Rule",
+        "body": "Primary teal appears on actions, selection, and wayfinding only. It should occupy ≤10% of any screen. Its rarity signals importance; do not flood panels with primaryContainer unless the content is genuinely highlighted.",
+        "section": "colors"
+      },
+      {
+        "name": "The Scheme-Only Rule",
+        "body": "Extend Theme.of(context).colorScheme and shared widgets (CustomButton, CustomTextField). Do not hardcode hex fills except the seed constant in theme setup and documented semantic exceptions.",
+        "section": "colors"
+      },
+      {
+        "name": "The Fredoka Unity Rule",
+        "body": "Do not introduce a second UI sans for buttons, labels, or data. If a monospace is ever needed, use it only for inline code-like values, never for navigation or actions.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Chrome Rule",
+        "body": "App bars, dividers, and table grids stay flat. Shadows appear on actionable floats (buttons, cards over maps), not on every container.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do use ColorScheme.fromSeed(seedColor: #007FA8) and read roles from colorScheme at runtime",
+      "Do use CustomButton and CustomTextField for primary actions and form fields",
+      "Do keep primary actions at 56px height and chips at ≥40px touch height",
+      "Do center content at 1200px max width with 16px padding on admin and detail pages",
+      "Do route all user-facing strings through AppLocalizations and allow flexible layout for long translations",
+      "Do use tonal surfaces to separate table headers, excluded rows, and disabled states",
+      "Do respect reduced-motion preferences as motion patterns are added"
+    ],
+    "donts": [
+      "Don't make the product feel like a cold corporate tool or a money grab; avoid stock SaaS hero layouts, fake urgency, or premium lock icons on core discovery",
+      "Don't visually gate the map or spot list behind login walls, blur overlays, or upgrade to see patterns; core discovery stays open",
+      "Don't invent one-off hex colors when a colorScheme role or semantic constant exists",
+      "Don't use border-left or border-right greater than 1px as a colored accent stripe on cards, rows, or callouts",
+      "Don't use gradient text, decorative glassmorphism, or neon-on-black crypto aesthetics",
+      "Don't truncate admin comparison text when full values are needed for moderator decisions; prefer full-width stacked layouts for long fields",
+      "Don't brittle-fix row heights or label widths that break in de, nl, or pt locales",
+      "Don't add orchestrated page-load animation sequences; motion should convey state change only"
+    ]
+  }
+}
