@@ -15,10 +15,13 @@ import '../../services/spot_service.dart';
 import '../../services/url_service.dart';
 import '../../utils/duplicate_spot_resolution_utils.dart';
 import '../../utils/marker_icon_utils.dart';
+import '../../widgets/custom_text_field.dart';
 import '../../widgets/detail_network_gallery_viewer.dart';
 import '../../widgets/moderator_action_fields.dart';
 import '../../widgets/page_scaffold.dart';
 import '../../widgets/resized_spot_image.dart';
+import '../../widgets/spot_form/attributes_section.dart';
+import '../../widgets/spot_form/image_section.dart';
 
 class DuplicateSpotsPairReviewScreen extends StatefulWidget {
   const DuplicateSpotsPairReviewScreen({
@@ -42,6 +45,14 @@ class _DuplicateSpotsPairReviewScreenState
   _DuplicateClusterReviewData? _loadedData;
   Object? _loadError;
   final TextEditingController _notesController = TextEditingController();
+  final TextEditingController _previewNameController = TextEditingController();
+  final TextEditingController _previewDescriptionController =
+      TextEditingController();
+  final List<String> _previewImageUrls = [];
+  String? _previewAccess;
+  final Set<String> _previewFeatures = {};
+  final Map<String, String> _previewFacilities = {};
+  final Set<String> _previewGoodFor = {};
   String? _selectedReportId;
   String? _initializedForClusterKey;
   String? _baseSpotId;
@@ -57,6 +68,8 @@ class _DuplicateSpotsPairReviewScreenState
   final Set<String> _youtubeSpotIds = {};
   bool _isResolving = false;
   String? _resolvedNativeSpotId;
+  bool _isEditingPreview = false;
+  bool _previewEditsActive = false;
 
   @override
   void initState() {
@@ -76,6 +89,8 @@ class _DuplicateSpotsPairReviewScreenState
   @override
   void dispose() {
     _notesController.dispose();
+    _previewNameController.dispose();
+    _previewDescriptionController.dispose();
     super.dispose();
   }
 
@@ -201,15 +216,15 @@ class _DuplicateSpotsPairReviewScreenState
           return ListView(
             padding: EdgeInsets.zero,
             children: [
-              _buildIntro(data, mergePairCount: mergePairCount),
+              _buildIntro(data),
               const SizedBox(height: 12),
               _buildClusterMap(data.spots),
               const SizedBox(height: 12),
               _buildSpotDetailsTable(data.spots),
               const SizedBox(height: 12),
-              _buildPreviewPanel(preview),
+              _buildPreviewPanel(preview, data.spots),
               const SizedBox(height: 12),
-              _buildConfirmPanel(data, preview, mergePairCount: mergePairCount),
+              _buildConfirmPanel(data, mergePairCount: mergePairCount),
             ],
           );
         },
@@ -296,11 +311,38 @@ class _DuplicateSpotsPairReviewScreenState
         _goodForSpotIds.remove(spotId);
       }
       _reconcileSelections(spots);
+      _afterMergeSelectionChanged(spots);
     });
   }
 
-  Spot _buildPreview(List<Spot> includedSpots) {
-    return buildDuplicateNativeSpotPreview(
+  void _afterMergeSelectionChanged(List<Spot> spots) {
+    if (_isEditingPreview) {
+      _refreshPreviewEdits(spots);
+    } else {
+      _previewEditsActive = false;
+    }
+  }
+
+  void _enterPreviewEditMode(List<Spot> spots) {
+    setState(() {
+      _refreshPreviewEdits(spots);
+      _previewEditsActive = true;
+      _isEditingPreview = true;
+    });
+  }
+
+  void _exitPreviewEditMode() {
+    setState(() {
+      _previewEditsActive = true;
+      _isEditingPreview = false;
+    });
+  }
+
+  void _refreshPreviewEdits(List<Spot> spots) {
+    final includedSpots = _includedSpots(spots);
+    if (includedSpots.isEmpty) return;
+
+    final computed = buildDuplicateNativeSpotPreview(
       spots: includedSpots,
       baseSpotId: _baseSpotId!,
       titleSpotId: _titleSpotId!,
@@ -313,69 +355,183 @@ class _DuplicateSpotsPairReviewScreenState
       photoSpotIds: _photoSpotIds,
       youtubeSpotIds: _youtubeSpotIds,
     );
+
+    _previewNameController.text = computed.name;
+    _previewDescriptionController.text = computed.description;
+    _previewImageUrls
+      ..clear()
+      ..addAll(computed.imageUrls ?? const <String>[]);
+    _previewAccess = computed.spotAccess;
+    _previewFeatures
+      ..clear()
+      ..addAll(computed.spotFeatures ?? const <String>[]);
+    _previewFacilities
+      ..clear()
+      ..addAll(_facilitiesForAttributesEditor(computed.spotFacilities));
+    _previewGoodFor
+      ..clear()
+      ..addAll(computed.goodFor ?? const <String>[]);
   }
 
-  String _buildIntroSummary(
-    _DuplicateClusterReviewData data, {
-    required int mergePairCount,
-  }) {
-    final alreadyDuplicateCount = data.spots
-        .where(isSpotAlreadyMarkedAsDuplicate)
-        .length;
-    final summary =
-        '${data.spots.length} spots are connected within $_duplicateRangeMeters meters. '
-        '${_includedSpotIds.length} will be merged into one native spot and marked as duplicates. '
-        '$mergePairCount detection pair${mergePairCount == 1 ? '' : 's'} will be marked resolved.';
-    if (alreadyDuplicateCount == 0) return summary;
-    return '$summary $alreadyDuplicateCount spot${alreadyDuplicateCount == 1 ? '' : 's'} '
-        'already marked as duplicate and cannot be merged.';
+  Map<String, String> _facilitiesForAttributesEditor(
+    Map<String, String>? raw,
+  ) {
+    if (raw == null || raw.isEmpty) return {};
+    return Map.fromEntries(
+      raw.entries.map((entry) {
+        final value = entry.value;
+        if (value == 'true') {
+          return MapEntry(entry.key, 'yes');
+        }
+        if (value == 'false') {
+          return MapEntry(entry.key, 'no');
+        }
+        return MapEntry(entry.key, value);
+      }),
+    );
   }
 
-  Widget _buildIntro(
-    _DuplicateClusterReviewData data, {
-    required int mergePairCount,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
+  Spot _buildPreview(List<Spot> includedSpots) {
+    final computed = buildDuplicateNativeSpotPreview(
+      spots: includedSpots,
+      baseSpotId: _baseSpotId!,
+      titleSpotId: _titleSpotId!,
+      descriptionSpotId: _descriptionSpotId!,
+      locationSpotId: _locationSpotId!,
+      accessSpotId: _accessSpotId!,
+      facilitiesSpotId: _facilitiesSpotId!,
+      featureSpotIds: _featureSpotIds,
+      goodForSpotIds: _goodForSpotIds,
+      photoSpotIds: _photoSpotIds,
+      youtubeSpotIds: _youtubeSpotIds,
+    );
+
+    if (!_previewEditsActive) {
+      return computed;
+    }
+
+    final trimmedName = _previewNameController.text.trim();
+    final trimmedDescription = _previewDescriptionController.text.trim();
+
+    return computed.copyWith(
+      name: trimmedName.isNotEmpty ? trimmedName : computed.name,
+      description: trimmedDescription,
+      imageUrls: _previewImageUrls.isEmpty
+          ? null
+          : List<String>.from(_previewImageUrls),
+      spotAccess: _previewAccess,
+      spotFeatures: _previewFeatures.isEmpty
+          ? null
+          : _previewFeatures.toList(growable: false),
+      spotFacilities: _previewFacilities.isEmpty
+          ? null
+          : Map<String, String>.from(_previewFacilities),
+      goodFor: _previewGoodFor.isEmpty
+          ? null
+          : _previewGoodFor.toList(growable: false),
+    );
+  }
+
+  void _removePreviewImageAt(int index) {
+    setState(() => _previewImageUrls.removeAt(index));
+  }
+
+  void _reorderPreviewImage(int oldIndex, int newIndex) {
+    setState(() {
+      final imageUrl = _previewImageUrls.removeAt(oldIndex);
+      _previewImageUrls.insert(newIndex, imageUrl);
+    });
+  }
+
+  void _onPreviewAccessChanged(String? value) {
+    setState(() => _previewAccess = value);
+  }
+
+  void _togglePreviewFeature(String key, bool selected) {
+    setState(() {
+      if (selected) {
+        _previewFeatures.add(key);
+      } else {
+        _previewFeatures.remove(key);
+      }
+    });
+  }
+
+  void _onPreviewFacilityChanged(String key, String value) {
+    setState(() => _previewFacilities[key] = value);
+  }
+
+  void _togglePreviewGoodFor(String key, bool selected) {
+    setState(() {
+      if (selected) {
+        _previewGoodFor.add(key);
+      } else {
+        _previewGoodFor.remove(key);
+      }
+    });
+  }
+
+  Widget _buildIntro(_DuplicateClusterReviewData data) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final valueStyle = theme.textTheme.bodyMedium?.copyWith(
+      fontWeight: FontWeight.w600,
+    );
     final resolution = data.existingResolution;
     final nativeSpotId = resolution?['nativeSpotId'] as String?;
+    final spotCount = data.spots.length;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: colorScheme.primaryContainer.withValues(alpha: 0.35),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.merge_type, color: colorScheme.primary),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.merge_type, color: colorScheme.primary),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
                   'Cluster from ${data.sourceName} pair #${data.pairIndex + 1}',
                   style: TextStyle(
                     color: colorScheme.onPrimaryContainer,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  _buildIntroSummary(data, mergePairCount: mergePairCount),
-                  style: TextStyle(color: colorScheme.onPrimaryContainer),
-                ),
-                if (nativeSpotId != null) ...[
-                  const SizedBox(height: 8),
-                  TextButton.icon(
-                    onPressed: () => context.push('/spot/$nativeSpotId'),
-                    icon: const Icon(Icons.open_in_new),
-                    label: const Text('Open existing native resolution'),
-                  ),
-                ],
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+              ),
+            ),
+            child: _buildResolutionConfirmRow(
+              icon: Icons.place_outlined,
+              label: 'Spots found',
+              value: '$spotCount spot${spotCount == 1 ? '' : 's'}',
+              valueStyle: valueStyle,
             ),
           ),
+          if (nativeSpotId != null) ...[
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: () => context.push('/spot/$nativeSpotId'),
+              icon: const Icon(Icons.open_in_new),
+              label: const Text('Open existing native resolution'),
+            ),
+          ],
         ],
       ),
     );
@@ -472,6 +628,7 @@ class _DuplicateSpotsPairReviewScreenState
                           _locationSpotId = spotId;
                           _accessSpotId = spotId;
                           _facilitiesSpotId = spotId;
+                          _afterMergeSelectionChanged(spots);
                         });
                       },
                     ),
@@ -483,8 +640,10 @@ class _DuplicateSpotsPairReviewScreenState
                       groupValue: _titleSpotId,
                       spots: spots,
                       isSpotEnabled: _isSpotIncludedInMerge,
-                      onChanged: (spotId) =>
-                          setState(() => _titleSpotId = spotId),
+                      onChanged: (spotId) => setState(() {
+                        _titleSpotId = spotId;
+                        _afterMergeSelectionChanged(spots);
+                      }),
                       cellBuilder: (spot) => Text(
                         spot.name.isEmpty ? 'Unnamed spot' : spot.name,
                         maxLines: 2,
@@ -499,8 +658,10 @@ class _DuplicateSpotsPairReviewScreenState
                       groupValue: _descriptionSpotId,
                       spots: spots,
                       isSpotEnabled: _isSpotIncludedInMerge,
-                      onChanged: (spotId) =>
-                          setState(() => _descriptionSpotId = spotId),
+                      onChanged: (spotId) => setState(() {
+                        _descriptionSpotId = spotId;
+                        _afterMergeSelectionChanged(spots);
+                      }),
                       cellBuilder: (spot) => Text(
                         spot.description.trim().isEmpty
                             ? 'No description'
@@ -515,8 +676,10 @@ class _DuplicateSpotsPairReviewScreenState
                       groupValue: _locationSpotId,
                       spots: spots,
                       isSpotEnabled: _isSpotIncludedInMerge,
-                      onChanged: (spotId) =>
-                          setState(() => _locationSpotId = spotId),
+                      onChanged: (spotId) => setState(() {
+                        _locationSpotId = spotId;
+                        _afterMergeSelectionChanged(spots);
+                      }),
                       cellBuilder: (spot) => Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -539,8 +702,10 @@ class _DuplicateSpotsPairReviewScreenState
                       groupValue: _accessSpotId,
                       spots: spots,
                       isSpotEnabled: _isSpotIncludedInMerge,
-                      onChanged: (spotId) =>
-                          setState(() => _accessSpotId = spotId),
+                      onChanged: (spotId) => setState(() {
+                        _accessSpotId = spotId;
+                        _afterMergeSelectionChanged(spots);
+                      }),
                       cellBuilder: (spot) => _buildAccessSummary(spot),
                     ),
                     _buildRadioGridRow(
@@ -551,8 +716,10 @@ class _DuplicateSpotsPairReviewScreenState
                       groupValue: _facilitiesSpotId,
                       spots: spots,
                       isSpotEnabled: _isSpotIncludedInMerge,
-                      onChanged: (spotId) =>
-                          setState(() => _facilitiesSpotId = spotId),
+                      onChanged: (spotId) => setState(() {
+                        _facilitiesSpotId = spotId;
+                        _afterMergeSelectionChanged(spots);
+                      }),
                       cellBuilder: (spot) => _buildFacilitiesSummary(spot),
                     ),
                     _buildAdditiveAttributeGridRow(
@@ -985,6 +1152,7 @@ class _DuplicateSpotsPairReviewScreenState
                                 } else {
                                   selectedIds.remove(spotId);
                                 }
+                                _afterMergeSelectionChanged(spots);
                               });
                             }
                           : null,
@@ -1144,38 +1312,6 @@ class _DuplicateSpotsPairReviewScreenState
     return Wrap(spacing: 6, runSpacing: 6, children: chips.take(8).toList());
   }
 
-  Widget _buildAttributeSummary(Spot spot) {
-    final chips = <Widget>[];
-    if (spot.spotAccess != null) {
-      chips.add(
-        _smallChip(SpotAttributes.getLabel('access', spot.spotAccess!)),
-      );
-    }
-    chips.addAll(
-      (spot.spotFeatures ?? <String>[]).map(
-        (key) => _smallChip(SpotAttributes.getLabel('features', key)),
-      ),
-    );
-    chips.addAll(
-      (spot.goodFor ?? <String>[]).map(
-        (key) => _smallChip(SpotAttributes.getLabel('goodFor', key)),
-      ),
-    );
-    spot.spotFacilities?.forEach((key, value) {
-      if (value == 'true') {
-        chips.add(_smallChip(SpotAttributes.getLabel('facilities', key)));
-      }
-    });
-
-    if (chips.isEmpty) {
-      return _detailLine(Icons.tune, 'No attributes');
-    }
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Wrap(spacing: 6, runSpacing: 6, children: chips.take(8).toList()),
-    );
-  }
-
   Widget _buildAdditiveAttributeGridRow({
     required String label,
     required double labelWidth,
@@ -1214,6 +1350,7 @@ class _DuplicateSpotsPairReviewScreenState
                           } else {
                             selectedIds.remove(spotId);
                           }
+                          _afterMergeSelectionChanged(spots);
                         });
                       }
                     : null,
@@ -1244,16 +1381,35 @@ class _DuplicateSpotsPairReviewScreenState
     );
   }
 
-  Widget _buildPreviewPanel(Spot preview) {
+  Widget _buildPreviewPanel(Spot preview, List<Spot> spots) {
+    if (_isEditingPreview) {
+      return _buildEditablePreviewPanel(preview);
+    }
+    return _buildReadOnlyPreviewPanel(preview, spots);
+  }
+
+  Widget _buildReadOnlyPreviewPanel(Spot preview, List<Spot> spots) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Result preview',
-              style: Theme.of(context).textTheme.titleMedium,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    'Result preview',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () => _enterPreviewEditMode(spots),
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  label: const Text('Edit'),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
             Text(preview.name, style: Theme.of(context).textTheme.titleLarge),
@@ -1267,11 +1423,13 @@ class _DuplicateSpotsPairReviewScreenState
             _detailLine(Icons.place, _locationLabel(preview)),
             _detailLine(
               Icons.gps_fixed,
-              '${preview.latitude.toStringAsFixed(6)}, ${preview.longitude.toStringAsFixed(6)}',
+              '${preview.latitude.toStringAsFixed(6)}, '
+              '${preview.longitude.toStringAsFixed(6)}',
             ),
             _detailLine(
               Icons.photo_library,
-              '${preview.imageUrls?.length ?? 0} photos · ${preview.youtubeVideoIds?.length ?? 0} videos',
+              '${preview.imageUrls?.length ?? 0} photos · '
+              '${preview.youtubeVideoIds?.length ?? 0} videos',
             ),
             _buildAttributeSummary(preview),
             if (preview.imageUrls?.isNotEmpty ?? false) ...[
@@ -1299,9 +1457,154 @@ class _DuplicateSpotsPairReviewScreenState
     );
   }
 
+  Widget _buildEditablePreviewPanel(Spot preview) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Result preview',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Fine-tune the merged spot before resolving.',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: _exitPreviewEditMode,
+                      icon: const Icon(Icons.check, size: 18),
+                      label: const Text('Done'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                CustomTextField(
+                  controller: _previewNameController,
+                  labelText: 'Spot Name',
+                  hintText: 'Enter the name of the spot',
+                ),
+                const SizedBox(height: 16),
+                CustomTextField(
+                  controller: _previewDescriptionController,
+                  labelText: 'Description',
+                  hintText:
+                      'Describe the spot, what makes it special, etc.',
+                  maxLines: 4,
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        SpotImageSection(
+          selectedImageBytes: const [],
+          existingImageUrls: _previewImageUrls,
+          onPickFromGallery: () {},
+          onTakePhoto: () {},
+          onRemoveSelectedAt: (_) {},
+          onRemoveExistingAt: _removePreviewImageAt,
+          onReorderExisting: _reorderPreviewImage,
+          sectionTitle: 'Photos',
+          showRequiredIndicator: false,
+          showAddButtons: false,
+        ),
+        const SizedBox(height: 16),
+        SpotAttributesSection(
+          selectedAccess: _previewAccess,
+          selectedFeatures: _previewFeatures,
+          selectedFacilities: _previewFacilities,
+          selectedGoodFor: _previewGoodFor,
+          onAccessChanged: _onPreviewAccessChanged,
+          onToggleFeature: _togglePreviewFeature,
+          onFacilityChanged: _onPreviewFacilityChanged,
+          onToggleGoodFor: _togglePreviewGoodFor,
+        ),
+        const SizedBox(height: 16),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Other merged details',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                _detailLine(Icons.place, _locationLabel(preview)),
+                _detailLine(
+                  Icons.gps_fixed,
+                  '${preview.latitude.toStringAsFixed(6)}, '
+                  '${preview.longitude.toStringAsFixed(6)}',
+                ),
+                _detailLine(
+                  Icons.ondemand_video,
+                  '${preview.youtubeVideoIds?.length ?? 0} '
+                  '${(preview.youtubeVideoIds?.length ?? 0) == 1 ? 'video' : 'videos'}',
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAttributeSummary(Spot spot) {
+    final chips = <Widget>[];
+    if (spot.spotAccess != null) {
+      chips.add(
+        _smallChip(SpotAttributes.getLabel('access', spot.spotAccess!)),
+      );
+    }
+    chips.addAll(
+      (spot.spotFeatures ?? <String>[]).map(
+        (key) => _smallChip(SpotAttributes.getLabel('features', key)),
+      ),
+    );
+    chips.addAll(
+      (spot.goodFor ?? <String>[]).map(
+        (key) => _smallChip(SpotAttributes.getLabel('goodFor', key)),
+      ),
+    );
+    spot.spotFacilities?.forEach((key, value) {
+      if (value == 'true' || value == 'yes') {
+        chips.add(_smallChip(SpotAttributes.getLabel('facilities', key)));
+      }
+    });
+
+    if (chips.isEmpty) {
+      return _detailLine(Icons.tune, 'No attributes');
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Wrap(spacing: 6, runSpacing: 6, children: chips.take(8).toList()),
+    );
+  }
+
   Widget _buildConfirmPanel(
-    _DuplicateClusterReviewData data,
-    Spot preview, {
+    _DuplicateClusterReviewData data, {
     required int mergePairCount,
   }) {
     final authService = context.watch<AuthService>();
@@ -1364,7 +1667,6 @@ class _DuplicateSpotsPairReviewScreenState
                 onPressed: canResolve
                     ? () => _confirmResolution(
                         data,
-                        preview,
                         authService,
                         mergePairCount: mergePairCount,
                       )
@@ -1500,11 +1802,11 @@ class _DuplicateSpotsPairReviewScreenState
 
   Future<void> _confirmResolution(
     _DuplicateClusterReviewData data,
-    Spot preview,
     AuthService authService, {
     required int mergePairCount,
   }) async {
     final includedSpots = _includedSpots(data.spots);
+    final preview = _buildPreview(includedSpots);
     final includedCount = includedSpots.length;
     final unchangedCount = data.spots.length - includedCount;
     final currentUser = authService.currentUser;

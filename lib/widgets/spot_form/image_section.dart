@@ -13,6 +13,7 @@ class SpotImageSection extends StatelessWidget {
   final void Function(int, int)? onReorderSelected;
   final String? sectionTitle;
   final bool showRequiredIndicator;
+  final bool showAddButtons;
 
   const SpotImageSection({
     super.key,
@@ -26,6 +27,7 @@ class SpotImageSection extends StatelessWidget {
     this.onReorderSelected,
     this.sectionTitle,
     this.showRequiredIndicator = true,
+    this.showAddButtons = true,
   });
 
   @override
@@ -160,25 +162,26 @@ class SpotImageSection extends StatelessWidget {
               const SizedBox(height: 12),
             ],
 
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: onPickFromGallery,
-                    icon: const Icon(Icons.photo_library),
-                    label: Text(l10n.addSpotGalleryButton),
+            if (showAddButtons)
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: onPickFromGallery,
+                      icon: const Icon(Icons.photo_library),
+                      label: Text(l10n.addSpotGalleryButton),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: onTakePhoto,
-                    icon: const Icon(Icons.camera_alt),
-                    label: Text(l10n.addSpotCameraButton),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: onTakePhoto,
+                      icon: const Icon(Icons.camera_alt),
+                      label: Text(l10n.addSpotCameraButton),
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
           ],
         ),
       ),
