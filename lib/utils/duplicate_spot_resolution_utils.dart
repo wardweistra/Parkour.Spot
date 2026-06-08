@@ -101,13 +101,220 @@ Map<String, double> boundsForRadiusMeters({
   };
 }
 
+int duplicateClusterOptionalDetailScore(Spot spot) {
+  var score = 0;
+  if (spot.description.trim().isNotEmpty) score++;
+  score += spot.imageUrls?.length ?? 0;
+  score += spot.youtubeVideoIds?.length ?? 0;
+  if (spot.spotAccess != null && spot.spotAccess!.trim().isNotEmpty) score++;
+  score += spot.spotFeatures?.length ?? 0;
+  score += spot.goodFor?.length ?? 0;
+  score += _enabledFacilityCount(spot);
+  if (_hasOptionalLocationDetail(spot)) score++;
+  return score;
+}
+
+int _enabledFacilityCount(Spot spot) {
+  var count = 0;
+  spot.spotFacilities?.forEach((_, value) {
+    if (value == 'true') count++;
+  });
+  return count;
+}
+
+bool _hasOptionalLocationDetail(Spot spot) {
+  return [
+    spot.address,
+    spot.city,
+    spot.countryCode,
+  ].any((value) => value?.trim().isNotEmpty ?? false);
+}
+
+int compareSpotsByOptionalDetailRichness(Spot a, Spot b) {
+  final scoreDiff =
+      duplicateClusterOptionalDetailScore(b) -
+      duplicateClusterOptionalDetailScore(a);
+  if (scoreDiff != 0) return scoreDiff;
+
+  final aIsNative = a.spotSource == null;
+  final bIsNative = b.spotSource == null;
+  if (aIsNative != bIsNative) {
+    return aIsNative ? -1 : 1;
+  }
+
+  return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+}
+
+List<Spot> sortSpotsByOptionalDetailRichness(List<Spot> spots) {
+  final ordered = List<Spot>.from(spots);
+  ordered.sort(compareSpotsByOptionalDetailRichness);
+  return ordered;
+}
+
+class DuplicateClusterMergeDefaults {
+  const DuplicateClusterMergeDefaults({
+    required this.basisSpotId,
+    required this.titleSpotId,
+    required this.descriptionSpotId,
+    required this.locationSpotId,
+    required this.accessSpotId,
+    required this.facilitiesSpotId,
+    required this.featureSpotIds,
+    required this.goodForSpotIds,
+    required this.photoSpotIds,
+    required this.youtubeSpotIds,
+  });
+
+  final String basisSpotId;
+  final String titleSpotId;
+  final String descriptionSpotId;
+  final String locationSpotId;
+  final String accessSpotId;
+  final String facilitiesSpotId;
+  final Set<String> featureSpotIds;
+  final Set<String> goodForSpotIds;
+  final Set<String> photoSpotIds;
+  final Set<String> youtubeSpotIds;
+}
+
+DuplicateClusterMergeDefaults buildDuplicateClusterMergeDefaults(
+  List<Spot> spots,
+) {
+  if (spots.isEmpty) {
+    throw ArgumentError.value(spots, 'spots', 'Must include at least one spot');
+  }
+
+  final ordered = sortSpotsByOptionalDetailRichness(spots);
+  final basisSpotId = ordered.first.id!;
+
+  return DuplicateClusterMergeDefaults(
+    basisSpotId: basisSpotId,
+    titleSpotId: _soleDetailProviderSpotId(
+          spots,
+          basisSpotId,
+          (spot) => spot.name.trim().isNotEmpty,
+        ) ??
+        basisSpotId,
+    descriptionSpotId: _soleDetailProviderSpotId(
+          spots,
+          basisSpotId,
+          (spot) => spot.description.trim().isNotEmpty,
+        ) ??
+        basisSpotId,
+    locationSpotId: _soleDetailProviderSpotId(
+          spots,
+          basisSpotId,
+          _hasOptionalLocationDetail,
+        ) ??
+        basisSpotId,
+    accessSpotId: _soleDetailProviderSpotId(
+          spots,
+          basisSpotId,
+          (spot) =>
+              spot.spotAccess != null && spot.spotAccess!.trim().isNotEmpty,
+        ) ??
+        basisSpotId,
+    facilitiesSpotId: _soleDetailProviderSpotId(
+          spots,
+          basisSpotId,
+          (spot) => _enabledFacilityCount(spot) > 0,
+        ) ??
+        basisSpotId,
+    featureSpotIds: _defaultTraitSpotIds(
+      spots,
+      basisSpotId,
+      (spot) => spot.spotFeatures,
+    ),
+    goodForSpotIds: _defaultTraitSpotIds(
+      spots,
+      basisSpotId,
+      (spot) => spot.goodFor,
+    ),
+    photoSpotIds: _defaultMediaSpotIds(
+      spots,
+      (spot) => spot.imageUrls?.isNotEmpty ?? false,
+    ),
+    youtubeSpotIds: _defaultMediaSpotIds(
+      spots,
+      (spot) => spot.youtubeVideoIds?.isNotEmpty ?? false,
+    ),
+  );
+}
+
+String? _soleDetailProviderSpotId(
+  List<Spot> spots,
+  String basisSpotId,
+  bool Function(Spot spot) hasDetail,
+) {
+  final providers = spots
+      .where((spot) => spot.id != null && hasDetail(spot))
+      .toList(growable: false);
+  if (providers.length == 1) {
+    return providers.first.id;
+  }
+  return null;
+}
+
+Set<String> _defaultTraitSpotIds(
+  List<Spot> spots,
+  String basisSpotId,
+  List<String>? Function(Spot spot) readTags,
+) {
+  final selected = <String>{};
+  final tagOwners = <String, List<String>>{};
+
+  for (final spot in spots) {
+    final spotId = spot.id;
+    if (spotId == null) continue;
+    for (final tag in readTags(spot) ?? const <String>[]) {
+      if (tag.trim().isEmpty) continue;
+      tagOwners.putIfAbsent(tag, () => []).add(spotId);
+    }
+  }
+
+  for (final owners in tagOwners.values) {
+    if (owners.length == 1) {
+      selected.add(owners.single);
+    }
+  }
+
+  final basis = spots.where((spot) => spot.id == basisSpotId).firstOrNull;
+  if (basis != null && (readTags(basis)?.isNotEmpty ?? false)) {
+    selected.add(basisSpotId);
+  }
+
+  if (selected.isEmpty) {
+    final providers = spots
+        .where((spot) => spot.id != null && (readTags(spot)?.isNotEmpty ?? false))
+        .toList(growable: false);
+    if (providers.length == 1) {
+      selected.add(providers.first.id!);
+    }
+  }
+
+  return selected;
+}
+
+Set<String> _defaultMediaSpotIds(
+  List<Spot> spots,
+  bool Function(Spot spot) hasMedia,
+) {
+  return spots
+      .where((spot) => spot.id != null && hasMedia(spot))
+      .map((spot) => spot.id!)
+      .toSet();
+}
+
 Spot buildDuplicateNativeSpotPreview({
   required List<Spot> spots,
   required String baseSpotId,
   required String titleSpotId,
   required String descriptionSpotId,
   required String locationSpotId,
-  required String attributesSpotId,
+  required String accessSpotId,
+  required String facilitiesSpotId,
+  required Set<String> featureSpotIds,
+  required Set<String> goodForSpotIds,
   required Set<String> photoSpotIds,
   required Set<String> youtubeSpotIds,
 }) {
@@ -123,7 +330,8 @@ Spot buildDuplicateNativeSpotPreview({
     baseSpot,
   );
   final locationSpot = _spotByIdOrFallback(spots, locationSpotId, baseSpot);
-  final attributesSpot = _spotByIdOrFallback(spots, attributesSpotId, baseSpot);
+  final accessSpot = _spotByIdOrFallback(spots, accessSpotId, baseSpot);
+  final facilitiesSpot = _spotByIdOrFallback(spots, facilitiesSpotId, baseSpot);
 
   final imageUrls = _dedupe(
     spots
@@ -134,6 +342,16 @@ Spot buildDuplicateNativeSpotPreview({
     spots
         .where((spot) => youtubeSpotIds.contains(spot.id))
         .expand((spot) => spot.youtubeVideoIds ?? const <String>[]),
+  );
+  final spotFeatures = _mergeTraitValues(
+    spots,
+    featureSpotIds,
+    (spot) => spot.spotFeatures,
+  );
+  final goodFor = _mergeTraitValues(
+    spots,
+    goodForSpotIds,
+    (spot) => spot.goodFor,
   );
 
   return Spot(
@@ -154,12 +372,12 @@ Spot buildDuplicateNativeSpotPreview({
     ratingCount: 0,
     wilsonLowerBound: 0,
     ranking: baseSpot.ranking,
-    spotAccess: attributesSpot.spotAccess,
-    spotFeatures: _copyList(attributesSpot.spotFeatures),
-    spotFacilities: attributesSpot.spotFacilities == null
+    spotAccess: accessSpot.spotAccess,
+    spotFeatures: spotFeatures,
+    spotFacilities: facilitiesSpot.spotFacilities == null
         ? null
-        : Map<String, String>.from(attributesSpot.spotFacilities!),
-    goodFor: _copyList(attributesSpot.goodFor),
+        : Map<String, String>.from(facilitiesSpot.spotFacilities!),
+    goodFor: goodFor,
     duplicateOf: null,
     hidden: false,
     createdFromCreateNative: true,
@@ -173,8 +391,22 @@ Spot _spotByIdOrFallback(List<Spot> spots, String id, [Spot? fallback]) {
   return fallback ?? spots.first;
 }
 
-List<String>? _copyList(List<String>? values) {
-  return values == null ? null : List<String>.from(values);
+List<String>? _mergeTraitValues(
+  List<Spot> spots,
+  Set<String> traitSpotIds,
+  List<String>? Function(Spot spot) readValues,
+) {
+  final merged = <String>[];
+  final seen = <String>{};
+  for (final spot in spots) {
+    if (!traitSpotIds.contains(spot.id)) continue;
+    for (final value in readValues(spot) ?? const <String>[]) {
+      if (value.trim().isEmpty || seen.contains(value)) continue;
+      seen.add(value);
+      merged.add(value);
+    }
+  }
+  return merged.isEmpty ? null : merged;
 }
 
 List<String> _dedupe(Iterable<String> values) {

@@ -1724,6 +1724,17 @@ class SpotService extends ChangeNotifier {
     }
   }
 
+  Query<Map<String, dynamic>> _spotsQueryWithinGeoBounds(
+    Query<Map<String, dynamic>> query,
+    Map<String, double> bounds,
+  ) {
+    return query
+        .where('latitude', isGreaterThanOrEqualTo: bounds['minLat'])
+        .where('latitude', isLessThanOrEqualTo: bounds['maxLat'])
+        .where('longitude', isGreaterThanOrEqualTo: bounds['minLng'])
+        .where('longitude', isLessThanOrEqualTo: bounds['maxLng']);
+  }
+
   Future<List<Spot>> getNearbyDuplicateCandidates(
     Spot spot, {
     int maxDistanceMeters = 50,
@@ -1739,31 +1750,21 @@ class SpotService extends ChangeNotifier {
         radiusMeters: maxDistanceMeters,
       );
 
-      Query query = _firestore.collection('spots');
-      if ((spot.countryCode?.isNotEmpty ?? false) &&
-          (spot.city?.isNotEmpty ?? false)) {
-        query = query
-            .where('countryCode', isEqualTo: spot.countryCode)
-            .where('city', isEqualTo: spot.city)
+      // Match getTopSpotsInBounds: geo bounds in Firestore, circle refined in memory.
+      final query = _spotsQueryWithinGeoBounds(
+        _firestore
+            .collection('spots')
             .where('duplicateOf', isEqualTo: null)
-            .where('hidden', isEqualTo: false);
-      }
+            .where('hidden', isEqualTo: false),
+        bounds,
+      );
 
-      final snapshot = await query
-          .where('latitude', isGreaterThanOrEqualTo: bounds['minLat'])
-          .where('latitude', isLessThanOrEqualTo: bounds['maxLat'])
-          .limit(limit)
-          .get();
+      final snapshot = await query.limit(limit).get();
 
       final candidates = <Spot>[];
       for (final doc in snapshot.docs) {
         if (doc.id == spotId) continue;
         final candidate = Spot.fromFirestore(doc);
-        if (candidate.hidden || candidate.duplicateOf != null) continue;
-        if (candidate.longitude < bounds['minLng']! ||
-            candidate.longitude > bounds['maxLng']!) {
-          continue;
-        }
         final distance = distanceMeters(
           spot.latitude,
           spot.longitude,

@@ -91,7 +91,10 @@ void main() {
         titleSpotId: 'b',
         descriptionSpotId: 'a',
         locationSpotId: 'b',
-        attributesSpotId: 'b',
+        accessSpotId: 'b',
+        facilitiesSpotId: 'b',
+        featureSpotIds: {'a', 'b'},
+        goodForSpotIds: {'b'},
         photoSpotIds: {'a', 'b'},
         youtubeSpotIds: {'b'},
       );
@@ -104,11 +107,157 @@ void main() {
       expect(preview.imageUrls, ['photo-a', 'shared-photo', 'photo-b']);
       expect(preview.youtubeVideoIds, ['video-b']);
       expect(preview.spotAccess, 'public');
-      expect(preview.spotFeatures, ['bars_low']);
+      expect(preview.spotFeatures, ['walls_low', 'bars_low']);
       expect(preview.goodFor, ['vaults']);
       expect(preview.spotSource, isNull);
       expect(preview.duplicateOf, isNull);
       expect(preview.createdFromCreateNative, isTrue);
+    });
+
+    test('buildDuplicateNativeSpotPreview unions feature and good-for tags separately', () {
+      final spotA = Spot(
+        id: 'a',
+        name: 'A',
+        description: '',
+        latitude: 52,
+        longitude: 4,
+        spotFeatures: const ['walls_low'],
+        goodFor: const ['vaults'],
+      );
+      final spotB = Spot(
+        id: 'b',
+        name: 'B',
+        description: '',
+        latitude: 52.0001,
+        longitude: 4.0001,
+        spotFeatures: const ['bars_low', 'walls_low'],
+        goodFor: const ['precisions'],
+      );
+
+      final preview = buildDuplicateNativeSpotPreview(
+        spots: [spotA, spotB],
+        baseSpotId: 'a',
+        titleSpotId: 'a',
+        descriptionSpotId: 'a',
+        locationSpotId: 'a',
+        accessSpotId: 'a',
+        facilitiesSpotId: 'a',
+        featureSpotIds: {'a', 'b'},
+        goodForSpotIds: {'a', 'b'},
+        photoSpotIds: const {},
+        youtubeSpotIds: const {},
+      );
+
+      expect(preview.spotFeatures, ['walls_low', 'bars_low']);
+      expect(preview.goodFor, ['vaults', 'precisions']);
+    });
+
+    test('sortSpotsByOptionalDetailRichness orders richest spot first', () {
+      final sparse = Spot(
+        id: 'sparse',
+        name: 'Sparse',
+        description: '',
+        latitude: 52,
+        longitude: 4,
+      );
+      final rich = Spot(
+        id: 'rich',
+        name: 'Rich',
+        description: 'A full write-up',
+        latitude: 52.0001,
+        longitude: 4.0001,
+        imageUrls: const ['one', 'two'],
+        spotAccess: 'public',
+        spotFeatures: const ['walls_low', 'bars_low'],
+        goodFor: const ['vaults'],
+        spotFacilities: const {'parking': 'true'},
+      );
+
+      final ordered = sortSpotsByOptionalDetailRichness([sparse, rich]);
+
+      expect(ordered.map((spot) => spot.id).toList(), ['rich', 'sparse']);
+      expect(duplicateClusterOptionalDetailScore(rich), greaterThan(
+        duplicateClusterOptionalDetailScore(sparse),
+      ));
+    });
+
+    test('buildDuplicateClusterMergeDefaults picks richest basis and sole providers', () {
+      final basisCandidate = Spot(
+        id: 'basis',
+        name: 'Basis title',
+        description: 'Shared description',
+        latitude: 52,
+        longitude: 4,
+        imageUrls: const ['photo-a', 'photo-b'],
+        spotAccess: 'public',
+        spotFeatures: const ['walls_low', 'bars_low'],
+        goodFor: const ['vaults'],
+        spotFacilities: const {'parking': 'true'},
+      );
+      final uniqueDetails = Spot(
+        id: 'unique',
+        name: 'Unique title',
+        description: '',
+        latitude: 52.0001,
+        longitude: 4.0001,
+        address: 'Only address',
+        goodFor: const ['precisions'],
+        youtubeVideoIds: const ['video-only'],
+      );
+
+      final defaults = buildDuplicateClusterMergeDefaults([
+        uniqueDetails,
+        basisCandidate,
+      ]);
+
+      expect(defaults.basisSpotId, 'basis');
+      expect(defaults.titleSpotId, 'basis');
+      expect(defaults.descriptionSpotId, 'basis');
+      expect(defaults.locationSpotId, 'unique');
+      expect(defaults.accessSpotId, 'basis');
+      expect(defaults.facilitiesSpotId, 'basis');
+      expect(defaults.featureSpotIds, {'basis'});
+      expect(defaults.goodForSpotIds, {'basis', 'unique'});
+      expect(defaults.photoSpotIds, {'basis'});
+      expect(defaults.youtubeSpotIds, {'unique'});
+    });
+
+    test('buildDuplicateNativeSpotPreview honors separate feature and good-for picks', () {
+      final spotA = Spot(
+        id: 'a',
+        name: 'A',
+        description: '',
+        latitude: 52,
+        longitude: 4,
+        spotFeatures: const ['walls_low'],
+        goodFor: const ['vaults'],
+      );
+      final spotB = Spot(
+        id: 'b',
+        name: 'B',
+        description: '',
+        latitude: 52.0001,
+        longitude: 4.0001,
+        spotFeatures: const ['bars_low'],
+        goodFor: const ['precisions'],
+      );
+
+      final preview = buildDuplicateNativeSpotPreview(
+        spots: [spotA, spotB],
+        baseSpotId: 'a',
+        titleSpotId: 'a',
+        descriptionSpotId: 'a',
+        locationSpotId: 'a',
+        accessSpotId: 'a',
+        facilitiesSpotId: 'a',
+        featureSpotIds: {'a'},
+        goodForSpotIds: {'b'},
+        photoSpotIds: const {},
+        youtubeSpotIds: const {},
+      );
+
+      expect(preview.spotFeatures, ['walls_low']);
+      expect(preview.goodFor, ['precisions']);
     });
   });
 }

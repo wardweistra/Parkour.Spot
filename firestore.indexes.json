@@ -217,6 +217,15 @@
       ]
     },
     {
+      "collectionGroup": "spots",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "hidden", "order": "ASCENDING" },
+        { "fieldPath": "latitude", "order": "ASCENDING" },
+        { "fieldPath": "longitude", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "apiClients",
       "queryScope": "COLLECTION",
       "fields": [

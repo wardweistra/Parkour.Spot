@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -45,7 +47,11 @@ class _DuplicateSpotsPairReviewScreenState
   String? _titleSpotId;
   String? _descriptionSpotId;
   String? _locationSpotId;
-  String? _attributesSpotId;
+  String? _accessSpotId;
+  String? _facilitiesSpotId;
+  final Set<String> _featureSpotIds = {};
+  final Set<String> _goodForSpotIds = {};
+  final Set<String> _includedSpotIds = {};
   final Set<String> _photoSpotIds = {};
   final Set<String> _youtubeSpotIds = {};
   bool _isResolving = false;
@@ -112,7 +118,7 @@ class _DuplicateSpotsPairReviewScreenState
       runId: widget.runId,
       pairIndex: widget.pairIndex,
       sourceName: data['sourceName'] as String? ?? 'Unknown source',
-      spots: spots,
+      spots: sortSpotsByOptionalDetailRichness(spots),
       pairRefs: pairRefs,
       resolvedPairIndices: pairIndices,
       existingResolution:
@@ -123,42 +129,35 @@ class _DuplicateSpotsPairReviewScreenState
   }
 
   void _ensureSelectionDefaults(_DuplicateClusterReviewData data) {
-    final clusterKey = data.spots.map((spot) => spot.id).join('|');
+    final clusterKey = (data.spots.map((spot) => spot.id).whereType<String>().toList()
+          ..sort())
+        .join('|');
     if (_initializedForClusterKey == clusterKey) return;
 
-    final clickedPair = data.pairRefs[data.pairIndex];
-    final clickedSpots = data.spots.where((spot) {
-      return spot.id == clickedPair.spot1Id || spot.id == clickedPair.spot2Id;
-    }).toList();
-    final baseSpot =
-        clickedSpots.where((spot) => spot.spotSource == null).firstOrNull ??
-        data.spots.where((spot) => spot.spotSource == null).firstOrNull ??
-        clickedSpots.firstOrNull ??
-        data.spots.first;
-    final baseId = baseSpot.id!;
+    final defaults = buildDuplicateClusterMergeDefaults(data.spots);
 
     _initializedForClusterKey = clusterKey;
-    _baseSpotId = baseId;
-    _titleSpotId = baseId;
-    _descriptionSpotId = baseId;
-    _locationSpotId = baseId;
-    _attributesSpotId = baseId;
+    _includedSpotIds
+      ..clear()
+      ..addAll(data.spots.map((spot) => spot.id).whereType<String>());
+    _baseSpotId = defaults.basisSpotId;
+    _titleSpotId = defaults.titleSpotId;
+    _descriptionSpotId = defaults.descriptionSpotId;
+    _locationSpotId = defaults.locationSpotId;
+    _accessSpotId = defaults.accessSpotId;
+    _facilitiesSpotId = defaults.facilitiesSpotId;
+    _featureSpotIds
+      ..clear()
+      ..addAll(defaults.featureSpotIds);
+    _goodForSpotIds
+      ..clear()
+      ..addAll(defaults.goodForSpotIds);
     _photoSpotIds
       ..clear()
-      ..addAll(
-        data.spots
-            .where((spot) => spot.imageUrls?.isNotEmpty ?? false)
-            .map((spot) => spot.id)
-            .whereType<String>(),
-      );
+      ..addAll(defaults.photoSpotIds);
     _youtubeSpotIds
       ..clear()
-      ..addAll(
-        data.spots
-            .where((spot) => spot.youtubeVideoIds?.isNotEmpty ?? false)
-            .map((spot) => spot.id)
-            .whereType<String>(),
-      );
+      ..addAll(defaults.youtubeSpotIds);
   }
 
   @override
@@ -183,22 +182,22 @@ class _DuplicateSpotsPairReviewScreenState
           }
           final data = snapshot.data!;
           _ensureSelectionDefaults(data);
-          final preview = _buildPreview(data.spots);
+          final includedSpots = _includedSpots(data.spots);
+          final preview = _buildPreview(includedSpots);
+          final mergePairCount = _resolvedPairIndicesForMerge(data).length;
 
           return ListView(
             padding: EdgeInsets.zero,
             children: [
-              _buildIntro(data),
+              _buildIntro(data, mergePairCount: mergePairCount),
               const SizedBox(height: 12),
               _buildClusterMap(data.spots),
               const SizedBox(height: 12),
-              _buildSpotDetailsGrid(data.spots),
-              const SizedBox(height: 12),
-              _buildSelectionPanel(data.spots),
+              _buildSpotDetailsTable(data.spots),
               const SizedBox(height: 12),
               _buildPreviewPanel(preview),
               const SizedBox(height: 12),
-              _buildConfirmPanel(data, preview),
+              _buildConfirmPanel(data, preview, mergePairCount: mergePairCount),
             ],
           );
         },
@@ -221,20 +220,87 @@ class _DuplicateSpotsPairReviewScreenState
     );
   }
 
-  Spot _buildPreview(List<Spot> spots) {
+  List<Spot> _includedSpots(List<Spot> spots) {
+    return spots
+        .where((spot) => _includedSpotIds.contains(spot.id))
+        .toList(growable: false);
+  }
+
+  List<int> _resolvedPairIndicesForMerge(_DuplicateClusterReviewData data) {
+    return data.resolvedPairIndices.where((index) {
+      final pair = data.pairRefs[index];
+      return _includedSpotIds.contains(pair.spot1Id) &&
+          _includedSpotIds.contains(pair.spot2Id);
+    }).toList(growable: false);
+  }
+
+  void _reconcileSelections(List<Spot> spots) {
+    final included = _includedSpots(spots);
+    if (included.isEmpty) return;
+
+    final fallbackId = included.first.id!;
+    if (!_includedSpotIds.contains(_baseSpotId)) {
+      _baseSpotId = fallbackId;
+    }
+    if (!_includedSpotIds.contains(_titleSpotId)) {
+      _titleSpotId = fallbackId;
+    }
+    if (!_includedSpotIds.contains(_descriptionSpotId)) {
+      _descriptionSpotId = fallbackId;
+    }
+    if (!_includedSpotIds.contains(_locationSpotId)) {
+      _locationSpotId = fallbackId;
+    }
+    if (!_includedSpotIds.contains(_accessSpotId)) {
+      _accessSpotId = fallbackId;
+    }
+    if (!_includedSpotIds.contains(_facilitiesSpotId)) {
+      _facilitiesSpotId = fallbackId;
+    }
+
+    _featureSpotIds.removeWhere((spotId) => !_includedSpotIds.contains(spotId));
+    _goodForSpotIds.removeWhere((spotId) => !_includedSpotIds.contains(spotId));
+    _photoSpotIds.removeWhere((spotId) => !_includedSpotIds.contains(spotId));
+    _youtubeSpotIds.removeWhere((spotId) => !_includedSpotIds.contains(spotId));
+  }
+
+  void _setSpotIncluded(String spotId, bool included, List<Spot> spots) {
+    if (!included && _includedSpotIds.length <= 2) return;
+
+    setState(() {
+      if (included) {
+        _includedSpotIds.add(spotId);
+      } else {
+        _includedSpotIds.remove(spotId);
+        _photoSpotIds.remove(spotId);
+        _youtubeSpotIds.remove(spotId);
+        _featureSpotIds.remove(spotId);
+        _goodForSpotIds.remove(spotId);
+      }
+      _reconcileSelections(spots);
+    });
+  }
+
+  Spot _buildPreview(List<Spot> includedSpots) {
     return buildDuplicateNativeSpotPreview(
-      spots: spots,
+      spots: includedSpots,
       baseSpotId: _baseSpotId!,
       titleSpotId: _titleSpotId!,
       descriptionSpotId: _descriptionSpotId!,
       locationSpotId: _locationSpotId!,
-      attributesSpotId: _attributesSpotId!,
+      accessSpotId: _accessSpotId!,
+      facilitiesSpotId: _facilitiesSpotId!,
+      featureSpotIds: _featureSpotIds,
+      goodForSpotIds: _goodForSpotIds,
       photoSpotIds: _photoSpotIds,
       youtubeSpotIds: _youtubeSpotIds,
     );
   }
 
-  Widget _buildIntro(_DuplicateClusterReviewData data) {
+  Widget _buildIntro(
+    _DuplicateClusterReviewData data, {
+    required int mergePairCount,
+  }) {
     final colorScheme = Theme.of(context).colorScheme;
     final resolution = data.existingResolution;
     final nativeSpotId = resolution?['nativeSpotId'] as String?;
@@ -262,7 +328,7 @@ class _DuplicateSpotsPairReviewScreenState
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${data.spots.length} spots are connected within $_duplicateRangeMeters meters. Resolving this cluster will mark ${data.resolvedPairIndices.length} detection pair${data.resolvedPairIndices.length == 1 ? '' : 's'} as resolved.',
+                  '${data.spots.length} spots are connected within $_duplicateRangeMeters meters. ${_includedSpotIds.length} will be merged into one native spot and marked as duplicates. $mergePairCount detection pair${mergePairCount == 1 ? '' : 's'} will be marked resolved.',
                   style: TextStyle(color: colorScheme.onPrimaryContainer),
                 ),
                 if (nativeSpotId != null) ...[
@@ -301,7 +367,11 @@ class _DuplicateSpotsPairReviewScreenState
     );
   }
 
-  Widget _buildSpotDetailsGrid(List<Spot> spots) {
+  Widget _buildSpotDetailsTable(List<Spot> spots) {
+    final colorScheme = Theme.of(context).colorScheme;
+    const labelWidth = 132.0;
+    const spotColumnWidth = 196.0;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -312,105 +382,200 @@ class _DuplicateSpotsPairReviewScreenState
               'Spot details',
               style: Theme.of(context).textTheme.titleMedium,
             ),
-            const SizedBox(height: 12),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final cardWidth = constraints.maxWidth >= 900
-                    ? (constraints.maxWidth - 24) / 3
-                    : constraints.maxWidth >= 620
-                    ? (constraints.maxWidth - 12) / 2
-                    : constraints.maxWidth;
-                return Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: spots
-                      .map(
-                        (spot) => SizedBox(
-                          width: cardWidth,
-                          child: _buildSpotCard(spot),
-                        ),
-                      )
-                      .toList(),
-                );
-              },
+            const SizedBox(height: 4),
+            Text(
+              'Uncheck spots to leave out of the merge. Pick sources per field; feature and good-for tags each combine across their checked spots.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSpotCard(Spot spot) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outlineVariant),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildThumbnail(spot),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
+            const SizedBox(height: 12),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  border: Border.all(color: colorScheme.outlineVariant),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  children: [
+                    _buildComparisonGridRow(
+                      labelWidth: labelWidth,
+                      spotColumnWidth: spotColumnWidth,
+                      colorScheme: colorScheme,
+                      backgroundColor: colorScheme.surfaceContainerLow,
+                      label: const SizedBox.shrink(),
+                      spotCells: spots
+                          .map(
+                            (spot) => _wrapIncludedSpotColumn(
+                              spot.id!,
+                              colorScheme,
+                              _buildSpotTableHeader(spot, colorScheme),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                    _buildIncludeGridRow(
+                      labelWidth: labelWidth,
+                      spotColumnWidth: spotColumnWidth,
+                      colorScheme: colorScheme,
+                      spots: spots,
+                    ),
+                    _buildRadioGridRow(
+                      label: 'Basis',
+                      tooltip: 'Ranking and default fallback for empty fields',
+                      labelWidth: labelWidth,
+                      spotColumnWidth: spotColumnWidth,
+                      colorScheme: colorScheme,
+                      groupValue: _baseSpotId,
+                      spots: spots,
+                      isSpotEnabled: _isSpotIncludedInMerge,
+                      onChanged: (spotId) {
+                        setState(() {
+                          _baseSpotId = spotId;
+                          _titleSpotId = spotId;
+                          _descriptionSpotId = spotId;
+                          _locationSpotId = spotId;
+                          _accessSpotId = spotId;
+                          _facilitiesSpotId = spotId;
+                        });
+                      },
+                    ),
+                    _buildRadioGridRow(
+                      label: 'Title',
+                      labelWidth: labelWidth,
+                      spotColumnWidth: spotColumnWidth,
+                      colorScheme: colorScheme,
+                      groupValue: _titleSpotId,
+                      spots: spots,
+                      isSpotEnabled: _isSpotIncludedInMerge,
+                      onChanged: (spotId) =>
+                          setState(() => _titleSpotId = spotId),
+                      cellBuilder: (spot) => Text(
                         spot.name.isEmpty ? 'Unnamed spot' : spot.name,
-                        style: Theme.of(context).textTheme.titleSmall,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _sourceLabel(spot),
+                    ),
+                    _buildRadioGridRow(
+                      label: 'Description',
+                      labelWidth: labelWidth,
+                      spotColumnWidth: spotColumnWidth,
+                      colorScheme: colorScheme,
+                      groupValue: _descriptionSpotId,
+                      spots: spots,
+                      isSpotEnabled: _isSpotIncludedInMerge,
+                      onChanged: (spotId) =>
+                          setState(() => _descriptionSpotId = spotId),
+                      cellBuilder: (spot) => Text(
+                        spot.description.trim().isEmpty
+                            ? 'No description'
+                            : spot.description,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(color: colorScheme.onSurfaceVariant),
                       ),
-                    ],
-                  ),
+                    ),
+                    _buildRadioGridRow(
+                      label: 'Location',
+                      labelWidth: labelWidth,
+                      spotColumnWidth: spotColumnWidth,
+                      colorScheme: colorScheme,
+                      groupValue: _locationSpotId,
+                      spots: spots,
+                      isSpotEnabled: _isSpotIncludedInMerge,
+                      onChanged: (spotId) =>
+                          setState(() => _locationSpotId = spotId),
+                      cellBuilder: (spot) => Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _locationLabel(spot),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${spot.latitude.toStringAsFixed(5)}, ${spot.longitude.toStringAsFixed(5)}',
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(color: colorScheme.onSurfaceVariant),
+                          ),
+                        ],
+                      ),
+                    ),
+                    _buildRadioGridRow(
+                      label: 'Access',
+                      labelWidth: labelWidth,
+                      spotColumnWidth: spotColumnWidth,
+                      colorScheme: colorScheme,
+                      groupValue: _accessSpotId,
+                      spots: spots,
+                      isSpotEnabled: _isSpotIncludedInMerge,
+                      onChanged: (spotId) =>
+                          setState(() => _accessSpotId = spotId),
+                      cellBuilder: (spot) => _buildAccessSummary(spot),
+                    ),
+                    _buildRadioGridRow(
+                      label: 'Facilities',
+                      labelWidth: labelWidth,
+                      spotColumnWidth: spotColumnWidth,
+                      colorScheme: colorScheme,
+                      groupValue: _facilitiesSpotId,
+                      spots: spots,
+                      isSpotEnabled: _isSpotIncludedInMerge,
+                      onChanged: (spotId) =>
+                          setState(() => _facilitiesSpotId = spotId),
+                      cellBuilder: (spot) => _buildFacilitiesSummary(spot),
+                    ),
+                    _buildAdditiveAttributeGridRow(
+                      label: 'Features',
+                      tooltip: 'Combine spot features from every checked spot',
+                      labelWidth: labelWidth,
+                      spotColumnWidth: spotColumnWidth,
+                      colorScheme: colorScheme,
+                      spots: spots,
+                      selectedIds: _featureSpotIds,
+                      countFor: (spot) => spot.spotFeatures?.length ?? 0,
+                      emptyLabel: 'No features',
+                      summaryBuilder: _buildFeaturesSummary,
+                    ),
+                    _buildAdditiveAttributeGridRow(
+                      label: 'Good for',
+                      tooltip: 'Combine good-for tags from every checked spot',
+                      labelWidth: labelWidth,
+                      spotColumnWidth: spotColumnWidth,
+                      colorScheme: colorScheme,
+                      spots: spots,
+                      selectedIds: _goodForSpotIds,
+                      countFor: (spot) => spot.goodFor?.length ?? 0,
+                      emptyLabel: 'No good-for tags',
+                      summaryBuilder: _buildGoodForSummary,
+                    ),
+                    _buildMediaGridRow(
+                      label: 'Photos',
+                      labelWidth: labelWidth,
+                      spotColumnWidth: spotColumnWidth,
+                      colorScheme: colorScheme,
+                      spots: spots,
+                      selectedIds: _photoSpotIds,
+                      countFor: (spot) => spot.imageUrls?.length ?? 0,
+                      hasMedia: (spot) => spot.imageUrls?.isNotEmpty ?? false,
+                    ),
+                    _buildMediaGridRow(
+                      label: 'Videos',
+                      labelWidth: labelWidth,
+                      spotColumnWidth: spotColumnWidth,
+                      colorScheme: colorScheme,
+                      spots: spots,
+                      selectedIds: _youtubeSpotIds,
+                      countFor: (spot) => spot.youtubeVideoIds?.length ?? 0,
+                      hasMedia: (spot) =>
+                          spot.youtubeVideoIds?.isNotEmpty ?? false,
+                      isLastRow: true,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            if (spot.description.trim().isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(
-                spot.description,
-                maxLines: 4,
-                overflow: TextOverflow.ellipsis,
               ),
-            ],
-            const SizedBox(height: 8),
-            _detailLine(Icons.place, _locationLabel(spot)),
-            _detailLine(
-              Icons.gps_fixed,
-              '${spot.latitude.toStringAsFixed(6)}, ${spot.longitude.toStringAsFixed(6)}',
-            ),
-            _detailLine(
-              Icons.photo_library,
-              '${spot.imageUrls?.length ?? 0} photos · ${spot.youtubeVideoIds?.length ?? 0} videos',
-            ),
-            _buildAttributeSummary(spot),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: [
-                TextButton.icon(
-                  onPressed: () => _openSpotDetails(spot),
-                  icon: const Icon(Icons.open_in_new),
-                  label: const Text('Details'),
-                ),
-                TextButton.icon(
-                  onPressed: () => context.push(
-                    '/explore?locateSpotId=${Uri.encodeComponent(spot.id!)}',
-                  ),
-                  icon: const Icon(Icons.map),
-                  label: const Text('Locate'),
-                ),
-              ],
             ),
           ],
         ),
@@ -418,12 +583,374 @@ class _DuplicateSpotsPairReviewScreenState
     );
   }
 
-  Widget _buildThumbnail(Spot spot) {
+  bool _isSpotIncludedInMerge(Spot spot) =>
+      _includedSpotIds.contains(spot.id);
+
+  Widget _wrapIncludedSpotColumn(
+    String spotId,
+    ColorScheme colorScheme,
+    Widget child,
+  ) {
+    if (_includedSpotIds.contains(spotId)) return child;
+    return ColoredBox(
+      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.55),
+      child: Opacity(opacity: 0.72, child: child),
+    );
+  }
+
+  Widget _buildIncludeGridRow({
+    required double labelWidth,
+    required double spotColumnWidth,
+    required ColorScheme colorScheme,
+    required List<Spot> spots,
+  }) {
+    return _buildComparisonGridRow(
+      labelWidth: labelWidth,
+      spotColumnWidth: spotColumnWidth,
+      colorScheme: colorScheme,
+      label: _buildTableLabelCell(
+        'Include',
+        tooltip: 'At least two spots must stay included',
+      ),
+      spotCells: spots.map((spot) {
+        final spotId = spot.id!;
+        final isIncluded = _includedSpotIds.contains(spotId);
+        final canExclude = _includedSpotIds.length > 2 || !isIncluded;
+        return Padding(
+          padding: const EdgeInsets.all(10),
+          child: CheckboxListTile(
+            value: isIncluded,
+            onChanged: canExclude
+                ? (checked) =>
+                      _setSpotIncluded(spotId, checked ?? false, spots)
+                : null,
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            controlAffinity: ListTileControlAffinity.leading,
+            title: Text(isIncluded ? 'In merge' : 'Excluded'),
+            visualDensity: VisualDensity.compact,
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildSpotTableHeader(Spot spot, ColorScheme colorScheme) {
+    final spotId = spot.id!;
+    final isBasis = spotId == _baseSpotId;
+    return Padding(
+      padding: const EdgeInsets.all(10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildThumbnail(spot, size: 56),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      spot.name.isEmpty ? 'Unnamed spot' : spot.name,
+                      style: Theme.of(context).textTheme.titleSmall,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _sourceLabel(spot),
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (isBasis)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          'Basis',
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 4,
+            runSpacing: 0,
+            children: [
+              TextButton(
+                onPressed: () => _openSpotDetails(spot),
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+                child: const Text('Details'),
+              ),
+              TextButton(
+                onPressed: () => context.push(
+                  '/explore?locateSpotId=${Uri.encodeComponent(spotId)}',
+                ),
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+                child: const Text('Locate'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildComparisonGridRow({
+    required double labelWidth,
+    required double spotColumnWidth,
+    required ColorScheme colorScheme,
+    required Widget label,
+    required List<Widget> spotCells,
+    Color? backgroundColor,
+    bool isLastRow = false,
+  }) {
+    return _buildComparisonGridRowShell(
+      labelWidth: labelWidth,
+      spotColumnWidth: spotColumnWidth,
+      colorScheme: colorScheme,
+      backgroundColor: backgroundColor,
+      isLastRow: isLastRow,
+      label: label,
+      spotCells: spotCells,
+    );
+  }
+
+  Widget _buildRadioGridRow({
+    required String label,
+    required double labelWidth,
+    required double spotColumnWidth,
+    required ColorScheme colorScheme,
+    required String? groupValue,
+    required List<Spot> spots,
+    required ValueChanged<String> onChanged,
+    bool Function(Spot spot)? isSpotEnabled,
+    Widget Function(Spot spot)? cellBuilder,
+    String? tooltip,
+    bool isLastRow = false,
+  }) {
+    final spotEnabled = isSpotEnabled ?? (_) => true;
+    final divider = BorderSide(color: colorScheme.outlineVariant);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: isLastRow ? null : Border(bottom: divider),
+      ),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              width: labelWidth,
+              child: DecoratedBox(
+                decoration: BoxDecoration(border: Border(right: divider)),
+                child: _buildTableLabelCell(label, tooltip: tooltip),
+              ),
+            ),
+            RadioGroup<String>(
+              groupValue: groupValue,
+              onChanged: (value) {
+                if (value == null) return;
+                final spot = spots.firstWhere((candidate) => candidate.id == value);
+                if (!spotEnabled(spot)) return;
+                onChanged(value);
+              },
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: spots.map((spot) {
+                  final spotId = spot.id!;
+                  final enabled = spotEnabled(spot);
+                  final selected = enabled && groupValue == spotId;
+                  return SizedBox(
+                    width: spotColumnWidth,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(border: Border(right: divider)),
+                      child: _wrapIncludedSpotColumn(
+                        spotId,
+                        colorScheme,
+                        Padding(
+                          padding: const EdgeInsets.all(10),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              IgnorePointer(
+                                ignoring: !enabled,
+                                child: Opacity(
+                                  opacity: enabled ? 1 : 0.45,
+                                  child: Radio<String>(
+                                    value: spotId,
+                                    visualDensity: VisualDensity.compact,
+                                    materialTapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: DefaultTextStyle(
+                                  style: TextStyle(
+                                    color: selected
+                                        ? colorScheme.onSurface
+                                        : colorScheme.onSurfaceVariant,
+                                    fontWeight: selected
+                                        ? FontWeight.w500
+                                        : FontWeight.normal,
+                                  ),
+                                  child:
+                                      cellBuilder?.call(spot) ??
+                                      const SizedBox.shrink(),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMediaGridRow({
+    required String label,
+    required double labelWidth,
+    required double spotColumnWidth,
+    required ColorScheme colorScheme,
+    required List<Spot> spots,
+    required Set<String> selectedIds,
+    required int Function(Spot spot) countFor,
+    required bool Function(Spot spot) hasMedia,
+    bool isLastRow = false,
+  }) {
+    return _buildComparisonGridRow(
+      labelWidth: labelWidth,
+      spotColumnWidth: spotColumnWidth,
+      colorScheme: colorScheme,
+      isLastRow: isLastRow,
+      label: _buildTableLabelCell(label),
+      spotCells: spots.map((spot) {
+        final spotId = spot.id!;
+        final count = countFor(spot);
+        final included = _isSpotIncludedInMerge(spot);
+        final cell = !hasMedia(spot)
+            ? Padding(
+                padding: const EdgeInsets.all(10),
+                child: Text(
+                  'None',
+                  style: TextStyle(color: colorScheme.onSurfaceVariant),
+                ),
+              )
+            : Padding(
+                padding: const EdgeInsets.all(10),
+                child: CheckboxListTile(
+                  value: included && selectedIds.contains(spotId),
+                  onChanged: included
+                      ? (checked) {
+                          setState(() {
+                            if (checked ?? false) {
+                              selectedIds.add(spotId);
+                            } else {
+                              selectedIds.remove(spotId);
+                            }
+                          });
+                        }
+                      : null,
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  title: Text('$count ${count == 1 ? 'item' : 'items'}'),
+                  visualDensity: VisualDensity.compact,
+                ),
+              );
+        return _wrapIncludedSpotColumn(spotId, colorScheme, cell);
+      }).toList(),
+    );
+  }
+
+  Widget _buildComparisonGridRowShell({
+    required double labelWidth,
+    required double spotColumnWidth,
+    required ColorScheme colorScheme,
+    required Widget label,
+    required List<Widget> spotCells,
+    Color? backgroundColor,
+    bool isLastRow = false,
+  }) {
+    final divider = BorderSide(color: colorScheme.outlineVariant);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        border: isLastRow ? null : Border(bottom: divider),
+      ),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              width: labelWidth,
+              child: DecoratedBox(
+                decoration: BoxDecoration(border: Border(right: divider)),
+                child: label,
+              ),
+            ),
+            ...spotCells.map((cell) {
+              return SizedBox(
+                width: spotColumnWidth,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(border: Border(right: divider)),
+                  child: cell,
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTableLabelCell(String label, {String? tooltip}) {
+    final text = Text(
+      label,
+      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+        fontWeight: FontWeight.w600,
+      ),
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      child: tooltip == null
+          ? text
+          : Tooltip(message: tooltip, child: text),
+    );
+  }
+
+  Widget _buildThumbnail(Spot spot, {double size = 72}) {
     final imageUrl = spot.imageUrls?.firstOrNull;
     if (imageUrl == null) {
       return Container(
-        width: 72,
-        height: 72,
+        width: size,
+        height: size,
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(8),
@@ -436,8 +963,8 @@ class _DuplicateSpotsPairReviewScreenState
       borderRadius: BorderRadius.circular(8),
       child: ResizedSpotImage(
         imageUrl: imageUrl,
-        width: 72,
-        height: 72,
+        width: size,
+        height: size,
         fit: BoxFit.cover,
       ),
     );
@@ -461,6 +988,46 @@ class _DuplicateSpotsPairReviewScreenState
         ],
       ),
     );
+  }
+
+  Widget _buildAccessSummary(Spot spot) {
+    if (spot.spotAccess == null) {
+      return _detailLine(Icons.lock_outline, 'No access');
+    }
+    return _smallChip(SpotAttributes.getLabel('access', spot.spotAccess!));
+  }
+
+  Widget _buildFacilitiesSummary(Spot spot) {
+    final chips = <Widget>[];
+    spot.spotFacilities?.forEach((key, value) {
+      if (value == 'true') {
+        chips.add(_smallChip(SpotAttributes.getLabel('facilities', key)));
+      }
+    });
+    if (chips.isEmpty) {
+      return _detailLine(Icons.home_work_outlined, 'No facilities');
+    }
+    return Wrap(spacing: 6, runSpacing: 6, children: chips.take(8).toList());
+  }
+
+  Widget _buildFeaturesSummary(Spot spot) {
+    final chips = (spot.spotFeatures ?? <String>[])
+        .map((key) => _smallChip(SpotAttributes.getLabel('features', key)))
+        .toList();
+    if (chips.isEmpty) {
+      return _detailLine(Icons.tune, 'No features');
+    }
+    return Wrap(spacing: 6, runSpacing: 6, children: chips.take(8).toList());
+  }
+
+  Widget _buildGoodForSummary(Spot spot) {
+    final chips = (spot.goodFor ?? <String>[])
+        .map((key) => _smallChip(SpotAttributes.getLabel('goodFor', key)))
+        .toList();
+    if (chips.isEmpty) {
+      return _detailLine(Icons.tune, 'No good-for tags');
+    }
+    return Wrap(spacing: 6, runSpacing: 6, children: chips.take(8).toList());
   }
 
   Widget _buildAttributeSummary(Spot spot) {
@@ -495,184 +1062,71 @@ class _DuplicateSpotsPairReviewScreenState
     );
   }
 
+  Widget _buildAdditiveAttributeGridRow({
+    required String label,
+    required double labelWidth,
+    required double spotColumnWidth,
+    required ColorScheme colorScheme,
+    required List<Spot> spots,
+    required Set<String> selectedIds,
+    required int Function(Spot spot) countFor,
+    required String emptyLabel,
+    required Widget Function(Spot spot) summaryBuilder,
+    String? tooltip,
+    bool isLastRow = false,
+  }) {
+    return _buildComparisonGridRow(
+      labelWidth: labelWidth,
+      spotColumnWidth: spotColumnWidth,
+      colorScheme: colorScheme,
+      isLastRow: isLastRow,
+      label: _buildTableLabelCell(label, tooltip: tooltip),
+      spotCells: spots.map((spot) {
+        final spotId = spot.id!;
+        final included = _isSpotIncludedInMerge(spot);
+        final count = countFor(spot);
+        final cell = Padding(
+          padding: const EdgeInsets.all(10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CheckboxListTile(
+                value: included && selectedIds.contains(spotId),
+                onChanged: included
+                    ? (checked) {
+                        setState(() {
+                          if (checked ?? false) {
+                            selectedIds.add(spotId);
+                          } else {
+                            selectedIds.remove(spotId);
+                          }
+                        });
+                      }
+                    : null,
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                controlAffinity: ListTileControlAffinity.leading,
+                title: Text(
+                  count == 0
+                      ? emptyLabel
+                      : '$count ${count == 1 ? 'tag' : 'tags'}',
+                ),
+                visualDensity: VisualDensity.compact,
+              ),
+              summaryBuilder(spot),
+            ],
+          ),
+        );
+        return _wrapIncludedSpotColumn(spotId, colorScheme, cell);
+      }).toList(),
+    );
+  }
+
   Widget _smallChip(String label) {
     return Chip(
       visualDensity: VisualDensity.compact,
       label: Text(label),
       labelStyle: const TextStyle(fontSize: 11),
-    );
-  }
-
-  Widget _buildSelectionPanel(List<Spot> spots) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Create native spot from cluster',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 12),
-            _spotDropdown(
-              label: 'Basis for the native spot',
-              value: _baseSpotId,
-              spots: spots,
-              onChanged: (value) {
-                if (value == null) return;
-                setState(() {
-                  _baseSpotId = value;
-                  _titleSpotId = value;
-                  _descriptionSpotId = value;
-                  _locationSpotId = value;
-                  _attributesSpotId = value;
-                });
-              },
-            ),
-            const SizedBox(height: 12),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final twoColumns = constraints.maxWidth >= 760;
-                final width = twoColumns
-                    ? (constraints.maxWidth - 12) / 2
-                    : constraints.maxWidth;
-                return Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    SizedBox(
-                      width: width,
-                      child: _spotDropdown(
-                        label: 'Title from',
-                        value: _titleSpotId,
-                        spots: spots,
-                        onChanged: (value) =>
-                            setState(() => _titleSpotId = value),
-                      ),
-                    ),
-                    SizedBox(
-                      width: width,
-                      child: _spotDropdown(
-                        label: 'Description from',
-                        value: _descriptionSpotId,
-                        spots: spots,
-                        onChanged: (value) =>
-                            setState(() => _descriptionSpotId = value),
-                      ),
-                    ),
-                    SizedBox(
-                      width: width,
-                      child: _spotDropdown(
-                        label: 'Location from',
-                        value: _locationSpotId,
-                        spots: spots,
-                        onChanged: (value) =>
-                            setState(() => _locationSpotId = value),
-                      ),
-                    ),
-                    SizedBox(
-                      width: width,
-                      child: _spotDropdown(
-                        label: 'Attributes from',
-                        value: _attributesSpotId,
-                        spots: spots,
-                        onChanged: (value) =>
-                            setState(() => _attributesSpotId = value),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Photos to include',
-              style: Theme.of(context).textTheme.labelLarge,
-            ),
-            _checkboxWrap(
-              spots: spots.where((spot) => spot.imageUrls?.isNotEmpty ?? false),
-              selectedIds: _photoSpotIds,
-              emptyText: 'No spots in this cluster have photos.',
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Videos to include',
-              style: Theme.of(context).textTheme.labelLarge,
-            ),
-            _checkboxWrap(
-              spots: spots.where(
-                (spot) => spot.youtubeVideoIds?.isNotEmpty ?? false,
-              ),
-              selectedIds: _youtubeSpotIds,
-              emptyText: 'No spots in this cluster have videos.',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _spotDropdown({
-    required String label,
-    required String? value,
-    required List<Spot> spots,
-    required ValueChanged<String?> onChanged,
-  }) {
-    return DropdownButtonFormField<String>(
-      initialValue: value,
-      isExpanded: true,
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
-      ),
-      items: spots.map((spot) {
-        return DropdownMenuItem(
-          value: spot.id,
-          child: Text(
-            '${spot.name.isEmpty ? 'Unnamed spot' : spot.name} · ${_sourceLabel(spot)}',
-            overflow: TextOverflow.ellipsis,
-          ),
-        );
-      }).toList(),
-      onChanged: onChanged,
-    );
-  }
-
-  Widget _checkboxWrap({
-    required Iterable<Spot> spots,
-    required Set<String> selectedIds,
-    required String emptyText,
-  }) {
-    final items = spots.toList();
-    if (items.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.only(top: 6),
-        child: Text(emptyText),
-      );
-    }
-
-    return Wrap(
-      spacing: 8,
-      runSpacing: 4,
-      children: items.map((spot) {
-        final spotId = spot.id!;
-        final count =
-            spot.imageUrls?.length ?? spot.youtubeVideoIds?.length ?? 0;
-        return FilterChip(
-          label: Text('${spot.name} ($count)'),
-          selected: selectedIds.contains(spotId),
-          onSelected: (selected) {
-            setState(() {
-              if (selected) {
-                selectedIds.add(spotId);
-              } else {
-                selectedIds.remove(spotId);
-              }
-            });
-          },
-        );
-      }).toList(),
     );
   }
 
@@ -734,9 +1188,16 @@ class _DuplicateSpotsPairReviewScreenState
     );
   }
 
-  Widget _buildConfirmPanel(_DuplicateClusterReviewData data, Spot preview) {
+  Widget _buildConfirmPanel(
+    _DuplicateClusterReviewData data,
+    Spot preview, {
+    required int mergePairCount,
+  }) {
     final authService = context.watch<AuthService>();
-    final canResolve = !_isResolving && _resolvedNativeSpotId == null;
+    final canResolve =
+        !_isResolving &&
+        _resolvedNativeSpotId == null &&
+        _includedSpotIds.length >= 2;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -756,6 +1217,15 @@ class _DuplicateSpotsPairReviewScreenState
               },
               showReportSelector: true,
             ),
+            if (_includedSpotIds.length < 2) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Include at least two spots to create a native merge.',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             if (_resolvedNativeSpotId != null)
               FilledButton.icon(
@@ -766,7 +1236,12 @@ class _DuplicateSpotsPairReviewScreenState
             else
               FilledButton.icon(
                 onPressed: canResolve
-                    ? () => _confirmResolution(data, preview, authService)
+                    ? () => _confirmResolution(
+                        data,
+                        preview,
+                        authService,
+                        mergePairCount: mergePairCount,
+                      )
                     : null,
                 icon: _isResolving
                     ? const SizedBox(
@@ -790,8 +1265,11 @@ class _DuplicateSpotsPairReviewScreenState
   Future<void> _confirmResolution(
     _DuplicateClusterReviewData data,
     Spot preview,
-    AuthService authService,
-  ) async {
+    AuthService authService, {
+    required int mergePairCount,
+  }) async {
+    final includedSpots = _includedSpots(data.spots);
+    final includedCount = includedSpots.length;
     final currentUser = authService.currentUser;
     if (currentUser == null) {
       _showSnack('You must be signed in to resolve duplicate clusters.');
@@ -803,7 +1281,7 @@ class _DuplicateSpotsPairReviewScreenState
       builder: (context) => AlertDialog(
         title: const Text('Resolve duplicate cluster?'),
         content: Text(
-          'This will create one native spot named "${preview.name}" and mark ${data.spots.length} cluster spots as duplicates of it. ${data.resolvedPairIndices.length} duplicate detection pair${data.resolvedPairIndices.length == 1 ? '' : 's'} will be marked resolved.',
+          'This will create one native spot named "${preview.name}" and mark $includedCount spot${includedCount == 1 ? '' : 's'} as duplicates of it. ${data.spots.length - includedCount} spot${data.spots.length - includedCount == 1 ? '' : 's'} will be left unchanged. $mergePairCount duplicate detection pair${mergePairCount == 1 ? '' : 's'} will be marked resolved.',
         ),
         actions: [
           TextButton(
@@ -827,12 +1305,12 @@ class _DuplicateSpotsPairReviewScreenState
         currentUser.email ??
         currentUser.uid;
     final nativeSpotId = await spotService.resolveDuplicateClusterToNative(
-      clusterSpots: data.spots,
+      clusterSpots: includedSpots,
       previewSpot: preview,
       userId: currentUser.uid,
       userName: userName,
       runId: data.runId,
-      resolvedPairIndices: data.resolvedPairIndices,
+      resolvedPairIndices: _resolvedPairIndicesForMerge(data),
       reportId: _selectedReportId,
       notes: _notesController.text.trim().isEmpty
           ? null
@@ -931,7 +1409,14 @@ class _DuplicateClusterMap extends StatefulWidget {
 }
 
 class _DuplicateClusterMapState extends State<_DuplicateClusterMap> {
-  bool _isSatelliteView = false;
+  static const int _selectedMarkerZBase = 1000;
+  static const double _coincidentPinSpreadMeters = 7;
+  static const double _minZoom = 3;
+  static const double _maxZoom = 21;
+
+  bool _isSatelliteView = true;
+  double? _currentZoom;
+  GoogleMapController? _mapController;
   BitmapDescriptor? _normalPinIcon;
   BitmapDescriptor? _selectedPinIcon;
 
@@ -989,18 +1474,81 @@ class _DuplicateClusterMapState extends State<_DuplicateClusterMap> {
     if (span > 5000) return 11;
     if (span > 2000) return 12;
     if (span > 500) return 14;
-    return 16;
+    if (span > 25) return 16;
+    return 18;
+  }
+
+  Map<String, LatLng> _spreadMarkerPositions(List<Spot> spots) {
+    final groups = <String, List<Spot>>{};
+    for (final spot in spots) {
+      final key =
+          '${spot.latitude.toStringAsFixed(7)}|${spot.longitude.toStringAsFixed(7)}';
+      groups.putIfAbsent(key, () => []).add(spot);
+    }
+
+    final positions = <String, LatLng>{};
+    for (final group in groups.values) {
+      if (group.length == 1) {
+        final spot = group.first;
+        if (spot.id != null) {
+          positions[spot.id!] = LatLng(spot.latitude, spot.longitude);
+        }
+        continue;
+      }
+
+      group.sort((a, b) => (a.id ?? '').compareTo(b.id ?? ''));
+      final center = LatLng(group.first.latitude, group.first.longitude);
+      for (var i = 0; i < group.length; i++) {
+        final spot = group[i];
+        final spotId = spot.id;
+        if (spotId == null) continue;
+        positions[spotId] = _offsetCoincidentPin(
+          center: center,
+          index: i,
+          count: group.length,
+        );
+      }
+    }
+    return positions;
+  }
+
+  LatLng _offsetCoincidentPin({
+    required LatLng center,
+    required int index,
+    required int count,
+  }) {
+    if (count <= 1) return center;
+
+    final angle = (2 * math.pi * index) / count;
+    final latOffset =
+        _coincidentPinSpreadMeters * math.cos(angle) / 111000.0;
+    final cosLat = math.cos(center.latitude * math.pi / 180.0).abs();
+    final lngOffset = cosLat < 0.000001
+        ? 0.0
+        : _coincidentPinSpreadMeters * math.sin(angle) / (111000.0 * cosLat);
+    return LatLng(
+      center.latitude + latOffset,
+      center.longitude + lngOffset,
+    );
   }
 
   Set<Marker> _markers() {
+    final displayPositions = _spreadMarkerPositions(widget.spots);
+    final drawOrder = MarkerIconUtils.sortSpotsForMapDrawOrder(widget.spots);
     final markers = <Marker>{};
-    for (var i = 0; i < widget.spots.length; i++) {
-      final spot = widget.spots[i];
-      final selected = spot.id == widget.selectedLocationSpotId;
+
+    for (var i = 0; i < drawOrder.length; i++) {
+      final spot = drawOrder[i];
+      final spotId = spot.id;
+      if (spotId == null) continue;
+
+      final selected = spotId == widget.selectedLocationSpotId;
+      final position = displayPositions[spotId] ??
+          LatLng(spot.latitude, spot.longitude);
       markers.add(
         Marker(
-          markerId: MarkerId(spot.id ?? 'spot-$i'),
-          position: LatLng(spot.latitude, spot.longitude),
+          markerId: MarkerId(spotId),
+          position: position,
           infoWindow: InfoWindow(
             title: spot.name,
             snippet:
@@ -1010,11 +1558,31 @@ class _DuplicateClusterMapState extends State<_DuplicateClusterMap> {
               ? (_selectedPinIcon ?? BitmapDescriptor.defaultMarker)
               : (_normalPinIcon ?? BitmapDescriptor.defaultMarker),
           anchor: const Offset(0.5, 1.0),
-          zIndexInt: selected ? 10 + i : i,
+          zIndexInt: selected ? _selectedMarkerZBase + i : i,
         ),
       );
     }
     return markers;
+  }
+
+  Future<void> _changeZoom(double delta) async {
+    final controller = _mapController;
+    if (controller == null) return;
+
+    var zoom = _currentZoom ?? _cameraZoom;
+    try {
+      zoom = await controller.getZoomLevel();
+    } catch (_) {}
+
+    final nextZoom = (zoom + delta).clamp(_minZoom, _maxZoom);
+    _currentZoom = nextZoom;
+    await controller.animateCamera(CameraUpdate.zoomTo(nextZoom));
+  }
+
+  @override
+  void dispose() {
+    _mapController?.dispose();
+    super.dispose();
   }
 
   @override
@@ -1028,7 +1596,7 @@ class _DuplicateClusterMapState extends State<_DuplicateClusterMap> {
           children: [
             GoogleMap(
               key: ValueKey(
-                'duplicate_cluster_${widget.spots.map((spot) => spot.id).join('_')}_${widget.selectedLocationSpotId ?? ''}',
+                'duplicate_cluster_${widget.spots.map((spot) => spot.id).join('_')}',
               ),
               initialCameraPosition: CameraPosition(
                 target: _cameraTarget,
@@ -1036,6 +1604,11 @@ class _DuplicateClusterMapState extends State<_DuplicateClusterMap> {
               ),
               mapType: _isSatelliteView ? MapType.hybrid : MapType.normal,
               markers: _markers(),
+              onMapCreated: (controller) {
+                _mapController = controller;
+                _currentZoom = _cameraZoom;
+              },
+              onCameraMove: (position) => _currentZoom = position.zoom,
               zoomControlsEnabled: false,
               myLocationButtonEnabled: false,
               mapToolbarEnabled: false,
@@ -1043,6 +1616,40 @@ class _DuplicateClusterMapState extends State<_DuplicateClusterMap> {
               liteModeEnabled: kIsWeb,
               compassEnabled: false,
               tiltGesturesEnabled: false,
+            ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface.withValues(alpha: 0.92),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: theme.colorScheme.outline.withValues(alpha: 0.35),
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      onPressed: () => _changeZoom(1),
+                      tooltip: 'Zoom in',
+                      visualDensity: VisualDensity.compact,
+                      icon: const Icon(Icons.add),
+                    ),
+                    Divider(
+                      height: 1,
+                      color: theme.colorScheme.outline.withValues(alpha: 0.35),
+                    ),
+                    IconButton(
+                      onPressed: () => _changeZoom(-1),
+                      tooltip: 'Zoom out',
+                      visualDensity: VisualDensity.compact,
+                      icon: const Icon(Icons.remove),
+                    ),
+                  ],
+                ),
+              ),
             ),
             Positioned(
               bottom: 8,
@@ -1077,7 +1684,7 @@ class _DuplicateClusterMapState extends State<_DuplicateClusterMap> {
                       vertical: 6,
                     ),
                     child: Text(
-                      '${widget.spots.length} cluster pins · highlighted pin supplies preview location',
+                      '${widget.spots.length} cluster pins · location row highlights map pin',
                       style: theme.textTheme.labelSmall,
                     ),
                   ),
