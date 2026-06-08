@@ -2,6 +2,42 @@ import 'dart:math' as math;
 
 import '../models/spot.dart';
 
+bool isSpotAlreadyMarkedAsDuplicate(Spot spot) {
+  final duplicateOf = spot.duplicateOf?.trim();
+  return duplicateOf != null && duplicateOf.isNotEmpty;
+}
+
+/// Safely reads a Firestore map on web where values may be JS interop objects.
+Map<String, dynamic> firestoreMap(dynamic value) {
+  if (value == null) return {};
+  if (value is Map<String, dynamic>) return value;
+  if (value is Map) return Map<String, dynamic>.from(value);
+  return {};
+}
+
+Map<String, dynamic>? firestoreMapOrNull(dynamic value) {
+  if (value == null) return null;
+  if (value is Map<String, dynamic>) return value;
+  if (value is Map) return Map<String, dynamic>.from(value);
+  return null;
+}
+
+int firestoreInt(dynamic value, {int fallback = 0}) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return fallback;
+}
+
+Set<int> firestoreIntSet(Iterable<dynamic>? values) {
+  if (values == null) return {};
+  return values.map(firestoreInt).toSet();
+}
+
+bool isPairResolvedToNative(Map<String, dynamic> pairResolutions, int index) {
+  final resolution = firestoreMapOrNull(pairResolutions[index.toString()]);
+  return resolution?['status'] == 'resolved_to_native';
+}
+
 class DuplicateSpotPairRef {
   const DuplicateSpotPairRef({
     required this.spot1Id,
@@ -14,8 +50,8 @@ class DuplicateSpotPairRef {
   final int distanceMeters;
 
   static DuplicateSpotPairRef? fromMap(Map<String, dynamic> pair) {
-    final spot1 = pair['spot1'] as Map<String, dynamic>?;
-    final spot2 = pair['spot2'] as Map<String, dynamic>?;
+    final spot1 = firestoreMapOrNull(pair['spot1']);
+    final spot2 = firestoreMapOrNull(pair['spot2']);
     final spot1Id = spot1?['id'] as String?;
     final spot2Id = spot2?['id'] as String?;
     if (spot1Id == null || spot2Id == null) return null;

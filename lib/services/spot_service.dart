@@ -1858,6 +1858,13 @@ class SpotService extends ChangeNotifier {
       return null;
     }
 
+    if (clusterSpots.any(isSpotAlreadyMarkedAsDuplicate)) {
+      _error =
+          'Cannot merge spots that are already marked as duplicates of another spot';
+      notifyListeners();
+      return null;
+    }
+
     try {
       _isLoading = true;
       _error = null;

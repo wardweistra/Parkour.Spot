@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../services/auth_service.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../services/url_service.dart';
+import '../../utils/duplicate_spot_resolution_utils.dart';
 import '../../widgets/page_scaffold.dart';
 
 class DuplicateSpotsResultsScreen extends StatefulWidget {
@@ -20,11 +21,22 @@ class DuplicateSpotsResultsScreen extends StatefulWidget {
 
 class _DuplicateSpotsResultsScreenState
     extends State<DuplicateSpotsResultsScreen> {
-  final Set<int> _collapsedPairs = {}; // Track which pairs are collapsed
-  String?
-  _lastLoadedRunId; // Track which runId we last loaded collapsed pairs for
   final ScrollController _scrollController = ScrollController();
   bool _hideCheckedPairs = true; // Hide checked pairs by default
+
+  Set<int> _checkedPairIndices(
+    int pairCount,
+    Set<int> firestoreCollapsedPairs,
+    Map<String, dynamic> pairResolutions,
+  ) {
+    final checked = Set<int>.from(firestoreCollapsedPairs);
+    for (var i = 0; i < pairCount; i++) {
+      if (isPairResolvedToNative(pairResolutions, i)) {
+        checked.add(i);
+      }
+    }
+    return checked;
+  }
 
   @override
   void dispose() {
@@ -94,36 +106,16 @@ class _DuplicateSpotsResultsScreenState
             return const Center(child: Text('Results not found'));
           }
 
-          final data = snapshot.data!.data() as Map<String, dynamic>;
+          final data = firestoreMap(snapshot.data!.data());
           final pairs = (data['pairs'] as List<dynamic>?) ?? [];
-          final stats = data['stats'] as Map<String, dynamic>? ?? {};
-          final pairsFound = stats['pairsFound'] as int? ?? 0;
-          final spotsChecked = stats['spotsChecked'] as int? ?? 0;
+          final stats = firestoreMap(data['stats']);
+          final pairsFound = firestoreInt(stats['pairsFound']);
+          final spotsChecked = firestoreInt(stats['spotsChecked']);
           final sourceName = data['sourceName'] as String? ?? 'Unknown';
-          final pairResolutions =
-              data['pairResolutions'] as Map<String, dynamic>? ?? {};
-
-          // Load collapsed pairs from Firestore if available and runId changed
-          if (_lastLoadedRunId != widget.runId) {
-            final collapsedPairsData = data['collapsedPairs'] as List<dynamic>?;
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted && _lastLoadedRunId != widget.runId) {
-                setState(() {
-                  if (collapsedPairsData != null) {
-                    final savedCollapsedPairs = collapsedPairsData
-                        .map((e) => e as int)
-                        .toSet();
-                    _collapsedPairs.clear();
-                    _collapsedPairs.addAll(savedCollapsedPairs);
-                  } else {
-                    // No saved collapsed pairs
-                    _collapsedPairs.clear();
-                  }
-                  _lastLoadedRunId = widget.runId;
-                });
-              }
-            });
-          }
+          final pairResolutions = firestoreMap(data['pairResolutions']);
+          final firestoreCollapsedPairs = firestoreIntSet(
+            data['collapsedPairs'] as List<dynamic>?,
+          );
 
           if (pairs.isEmpty) {
             return _buildEmptyPairsList(
@@ -139,6 +131,7 @@ class _DuplicateSpotsResultsScreenState
             pairsFound: pairsFound,
             spotsChecked: spotsChecked,
             pairResolutions: pairResolutions,
+            firestoreCollapsedPairs: firestoreCollapsedPairs,
           );
         },
       ),
@@ -151,18 +144,24 @@ class _DuplicateSpotsResultsScreenState
     required int pairsFound,
     required int spotsChecked,
     required Map<String, dynamic> pairResolutions,
+    required Set<int> firestoreCollapsedPairs,
   }) {
     // Filter pairs based on hideCheckedPairs setting, maintaining original order.
     final List<Map<String, dynamic>> displayPairs = [];
+    final checkedPairIndices = _checkedPairIndices(
+      pairs.length,
+      firestoreCollapsedPairs,
+      pairResolutions,
+    );
 
     for (int i = 0; i < pairs.length; i++) {
-      if (_hideCheckedPairs && _collapsedPairs.contains(i)) {
+      if (_hideCheckedPairs && checkedPairIndices.contains(i)) {
         continue;
       }
-      displayPairs.add({'pair': pairs[i] as Map<String, dynamic>, 'index': i});
+      displayPairs.add({'pair': firestoreMap(pairs[i]), 'index': i});
     }
 
-    final checkedCount = _collapsedPairs.length;
+    final checkedCount = checkedPairIndices.length;
     final showHiddenCheckedBanner = _hideCheckedPairs && checkedCount > 0;
     final hasAllPairsChecked = _hideCheckedPairs && displayPairs.isEmpty;
     final headerItemsCount = 2;
@@ -209,15 +208,14 @@ class _DuplicateSpotsResultsScreenState
         }
 
         final pairData = displayPairs[listIndex - pairListStartIndex];
-        final pair = pairData['pair'] as Map<String, dynamic>;
+        final pair = firestoreMap(pairData['pair']);
         final index = pairData['index'] as int;
-        final spot1 = pair['spot1'] as Map<String, dynamic>;
-        final spot2 = pair['spot2'] as Map<String, dynamic>;
-        final distanceMeters = pair['distanceMeters'] as int? ?? 0;
-        final isCollapsed = _collapsedPairs.contains(index);
-        final resolution =
-            pairResolutions[index.toString()] as Map<String, dynamic>?;
-        final isResolved = resolution?['status'] == 'resolved_to_native';
+        final spot1 = firestoreMap(pair['spot1']);
+        final spot2 = firestoreMap(pair['spot2']);
+        final distanceMeters = firestoreInt(pair['distanceMeters']);
+        final isResolved = isPairResolvedToNative(pairResolutions, index);
+        final isChecked =
+            firestoreCollapsedPairs.contains(index) || isResolved;
         final colorScheme = Theme.of(context).colorScheme;
 
         return Card(
@@ -231,21 +229,18 @@ class _DuplicateSpotsResultsScreenState
                 Row(
                   children: [
                     Checkbox(
-                      value: isCollapsed,
-                      onChanged: (value) {
+                      value: isChecked,
+                      onChanged: isResolved
+                          ? null
+                          : (value) {
                         final newCollapsedPairs = Set<int>.from(
-                          _collapsedPairs,
+                          firestoreCollapsedPairs,
                         );
                         if (value == true) {
                           newCollapsedPairs.add(index);
                         } else {
                           newCollapsedPairs.remove(index);
                         }
-
-                        setState(() {
-                          _collapsedPairs.clear();
-                          _collapsedPairs.addAll(newCollapsedPairs);
-                        });
 
                         _updateCollapsedPairs(widget.runId, newCollapsedPairs);
                       },
@@ -300,7 +295,7 @@ class _DuplicateSpotsResultsScreenState
                     ),
                   ],
                 ),
-                if (!isCollapsed) ...[
+                if (!isChecked) ...[
                   const SizedBox(height: 16),
                   _buildSpotCard(spot1, 'Spot 1'),
                   const SizedBox(height: 12),

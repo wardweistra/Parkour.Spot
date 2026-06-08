@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -16,6 +15,7 @@ import '../../services/spot_service.dart';
 import '../../services/url_service.dart';
 import '../../utils/duplicate_spot_resolution_utils.dart';
 import '../../utils/marker_icon_utils.dart';
+import '../../widgets/detail_network_gallery_viewer.dart';
 import '../../widgets/moderator_action_fields.dart';
 import '../../widgets/page_scaffold.dart';
 import '../../widgets/resized_spot_image.dart';
@@ -39,7 +39,8 @@ class _DuplicateSpotsPairReviewScreenState
     extends State<DuplicateSpotsPairReviewScreen> {
   static const int _duplicateRangeMeters = 50;
 
-  late Future<_DuplicateClusterReviewData> _reviewFuture;
+  _DuplicateClusterReviewData? _loadedData;
+  Object? _loadError;
   final TextEditingController _notesController = TextEditingController();
   String? _selectedReportId;
   String? _initializedForClusterKey;
@@ -60,7 +61,16 @@ class _DuplicateSpotsPairReviewScreenState
   @override
   void initState() {
     super.initState();
-    _reviewFuture = _loadReviewData();
+    _loadReviewData().then((data) {
+      if (!mounted) return;
+      setState(() {
+        _ensureSelectionDefaults(data);
+        _loadedData = data;
+      });
+    }).catchError((Object error) {
+      if (!mounted) return;
+      setState(() => _loadError = error);
+    });
   }
 
   @override
@@ -79,7 +89,7 @@ class _DuplicateSpotsPairReviewScreenState
       throw StateError('Duplicate detection run not found');
     }
 
-    final data = runDoc.data() ?? <String, dynamic>{};
+    final data = firestoreMap(runDoc.data());
     final rawPairs = data['pairs'] as List<dynamic>? ?? <dynamic>[];
     final pairRefs = rawPairs
         .whereType<Map<String, dynamic>>()
@@ -121,10 +131,9 @@ class _DuplicateSpotsPairReviewScreenState
       spots: sortSpotsByOptionalDetailRichness(spots),
       pairRefs: pairRefs,
       resolvedPairIndices: pairIndices,
-      existingResolution:
-          (data['pairResolutions']
-                  as Map<String, dynamic>?)?['${widget.pairIndex}']
-              as Map<String, dynamic>?,
+      existingResolution: firestoreMapOrNull(
+        firestoreMap(data['pairResolutions'])['${widget.pairIndex}'],
+      ),
     );
   }
 
@@ -139,7 +148,12 @@ class _DuplicateSpotsPairReviewScreenState
     _initializedForClusterKey = clusterKey;
     _includedSpotIds
       ..clear()
-      ..addAll(data.spots.map((spot) => spot.id).whereType<String>());
+      ..addAll(
+        data.spots
+            .where((spot) => !isSpotAlreadyMarkedAsDuplicate(spot))
+            .map((spot) => spot.id)
+            .whereType<String>(),
+      );
     _baseSpotId = defaults.basisSpotId;
     _titleSpotId = defaults.titleSpotId;
     _descriptionSpotId = defaults.descriptionSpotId;
@@ -171,17 +185,15 @@ class _DuplicateSpotsPairReviewScreenState
     }
 
     return _buildScaffold(
-      body: FutureBuilder<_DuplicateClusterReviewData>(
-        future: _reviewFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+      body: Builder(
+        builder: (context) {
+          if (_loadError != null) {
+            return Center(child: Text('Error: $_loadError'));
+          }
+          if (_loadedData == null) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-          final data = snapshot.data!;
-          _ensureSelectionDefaults(data);
+          final data = _loadedData!;
           final includedSpots = _includedSpots(data.spots);
           final preview = _buildPreview(includedSpots);
           final mergePairCount = _resolvedPairIndicesForMerge(data).length;
@@ -266,6 +278,12 @@ class _DuplicateSpotsPairReviewScreenState
 
   void _setSpotIncluded(String spotId, bool included, List<Spot> spots) {
     if (!included && _includedSpotIds.length <= 2) return;
+    if (included &&
+        spots.any(
+          (spot) => spot.id == spotId && isSpotAlreadyMarkedAsDuplicate(spot),
+        )) {
+      return;
+    }
 
     setState(() {
       if (included) {
@@ -295,6 +313,22 @@ class _DuplicateSpotsPairReviewScreenState
       photoSpotIds: _photoSpotIds,
       youtubeSpotIds: _youtubeSpotIds,
     );
+  }
+
+  String _buildIntroSummary(
+    _DuplicateClusterReviewData data, {
+    required int mergePairCount,
+  }) {
+    final alreadyDuplicateCount = data.spots
+        .where(isSpotAlreadyMarkedAsDuplicate)
+        .length;
+    final summary =
+        '${data.spots.length} spots are connected within $_duplicateRangeMeters meters. '
+        '${_includedSpotIds.length} will be merged into one native spot and marked as duplicates. '
+        '$mergePairCount detection pair${mergePairCount == 1 ? '' : 's'} will be marked resolved.';
+    if (alreadyDuplicateCount == 0) return summary;
+    return '$summary $alreadyDuplicateCount spot${alreadyDuplicateCount == 1 ? '' : 's'} '
+        'already marked as duplicate and cannot be merged.';
   }
 
   Widget _buildIntro(
@@ -328,7 +362,7 @@ class _DuplicateSpotsPairReviewScreenState
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${data.spots.length} spots are connected within $_duplicateRangeMeters meters. ${_includedSpotIds.length} will be merged into one native spot and marked as duplicates. $mergePairCount detection pair${mergePairCount == 1 ? '' : 's'} will be marked resolved.',
+                  _buildIntroSummary(data, mergePairCount: mergePairCount),
                   style: TextStyle(color: colorScheme.onPrimaryContainer),
                 ),
                 if (nativeSpotId != null) ...[
@@ -370,7 +404,7 @@ class _DuplicateSpotsPairReviewScreenState
   Widget _buildSpotDetailsTable(List<Spot> spots) {
     final colorScheme = Theme.of(context).colorScheme;
     const labelWidth = 132.0;
-    const spotColumnWidth = 196.0;
+    const spotColumnWidth = 280.0;
 
     return Card(
       child: Padding(
@@ -471,9 +505,6 @@ class _DuplicateSpotsPairReviewScreenState
                         spot.description.trim().isEmpty
                             ? 'No description'
                             : spot.description,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: colorScheme.onSurfaceVariant),
                       ),
                     ),
                     _buildRadioGridRow(
@@ -489,14 +520,11 @@ class _DuplicateSpotsPairReviewScreenState
                       cellBuilder: (spot) => Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Text(_locationLabel(spot)),
+                          const SizedBox(height: 4),
                           Text(
-                            _locationLabel(spot),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '${spot.latitude.toStringAsFixed(5)}, ${spot.longitude.toStringAsFixed(5)}',
+                            '${spot.latitude.toStringAsFixed(6)}, '
+                            '${spot.longitude.toStringAsFixed(6)}',
                             style: Theme.of(context).textTheme.labelSmall
                                 ?.copyWith(color: colorScheme.onSurfaceVariant),
                           ),
@@ -560,6 +588,7 @@ class _DuplicateSpotsPairReviewScreenState
                       selectedIds: _photoSpotIds,
                       countFor: (spot) => spot.imageUrls?.length ?? 0,
                       hasMedia: (spot) => spot.imageUrls?.isNotEmpty ?? false,
+                      previewBuilder: _buildSpotPhotoPreviews,
                     ),
                     _buildMediaGridRow(
                       label: 'Videos',
@@ -614,20 +643,26 @@ class _DuplicateSpotsPairReviewScreenState
       ),
       spotCells: spots.map((spot) {
         final spotId = spot.id!;
+        final isAlreadyDuplicate = isSpotAlreadyMarkedAsDuplicate(spot);
         final isIncluded = _includedSpotIds.contains(spotId);
         final canExclude = _includedSpotIds.length > 2 || !isIncluded;
+        final canToggle = !isAlreadyDuplicate && canExclude;
         return Padding(
           padding: const EdgeInsets.all(10),
           child: CheckboxListTile(
             value: isIncluded,
-            onChanged: canExclude
+            onChanged: canToggle
                 ? (checked) =>
                       _setSpotIncluded(spotId, checked ?? false, spots)
                 : null,
             contentPadding: EdgeInsets.zero,
             dense: true,
             controlAffinity: ListTileControlAffinity.leading,
-            title: Text(isIncluded ? 'In merge' : 'Excluded'),
+            title: Text(
+              isAlreadyDuplicate
+                  ? 'Already duplicate'
+                  : (isIncluded ? 'In merge' : 'Excluded'),
+            ),
             visualDensity: VisualDensity.compact,
           ),
         );
@@ -638,6 +673,9 @@ class _DuplicateSpotsPairReviewScreenState
   Widget _buildSpotTableHeader(Spot spot, ColorScheme colorScheme) {
     final spotId = spot.id!;
     final isBasis = spotId == _baseSpotId;
+    final duplicateOf = spot.duplicateOf?.trim();
+    final isAlreadyDuplicate =
+        duplicateOf != null && duplicateOf.isNotEmpty;
     return Padding(
       padding: const EdgeInsets.all(10),
       child: Column(
@@ -679,6 +717,18 @@ class _DuplicateSpotsPairReviewScreenState
                               ),
                         ),
                       ),
+                    if (isAlreadyDuplicate)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          'Duplicate of another spot',
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(
+                                color: colorScheme.error,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -689,6 +739,15 @@ class _DuplicateSpotsPairReviewScreenState
             spacing: 4,
             runSpacing: 0,
             children: [
+              if (isAlreadyDuplicate)
+                TextButton(
+                  onPressed: () => context.push('/spot/$duplicateOf'),
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                  child: const Text('Open original'),
+                ),
               TextButton(
                 onPressed: () => _openSpotDetails(spot),
                 style: TextButton.styleFrom(
@@ -768,12 +827,14 @@ class _DuplicateSpotsPairReviewScreenState
               groupValue: groupValue,
               onChanged: (value) {
                 if (value == null) return;
-                final spot = spots.firstWhere((candidate) => candidate.id == value);
+                final spot = spots.firstWhere(
+                  (candidate) => candidate.id == value,
+                );
                 if (!spotEnabled(spot)) return;
                 onChanged(value);
               },
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: spots.map((spot) {
                   final spotId = spot.id!;
                   final enabled = spotEnabled(spot);
@@ -785,40 +846,31 @@ class _DuplicateSpotsPairReviewScreenState
                       child: _wrapIncludedSpotColumn(
                         spotId,
                         colorScheme,
-                        Padding(
-                          padding: const EdgeInsets.all(10),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              IgnorePointer(
-                                ignoring: !enabled,
-                                child: Opacity(
-                                  opacity: enabled ? 1 : 0.45,
-                                  child: Radio<String>(
-                                    value: spotId,
-                                    visualDensity: VisualDensity.compact,
-                                    materialTapTargetSize:
-                                        MaterialTapTargetSize.shrinkWrap,
-                                  ),
+                        Align(
+                          alignment: Alignment.topLeft,
+                          child: Padding(
+                            padding: const EdgeInsets.all(10),
+                            child: RadioListTile<String>(
+                              value: spotId,
+                              enabled: enabled,
+                              contentPadding: EdgeInsets.zero,
+                              dense: true,
+                              controlAffinity: ListTileControlAffinity.leading,
+                              visualDensity: VisualDensity.compact,
+                              title: DefaultTextStyle(
+                                style: TextStyle(
+                                  color: selected
+                                      ? colorScheme.onSurface
+                                      : colorScheme.onSurfaceVariant,
+                                  fontWeight: selected
+                                      ? FontWeight.w500
+                                      : FontWeight.normal,
                                 ),
+                                child:
+                                    cellBuilder?.call(spot) ??
+                                    const SizedBox.shrink(),
                               ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: DefaultTextStyle(
-                                  style: TextStyle(
-                                    color: selected
-                                        ? colorScheme.onSurface
-                                        : colorScheme.onSurfaceVariant,
-                                    fontWeight: selected
-                                        ? FontWeight.w500
-                                        : FontWeight.normal,
-                                  ),
-                                  child:
-                                      cellBuilder?.call(spot) ??
-                                      const SizedBox.shrink(),
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
@@ -833,6 +885,61 @@ class _DuplicateSpotsPairReviewScreenState
     );
   }
 
+  Future<void> _openImageGallery(
+    List<String> imageUrls,
+    int initialIndex,
+  ) async {
+    if (imageUrls.isEmpty) return;
+    await Navigator.of(context).push<int>(
+      MaterialPageRoute(
+        builder: (context) => DetailNetworkGalleryViewer(
+          imageUrls: imageUrls,
+          initialIndex: initialIndex.clamp(0, imageUrls.length - 1),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildClickablePhotoThumbnail(
+    String imageUrl,
+    List<String> allUrls,
+    int index, {
+    double size = 44,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _openImageGallery(allUrls, index),
+        borderRadius: BorderRadius.circular(6),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: ResizedSpotImage(
+            imageUrl: imageUrl,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSpotPhotoPreviews(Spot spot) {
+    final urls = spot.imageUrls ?? const [];
+    if (urls.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        children: [
+          for (var i = 0; i < urls.length; i++)
+            _buildClickablePhotoThumbnail(urls[i], urls, i),
+        ],
+      ),
+    );
+  }
+
   Widget _buildMediaGridRow({
     required String label,
     required double labelWidth,
@@ -842,6 +949,7 @@ class _DuplicateSpotsPairReviewScreenState
     required Set<String> selectedIds,
     required int Function(Spot spot) countFor,
     required bool Function(Spot spot) hasMedia,
+    Widget Function(Spot spot)? previewBuilder,
     bool isLastRow = false,
   }) {
     return _buildComparisonGridRow(
@@ -864,24 +972,30 @@ class _DuplicateSpotsPairReviewScreenState
               )
             : Padding(
                 padding: const EdgeInsets.all(10),
-                child: CheckboxListTile(
-                  value: included && selectedIds.contains(spotId),
-                  onChanged: included
-                      ? (checked) {
-                          setState(() {
-                            if (checked ?? false) {
-                              selectedIds.add(spotId);
-                            } else {
-                              selectedIds.remove(spotId);
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CheckboxListTile(
+                      value: included && selectedIds.contains(spotId),
+                      onChanged: included
+                          ? (checked) {
+                              setState(() {
+                                if (checked ?? false) {
+                                  selectedIds.add(spotId);
+                                } else {
+                                  selectedIds.remove(spotId);
+                                }
+                              });
                             }
-                          });
-                        }
-                      : null,
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  title: Text('$count ${count == 1 ? 'item' : 'items'}'),
-                  visualDensity: VisualDensity.compact,
+                          : null,
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      title: Text('$count ${count == 1 ? 'item' : 'items'}'),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    if (previewBuilder != null) previewBuilder(spot),
+                  ],
                 ),
               );
         return _wrapIncludedSpotColumn(spotId, colorScheme, cell);
@@ -1169,14 +1283,11 @@ class _DuplicateSpotsPairReviewScreenState
                   itemCount: preview.imageUrls!.length,
                   separatorBuilder: (_, _) => const SizedBox(width: 8),
                   itemBuilder: (context, index) {
-                    return ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: ResizedSpotImage(
-                        imageUrl: preview.imageUrls![index],
-                        width: 84,
-                        height: 84,
-                        fit: BoxFit.cover,
-                      ),
+                    return _buildClickablePhotoThumbnail(
+                      preview.imageUrls![index],
+                      preview.imageUrls!,
+                      index,
+                      size: 84,
                     );
                   },
                 ),
@@ -1194,10 +1305,16 @@ class _DuplicateSpotsPairReviewScreenState
     required int mergePairCount,
   }) {
     final authService = context.watch<AuthService>();
+    final hasAlreadyDuplicateIncluded = data.spots.any(
+      (spot) =>
+          _includedSpotIds.contains(spot.id) &&
+          isSpotAlreadyMarkedAsDuplicate(spot),
+    );
     final canResolve =
         !_isResolving &&
         _resolvedNativeSpotId == null &&
-        _includedSpotIds.length >= 2;
+        _includedSpotIds.length >= 2 &&
+        !hasAlreadyDuplicateIncluded;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -1221,6 +1338,15 @@ class _DuplicateSpotsPairReviewScreenState
               const SizedBox(height: 8),
               Text(
                 'Include at least two spots to create a native merge.',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+            ],
+            if (hasAlreadyDuplicateIncluded) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Remove spots that are already marked as duplicates of another spot.',
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.error,
                 ),
@@ -1262,6 +1388,116 @@ class _DuplicateSpotsPairReviewScreenState
     );
   }
 
+  Widget _buildResolutionConfirmRow({
+    required IconData icon,
+    required String label,
+    required String value,
+    TextStyle? valueStyle,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: colorScheme.primary),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: valueStyle ?? theme.textTheme.bodyMedium,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildResolutionConfirmContent({
+    required Spot preview,
+    required int includedCount,
+    required int unchangedCount,
+    required int mergePairCount,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final mutedStyle = theme.textTheme.bodyMedium?.copyWith(
+      color: colorScheme.onSurfaceVariant,
+    );
+    final valueStyle = theme.textTheme.bodyMedium?.copyWith(
+      fontWeight: FontWeight.w600,
+    );
+    final spotNameStyle = theme.textTheme.titleSmall?.copyWith(
+      fontWeight: FontWeight.w600,
+    );
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Review the outcome before resolving.', style: mutedStyle),
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildResolutionConfirmRow(
+                icon: Icons.add_location_alt_outlined,
+                label: 'New native spot',
+                value: preview.name,
+                valueStyle: spotNameStyle,
+              ),
+              const SizedBox(height: 10),
+              _buildResolutionConfirmRow(
+                icon: Icons.link,
+                label: 'Marked as duplicates',
+                value: '$includedCount spot${includedCount == 1 ? '' : 's'}',
+                valueStyle: valueStyle,
+              ),
+              if (unchangedCount > 0) ...[
+                const SizedBox(height: 10),
+                _buildResolutionConfirmRow(
+                  icon: Icons.remove_circle_outline,
+                  label: 'Left unchanged',
+                  value:
+                      '$unchangedCount spot${unchangedCount == 1 ? '' : 's'}',
+                  valueStyle: valueStyle,
+                ),
+              ],
+              const SizedBox(height: 10),
+              _buildResolutionConfirmRow(
+                icon: Icons.done_all,
+                label: 'Detection pairs resolved',
+                value: '$mergePairCount pair${mergePairCount == 1 ? '' : 's'}',
+                valueStyle: valueStyle,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   Future<void> _confirmResolution(
     _DuplicateClusterReviewData data,
     Spot preview,
@@ -1270,9 +1506,16 @@ class _DuplicateSpotsPairReviewScreenState
   }) async {
     final includedSpots = _includedSpots(data.spots);
     final includedCount = includedSpots.length;
+    final unchangedCount = data.spots.length - includedCount;
     final currentUser = authService.currentUser;
     if (currentUser == null) {
       _showSnack('You must be signed in to resolve duplicate clusters.');
+      return;
+    }
+    if (includedSpots.any(isSpotAlreadyMarkedAsDuplicate)) {
+      _showSnack(
+        'Cannot merge spots that are already marked as duplicates of another spot.',
+      );
       return;
     }
 
@@ -1280,8 +1523,11 @@ class _DuplicateSpotsPairReviewScreenState
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Resolve duplicate cluster?'),
-        content: Text(
-          'This will create one native spot named "${preview.name}" and mark $includedCount spot${includedCount == 1 ? '' : 's'} as duplicates of it. ${data.spots.length - includedCount} spot${data.spots.length - includedCount == 1 ? '' : 's'} will be left unchanged. $mergePairCount duplicate detection pair${mergePairCount == 1 ? '' : 's'} will be marked resolved.',
+        content: _buildResolutionConfirmContent(
+          preview: preview,
+          includedCount: includedCount,
+          unchangedCount: unchangedCount,
+          mergePairCount: mergePairCount,
         ),
         actions: [
           TextButton(
@@ -1580,12 +1826,6 @@ class _DuplicateClusterMapState extends State<_DuplicateClusterMap> {
   }
 
   @override
-  void dispose() {
-    _mapController?.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return ClipRRect(
@@ -1613,7 +1853,6 @@ class _DuplicateClusterMapState extends State<_DuplicateClusterMap> {
               myLocationButtonEnabled: false,
               mapToolbarEnabled: false,
               webCameraControlEnabled: false,
-              liteModeEnabled: kIsWeb,
               compassEnabled: false,
               tiltGesturesEnabled: false,
             ),

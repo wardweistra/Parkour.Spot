@@ -4,6 +4,58 @@ import 'package:parkour_spot/utils/duplicate_spot_resolution_utils.dart';
 
 void main() {
   group('duplicate spot resolution utils', () {
+    test('firestore helpers coerce web interop values', () {
+      expect(firestoreInt(3), 3);
+      expect(firestoreInt(3.9), 3);
+      expect(firestoreInt('bad'), 0);
+      expect(firestoreIntSet([1, 2.0, 3]), {1, 2, 3});
+      expect(
+        firestoreMap({'nested': {'status': 'resolved_to_native'}}),
+        {'nested': {'status': 'resolved_to_native'}},
+      );
+      expect(
+        isPairResolvedToNative({'0': {'status': 'resolved_to_native'}}, 0),
+        isTrue,
+      );
+      expect(
+        isPairResolvedToNative({'0': {'status': 'pending'}}, 0),
+        isFalse,
+      );
+    });
+
+    test('isSpotAlreadyMarkedAsDuplicate detects duplicateOf', () {
+      expect(
+        isSpotAlreadyMarkedAsDuplicate(
+          Spot(name: 'A', description: '', latitude: 0, longitude: 0),
+        ),
+        isFalse,
+      );
+      expect(
+        isSpotAlreadyMarkedAsDuplicate(
+          Spot(
+            name: 'B',
+            description: '',
+            latitude: 0,
+            longitude: 0,
+            duplicateOf: 'original-id',
+          ),
+        ),
+        isTrue,
+      );
+      expect(
+        isSpotAlreadyMarkedAsDuplicate(
+          Spot(
+            name: 'C',
+            description: '',
+            latitude: 0,
+            longitude: 0,
+            duplicateOf: '  ',
+          ),
+        ),
+        isFalse,
+      );
+    });
+
     test('buildConnectedDuplicateSpotIds follows recursive nearby pairs', () {
       final pairs = [
         const DuplicateSpotPairRef(
