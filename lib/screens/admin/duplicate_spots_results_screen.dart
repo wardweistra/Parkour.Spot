@@ -100,6 +100,8 @@ class _DuplicateSpotsResultsScreenState
           final pairsFound = stats['pairsFound'] as int? ?? 0;
           final spotsChecked = stats['spotsChecked'] as int? ?? 0;
           final sourceName = data['sourceName'] as String? ?? 'Unknown';
+          final pairResolutions =
+              data['pairResolutions'] as Map<String, dynamic>? ?? {};
 
           // Load collapsed pairs from Firestore if available and runId changed
           if (_lastLoadedRunId != widget.runId) {
@@ -136,6 +138,7 @@ class _DuplicateSpotsResultsScreenState
             sourceName: sourceName,
             pairsFound: pairsFound,
             spotsChecked: spotsChecked,
+            pairResolutions: pairResolutions,
           );
         },
       ),
@@ -147,6 +150,7 @@ class _DuplicateSpotsResultsScreenState
     required String sourceName,
     required int pairsFound,
     required int spotsChecked,
+    required Map<String, dynamic> pairResolutions,
   }) {
     // Filter pairs based on hideCheckedPairs setting, maintaining original order.
     final List<Map<String, dynamic>> displayPairs = [];
@@ -211,6 +215,9 @@ class _DuplicateSpotsResultsScreenState
         final spot2 = pair['spot2'] as Map<String, dynamic>;
         final distanceMeters = pair['distanceMeters'] as int? ?? 0;
         final isCollapsed = _collapsedPairs.contains(index);
+        final resolution =
+            pairResolutions[index.toString()] as Map<String, dynamic>?;
+        final isResolved = resolution?['status'] == 'resolved_to_native';
         final colorScheme = Theme.of(context).colorScheme;
 
         return Card(
@@ -268,13 +275,27 @@ class _DuplicateSpotsResultsScreenState
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              '${distanceMeters}m apart',
+                              isResolved
+                                  ? 'Resolved · ${distanceMeters}m apart'
+                                  : '${distanceMeters}m apart',
                               style: TextStyle(
                                 color: colorScheme.onSecondaryContainer,
                               ),
                             ),
                           ],
                         ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton.tonalIcon(
+                      onPressed: () {
+                        context.push(
+                          '/moderator/duplicate-spots/${widget.runId}/pair/$index',
+                        );
+                      },
+                      icon: const Icon(Icons.merge_type, size: 18),
+                      label: Text(
+                        isResolved ? 'View resolution' : 'Review cluster',
                       ),
                     ),
                   ],
@@ -350,7 +371,7 @@ class _DuplicateSpotsResultsScreenState
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Review each pair of spots to determine if they are duplicates. Click on a spot card to view its details, or use the location icon to locate it on the map. Check the checkbox when you\'ve reviewed a pair to mark it as checked. Use the "Hide checked" toggle to focus on pairs that still need review.',
+                  'Review each pair of spots to determine if they are duplicates. Use "Review cluster" to compare the full nearby cluster, choose what data to keep, and create one native spot. Check the checkbox when you\'ve reviewed a pair to mark it as checked. Use the "Hide checked" toggle to focus on pairs that still need review.',
                   style: TextStyle(
                     color: colorScheme.onPrimaryContainer,
                     fontSize: 12,

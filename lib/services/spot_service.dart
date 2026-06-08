@@ -7,6 +7,7 @@ import 'dart:io';
 import 'dart:math';
 import '../models/spot.dart';
 import '../models/rating.dart';
+import '../utils/duplicate_spot_resolution_utils.dart';
 import '../utils/image_preparation.dart';
 import '../utils/image_url_utils.dart';
 import 'audit_log_service.dart';
@@ -1720,6 +1721,255 @@ class SpotService extends ChangeNotifier {
     } catch (e) {
       debugPrint('Error getting duplicates of spot: $e');
       return [];
+    }
+  }
+
+  Future<List<Spot>> getNearbyDuplicateCandidates(
+    Spot spot, {
+    int maxDistanceMeters = 50,
+    int limit = 50,
+  }) async {
+    final spotId = spot.id;
+    if (spotId == null) return [];
+
+    try {
+      final bounds = boundsForRadiusMeters(
+        latitude: spot.latitude,
+        longitude: spot.longitude,
+        radiusMeters: maxDistanceMeters,
+      );
+
+      Query query = _firestore.collection('spots');
+      if ((spot.countryCode?.isNotEmpty ?? false) &&
+          (spot.city?.isNotEmpty ?? false)) {
+        query = query
+            .where('countryCode', isEqualTo: spot.countryCode)
+            .where('city', isEqualTo: spot.city)
+            .where('duplicateOf', isEqualTo: null)
+            .where('hidden', isEqualTo: false);
+      }
+
+      final snapshot = await query
+          .where('latitude', isGreaterThanOrEqualTo: bounds['minLat'])
+          .where('latitude', isLessThanOrEqualTo: bounds['maxLat'])
+          .limit(limit)
+          .get();
+
+      final candidates = <Spot>[];
+      for (final doc in snapshot.docs) {
+        if (doc.id == spotId) continue;
+        final candidate = Spot.fromFirestore(doc);
+        if (candidate.hidden || candidate.duplicateOf != null) continue;
+        if (candidate.longitude < bounds['minLng']! ||
+            candidate.longitude > bounds['maxLng']!) {
+          continue;
+        }
+        final distance = distanceMeters(
+          spot.latitude,
+          spot.longitude,
+          candidate.latitude,
+          candidate.longitude,
+        );
+        if (distance <= maxDistanceMeters) {
+          candidates.add(candidate);
+        }
+      }
+
+      candidates.sort((a, b) {
+        final aDistance = distanceMeters(
+          spot.latitude,
+          spot.longitude,
+          a.latitude,
+          a.longitude,
+        );
+        final bDistance = distanceMeters(
+          spot.latitude,
+          spot.longitude,
+          b.latitude,
+          b.longitude,
+        );
+        return aDistance.compareTo(bDistance);
+      });
+      return candidates;
+    } catch (e) {
+      debugPrint('Error loading nearby duplicate candidates: $e');
+      return [];
+    }
+  }
+
+  Future<List<Spot>> findDuplicateClusterFromSeeds(
+    Iterable<String> seedSpotIds, {
+    int maxDistanceMeters = 50,
+  }) async {
+    final spotsById = <String, Spot>{};
+    final queue = <Spot>[];
+
+    Future<void> addSpot(Spot? spot) async {
+      final id = spot?.id;
+      if (spot == null || id == null || spotsById.containsKey(id)) return;
+      spotsById[id] = spot;
+      queue.add(spot);
+    }
+
+    for (final spotId in seedSpotIds.toSet()) {
+      await addSpot(await getSpotById(spotId));
+    }
+
+    while (queue.isNotEmpty) {
+      final current = queue.removeAt(0);
+      final currentId = current.id;
+      if (currentId == null) continue;
+
+      for (final linkedDuplicate in await getDuplicatesOfSpot(currentId)) {
+        await addSpot(linkedDuplicate);
+      }
+
+      for (final nearby in await getNearbyDuplicateCandidates(
+        current,
+        maxDistanceMeters: maxDistanceMeters,
+      )) {
+        await addSpot(nearby);
+      }
+    }
+
+    final spots = spotsById.values.toList();
+    spots.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    return spots;
+  }
+
+  Future<String?> resolveDuplicateClusterToNative({
+    required List<Spot> clusterSpots,
+    required Spot previewSpot,
+    required String userId,
+    required String userName,
+    String? runId,
+    List<int> resolvedPairIndices = const [],
+    String? reportId,
+    String? notes,
+  }) async {
+    final memberIds = clusterSpots
+        .map((spot) => spot.id)
+        .whereType<String>()
+        .toSet();
+    if (memberIds.length < 2) {
+      _error = 'At least two spots are required to resolve a duplicate cluster';
+      notifyListeners();
+      return null;
+    }
+
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      final duplicateIdsToUpdate = <String>{...memberIds};
+      for (final memberId in memberIds) {
+        final linkedDuplicates = await getDuplicatesOfSpot(memberId);
+        duplicateIdsToUpdate.addAll(
+          linkedDuplicates.map((spot) => spot.id).whereType<String>(),
+        );
+      }
+
+      final nativeRef = _firestore.collection('spots').doc();
+      final now = DateTime.now();
+      final nativeSpot = Spot(
+        name: previewSpot.name,
+        description: previewSpot.description,
+        latitude: previewSpot.latitude,
+        longitude: previewSpot.longitude,
+        address: previewSpot.address,
+        city: previewSpot.city,
+        countryCode: previewSpot.countryCode,
+        imageUrls: previewSpot.imageUrls,
+        youtubeVideoIds: previewSpot.youtubeVideoIds,
+        createdBy: userId,
+        createdByName: userName,
+        createdAt: now,
+        updatedAt: now,
+        averageRating: 0,
+        ratingCount: 0,
+        wilsonLowerBound: 0,
+        ranking: previewSpot.ranking ?? Random().nextDouble(),
+        spotAccess: previewSpot.spotAccess,
+        spotFeatures: previewSpot.spotFeatures,
+        spotFacilities: previewSpot.spotFacilities,
+        goodFor: previewSpot.goodFor,
+        duplicateOf: null,
+        hidden: false,
+        createdFromCreateNative: true,
+      );
+
+      final batch = _firestore.batch();
+      batch.set(nativeRef, nativeSpot.toFirestore());
+      for (final duplicateId in duplicateIdsToUpdate) {
+        batch.update(_firestore.collection('spots').doc(duplicateId), {
+          'duplicateOf': nativeRef.id,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      if (runId != null) {
+        final resolution = {
+          'status': 'resolved_to_native',
+          'nativeSpotId': nativeRef.id,
+          'clusterSpotIds': memberIds.toList()..sort(),
+          'resolvedAt': FieldValue.serverTimestamp(),
+          'resolvedBy': userId,
+          'resolvedByName': userName,
+          if (notes?.isNotEmpty ?? false) 'notes': notes,
+          if (reportId?.isNotEmpty ?? false) 'reportId': reportId,
+        };
+        final runUpdates = <String, dynamic>{
+          'collapsedPairs': FieldValue.arrayUnion(resolvedPairIndices),
+        };
+        for (final pairIndex in resolvedPairIndices) {
+          runUpdates['pairResolutions.$pairIndex'] = resolution;
+        }
+        batch.update(
+          _firestore.collection('duplicateDetectionResults').doc(runId),
+          runUpdates,
+        );
+      }
+
+      await batch.commit();
+
+      for (final duplicateId in duplicateIdsToUpdate) {
+        await _auditLogService.logSpotMarkedAsDuplicate(
+          spotId: duplicateId,
+          originalSpotId: nativeRef.id,
+          userId: userId,
+          userName: userName,
+          reportId: reportId,
+          notes: notes,
+        );
+      }
+      await _auditLogService.logSpotEdit(
+        spotId: nativeRef.id,
+        userId: userId,
+        userName: userName,
+        reportId: reportId,
+        notes: notes,
+        changes: {
+          'createdFromDuplicateCluster': {
+            'from': null,
+            'to': memberIds.toList()..sort(),
+          },
+        },
+        metadata: {
+          'sourceSpotIds': memberIds.toList()..sort(),
+          'resolvedPairIndices': resolvedPairIndices,
+        },
+      );
+
+      _isLoading = false;
+      notifyListeners();
+      return nativeRef.id;
+    } catch (e) {
+      _error = 'Failed to resolve duplicate cluster: $e';
+      debugPrint('Error resolving duplicate cluster: $e');
+      _isLoading = false;
+      notifyListeners();
+      return null;
     }
   }
 

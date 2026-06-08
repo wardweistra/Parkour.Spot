@@ -23,6 +23,7 @@ import '../screens/admin/duplicate_images_screen.dart';
 import '../screens/admin/missing_resized_images_screen.dart';
 import '../screens/admin/duplicate_spots_screen.dart';
 import '../screens/admin/duplicate_spots_results_screen.dart';
+import '../screens/admin/duplicate_spots_pair_review_screen.dart';
 import '../screens/admin/device_detection_screen.dart';
 import '../screens/debug/support_debug_screen.dart';
 import '../screens/admin/api_clients_screen.dart';
@@ -493,6 +494,23 @@ class AppRouter {
                     final runId = state.pathParameters['runId']!;
                     return DuplicateSpotsResultsScreen(runId: runId);
                   },
+                  routes: [
+                    GoRoute(
+                      path: 'pair/:pairIndex',
+                      builder: (context, state) {
+                        final runId = state.pathParameters['runId']!;
+                        final pairIndex =
+                            int.tryParse(
+                              state.pathParameters['pairIndex'] ?? '',
+                            ) ??
+                            0;
+                        return DuplicateSpotsPairReviewScreen(
+                          runId: runId,
+                          pairIndex: pairIndex,
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
