@@ -107,6 +107,20 @@ class EventScheduleUtils {
     return '$normalized (UTC$offset · ${zoned.timeZoneName})';
   }
 
+  /// Compact label for closed dropdowns and narrow layouts.
+  static String formatTimeZoneShortLabel(
+    String timeZone, {
+    DateTime? referenceUtc,
+  }) {
+    final normalized = normalizeTimeZone(timeZone);
+    if (normalized == null) return timeZone;
+    final location = tz.getLocation(normalized);
+    final instant = (referenceUtc ?? DateTime.now()).toUtc();
+    final zoned = tz.TZDateTime.from(instant, location);
+    final city = normalized.split('/').last.replaceAll('_', ' ');
+    return '$city (${zoned.timeZoneName})';
+  }
+
   static String formatSummaryLine(
     BuildContext context, {
     required DateTime startAt,

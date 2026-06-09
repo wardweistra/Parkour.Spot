@@ -6,6 +6,7 @@ class CustomTextField extends StatelessWidget {
   final String? hintText;
   final IconData? prefixIcon;
   final IconData? suffixIcon;
+  final Widget? suffixIconWidget;
   final bool obscureText;
   final TextInputType? keyboardType;
   final TextCapitalization textCapitalization;
@@ -18,6 +19,7 @@ class CustomTextField extends StatelessWidget {
   final int? maxLines;
   final int? maxLength;
   final List<String>? autofillHints;
+  final bool enabled;
 
   const CustomTextField({
     super.key,
@@ -26,6 +28,7 @@ class CustomTextField extends StatelessWidget {
     this.hintText,
     this.prefixIcon,
     this.suffixIcon,
+    this.suffixIconWidget,
     this.obscureText = false,
     this.keyboardType,
     this.textCapitalization = TextCapitalization.none,
@@ -38,12 +41,14 @@ class CustomTextField extends StatelessWidget {
     this.maxLines = 1,
     this.maxLength,
     this.autofillHints,
+    this.enabled = true,
   });
 
   @override
   Widget build(BuildContext context) {
     return TextFormField(
       controller: controller,
+      enabled: enabled,
       obscureText: obscureText,
       keyboardType: keyboardType,
       textCapitalization: textCapitalization,
@@ -60,7 +65,8 @@ class CustomTextField extends StatelessWidget {
         labelText: labelText,
         hintText: hintText,
         prefixIcon: prefixIcon != null ? Icon(prefixIcon) : null,
-        suffixIcon: suffixIcon != null ? Icon(suffixIcon) : null,
+        suffixIcon: suffixIconWidget ??
+            (suffixIcon != null ? Icon(suffixIcon) : null),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(

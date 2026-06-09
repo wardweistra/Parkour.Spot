@@ -985,7 +985,7 @@ abstract class AppLocalizations {
   /// Add tab hub: event card title
   ///
   /// In en, this message translates to:
-  /// **'Add event'**
+  /// **'Add New Event'**
   String get addHubEventTitle;
 
   /// Add tab hub: event card description
@@ -1003,7 +1003,7 @@ abstract class AppLocalizations {
   /// Add tab hub: event card action
   ///
   /// In en, this message translates to:
-  /// **'Create event'**
+  /// **'Add new event'**
   String get addHubEventButton;
 
   /// Add tab sign-in callout: heading
@@ -1603,7 +1603,7 @@ abstract class AppLocalizations {
   /// Add event page: app bar title
   ///
   /// In en, this message translates to:
-  /// **'Add event'**
+  /// **'Add New Event'**
   String get addEventTitle;
 
   /// Add event page: moderation info banner
@@ -1615,7 +1615,7 @@ abstract class AppLocalizations {
   /// Add event page: title field label
   ///
   /// In en, this message translates to:
-  /// **'Event title'**
+  /// **'Event title *'**
   String get addEventTitleLabel;
 
   /// Add event page: title validation empty
@@ -1654,10 +1654,10 @@ abstract class AppLocalizations {
   /// **'https://example.com'**
   String get addEventWebsiteHint;
 
-  /// Add event page: photos section title
+  /// Add event page: poster/cover image section title — the event's visual heading
   ///
   /// In en, this message translates to:
-  /// **'Event photos (optional)'**
+  /// **'Poster or cover image (optional)'**
   String get addEventPhotosSectionTitle;
 
   /// Add event page: all-day toggle
@@ -1702,6 +1702,24 @@ abstract class AppLocalizations {
   /// **'Linking'**
   String get addEventLinkingSectionTitle;
 
+  /// Add event page: combined spot link and location section
+  ///
+  /// In en, this message translates to:
+  /// **'Where is it happening?'**
+  String get addEventWhereSectionTitle;
+
+  /// Add event page: schedule section title
+  ///
+  /// In en, this message translates to:
+  /// **'When is it happening?'**
+  String get addEventWhenSectionTitle;
+
+  /// Add event page: submit blocked until address is geocoded
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the search icon next to the address to confirm it, or pick a location on the map.'**
+  String get addEventAddressNeedsResolve;
+
   /// Add event page: open map picker to link spots
   ///
   /// In en, this message translates to:
@@ -1725,6 +1743,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Location not set'**
   String get addEventLocationNotSet;
+
+  /// Add event page: confirmation when a map pin is active
+  ///
+  /// In en, this message translates to:
+  /// **'Exact location set'**
+  String get addEventExactLocationSet;
 
   /// Add event page: location section title
   ///
@@ -1831,7 +1855,7 @@ abstract class AppLocalizations {
   /// Add event page: location/link validation
   ///
   /// In en, this message translates to:
-  /// **'Add a map location, link a spot, or link a spot list before submitting.'**
+  /// **'Add a map location or link a spot before submitting.'**
   String get addEventNeedLocationOrLink;
 
   /// Add event page: photo count validation

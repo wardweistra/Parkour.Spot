@@ -98,3 +98,4 @@ yarn-error.log*
 #  Agents and skills
 skills-lock.json
 .agents/
+.impeccable/

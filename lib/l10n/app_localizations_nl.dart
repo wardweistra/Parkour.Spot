@@ -530,7 +530,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get addHubSpotButton => 'Spot aanmaken';
 
   @override
-  String get addHubEventTitle => 'Evenement toevoegen';
+  String get addHubEventTitle => 'Nieuw evenement toevoegen';
 
   @override
   String get addHubEventDescription =>
@@ -540,7 +540,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get addHubEventModerationBadge => 'Beoordeeld door moderators';
 
   @override
-  String get addHubEventButton => 'Evenement aanmaken';
+  String get addHubEventButton => 'Nieuw evenement toevoegen';
 
   @override
   String get addHubSignInTitle => 'Log in om bij te dragen';
@@ -885,14 +885,14 @@ class AppLocalizationsNl extends AppLocalizations {
   String get addSpotGettingAddress => 'Adres ophalen…';
 
   @override
-  String get addEventTitle => 'Evenement toevoegen';
+  String get addEventTitle => 'Nieuw evenement toevoegen';
 
   @override
   String get addEventModerationNotice =>
       'Evenementvoorstellen worden beoordeeld door moderators voordat ze openbaar worden.';
 
   @override
-  String get addEventTitleLabel => 'Evenementtitel';
+  String get addEventTitleLabel => 'Evenementtitel *';
 
   @override
   String get addEventTitleRequired => 'Titel is verplicht.';
@@ -913,7 +913,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get addEventWebsiteHint => 'https://example.com';
 
   @override
-  String get addEventPhotosSectionTitle => 'Evenementfoto\'s (optioneel)';
+  String get addEventPhotosSectionTitle =>
+      'Poster of omslagafbeelding (optioneel)';
 
   @override
   String get addEventAllDay => 'Hele-dag-evenement';
@@ -937,6 +938,16 @@ class AppLocalizationsNl extends AppLocalizations {
   String get addEventLinkingSectionTitle => 'Koppeling';
 
   @override
+  String get addEventWhereSectionTitle => 'Waar vindt het plaats?';
+
+  @override
+  String get addEventWhenSectionTitle => 'Wanneer vindt het plaats?';
+
+  @override
+  String get addEventAddressNeedsResolve =>
+      'Tik op het zoekpictogram naast het adres om het te bevestigen, of kies een locatie op de kaart.';
+
+  @override
   String get addEventLinkSpotButton => 'Spot koppelen';
 
   @override
@@ -951,6 +962,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get addEventLocationNotSet => 'Locatie niet ingesteld';
+
+  @override
+  String get addEventExactLocationSet => 'Exacte locatie ingesteld';
 
   @override
   String get addEventLocationSectionTitle => 'Locatie';
@@ -1013,7 +1027,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get addEventNeedLocationOrLink =>
-      'Voeg een kaartlocatie toe, koppel een spot of spotlijst voordat je indient.';
+      'Voeg een kaartlocatie toe of koppel een spot voordat je indient.';
 
   @override
   String addEventMaxPhotos(int count) {

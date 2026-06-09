@@ -535,7 +535,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addHubSpotButton => 'Criar spot';
 
   @override
-  String get addHubEventTitle => 'Adicionar evento';
+  String get addHubEventTitle => 'Adicionar novo evento';
 
   @override
   String get addHubEventDescription =>
@@ -545,7 +545,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addHubEventModerationBadge => 'Revisto pelos moderadores';
 
   @override
-  String get addHubEventButton => 'Criar evento';
+  String get addHubEventButton => 'Adicionar novo evento';
 
   @override
   String get addHubSignInTitle => 'Inicia sessão para contribuir';
@@ -889,14 +889,14 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addSpotGettingAddress => 'A obter morada…';
 
   @override
-  String get addEventTitle => 'Adicionar evento';
+  String get addEventTitle => 'Adicionar novo evento';
 
   @override
   String get addEventModerationNotice =>
       'As propostas de eventos são revistas pelos moderadores antes de se tornarem públicas.';
 
   @override
-  String get addEventTitleLabel => 'Título do evento';
+  String get addEventTitleLabel => 'Título do evento *';
 
   @override
   String get addEventTitleRequired => 'O título é obrigatório.';
@@ -917,7 +917,8 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addEventWebsiteHint => 'https://example.com';
 
   @override
-  String get addEventPhotosSectionTitle => 'Fotos do evento (opcional)';
+  String get addEventPhotosSectionTitle =>
+      'Cartaz ou imagem de capa (opcional)';
 
   @override
   String get addEventAllDay => 'Evento de dia inteiro';
@@ -941,6 +942,16 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addEventLinkingSectionTitle => 'Ligação';
 
   @override
+  String get addEventWhereSectionTitle => 'Onde acontece?';
+
+  @override
+  String get addEventWhenSectionTitle => 'Quando acontece?';
+
+  @override
+  String get addEventAddressNeedsResolve =>
+      'Toca no ícone de pesquisa ao lado da morada para confirmar, ou escolhe uma localização no mapa.';
+
+  @override
   String get addEventLinkSpotButton => 'Associar spot';
 
   @override
@@ -955,6 +966,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get addEventLocationNotSet => 'Localização não definida';
+
+  @override
+  String get addEventExactLocationSet => 'Localização exata definida';
 
   @override
   String get addEventLocationSectionTitle => 'Localização';
@@ -1017,7 +1031,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get addEventNeedLocationOrLink =>
-      'Adiciona uma localização no mapa, liga um spot ou uma lista de spots antes de submeter.';
+      'Adiciona uma localização no mapa ou liga um spot antes de submeter.';
 
   @override
   String addEventMaxPhotos(int count) {

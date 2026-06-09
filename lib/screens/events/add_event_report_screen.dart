@@ -1,27 +1,31 @@
 import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:provider/provider.dart';
 
+import '../../config/app_config.dart';
 import '../../models/spot.dart';
 import '../../services/auth_service.dart';
 import '../../services/event_report_service.dart';
 import '../../services/geocoding_service.dart';
+import '../../services/search_state_service.dart';
 import '../../utils/browser_timezone_utils.dart';
 import '../../utils/event_schedule_utils.dart';
 import '../../utils/image_preparation.dart';
-import '../../utils/marker_icon_utils.dart';
+import '../../utils/location_permission_utils.dart';
+import '../../utils/map_recentering_mixin.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/explore_entity_picker/explore_entity_picker_config.dart';
 import '../../widgets/explore_entity_picker/explore_entity_picker_screen.dart';
-import '../../widgets/location_info_box.dart';
+import '../../widgets/custom_button.dart';
+import '../../widgets/custom_text_field.dart';
 import '../../widgets/page_scaffold.dart';
 import '../../widgets/spot_form/image_section.dart';
+import '../../widgets/spot_form/location_section.dart';
 
 class AddEventReportScreen extends StatefulWidget {
   const AddEventReportScreen({
@@ -43,12 +47,15 @@ class AddEventReportScreen extends StatefulWidget {
   State<AddEventReportScreen> createState() => _AddEventReportScreenState();
 }
 
-class _AddEventReportScreenState extends State<AddEventReportScreen> {
+class _AddEventReportScreenState extends State<AddEventReportScreen>
+    with MapRecenteringMixin {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _websiteController = TextEditingController();
   final _locationAddressController = TextEditingController();
+  final _startDisplayController = TextEditingController();
+  final _endDisplayController = TextEditingController();
 
   bool _isSubmitting = false;
   bool _isDateOnly = false;
@@ -58,18 +65,59 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
   late final List<String> _timeZoneOptions;
 
   LatLng? _pickedLocation;
+  Position? _currentPosition;
+  late LatLng _mapFallbackCenter;
   String? _address;
   String? _city;
   String? _countryCode;
   bool _isGeocoding = false;
+  bool _isGettingLocation = false;
+  bool _isSatelliteView = false;
+  bool _isLocationPermissionDenied = false;
   String? _resolvedAddressInput;
-  BitmapDescriptor? _locationPinIcon;
+  SearchStateService? _searchStateServiceRef;
 
   List<Spot> _linkedSpots = [];
   String? _linkedSpotListId;
   String? _linkedSpotListName;
 
   final List<Uint8List?> _selectedImageBytes = [];
+  bool _scheduleDisplayInitialized = false;
+
+  LatLng get _displayLocationForMap {
+    if (_pickedLocation != null) return _pickedLocation!;
+    if (_currentPosition != null) {
+      return LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
+    }
+    return _mapFallbackCenter;
+  }
+
+  bool _spotHasCoordinates(Spot spot) =>
+      spot.latitude != 0 || spot.longitude != 0;
+
+  List<LatLng> _mapMarkerLocations() {
+    final locations = <LatLng>[];
+    if (_pickedLocation != null) {
+      locations.add(_pickedLocation!);
+    }
+    for (final spot in _linkedSpots) {
+      if (_spotHasCoordinates(spot)) {
+        locations.add(LatLng(spot.latitude, spot.longitude));
+      }
+    }
+    if (locations.isNotEmpty) return locations;
+
+    if (_currentPosition != null) {
+      return [
+        LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+      ];
+    }
+    return [_mapFallbackCenter];
+  }
+
+  void _recenterMapForDisplay() {
+    recenterMapForLocationsAfterBuild(_mapMarkerLocations());
+  }
 
   @override
   void initState() {
@@ -90,26 +138,176 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
     }
     _linkedSpotListId = widget.initialSpotListId;
     _linkedSpotListName = widget.initialSpotListName;
-    _loadLocationPinIcon();
+    _mapFallbackCenter = const LatLng(
+      AppConfig.defaultMapCenterLat,
+      AppConfig.defaultMapCenterLng,
+    );
     if (_pickedLocation != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _geocodeLocation(_pickedLocation!);
       });
+    } else {
+      _getCurrentLocation(setAsPickedPin: false);
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _searchStateServiceRef = Provider.of<SearchStateService>(
+        context,
+        listen: false,
+      );
+      _searchStateServiceRef!.addListener(_onSearchStateChanged);
+      setState(() => _isSatelliteView = _searchStateServiceRef!.isSatellite);
+    });
+    _titleController.addListener(_onFormFieldChanged);
+    _websiteController.addListener(_onFormFieldChanged);
+    _locationAddressController.addListener(_onFormFieldChanged);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_scheduleDisplayInitialized) {
+      _scheduleDisplayInitialized = true;
+      _syncScheduleDisplayControllers();
+    }
+    _recenterMapForDisplay();
   }
 
   @override
   void dispose() {
+    _titleController.removeListener(_onFormFieldChanged);
+    _websiteController.removeListener(_onFormFieldChanged);
+    _locationAddressController.removeListener(_onFormFieldChanged);
+    _searchStateServiceRef?.removeListener(_onSearchStateChanged);
     _titleController.dispose();
     _descriptionController.dispose();
     _websiteController.dispose();
     _locationAddressController.dispose();
+    _startDisplayController.dispose();
+    _endDisplayController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadLocationPinIcon() async {
-    final icon = await MarkerIconUtils.loadNormalSelectedMapPin();
-    if (mounted) setState(() => _locationPinIcon = icon);
+  void _onSearchStateChanged() {
+    if (!mounted) return;
+    final searchState = _searchStateServiceRef;
+    if (searchState == null) return;
+    setState(() => _isSatelliteView = searchState.isSatellite);
+  }
+
+  void _syncScheduleDisplayControllers() {
+    _startDisplayController.text = _formatDateTime(_startAt);
+    _endDisplayController.text =
+        _endAt == null ? '' : _formatDateTime(_endAt!);
+  }
+
+  void _onFormFieldChanged() {
+    if (mounted) setState(() {});
+  }
+
+  bool get _hasTitle => _titleController.text.trim().isNotEmpty;
+
+  bool get _hasLocationOrLink =>
+      _linkedSpots.isNotEmpty ||
+      _linkedSpotListId != null ||
+      _pickedLocation != null;
+
+  bool get _canSubmit =>
+      !_isSubmitting &&
+      _hasLocationOrLink &&
+      !_typedAddressNeedsResolution() &&
+      _hasTitle &&
+      _hasValidWebsiteUrl();
+
+  String? _submitBlockReason(AppLocalizations l10n) {
+    if (!_hasLocationOrLink) return l10n.addEventNeedLocationOrLink;
+    if (_typedAddressNeedsResolution()) return l10n.addEventAddressNeedsResolve;
+    if (!_hasTitle) return l10n.addEventTitleRequired;
+    if (!_hasValidWebsiteUrl()) return l10n.addEventWebsiteInvalid;
+    return null;
+  }
+
+  InputDecoration _outlineFieldDecoration(
+    ThemeData theme, {
+    required String labelText,
+    String? hintText,
+  }) {
+    final scheme = theme.colorScheme;
+    final borderRadius = BorderRadius.circular(12);
+    OutlineInputBorder border(Color color, {double width = 1}) {
+      return OutlineInputBorder(
+        borderRadius: borderRadius,
+        borderSide: BorderSide(color: color, width: width),
+      );
+    }
+
+    return InputDecoration(
+      labelText: labelText,
+      hintText: hintText,
+      border: border(scheme.outline),
+      enabledBorder: border(scheme.outline.withValues(alpha: 0.5)),
+      focusedBorder: border(scheme.primary, width: 2),
+      errorBorder: border(scheme.error),
+      focusedErrorBorder: border(scheme.error, width: 2),
+      filled: true,
+      fillColor: scheme.surface,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      labelStyle: TextStyle(color: scheme.onSurface.withValues(alpha: 0.7)),
+      hintStyle: TextStyle(color: scheme.onSurface.withValues(alpha: 0.5)),
+    );
+  }
+
+  Future<void> _getCurrentLocation({bool setAsPickedPin = true}) async {
+    setState(() => _isGettingLocation = true);
+
+    final permission = await LocationPermissionUtils.checkAndRequestPermission(
+      context: context,
+      showErrorMessages: setAsPickedPin,
+    );
+    final isPermissionGranted = LocationPermissionUtils.isPermissionGranted(
+      permission,
+    );
+
+    if (mounted) {
+      setState(() => _isLocationPermissionDenied = !isPermissionGranted);
+    }
+
+    if (!isPermissionGranted) {
+      if (mounted) setState(() => _isGettingLocation = false);
+      return;
+    }
+
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+
+      if (!mounted) return;
+      final latLng = LatLng(position.latitude, position.longitude);
+      setState(() {
+        _currentPosition = position;
+        if (setAsPickedPin) {
+          _pickedLocation = latLng;
+        }
+        _isLocationPermissionDenied = false;
+      });
+      _recenterMapForDisplay();
+      await _geocodeLocation(latLng, bindToForm: setAsPickedPin);
+    } catch (e) {
+      if (mounted && setAsPickedPin) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.exploreLocationError('$e'),
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isGettingLocation = false);
+    }
   }
 
   DateTime _displayInSelectedTimeZone(DateTime value) {
@@ -126,8 +324,19 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
     );
   }
 
-  Future<void> _geocodeLocation(LatLng location) async {
+  String _timeZoneShortLabel(String value) {
+    return EventScheduleUtils.formatTimeZoneShortLabel(
+      value,
+      referenceUtc: _startAt,
+    );
+  }
+
+  Future<void> _geocodeLocation(
+    LatLng location, {
+    bool bindToForm = true,
+  }) async {
     if (!mounted) return;
+    if (!bindToForm) return;
     setState(() => _isGeocoding = true);
     try {
       final geocodingService = context.read<GeocodingService>();
@@ -171,6 +380,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
     if (spot == null) return;
     if (_linkedSpots.any((s) => s.id == spot.id)) return;
     setState(() => _linkedSpots.add(spot));
+    _recenterMapForDisplay();
   }
 
   Future<void> _pickLocationOnMap() async {
@@ -186,12 +396,14 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
     if (latLng == null || !mounted) return;
     setState(() {
       _pickedLocation = latLng;
+      _currentPosition = null;
       _address = null;
       _city = null;
       _countryCode = null;
       _resolvedAddressInput = null;
       _locationAddressController.clear();
     });
+    _recenterMapForDisplay();
     await _geocodeLocation(latLng);
   }
 
@@ -242,7 +454,9 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
         _countryCode = result['countryCode'] as String?;
         _locationAddressController.text = acceptedAddress;
         _resolvedAddressInput = acceptedAddress;
+        _currentPosition = null;
       });
+      _recenterMapForDisplay();
       return true;
     } catch (_) {
       if (mounted) {
@@ -259,12 +473,56 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
   void _clearLocation() {
     setState(() {
       _pickedLocation = null;
+      _currentPosition = null;
       _address = null;
       _city = null;
       _countryCode = null;
       _resolvedAddressInput = null;
       _locationAddressController.clear();
     });
+    _recenterMapForDisplay();
+  }
+
+  Widget _buildLocationAddressSuffixIcon({
+    required AppLocalizations l10n,
+    required bool fieldsEnabled,
+    required bool hasSelectedPin,
+  }) {
+    if (_isGeocoding) {
+      return const Padding(
+        padding: EdgeInsets.all(12),
+        child: SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
+    }
+
+    final needsResolve = _typedAddressNeedsResolution();
+    final showSearch = needsResolve || !hasSelectedPin;
+    final showClear = hasSelectedPin;
+
+    Widget searchButton() => IconButton(
+      icon: const Icon(Icons.search),
+      tooltip: l10n.addEventUseAddressButton,
+      onPressed: fieldsEnabled ? _resolveTypedAddress : null,
+    );
+
+    Widget clearButton() => IconButton(
+      icon: const Icon(Icons.clear),
+      tooltip: l10n.addEventClearLocationTooltip,
+      onPressed: fieldsEnabled ? _clearLocation : null,
+    );
+
+    if (showSearch && showClear) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [searchButton(), clearButton()],
+      );
+    }
+    if (showSearch) return searchButton();
+    return clearButton();
   }
 
   Future<void> _pickStartDateTime() async {
@@ -290,6 +548,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
         if (_endAt != null && _endAt!.isBefore(_startAt)) {
           _endAt = _startAt;
         }
+        _syncScheduleDisplayControllers();
       });
       return;
     }
@@ -301,6 +560,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
       if (_endAt != null && _endAt!.isBefore(_startAt)) {
         _endAt = _startAt.add(const Duration(hours: 1));
       }
+      _syncScheduleDisplayControllers();
     });
   }
 
@@ -323,6 +583,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
           pickedDate,
           timeZone: _selectedTimeZone,
         );
+        _syncScheduleDisplayControllers();
       });
       return;
     }
@@ -331,6 +592,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
     if (value == null || !mounted) return;
     setState(() {
       _endAt = value;
+      _syncScheduleDisplayControllers();
     });
   }
 
@@ -486,14 +748,19 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
     final l10n = AppLocalizations.of(context)!;
-    if (!_hasValidWebsiteUrl()) {
+
+    if (!_hasLocationOrLink) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.addEventWebsiteInvalid)));
+      ).showSnackBar(SnackBar(content: Text(l10n.addEventNeedLocationOrLink)));
       return;
     }
+
+    if (_typedAddressNeedsResolution() && !await _resolveTypedAddress()) {
+      return;
+    }
+    if (!mounted) return;
 
     var normalizedStartAt = _startAt;
     var normalizedEndAt = _endAt;
@@ -518,18 +785,12 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
       return;
     }
 
-    if (_typedAddressNeedsResolution() && !await _resolveTypedAddress()) {
-      return;
-    }
-    if (!mounted) return;
+    if (!_formKey.currentState!.validate()) return;
 
-    final hasLinkedSpot = _linkedSpots.isNotEmpty;
-    final hasLinkedList = _linkedSpotListId != null;
-    final hasLocation = _pickedLocation != null;
-    if (!hasLinkedSpot && !hasLinkedList && !hasLocation) {
+    if (!_hasValidWebsiteUrl()) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.addEventNeedLocationOrLink)));
+      ).showSnackBar(SnackBar(content: Text(l10n.addEventWebsiteInvalid)));
       return;
     }
 
@@ -641,8 +902,10 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
     }
   }
 
-  Widget _buildLocationSection(AppLocalizations l10n, ThemeData theme) {
-    final pickedLocation = _pickedLocation;
+  Widget _buildWhereSection(AppLocalizations l10n, ThemeData theme) {
+    final fieldsEnabled = !_isSubmitting && !_isGeocoding;
+    final hasSelectedPin = _pickedLocation != null;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -650,40 +913,122 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              l10n.addEventLocationSectionTitle,
+              l10n.addEventWhereSectionTitle,
               style: theme.textTheme.titleMedium,
             ),
             const SizedBox(height: 4),
             Text(
               l10n.addEventLocationSectionHint,
-              style: theme.textTheme.bodySmall,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 12),
-            TextFormField(
-              controller: _locationAddressController,
-              decoration: InputDecoration(
-                labelText: l10n.addEventAddressLabel,
-                hintText: l10n.addEventAddressHint,
-                border: const OutlineInputBorder(),
-                suffixIcon: _locationAddressController.text.trim().isEmpty
-                    ? null
-                    : IconButton(
-                        tooltip: l10n.addEventClearAddressTooltip,
-                        onPressed: _isSubmitting || _isGeocoding
-                            ? null
-                            : () {
-                                setState(() {
-                                  _locationAddressController.clear();
-                                  _address = null;
-                                  _resolvedAddressInput = null;
-                                });
-                              },
-                        icon: const Icon(Icons.clear),
-                      ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: _isSubmitting ? null : _linkSpotsOnMap,
+                icon: const Icon(Icons.add_location_alt_outlined, size: 18),
+                label: Text(l10n.addEventLinkSpotButton),
               ),
-              enabled: !_isSubmitting && !_isGeocoding,
+            ),
+            if (_linkedSpots.isNotEmpty ||
+                _linkedSpotListId != null) ...[
+              const SizedBox(height: 4),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: [
+                  ..._linkedSpots.map(
+                    (spot) => Chip(
+                      avatar: const Icon(
+                        Icons.location_on_outlined,
+                        size: 18,
+                      ),
+                      label: Text(
+                        l10n.addEventLinkedSpotLabel(
+                          spot.name.isNotEmpty ? spot.name : (spot.id ?? ''),
+                        ),
+                      ),
+                      onDeleted: _isSubmitting
+                          ? null
+                          : () {
+                              setState(
+                                () => _linkedSpots.removeWhere(
+                                  (s) => s.id == spot.id,
+                                ),
+                              );
+                              _recenterMapForDisplay();
+                            },
+                    ),
+                  ),
+                  if (_linkedSpotListId != null)
+                    Chip(
+                      avatar: const Icon(Icons.list_alt_outlined, size: 18),
+                      label: Text(
+                        l10n.addEventLinkedSpotListLabel(
+                          _linkedSpotListName?.isNotEmpty == true
+                              ? _linkedSpotListName!
+                              : _linkedSpotListId!,
+                        ),
+                      ),
+                      onDeleted: _isSubmitting
+                          ? null
+                          : () {
+                              setState(() {
+                                _linkedSpotListId = null;
+                                _linkedSpotListName = null;
+                              });
+                            },
+                    ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 12),
+            SpotLocationSection(
+              embedded: true,
+              showRequiredIndicator: false,
+              showSelectedPin: hasSelectedPin,
+              showLocationDetails: false,
+              mapHeroTagPrefix: 'addEvent',
+              linkedSpots: _linkedSpots,
+              currentLocation: _displayLocationForMap,
+              address: null,
+              countryCode: null,
+              isGettingLocation: _isGettingLocation,
+              isGeocoding: false,
+              isSatelliteView: _isSatelliteView,
+              isLocationPermissionDenied: _isLocationPermissionDenied,
+              onRefreshLocation: () => _getCurrentLocation(setAsPickedPin: true),
+              onPickOnMap: _pickLocationOnMap,
+              onToggleSatellite: (value) {
+                setState(() => _isSatelliteView = value);
+                final searchState = Provider.of<SearchStateService>(
+                  context,
+                  listen: false,
+                );
+                searchState.setSatellite(value);
+              },
+              onMapCreated: onMapCreated,
+            ),
+            if (!hasSelectedPin) ...[
+              const SizedBox(height: 8),
+              Text(
+                l10n.addEventLocationNotSet,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            CustomTextField(
+              controller: _locationAddressController,
+              labelText: l10n.addEventAddressLabel,
+              hintText: l10n.addEventAddressHint,
+              prefixIcon: Icons.place_outlined,
               keyboardType: TextInputType.streetAddress,
               textInputAction: TextInputAction.search,
+              enabled: fieldsEnabled,
               onChanged: (value) {
                 setState(() {
                   if (value.trim().isEmpty) {
@@ -693,143 +1038,130 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
                 });
               },
               onFieldSubmitted: (_) {
-                if (!_isSubmitting && !_isGeocoding) _resolveTypedAddress();
+                if (fieldsEnabled) _resolveTypedAddress();
               },
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                OutlinedButton.icon(
-                  onPressed: _isSubmitting || _isGeocoding
-                      ? null
-                      : _resolveTypedAddress,
-                  icon: _isGeocoding
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.search),
-                  label: Text(l10n.addEventUseAddressButton),
-                ),
-                FilledButton.icon(
-                  onPressed: _isSubmitting || _isGeocoding
-                      ? null
-                      : _pickLocationOnMap,
-                  icon: const Icon(Icons.edit_location_alt_outlined),
-                  label: Text(l10n.addEventPickLocationButton),
-                ),
-                if (pickedLocation != null)
-                  TextButton.icon(
-                    onPressed: _isSubmitting || _isGeocoding
-                        ? null
-                        : _clearLocation,
-                    icon: const Icon(Icons.clear),
-                    label: Text(l10n.addEventClearLocationTooltip),
-                  ),
-              ],
-            ),
-            if (pickedLocation == null) ...[
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Icon(
-                    Icons.map_outlined,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(l10n.addEventLocationNotSet)),
-                ],
+              suffixIconWidget: _buildLocationAddressSuffixIcon(
+                l10n: l10n,
+                fieldsEnabled: fieldsEnabled,
+                hasSelectedPin: hasSelectedPin,
               ),
-            ] else ...[
-              const SizedBox(height: 16),
-              _buildLocationPreviewMap(pickedLocation, l10n, theme),
-              const SizedBox(height: 16),
-              LocationInfoBox(
-                latitude: pickedLocation.latitude,
-                longitude: pickedLocation.longitude,
-                address: _address,
-                countryCode: _countryCode,
-                isGeocoding: _isGeocoding,
-              ),
-            ],
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildLocationPreviewMap(
-    LatLng location,
-    AppLocalizations l10n,
-    ThemeData theme,
-  ) {
-    return Container(
-      height: 200,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.3),
-        ),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        children: [
-          GoogleMap(
-            key: ValueKey(
-              'event_location_${location.latitude}_${location.longitude}',
+  Widget _buildWhenSection(AppLocalizations l10n, ThemeData theme) {
+    final fieldsEnabled = !_isSubmitting;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.addEventWhenSectionTitle,
+              style: theme.textTheme.titleMedium,
             ),
-            initialCameraPosition: CameraPosition(target: location, zoom: 16),
-            markers: {
-              Marker(
-                markerId: const MarkerId('selected_event_location'),
-                position: location,
-                icon: _locationPinIcon ?? BitmapDescriptor.defaultMarker,
-                anchor: const Offset(0.5, 1.0),
-                infoWindow: InfoWindow.noText,
-              ),
-            },
-            zoomControlsEnabled: false,
-            myLocationButtonEnabled: false,
-            mapToolbarEnabled: false,
-            liteModeEnabled: kIsWeb,
-            compassEnabled: false,
-            zoomGesturesEnabled: false,
-            scrollGesturesEnabled: false,
-            tiltGesturesEnabled: false,
-            rotateGesturesEnabled: false,
-            onTap: (_) => _pickLocationOnMap(),
-          ),
-          Positioned(
-            top: 8,
-            right: 8,
-            child: PointerInterceptor(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.7),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.touch_app, color: Colors.white, size: 14),
-                    const SizedBox(width: 4),
-                    Text(
-                      l10n.addSpotPickLocationHint,
-                      style: const TextStyle(color: Colors.white, fontSize: 11),
+            const SizedBox(height: 8),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              value: _isDateOnly,
+              title: Text(l10n.addEventAllDay),
+              onChanged: fieldsEnabled
+                  ? (value) {
+                      setState(() {
+                        _isDateOnly = value;
+                        _syncScheduleDisplayControllers();
+                      });
+                    }
+                  : null,
+            ),
+            const SizedBox(height: 8),
+            CustomTextField(
+              controller: _startDisplayController,
+              labelText: l10n.addEventStartLabel,
+              prefixIcon: Icons.event_outlined,
+              readOnly: true,
+              enabled: fieldsEnabled,
+              onTap: fieldsEnabled ? _pickStartDateTime : null,
+              suffixIcon: Icons.edit_calendar,
+            ),
+            const SizedBox(height: 16),
+            CustomTextField(
+              controller: _endDisplayController,
+              labelText: l10n.addEventEndLabel,
+              hintText: l10n.addEventEndNotSet,
+              prefixIcon: Icons.event_available_outlined,
+              readOnly: true,
+              enabled: fieldsEnabled,
+              onTap: fieldsEnabled ? _pickEndDateTime : null,
+              suffixIconWidget: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_endAt != null)
+                    IconButton(
+                      icon: const Icon(Icons.clear),
+                      tooltip: l10n.addEventClearEndTooltip,
+                      onPressed: fieldsEnabled
+                          ? () => setState(() {
+                              _endAt = null;
+                              _syncScheduleDisplayControllers();
+                            })
+                          : null,
                     ),
-                  ],
-                ),
+                  const Icon(Icons.edit_calendar),
+                  const SizedBox(width: 8),
+                ],
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              isExpanded: true,
+              initialValue: _selectedTimeZone,
+              decoration: _outlineFieldDecoration(
+                theme,
+                labelText: l10n.addEventTimezoneLabel,
+              ),
+              selectedItemBuilder: (context) {
+                return _timeZoneOptions
+                    .map(
+                      (value) => Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          _timeZoneShortLabel(value),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
+                    )
+                    .toList();
+              },
+              items: _timeZoneOptions
+                  .map(
+                    (value) => DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(
+                        _timeZoneLabel(value),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  )
+                  .toList(),
+              onChanged: fieldsEnabled
+                  ? (value) {
+                      if (value == null) return;
+                      setState(() {
+                        _selectedTimeZone = value;
+                        _syncScheduleDisplayControllers();
+                      });
+                    }
+                  : null,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -838,6 +1170,9 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final submitBlockReason = _submitBlockReason(l10n);
+    final fieldsEnabled = !_isSubmitting;
+
     return PageScaffold(
       title: l10n.addEventTitle,
       body: Form(
@@ -854,14 +1189,17 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 12),
-            TextFormField(
+            const SizedBox(height: 16),
+            _buildWhereSection(l10n, theme),
+            const SizedBox(height: 16),
+            _buildWhenSection(l10n, theme),
+            const SizedBox(height: 16),
+            CustomTextField(
               controller: _titleController,
-              decoration: InputDecoration(
-                labelText: l10n.addEventTitleLabel,
-                border: const OutlineInputBorder(),
-              ),
+              labelText: l10n.addEventTitleLabel,
+              prefixIcon: Icons.event_outlined,
               textCapitalization: TextCapitalization.words,
+              enabled: fieldsEnabled,
               validator: (value) {
                 final trimmed = value?.trim() ?? '';
                 if (trimmed.isEmpty) return l10n.addEventTitleRequired;
@@ -869,15 +1207,14 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
                 return null;
               },
             ),
-            const SizedBox(height: 12),
-            TextFormField(
+            const SizedBox(height: 16),
+            CustomTextField(
               controller: _descriptionController,
-              decoration: InputDecoration(
-                labelText: l10n.addEventDescriptionLabel,
-                border: const OutlineInputBorder(),
-              ),
+              labelText: l10n.addEventDescriptionLabel,
+              prefixIcon: Icons.description_outlined,
               maxLines: 4,
               textCapitalization: TextCapitalization.sentences,
+              enabled: fieldsEnabled,
               validator: (value) {
                 final trimmed = value?.trim() ?? '';
                 if (trimmed.length > 2000) {
@@ -886,16 +1223,14 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
                 return null;
               },
             ),
-            const SizedBox(height: 12),
-            TextFormField(
+            const SizedBox(height: 16),
+            CustomTextField(
               controller: _websiteController,
-              decoration: InputDecoration(
-                labelText: l10n.addEventWebsiteLabel,
-                hintText: l10n.addEventWebsiteHint,
-                border: const OutlineInputBorder(),
-              ),
+              labelText: l10n.addEventWebsiteLabel,
+              hintText: l10n.addEventWebsiteHint,
+              prefixIcon: Icons.link,
               keyboardType: TextInputType.url,
-              autocorrect: false,
+              enabled: fieldsEnabled,
             ),
             const SizedBox(height: 16),
             SpotImageSection(
@@ -909,152 +1244,24 @@ class _AddEventReportScreenState extends State<AddEventReportScreen> {
               sectionTitle: l10n.addEventPhotosSectionTitle,
               showRequiredIndicator: false,
             ),
-            const SizedBox(height: 16),
-            SwitchListTile(
-              value: _isDateOnly,
-              title: Text(l10n.addEventAllDay),
-              onChanged: (value) {
-                setState(() {
-                  _isDateOnly = value;
-                });
-              },
-            ),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              initialValue: _selectedTimeZone,
-              decoration: InputDecoration(
-                labelText: l10n.addEventTimezoneLabel,
-                border: const OutlineInputBorder(),
-              ),
-              items: _timeZoneOptions
-                  .map(
-                    (value) => DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(
-                        _timeZoneLabel(value),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  )
-                  .toList(),
-              onChanged: _isSubmitting
-                  ? null
-                  : (value) {
-                      if (value == null) return;
-                      setState(() => _selectedTimeZone = value);
-                    },
-            ),
-            const SizedBox(height: 8),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.addEventStartLabel),
-              subtitle: Text(_formatDateTime(_startAt)),
-              trailing: const Icon(Icons.edit_calendar),
-              onTap: _pickStartDateTime,
-            ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.addEventEndLabel),
-              subtitle: Text(
-                _endAt == null
-                    ? l10n.addEventEndNotSet
-                    : _formatDateTime(_endAt!),
-              ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_endAt != null)
-                    IconButton(
-                      icon: const Icon(Icons.clear),
-                      tooltip: l10n.addEventClearEndTooltip,
-                      onPressed: () => setState(() => _endAt = null),
-                    ),
-                  const Icon(Icons.edit_calendar),
-                ],
-              ),
-              onTap: _pickEndDateTime,
-            ),
-            const Divider(height: 24),
-            Text(
-              l10n.addEventLinkingSectionTitle,
-              style: theme.textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                FilledButton.icon(
-                  onPressed: _isSubmitting ? null : _linkSpotsOnMap,
-                  icon: const Icon(Icons.add_location_alt_outlined),
-                  label: Text(l10n.addEventLinkSpotButton),
-                ),
-              ],
-            ),
-            if (_linkedSpots.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 6,
-                children: _linkedSpots
-                    .map(
-                      (spot) => Chip(
-                        avatar: const Icon(
-                          Icons.location_on_outlined,
-                          size: 18,
-                        ),
-                        label: Text(
-                          l10n.addEventLinkedSpotLabel(
-                            spot.name.isNotEmpty ? spot.name : (spot.id ?? ''),
-                          ),
-                        ),
-                        onDeleted: _isSubmitting
-                            ? null
-                            : () => setState(
-                                () => _linkedSpots.removeWhere(
-                                  (s) => s.id == spot.id,
-                                ),
-                              ),
-                      ),
-                    )
-                    .toList(),
-              ),
-            ],
-            if (_linkedSpotListId != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Chip(
-                  avatar: const Icon(Icons.list_alt_outlined, size: 18),
-                  label: Text(
-                    l10n.addEventLinkedSpotListLabel(
-                      _linkedSpotListName?.isNotEmpty == true
-                          ? _linkedSpotListName!
-                          : _linkedSpotListId!,
-                    ),
-                  ),
-                  onDeleted: () {
-                    setState(() {
-                      _linkedSpotListId = null;
-                      _linkedSpotListName = null;
-                    });
-                  },
-                ),
-              ),
-            const SizedBox(height: 12),
-            _buildLocationSection(l10n, theme),
             const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: _isSubmitting ? null : _submit,
-              icon: _isSubmitting
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.send_outlined),
-              label: Text(
-                _isSubmitting
-                    ? l10n.addEventSubmitting
-                    : l10n.addEventSubmitButton,
+            if (submitBlockReason != null) ...[
+              Text(
+                submitBlockReason,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
+              const SizedBox(height: 8),
+            ],
+            CustomButton(
+              onPressed: _canSubmit ? _submit : null,
+              text: _isSubmitting
+                  ? l10n.addEventSubmitting
+                  : l10n.addEventSubmitButton,
+              isLoading: _isSubmitting,
+              icon: Icons.send_outlined,
+              width: double.infinity,
             ),
           ],
         ),

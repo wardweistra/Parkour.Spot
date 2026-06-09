@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:pointer_interceptor/pointer_interceptor.dart';
+import '../../models/spot.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../utils/marker_icon_utils.dart';
 import '../../widgets/location_info_box.dart';
@@ -19,6 +20,14 @@ class SpotLocationSection extends StatefulWidget {
   final void Function() onPickOnMap;
   final void Function(bool) onToggleSatellite;
   final void Function(GoogleMapController)? onMapCreated;
+  final String? sectionTitle;
+  final String? sectionSubtitle;
+  final bool showRequiredIndicator;
+  final bool embedded;
+  final String mapHeroTagPrefix;
+  final bool showSelectedPin;
+  final bool showLocationDetails;
+  final List<Spot> linkedSpots;
 
   const SpotLocationSection({
     super.key,
@@ -33,6 +42,14 @@ class SpotLocationSection extends StatefulWidget {
     required this.onPickOnMap,
     required this.onToggleSatellite,
     this.onMapCreated,
+    this.sectionTitle,
+    this.sectionSubtitle,
+    this.showRequiredIndicator = true,
+    this.embedded = false,
+    this.mapHeroTagPrefix = 'spotForm',
+    this.showSelectedPin = true,
+    this.showLocationDetails = true,
+    this.linkedSpots = const <Spot>[],
   });
 
   @override
@@ -41,47 +58,112 @@ class SpotLocationSection extends StatefulWidget {
 
 class _SpotLocationSectionState extends State<SpotLocationSection> {
   BitmapDescriptor? _locationPinIcon;
+  BitmapDescriptor? _linkedSpotPinIcon;
 
   @override
   void initState() {
     super.initState();
-    _loadLocationPinIcon();
+    _loadPinIcons();
   }
 
-  Future<void> _loadLocationPinIcon() async {
-    final BitmapDescriptor icon =
+  Future<void> _loadPinIcons() async {
+    final double pinHeight = MarkerIconUtils.mapPinSingleSpotLogicalHeight;
+    final BitmapDescriptor locationIcon =
         await MarkerIconUtils.loadNormalSelectedMapPin();
+    final BitmapDescriptor linkedSpotIcon = await MarkerIconUtils.loadMapPinPng(
+      MarkerIconUtils.mapPinNormalAsset,
+      fallbackFill: MarkerIconUtils.mapPinNormalFallbackFill,
+      logicalHeight: pinHeight,
+    );
     if (mounted) {
-      setState(() => _locationPinIcon = icon);
+      setState(() {
+        _locationPinIcon = locationIcon;
+        _linkedSpotPinIcon = linkedSpotIcon;
+      });
     }
+  }
+
+  bool _spotHasCoordinates(Spot spot) =>
+      spot.latitude != 0 || spot.longitude != 0;
+
+  Set<Marker> _buildMarkers() {
+    final markers = <Marker>{};
+
+    if (widget.showSelectedPin && widget.currentLocation != null) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('selected_location'),
+          position: widget.currentLocation!,
+          icon: _locationPinIcon ?? BitmapDescriptor.defaultMarker,
+          anchor: const Offset(0.5, 1.0),
+          infoWindow: InfoWindow.noText,
+          zIndexInt: 1000,
+        ),
+      );
+    }
+
+    final linkedSpots = widget.linkedSpots
+        .where(_spotHasCoordinates)
+        .toList(growable: false);
+    final orderedSpots = MarkerIconUtils.sortSpotsForMapDrawOrder(linkedSpots);
+    for (var i = 0; i < orderedSpots.length; i++) {
+      final spot = orderedSpots[i];
+      markers.add(
+        Marker(
+          markerId: MarkerId('linked_spot_${spot.id ?? spot.name}'),
+          position: LatLng(spot.latitude, spot.longitude),
+          icon: _linkedSpotPinIcon ?? BitmapDescriptor.defaultMarker,
+          anchor: const Offset(0.5, 1.0),
+          infoWindow: InfoWindow(title: spot.name),
+          zIndexInt: i,
+        ),
+      );
+    }
+
+    return markers;
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  l10n.addSpotLocationSectionTitle,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final title =
+        widget.sectionTitle ?? l10n.addSpotLocationSectionTitle;
+    final showTitle = widget.embedded
+        ? widget.sectionTitle != null
+        : true;
+
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (showTitle) ...[
+          Row(
+            children: [
+              Text(title, style: theme.textTheme.titleMedium),
+              if (widget.showRequiredIndicator) ...[
                 const SizedBox(width: 8),
                 Text(
                   '*',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: scheme.error,
+                  ),
                 ),
               ],
+            ],
+          ),
+          if (widget.sectionSubtitle != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              widget.sectionSubtitle!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
             ),
-            const SizedBox(height: 12),
-            if (widget.isGettingLocation)
+          ],
+          const SizedBox(height: 12),
+        ],
+        if (widget.isGettingLocation)
               Row(
                 children: [
                   const CircularProgressIndicator(),
@@ -139,16 +221,7 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
                       ),
                       mapType: widget.isSatelliteView ? MapType.hybrid : MapType.normal,
                       onMapCreated: widget.onMapCreated,
-                      markers: {
-                        Marker(
-                          markerId: const MarkerId('selected_location'),
-                          position: widget.currentLocation!,
-                          icon: _locationPinIcon ??
-                              BitmapDescriptor.defaultMarker,
-                          anchor: const Offset(0.5, 1.0),
-                          infoWindow: InfoWindow.noText,
-                        ),
-                      },
+                      markers: _buildMarkers(),
                       zoomControlsEnabled: false,
                       myLocationButtonEnabled: false,
                       mapToolbarEnabled: false,
@@ -206,7 +279,7 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
                           onPressed: () {
                             widget.onToggleSatellite(!widget.isSatelliteView);
                           },
-                          heroTag: 'mapTypeToggleFab',
+                          heroTag: '${widget.mapHeroTagPrefix}_mapTypeToggleFab',
                           mini: true,
                           tooltip: widget.isSatelliteView
                               ? l10n.exploreSwitchToMap
@@ -224,7 +297,7 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
                       child: PointerInterceptor(
                         child: FloatingActionButton(
                           onPressed: widget.isGettingLocation ? null : widget.onRefreshLocation,
-                          heroTag: 'currentLocationFab',
+                          heroTag: '${widget.mapHeroTagPrefix}_currentLocationFab',
                           mini: true,
                           tooltip: widget.isLocationPermissionDenied
                               ? l10n.exploreLocationPermissionDenied
@@ -247,17 +320,26 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-              LocationInfoBox(
-                latitude: widget.currentLocation!.latitude,
-                longitude: widget.currentLocation!.longitude,
-                address: widget.address,
-                countryCode: widget.countryCode,
-                isGeocoding: widget.isGeocoding,
-              ),
+              if (widget.showLocationDetails) ...[
+                const SizedBox(height: 16),
+                LocationInfoBox(
+                  latitude: widget.currentLocation!.latitude,
+                  longitude: widget.currentLocation!.longitude,
+                  address: widget.address,
+                  countryCode: widget.countryCode,
+                  isGeocoding: widget.isGeocoding,
+                ),
+              ],
             ],
-          ],
-        ),
+      ],
+    );
+
+    if (widget.embedded) return content;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: content,
       ),
     );
   }

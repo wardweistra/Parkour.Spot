@@ -660,7 +660,7 @@
   "@addHubSpotButton": {
     "description": "Add tab hub: spot card action"
   },
-  "addHubEventTitle": "Add event",
+  "addHubEventTitle": "Add New Event",
   "@addHubEventTitle": {
     "description": "Add tab hub: event card title"
   },
@@ -672,7 +672,7 @@
   "@addHubEventModerationBadge": {
     "description": "Add tab hub: event moderation status badge"
   },
-  "addHubEventButton": "Create event",
+  "addHubEventButton": "Add new event",
   "@addHubEventButton": {
     "description": "Add tab hub: event card action"
   },
@@ -1108,7 +1108,7 @@
   "@addSpotGettingAddress": {
     "description": "While reverse-geocoding coordinates"
   },
-  "addEventTitle": "Add event",
+  "addEventTitle": "Add New Event",
   "@addEventTitle": {
     "description": "Add event page: app bar title"
   },
@@ -1116,7 +1116,7 @@
   "@addEventModerationNotice": {
     "description": "Add event page: moderation info banner"
   },
-  "addEventTitleLabel": "Event title",
+  "addEventTitleLabel": "Event title *",
   "@addEventTitleLabel": {
     "description": "Add event page: title field label"
   },
@@ -1144,9 +1144,9 @@
   "@addEventWebsiteHint": {
     "description": "Add event page: website field placeholder"
   },
-  "addEventPhotosSectionTitle": "Event photos (optional)",
+  "addEventPhotosSectionTitle": "Poster or cover image (optional)",
   "@addEventPhotosSectionTitle": {
-    "description": "Add event page: photos section title"
+    "description": "Add event page: poster/cover image section title — the event's visual heading"
   },
   "addEventAllDay": "All-day event",
   "@addEventAllDay": {
@@ -1176,6 +1176,18 @@
   "@addEventLinkingSectionTitle": {
     "description": "Add event page: spot/list linking section"
   },
+  "addEventWhereSectionTitle": "Where is it happening?",
+  "@addEventWhereSectionTitle": {
+    "description": "Add event page: combined spot link and location section"
+  },
+  "addEventWhenSectionTitle": "When is it happening?",
+  "@addEventWhenSectionTitle": {
+    "description": "Add event page: schedule section title"
+  },
+  "addEventAddressNeedsResolve": "Tap the search icon next to the address to confirm it, or pick a location on the map.",
+  "@addEventAddressNeedsResolve": {
+    "description": "Add event page: submit blocked until address is geocoded"
+  },
   "addEventLinkSpotButton": "Link spot",
   "@addEventLinkSpotButton": {
     "description": "Add event page: open map picker to link spots"
@@ -1199,6 +1211,10 @@
     }
   },
   "addEventLocationNotSet": "Location not set",
+  "addEventExactLocationSet": "Exact location set",
+  "@addEventExactLocationSet": {
+    "description": "Add event page: confirmation when a map pin is active"
+  },
   "@addEventLocationNotSet": {
     "description": "Add event page: no map location chosen"
   },
@@ -1278,7 +1294,7 @@
   "@addEventEndBeforeStart": {
     "description": "Add event page: schedule validation"
   },
-  "addEventNeedLocationOrLink": "Add a map location, link a spot, or link a spot list before submitting.",
+  "addEventNeedLocationOrLink": "Add a map location or link a spot before submitting.",
   "@addEventNeedLocationOrLink": {
     "description": "Add event page: location/link validation"
   },
