@@ -514,15 +514,17 @@ class AppLocalizationsNl extends AppLocalizations {
   String get addHubHeading => 'Wat wil je toevoegen?';
 
   @override
-  String get addHubSubtitle =>
-      'Spots worden direct gepubliceerd. Evenementen worden eerst beoordeeld door moderators.';
+  String get addHubSubtitle => 'Deel wat je weet op de communitykaart.';
 
   @override
   String get addHubSpotTitle => 'Spot toevoegen';
 
   @override
   String get addHubSpotDescription =>
-      'Deel een nieuwe trainingspot met foto\'s en details.';
+      'Zet een pin, voeg foto\'s toe en plaats een nieuwe trainingspot op de kaart.';
+
+  @override
+  String get addHubSpotPublishBadge => 'Direct live op de kaart';
 
   @override
   String get addHubSpotButton => 'Spot aanmaken';
@@ -532,7 +534,10 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get addHubEventDescription =>
-      'Dien een evenementvoorstel in. Moderators keuren het goed of af.';
+      'Stel een jam, meetup of sessie voor die anderen kunnen vinden.';
+
+  @override
+  String get addHubEventModerationBadge => 'Beoordeeld door moderators';
 
   @override
   String get addHubEventButton => 'Evenement aanmaken';

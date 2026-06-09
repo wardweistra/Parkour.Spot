@@ -521,14 +521,17 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get addHubSubtitle =>
-      'Les spots sont publiés immédiatement. Les événements sont d\'abord examinés par les modérateurs.';
+      'Partagez ce que vous savez sur la carte de la communauté.';
 
   @override
   String get addHubSpotTitle => 'Ajouter un spot';
 
   @override
   String get addHubSpotDescription =>
-      'Partagez un nouveau spot d\'entraînement avec photos et détails.';
+      'Posez une épingle, ajoutez des photos et placez un nouveau spot d\'entraînement sur la carte.';
+
+  @override
+  String get addHubSpotPublishBadge => 'En ligne sur la carte tout de suite';
 
   @override
   String get addHubSpotButton => 'Créer un spot';
@@ -538,7 +541,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get addHubEventDescription =>
-      'Soumettez une proposition d\'événement. Les modérateurs l\'approuvent ou la rejettent.';
+      'Proposez un jam, une rencontre ou une session pour que d\'autres le trouvent.';
+
+  @override
+  String get addHubEventModerationBadge => 'Examiné par les modérateurs';
 
   @override
   String get addHubEventButton => 'Créer un événement';

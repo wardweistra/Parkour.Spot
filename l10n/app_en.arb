@@ -640,7 +640,7 @@
   "@addHubHeading": {
     "description": "Add tab hub: main heading"
   },
-  "addHubSubtitle": "Spots are published immediately. Events are reviewed by moderators first.",
+  "addHubSubtitle": "Share what you know with the community map.",
   "@addHubSubtitle": {
     "description": "Add tab hub: supporting text"
   },
@@ -648,9 +648,13 @@
   "@addHubSpotTitle": {
     "description": "Add tab hub: spot card title"
   },
-  "addHubSpotDescription": "Share a new training spot with photos and details.",
+  "addHubSpotDescription": "Drop a pin, add photos, and put a new training spot on the map.",
   "@addHubSpotDescription": {
     "description": "Add tab hub: spot card description"
+  },
+  "addHubSpotPublishBadge": "Live on the map right away",
+  "@addHubSpotPublishBadge": {
+    "description": "Add tab hub: spot publish status badge"
   },
   "addHubSpotButton": "Create spot",
   "@addHubSpotButton": {
@@ -660,9 +664,13 @@
   "@addHubEventTitle": {
     "description": "Add tab hub: event card title"
   },
-  "addHubEventDescription": "Submit an event proposal. Moderators approve or reject it.",
+  "addHubEventDescription": "Propose a jam, meetup, or session for others to find.",
   "@addHubEventDescription": {
     "description": "Add tab hub: event card description"
+  },
+  "addHubEventModerationBadge": "Reviewed by moderators",
+  "@addHubEventModerationBadge": {
+    "description": "Add tab hub: event moderation status badge"
   },
   "addHubEventButton": "Create event",
   "@addHubEventButton": {

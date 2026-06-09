@@ -955,7 +955,7 @@ abstract class AppLocalizations {
   /// Add tab hub: supporting text
   ///
   /// In en, this message translates to:
-  /// **'Spots are published immediately. Events are reviewed by moderators first.'**
+  /// **'Share what you know with the community map.'**
   String get addHubSubtitle;
 
   /// Add tab hub: spot card title
@@ -967,8 +967,14 @@ abstract class AppLocalizations {
   /// Add tab hub: spot card description
   ///
   /// In en, this message translates to:
-  /// **'Share a new training spot with photos and details.'**
+  /// **'Drop a pin, add photos, and put a new training spot on the map.'**
   String get addHubSpotDescription;
+
+  /// Add tab hub: spot publish status badge
+  ///
+  /// In en, this message translates to:
+  /// **'Live on the map right away'**
+  String get addHubSpotPublishBadge;
 
   /// Add tab hub: spot card action
   ///
@@ -985,8 +991,14 @@ abstract class AppLocalizations {
   /// Add tab hub: event card description
   ///
   /// In en, this message translates to:
-  /// **'Submit an event proposal. Moderators approve or reject it.'**
+  /// **'Propose a jam, meetup, or session for others to find.'**
   String get addHubEventDescription;
+
+  /// Add tab hub: event moderation status badge
+  ///
+  /// In en, this message translates to:
+  /// **'Reviewed by moderators'**
+  String get addHubEventModerationBadge;
 
   /// Add tab hub: event card action
   ///
