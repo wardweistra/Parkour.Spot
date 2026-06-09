@@ -543,6 +543,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get addHubEventButton => 'Evenement aanmaken';
 
   @override
+  String get addHubSignInTitle => 'Log in om bij te dragen';
+
+  @override
+  String get addHubSignInSubtitle =>
+      'Gratis account. Voeg spots toe aan de kaart of stel evenementen voor de community voor.';
+
+  @override
   String get exploreLoadingProfile => 'Profiel laden…';
 
   @override

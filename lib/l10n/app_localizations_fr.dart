@@ -550,6 +550,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get addHubEventButton => 'Créer un événement';
 
   @override
+  String get addHubSignInTitle => 'Connectez-vous pour contribuer';
+
+  @override
+  String get addHubSignInSubtitle =>
+      'Compte gratuit. Ajoutez des spots à la carte ou proposez des événements pour la communauté.';
+
+  @override
   String get exploreLoadingProfile => 'Chargement du profil…';
 
   @override

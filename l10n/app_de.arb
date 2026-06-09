@@ -109,6 +109,8 @@
   "addHubEventDescription": "Schlage ein Jam, Meetup oder Training vor, damit andere es finden.",
   "addHubEventModerationBadge": "Von Moderatoren geprüft",
   "addHubEventButton": "Event erstellen",
+  "addHubSignInTitle": "Anmelden und mitmachen",
+  "addHubSignInSubtitle": "Kostenloses Konto. Füge Spots zur Karte hinzu oder schlage Events für die Community vor.",
   "exploreLoadingProfile": "Profil wird geladen…",
   "exploreSearchHint": "Ort oder Spot suchen…",
   "explorePickerTitleLocation": "Standort wählen",

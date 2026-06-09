@@ -676,6 +676,14 @@
   "@addHubEventButton": {
     "description": "Add tab hub: event card action"
   },
+  "addHubSignInTitle": "Sign in to contribute",
+  "@addHubSignInTitle": {
+    "description": "Add tab sign-in callout: heading"
+  },
+  "addHubSignInSubtitle": "Free account. Add spots to the map or propose events for the community.",
+  "@addHubSignInSubtitle": {
+    "description": "Add tab sign-in callout: supporting text"
+  },
   "exploreLoadingProfile": "Loading your profile…",
   "@exploreLoadingProfile": {
     "description": "Shown while profile loads before add spot"

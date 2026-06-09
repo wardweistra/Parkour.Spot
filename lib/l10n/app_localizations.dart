@@ -1006,6 +1006,18 @@ abstract class AppLocalizations {
   /// **'Create event'**
   String get addHubEventButton;
 
+  /// Add tab sign-in callout: heading
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to contribute'**
+  String get addHubSignInTitle;
+
+  /// Add tab sign-in callout: supporting text
+  ///
+  /// In en, this message translates to:
+  /// **'Free account. Add spots to the map or propose events for the community.'**
+  String get addHubSignInSubtitle;
+
   /// Shown while profile loads before add spot
   ///
   /// In en, this message translates to:

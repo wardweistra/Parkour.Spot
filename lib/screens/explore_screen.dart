@@ -9,10 +9,10 @@ import '../l10n/app_localizations.dart';
 import '../services/auth_service.dart';
 import '../services/mobile_detection_service.dart';
 import '../services/user_notification_service.dart';
-import '../widgets/custom_button.dart';
 import '../widgets/pwa_install_prompt.dart';
 import 'spots/search_screen.dart';
 import 'add/add_hub_screen.dart';
+import 'add/add_hub_sign_in_screen.dart';
 import 'profile/profile_screen.dart';
 
 // Countries that need "the" article prefix (e.g., "the Netherlands", not "Netherlands")
@@ -382,7 +382,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
           ? const AddHubScreen()
           : authService.isAuthenticated
           ? _buildProfileLoadingScreen(authService)
-          : _buildLoginPromptScreen(Icons.add),
+          : const AddHubSignInScreen(),
       // Profile tab is always accessible
       const ProfileScreen(),
     ];
@@ -455,133 +455,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
               ),
             ],
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLoginPromptScreen(IconData icon) {
-    final l10n = AppLocalizations.of(context)!;
-    return Scaffold(
-      appBar: AppBar(
-        title: const SizedBox.shrink(),
-        toolbarHeight: 0,
-        elevation: 0,
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        foregroundColor: Theme.of(context).colorScheme.onSurface,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1200),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Sign In Prompt Card
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      children: [
-                        Icon(
-                          icon,
-                          size: 48,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.primary.withValues(alpha: 0.6),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          l10n.exploreSignInToAddSpot,
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w600),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          l10n.exploreSignInToAddSubtitle,
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withValues(alpha: 0.7),
-                              ),
-                        ),
-                        const SizedBox(height: 16),
-                        Center(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 400),
-                            child: CustomButton(
-                              onPressed: () {
-                                context.go(
-                                  '/login?redirectTo=${Uri.encodeComponent('/explore?tab=add')}',
-                                );
-                              },
-                              text: l10n.profileSignInButton,
-                              width: double.infinity,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        // OR divider
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Divider(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.outline.withValues(alpha: 0.3),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              child: Text(
-                                l10n.profileOrDivider,
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface
-                                          .withValues(alpha: 0.6),
-                                    ),
-                              ),
-                            ),
-                            Expanded(
-                              child: Divider(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.outline.withValues(alpha: 0.3),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Center(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 400),
-                            child: CustomButton(
-                              onPressed: () {
-                                context.go(
-                                  '/login?mode=signup&redirectTo=${Uri.encodeComponent('/explore?tab=add')}',
-                                );
-                              },
-                              text: l10n.profileCreateAccount,
-                              width: double.infinity,
-                              isOutlined: true,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );

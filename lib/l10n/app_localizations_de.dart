@@ -549,6 +549,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get addHubEventButton => 'Event erstellen';
 
   @override
+  String get addHubSignInTitle => 'Anmelden und mitmachen';
+
+  @override
+  String get addHubSignInSubtitle =>
+      'Kostenloses Konto. Füge Spots zur Karte hinzu oder schlage Events für die Community vor.';
+
+  @override
   String get exploreLoadingProfile => 'Profil wird geladen…';
 
   @override

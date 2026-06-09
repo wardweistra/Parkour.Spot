@@ -150,6 +150,8 @@
   "addHubEventDescription": "Stel een jam, meetup of sessie voor die anderen kunnen vinden.",
   "addHubEventModerationBadge": "Beoordeeld door moderators",
   "addHubEventButton": "Evenement aanmaken",
+  "addHubSignInTitle": "Log in om bij te dragen",
+  "addHubSignInSubtitle": "Gratis account. Voeg spots toe aan de kaart of stel evenementen voor de community voor.",
   "exploreLoadingProfile": "Profiel laden…",
   "exploreSearchHint": "Zoek locatie of spot…",
   "explorePickerTitleLocation": "Locatie kiezen",

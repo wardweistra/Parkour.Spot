@@ -109,6 +109,8 @@
   "addHubEventDescription": "Propõe um jam, encontro ou sessão para outros encontrarem.",
   "addHubEventModerationBadge": "Revisto pelos moderadores",
   "addHubEventButton": "Criar evento",
+  "addHubSignInTitle": "Inicia sessão para contribuir",
+  "addHubSignInSubtitle": "Conta gratuita. Adiciona spots ao mapa ou propõe eventos para a comunidade.",
   "exploreLoadingProfile": "A carregar o teu perfil…",
   "exploreSearchHint": "Pesquisar localização ou spot…",
   "explorePickerTitleLocation": "Escolher localização",
