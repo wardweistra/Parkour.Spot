@@ -274,6 +274,133 @@ void main() {
       expect(defaults.youtubeSpotIds, {'unique'});
     });
 
+    test('isParkourSpotNativeSpot treats null spotSource as native', () {
+      expect(
+        isParkourSpotNativeSpot(
+          Spot(name: 'Native', description: '', latitude: 0, longitude: 0),
+        ),
+        isTrue,
+      );
+      expect(
+        isParkourSpotNativeSpot(
+          Spot(
+            name: 'External',
+            description: '',
+            latitude: 0,
+            longitude: 0,
+            spotSource: 'some-source',
+          ),
+        ),
+        isFalse,
+      );
+    });
+
+    test('pickDuplicateClusterBasisSpotId prefers native over richer external', () {
+      final native = Spot(
+        id: 'native',
+        name: 'Native',
+        description: '',
+        latitude: 52,
+        longitude: 4,
+      );
+      final external = Spot(
+        id: 'external',
+        name: 'External',
+        description: 'Much more detail',
+        latitude: 52.0001,
+        longitude: 4.0001,
+        imageUrls: const ['photo-a', 'photo-b'],
+        spotAccess: 'public',
+        spotFeatures: const ['walls_low', 'bars_low'],
+        goodFor: const ['vaults'],
+        spotFacilities: const {'parking': 'true'},
+        spotSource: 'external-source',
+      );
+
+      expect(
+        pickDuplicateClusterBasisSpotId([external, native]),
+        'native',
+      );
+    });
+
+    test('pickDuplicateClusterBasisSpotId picks richest among multiple natives', () {
+      final sparseNative = Spot(
+        id: 'sparse-native',
+        name: 'Sparse native',
+        description: '',
+        latitude: 52,
+        longitude: 4,
+      );
+      final richNative = Spot(
+        id: 'rich-native',
+        name: 'Rich native',
+        description: 'Detailed native spot',
+        latitude: 52.0001,
+        longitude: 4.0001,
+        imageUrls: const ['photo-a'],
+        spotAccess: 'public',
+      );
+
+      expect(
+        pickDuplicateClusterBasisSpotId([sparseNative, richNative]),
+        'rich-native',
+      );
+    });
+
+    test('pickDuplicateClusterBasisSpotId falls back to richest external when no natives', () {
+      final sparseExternal = Spot(
+        id: 'sparse-external',
+        name: 'Sparse external',
+        description: '',
+        latitude: 52,
+        longitude: 4,
+        spotSource: 'source-a',
+      );
+      final richExternal = Spot(
+        id: 'rich-external',
+        name: 'Rich external',
+        description: 'Detailed external spot',
+        latitude: 52.0001,
+        longitude: 4.0001,
+        imageUrls: const ['photo-a', 'photo-b'],
+        spotSource: 'source-b',
+      );
+
+      expect(
+        pickDuplicateClusterBasisSpotId([sparseExternal, richExternal]),
+        'rich-external',
+      );
+    });
+
+    test('buildDuplicateClusterMergeDefaults uses native as basis when present', () {
+      final native = Spot(
+        id: 'native',
+        name: 'Native title',
+        description: '',
+        latitude: 52,
+        longitude: 4,
+      );
+      final external = Spot(
+        id: 'external',
+        name: 'External title',
+        description: 'Rich external description',
+        latitude: 52.0001,
+        longitude: 4.0001,
+        address: 'Only address',
+        imageUrls: const ['photo-a', 'photo-b'],
+        youtubeVideoIds: const ['video-only'],
+        spotSource: 'external-source',
+      );
+
+      final defaults = buildDuplicateClusterMergeDefaults([external, native]);
+
+      expect(defaults.basisSpotId, 'native');
+      expect(defaults.titleSpotId, 'native');
+      expect(defaults.locationSpotId, 'external');
+      expect(defaults.photoSpotIds, {'external'});
+      expect(defaults.youtubeSpotIds, {'external'});
+    });
+
     test('buildDuplicateNativeSpotPreview honors separate feature and good-for picks', () {
       final spotA = Spot(
         id: 'a',

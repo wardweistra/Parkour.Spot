@@ -187,6 +187,19 @@ List<Spot> sortSpotsByOptionalDetailRichness(List<Spot> spots) {
   return ordered;
 }
 
+bool isParkourSpotNativeSpot(Spot spot) => spot.spotSource == null;
+
+String pickDuplicateClusterBasisSpotId(List<Spot> spots) {
+  final withIds = spots.where((spot) => spot.id != null).toList(growable: false);
+  if (withIds.isEmpty) {
+    throw ArgumentError.value(spots, 'spots', 'Must include at least one spot with an id');
+  }
+
+  final natives = withIds.where(isParkourSpotNativeSpot).toList(growable: false);
+  final candidates = natives.isNotEmpty ? natives : withIds;
+  return sortSpotsByOptionalDetailRichness(candidates).first.id!;
+}
+
 class DuplicateClusterMergeDefaults {
   const DuplicateClusterMergeDefaults({
     required this.basisSpotId,
@@ -220,8 +233,7 @@ DuplicateClusterMergeDefaults buildDuplicateClusterMergeDefaults(
     throw ArgumentError.value(spots, 'spots', 'Must include at least one spot');
   }
 
-  final ordered = sortSpotsByOptionalDetailRichness(spots);
-  final basisSpotId = ordered.first.id!;
+  final basisSpotId = pickDuplicateClusterBasisSpotId(spots);
 
   return DuplicateClusterMergeDefaults(
     basisSpotId: basisSpotId,

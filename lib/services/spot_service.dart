@@ -1841,6 +1841,7 @@ class SpotService extends ChangeNotifier {
   Future<String?> resolveDuplicateClusterToNative({
     required List<Spot> clusterSpots,
     required Spot previewSpot,
+    required String basisSpotId,
     required String userId,
     required String userName,
     String? runId,
@@ -1854,6 +1855,12 @@ class SpotService extends ChangeNotifier {
         .toSet();
     if (memberIds.length < 2) {
       _error = 'At least two spots are required to resolve a duplicate cluster';
+      notifyListeners();
+      return null;
+    }
+
+    if (!memberIds.contains(basisSpotId)) {
+      _error = 'Basis spot must be included in the duplicate cluster';
       notifyListeners();
       return null;
     }
@@ -1878,40 +1885,78 @@ class SpotService extends ChangeNotifier {
         );
       }
 
-      final nativeRef = _firestore.collection('spots').doc();
-      final now = DateTime.now();
-      final nativeSpot = Spot(
-        name: previewSpot.name,
-        description: previewSpot.description,
-        latitude: previewSpot.latitude,
-        longitude: previewSpot.longitude,
-        address: previewSpot.address,
-        city: previewSpot.city,
-        countryCode: previewSpot.countryCode,
-        imageUrls: previewSpot.imageUrls,
-        youtubeVideoIds: previewSpot.youtubeVideoIds,
-        createdBy: userId,
-        createdByName: userName,
-        createdAt: now,
-        updatedAt: now,
-        averageRating: 0,
-        ratingCount: 0,
-        wilsonLowerBound: 0,
-        ranking: previewSpot.ranking ?? Random().nextDouble(),
-        spotAccess: previewSpot.spotAccess,
-        spotFeatures: previewSpot.spotFeatures,
-        spotFacilities: previewSpot.spotFacilities,
-        goodFor: previewSpot.goodFor,
-        duplicateOf: null,
-        hidden: false,
-        createdFromCreateNative: true,
+      final basisSpot = clusterSpots.firstWhere(
+        (spot) => spot.id == basisSpotId,
       );
-
+      final updateExistingNative = isParkourSpotNativeSpot(basisSpot);
       final batch = _firestore.batch();
-      batch.set(nativeRef, nativeSpot.toFirestore());
+      final sortedMemberIds = memberIds.toList()..sort();
+      late final String targetId;
+      Spot? oldBasisSpot;
+
+      if (updateExistingNative) {
+        targetId = basisSpotId;
+        oldBasisSpot = basisSpot;
+        duplicateIdsToUpdate.remove(basisSpotId);
+
+        final updatedSpot = basisSpot.copyWith(
+          name: previewSpot.name,
+          description: previewSpot.description,
+          latitude: previewSpot.latitude,
+          longitude: previewSpot.longitude,
+          address: previewSpot.address,
+          city: previewSpot.city,
+          countryCode: previewSpot.countryCode,
+          imageUrls: previewSpot.imageUrls,
+          youtubeVideoIds: previewSpot.youtubeVideoIds,
+          spotAccess: previewSpot.spotAccess,
+          spotFeatures: previewSpot.spotFeatures,
+          spotFacilities: previewSpot.spotFacilities,
+          goodFor: previewSpot.goodFor,
+          updatedAt: DateTime.now(),
+        );
+
+        batch.update(
+          _firestore.collection('spots').doc(targetId),
+          updatedSpot.toFirestore(isUpdate: true),
+        );
+      } else {
+        final nativeRef = _firestore.collection('spots').doc();
+        targetId = nativeRef.id;
+        final now = DateTime.now();
+        final nativeSpot = Spot(
+          name: previewSpot.name,
+          description: previewSpot.description,
+          latitude: previewSpot.latitude,
+          longitude: previewSpot.longitude,
+          address: previewSpot.address,
+          city: previewSpot.city,
+          countryCode: previewSpot.countryCode,
+          imageUrls: previewSpot.imageUrls,
+          youtubeVideoIds: previewSpot.youtubeVideoIds,
+          createdBy: userId,
+          createdByName: userName,
+          createdAt: now,
+          updatedAt: now,
+          averageRating: 0,
+          ratingCount: 0,
+          wilsonLowerBound: 0,
+          ranking: previewSpot.ranking ?? Random().nextDouble(),
+          spotAccess: previewSpot.spotAccess,
+          spotFeatures: previewSpot.spotFeatures,
+          spotFacilities: previewSpot.spotFacilities,
+          goodFor: previewSpot.goodFor,
+          duplicateOf: null,
+          hidden: false,
+          createdFromCreateNative: true,
+        );
+
+        batch.set(nativeRef, nativeSpot.toFirestore());
+      }
+
       for (final duplicateId in duplicateIdsToUpdate) {
         batch.update(_firestore.collection('spots').doc(duplicateId), {
-          'duplicateOf': nativeRef.id,
+          'duplicateOf': targetId,
           'updatedAt': FieldValue.serverTimestamp(),
         });
       }
@@ -1919,8 +1964,8 @@ class SpotService extends ChangeNotifier {
       if (runId != null) {
         final resolution = {
           'status': 'resolved_to_native',
-          'nativeSpotId': nativeRef.id,
-          'clusterSpotIds': memberIds.toList()..sort(),
+          'nativeSpotId': targetId,
+          'clusterSpotIds': sortedMemberIds,
           'resolvedAt': FieldValue.serverTimestamp(),
           'resolvedBy': userId,
           'resolvedByName': userName,
@@ -1944,34 +1989,70 @@ class SpotService extends ChangeNotifier {
       for (final duplicateId in duplicateIdsToUpdate) {
         await _auditLogService.logSpotMarkedAsDuplicate(
           spotId: duplicateId,
-          originalSpotId: nativeRef.id,
+          originalSpotId: targetId,
           userId: userId,
           userName: userName,
           reportId: reportId,
           notes: notes,
         );
       }
-      await _auditLogService.logSpotEdit(
-        spotId: nativeRef.id,
-        userId: userId,
-        userName: userName,
-        reportId: reportId,
-        notes: notes,
-        changes: {
-          'createdFromDuplicateCluster': {
-            'from': null,
-            'to': memberIds.toList()..sort(),
+
+      if (updateExistingNative && oldBasisSpot != null) {
+        final updatedSpot = oldBasisSpot.copyWith(
+          name: previewSpot.name,
+          description: previewSpot.description,
+          latitude: previewSpot.latitude,
+          longitude: previewSpot.longitude,
+          address: previewSpot.address,
+          city: previewSpot.city,
+          countryCode: previewSpot.countryCode,
+          imageUrls: previewSpot.imageUrls,
+          youtubeVideoIds: previewSpot.youtubeVideoIds,
+          spotAccess: previewSpot.spotAccess,
+          spotFeatures: previewSpot.spotFeatures,
+          spotFacilities: previewSpot.spotFacilities,
+          goodFor: previewSpot.goodFor,
+        );
+        final changes = _computeSpotChanges(oldBasisSpot, updatedSpot);
+        changes['updatedFromDuplicateCluster'] = {
+          'from': null,
+          'to': sortedMemberIds,
+        };
+        await _auditLogService.logSpotEdit(
+          spotId: targetId,
+          userId: userId,
+          userName: userName,
+          reportId: reportId,
+          notes: notes,
+          changes: changes,
+          metadata: {
+            'sourceSpotIds': sortedMemberIds,
+            'resolvedPairIndices': resolvedPairIndices,
           },
-        },
-        metadata: {
-          'sourceSpotIds': memberIds.toList()..sort(),
-          'resolvedPairIndices': resolvedPairIndices,
-        },
-      );
+        );
+      } else {
+        await _auditLogService.logSpotEdit(
+          spotId: targetId,
+          userId: userId,
+          userName: userName,
+          reportId: reportId,
+          notes: notes,
+          changes: {
+            'createdFromDuplicateCluster': {
+              'from': null,
+              'to': sortedMemberIds,
+            },
+          },
+          metadata: {
+            'sourceSpotIds': sortedMemberIds,
+            'resolvedPairIndices': resolvedPairIndices,
+          },
+        );
+      }
 
       _isLoading = false;
       notifyListeners();
-      return nativeRef.id;
+      return targetId;
     } catch (e) {
       _error = 'Failed to resolve duplicate cluster: $e';
       debugPrint('Error resolving duplicate cluster: $e');

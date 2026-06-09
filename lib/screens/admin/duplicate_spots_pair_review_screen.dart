@@ -265,7 +265,7 @@ class _DuplicateSpotsPairReviewScreenState
     final included = _includedSpots(spots);
     if (included.isEmpty) return;
 
-    final fallbackId = included.first.id!;
+    final fallbackId = pickDuplicateClusterBasisSpotId(included);
     if (!_includedSpotIds.contains(_baseSpotId)) {
       _baseSpotId = fallbackId;
     }
@@ -781,6 +781,13 @@ class _DuplicateSpotsPairReviewScreenState
 
   bool _isSpotIncludedInMerge(Spot spot) =>
       _includedSpotIds.contains(spot.id);
+
+  bool _isBasisNativeSpot(List<Spot> spots) {
+    final basisId = _baseSpotId;
+    if (basisId == null) return false;
+    final basis = spots.where((spot) => spot.id == basisId).firstOrNull;
+    return basis != null && isParkourSpotNativeSpot(basis);
+  }
 
   Widget _wrapIncludedSpotColumn(
     String spotId,
@@ -1618,6 +1625,7 @@ class _DuplicateSpotsPairReviewScreenState
         _resolvedNativeSpotId == null &&
         _includedSpotIds.length >= 2 &&
         !hasAlreadyDuplicateIncluded;
+    final updateExistingNative = _isBasisNativeSpot(data.spots);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -1660,7 +1668,7 @@ class _DuplicateSpotsPairReviewScreenState
               FilledButton.icon(
                 onPressed: () => context.push('/spot/$_resolvedNativeSpotId'),
                 icon: const Icon(Icons.open_in_new),
-                label: const Text('Open created native spot'),
+                label: const Text('Open native spot'),
               )
             else
               FilledButton.icon(
@@ -1681,6 +1689,8 @@ class _DuplicateSpotsPairReviewScreenState
                 label: Text(
                   _isResolving
                       ? 'Resolving cluster...'
+                      : updateExistingNative
+                      ? 'Update native spot and resolve cluster'
                       : 'Create native spot and resolve cluster',
                 ),
               ),
@@ -1731,6 +1741,7 @@ class _DuplicateSpotsPairReviewScreenState
     required int includedCount,
     required int unchangedCount,
     required int mergePairCount,
+    required bool updateExistingNative,
   }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -1743,6 +1754,8 @@ class _DuplicateSpotsPairReviewScreenState
     final spotNameStyle = theme.textTheme.titleSmall?.copyWith(
       fontWeight: FontWeight.w600,
     );
+    final duplicateCount =
+        updateExistingNative ? includedCount - 1 : includedCount;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1764,8 +1777,12 @@ class _DuplicateSpotsPairReviewScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildResolutionConfirmRow(
-                icon: Icons.add_location_alt_outlined,
-                label: 'New native spot',
+                icon: updateExistingNative
+                    ? Icons.edit_location_alt_outlined
+                    : Icons.add_location_alt_outlined,
+                label: updateExistingNative
+                    ? 'Updated native spot'
+                    : 'New native spot',
                 value: preview.name,
                 valueStyle: spotNameStyle,
               ),
@@ -1773,7 +1790,8 @@ class _DuplicateSpotsPairReviewScreenState
               _buildResolutionConfirmRow(
                 icon: Icons.link,
                 label: 'Marked as duplicates',
-                value: '$includedCount spot${includedCount == 1 ? '' : 's'}',
+                value:
+                    '$duplicateCount spot${duplicateCount == 1 ? '' : 's'}',
                 valueStyle: valueStyle,
               ),
               if (unchangedCount > 0) ...[
@@ -1809,6 +1827,7 @@ class _DuplicateSpotsPairReviewScreenState
     final preview = _buildPreview(includedSpots);
     final includedCount = includedSpots.length;
     final unchangedCount = data.spots.length - includedCount;
+    final updateExistingNative = _isBasisNativeSpot(data.spots);
     final currentUser = authService.currentUser;
     if (currentUser == null) {
       _showSnack('You must be signed in to resolve duplicate clusters.');
@@ -1830,6 +1849,7 @@ class _DuplicateSpotsPairReviewScreenState
           includedCount: includedCount,
           unchangedCount: unchangedCount,
           mergePairCount: mergePairCount,
+          updateExistingNative: updateExistingNative,
         ),
         actions: [
           TextButton(
@@ -1855,6 +1875,7 @@ class _DuplicateSpotsPairReviewScreenState
     final nativeSpotId = await spotService.resolveDuplicateClusterToNative(
       clusterSpots: includedSpots,
       previewSpot: preview,
+      basisSpotId: _baseSpotId!,
       userId: currentUser.uid,
       userName: userName,
       runId: data.runId,
