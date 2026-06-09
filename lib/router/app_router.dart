@@ -329,12 +329,21 @@ class AppRouter {
             final initialLocation = (lat != null && lng != null)
                 ? gmaps.LatLng(lat, lng)
                 : null;
+            final extra = state.extra;
+            final initialSpotListSpots = extra is List<Spot>
+                ? extra
+                : (extra is List
+                      ? extra.whereType<Spot>().toList(growable: false)
+                      : null);
             return AddEventReportScreen(
               initialLocation: initialLocation,
               initialSpotId: state.uri.queryParameters['spotId'],
               initialSpotName: state.uri.queryParameters['spotName'],
               initialSpotListId: state.uri.queryParameters['spotListId'],
               initialSpotListName: state.uri.queryParameters['spotListName'],
+              initialSpotListSpots: initialSpotListSpots?.isNotEmpty == true
+                  ? initialSpotListSpots
+                  : null,
             );
           },
         ),

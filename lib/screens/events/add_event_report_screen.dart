@@ -13,6 +13,8 @@ import '../../services/auth_service.dart';
 import '../../services/event_report_service.dart';
 import '../../services/geocoding_service.dart';
 import '../../services/search_state_service.dart';
+import '../../services/spot_list_service.dart';
+import '../../services/spot_service.dart';
 import '../../utils/browser_timezone_utils.dart';
 import '../../utils/event_schedule_utils.dart';
 import '../../utils/image_preparation.dart';
@@ -35,6 +37,7 @@ class AddEventReportScreen extends StatefulWidget {
     this.initialSpotName,
     this.initialSpotListId,
     this.initialSpotListName,
+    this.initialSpotListSpots,
   });
 
   final LatLng? initialLocation;
@@ -42,6 +45,7 @@ class AddEventReportScreen extends StatefulWidget {
   final String? initialSpotName;
   final String? initialSpotListId;
   final String? initialSpotListName;
+  final List<Spot>? initialSpotListSpots;
 
   @override
   State<AddEventReportScreen> createState() => _AddEventReportScreenState();
@@ -76,8 +80,10 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
   bool _isLocationPermissionDenied = false;
   String? _resolvedAddressInput;
   SearchStateService? _searchStateServiceRef;
+  AuthService? _authServiceRef;
 
   List<Spot> _linkedSpots = [];
+  List<Spot> _linkedSpotListSpots = [];
   String? _linkedSpotListId;
   String? _linkedSpotListName;
 
@@ -95,12 +101,38 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
   bool _spotHasCoordinates(Spot spot) =>
       spot.latitude != 0 || spot.longitude != 0;
 
+  List<Spot> _readSpotList(List<Spot> Function() read) {
+    try {
+      return List<Spot>.from(read());
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  List<Spot> get _mapDisplaySpots {
+    final seen = <String>{};
+    final spots = <Spot>[];
+
+    void addSpot(Spot spot) {
+      final key = spot.id ?? '${spot.name}_${spot.latitude}_${spot.longitude}';
+      if (seen.add(key)) spots.add(spot);
+    }
+
+    for (final spot in _readSpotList(() => _linkedSpots)) {
+      addSpot(spot);
+    }
+    for (final spot in _readSpotList(() => _linkedSpotListSpots)) {
+      addSpot(spot);
+    }
+    return spots;
+  }
+
   List<LatLng> _mapMarkerLocations() {
     final locations = <LatLng>[];
     if (_pickedLocation != null) {
       locations.add(_pickedLocation!);
     }
-    for (final spot in _linkedSpots) {
+    for (final spot in _mapDisplaySpots) {
       if (_spotHasCoordinates(spot)) {
         locations.add(LatLng(spot.latitude, spot.longitude));
       }
@@ -138,6 +170,10 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
     }
     _linkedSpotListId = widget.initialSpotListId;
     _linkedSpotListName = widget.initialSpotListName;
+    if (widget.initialSpotListSpots != null &&
+        widget.initialSpotListSpots!.isNotEmpty) {
+      _linkedSpotListSpots = List<Spot>.from(widget.initialSpotListSpots!);
+    }
     _mapFallbackCenter = const LatLng(
       AppConfig.defaultMapCenterLat,
       AppConfig.defaultMapCenterLng,
@@ -156,10 +192,75 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
       );
       _searchStateServiceRef!.addListener(_onSearchStateChanged);
       setState(() => _isSatelliteView = _searchStateServiceRef!.isSatellite);
+
+      _authServiceRef = Provider.of<AuthService>(context, listen: false);
+      _authServiceRef!.addListener(_onAuthChanged);
     });
     _titleController.addListener(_onFormFieldChanged);
     _websiteController.addListener(_onFormFieldChanged);
     _locationAddressController.addListener(_onFormFieldChanged);
+    if (_linkedSpotListId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_linkedSpotListSpots.isNotEmpty) {
+          _recenterMapForDisplay();
+        } else {
+          _loadLinkedSpotListSpots();
+        }
+      });
+    }
+  }
+
+  void _onAuthChanged() {
+    if (!mounted || _linkedSpotListId == null || _linkedSpotListSpots.isNotEmpty) {
+      return;
+    }
+    final authService = _authServiceRef;
+    if (authService == null || !authService.isAuthenticated) return;
+    _loadLinkedSpotListSpots();
+  }
+
+  Future<void> _loadLinkedSpotListSpots() async {
+    final listId = _linkedSpotListId;
+    if (listId == null) {
+      if (_linkedSpotListSpots.isNotEmpty && mounted) {
+        setState(() => _linkedSpotListSpots = []);
+        _recenterMapForDisplay();
+      }
+      return;
+    }
+
+    if (_linkedSpotListSpots.isNotEmpty) {
+      _recenterMapForDisplay();
+      return;
+    }
+
+    try {
+      final spotListService = context.read<SpotListService>();
+      final spotService = context.read<SpotService>();
+      final list = await spotListService.getSpotListById(listId);
+      if (!mounted || _linkedSpotListId != listId) return;
+
+      final spotIds = list?.effectiveSpotIds ?? const <String>[];
+      if (spotIds.isEmpty) {
+        setState(() => _linkedSpotListSpots = []);
+        _recenterMapForDisplay();
+        return;
+      }
+
+      final loadedSpots = <Spot>[];
+      for (final spotId in spotIds) {
+        final spot = await spotService.getSpotById(spotId);
+        if (spot != null) loadedSpots.add(spot);
+        if (!mounted || _linkedSpotListId != listId) return;
+      }
+
+      setState(() => _linkedSpotListSpots = loadedSpots);
+      _recenterMapForDisplay();
+    } catch (e) {
+      debugPrint('Failed to load linked spot list spots: $e');
+      if (!mounted || _linkedSpotListId != listId) return;
+      setState(() => _linkedSpotListSpots = []);
+    }
   }
 
   @override
@@ -178,6 +279,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
     _websiteController.removeListener(_onFormFieldChanged);
     _locationAddressController.removeListener(_onFormFieldChanged);
     _searchStateServiceRef?.removeListener(_onSearchStateChanged);
+    _authServiceRef?.removeListener(_onAuthChanged);
     _titleController.dispose();
     _descriptionController.dispose();
     _websiteController.dispose();
@@ -924,14 +1026,15 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
               ),
             ),
             const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: _isSubmitting ? null : _linkSpotsOnMap,
-                icon: const Icon(Icons.add_location_alt_outlined, size: 18),
-                label: Text(l10n.addEventLinkSpotButton),
+            if (_linkedSpotListId == null)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: _isSubmitting ? null : _linkSpotsOnMap,
+                  icon: const Icon(Icons.add_location_alt_outlined, size: 18),
+                  label: Text(l10n.addEventLinkSpotButton),
+                ),
               ),
-            ),
             if (_linkedSpots.isNotEmpty ||
                 _linkedSpotListId != null) ...[
               const SizedBox(height: 4),
@@ -978,7 +1081,9 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
                               setState(() {
                                 _linkedSpotListId = null;
                                 _linkedSpotListName = null;
+                                _linkedSpotListSpots = [];
                               });
+                              _recenterMapForDisplay();
                             },
                     ),
                 ],
@@ -991,7 +1096,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
               showSelectedPin: hasSelectedPin,
               showLocationDetails: false,
               mapHeroTagPrefix: 'addEvent',
-              linkedSpots: _linkedSpots,
+              linkedSpots: _mapDisplaySpots,
               currentLocation: _displayLocationForMap,
               address: null,
               countryCode: null,

@@ -840,6 +840,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
               'spotListName': _list!.name,
             },
           ).toString(),
+          extra: List<Spot>.from(_spots),
         );
         break;
       case _ListManageMenuAction.delete:
