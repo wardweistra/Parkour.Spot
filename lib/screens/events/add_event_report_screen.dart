@@ -62,7 +62,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
   final _endDisplayController = TextEditingController();
 
   bool _isSubmitting = false;
-  bool _isDateOnly = false;
+  bool _isDateOnly = true;
   DateTime _startAt = DateTime.now().toUtc().add(const Duration(hours: 1));
   DateTime? _endAt;
   late String _selectedTimeZone;

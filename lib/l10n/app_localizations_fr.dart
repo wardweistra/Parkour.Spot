@@ -926,8 +926,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get addEventWebsiteHint => 'https://example.com';
 
   @override
-  String get addEventPhotosSectionTitle =>
-      'Affiche ou image de couverture (facultatif)';
+  String get addEventPhotosSectionTitle => 'Choisir les images de l\'événement';
 
   @override
   String get addEventAllDay => 'Événement sur toute la journée';
@@ -951,10 +950,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get addEventLinkingSectionTitle => 'Liaison';
 
   @override
-  String get addEventWhereSectionTitle => 'Où se déroule-t-il ?';
+  String get addEventWhereSectionTitle =>
+      'Choisir l\'emplacement de l\'événement';
 
   @override
-  String get addEventWhenSectionTitle => 'Quand se déroule-t-il ?';
+  String get addEventWhenSectionTitle =>
+      'Choisir le calendrier de l\'événement';
 
   @override
   String get addEventAddressNeedsResolve =>

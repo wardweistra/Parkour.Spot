@@ -1144,9 +1144,9 @@
   "@addEventWebsiteHint": {
     "description": "Add event page: website field placeholder"
   },
-  "addEventPhotosSectionTitle": "Poster or cover image (optional)",
+  "addEventPhotosSectionTitle": "Select Event Images",
   "@addEventPhotosSectionTitle": {
-    "description": "Add event page: poster/cover image section title — the event's visual heading"
+    "description": "Add event page: poster/cover image section title"
   },
   "addEventAllDay": "All-day event",
   "@addEventAllDay": {
@@ -1176,11 +1176,11 @@
   "@addEventLinkingSectionTitle": {
     "description": "Add event page: spot/list linking section"
   },
-  "addEventWhereSectionTitle": "Where is it happening?",
+  "addEventWhereSectionTitle": "Select Event Location",
   "@addEventWhereSectionTitle": {
     "description": "Add event page: combined spot link and location section"
   },
-  "addEventWhenSectionTitle": "When is it happening?",
+  "addEventWhenSectionTitle": "Select Event Schedule",
   "@addEventWhenSectionTitle": {
     "description": "Add event page: schedule section title"
   },

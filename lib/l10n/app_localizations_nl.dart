@@ -913,8 +913,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get addEventWebsiteHint => 'https://example.com';
 
   @override
-  String get addEventPhotosSectionTitle =>
-      'Poster of omslagafbeelding (optioneel)';
+  String get addEventPhotosSectionTitle => 'Evenementafbeeldingen kiezen';
 
   @override
   String get addEventAllDay => 'Hele-dag-evenement';
@@ -938,10 +937,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get addEventLinkingSectionTitle => 'Koppeling';
 
   @override
-  String get addEventWhereSectionTitle => 'Waar vindt het plaats?';
+  String get addEventWhereSectionTitle => 'Evenementlocatie kiezen';
 
   @override
-  String get addEventWhenSectionTitle => 'Wanneer vindt het plaats?';
+  String get addEventWhenSectionTitle => 'Evenementplanning kiezen';
 
   @override
   String get addEventAddressNeedsResolve =>

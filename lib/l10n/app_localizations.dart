@@ -1654,10 +1654,10 @@ abstract class AppLocalizations {
   /// **'https://example.com'**
   String get addEventWebsiteHint;
 
-  /// Add event page: poster/cover image section title — the event's visual heading
+  /// Add event page: poster/cover image section title
   ///
   /// In en, this message translates to:
-  /// **'Poster or cover image (optional)'**
+  /// **'Select Event Images'**
   String get addEventPhotosSectionTitle;
 
   /// Add event page: all-day toggle
@@ -1705,13 +1705,13 @@ abstract class AppLocalizations {
   /// Add event page: combined spot link and location section
   ///
   /// In en, this message translates to:
-  /// **'Where is it happening?'**
+  /// **'Select Event Location'**
   String get addEventWhereSectionTitle;
 
   /// Add event page: schedule section title
   ///
   /// In en, this message translates to:
-  /// **'When is it happening?'**
+  /// **'Select Event Schedule'**
   String get addEventWhenSectionTitle;
 
   /// Add event page: submit blocked until address is geocoded
