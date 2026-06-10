@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../services/auth_service.dart';
+import '../../services/event_report_service.dart';
+import '../../services/spot_report_service.dart';
 import '../../widgets/page_scaffold.dart';
 
 class ModeratorToolsScreen extends StatelessWidget {
@@ -119,28 +121,36 @@ class ModeratorToolsScreen extends StatelessWidget {
       body: ListView(
         padding: EdgeInsets.zero,
         children: [
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.report_problem),
-              title: const Text('Spot Report Queue'),
-              subtitle: const Text(
-                'Work through new spot reports, keeping moderators aligned on progress',
-              ),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => context.push('/moderator/reports'),
-            ),
+          StreamBuilder<int>(
+            initialData: context.read<SpotReportService>().newReportCount,
+            stream: context.read<SpotReportService>().watchNewReportCount(),
+            builder: (context, snapshot) {
+              final newCount = snapshot.data ?? 0;
+              return _buildQueueTile(
+                icon: Icons.report_problem,
+                title: 'Spot Report Queue',
+                subtitle:
+                    'Work through new spot reports, keeping moderators aligned on progress',
+                badgeCount: newCount > 0 ? newCount : null,
+                onTap: () => context.push('/moderator/reports'),
+              );
+            },
           ),
           const SizedBox(height: 8),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.event_note_outlined),
-              title: const Text('Event Report Queue'),
-              subtitle: const Text(
-                'Review user-submitted event proposals and publish approved events',
-              ),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => context.push('/moderator/event-reports'),
-            ),
+          StreamBuilder<int>(
+            initialData: context.read<EventReportService>().newReportCount,
+            stream: context.read<EventReportService>().watchNewReportCount(),
+            builder: (context, snapshot) {
+              final newCount = snapshot.data ?? 0;
+              return _buildQueueTile(
+                icon: Icons.event_note_outlined,
+                title: 'Event Report Queue',
+                subtitle:
+                    'Review user-submitted event proposals and publish approved events',
+                badgeCount: newCount > 0 ? newCount : null,
+                onTap: () => context.push('/moderator/event-reports'),
+              );
+            },
           ),
           const SizedBox(height: 8),
           Card(
@@ -155,6 +165,31 @@ class ModeratorToolsScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildQueueTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    int? badgeCount,
+  }) {
+    Widget leading = Icon(icon);
+    if (badgeCount != null && badgeCount > 0) {
+      leading = Badge(
+        label: Text('$badgeCount'),
+        child: leading,
+      );
+    }
+    return Card(
+      child: ListTile(
+        leading: leading,
+        title: Text(title),
+        subtitle: Text(subtitle),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+        onTap: onTap,
       ),
     );
   }

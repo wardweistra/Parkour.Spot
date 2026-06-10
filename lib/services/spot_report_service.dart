@@ -14,6 +14,12 @@ class SpotReportService {
 
   /// Shared listener for all UI subscribers (avoids duplicate Firestore targets).
   Stream<List<SpotReport>>? _spotReportsStream;
+  Stream<int>? _newReportCountStream;
+  List<SpotReport>? _latestSpotReports;
+
+  /// Count of reports with status [statuses.first] ("New"); used as [StreamBuilder.initialData].
+  int get newReportCount =>
+      _latestSpotReports?.where((r) => r.status == statuses.first).length ?? 0;
 
   /// Default categories shown to the user when reporting a spot.
   static const List<String> defaultCategories = <String>[
@@ -343,11 +349,20 @@ class SpotReportService {
         .collection('spotReports')
         .orderBy('createdAt', descending: false)
         .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
+        .map((snapshot) {
+          final reports = snapshot.docs
               .map((doc) => SpotReport.fromSnapshot(doc))
-              .toList(growable: false),
-        );
+              .toList(growable: false);
+          _latestSpotReports = reports;
+          return reports;
+        });
+  }
+
+  /// Streams the number of spot reports with status [statuses.first] ("New").
+  Stream<int> watchNewReportCount() {
+    return _newReportCountStream ??= watchSpotReports().map(
+      (reports) => reports.where((r) => r.status == statuses.first).length,
+    );
   }
 
   /// Gets all spot reports for a specific spot.
