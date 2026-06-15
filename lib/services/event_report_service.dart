@@ -527,17 +527,32 @@ class EventReportService {
   }
 
   Stream<List<EventReport>>? _eventReportsStream;
+  Stream<int>? _newReportCountStream;
+  List<EventReport>? _latestEventReports;
+
+  /// Count of reports with status [statuses.first] ("New"); used as [StreamBuilder.initialData].
+  int get newReportCount =>
+      _latestEventReports?.where((r) => r.status == statuses.first).length ?? 0;
 
   Stream<List<EventReport>> watchEventReports() {
     return _eventReportsStream ??= _firestore
         .collection('eventReports')
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
+        .map((snapshot) {
+          final reports = snapshot.docs
               .map((doc) => EventReport.fromSnapshot(doc))
-              .toList(growable: false),
-        );
+              .toList(growable: false);
+          _latestEventReports = reports;
+          return reports;
+        });
+  }
+
+  /// Streams the number of event reports with status [statuses.first] ("New").
+  Stream<int> watchNewReportCount() {
+    return _newReportCountStream ??= watchEventReports().map(
+      (reports) => reports.where((r) => r.status == statuses.first).length,
+    );
   }
 
   /// Move staging photos from [eventSuggestions/] to [events/] with resize.

@@ -7,6 +7,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:web/web.dart' as web;
 import 'package:lottie/lottie.dart';
 import '../../services/auth_service.dart';
+import '../../services/event_report_service.dart';
+import '../../services/spot_report_service.dart';
 import '../../services/user_notification_service.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../widgets/custom_button.dart';
@@ -392,15 +394,45 @@ class _ProfileScreenState extends State<ProfileScreen>
                             ),
                             if (authService.isModerator ||
                                 authService.isAdmin) ...[
-                              _buildActionTile(
-                                context,
-                                Icons.shield,
-                                l10n.profileModeratorToolsTitle,
-                                l10n.profileModeratorToolsSubtitle,
-                                () {
-                                  // Use go (not push) so Explore/SearchScreen dispose and
-                                  // release Firestore listeners before moderator flows.
-                                  context.go('/moderator');
+                              StreamBuilder<int>(
+                                initialData: Provider.of<SpotReportService>(
+                                  context,
+                                  listen: false,
+                                ).newReportCount,
+                                stream: Provider.of<SpotReportService>(
+                                  context,
+                                  listen: false,
+                                ).watchNewReportCount(),
+                                builder: (context, spotSnapshot) {
+                                  final spotNew = spotSnapshot.data ?? 0;
+                                  return StreamBuilder<int>(
+                                    initialData:
+                                        Provider.of<EventReportService>(
+                                      context,
+                                      listen: false,
+                                    ).newReportCount,
+                                    stream: Provider.of<EventReportService>(
+                                      context,
+                                      listen: false,
+                                    ).watchNewReportCount(),
+                                    builder: (context, eventSnapshot) {
+                                      final totalNew = spotNew +
+                                          (eventSnapshot.data ?? 0);
+                                      return _buildActionTile(
+                                        context,
+                                        Icons.shield,
+                                        l10n.profileModeratorToolsTitle,
+                                        l10n.profileModeratorToolsSubtitle,
+                                        () {
+                                          // Use go (not push) so Explore/SearchScreen dispose and
+                                          // release Firestore listeners before moderator flows.
+                                          context.go('/moderator');
+                                        },
+                                        badgeCount:
+                                            totalNew > 0 ? totalNew : null,
+                                      );
+                                    },
+                                  );
                                 },
                               ),
                             ],
