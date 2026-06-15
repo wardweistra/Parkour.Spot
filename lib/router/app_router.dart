@@ -235,7 +235,9 @@ class AppRouter {
           '/moderator',
           '/profile/notifications',
         ];
-        if (protectedRoutes.contains(state.matchedLocation) &&
+        final location = state.matchedLocation;
+        if ((protectedRoutes.contains(location) ||
+                location.startsWith('/moderator/')) &&
             !isAuthenticated) {
           // Redirect to login with the intended destination
           String redirectTo;
@@ -484,42 +486,40 @@ class AppRouter {
         GoRoute(
           path: '/moderator',
           builder: (context, state) => const ModeratorToolsScreen(),
+        ),
+        GoRoute(
+          path: '/moderator/reports',
+          builder: (context, state) => const SpotReportQueueScreen(),
+        ),
+        GoRoute(
+          path: '/moderator/event-reports',
+          builder: (context, state) => const EventReportQueueScreen(),
+        ),
+        GoRoute(
+          path: '/moderator/duplicate-spots',
+          builder: (context, state) => const DuplicateSpotsScreen(),
           routes: [
             GoRoute(
-              path: 'reports',
-              builder: (context, state) => const SpotReportQueueScreen(),
-            ),
-            GoRoute(
-              path: 'event-reports',
-              builder: (context, state) => const EventReportQueueScreen(),
-            ),
-            GoRoute(
-              path: 'duplicate-spots',
-              builder: (context, state) => const DuplicateSpotsScreen(),
+              path: ':runId',
+              builder: (context, state) {
+                final runId = state.pathParameters['runId']!;
+                return DuplicateSpotsResultsScreen(runId: runId);
+              },
               routes: [
                 GoRoute(
-                  path: ':runId',
+                  path: 'pair/:pairIndex',
                   builder: (context, state) {
                     final runId = state.pathParameters['runId']!;
-                    return DuplicateSpotsResultsScreen(runId: runId);
+                    final pairIndex =
+                        int.tryParse(
+                          state.pathParameters['pairIndex'] ?? '',
+                        ) ??
+                        0;
+                    return DuplicateSpotsPairReviewScreen(
+                      runId: runId,
+                      pairIndex: pairIndex,
+                    );
                   },
-                  routes: [
-                    GoRoute(
-                      path: 'pair/:pairIndex',
-                      builder: (context, state) {
-                        final runId = state.pathParameters['runId']!;
-                        final pairIndex =
-                            int.tryParse(
-                              state.pathParameters['pairIndex'] ?? '',
-                            ) ??
-                            0;
-                        return DuplicateSpotsPairReviewScreen(
-                          runId: runId,
-                          pairIndex: pairIndex,
-                        );
-                      },
-                    ),
-                  ],
                 ),
               ],
             ),

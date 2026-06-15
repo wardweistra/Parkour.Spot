@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
+
+import '../utils/replay_latest_stream.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/event_report.dart';
@@ -530,28 +532,35 @@ class EventReportService {
   Stream<int>? _newReportCountStream;
   List<EventReport>? _latestEventReports;
 
+  /// Last loaded report list; used as [StreamBuilder.initialData].
+  List<EventReport>? get latestEventReports => _latestEventReports;
+
   /// Count of reports with status [statuses.first] ("New"); used as [StreamBuilder.initialData].
   int get newReportCount =>
       _latestEventReports?.where((r) => r.status == statuses.first).length ?? 0;
 
   Stream<List<EventReport>> watchEventReports() {
-    return _eventReportsStream ??= _firestore
-        .collection('eventReports')
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snapshot) {
-          final reports = snapshot.docs
-              .map((doc) => EventReport.fromSnapshot(doc))
-              .toList(growable: false);
-          _latestEventReports = reports;
-          return reports;
-        });
+    return _eventReportsStream ??= replayLatest(
+      _firestore
+          .collection('eventReports')
+          .orderBy('createdAt', descending: true)
+          .snapshots()
+          .map((snapshot) {
+            final reports = snapshot.docs
+                .map((doc) => EventReport.fromSnapshot(doc))
+                .toList(growable: false);
+            return reports;
+          }),
+      onValue: (reports) => _latestEventReports = reports,
+    );
   }
 
   /// Streams the number of event reports with status [statuses.first] ("New").
   Stream<int> watchNewReportCount() {
-    return _newReportCountStream ??= watchEventReports().map(
-      (reports) => reports.where((r) => r.status == statuses.first).length,
+    return _newReportCountStream ??= replayLatest(
+      watchEventReports().map(
+        (reports) => reports.where((r) => r.status == statuses.first).length,
+      ),
     );
   }
 

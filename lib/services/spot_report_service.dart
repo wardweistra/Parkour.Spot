@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
 import '../models/spot_report.dart';
+import '../utils/replay_latest_stream.dart';
 import 'audit_log_service.dart';
 
 /// Service responsible for submitting spot reports to Firestore.
@@ -16,6 +17,9 @@ class SpotReportService {
   Stream<List<SpotReport>>? _spotReportsStream;
   Stream<int>? _newReportCountStream;
   List<SpotReport>? _latestSpotReports;
+
+  /// Last loaded report list; used as [StreamBuilder.initialData].
+  List<SpotReport>? get latestSpotReports => _latestSpotReports;
 
   /// Count of reports with status [statuses.first] ("New"); used as [StreamBuilder.initialData].
   int get newReportCount =>
@@ -345,23 +349,27 @@ class SpotReportService {
 
   /// Streams all spot reports ordered by creation time.
   Stream<List<SpotReport>> watchSpotReports() {
-    return _spotReportsStream ??= _firestore
-        .collection('spotReports')
-        .orderBy('createdAt', descending: false)
-        .snapshots()
-        .map((snapshot) {
-          final reports = snapshot.docs
-              .map((doc) => SpotReport.fromSnapshot(doc))
-              .toList(growable: false);
-          _latestSpotReports = reports;
-          return reports;
-        });
+    return _spotReportsStream ??= replayLatest(
+      _firestore
+          .collection('spotReports')
+          .orderBy('createdAt', descending: false)
+          .snapshots()
+          .map((snapshot) {
+            final reports = snapshot.docs
+                .map((doc) => SpotReport.fromSnapshot(doc))
+                .toList(growable: false);
+            return reports;
+          }),
+      onValue: (reports) => _latestSpotReports = reports,
+    );
   }
 
   /// Streams the number of spot reports with status [statuses.first] ("New").
   Stream<int> watchNewReportCount() {
-    return _newReportCountStream ??= watchSpotReports().map(
-      (reports) => reports.where((r) => r.status == statuses.first).length,
+    return _newReportCountStream ??= replayLatest(
+      watchSpotReports().map(
+        (reports) => reports.where((r) => r.status == statuses.first).length,
+      ),
     );
   }
 

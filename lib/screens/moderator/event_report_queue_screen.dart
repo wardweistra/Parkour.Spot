@@ -56,6 +56,7 @@ class _EventReportQueueScreenState extends State<EventReportQueueScreen> {
           ),
           const SizedBox(height: 16),
           StreamBuilder<List<EventReport>>(
+            initialData: service.latestEventReports,
             stream: service.watchEventReports(),
             builder: (context, snapshot) {
               final allReports = snapshot.data ?? const <EventReport>[];
@@ -113,6 +114,7 @@ class _EventReportQueueScreenState extends State<EventReportQueueScreen> {
           const SizedBox(height: 16),
           Expanded(
             child: StreamBuilder<List<EventReport>>(
+              initialData: service.latestEventReports,
               stream: service.watchEventReports(),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
@@ -122,7 +124,8 @@ class _EventReportQueueScreenState extends State<EventReportQueueScreen> {
                     message: 'Please try again shortly.',
                   );
                 }
-                if (snapshot.connectionState == ConnectionState.waiting) {
+                if (snapshot.connectionState == ConnectionState.waiting &&
+                    !snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
                 }
 

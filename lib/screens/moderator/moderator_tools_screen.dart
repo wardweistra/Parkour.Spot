@@ -132,7 +132,7 @@ class ModeratorToolsScreen extends StatelessWidget {
                 subtitle:
                     'Work through new spot reports, keeping moderators aligned on progress',
                 badgeCount: newCount > 0 ? newCount : null,
-                onTap: () => context.push('/moderator/reports'),
+                onTap: () => context.go('/moderator/reports'),
               );
             },
           ),
@@ -148,7 +148,7 @@ class ModeratorToolsScreen extends StatelessWidget {
                 subtitle:
                     'Review user-submitted event proposals and publish approved events',
                 badgeCount: newCount > 0 ? newCount : null,
-                onTap: () => context.push('/moderator/event-reports'),
+                onTap: () => context.go('/moderator/event-reports'),
               );
             },
           ),
@@ -161,7 +161,7 @@ class ModeratorToolsScreen extends StatelessWidget {
                 'Find potential duplicate spots within 50m from different sources',
               ),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => context.push('/moderator/duplicate-spots'),
+              onTap: () => context.go('/moderator/duplicate-spots'),
             ),
           ),
         ],

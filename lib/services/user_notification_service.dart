@@ -4,54 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
 import '../models/user_notification.dart';
+import '../utils/replay_latest_stream.dart';
 import 'auth_service.dart';
-
-/// Forwards [source] to a broadcast stream and replays the latest event to late
-/// subscribers (Firestore snapshot streams do not replay by default).
-Stream<T> _replayLatest<T>(
-  Stream<T> source, {
-  void Function(T value)? onValue,
-}) {
-  T? lastValue;
-  Object? lastError;
-  StackTrace? lastStackTrace;
-  var hasEvent = false;
-  StreamSubscription<T>? subscription;
-  late final StreamController<T> controller;
-
-  controller = StreamController<T>.broadcast(
-    onListen: () {
-      subscription ??= source.listen(
-        (value) {
-          lastValue = value;
-          lastError = null;
-          hasEvent = true;
-          onValue?.call(value);
-          if (!controller.isClosed) {
-            controller.add(value);
-          }
-        },
-        onError: (Object error, StackTrace stackTrace) {
-          lastError = error;
-          lastStackTrace = stackTrace;
-          hasEvent = true;
-          if (!controller.isClosed) {
-            controller.addError(error, stackTrace);
-          }
-        },
-      );
-      if (hasEvent) {
-        if (lastError != null) {
-          controller.addError(lastError!, lastStackTrace);
-        } else {
-          controller.add(lastValue as T);
-        }
-      }
-    },
-  );
-
-  return controller.stream;
-}
 
 class UserNotificationService extends ChangeNotifier {
   UserNotificationService(this._authService);
@@ -106,7 +60,7 @@ class UserNotificationService extends ChangeNotifier {
     _notificationsStreamUid = uid;
     _unreadCountStream = null;
     _unreadCountStreamUid = null;
-    _notificationsStream = _replayLatest(
+    _notificationsStream = replayLatest(
       collection
           .orderBy('createdAt', descending: true)
           .snapshots()
@@ -128,7 +82,7 @@ class UserNotificationService extends ChangeNotifier {
     final notificationsStream = watchNotifications();
     if (_unreadCountStream == null || _unreadCountStreamUid != uid) {
       _unreadCountStreamUid = uid;
-      _unreadCountStream = _replayLatest(
+      _unreadCountStream = replayLatest(
         notificationsStream.map(
           (items) => items.where((n) => !n.read).length,
         ),

@@ -56,6 +56,7 @@ class _SpotReportQueueScreenState extends State<SpotReportQueueScreen> {
             ),
             const SizedBox(height: 16),
             StreamBuilder<List<SpotReport>>(
+              initialData: spotReportService.latestSpotReports,
               stream: spotReportService.watchSpotReports(),
               builder: (context, snapshot) {
                 final allReports = snapshot.data ?? <SpotReport>[];
@@ -112,6 +113,7 @@ class _SpotReportQueueScreenState extends State<SpotReportQueueScreen> {
             const SizedBox(height: 16),
             Expanded(
               child: StreamBuilder<List<SpotReport>>(
+                initialData: spotReportService.latestSpotReports,
                 stream: spotReportService.watchSpotReports(),
                 builder: (context, snapshot) {
                   if (snapshot.hasError) {
@@ -123,7 +125,8 @@ class _SpotReportQueueScreenState extends State<SpotReportQueueScreen> {
                     );
                   }
 
-                  if (snapshot.connectionState == ConnectionState.waiting) {
+                  if (snapshot.connectionState == ConnectionState.waiting &&
+                      !snapshot.hasData) {
                     return const Center(child: CircularProgressIndicator());
                   }
 
