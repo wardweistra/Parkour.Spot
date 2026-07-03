@@ -127,6 +127,25 @@ service cloud.firestore {
           eventCommonShape(request.resource.data);
       }
 
+      // Staff may set or clear duplicateOf on any event (including external imports)
+      // without granting full edit access to imported calendar data.
+      function eventDuplicateOfOk(data) {
+        return !('duplicateOf' in data) || data.duplicateOf == null ||
+          (data.duplicateOf is string &&
+            data.duplicateOf.size() > 0 &&
+            data.duplicateOf.size() <= 200);
+      }
+
+      function eventDuplicateStatusUpdateShape() {
+        return request.auth != null &&
+          request.resource.data.createdBy == resource.data.createdBy &&
+          request.resource.data.createdAt == resource.data.createdAt &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['duplicateOf', 'updatedAt']) &&
+          eventUpdatedAtOk(request.resource.data) &&
+          eventDuplicateOfOk(request.resource.data);
+      }
+
       // Native events have no external calendar source id.
       function eventIsNative() {
         return !('eventSourceId' in resource.data) ||
@@ -137,9 +156,13 @@ service cloud.firestore {
 
       allow read: if true;
       allow create: if requestingUserIsStaff() && eventCreateShape();
-      allow update: if eventUpdateShape() && (
-        requestingUserIsAdmin() ||
-        (requestingUserIsModerator() && eventIsNative())
+      allow update: if (
+        eventUpdateShape() && (
+          requestingUserIsAdmin() ||
+          (requestingUserIsModerator() && eventIsNative())
+        )
+      ) || (
+        eventDuplicateStatusUpdateShape() && requestingUserIsStaff()
       );
       allow delete: if requestingUserIsAdmin();
     }
