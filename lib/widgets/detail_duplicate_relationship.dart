@@ -141,8 +141,11 @@ class DetailDuplicateOfCallout extends StatelessWidget {
   }
 }
 
-/// Deemphasized list of items marked as duplicates of the current detail page.
-class DetailLinkedDuplicatesSection extends StatefulWidget {
+/// Visible list of other listings marked as duplicates of the current page.
+///
+/// Matches spot detail "Also based on" attribution: section heading plus
+/// indented rows with source names where available.
+class DetailLinkedDuplicatesSection extends StatelessWidget {
   const DetailLinkedDuplicatesSection({
     super.key,
     required this.heading,
@@ -150,7 +153,6 @@ class DetailLinkedDuplicatesSection extends StatefulWidget {
     required this.loading,
     required this.items,
     required this.onOpenItem,
-    this.initiallyExpanded = false,
   });
 
   final String heading;
@@ -158,173 +160,92 @@ class DetailLinkedDuplicatesSection extends StatefulWidget {
   final bool loading;
   final List<DetailDuplicateLinkItem> items;
   final ValueChanged<String> onOpenItem;
-  final bool initiallyExpanded;
-
-  @override
-  State<DetailLinkedDuplicatesSection> createState() =>
-      _DetailLinkedDuplicatesSectionState();
-}
-
-class _DetailLinkedDuplicatesSectionState
-    extends State<DetailLinkedDuplicatesSection> {
-  late bool _expanded;
-
-  @override
-  void initState() {
-    super.initState();
-    _expanded = widget.initiallyExpanded;
-  }
-
-  @override
-  void didUpdateWidget(DetailLinkedDuplicatesSection oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (!oldWidget.initiallyExpanded && widget.initiallyExpanded) {
-      _expanded = true;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final muted = colors.onSurfaceVariant;
-    final headingStyle = theme.textTheme.bodyMedium?.copyWith(
-      color: muted,
-      height: 1.4,
-    );
+    final accent = colors.secondary;
 
     return Padding(
-      padding: const EdgeInsets.only(top: SpotDetailUi.detailSubsectionGap),
+      padding: const EdgeInsets.only(top: SpotDetailUi.detailFooterGap),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => setState(() => _expanded = !_expanded),
-              borderRadius: BorderRadius.circular(8),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        widget.heading,
-                        style: headingStyle,
-                      ),
-                    ),
-                  if (widget.loading)
-                    SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: muted.withValues(alpha: 0.65),
-                      ),
-                    )
-                  else
-                    Icon(
-                      _expanded
-                          ? Icons.expand_less_rounded
-                          : Icons.expand_more_rounded,
-                      size: 22,
-                      color: muted.withValues(alpha: 0.85),
-                    ),
-                ],
+          if (loading)
+            ListTile(
+              leading: Icon(Icons.copy_all, color: accent),
+              title: Text(heading),
+              subtitle: Text(loadingLabel),
+              contentPadding: EdgeInsets.zero,
+            )
+          else ...[
+            ListTile(
+              leading: Icon(Icons.copy_all, color: accent),
+              title: Text(
+                heading,
+                style: theme.textTheme.titleSmall,
               ),
+              contentPadding: EdgeInsets.zero,
+              dense: true,
             ),
+            ...items.map((item) => _DuplicateSourceRow(
+                  item: item,
+                  accent: accent,
+                  onOpenItem: onOpenItem,
+                )),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _DuplicateSourceRow extends StatelessWidget {
+  const _DuplicateSourceRow({
+    required this.item,
+    required this.accent,
+    required this.onOpenItem,
+  });
+
+  final DetailDuplicateLinkItem item;
+  final Color accent;
+  final ValueChanged<String> onOpenItem;
+
+  @override
+  Widget build(BuildContext context) {
+    final subtitle = item.subtitle?.trim();
+
+    return GestureDetector(
+      onTap: () => onOpenItem(item.id),
+      child: Padding(
+        padding: const EdgeInsets.only(left: 48),
+        child: ListTile(
+          leading: Icon(
+            Icons.arrow_right,
+            size: 16,
+            color: accent,
+          ),
+          title: Text(
+            item.title,
+            style: TextStyle(color: accent),
+          ),
+          subtitle: subtitle != null && subtitle.isNotEmpty
+              ? Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: accent.withValues(alpha: 0.7),
+                  ),
+                )
+              : null,
+          contentPadding: EdgeInsets.zero,
+          trailing: Icon(
+            Icons.open_in_new,
+            size: 16,
+            color: accent,
           ),
         ),
-        AnimatedSize(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          alignment: Alignment.topCenter,
-          child: _expanded
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: SpotDetailUi.detailLabelGap),
-                    if (widget.loading)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Text(
-                          widget.loadingLabel,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: muted,
-                          ),
-                        ),
-                      )
-                    else
-                      ...widget.items.map((item) {
-                        final subtitle = item.subtitle?.trim();
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 2),
-                          child: InkWell(
-                            onTap: () => widget.onOpenItem(item.id),
-                            borderRadius: BorderRadius.circular(8),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 6,
-                                horizontal: 2,
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 2),
-                                    child: Icon(
-                                      Icons.subdirectory_arrow_right_rounded,
-                                      size: 18,
-                                      color: muted.withValues(alpha: 0.7),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          item.title,
-                                          style: theme.textTheme.bodyMedium
-                                              ?.copyWith(
-                                                color: muted,
-                                                decoration:
-                                                    TextDecoration.underline,
-                                                decorationColor: muted
-                                                    .withValues(alpha: 0.35),
-                                              ),
-                                        ),
-                                        if (subtitle != null &&
-                                            subtitle.isNotEmpty)
-                                          Text(
-                                            subtitle,
-                                            style: theme.textTheme.bodySmall
-                                                ?.copyWith(
-                                                  color: muted.withValues(
-                                                    alpha: 0.75,
-                                                  ),
-                                                ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.open_in_new_rounded,
-                                    size: 14,
-                                    color: muted.withValues(alpha: 0.65),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      }),
-                  ],
-                )
-              : const SizedBox(width: double.infinity),
-          ),
-        ],
       ),
     );
   }

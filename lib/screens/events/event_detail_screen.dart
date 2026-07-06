@@ -235,6 +235,18 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     }
   }
 
+  String? _duplicateEventSourceLabel(ParkourEvent event) {
+    final sourceName = event.eventSourceName?.trim();
+    if (sourceName != null && sourceName.isNotEmpty) {
+      return sourceName;
+    }
+    final sourceId = event.eventSourceId?.trim();
+    if (sourceId != null && sourceId.isNotEmpty) {
+      return sourceId;
+    }
+    return null;
+  }
+
   Future<void> _reloadAfterMutation() async {
     await _loadEvent();
   }
@@ -958,7 +970,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                         ..._buildEventMainContent(context, event, l10n),
                         if (showLinkedDuplicates) ...[
                           DetailLinkedDuplicatesSection(
-                            heading: l10n.eventDetailLinkedDuplicatesHeading,
+                            heading: l10n.spotDetailAlsoBasedOn,
                             loadingLabel: l10n.spotDetailLoading,
                             loading: _loadingDuplicates,
                             items: _duplicateEvents
@@ -967,7 +979,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                                   (e) => DetailDuplicateLinkItem(
                                     id: e.id!,
                                     title: e.title,
-                                    subtitle: e.eventSourceName?.trim(),
+                                    subtitle: _duplicateEventSourceLabel(e),
                                   ),
                                 )
                                 .toList(),
