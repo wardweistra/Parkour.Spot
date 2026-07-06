@@ -10,6 +10,8 @@ class ParkourEvent {
   final DateTime? endAt;
   final bool isDateOnly;
   final String? timeZone;
+  /// `feed` when from ICS; `sourceDefault` when from sync source default.
+  final String? timeZoneSource;
   final double? latitude;
   final double? longitude;
   final String? address;
@@ -45,6 +47,7 @@ class ParkourEvent {
     this.endAt,
     this.isDateOnly = false,
     this.timeZone,
+    this.timeZoneSource,
     this.latitude,
     this.longitude,
     this.address,
@@ -87,6 +90,7 @@ class ParkourEvent {
           : null,
       isDateOnly: data['isDateOnly'] == true,
       timeZone: data['timeZone'] as String?,
+      timeZoneSource: data['timeZoneSource'] as String?,
       latitude: (data['latitude'] as num?)?.toDouble(),
       longitude: (data['longitude'] as num?)?.toDouble(),
       address: data['address'] as String?,
@@ -147,6 +151,7 @@ class ParkourEvent {
       endAt: parseDate(data['endAt']),
       isDateOnly: data['isDateOnly'] == true,
       timeZone: data['timeZone'] as String?,
+      timeZoneSource: data['timeZoneSource'] as String?,
       latitude: (data['latitude'] as num?)?.toDouble(),
       longitude: (data['longitude'] as num?)?.toDouble(),
       address: data['address'] as String?,
@@ -191,6 +196,8 @@ class ParkourEvent {
       if (isDateOnly) 'isDateOnly': true,
       if (timeZone != null && timeZone!.trim().isNotEmpty)
         'timeZone': timeZone!.trim(),
+      if (timeZoneSource != null && timeZoneSource!.trim().isNotEmpty)
+        'timeZoneSource': timeZoneSource!.trim(),
       if (latitude != null) 'latitude': latitude,
       if (longitude != null) 'longitude': longitude,
       if (address != null && address!.trim().isNotEmpty)
@@ -235,6 +242,7 @@ class ParkourEvent {
     Object? endAt = _unset,
     bool? isDateOnly,
     Object? timeZone = _unset,
+    Object? timeZoneSource = _unset,
     Object? latitude = _unset,
     Object? longitude = _unset,
     Object? address = _unset,
@@ -270,6 +278,9 @@ class ParkourEvent {
       timeZone: identical(timeZone, _unset)
           ? this.timeZone
           : timeZone as String?,
+      timeZoneSource: identical(timeZoneSource, _unset)
+          ? this.timeZoneSource
+          : timeZoneSource as String?,
       latitude: identical(latitude, _unset)
           ? this.latitude
           : latitude as double?,

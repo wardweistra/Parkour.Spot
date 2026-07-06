@@ -1,5 +1,10 @@
 const ical = require("node-ical");
 
+/** @type {"feed"} */
+const EVENT_TIME_ZONE_SOURCE_FEED = "feed";
+/** @type {"sourceDefault"} */
+const EVENT_TIME_ZONE_SOURCE_SOURCE_DEFAULT = "sourceDefault";
+
 /**
  * Coerces unknown input into a non-empty trimmed string.
  * @param {*} value
@@ -344,6 +349,51 @@ function normalizeAllDaySchedule(icsBlock, calendarTimeZone) {
 }
 
 /**
+ * All-day VALUE=DATE bounds when the feed has no X-WR-TIMEZONE (floating dates).
+ * @param {string} icsBlock
+ * @return {Object|null}
+ */
+function normalizeAllDayScheduleUtc(icsBlock) {
+  const dates = extractValueDatesFromIcsBlock(icsBlock);
+  if (!dates) return null;
+  const startParts = parseYmd(dates.startYmd);
+  if (!startParts) return null;
+
+  const startAt = new Date(Date.UTC(
+      startParts.year,
+      startParts.month - 1,
+      startParts.day,
+      0,
+      0,
+      0,
+      0,
+  ));
+
+  let endAt = null;
+  if (dates.endYmdExclusive) {
+    const endInclusive = endInclusiveFromExclusive(dates.endYmdExclusive);
+    if (endInclusive) {
+      endAt = new Date(Date.UTC(
+          endInclusive.year,
+          endInclusive.month - 1,
+          endInclusive.day,
+          23,
+          59,
+          59,
+          999,
+      ));
+    }
+  }
+
+  return {
+    startAt,
+    endAt,
+    isDateOnly: true,
+    timeZone: null,
+  };
+}
+
+/**
  * @param {*} value
  * @return {string|null}
  */
@@ -548,6 +598,14 @@ function hasExternalEventContentChanges(existingData, incomingData) {
   if (!nullableStringEqual(existingData.timeZone, incomingData.timeZone)) {
     return true;
   }
+  if (
+    !nullableStringEqual(
+        existingData.timeZoneSource,
+        incomingData.timeZoneSource,
+    )
+  ) {
+    return true;
+  }
   return false;
 }
 
@@ -600,17 +658,56 @@ function shouldGeocodeExternalEventAddress(existingData, incomingData) {
 }
 
 /**
+ * @param {*} raw
+ * @return {string|null}
+ */
+function normalizeEventSyncSourceDefaultTimeZone(raw) {
+  return normalizeImportedTimeZone(raw);
+}
+
+/**
+ * @param {string} icsBlock
+ * @param {string|null} calendarTimeZone
+ * @param {string|null} sourceDefaultTimeZone
+ * @return {{schedule: Object|null, timeZoneSource: string|null}}
+ */
+function resolveAllDaySchedule(
+    icsBlock,
+    calendarTimeZone,
+    sourceDefaultTimeZone,
+) {
+  if (calendarTimeZone) {
+    const schedule = normalizeAllDaySchedule(icsBlock, calendarTimeZone);
+    if (!schedule) return {schedule: null, timeZoneSource: null};
+    return {schedule, timeZoneSource: EVENT_TIME_ZONE_SOURCE_FEED};
+  }
+  if (sourceDefaultTimeZone) {
+    const schedule = normalizeAllDaySchedule(icsBlock, sourceDefaultTimeZone);
+    if (!schedule) return {schedule: null, timeZoneSource: null};
+    return {schedule, timeZoneSource: EVENT_TIME_ZONE_SOURCE_SOURCE_DEFAULT};
+  }
+  const schedule = normalizeAllDayScheduleUtc(icsBlock);
+  return {schedule, timeZoneSource: null};
+}
+
+/**
  * Parses VEVENT records from an ICS file into normalized event payloads.
  * @param {string} icsText
  * @param {Object} sourceMeta
  * @param {string} sourceMeta.sourceId
  * @param {string} sourceMeta.sourceName
+ * @param {string=} sourceMeta.sourceDefaultTimeZone
  * @return {Array<Object>}
  */
-function parseExternalEventsFromIcs(icsText, {sourceId, sourceName}) {
+function parseExternalEventsFromIcs(
+    icsText,
+    {sourceId, sourceName, sourceDefaultTimeZone = null},
+) {
   const parsedCalendar = ical.sync.parseICS(icsText);
   const parsedEvents = [];
   const calendarTimeZone = extractCalendarTimeZone(parsedCalendar);
+  const normalizedSourceDefaultTimeZone =
+    normalizeEventSyncSourceDefaultTimeZone(sourceDefaultTimeZone);
   const uidToIcsBlock = buildUidToIcsBlockMap(icsText);
 
   for (const value of Object.values(parsedCalendar)) {
@@ -624,15 +721,9 @@ function parseExternalEventsFromIcs(icsText, {sourceId, sourceName}) {
     let endAt = null;
     let isDateOnly = false;
     let timeZone = null;
+    let timeZoneSource = null;
 
     if (isAllDay) {
-      if (!calendarTimeZone) {
-        console.warn(
-            `Skipping all-day ICS event "${value.summary || uid}": ` +
-            "calendar has no valid X-WR-TIMEZONE",
-        );
-        continue;
-      }
       const icsBlock = uidToIcsBlock.get(uid);
       if (!icsBlock) {
         console.warn(
@@ -641,23 +732,29 @@ function parseExternalEventsFromIcs(icsText, {sourceId, sourceName}) {
         );
         continue;
       }
-      const schedule = normalizeAllDaySchedule(icsBlock, calendarTimeZone);
-      if (!schedule) {
+      const resolved = resolveAllDaySchedule(
+          icsBlock,
+          calendarTimeZone,
+          normalizedSourceDefaultTimeZone,
+      );
+      if (!resolved.schedule) {
         console.warn(
             `Skipping all-day ICS event "${value.summary || uid}": ` +
             "could not parse VALUE=DATE bounds",
         );
         continue;
       }
-      startAt = schedule.startAt;
-      endAt = schedule.endAt;
-      isDateOnly = schedule.isDateOnly;
-      timeZone = schedule.timeZone;
+      startAt = resolved.schedule.startAt;
+      endAt = resolved.schedule.endAt;
+      isDateOnly = resolved.schedule.isDateOnly;
+      timeZone = resolved.schedule.timeZone;
+      timeZoneSource = resolved.timeZoneSource;
     } else {
       startAt = normalizeDate(value.start);
       endAt = normalizeDate(value.end);
       isDateOnly = false;
       timeZone = extractEventTimeZoneFromNodeIcal(value);
+      if (timeZone) timeZoneSource = EVENT_TIME_ZONE_SOURCE_FEED;
     }
 
     if (!startAt) continue;
@@ -696,6 +793,7 @@ function parseExternalEventsFromIcs(icsText, {sourceId, sourceName}) {
       externalEventKey: buildExternalEventKey(uid, recurrenceId),
     };
     if (timeZone) eventPayload.timeZone = timeZone;
+    if (timeZoneSource) eventPayload.timeZoneSource = timeZoneSource;
     parsedEvents.push(eventPayload);
   }
 
@@ -703,6 +801,8 @@ function parseExternalEventsFromIcs(icsText, {sourceId, sourceName}) {
 }
 
 module.exports = {
+  EVENT_TIME_ZONE_SOURCE_FEED,
+  EVENT_TIME_ZONE_SOURCE_SOURCE_DEFAULT,
   buildExternalEventKey,
   buildUidToIcsBlockMap,
   dateEndToUtc,
@@ -712,10 +812,13 @@ module.exports = {
   hasExternalEventAddressChanged,
   hasExternalEventContentChanges,
   normalizeAllDaySchedule,
+  normalizeAllDayScheduleUtc,
+  normalizeEventSyncSourceDefaultTimeZone,
   normalizeImportedEventDescription,
   normalizeImportedTimeZone,
   parseExternalEventsFromIcs,
   normalizeRecurrenceId,
   removeExtractedWebsiteUrlFromDescription,
+  resolveAllDaySchedule,
   shouldGeocodeExternalEventAddress,
 };

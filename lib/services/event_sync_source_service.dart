@@ -52,6 +52,7 @@ class EventSyncSource {
   final Map<String, dynamic>? lastSyncStats;
   final String? syncSchedule;
   final bool? autoSyncEnabled;
+  final String? defaultTimeZone;
 
   const EventSyncSource({
     required this.id,
@@ -66,6 +67,7 @@ class EventSyncSource {
     this.lastSyncStats,
     this.syncSchedule,
     this.autoSyncEnabled,
+    this.defaultTimeZone,
   });
 
   factory EventSyncSource.fromMap(Map<String, dynamic> data) {
@@ -86,6 +88,7 @@ class EventSyncSource {
       autoSyncEnabled: data['autoSyncEnabled'] is bool
           ? data['autoSyncEnabled'] as bool
           : null,
+      defaultTimeZone: data['defaultTimeZone'] as String?,
     );
   }
 }
@@ -162,6 +165,7 @@ class EventSyncSourceService extends ChangeNotifier {
     bool isActive = true,
     String? syncSchedule,
     bool autoSyncEnabled = false,
+    String? defaultTimeZone,
   }) async {
     try {
       final callable = _functions.httpsCallable('createEventSyncSource');
@@ -174,6 +178,8 @@ class EventSyncSourceService extends ChangeNotifier {
         if (syncSchedule != null && syncSchedule.isNotEmpty)
           'syncSchedule': syncSchedule,
         'autoSyncEnabled': autoSyncEnabled,
+        if (defaultTimeZone != null && defaultTimeZone.isNotEmpty)
+          'defaultTimeZone': defaultTimeZone,
       });
       final success = _callableMap(result.data)['success'] == true;
       if (success) {
@@ -197,6 +203,8 @@ class EventSyncSourceService extends ChangeNotifier {
     bool? isActive,
     String? syncSchedule,
     bool? autoSyncEnabled,
+    String? defaultTimeZone,
+    bool clearDefaultTimeZone = false,
   }) async {
     try {
       final payload = <String, dynamic>{'sourceId': sourceId};
@@ -210,6 +218,11 @@ class EventSyncSourceService extends ChangeNotifier {
       }
       if (autoSyncEnabled != null) {
         payload['autoSyncEnabled'] = autoSyncEnabled;
+      }
+      if (clearDefaultTimeZone) {
+        payload['defaultTimeZone'] = '';
+      } else if (defaultTimeZone != null) {
+        payload['defaultTimeZone'] = defaultTimeZone;
       }
 
       final callable = _functions.httpsCallable('updateEventSyncSource');

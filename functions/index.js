@@ -120,6 +120,7 @@ const {
   parseExternalEventsFromIcs,
   buildExternalEventKey,
   shouldGeocodeExternalEventAddress,
+  normalizeEventSyncSourceDefaultTimeZone,
 } = require("./lib/event-sync");
 const {
   deleteEventMapPins,
@@ -4270,6 +4271,9 @@ async function buildExternalEventCreateData(parsedEvent, options = {}) {
   if (parsedEvent.endAt) createData.endAt = parsedEvent.endAt;
   if (parsedEvent.isDateOnly === true) createData.isDateOnly = true;
   if (parsedEvent.timeZone) createData.timeZone = parsedEvent.timeZone;
+  if (parsedEvent.timeZoneSource) {
+    createData.timeZoneSource = parsedEvent.timeZoneSource;
+  }
   if (parsedEvent.externalEventRecurrenceId) {
     createData.externalEventRecurrenceId = parsedEvent.externalEventRecurrenceId;
   }
@@ -4336,6 +4340,11 @@ async function buildExternalEventChangedUpdate(
     updateData.timeZone = parsedEvent.timeZone;
   } else {
     updateData.timeZone = FieldValue.delete();
+  }
+  if (parsedEvent.timeZoneSource) {
+    updateData.timeZoneSource = parsedEvent.timeZoneSource;
+  } else {
+    updateData.timeZoneSource = FieldValue.delete();
   }
 
   const addressChanged = hasExternalEventAddressChanged(
@@ -4412,9 +4421,12 @@ async function syncExternalEventSource(sourceDoc) {
   });
   const icsUrl = normalizeIcsUrl(sourceData.icsUrl);
   const icsText = await downloadTextFromUrl(icsUrl);
+  const sourceDefaultTimeZone =
+    normalizeEventSyncSourceDefaultTimeZone(sourceData.defaultTimeZone);
   const parsedEvents = parseExternalEventsFromIcs(icsText, {
     sourceId,
     sourceName,
+    sourceDefaultTimeZone,
   });
 
   const uniqueEventsByKey = new Map();
@@ -4564,6 +4576,7 @@ exports.createEventSyncSource = onCall(
           isActive = true,
           syncSchedule,
           autoSyncEnabled = false,
+          defaultTimeZone,
         } = request.data || {};
 
         if (typeof name !== "string" || name.trim().length === 0) {
@@ -4587,6 +4600,19 @@ exports.createEventSyncSource = onCall(
         }
         if (typeof syncSchedule === "string" && syncSchedule.trim().length > 0) {
           sourceData.syncSchedule = syncSchedule.trim();
+        }
+        if (
+          defaultTimeZone !== undefined &&
+          defaultTimeZone !== null &&
+          typeof defaultTimeZone === "string" &&
+          defaultTimeZone.trim().length > 0
+        ) {
+          const normalizedDefaultTimeZone =
+            normalizeEventSyncSourceDefaultTimeZone(defaultTimeZone);
+          if (!normalizedDefaultTimeZone) {
+            throw new Error("defaultTimeZone must be a valid IANA timezone");
+          }
+          sourceData.defaultTimeZone = normalizedDefaultTimeZone;
         }
 
         const docRef = await db.collection("eventSyncSources").add(sourceData);
@@ -4617,6 +4643,7 @@ exports.updateEventSyncSource = onCall(
           isActive,
           syncSchedule,
           autoSyncEnabled,
+          defaultTimeZone,
         } = request.data || {};
 
         if (typeof sourceId !== "string" || sourceId.trim().length === 0) {
@@ -4662,6 +4689,24 @@ exports.updateEventSyncSource = onCall(
         }
         if (autoSyncEnabled !== undefined) {
           updateData.autoSyncEnabled = Boolean(autoSyncEnabled);
+        }
+        if (defaultTimeZone !== undefined) {
+          if (
+            defaultTimeZone === null ||
+            (typeof defaultTimeZone === "string" &&
+              defaultTimeZone.trim().length === 0)
+          ) {
+            updateData.defaultTimeZone = FieldValue.delete();
+          } else if (typeof defaultTimeZone === "string") {
+            const normalizedDefaultTimeZone =
+              normalizeEventSyncSourceDefaultTimeZone(defaultTimeZone);
+            if (!normalizedDefaultTimeZone) {
+              throw new Error("defaultTimeZone must be a valid IANA timezone");
+            }
+            updateData.defaultTimeZone = normalizedDefaultTimeZone;
+          } else {
+            throw new Error("defaultTimeZone must be a string");
+          }
         }
 
         await db.collection("eventSyncSources").doc(sourceId.trim())

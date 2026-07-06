@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../services/auth_service.dart';
 import '../../services/event_sync_source_service.dart';
+import '../../utils/event_schedule_utils.dart';
 
 const TextStyle _kEventSyncChipLabelText = TextStyle(
   fontSize: 11,
@@ -190,6 +191,17 @@ class _EventSyncSourcesScreenState extends State<EventSyncSourcesScreen> {
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
                             child: Text(source.description!.trim()),
+                          ),
+                        if (source.defaultTimeZone?.trim().isNotEmpty == true)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              'Default timezone: ${source.defaultTimeZone}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
                           ),
                         const SizedBox(height: 6),
                         SelectableText(
@@ -388,12 +400,16 @@ class EventSyncSourceEditDialog extends StatefulWidget {
 }
 
 class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
+  static const String _noDefaultTimeZoneValue = '';
+
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameCtrl;
   late final TextEditingController _icsUrlCtrl;
   late final TextEditingController _descriptionCtrl;
   late final TextEditingController _publicUrlCtrl;
   late final TextEditingController _syncScheduleCtrl;
+  late final List<String> _defaultTimeZoneOptions;
+  late String _selectedDefaultTimeZone;
   late bool _isActive;
   late bool _autoSyncEnabled;
   bool _isSaving = false;
@@ -401,6 +417,20 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
   @override
   void initState() {
     super.initState();
+    EventScheduleUtils.ensureTimeZonesInitialized();
+    const commonTimeZones = <String>[
+      'America/New_York',
+      'America/Los_Angeles',
+      'America/Chicago',
+      'Europe/London',
+    ];
+    _defaultTimeZoneOptions = <String>[
+      _noDefaultTimeZoneValue,
+      ...commonTimeZones,
+      ...EventScheduleUtils.availableTimeZoneIds().where(
+        (timeZone) => !commonTimeZones.contains(timeZone),
+      ),
+    ];
     _nameCtrl = TextEditingController(text: widget.source?.name ?? '');
     _icsUrlCtrl = TextEditingController(text: widget.source?.icsUrl ?? '');
     _descriptionCtrl = TextEditingController(
@@ -412,8 +442,23 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
     _syncScheduleCtrl = TextEditingController(
       text: widget.source?.syncSchedule ?? '',
     );
+    _selectedDefaultTimeZone =
+        EventScheduleUtils.normalizeTimeZone(widget.source?.defaultTimeZone) ??
+        _noDefaultTimeZoneValue;
     _isActive = widget.source?.isActive ?? true;
     _autoSyncEnabled = widget.source?.autoSyncEnabled ?? false;
+  }
+
+  String _defaultTimeZoneLabel(String value) {
+    if (value == _noDefaultTimeZoneValue) {
+      return 'None (UTC for all-day events)';
+    }
+    return EventScheduleUtils.formatTimeZoneLabel(value);
+  }
+
+  String? get _effectiveDefaultTimeZone {
+    if (_selectedDefaultTimeZone == _noDefaultTimeZoneValue) return null;
+    return EventScheduleUtils.normalizeTimeZone(_selectedDefaultTimeZone);
   }
 
   @override
@@ -477,6 +522,32 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                     labelText: 'Public URL (optional)',
                   ),
                 ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  initialValue: _selectedDefaultTimeZone,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Default timezone for all-day events',
+                    helperText:
+                        'Used when the ICS feed has no calendar timezone. '
+                        'Re-sync after changing this.',
+                  ),
+                  items: _defaultTimeZoneOptions
+                      .map(
+                        (value) => DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(
+                            _defaultTimeZoneLabel(value),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    if (value == null) return;
+                    setState(() => _selectedDefaultTimeZone = value);
+                  },
+                ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Active'),
@@ -528,6 +599,11 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                   setState(() => _isSaving = true);
                   final trimmedDescription = _descriptionCtrl.text.trim();
                   final trimmedPublicUrl = _publicUrlCtrl.text.trim();
+                  final selectedDefaultTimeZone = _effectiveDefaultTimeZone;
+                  final previousDefaultTimeZone =
+                      EventScheduleUtils.normalizeTimeZone(
+                        widget.source?.defaultTimeZone,
+                      );
 
                   bool ok;
                   if (widget.source == null) {
@@ -545,8 +621,11 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                           ? null
                           : _syncScheduleCtrl.text.trim(),
                       autoSyncEnabled: _autoSyncEnabled,
+                      defaultTimeZone: selectedDefaultTimeZone,
                     );
                   } else {
+                    final defaultTimeZoneChanged =
+                        selectedDefaultTimeZone != previousDefaultTimeZone;
                     ok = await service.updateSource(
                       sourceId: widget.source!.id,
                       name: _nameCtrl.text.trim(),
@@ -556,6 +635,11 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                       isActive: _isActive,
                       syncSchedule: _syncScheduleCtrl.text.trim(),
                       autoSyncEnabled: _autoSyncEnabled,
+                      defaultTimeZone: defaultTimeZoneChanged
+                          ? selectedDefaultTimeZone
+                          : null,
+                      clearDefaultTimeZone: defaultTimeZoneChanged &&
+                          selectedDefaultTimeZone == null,
                     );
                   }
 

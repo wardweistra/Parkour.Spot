@@ -2,6 +2,8 @@ const {
   buildExternalEventKey,
   dateEndToUtc,
   dateStartToUtc,
+  EVENT_TIME_ZONE_SOURCE_FEED,
+  EVENT_TIME_ZONE_SOURCE_SOURCE_DEFAULT,
   extractLastHttpUrlFromDescription,
   hasExternalEventAddressChanged,
   hasExternalEventContentChanges,
@@ -70,6 +72,15 @@ describe("event-sync helpers", () => {
       const existing = {...incoming};
       const withZone = {...incoming, timeZone: "America/New_York"};
       expect(hasExternalEventContentChanges(existing, withZone)).toBe(true);
+    });
+
+    it("detects timeZoneSource changes", () => {
+      const existing = {...incoming, timeZone: "America/New_York"};
+      const withSource = {
+        ...existing,
+        timeZoneSource: EVENT_TIME_ZONE_SOURCE_SOURCE_DEFAULT,
+      };
+      expect(hasExternalEventContentChanges(existing, withSource)).toBe(true);
     });
   });
 
@@ -283,6 +294,7 @@ describe("event-sync helpers", () => {
       expect(events).toHaveLength(1);
       expect(events[0].isDateOnly).toBe(true);
       expect(events[0].timeZone).toBe("America/New_York");
+      expect(events[0].timeZoneSource).toBe(EVENT_TIME_ZONE_SOURCE_FEED);
       expect(events[0].startAt.toISOString()).toBe("2026-06-26T04:00:00.000Z");
       expect(events[0].endAt.toISOString()).toBe("2026-06-29T03:59:59.999Z");
     });
@@ -338,14 +350,14 @@ describe("event-sync helpers", () => {
       expect(events[0].startAt.toISOString()).toBe("2025-03-01T05:00:00.000Z");
     });
 
-    it("skips all-day events when calendar timezone is missing", () => {
+    it("parses all-day events with UTC when calendar timezone is missing", () => {
       const icsText = [
         "BEGIN:VCALENDAR",
         "VERSION:2.0",
         "BEGIN:VEVENT",
         "UID:allday@example.com",
         "DTSTART;VALUE=DATE:20260626",
-        "DTEND;VALUE=DATE:20260627",
+        "DTEND;VALUE=DATE:20260629",
         "SUMMARY:No TZ calendar",
         "END:VEVENT",
         "END:VCALENDAR",
@@ -356,7 +368,121 @@ describe("event-sync helpers", () => {
         sourceName: "S",
       });
 
-      expect(events).toHaveLength(0);
+      expect(events).toHaveLength(1);
+      expect(events[0].isDateOnly).toBe(true);
+      expect(events[0].timeZone).toBeUndefined();
+      expect(events[0].timeZoneSource).toBeUndefined();
+      expect(events[0].startAt.toISOString()).toBe("2026-06-26T00:00:00.000Z");
+      expect(events[0].endAt.toISOString()).toBe("2026-06-28T23:59:59.999Z");
+    });
+
+    it("uses source default timezone for all-day events without calendar TZ", () => {
+      const icsText = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "BEGIN:VEVENT",
+        "UID:allday@example.com",
+        "DTSTART;VALUE=DATE:20260626",
+        "DTEND;VALUE=DATE:20260629",
+        "SUMMARY:Source default TZ",
+        "END:VEVENT",
+        "END:VCALENDAR",
+      ].join("\r\n");
+
+      const events = parseExternalEventsFromIcs(icsText, {
+        sourceId: "apk",
+        sourceName: "American Parkour",
+        sourceDefaultTimeZone: "America/New_York",
+      });
+
+      expect(events).toHaveLength(1);
+      expect(events[0].timeZone).toBe("America/New_York");
+      expect(events[0].timeZoneSource).toBe(
+          EVENT_TIME_ZONE_SOURCE_SOURCE_DEFAULT,
+      );
+      expect(events[0].startAt.toISOString()).toBe("2026-06-26T04:00:00.000Z");
+      expect(events[0].endAt.toISOString()).toBe("2026-06-29T03:59:59.999Z");
+    });
+
+    it("prefers feed calendar timezone over source default", () => {
+      const icsText = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "X-WR-TIMEZONE:Europe/London",
+        "BEGIN:VEVENT",
+        "UID:allday@example.com",
+        "DTSTART;VALUE=DATE:20260626",
+        "DTEND;VALUE=DATE:20260627",
+        "SUMMARY:Feed TZ wins",
+        "END:VEVENT",
+        "END:VCALENDAR",
+      ].join("\r\n");
+
+      const events = parseExternalEventsFromIcs(icsText, {
+        sourceId: "s",
+        sourceName: "S",
+        sourceDefaultTimeZone: "America/New_York",
+      });
+
+      expect(events).toHaveLength(1);
+      expect(events[0].timeZone).toBe("Europe/London");
+      expect(events[0].timeZoneSource).toBe(EVENT_TIME_ZONE_SOURCE_FEED);
+    });
+
+    it("marks timed events with TZID as feed timezone source", () => {
+      const icsText = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "BEGIN:VEVENT",
+        "UID:timed@example.com",
+        "DTSTART;TZID=America/New_York:20260724T000000",
+        "DTEND;TZID=America/New_York:20260726T235959",
+        "SUMMARY:Indy Jam",
+        "END:VEVENT",
+        "END:VCALENDAR",
+      ].join("\r\n");
+
+      const events = parseExternalEventsFromIcs(icsText, {
+        sourceId: "apk",
+        sourceName: "American Parkour",
+        sourceDefaultTimeZone: "America/Los_Angeles",
+      });
+
+      expect(events).toHaveLength(1);
+      expect(events[0].timeZone).toBe("America/New_York");
+      expect(events[0].timeZoneSource).toBe(EVENT_TIME_ZONE_SOURCE_FEED);
+      expect(events[0].isDateOnly).toBe(false);
+    });
+
+    it("imports all-day and timed events from feeds without X-WR-TIMEZONE", () => {
+      const icsText = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "BEGIN:VEVENT",
+        "UID:all-day@example.com",
+        "DTSTART;VALUE=DATE:20260710",
+        "DTEND;VALUE=DATE:20260713",
+        "SUMMARY:Summer Jam",
+        "END:VEVENT",
+        "BEGIN:VEVENT",
+        "UID:timed@example.com",
+        "DTSTART;TZID=America/New_York:20260724T000000",
+        "DTEND;TZID=America/New_York:20260726T235959",
+        "SUMMARY:Indy Jam",
+        "END:VEVENT",
+        "END:VCALENDAR",
+      ].join("\r\n");
+
+      const events = parseExternalEventsFromIcs(icsText, {
+        sourceId: "apk",
+        sourceName: "American Parkour",
+      });
+
+      expect(events).toHaveLength(2);
+      expect(events.map((e) => e.title).sort()).toEqual([
+        "Indy Jam",
+        "Summer Jam",
+      ]);
     });
   });
 });
