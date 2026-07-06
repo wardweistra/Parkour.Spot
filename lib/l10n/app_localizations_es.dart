@@ -3490,11 +3490,12 @@ class AppLocalizationsEs extends AppLocalizations {
       'Marcar como duplicado de un evento nativo';
 
   @override
-  String get eventDetailMarkDuplicateSearchHint => 'URL o ID del evento';
+  String get eventDetailMarkDuplicateSearchHint =>
+      'Nombre del evento, URL o ID';
 
   @override
   String get eventDetailMarkDuplicateNotFoundOrInvalid =>
-      'Introduce un ID de evento válido o un enlace /event/…';
+      'Elige un evento de la lista o introduce un ID válido o un enlace /event/….';
 
   @override
   String get eventDetailMarkDuplicateTargetNotNative =>
@@ -3509,11 +3510,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get eventDetailMarkDuplicateSuggestionsHeader =>
-      'Eventos nativos recientes';
+      'Eventos nativos en estas fechas';
 
   @override
   String get eventDetailMarkDuplicateNoSuggestions =>
-      'No hay sugerencias disponibles.';
+      'No se encontraron eventos nativos dentro de una semana de las fechas de este evento.';
 
   @override
   String eventDetailMarkDuplicateConfirmBody(String title) {

@@ -5907,16 +5907,16 @@ abstract class AppLocalizations {
   /// **'Mark as duplicate of native event'**
   String get eventDetailMarkDuplicatePickNativeTitle;
 
-  /// Hint for finding canonical event by id or link
+  /// Hint for finding canonical event by name, id, or link
   ///
   /// In en, this message translates to:
-  /// **'Event URL or ID'**
+  /// **'Event name, URL, or ID'**
   String get eventDetailMarkDuplicateSearchHint;
 
   /// Invalid search input for event duplicate picker
   ///
   /// In en, this message translates to:
-  /// **'Enter a valid event id or /event/… link.'**
+  /// **'Pick a matching event from the list, or enter a valid event id or /event/… link.'**
   String get eventDetailMarkDuplicateNotFoundOrInvalid;
 
   /// Chosen original has an external calendar source
@@ -5940,13 +5940,13 @@ abstract class AppLocalizations {
   /// Section header in duplicate picker
   ///
   /// In en, this message translates to:
-  /// **'Recent native events'**
+  /// **'Native events around these dates'**
   String get eventDetailMarkDuplicateSuggestionsHeader;
 
   /// Empty suggestions in duplicate picker
   ///
   /// In en, this message translates to:
-  /// **'No suggestions available.'**
+  /// **'No native events found within a week of this event\'s dates.'**
   String get eventDetailMarkDuplicateNoSuggestions;
 
   /// Confirm marking duplicate; title is canonical event name

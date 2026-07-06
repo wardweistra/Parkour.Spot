@@ -3356,11 +3356,11 @@
   "@eventDetailMarkDuplicatePickNativeTitle": {
     "description": "Event selection dialog title"
   },
-  "eventDetailMarkDuplicateSearchHint": "Event URL or ID",
+  "eventDetailMarkDuplicateSearchHint": "Event name, URL, or ID",
   "@eventDetailMarkDuplicateSearchHint": {
-    "description": "Hint for finding canonical event by id or link"
+    "description": "Hint for finding canonical event by name, id, or link"
   },
-  "eventDetailMarkDuplicateNotFoundOrInvalid": "Enter a valid event id or /event/… link.",
+  "eventDetailMarkDuplicateNotFoundOrInvalid": "Pick a matching event from the list, or enter a valid event id or /event/… link.",
   "@eventDetailMarkDuplicateNotFoundOrInvalid": {
     "description": "Invalid search input for event duplicate picker"
   },
@@ -3376,11 +3376,11 @@
   "@eventDetailMarkDuplicateUseButton": {
     "description": "Confirm picked search result in duplicate dialog"
   },
-  "eventDetailMarkDuplicateSuggestionsHeader": "Recent native events",
+  "eventDetailMarkDuplicateSuggestionsHeader": "Native events around these dates",
   "@eventDetailMarkDuplicateSuggestionsHeader": {
     "description": "Section header in duplicate picker"
   },
-  "eventDetailMarkDuplicateNoSuggestions": "No suggestions available.",
+  "eventDetailMarkDuplicateNoSuggestions": "No native events found within a week of this event's dates.",
   "@eventDetailMarkDuplicateNoSuggestions": {
     "description": "Empty suggestions in duplicate picker"
   },

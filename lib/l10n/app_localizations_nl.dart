@@ -3478,11 +3478,11 @@ class AppLocalizationsNl extends AppLocalizations {
       'Als duplicaat van een native event markeren';
 
   @override
-  String get eventDetailMarkDuplicateSearchHint => 'Event-URL of -ID';
+  String get eventDetailMarkDuplicateSearchHint => 'Eventnaam, URL of ID';
 
   @override
   String get eventDetailMarkDuplicateNotFoundOrInvalid =>
-      'Voer een geldige event-ID of een /event/…-link in.';
+      'Kies een passend event uit de lijst of voer een geldige event-ID of /event/…-link in.';
 
   @override
   String get eventDetailMarkDuplicateTargetNotNative =>
@@ -3497,11 +3497,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get eventDetailMarkDuplicateSuggestionsHeader =>
-      'Recente native events';
+      'Native events rond deze data';
 
   @override
   String get eventDetailMarkDuplicateNoSuggestions =>
-      'Geen suggesties beschikbaar.';
+      'Geen native events gevonden binnen een week van de data van dit event.';
 
   @override
   String eventDetailMarkDuplicateConfirmBody(String title) {

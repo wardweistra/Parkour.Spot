@@ -1,10 +1,20 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:intl/intl.dart';
 
+import '../models/parkour_event.dart';
 import '../models/spot.dart';
 import '../services/admin_events_service.dart';
 import '../services/geocoding_service.dart';
 import '../services/spot_service.dart';
+import '../utils/event_date_window.dart';
 import '../widgets/explore_entity_picker/explore_entity_picker_config.dart';
+
+DateTime? parseEventSearchStartAt(dynamic raw) {
+  if (raw is String && raw.isNotEmpty) {
+    return DateTime.tryParse(raw);
+  }
+  return null;
+}
 
 String formatSpotSuggestionLocation(Spot spot) {
   final parts = <String>[];
@@ -26,6 +36,74 @@ String formatEventSuggestionLocation(Map<String, dynamic> event) {
     parts.add(countryCode.toUpperCase());
   }
   return parts.join(', ');
+}
+
+String formatEventCandidateSubtitle(ParkourEvent event) {
+  final parts = <String>[];
+  parts.add(
+    DateFormat.yMMMd().add_jm().format(event.startAt.toLocal()),
+  );
+  final location = formatEventSuggestionLocation({
+    'city': event.city,
+    'countryCode': event.countryCode,
+  });
+  if (location.isNotEmpty) {
+    parts.add(location);
+  }
+  return parts.join(' · ');
+}
+
+/// Event title autocomplete for moderator tools (no place/spot suggestions).
+Future<List<Map<String, dynamic>>> buildEventTitleAutocompleteOptions({
+  required String query,
+  required AdminEventsService eventsService,
+  Set<String> excludeEventIds = const {},
+  EventDateWindow? dateWindow,
+  int limit = 8,
+}) async {
+  final trimmedQuery = query.trim();
+  if (trimmedQuery.length < 2) return [];
+
+  final matches = await eventsService.searchEventsByTitle(
+    query: trimmedQuery,
+    limit: limit * 3,
+  );
+
+  final options = <Map<String, dynamic>>[];
+  for (final event in matches) {
+    final eventId = event['id'] as String?;
+    final title = (event['title'] as String?)?.trim() ?? '';
+    if (eventId == null || eventId.isEmpty || title.isEmpty) continue;
+    if (excludeEventIds.contains(eventId)) continue;
+
+    final startAt = parseEventSearchStartAt(event['startAt']);
+    if (dateWindow != null) {
+      if (startAt == null || !dateWindow.overlaps(startAt, startAt)) {
+        continue;
+      }
+    }
+
+    final location = formatEventSuggestionLocation(event);
+    final secondaryParts = <String>[];
+    if (startAt != null) {
+      secondaryParts.add(
+        DateFormat.yMMMd().add_jm().format(startAt.toLocal()),
+      );
+    }
+    if (location.isNotEmpty) {
+      secondaryParts.add(location);
+    }
+
+    options.add({
+      'optionType': 'event',
+      'description': title,
+      if (secondaryParts.isNotEmpty) 'secondary': secondaryParts.join(' · '),
+      'eventId': eventId,
+    });
+    if (options.length >= limit) break;
+  }
+
+  return options;
 }
 
 double zoomLevelForPlaceDetails(Map<String, dynamic> details) {

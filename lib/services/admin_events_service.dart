@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
 import '../models/parkour_event.dart';
+import '../utils/event_date_window.dart';
 import '../utils/image_preparation.dart';
 
 class AdminEventsService extends ChangeNotifier {
@@ -930,17 +931,41 @@ class AdminEventsService extends ChangeNotifier {
     }
   }
 
-  /// Recent events that can serve as a duplicate target: native, not a duplicate.
+  /// Native, non-duplicate events that can serve as a duplicate target.
+  ///
+  /// When [aroundStartAt] is set, results are limited to events whose dates
+  /// overlap a padded window around the reference event (see [EventDateWindow]).
   Future<List<ParkourEvent>> fetchNativeOriginalEventCandidates({
     required String excludeEventId,
+    DateTime? aroundStartAt,
+    DateTime? aroundEndAt,
     int limit = 40,
   }) async {
     try {
-      final snapshot = await _firestore
-          .collection('events')
-          .orderBy('startAt', descending: true)
-          .limit(limit * 3)
-          .get();
+      final dateWindow = aroundStartAt == null
+          ? null
+          : EventDateWindow.aroundEvent(
+              startAt: aroundStartAt,
+              endAt: aroundEndAt,
+            );
+
+      Query<Map<String, dynamic>> query = _firestore.collection('events');
+      if (dateWindow != null) {
+        query = query
+            .where(
+              'startAt',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(dateWindow.start),
+            )
+            .where(
+              'startAt',
+              isLessThanOrEqualTo: Timestamp.fromDate(dateWindow.end),
+            )
+            .orderBy('startAt');
+      } else {
+        query = query.orderBy('startAt', descending: true);
+      }
+
+      final snapshot = await query.limit(limit * 3).get();
       final out = <ParkourEvent>[];
       for (final doc in snapshot.docs) {
         if (doc.id == excludeEventId) continue;
@@ -948,6 +973,9 @@ class AdminEventsService extends ChangeNotifier {
         if (!event.isNativeEvent) continue;
         final dup = event.duplicateOf?.trim();
         if (dup != null && dup.isNotEmpty) continue;
+        if (dateWindow != null && !dateWindow.overlapsParkourEvent(event)) {
+          continue;
+        }
         out.add(event);
         if (out.length >= limit) break;
       }

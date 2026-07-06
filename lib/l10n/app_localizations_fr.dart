@@ -3524,11 +3524,12 @@ class AppLocalizationsFr extends AppLocalizations {
       'Marquer comme doublon d’un événement natif';
 
   @override
-  String get eventDetailMarkDuplicateSearchHint => 'URL ou ID de l’événement';
+  String get eventDetailMarkDuplicateSearchHint =>
+      'Nom de l’événement, URL ou ID';
 
   @override
   String get eventDetailMarkDuplicateNotFoundOrInvalid =>
-      'Saisissez un ID d’événement valide ou un lien /event/…';
+      'Choisissez un événement dans la liste ou saisissez un ID valide ou un lien /event/…';
 
   @override
   String get eventDetailMarkDuplicateTargetNotNative =>
@@ -3543,11 +3544,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get eventDetailMarkDuplicateSuggestionsHeader =>
-      'Événements natifs récents';
+      'Événements natifs autour de ces dates';
 
   @override
   String get eventDetailMarkDuplicateNoSuggestions =>
-      'Aucune suggestion disponible.';
+      'Aucun événement natif trouvé dans la semaine autour des dates de cet événement.';
 
   @override
   String eventDetailMarkDuplicateConfirmBody(String title) {

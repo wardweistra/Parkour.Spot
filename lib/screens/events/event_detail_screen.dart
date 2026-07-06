@@ -696,7 +696,11 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       case _EventStaffAction.markDuplicate:
         final originalId = await showDialog<String>(
           context: context,
-          builder: (c) => EventSelectionDialog(currentEventId: id),
+          builder: (c) => EventSelectionDialog(
+            currentEventId: id,
+            referenceStartAt: event.startAt,
+            referenceEndAt: event.endAt,
+          ),
         );
         if (!context.mounted || originalId == null) return;
         final admin = context.read<AdminEventsService>();
