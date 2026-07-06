@@ -12,6 +12,7 @@ import '../../models/spot.dart';
 import '../../models/spot_list.dart';
 import '../../services/admin_events_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/event_sync_source_service.dart';
 import '../../services/geocoding_service.dart';
 import '../../services/spot_list_service.dart';
 import '../../services/spot_service.dart';
@@ -38,7 +39,35 @@ class _AdminEventsScreenState extends State<AdminEventsScreen> {
     super.initState();
     _authService = context.read<AuthService>();
     _authService.addListener(_tryFetchForAdmin);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _tryFetchForAdmin());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _tryFetchForAdmin();
+      _loadEventSources();
+    });
+  }
+
+  Future<void> _loadEventSources() async {
+    await context.read<EventSyncSourceService>().fetchSources(
+      includeInactive: true,
+    );
+  }
+
+  Future<void> _onFiltersChanged({
+    String? eventSourceFilter,
+    bool? upcomingOnly,
+    bool? excludeDuplicates,
+    bool? withoutLocationOnly,
+  }) async {
+    final service = context.read<AdminEventsService>();
+    final changed = service.updateListFilters(
+      eventSourceFilter: eventSourceFilter,
+      upcomingOnly: upcomingOnly,
+      excludeDuplicates: excludeDuplicates,
+      withoutLocationOnly: withoutLocationOnly,
+    );
+    if (!changed) return;
+
+    _scheduledInitialFetch = true;
+    await service.fetchEvents(forceRefresh: true);
   }
 
   @override
@@ -436,6 +465,34 @@ class _AdminEventsScreenState extends State<AdminEventsScreen> {
       ),
       body: Consumer<AdminEventsService>(
         builder: (context, service, _) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _AdminEventsFilterBar(
+                service: service,
+                onEventSourceChanged: service.isLoading
+                    ? null
+                    : (value) => _onFiltersChanged(eventSourceFilter: value),
+                onUpcomingOnlyChanged: service.isLoading
+                    ? null
+                    : (value) => _onFiltersChanged(upcomingOnly: value),
+                onExcludeDuplicatesChanged: service.isLoading
+                    ? null
+                    : (value) => _onFiltersChanged(excludeDuplicates: value),
+                onWithoutLocationOnlyChanged: service.isLoading
+                    ? null
+                    : (value) =>
+                          _onFiltersChanged(withoutLocationOnly: value),
+              ),
+              Expanded(child: _buildEventsBody(context, service)),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildEventsBody(BuildContext context, AdminEventsService service) {
           if (service.isLoading && service.events.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -467,22 +524,27 @@ class _AdminEventsScreenState extends State<AdminEventsScreen> {
           }
 
           if (service.events.isEmpty) {
+            final emptyMessage = service.hasActiveListFilters
+                ? 'No events match the current filters'
+                : 'No events yet';
             return RefreshIndicator(
               onRefresh: () => service.fetchEvents(forceRefresh: true),
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                children: const [
+                children: [
                   Padding(
-                    padding: EdgeInsets.only(top: 140),
+                    padding: const EdgeInsets.only(top: 140),
                     child: Column(
                       children: [
                         Icon(
-                          Icons.event_busy_outlined,
+                          service.hasActiveListFilters
+                              ? Icons.filter_alt_off_outlined
+                              : Icons.event_busy_outlined,
                           size: 64,
                           color: Colors.grey,
                         ),
-                        SizedBox(height: 16),
-                        Text('No events yet'),
+                        const SizedBox(height: 16),
+                        Text(emptyMessage),
                       ],
                     ),
                   ),
@@ -508,7 +570,107 @@ class _AdminEventsScreenState extends State<AdminEventsScreen> {
               },
             ),
           );
-        },
+  }
+}
+
+class _AdminEventsFilterBar extends StatelessWidget {
+  const _AdminEventsFilterBar({
+    required this.service,
+    required this.onEventSourceChanged,
+    required this.onUpcomingOnlyChanged,
+    required this.onExcludeDuplicatesChanged,
+    required this.onWithoutLocationOnlyChanged,
+  });
+
+  final AdminEventsService service;
+  final ValueChanged<String?>? onEventSourceChanged;
+  final ValueChanged<bool>? onUpcomingOnlyChanged;
+  final ValueChanged<bool>? onExcludeDuplicatesChanged;
+  final ValueChanged<bool>? onWithoutLocationOnlyChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Material(
+      color: colorScheme.surfaceContainerLow,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Consumer<EventSyncSourceService>(
+              builder: (context, sourceService, _) {
+                final sources = [...sourceService.sources]
+                  ..sort((a, b) => a.name.compareTo(b.name));
+
+                return DropdownButtonFormField<String>(
+                  initialValue: service.eventSourceFilter,
+                  isExpanded: true,
+                  decoration: InputDecoration(
+                    labelText: 'Event source',
+                    filled: true,
+                    fillColor: colorScheme.surface,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    isDense: true,
+                  ),
+                  items: [
+                    const DropdownMenuItem<String>(
+                      value: AdminEventsService.eventSourceFilterAll,
+                      child: Text('All sources'),
+                    ),
+                    const DropdownMenuItem<String>(
+                      value: AdminEventsService.eventSourceFilterNative,
+                      child: Text('Native (parkour.spot)'),
+                    ),
+                    ...sources.map(
+                      (source) => DropdownMenuItem<String>(
+                        value: source.id,
+                        child: Text(
+                          source.isActive
+                              ? source.name
+                              : '${source.name} (inactive)',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ],
+                  onChanged: onEventSourceChanged,
+                );
+              },
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                FilterChip(
+                  label: const Text('Upcoming only'),
+                  selected: service.upcomingOnly,
+                  onSelected: onUpcomingOnlyChanged == null
+                      ? null
+                      : (selected) => onUpcomingOnlyChanged!(selected),
+                ),
+                FilterChip(
+                  label: const Text('Exclude duplicates'),
+                  selected: service.excludeDuplicates,
+                  onSelected: onExcludeDuplicatesChanged == null
+                      ? null
+                      : (selected) => onExcludeDuplicatesChanged!(selected),
+                ),
+                FilterChip(
+                  label: const Text('Without location only'),
+                  selected: service.withoutLocationOnly,
+                  onSelected: onWithoutLocationOnlyChanged == null
+                      ? null
+                      : (selected) => onWithoutLocationOnlyChanged!(selected),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

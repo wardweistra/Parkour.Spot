@@ -28,12 +28,68 @@ class AdminEventsService extends ChangeNotifier {
 
   static const int _defaultPageSize = 30;
   static const int maxSpotListIds = 10;
+  static const String eventSourceFilterAll = '__all__';
+  static const String eventSourceFilterNative = '__native__';
+  static const int _maxNativeFilterBatches = 15;
+
+  String _eventSourceFilter = eventSourceFilterAll;
+  bool _upcomingOnly = true;
+  bool _excludeDuplicates = true;
+  bool _withoutLocationOnly = false;
 
   List<ParkourEvent> get events => List<ParkourEvent>.unmodifiable(_events);
   bool get isLoading => _isLoading;
   bool get isLoadingMore => _isLoadingMore;
   bool get hasMore => _hasMore;
   String? get error => _error;
+  String get eventSourceFilter => _eventSourceFilter;
+  bool get upcomingOnly => _upcomingOnly;
+  bool get excludeDuplicates => _excludeDuplicates;
+  bool get withoutLocationOnly => _withoutLocationOnly;
+  bool get hasEventSourceFilter =>
+      _eventSourceFilter != eventSourceFilterAll;
+  bool get hasActiveListFilters =>
+      hasEventSourceFilter ||
+      !_upcomingOnly ||
+      !_excludeDuplicates ||
+      _withoutLocationOnly;
+
+  void setEventSourceFilter(String filter) {
+    if (_eventSourceFilter == filter) return;
+    _eventSourceFilter = filter;
+    notifyListeners();
+  }
+
+  /// Returns true when any filter value changed.
+  bool updateListFilters({
+    String? eventSourceFilter,
+    bool? upcomingOnly,
+    bool? excludeDuplicates,
+    bool? withoutLocationOnly,
+  }) {
+    var changed = false;
+    if (eventSourceFilter != null && _eventSourceFilter != eventSourceFilter) {
+      _eventSourceFilter = eventSourceFilter;
+      changed = true;
+    }
+    if (upcomingOnly != null && _upcomingOnly != upcomingOnly) {
+      _upcomingOnly = upcomingOnly;
+      changed = true;
+    }
+    if (excludeDuplicates != null && _excludeDuplicates != excludeDuplicates) {
+      _excludeDuplicates = excludeDuplicates;
+      changed = true;
+    }
+    if (withoutLocationOnly != null &&
+        _withoutLocationOnly != withoutLocationOnly) {
+      _withoutLocationOnly = withoutLocationOnly;
+      changed = true;
+    }
+    if (changed) {
+      notifyListeners();
+    }
+    return changed;
+  }
 
   Future<void> fetchEvents({
     bool forceRefresh = false,
@@ -52,12 +108,15 @@ class AdminEventsService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final snapshot = await _firestore
-          .collection('events')
-          .orderBy('startAt', descending: true)
-          .limit(pageSize)
-          .get();
-      _applyPage(snapshot, pageSize, replaceExisting: true);
+      if (_usesClientSidePaging) {
+        await _fetchUntilPageFull(
+          replaceExisting: true,
+          pageSize: pageSize,
+        );
+      } else {
+        final snapshot = await _buildEventsQuery().limit(pageSize).get();
+        _applyPage(snapshot, pageSize, replaceExisting: true);
+      }
     } catch (e, st) {
       _error = 'Failed to load events';
       debugPrint('AdminEventsService.fetchEvents error: $e\n$st');
@@ -80,13 +139,18 @@ class AdminEventsService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final snapshot = await _firestore
-          .collection('events')
-          .orderBy('startAt', descending: true)
-          .startAfterDocument(_lastEventDocument!)
-          .limit(pageSize)
-          .get();
-      _applyPage(snapshot, pageSize, replaceExisting: false);
+      if (_usesClientSidePaging) {
+        await _fetchUntilPageFull(
+          replaceExisting: false,
+          pageSize: pageSize,
+        );
+      } else {
+        final snapshot = await _buildEventsQuery()
+            .startAfterDocument(_lastEventDocument!)
+            .limit(pageSize)
+            .get();
+        _applyPage(snapshot, pageSize, replaceExisting: false);
+      }
     } catch (e, st) {
       _error = 'Failed to load more events';
       debugPrint('AdminEventsService.loadMore error: $e\n$st');
@@ -538,6 +602,108 @@ class AdminEventsService extends ChangeNotifier {
     }
   }
 
+  Query<Map<String, dynamic>> _buildEventsQuery() {
+    Query<Map<String, dynamic>> query = _firestore.collection('events');
+    if (_isExternalSourceFilter) {
+      query = query.where('eventSourceId', isEqualTo: _eventSourceFilter);
+    }
+    return query.orderBy('startAt', descending: true);
+  }
+
+  bool get _isExternalSourceFilter =>
+      _eventSourceFilter != eventSourceFilterAll &&
+      _eventSourceFilter != eventSourceFilterNative;
+
+  bool get _usesClientSidePaging =>
+      _eventSourceFilter == eventSourceFilterNative ||
+      _upcomingOnly ||
+      _excludeDuplicates ||
+      _withoutLocationOnly;
+
+  bool _matchesEventSourceFilter(ParkourEvent event) {
+    switch (_eventSourceFilter) {
+      case eventSourceFilterAll:
+        return true;
+      case eventSourceFilterNative:
+        return event.isNativeEvent;
+      default:
+        return event.eventSourceId == _eventSourceFilter;
+    }
+  }
+
+  bool _isUpcoming(ParkourEvent event, DateTime now) {
+    final utcNow = now.toUtc();
+    if (event.endAt != null) {
+      return !event.endAt!.toUtc().isBefore(utcNow);
+    }
+    return !event.startAt.toUtc().isBefore(utcNow);
+  }
+
+  bool _isDuplicate(ParkourEvent event) {
+    final duplicateOf = event.duplicateOf?.trim();
+    return duplicateOf != null && duplicateOf.isNotEmpty;
+  }
+
+  bool _hasLocation(ParkourEvent event) {
+    if (event.latitude != null && event.longitude != null) return true;
+    if (event.spotIds.isNotEmpty) return true;
+    if (event.spotListIds.isNotEmpty) return true;
+    return false;
+  }
+
+  bool _matchesEventFilters(ParkourEvent event) {
+    if (!_matchesEventSourceFilter(event)) return false;
+    if (_upcomingOnly && !_isUpcoming(event, DateTime.now())) return false;
+    if (_excludeDuplicates && _isDuplicate(event)) return false;
+    if (_withoutLocationOnly && _hasLocation(event)) return false;
+    return true;
+  }
+
+  Future<void> _fetchUntilPageFull({
+    required bool replaceExisting,
+    required int pageSize,
+  }) async {
+    if (replaceExisting) {
+      _events.clear();
+      _lastEventDocument = null;
+      _hasMore = true;
+    }
+
+    final targetCount = replaceExisting
+        ? pageSize
+        : _events.length + pageSize;
+    var batches = 0;
+
+    while (_hasMore && _events.length < targetCount) {
+      if (batches >= _maxNativeFilterBatches) {
+        break;
+      }
+      batches++;
+
+      Query<Map<String, dynamic>> query = _buildEventsQuery();
+      if (_lastEventDocument != null) {
+        query = query.startAfterDocument(_lastEventDocument!);
+      }
+
+      final snapshot = await query.limit(pageSize).get();
+      final docs = snapshot.docs;
+      if (docs.isEmpty) {
+        _hasMore = false;
+        break;
+      }
+
+      for (final doc in docs) {
+        final event = ParkourEvent.fromFirestore(doc);
+        if (_matchesEventFilters(event)) {
+          _events.add(event);
+        }
+      }
+
+      _lastEventDocument = docs.last;
+      _hasMore = docs.length >= pageSize;
+    }
+  }
+
   void _applyPage(
     QuerySnapshot<Map<String, dynamic>> snapshot,
     int pageSize, {
@@ -548,7 +714,10 @@ class AdminEventsService extends ChangeNotifier {
       _events.clear();
     }
     for (final doc in docs) {
-      _events.add(ParkourEvent.fromFirestore(doc));
+      final event = ParkourEvent.fromFirestore(doc);
+      if (_matchesEventFilters(event)) {
+        _events.add(event);
+      }
     }
     if (replaceExisting) {
       _lastEventDocument = docs.isNotEmpty ? docs.last : null;
