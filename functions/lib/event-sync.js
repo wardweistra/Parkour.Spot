@@ -349,7 +349,7 @@ function normalizeAllDaySchedule(icsBlock, calendarTimeZone) {
 }
 
 /**
- * All-day VALUE=DATE bounds when the feed has no X-WR-TIMEZONE (floating dates).
+ * All-day VALUE=DATE bounds when feed has no X-WR-TIMEZONE (floating dates).
  * @param {string} icsBlock
  * @return {Object|null}
  */
@@ -666,10 +666,11 @@ function normalizeEventSyncSourceDefaultTimeZone(raw) {
 }
 
 /**
+ * Resolves all-day schedule and time zone source from an ICS block.
  * @param {string} icsBlock
  * @param {string|null} calendarTimeZone
  * @param {string|null} sourceDefaultTimeZone
- * @return {{schedule: Object|null, timeZoneSource: string|null}}
+ * @return {{schedule: (Object|null), timeZoneSource: (string|null)}}
  */
 function resolveAllDaySchedule(
     icsBlock,
