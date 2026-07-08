@@ -1696,6 +1696,42 @@ abstract class AppLocalizations {
   /// **'Clear end'**
   String get addEventClearEndTooltip;
 
+  /// Add event page: date picker title when choosing start date
+  ///
+  /// In en, this message translates to:
+  /// **'Select start date'**
+  String get addEventSchedulePickStartDate;
+
+  /// Add event page: time picker title when choosing start time
+  ///
+  /// In en, this message translates to:
+  /// **'Select start time'**
+  String get addEventSchedulePickStartTime;
+
+  /// Add event page: date picker title when choosing optional end date after start
+  ///
+  /// In en, this message translates to:
+  /// **'Select end date (optional)'**
+  String get addEventSchedulePickEndDateOptional;
+
+  /// Add event page: time picker title when choosing optional end time after start
+  ///
+  /// In en, this message translates to:
+  /// **'Select end time (optional)'**
+  String get addEventSchedulePickEndTimeOptional;
+
+  /// Add event page: skip optional end date/time in chained schedule picker
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get addEventScheduleSkipEnd;
+
+  /// Add event page: combined start/end schedule field label
+  ///
+  /// In en, this message translates to:
+  /// **'Dates'**
+  String get addEventScheduleLabel;
+
   /// Add event page: spot/list linking section
   ///
   /// In en, this message translates to:

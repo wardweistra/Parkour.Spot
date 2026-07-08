@@ -1172,6 +1172,30 @@
   "@addEventClearEndTooltip": {
     "description": "Add event page: clear end time button"
   },
+  "addEventSchedulePickStartDate": "Select start date",
+  "@addEventSchedulePickStartDate": {
+    "description": "Add event page: date picker title when choosing start date"
+  },
+  "addEventSchedulePickStartTime": "Select start time",
+  "@addEventSchedulePickStartTime": {
+    "description": "Add event page: time picker title when choosing start time"
+  },
+  "addEventSchedulePickEndDateOptional": "Select end date (optional)",
+  "@addEventSchedulePickEndDateOptional": {
+    "description": "Add event page: date picker title when choosing optional end date after start"
+  },
+  "addEventSchedulePickEndTimeOptional": "Select end time (optional)",
+  "@addEventSchedulePickEndTimeOptional": {
+    "description": "Add event page: time picker title when choosing optional end time after start"
+  },
+  "addEventScheduleSkipEnd": "Skip",
+  "@addEventScheduleSkipEnd": {
+    "description": "Add event page: skip optional end date/time in chained schedule picker"
+  },
+  "addEventScheduleLabel": "Dates",
+  "@addEventScheduleLabel": {
+    "description": "Add event page: combined start/end schedule field label"
+  },
   "addEventLinkingSectionTitle": "Linking",
   "@addEventLinkingSectionTitle": {
     "description": "Add event page: spot/list linking section"

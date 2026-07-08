@@ -947,6 +947,26 @@ class AppLocalizationsFr extends AppLocalizations {
   String get addEventClearEndTooltip => 'Effacer la fin';
 
   @override
+  String get addEventSchedulePickStartDate => 'Choisir la date de début';
+
+  @override
+  String get addEventSchedulePickStartTime => 'Choisir l\'heure de début';
+
+  @override
+  String get addEventSchedulePickEndDateOptional =>
+      'Choisir la date de fin (facultatif)';
+
+  @override
+  String get addEventSchedulePickEndTimeOptional =>
+      'Choisir l\'heure de fin (facultatif)';
+
+  @override
+  String get addEventScheduleSkipEnd => 'Ignorer';
+
+  @override
+  String get addEventScheduleLabel => 'Dates';
+
+  @override
   String get addEventLinkingSectionTitle => 'Liaison';
 
   @override

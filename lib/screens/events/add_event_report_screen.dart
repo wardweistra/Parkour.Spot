@@ -59,11 +59,13 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
   final _descriptionController = TextEditingController();
   final _websiteController = TextEditingController();
   final _locationAddressController = TextEditingController();
-  final _startDisplayController = TextEditingController();
-  final _endDisplayController = TextEditingController();
+  final _scheduleDisplayController = TextEditingController();
 
   bool _isSubmitting = false;
   bool _isDateOnly = true;
+  // Used to prevent click-through interactions on the embedded Google Map while
+  // the schedule pickers (date/time) are open.
+  bool _isSchedulePickerOpen = false;
   DateTime _startAt = DateTime.now().toUtc().add(const Duration(hours: 1));
   DateTime? _endAt;
   late String _selectedTimeZone;
@@ -296,8 +298,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
     _descriptionController.dispose();
     _websiteController.dispose();
     _locationAddressController.dispose();
-    _startDisplayController.dispose();
-    _endDisplayController.dispose();
+    _scheduleDisplayController.dispose();
     super.dispose();
   }
 
@@ -309,9 +310,147 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
   }
 
   void _syncScheduleDisplayControllers() {
-    _startDisplayController.text = _formatDateTime(_startAt);
-    _endDisplayController.text =
-        _endAt == null ? '' : _formatDateTime(_endAt!);
+    _scheduleDisplayController.text = EventScheduleUtils.formatSummaryLine(
+      context,
+      startAt: _startAt,
+      endAt: _endAt,
+      isDateOnly: _isDateOnly,
+      timeZone: _selectedTimeZone,
+    );
+  }
+
+  Future<void> _withSchedulePickerLock(Future<void> Function() fn) async {
+    _isSchedulePickerOpen = true;
+    try {
+      await fn();
+    } finally {
+      _isSchedulePickerOpen = false;
+    }
+  }
+
+  DateTime _endAfterStartUtc({required DateTime startAtUtc}) {
+    if (_isDateOnly) {
+      final startLocal = _displayInSelectedTimeZone(startAtUtc);
+      final nextLocalDate = DateTime(
+        startLocal.year,
+        startLocal.month,
+        startLocal.day,
+      ).add(const Duration(days: 1));
+      return EventScheduleUtils.dateEndToUtc(
+        nextLocalDate,
+        timeZone: _selectedTimeZone,
+      );
+    }
+
+    return startAtUtc.add(const Duration(hours: 1));
+  }
+
+  Future<DateTime?> _pickStartSchedule(AppLocalizations l10n) async {
+    if (_isDateOnly) {
+      final initialDate = _displayInSelectedTimeZone(_startAt);
+      final pickedDate = await showDatePicker(
+        context: context,
+        helpText: l10n.addEventSchedulePickStartDate,
+        initialDate: DateTime(
+          initialDate.year,
+          initialDate.month,
+          initialDate.day,
+        ),
+        firstDate: DateTime.now().subtract(const Duration(days: 365)),
+        lastDate: DateTime.now().add(const Duration(days: 3650)),
+      );
+      if (pickedDate == null || !mounted) return null;
+      return EventScheduleUtils.dateStartToUtc(
+        pickedDate,
+        timeZone: _selectedTimeZone,
+      );
+    }
+
+    return _pickDateTime(
+      initial: _startAt,
+      dateHelpText: l10n.addEventSchedulePickStartDate,
+      timeHelpText: l10n.addEventSchedulePickStartTime,
+    );
+  }
+
+  Future<({DateTime? value, bool cancelled})> _pickEndSchedule(
+    AppLocalizations l10n, {
+    required DateTime startAtUtc,
+    DateTime? initialEndUtc,
+  }) async {
+    final initialEnd =
+        initialEndUtc ?? _endAfterStartUtc(startAtUtc: startAtUtc);
+
+    if (_isDateOnly) {
+      final initialDate = _displayInSelectedTimeZone(initialEnd);
+      final minDate = _displayInSelectedTimeZone(startAtUtc);
+      final pickedDate = await showDatePicker(
+        context: context,
+        helpText: l10n.addEventSchedulePickEndDateOptional,
+        cancelText: l10n.addEventScheduleSkipEnd,
+        initialDate: DateTime(
+          initialDate.year,
+          initialDate.month,
+          initialDate.day,
+        ),
+        firstDate: DateTime(
+          minDate.year,
+          minDate.month,
+          minDate.day,
+        ),
+        lastDate: DateTime.now().add(const Duration(days: 3650)),
+      );
+      if (pickedDate == null || !mounted) {
+        return (value: null, cancelled: true);
+      }
+      return (
+        value: EventScheduleUtils.dateEndToUtc(
+          pickedDate,
+          timeZone: _selectedTimeZone,
+        ),
+        cancelled: false,
+      );
+    }
+
+    final picked = await _pickDateTime(
+      initial: initialEnd,
+      minUtc: startAtUtc,
+      dateHelpText: l10n.addEventSchedulePickEndDateOptional,
+      timeHelpText: l10n.addEventSchedulePickEndTimeOptional,
+      dateCancelText: l10n.addEventScheduleSkipEnd,
+      timeCancelText: l10n.addEventScheduleSkipEnd,
+    );
+    if (picked == null || !mounted) {
+      return (value: null, cancelled: true);
+    }
+
+    final clamped = picked.isBefore(startAtUtc)
+        ? _endAfterStartUtc(startAtUtc: startAtUtc)
+        : picked;
+    return (value: clamped, cancelled: false);
+  }
+
+  Future<void> _pickScheduleFromStart() async {
+    await _withSchedulePickerLock(() async {
+      final l10n = AppLocalizations.of(context)!;
+      final newStart = await _pickStartSchedule(l10n);
+      if (newStart == null || !mounted) return;
+
+      final preservedEnd =
+          _endAt != null && !_endAt!.isBefore(newStart) ? _endAt : null;
+      final endResult = await _pickEndSchedule(
+        l10n,
+        startAtUtc: newStart,
+        initialEndUtc: preservedEnd,
+      );
+      if (!mounted) return;
+
+      setState(() {
+        _startAt = newStart;
+        _endAt = endResult.cancelled ? null : endResult.value;
+        _syncScheduleDisplayControllers();
+      });
+    });
   }
 
   void _onFormFieldChanged() {
@@ -371,6 +510,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
   }
 
   Future<void> _getCurrentLocation({bool setAsPickedPin = true}) async {
+    if (_isSchedulePickerOpen) return;
     setState(() => _isGettingLocation = true);
 
     final permission = await LocationPermissionUtils.checkAndRequestPermission(
@@ -542,6 +682,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
   }
 
   Future<void> _pickLocationOnMap() async {
+    if (_isSchedulePickerOpen) return;
     final result = await ExploreEntityPickerScreen.show(
       context,
       config: ExploreEntityPickerConfig(
@@ -686,89 +827,32 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
     return clearButton();
   }
 
-  Future<void> _pickStartDateTime() async {
-    if (_isDateOnly) {
-      final initialDate = _displayInSelectedTimeZone(_startAt);
-      final pickedDate = await showDatePicker(
-        context: context,
-        initialDate: DateTime(
-          initialDate.year,
-          initialDate.month,
-          initialDate.day,
-        ),
-        firstDate: DateTime.now().subtract(const Duration(days: 365)),
-        lastDate: DateTime.now().add(const Duration(days: 3650)),
-      );
-      if (pickedDate == null || !mounted) return;
-      final value = EventScheduleUtils.dateStartToUtc(
-        pickedDate,
-        timeZone: _selectedTimeZone,
-      );
-      setState(() {
-        _startAt = value;
-        if (_endAt != null && _endAt!.isBefore(_startAt)) {
-          _endAt = _startAt;
-        }
-        _syncScheduleDisplayControllers();
-      });
-      return;
-    }
-
-    final value = await _pickDateTime(initial: _startAt);
-    if (value == null || !mounted) return;
-    setState(() {
-      _startAt = value;
-      if (_endAt != null && _endAt!.isBefore(_startAt)) {
-        _endAt = _startAt.add(const Duration(hours: 1));
-      }
-      _syncScheduleDisplayControllers();
-    });
-  }
-
-  Future<void> _pickEndDateTime() async {
-    if (_isDateOnly) {
-      final initialDateTime = _displayInSelectedTimeZone(_endAt ?? _startAt);
-      final pickedDate = await showDatePicker(
-        context: context,
-        initialDate: DateTime(
-          initialDateTime.year,
-          initialDateTime.month,
-          initialDateTime.day,
-        ),
-        firstDate: DateTime.now().subtract(const Duration(days: 365)),
-        lastDate: DateTime.now().add(const Duration(days: 3650)),
-      );
-      if (pickedDate == null || !mounted) return;
-      setState(() {
-        _endAt = EventScheduleUtils.dateEndToUtc(
-          pickedDate,
-          timeZone: _selectedTimeZone,
-        );
-        _syncScheduleDisplayControllers();
-      });
-      return;
-    }
-
-    final value = await _pickDateTime(initial: _endAt ?? _startAt);
-    if (value == null || !mounted) return;
-    setState(() {
-      _endAt = value;
-      _syncScheduleDisplayControllers();
-    });
-  }
-
-  Future<DateTime?> _pickDateTime({required DateTime initial}) async {
+  Future<DateTime?> _pickDateTime({
+    required DateTime initial,
+    DateTime? minUtc,
+    String? dateHelpText,
+    String? timeHelpText,
+    String? dateCancelText,
+    String? timeCancelText,
+  }) async {
     final displayInitial = _displayInSelectedTimeZone(initial);
+    final displayMin = minUtc == null ? null : _displayInSelectedTimeZone(minUtc);
     final pickedDate = await showDatePicker(
       context: context,
+      helpText: dateHelpText,
+      cancelText: dateCancelText,
       initialDate: displayInitial,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      firstDate: displayMin != null
+          ? DateTime(displayMin.year, displayMin.month, displayMin.day)
+          : DateTime.now().subtract(const Duration(days: 365)),
       lastDate: DateTime.now().add(const Duration(days: 3650)),
     );
     if (pickedDate == null || !mounted) return null;
 
     final pickedTime = await showTimePicker(
       context: context,
+      helpText: timeHelpText,
+      cancelText: timeCancelText,
       initialTime: TimeOfDay.fromDateTime(displayInitial),
     );
     if (pickedTime == null || !mounted) return null;
@@ -792,15 +876,6 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
     return uri != null &&
         uri.hasAuthority &&
         (uri.scheme == 'http' || uri.scheme == 'https');
-  }
-
-  String _formatDateTime(DateTime value) {
-    return EventScheduleUtils.formatSummaryLine(
-      context,
-      startAt: value,
-      isDateOnly: _isDateOnly,
-      timeZone: _selectedTimeZone,
-    );
   }
 
   String? _effectiveAddressForSubmission() {
@@ -1168,6 +1243,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
               onRefreshLocation: () => _getCurrentLocation(setAsPickedPin: true),
               onPickOnMap: _pickLocationOnMap,
               onToggleSatellite: (value) {
+                if (_isSchedulePickerOpen) return;
                 setState(() => _isSatelliteView = value);
                 final searchState = Provider.of<SearchStateService>(
                   context,
@@ -1301,41 +1377,38 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
             ),
             const SizedBox(height: 8),
             CustomTextField(
-              controller: _startDisplayController,
-              labelText: l10n.addEventStartLabel,
-              prefixIcon: Icons.event_outlined,
+              controller: _scheduleDisplayController,
+              labelText: l10n.addEventScheduleLabel,
+              prefixIcon: Icons.date_range_outlined,
               readOnly: true,
               enabled: fieldsEnabled,
-              onTap: fieldsEnabled ? _pickStartDateTime : null,
-              suffixIcon: Icons.edit_calendar,
-            ),
-            const SizedBox(height: 16),
-            CustomTextField(
-              controller: _endDisplayController,
-              labelText: l10n.addEventEndLabel,
-              hintText: l10n.addEventEndNotSet,
-              prefixIcon: Icons.event_available_outlined,
-              readOnly: true,
-              enabled: fieldsEnabled,
-              onTap: fieldsEnabled ? _pickEndDateTime : null,
-              suffixIconWidget: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_endAt != null)
-                    IconButton(
-                      icon: const Icon(Icons.clear),
-                      tooltip: l10n.addEventClearEndTooltip,
-                      onPressed: fieldsEnabled
-                          ? () => setState(() {
-                              _endAt = null;
-                              _syncScheduleDisplayControllers();
-                            })
-                          : null,
+              onTap: fieldsEnabled ? _pickScheduleFromStart : null,
+              suffixIcon: _endAt == null ? Icons.edit_calendar : null,
+              suffixIconWidget: _endAt == null
+                  ? null
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.clear, size: 20),
+                          tooltip: l10n.addEventClearEndTooltip,
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 40,
+                            minHeight: 40,
+                          ),
+                          onPressed: fieldsEnabled
+                              ? () => setState(() {
+                                  _endAt = null;
+                                  _syncScheduleDisplayControllers();
+                                })
+                              : null,
+                        ),
+                        const Icon(Icons.edit_calendar),
+                        const SizedBox(width: 8),
+                      ],
                     ),
-                  const Icon(Icons.edit_calendar),
-                  const SizedBox(width: 8),
-                ],
-              ),
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(

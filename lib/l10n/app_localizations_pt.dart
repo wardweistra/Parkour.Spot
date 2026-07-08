@@ -938,6 +938,26 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addEventClearEndTooltip => 'Limpar fim';
 
   @override
+  String get addEventSchedulePickStartDate => 'Escolher data de início';
+
+  @override
+  String get addEventSchedulePickStartTime => 'Escolher hora de início';
+
+  @override
+  String get addEventSchedulePickEndDateOptional =>
+      'Escolher data de fim (opcional)';
+
+  @override
+  String get addEventSchedulePickEndTimeOptional =>
+      'Escolher hora de fim (opcional)';
+
+  @override
+  String get addEventScheduleSkipEnd => 'Ignorar';
+
+  @override
+  String get addEventScheduleLabel => 'Datas';
+
+  @override
   String get addEventLinkingSectionTitle => 'Ligação';
 
   @override

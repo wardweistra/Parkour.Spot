@@ -934,6 +934,25 @@ class AppLocalizationsNl extends AppLocalizations {
   String get addEventClearEndTooltip => 'Einde wissen';
 
   @override
+  String get addEventSchedulePickStartDate => 'Kies startdatum';
+
+  @override
+  String get addEventSchedulePickStartTime => 'Kies starttijd';
+
+  @override
+  String get addEventSchedulePickEndDateOptional =>
+      'Kies einddatum (optioneel)';
+
+  @override
+  String get addEventSchedulePickEndTimeOptional => 'Kies eindtijd (optioneel)';
+
+  @override
+  String get addEventScheduleSkipEnd => 'Overslaan';
+
+  @override
+  String get addEventScheduleLabel => 'Datums';
+
+  @override
   String get addEventLinkingSectionTitle => 'Koppeling';
 
   @override
