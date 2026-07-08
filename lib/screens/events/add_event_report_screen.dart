@@ -1218,6 +1218,60 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
     );
   }
 
+  Widget _buildEventBasicsSection(
+    AppLocalizations l10n,
+    bool fieldsEnabled,
+  ) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            CustomTextField(
+              controller: _titleController,
+              labelText: l10n.addEventTitleLabel,
+              prefixIcon: Icons.event_outlined,
+              textCapitalization: TextCapitalization.words,
+              enabled: fieldsEnabled,
+              validator: (value) {
+                final trimmed = value?.trim() ?? '';
+                if (trimmed.isEmpty) return l10n.addEventTitleRequired;
+                if (trimmed.length > 200) return l10n.addEventTitleTooLong;
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            CustomTextField(
+              controller: _descriptionController,
+              labelText: l10n.addEventDescriptionLabel,
+              prefixIcon: Icons.description_outlined,
+              maxLines: 4,
+              textCapitalization: TextCapitalization.sentences,
+              enabled: fieldsEnabled,
+              validator: (value) {
+                final trimmed = value?.trim() ?? '';
+                if (trimmed.length > 2000) {
+                  return l10n.addEventDescriptionTooLong;
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            CustomTextField(
+              controller: _websiteController,
+              labelText: l10n.addEventWebsiteLabel,
+              hintText: l10n.addEventWebsiteHint,
+              prefixIcon: Icons.link,
+              keyboardType: TextInputType.url,
+              enabled: fieldsEnabled,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildWhenSection(AppLocalizations l10n, ThemeData theme) {
     final fieldsEnabled = !_isSubmitting;
 
@@ -1357,48 +1411,11 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
               ),
             ),
             const SizedBox(height: 16),
+            _buildEventBasicsSection(l10n, fieldsEnabled),
+            const SizedBox(height: 16),
             _buildWhereSection(l10n, theme),
             const SizedBox(height: 16),
             _buildWhenSection(l10n, theme),
-            const SizedBox(height: 16),
-            CustomTextField(
-              controller: _titleController,
-              labelText: l10n.addEventTitleLabel,
-              prefixIcon: Icons.event_outlined,
-              textCapitalization: TextCapitalization.words,
-              enabled: fieldsEnabled,
-              validator: (value) {
-                final trimmed = value?.trim() ?? '';
-                if (trimmed.isEmpty) return l10n.addEventTitleRequired;
-                if (trimmed.length > 200) return l10n.addEventTitleTooLong;
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            CustomTextField(
-              controller: _descriptionController,
-              labelText: l10n.addEventDescriptionLabel,
-              prefixIcon: Icons.description_outlined,
-              maxLines: 4,
-              textCapitalization: TextCapitalization.sentences,
-              enabled: fieldsEnabled,
-              validator: (value) {
-                final trimmed = value?.trim() ?? '';
-                if (trimmed.length > 2000) {
-                  return l10n.addEventDescriptionTooLong;
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            CustomTextField(
-              controller: _websiteController,
-              labelText: l10n.addEventWebsiteLabel,
-              hintText: l10n.addEventWebsiteHint,
-              prefixIcon: Icons.link,
-              keyboardType: TextInputType.url,
-              enabled: fieldsEnabled,
-            ),
             const SizedBox(height: 16),
             SpotImageSection(
               selectedImageBytes: _selectedImageBytes,
