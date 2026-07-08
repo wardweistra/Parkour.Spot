@@ -129,6 +129,9 @@ const {
   isEventPast,
 } = require("./lib/event-map-pins");
 const {executeEventsInBoundsQuery} = require("./lib/events-in-bounds");
+const {
+  lookupTimeZoneFromCoordinates,
+} = require("./lib/timezone-lookup");
 
 // Import shared HTML template
 const {generateHtmlPage} = require("./html-template");
@@ -6285,6 +6288,45 @@ exports.backfillEventSearchTerms = onCall(
       } catch (error) {
         console.error("Error in backfillEventSearchTerms:", error);
         throw new Error(`Failed to backfill event search terms: ${error.message}`);
+      }
+    },
+);
+
+// Timezone lookup from coordinates via Google Time Zone API
+exports.lookupTimeZone = onCall(
+    {region: "europe-west1", secrets: ["GOOGLE_MAPS_API_KEY"]},
+    async (request) => {
+      try {
+        const {latitude, longitude} = request.data || {};
+
+        if (latitude === undefined || longitude === undefined) {
+          throw new Error("latitude and longitude are required");
+        }
+
+        const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+        const timeZone = await lookupTimeZoneFromCoordinates(
+            Number(latitude),
+            Number(longitude),
+            apiKey,
+        );
+
+        if (!timeZone) {
+          return {
+            success: false,
+            error: "No timezone found for coordinates",
+          };
+        }
+
+        return {
+          success: true,
+          timeZone,
+        };
+      } catch (error) {
+        console.error("Error looking up timezone:", error);
+        return {
+          success: false,
+          error: error.message,
+        };
       }
     },
 );

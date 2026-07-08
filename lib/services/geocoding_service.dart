@@ -174,6 +174,28 @@ class GeocodingService extends ChangeNotifier {
     }
   }
 
+  /// Looks up the IANA timezone for coordinates via the backend.
+  ///
+  /// Returns null if lookup fails.
+  Future<String?> lookupTimeZone(double latitude, double longitude) async {
+    try {
+      final callable = _functions.httpsCallable('lookupTimeZone');
+      final result = await callable.call({
+        'latitude': latitude,
+        'longitude': longitude,
+      });
+
+      if (result.data['success'] == true) {
+        return result.data['timeZone'] as String?;
+      }
+      debugPrint('Timezone lookup failed: ${result.data['error']}');
+      return null;
+    } catch (e) {
+      debugPrint('Error looking up timezone: $e');
+      return null;
+    }
+  }
+
   /// Clears any error state
   void clearError() {
     _error = null;

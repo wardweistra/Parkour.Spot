@@ -16,6 +16,7 @@ import '../../services/search_state_service.dart';
 import '../../services/spot_list_service.dart';
 import '../../services/spot_service.dart';
 import '../../utils/browser_timezone_utils.dart';
+import '../../utils/event_location_utils.dart';
 import '../../utils/event_schedule_utils.dart';
 import '../../utils/image_preparation.dart';
 import '../../utils/location_permission_utils.dart';
@@ -66,7 +67,10 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
   DateTime _startAt = DateTime.now().toUtc().add(const Duration(hours: 1));
   DateTime? _endAt;
   late String _selectedTimeZone;
+  late final String _browserTimeZone;
   late final List<String> _timeZoneOptions;
+  bool _timeZoneManuallySet = false;
+  int _timeZoneLookupGeneration = 0;
 
   LatLng? _pickedLocation;
   Position? _currentPosition;
@@ -98,8 +102,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
     return _mapFallbackCenter;
   }
 
-  bool _spotHasCoordinates(Spot spot) =>
-      spot.latitude != 0 || spot.longitude != 0;
+  bool _spotHasCoordinates(Spot spot) => spotHasCoordinates(spot);
 
   List<Spot> _readSpotList(List<Spot> Function() read) {
     try {
@@ -154,7 +157,8 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
   @override
   void initState() {
     super.initState();
-    _selectedTimeZone = detectIanaTimeZone();
+    _browserTimeZone = detectIanaTimeZone();
+    _selectedTimeZone = _browserTimeZone;
     _timeZoneOptions = EventScheduleUtils.availableTimeZoneIds();
     _pickedLocation = widget.initialLocation;
     if (widget.initialSpotId != null) {
@@ -203,11 +207,15 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_linkedSpotListSpots.isNotEmpty) {
           _recenterMapForDisplay();
+          _syncTimeZoneFromLocation();
         } else {
           _loadLinkedSpotListSpots();
         }
       });
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _syncTimeZoneFromLocation();
+    });
   }
 
   void _onAuthChanged() {
@@ -225,6 +233,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
       if (_linkedSpotListSpots.isNotEmpty && mounted) {
         setState(() => _linkedSpotListSpots = []);
         _recenterMapForDisplay();
+        _syncTimeZoneFromLocation();
       }
       return;
     }
@@ -244,6 +253,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
       if (spotIds.isEmpty) {
         setState(() => _linkedSpotListSpots = []);
         _recenterMapForDisplay();
+        _syncTimeZoneFromLocation();
         return;
       }
 
@@ -256,10 +266,12 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
 
       setState(() => _linkedSpotListSpots = loadedSpots);
       _recenterMapForDisplay();
+      _syncTimeZoneFromLocation();
     } catch (e) {
       debugPrint('Failed to load linked spot list spots: $e');
       if (!mounted || _linkedSpotListId != listId) return;
       setState(() => _linkedSpotListSpots = []);
+      _syncTimeZoneFromLocation();
     }
   }
 
@@ -395,6 +407,9 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
         _isLocationPermissionDenied = false;
       });
       _recenterMapForDisplay();
+      if (setAsPickedPin) {
+        _syncTimeZoneFromLocation();
+      }
       await _geocodeLocation(latLng, bindToForm: setAsPickedPin);
     } catch (e) {
       if (mounted && setAsPickedPin) {
@@ -469,6 +484,46 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
     }
   }
 
+  Future<void> _syncTimeZoneFromLocation() async {
+    if (!mounted || _timeZoneManuallySet) return;
+
+    final generation = ++_timeZoneLookupGeneration;
+    final coordinates = resolveEventTimezoneCoordinates(
+      pickedLocation: _pickedLocation,
+      linkedSpots: _linkedSpots,
+      linkedSpotListSpots: _linkedSpotListSpots,
+    );
+
+    if (coordinates == null) {
+      if (!mounted || generation != _timeZoneLookupGeneration) return;
+      setState(() {
+        _selectedTimeZone = _browserTimeZone;
+        _syncScheduleDisplayControllers();
+      });
+      return;
+    }
+
+    try {
+      final geocodingService = context.read<GeocodingService>();
+      final rawTimeZone = await geocodingService.lookupTimeZone(
+        coordinates.latitude,
+        coordinates.longitude,
+      );
+      final normalized = EventScheduleUtils.normalizeTimeZone(rawTimeZone);
+      if (!mounted || generation != _timeZoneLookupGeneration) return;
+      if (normalized == null) return;
+      setState(() {
+        _selectedTimeZone = normalized;
+        if (!_timeZoneOptions.contains(normalized)) {
+          _timeZoneOptions.insert(0, normalized);
+        }
+        _syncScheduleDisplayControllers();
+      });
+    } catch (_) {
+      // Best-effort timezone lookup.
+    }
+  }
+
   Future<void> _linkSpotsOnMap() async {
     final result = await ExploreEntityPickerScreen.show(
       context,
@@ -483,6 +538,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
     if (_linkedSpots.any((s) => s.id == spot.id)) return;
     setState(() => _linkedSpots.add(spot));
     _recenterMapForDisplay();
+    _syncTimeZoneFromLocation();
   }
 
   Future<void> _pickLocationOnMap() async {
@@ -507,6 +563,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
     });
     _recenterMapForDisplay();
     await _geocodeLocation(latLng);
+    _syncTimeZoneFromLocation();
   }
 
   bool _typedAddressNeedsResolution() {
@@ -559,6 +616,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
         _currentPosition = null;
       });
       _recenterMapForDisplay();
+      _syncTimeZoneFromLocation();
       return true;
     } catch (_) {
       if (mounted) {
@@ -583,6 +641,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
       _locationAddressController.clear();
     });
     _recenterMapForDisplay();
+    _syncTimeZoneFromLocation();
   }
 
   Widget _buildLocationAddressSuffixIcon({
@@ -1062,6 +1121,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
                                 ),
                               );
                               _recenterMapForDisplay();
+                              _syncTimeZoneFromLocation();
                             },
                     ),
                   ),
@@ -1084,6 +1144,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
                                 _linkedSpotListSpots = [];
                               });
                               _recenterMapForDisplay();
+                              _syncTimeZoneFromLocation();
                             },
                     ),
                 ],
@@ -1260,6 +1321,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
                       if (value == null) return;
                       setState(() {
                         _selectedTimeZone = value;
+                        _timeZoneManuallySet = true;
                         _syncScheduleDisplayControllers();
                       });
                     }
