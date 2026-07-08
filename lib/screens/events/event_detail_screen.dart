@@ -1,12 +1,14 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:provider/provider.dart';
 
+import '../../config/app_config.dart';
 import '../../constants/spot_detail_ui.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/parkour_event.dart';
@@ -22,12 +24,17 @@ import '../../services/search_state_service.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../services/event_report_service.dart';
 import '../../utils/browser_timezone_utils.dart';
+import '../../utils/event_location_utils.dart';
 import '../../utils/event_schedule_utils.dart';
+import '../../utils/location_permission_utils.dart';
+import '../../utils/map_recentering_mixin.dart';
 import '../../utils/event_suggestion_utils.dart';
 import '../../utils/marker_icon_utils.dart';
 import '../../utils/image_preparation.dart';
+import '../../widgets/custom_text_field.dart';
 import '../../widgets/location_info_box.dart';
 import '../../widgets/explore_entity_picker/explore_entity_picker_config.dart';
+import '../../widgets/spot_form/location_section.dart';
 import '../../widgets/explore_entity_picker/explore_entity_picker_screen.dart';
 import '../../services/web_share_service.dart';
 import '../../utils/share_link_text.dart';
@@ -1857,37 +1864,88 @@ class _SuggestEventEditDialog extends StatefulWidget {
       _SuggestEventEditDialogState();
 }
 
-class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
+class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
+    with MapRecenteringMixin {
   final TextEditingController _emailController = TextEditingController();
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
   late final TextEditingController _websiteController;
   late final TextEditingController _locationAddressController;
+  final TextEditingController _scheduleDisplayController =
+      TextEditingController();
   late final List<String> _timeZoneOptions;
   late final String _originalTimeZoneSelection;
   String? _originalNormalizedTimeZone;
-  bool _timeZoneDirty = false;
+  bool _timeZoneManuallySet = false;
+  late final String _browserTimeZone;
+  int _timeZoneLookupGeneration = 0;
   late bool _suggestedIsDateOnly;
   late String _selectedTimeZone;
   late DateTime _suggestedStartAt;
   DateTime? _suggestedEndAt;
   late List<Spot> _suggestedLinkedSpots;
   LatLng? _suggestedLocation;
+  Position? _currentPosition;
+  late LatLng _mapFallbackCenter;
   String? _suggestedAddress;
   String? _suggestedCity;
   String? _suggestedCountryCode;
   String? _resolvedAddressInput;
   bool _locationCleared = false;
   bool _isGeocoding = false;
-  BitmapDescriptor? _suggestedLocationPinIcon;
+  bool _isGettingLocation = false;
+  bool _isSatelliteView = false;
+  bool _isLocationPermissionDenied = false;
+  bool _isSchedulePickerOpen = false;
+  bool _scheduleDisplayInitialized = false;
+  SearchStateService? _searchStateServiceRef;
   bool _submitting = false;
   String? _error;
 
   static final RegExp _emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
+  LatLng get _displayLocationForMap {
+    if (_suggestedLocation != null) return _suggestedLocation!;
+    if (_currentPosition != null) {
+      return LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
+    }
+    return _mapFallbackCenter;
+  }
+
+  List<Spot> get _mapDisplaySpots => List<Spot>.from(_suggestedLinkedSpots);
+
+  List<LatLng> _mapMarkerLocations() {
+    final locations = <LatLng>[];
+    if (_suggestedLocation != null) {
+      locations.add(_suggestedLocation!);
+    }
+    for (final spot in _mapDisplaySpots) {
+      if (spotHasCoordinates(spot)) {
+        locations.add(LatLng(spot.latitude, spot.longitude));
+      }
+    }
+    if (locations.isNotEmpty) return locations;
+
+    if (_currentPosition != null) {
+      return [
+        LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+      ];
+    }
+    return [_mapFallbackCenter];
+  }
+
+  void _recenterMapForDisplay() {
+    recenterMapForLocationsAfterBuild(_mapMarkerLocations());
+  }
+
   @override
   void initState() {
     super.initState();
+    _browserTimeZone = detectIanaTimeZone();
+    _mapFallbackCenter = const LatLng(
+      AppConfig.defaultMapCenterLat,
+      AppConfig.defaultMapCenterLng,
+    );
     final auth = context.read<AuthService>();
     _emailController.text =
         auth.userProfile?.email.trim() ?? auth.currentUser?.email?.trim() ?? '';
@@ -1907,7 +1965,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
       widget.event.timeZone,
     );
     _originalTimeZoneSelection =
-        _originalNormalizedTimeZone ?? detectIanaTimeZone();
+        _originalNormalizedTimeZone ?? _browserTimeZone;
     _selectedTimeZone = _originalTimeZoneSelection;
     if (!_timeZoneOptions.contains(_selectedTimeZone)) {
       _timeZoneOptions.insert(0, _selectedTimeZone);
@@ -1939,16 +1997,44 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
     _suggestedCity = widget.event.city;
     _suggestedCountryCode = widget.event.countryCode;
     _loadSuggestedLinkedSpots();
-    _loadSuggestedLocationPinIcon();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _searchStateServiceRef = Provider.of<SearchStateService>(
+        context,
+        listen: false,
+      );
+      _searchStateServiceRef!.addListener(_onSearchStateChanged);
+      setState(() => _isSatelliteView = _searchStateServiceRef!.isSatellite);
+      _recenterMapForDisplay();
+      _syncTimeZoneFromLocation();
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_scheduleDisplayInitialized) {
+      _scheduleDisplayInitialized = true;
+      _syncScheduleDisplayControllers();
+    }
+    _recenterMapForDisplay();
+  }
+
+  void _onSearchStateChanged() {
+    if (!mounted) return;
+    final searchState = _searchStateServiceRef;
+    if (searchState == null) return;
+    setState(() => _isSatelliteView = searchState.isSatellite);
   }
 
   @override
   void dispose() {
+    _searchStateServiceRef?.removeListener(_onSearchStateChanged);
     _emailController.dispose();
     _titleController.dispose();
     _descriptionController.dispose();
     _websiteController.dispose();
     _locationAddressController.dispose();
+    _scheduleDisplayController.dispose();
     super.dispose();
   }
 
@@ -1961,7 +2047,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
         (parsed.scheme == 'http' || parsed.scheme == 'https');
   }
 
-  DateTime _displayInEventTimeZone(DateTime value) {
+  DateTime _displayInSelectedTimeZone(DateTime value) {
     return EventScheduleUtils.toDisplayDateTime(
       value,
       timeZone: _selectedTimeZone,
@@ -1975,18 +2061,77 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
     );
   }
 
-  String _formatDateTime(DateTime value) {
-    return EventScheduleUtils.formatSummaryLine(
+  String _timeZoneShortLabel(String value) {
+    return EventScheduleUtils.formatTimeZoneShortLabel(
+      value,
+      referenceUtc: _suggestedStartAt,
+    );
+  }
+
+  void _syncScheduleDisplayControllers() {
+    _scheduleDisplayController.text = EventScheduleUtils.formatSummaryLine(
       context,
-      startAt: value,
+      startAt: _suggestedStartAt,
+      endAt: _suggestedEndAt,
       isDateOnly: _suggestedIsDateOnly,
       timeZone: _selectedTimeZone,
     );
   }
 
-  Future<void> _loadSuggestedLocationPinIcon() async {
-    final icon = await MarkerIconUtils.loadNormalSelectedMapPin();
-    if (mounted) setState(() => _suggestedLocationPinIcon = icon);
+  Future<void> _withSchedulePickerLock(Future<void> Function() fn) async {
+    _isSchedulePickerOpen = true;
+    try {
+      await fn();
+    } finally {
+      _isSchedulePickerOpen = false;
+    }
+  }
+
+  DateTime _endAfterStartUtc({required DateTime startAtUtc}) {
+    if (_suggestedIsDateOnly) {
+      final startLocal = _displayInSelectedTimeZone(startAtUtc);
+      final nextLocalDate = DateTime(
+        startLocal.year,
+        startLocal.month,
+        startLocal.day,
+      ).add(const Duration(days: 1));
+      return EventScheduleUtils.dateEndToUtc(
+        nextLocalDate,
+        timeZone: _selectedTimeZone,
+      );
+    }
+
+    return startAtUtc.add(const Duration(hours: 1));
+  }
+
+  InputDecoration _outlineFieldDecoration(
+    ThemeData theme, {
+    required String labelText,
+    String? hintText,
+  }) {
+    final scheme = theme.colorScheme;
+    final borderRadius = BorderRadius.circular(12);
+    OutlineInputBorder border(Color color, {double width = 1}) {
+      return OutlineInputBorder(
+        borderRadius: borderRadius,
+        borderSide: BorderSide(color: color, width: width),
+      );
+    }
+
+    return InputDecoration(
+      labelText: labelText,
+      hintText: hintText,
+      border: border(scheme.outline),
+      enabledBorder: border(scheme.outline.withValues(alpha: 0.5)),
+      focusedBorder: border(scheme.primary, width: 2),
+      errorBorder: border(scheme.error),
+      focusedErrorBorder: border(scheme.error, width: 2),
+      filled: true,
+      fillColor: scheme.surface,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      labelStyle: TextStyle(color: scheme.onSurface.withValues(alpha: 0.7)),
+      hintStyle: TextStyle(color: scheme.onSurface.withValues(alpha: 0.5)),
+    );
   }
 
   Future<void> _loadSuggestedLinkedSpots() async {
@@ -2003,6 +2148,8 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
     setState(() {
       _suggestedLinkedSpots = spots.toList(growable: true);
     });
+    _recenterMapForDisplay();
+    _syncTimeZoneFromLocation();
   }
 
   List<String> _normalizedSpotIds(Iterable<String?> ids) {
@@ -2062,7 +2209,97 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
   bool _typedAddressNeedsResolution() {
     final typed = _locationAddressController.text.trim();
     if (typed.isEmpty) return false;
-    return typed != _resolvedAddressInput;
+    return typed != _resolvedAddressInput || _suggestedLocation == null;
+  }
+
+  Future<void> _getCurrentLocation({bool setAsPickedPin = true}) async {
+    if (_isSchedulePickerOpen) return;
+    setState(() => _isGettingLocation = true);
+
+    final permission = await LocationPermissionUtils.checkAndRequestPermission(
+      context: context,
+      showErrorMessages: setAsPickedPin,
+    );
+    final isPermissionGranted = LocationPermissionUtils.isPermissionGranted(
+      permission,
+    );
+
+    if (mounted) {
+      setState(() => _isLocationPermissionDenied = !isPermissionGranted);
+    }
+
+    if (!isPermissionGranted) {
+      if (mounted) setState(() => _isGettingLocation = false);
+      return;
+    }
+
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+
+      if (!mounted) return;
+      final latLng = LatLng(position.latitude, position.longitude);
+      setState(() {
+        _currentPosition = position;
+        if (setAsPickedPin) {
+          _suggestedLocation = latLng;
+          _locationCleared = false;
+        }
+        _isLocationPermissionDenied = false;
+      });
+      _recenterMapForDisplay();
+      if (setAsPickedPin) {
+        _syncTimeZoneFromLocation();
+      }
+      await _geocodeLocation(latLng);
+    } catch (_) {
+      // Best-effort current location lookup.
+    } finally {
+      if (mounted) setState(() => _isGettingLocation = false);
+    }
+  }
+
+  Future<void> _syncTimeZoneFromLocation() async {
+    if (!mounted || _timeZoneManuallySet) return;
+
+    final generation = ++_timeZoneLookupGeneration;
+    final coordinates = resolveEventTimezoneCoordinates(
+      pickedLocation: _suggestedLocation,
+      linkedSpots: _suggestedLinkedSpots,
+      linkedSpotListSpots: const [],
+    );
+
+    if (coordinates == null) {
+      if (!mounted || generation != _timeZoneLookupGeneration) return;
+      setState(() {
+        _selectedTimeZone = _browserTimeZone;
+        _syncScheduleDisplayControllers();
+      });
+      return;
+    }
+
+    try {
+      final geocodingService = context.read<GeocodingService>();
+      final rawTimeZone = await geocodingService.lookupTimeZone(
+        coordinates.latitude,
+        coordinates.longitude,
+      );
+      final normalized = EventScheduleUtils.normalizeTimeZone(rawTimeZone);
+      if (!mounted || generation != _timeZoneLookupGeneration) return;
+      if (normalized == null) return;
+      setState(() {
+        _selectedTimeZone = normalized;
+        if (!_timeZoneOptions.contains(normalized)) {
+          _timeZoneOptions.insert(0, normalized);
+        }
+        _syncScheduleDisplayControllers();
+      });
+    } catch (_) {
+      // Best-effort timezone lookup.
+    }
   }
 
   Future<void> _geocodeLocation(LatLng location) async {
@@ -2126,8 +2363,11 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
         _locationAddressController.text = acceptedAddress;
         _resolvedAddressInput = acceptedAddress;
         _locationCleared = false;
+        _currentPosition = null;
         _error = null;
       });
+      _recenterMapForDisplay();
+      _syncTimeZoneFromLocation();
       return true;
     } catch (_) {
       if (mounted) setState(() => _error = l10n.addEventAddressNotFound);
@@ -2138,6 +2378,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
   }
 
   Future<void> _pickLocationOnMap() async {
+    if (_isSchedulePickerOpen) return;
     final result = await ExploreEntityPickerScreen.show(
       context,
       config: ExploreEntityPickerConfig(
@@ -2156,9 +2397,12 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
       _resolvedAddressInput = null;
       _locationAddressController.clear();
       _locationCleared = false;
+      _currentPosition = null;
       _error = null;
     });
+    _recenterMapForDisplay();
     await _geocodeLocation(latLng);
+    _syncTimeZoneFromLocation();
   }
 
   Future<void> _linkSpotOnMap() async {
@@ -2176,11 +2420,14 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
       _suggestedLinkedSpots.add(spot);
       _error = null;
     });
+    _recenterMapForDisplay();
+    _syncTimeZoneFromLocation();
   }
 
   void _clearLocation() {
     setState(() {
       _suggestedLocation = null;
+      _currentPosition = null;
       _suggestedAddress = null;
       _suggestedCity = null;
       _suggestedCountryCode = null;
@@ -2189,20 +2436,78 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
       _locationCleared = true;
       _error = null;
     });
+    _recenterMapForDisplay();
+    _syncTimeZoneFromLocation();
   }
 
-  Future<DateTime?> _pickDateTime({required DateTime initial}) async {
-    final displayInitial = _displayInEventTimeZone(initial);
+  Widget _buildLocationAddressSuffixIcon({
+    required AppLocalizations l10n,
+    required bool fieldsEnabled,
+    required bool hasSelectedPin,
+  }) {
+    if (_isGeocoding) {
+      return const Padding(
+        padding: EdgeInsets.all(12),
+        child: SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
+    }
+
+    final needsResolve = _typedAddressNeedsResolution();
+    final showSearch = needsResolve || !hasSelectedPin;
+    final showClear = hasSelectedPin;
+
+    Widget searchButton() => IconButton(
+      icon: const Icon(Icons.search),
+      tooltip: l10n.addEventUseAddressButton,
+      onPressed: fieldsEnabled ? _resolveTypedAddress : null,
+    );
+
+    Widget clearButton() => IconButton(
+      icon: const Icon(Icons.clear),
+      tooltip: l10n.addEventClearLocationTooltip,
+      onPressed: fieldsEnabled ? _clearLocation : null,
+    );
+
+    if (showSearch && showClear) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [searchButton(), clearButton()],
+      );
+    }
+    if (showSearch) return searchButton();
+    return clearButton();
+  }
+
+  Future<DateTime?> _pickDateTime({
+    required DateTime initial,
+    DateTime? minUtc,
+    String? dateHelpText,
+    String? timeHelpText,
+    String? dateCancelText,
+    String? timeCancelText,
+  }) async {
+    final displayInitial = _displayInSelectedTimeZone(initial);
+    final displayMin = minUtc == null ? null : _displayInSelectedTimeZone(minUtc);
     final pickedDate = await showDatePicker(
       context: context,
+      helpText: dateHelpText,
+      cancelText: dateCancelText,
       initialDate: displayInitial,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      firstDate: displayMin != null
+          ? DateTime(displayMin.year, displayMin.month, displayMin.day)
+          : DateTime.now().subtract(const Duration(days: 365)),
       lastDate: DateTime.now().add(const Duration(days: 3650)),
     );
     if (pickedDate == null || !mounted) return null;
 
     final pickedTime = await showTimePicker(
       context: context,
+      helpText: timeHelpText,
+      cancelText: timeCancelText,
       initialTime: TimeOfDay.fromDateTime(displayInitial),
     );
     if (pickedTime == null || !mounted) return null;
@@ -2219,11 +2524,12 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
     );
   }
 
-  Future<void> _pickStartDateTime() async {
+  Future<DateTime?> _pickStartSchedule(AppLocalizations l10n) async {
     if (_suggestedIsDateOnly) {
-      final initialDate = _displayInEventTimeZone(_suggestedStartAt);
+      final initialDate = _displayInSelectedTimeZone(_suggestedStartAt);
       final pickedDate = await showDatePicker(
         context: context,
+        helpText: l10n.addEventSchedulePickStartDate,
         initialDate: DateTime(
           initialDate.year,
           initialDate.month,
@@ -2232,65 +2538,100 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
         firstDate: DateTime.now().subtract(const Duration(days: 365)),
         lastDate: DateTime.now().add(const Duration(days: 3650)),
       );
-      if (pickedDate == null || !mounted) return;
-      final pickedStart = EventScheduleUtils.dateStartToUtc(
+      if (pickedDate == null || !mounted) return null;
+      return EventScheduleUtils.dateStartToUtc(
         pickedDate,
         timeZone: _selectedTimeZone,
       );
-      setState(() {
-        _suggestedStartAt = pickedStart;
-        if (_suggestedEndAt != null && _suggestedEndAt!.isBefore(pickedStart)) {
-          _suggestedEndAt = pickedStart;
-        }
-        _error = null;
-      });
-      return;
     }
 
-    final value = await _pickDateTime(initial: _suggestedStartAt);
-    if (value == null || !mounted) return;
-    setState(() {
-      _suggestedStartAt = value;
-      if (_suggestedEndAt != null && _suggestedEndAt!.isBefore(value)) {
-        _suggestedEndAt = value.add(const Duration(hours: 1));
-      }
-      _error = null;
-    });
+    return _pickDateTime(
+      initial: _suggestedStartAt,
+      dateHelpText: l10n.addEventSchedulePickStartDate,
+      timeHelpText: l10n.addEventSchedulePickStartTime,
+    );
   }
 
-  Future<void> _pickEndDateTime() async {
+  Future<({DateTime? value, bool cancelled})> _pickEndSchedule(
+    AppLocalizations l10n, {
+    required DateTime startAtUtc,
+    DateTime? initialEndUtc,
+  }) async {
+    final initialEnd =
+        initialEndUtc ?? _endAfterStartUtc(startAtUtc: startAtUtc);
+
     if (_suggestedIsDateOnly) {
-      final initialDate = _displayInEventTimeZone(
-        _suggestedEndAt ?? _suggestedStartAt,
-      );
+      final initialDate = _displayInSelectedTimeZone(initialEnd);
+      final minDate = _displayInSelectedTimeZone(startAtUtc);
       final pickedDate = await showDatePicker(
         context: context,
+        helpText: l10n.addEventSchedulePickEndDateOptional,
+        cancelText: l10n.addEventScheduleSkipEnd,
         initialDate: DateTime(
           initialDate.year,
           initialDate.month,
           initialDate.day,
         ),
-        firstDate: DateTime.now().subtract(const Duration(days: 365)),
+        firstDate: DateTime(
+          minDate.year,
+          minDate.month,
+          minDate.day,
+        ),
         lastDate: DateTime.now().add(const Duration(days: 3650)),
       );
-      if (pickedDate == null || !mounted) return;
-      setState(() {
-        _suggestedEndAt = EventScheduleUtils.dateEndToUtc(
+      if (pickedDate == null || !mounted) {
+        return (value: null, cancelled: true);
+      }
+      return (
+        value: EventScheduleUtils.dateEndToUtc(
           pickedDate,
           timeZone: _selectedTimeZone,
-        );
-        _error = null;
-      });
-      return;
+        ),
+        cancelled: false,
+      );
     }
 
-    final value = await _pickDateTime(
-      initial: _suggestedEndAt ?? _suggestedStartAt,
+    final picked = await _pickDateTime(
+      initial: initialEnd,
+      minUtc: startAtUtc,
+      dateHelpText: l10n.addEventSchedulePickEndDateOptional,
+      timeHelpText: l10n.addEventSchedulePickEndTimeOptional,
+      dateCancelText: l10n.addEventScheduleSkipEnd,
+      timeCancelText: l10n.addEventScheduleSkipEnd,
     );
-    if (value == null || !mounted) return;
-    setState(() {
-      _suggestedEndAt = value;
-      _error = null;
+    if (picked == null || !mounted) {
+      return (value: null, cancelled: true);
+    }
+
+    final clamped = picked.isBefore(startAtUtc)
+        ? _endAfterStartUtc(startAtUtc: startAtUtc)
+        : picked;
+    return (value: clamped, cancelled: false);
+  }
+
+  Future<void> _pickScheduleFromStart() async {
+    await _withSchedulePickerLock(() async {
+      final l10n = AppLocalizations.of(context)!;
+      final newStart = await _pickStartSchedule(l10n);
+      if (newStart == null || !mounted) return;
+
+      final preservedEnd =
+          _suggestedEndAt != null && !_suggestedEndAt!.isBefore(newStart)
+          ? _suggestedEndAt
+          : null;
+      final endResult = await _pickEndSchedule(
+        l10n,
+        startAtUtc: newStart,
+        initialEndUtc: preservedEnd,
+      );
+      if (!mounted) return;
+
+      setState(() {
+        _suggestedStartAt = newStart;
+        _suggestedEndAt = endResult.cancelled ? null : endResult.value;
+        _syncScheduleDisplayControllers();
+        _error = null;
+      });
     });
   }
 
@@ -2339,7 +2680,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
         ? _suggestedIsDateOnly
         : null;
     final suggestedTimeZone =
-        _timeZoneDirty && _selectedTimeZone != originalTimeZone
+        _timeZoneManuallySet && _selectedTimeZone != originalTimeZone
         ? _selectedTimeZone
         : null;
 
@@ -2502,43 +2843,90 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
     }
   }
 
-  Widget _buildSpotLocationSuggestionSection(
+  Widget _buildEventBasicsSection(
     AppLocalizations l10n,
-    ThemeData theme,
+    bool fieldsEnabled,
   ) {
-    final location = _suggestedLocation;
     return Card(
       margin: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            CustomTextField(
+              controller: _titleController,
+              labelText: l10n.addEventTitleLabel,
+              prefixIcon: Icons.event_outlined,
+              textCapitalization: TextCapitalization.words,
+              enabled: fieldsEnabled,
+              onChanged: (_) {
+                if (_error != null) setState(() => _error = null);
+              },
+            ),
+            const SizedBox(height: 16),
+            CustomTextField(
+              controller: _descriptionController,
+              labelText: l10n.addEventDescriptionLabel,
+              prefixIcon: Icons.description_outlined,
+              maxLines: 4,
+              textCapitalization: TextCapitalization.sentences,
+              enabled: fieldsEnabled,
+              onChanged: (_) {
+                if (_error != null) setState(() => _error = null);
+              },
+            ),
+            const SizedBox(height: 16),
+            CustomTextField(
+              controller: _websiteController,
+              labelText: l10n.addEventWebsiteLabel,
+              hintText: l10n.addEventWebsiteHint,
+              prefixIcon: Icons.link,
+              keyboardType: TextInputType.url,
+              enabled: fieldsEnabled,
+              onChanged: (_) {
+                if (_error != null) setState(() => _error = null);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWhereSection(AppLocalizations l10n, ThemeData theme) {
+    final fieldsEnabled = !_submitting && !_isGeocoding;
+    final hasSelectedPin = _suggestedLocation != null;
+
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              l10n.addEventLinkingSectionTitle,
-              style: theme.textTheme.titleSmall,
+              l10n.addEventWhereSectionTitle,
+              style: theme.textTheme.titleMedium,
             ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                FilledButton.icon(
-                  onPressed: _submitting ? null : _linkSpotOnMap,
-                  icon: const Icon(Icons.add_location_alt_outlined),
-                  label: Text(l10n.addEventLinkSpotButton),
-                ),
-              ],
+            const SizedBox(height: 4),
+            Text(
+              l10n.addEventLocationSectionHint,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
-            const SizedBox(height: 8),
-            if (_suggestedLinkedSpots.isEmpty)
-              Text(
-                l10n.eventDetailNoEventSpotLocations,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
-                ),
-              )
-            else
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: _submitting ? null : _linkSpotOnMap,
+                icon: const Icon(Icons.add_location_alt_outlined, size: 18),
+                label: Text(l10n.addEventLinkSpotButton),
+              ),
+            ),
+            if (_suggestedLinkedSpots.isNotEmpty) ...[
+              const SizedBox(height: 4),
               Wrap(
                 spacing: 8,
                 runSpacing: 6,
@@ -2563,27 +2951,60 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
                                   );
                                   _error = null;
                                 });
+                                _recenterMapForDisplay();
+                                _syncTimeZoneFromLocation();
                               },
                       ),
                     )
                     .toList(),
               ),
-            const Divider(height: 24),
-            Text(
-              l10n.addEventLocationSectionTitle,
-              style: theme.textTheme.titleSmall,
+            ],
+            const SizedBox(height: 12),
+            SpotLocationSection(
+              embedded: true,
+              showRequiredIndicator: false,
+              showSelectedPin: hasSelectedPin,
+              showLocationDetails: false,
+              mapHeroTagPrefix: 'suggestEventEdit',
+              linkedSpots: _mapDisplaySpots,
+              currentLocation: _displayLocationForMap,
+              address: null,
+              countryCode: null,
+              isGettingLocation: _isGettingLocation,
+              isGeocoding: false,
+              isSatelliteView: _isSatelliteView,
+              isLocationPermissionDenied: _isLocationPermissionDenied,
+              onRefreshLocation: () => _getCurrentLocation(setAsPickedPin: true),
+              onPickOnMap: _pickLocationOnMap,
+              onToggleSatellite: (value) {
+                if (_isSchedulePickerOpen) return;
+                setState(() => _isSatelliteView = value);
+                final searchState = Provider.of<SearchStateService>(
+                  context,
+                  listen: false,
+                );
+                searchState.setSatellite(value);
+              },
+              onMapCreated: onMapCreated,
             ),
-            const SizedBox(height: 4),
-            Text(
-              l10n.addEventLocationSectionHint,
-              style: theme.textTheme.bodySmall,
-            ),
-            const SizedBox(height: 10),
-            TextField(
+            if (!hasSelectedPin) ...[
+              const SizedBox(height: 8),
+              Text(
+                l10n.addEventLocationNotSet,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            CustomTextField(
               controller: _locationAddressController,
-              enabled: !_submitting && !_isGeocoding,
+              labelText: l10n.addEventAddressLabel,
+              hintText: l10n.addEventAddressHint,
+              prefixIcon: Icons.place_outlined,
               keyboardType: TextInputType.streetAddress,
               textInputAction: TextInputAction.search,
+              enabled: fieldsEnabled,
               onChanged: (value) {
                 setState(() {
                   if (value.trim().isEmpty) {
@@ -2596,169 +3017,133 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
                   _error = null;
                 });
               },
-              onSubmitted: (_) {
-                if (!_submitting && !_isGeocoding) _resolveTypedAddress();
+              onFieldSubmitted: (_) {
+                if (fieldsEnabled) _resolveTypedAddress();
               },
-              decoration: InputDecoration(
-                labelText: l10n.addEventAddressLabel,
-                hintText: l10n.addEventAddressHint,
-                border: const OutlineInputBorder(),
-                suffixIcon: _locationAddressController.text.trim().isEmpty
-                    ? null
-                    : IconButton(
-                        tooltip: l10n.addEventClearAddressTooltip,
-                        onPressed: _submitting || _isGeocoding
-                            ? null
-                            : () {
-                                setState(() {
-                                  _locationAddressController.clear();
-                                  _suggestedAddress = null;
-                                  _resolvedAddressInput = null;
-                                  if (_suggestedLocation == null) {
-                                    _locationCleared = true;
-                                  }
-                                  _error = null;
-                                });
-                              },
-                        icon: const Icon(Icons.clear),
-                      ),
+              suffixIconWidget: _buildLocationAddressSuffixIcon(
+                l10n: l10n,
+                fieldsEnabled: fieldsEnabled,
+                hasSelectedPin: hasSelectedPin,
               ),
             ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                OutlinedButton.icon(
-                  onPressed: _submitting || _isGeocoding
-                      ? null
-                      : _resolveTypedAddress,
-                  icon: _isGeocoding
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.search),
-                  label: Text(l10n.addEventUseAddressButton),
-                ),
-                FilledButton.icon(
-                  onPressed: _submitting || _isGeocoding
-                      ? null
-                      : _pickLocationOnMap,
-                  icon: const Icon(Icons.edit_location_alt_outlined),
-                  label: Text(l10n.addEventPickLocationButton),
-                ),
-                if (location != null || _hasOriginalLocationData())
-                  TextButton.icon(
-                    onPressed: _submitting || _isGeocoding
-                        ? null
-                        : _clearLocation,
-                    icon: const Icon(Icons.clear),
-                    label: Text(l10n.addEventClearLocationTooltip),
-                  ),
-              ],
-            ),
-            if (location == null) ...[
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Icon(
-                    Icons.map_outlined,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(l10n.addEventLocationNotSet)),
-                ],
-              ),
-            ] else ...[
-              const SizedBox(height: 12),
-              _buildSuggestedLocationPreviewMap(location, l10n, theme),
-              const SizedBox(height: 12),
-              LocationInfoBox(
-                latitude: location.latitude,
-                longitude: location.longitude,
-                address: _suggestedAddress,
-                countryCode: _suggestedCountryCode,
-                isGeocoding: _isGeocoding,
-              ),
-            ],
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSuggestedLocationPreviewMap(
-    LatLng location,
-    AppLocalizations l10n,
-    ThemeData theme,
-  ) {
-    return Container(
-      height: 180,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.3),
-        ),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        children: [
-          GoogleMap(
-            key: ValueKey(
-              'event_suggest_location_${location.latitude}_${location.longitude}',
+  Widget _buildWhenSection(AppLocalizations l10n, ThemeData theme) {
+    final fieldsEnabled = !_submitting;
+
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.addEventWhenSectionTitle,
+              style: theme.textTheme.titleMedium,
             ),
-            initialCameraPosition: CameraPosition(target: location, zoom: 16),
-            markers: {
-              Marker(
-                markerId: const MarkerId('suggested_event_location'),
-                position: location,
-                icon:
-                    _suggestedLocationPinIcon ?? BitmapDescriptor.defaultMarker,
-                anchor: const Offset(0.5, 1.0),
-                infoWindow: InfoWindow.noText,
-              ),
-            },
-            zoomControlsEnabled: false,
-            myLocationButtonEnabled: false,
-            mapToolbarEnabled: false,
-            liteModeEnabled: kIsWeb,
-            compassEnabled: false,
-            zoomGesturesEnabled: false,
-            scrollGesturesEnabled: false,
-            tiltGesturesEnabled: false,
-            rotateGesturesEnabled: false,
-            onTap: (_) => _pickLocationOnMap(),
-          ),
-          Positioned(
-            top: 8,
-            right: 8,
-            child: PointerInterceptor(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.7),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.touch_app, color: Colors.white, size: 14),
-                    const SizedBox(width: 4),
-                    Text(
-                      l10n.addSpotPickLocationHint,
-                      style: const TextStyle(color: Colors.white, fontSize: 11),
+            const SizedBox(height: 8),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              value: _suggestedIsDateOnly,
+              title: Text(l10n.addEventAllDay),
+              onChanged: fieldsEnabled
+                  ? (value) {
+                      setState(() {
+                        _suggestedIsDateOnly = value;
+                        _syncScheduleDisplayControllers();
+                        _error = null;
+                      });
+                    }
+                  : null,
+            ),
+            const SizedBox(height: 8),
+            CustomTextField(
+              controller: _scheduleDisplayController,
+              labelText: l10n.addEventScheduleLabel,
+              prefixIcon: Icons.date_range_outlined,
+              readOnly: true,
+              enabled: fieldsEnabled,
+              onTap: fieldsEnabled ? _pickScheduleFromStart : null,
+              suffixIcon: _suggestedEndAt == null ? Icons.edit_calendar : null,
+              suffixIconWidget: _suggestedEndAt == null
+                  ? null
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.clear, size: 20),
+                          tooltip: l10n.addEventClearEndTooltip,
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 40,
+                            minHeight: 40,
+                          ),
+                          onPressed: fieldsEnabled
+                              ? () => setState(() {
+                                  _suggestedEndAt = null;
+                                  _syncScheduleDisplayControllers();
+                                  _error = null;
+                                })
+                              : null,
+                        ),
+                        const Icon(Icons.edit_calendar),
+                        const SizedBox(width: 8),
+                      ],
                     ),
-                  ],
-                ),
-              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              isExpanded: true,
+              initialValue: _selectedTimeZone,
+              decoration: _outlineFieldDecoration(
+                theme,
+                labelText: l10n.addEventTimezoneLabel,
+              ),
+              selectedItemBuilder: (context) {
+                return _timeZoneOptions
+                    .map(
+                      (value) => Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          _timeZoneShortLabel(value),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
+                    )
+                    .toList();
+              },
+              items: _timeZoneOptions
+                  .map(
+                    (value) => DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(
+                        _timeZoneLabel(value),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  )
+                  .toList(),
+              onChanged: fieldsEnabled
+                  ? (value) {
+                      if (value == null) return;
+                      setState(() {
+                        _selectedTimeZone = value;
+                        _timeZoneManuallySet = true;
+                        _syncScheduleDisplayControllers();
+                        _error = null;
+                      });
+                    }
+                  : null,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -2769,6 +3154,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
     final theme = Theme.of(context);
     final auth = context.read<AuthService>();
     final isLoggedIn = auth.isAuthenticated && auth.userProfile != null;
+    final fieldsEnabled = !_submitting;
     return AlertDialog(
       title: Text(l10n.eventDetailSuggestEditTitle),
       content: SizedBox(
@@ -2776,25 +3162,27 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(l10n.eventDetailSuggestEditIntro),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               if (!isLoggedIn) ...[
-                TextField(
+                CustomTextField(
                   controller: _emailController,
+                  labelText: l10n.spotDetailReportEmailLabel,
+                  hintText: l10n.spotDetailReportEmailLabel,
+                  prefixIcon: Icons.mail_outline,
                   keyboardType: TextInputType.emailAddress,
+                  enabled: fieldsEnabled,
                   onChanged: (_) {
-                    if (_error != null) {
-                      setState(() => _error = null);
-                    }
+                    if (_error != null) setState(() => _error = null);
                   },
-                  enabled: !_submitting,
-                  decoration: InputDecoration(
-                    labelText: l10n.spotDetailReportEmailLabel,
-                    hintText: l10n.spotDetailReportEmailLabel,
-                    helperText: l10n.spotDetailSuggestEditEmailHelper,
-                    border: const OutlineInputBorder(),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  l10n.spotDetailSuggestEditEmailHelper,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ] else ...[
@@ -2839,115 +3227,14 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog> {
                   ),
                 ),
               ],
-              const SizedBox(height: 12),
-              TextField(
-                controller: _titleController,
-                enabled: !_submitting,
-                textCapitalization: TextCapitalization.words,
-                decoration: InputDecoration(
-                  labelText: l10n.addEventTitleLabel,
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _descriptionController,
-                enabled: !_submitting,
-                maxLines: 4,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: InputDecoration(
-                  labelText: l10n.addEventDescriptionLabel,
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _websiteController,
-                enabled: !_submitting,
-                keyboardType: TextInputType.url,
-                onChanged: (_) {
-                  if (_error != null) {
-                    setState(() => _error = null);
-                  }
-                },
-                decoration: InputDecoration(
-                  labelText: l10n.addEventWebsiteLabel,
-                  hintText: l10n.addEventWebsiteHint,
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 10),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                value: _suggestedIsDateOnly,
-                title: Text(l10n.addEventAllDay),
-                onChanged: _submitting
-                    ? null
-                    : (value) {
-                        setState(() {
-                          _suggestedIsDateOnly = value;
-                          _error = null;
-                        });
-                      },
-              ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                initialValue: _selectedTimeZone,
-                decoration: InputDecoration(
-                  labelText: l10n.addEventTimezoneLabel,
-                  border: const OutlineInputBorder(),
-                ),
-                items: _timeZoneOptions
-                    .map(
-                      (value) => DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(
-                          _timeZoneLabel(value),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    )
-                    .toList(),
-                onChanged: _submitting
-                    ? null
-                    : (value) {
-                        if (value == null) return;
-                        setState(() {
-                          _selectedTimeZone = value;
-                          _timeZoneDirty = true;
-                          _error = null;
-                        });
-                      },
-              ),
-              const SizedBox(height: 10),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.play_arrow_outlined),
-                title: Text(l10n.addEventStartLabel),
-                subtitle: Text(_formatDateTime(_suggestedStartAt)),
-                trailing: TextButton(
-                  onPressed: _submitting ? null : _pickStartDateTime,
-                  child: Text(l10n.spotDetailQuickActionEdit),
-                ),
-              ),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.stop_outlined),
-                title: Text(l10n.addEventEndLabel),
-                subtitle: Text(
-                  _suggestedEndAt == null
-                      ? l10n.addEventEndNotSet
-                      : _formatDateTime(_suggestedEndAt!),
-                ),
-                trailing: TextButton(
-                  onPressed: _submitting ? null : _pickEndDateTime,
-                  child: Text(l10n.spotDetailQuickActionEdit),
-                ),
-              ),
-              const SizedBox(height: 10),
-              _buildSpotLocationSuggestionSection(l10n, theme),
+              const SizedBox(height: 16),
+              _buildEventBasicsSection(l10n, fieldsEnabled),
+              const SizedBox(height: 16),
+              _buildWhereSection(l10n, theme),
+              const SizedBox(height: 16),
+              _buildWhenSection(l10n, theme),
               if (_error != null) ...[
-                const SizedBox(height: 10),
+                const SizedBox(height: 16),
                 Text(
                   _error!,
                   style: theme.textTheme.bodySmall?.copyWith(

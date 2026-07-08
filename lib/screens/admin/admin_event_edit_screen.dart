@@ -1,10 +1,13 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
+import '../../config/app_config.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/parkour_event.dart';
 import '../../models/spot.dart';
@@ -12,13 +15,23 @@ import '../../models/spot_list.dart';
 import '../../services/admin_events_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/geocoding_service.dart';
+import '../../services/search_state_service.dart';
 import '../../services/spot_list_service.dart';
 import '../../services/spot_service.dart';
+import '../../utils/browser_timezone_utils.dart';
+import '../../utils/event_location_utils.dart';
 import '../../utils/event_schedule_utils.dart';
 import '../../utils/image_preparation.dart';
+import '../../utils/location_permission_utils.dart';
+import '../../utils/map_recentering_mixin.dart';
+import '../../widgets/custom_button.dart';
+import '../../widgets/custom_text_field.dart';
+import '../../widgets/explore_entity_picker/explore_entity_picker_config.dart';
+import '../../widgets/explore_entity_picker/explore_entity_picker_screen.dart';
+import '../../widgets/page_scaffold.dart';
 import '../../widgets/spot_form/image_section.dart';
+import '../../widgets/spot_form/location_section.dart';
 import '../../widgets/spot_list_selection_dialog.dart';
-import '../../widgets/spot_selection_dialog.dart';
 
 class AdminEventEditScreen extends StatefulWidget {
   const AdminEventEditScreen({super.key, required this.eventId});
@@ -29,17 +42,18 @@ class AdminEventEditScreen extends StatefulWidget {
   State<AdminEventEditScreen> createState() => _AdminEventEditScreenState();
 }
 
-class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
+class _AdminEventEditScreenState extends State<AdminEventEditScreen>
+    with MapRecenteringMixin {
   static const String _localTimeZoneValue = '__local__';
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _websiteController = TextEditingController();
-  final TextEditingController _latitudeController = TextEditingController();
-  final TextEditingController _longitudeController = TextEditingController();
-  final TextEditingController _addressController = TextEditingController();
-  final TextEditingController _newImageUrlController = TextEditingController();
+  final TextEditingController _locationAddressController =
+      TextEditingController();
+  final TextEditingController _scheduleDisplayController =
+      TextEditingController();
 
   ParkourEvent? _event;
   DateTime _startAt = DateTime.now().toUtc();
@@ -47,37 +61,130 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
   bool _isDateOnly = false;
   String _selectedTimeZone = _localTimeZoneValue;
   late final List<String> _timeZoneOptions;
+  late final String _browserTimeZone;
+  bool _timeZoneManuallySet = false;
+  int _timeZoneLookupGeneration = 0;
   bool _isLoading = true;
   bool _isSubmitting = false;
   bool _isGeocoding = false;
+  bool _isGettingLocation = false;
+  bool _isSatelliteView = false;
+  bool _isLocationPermissionDenied = false;
+  bool _isSchedulePickerOpen = false;
+  bool _scheduleDisplayInitialized = false;
   String? _formError;
   String? _currentCity;
   String? _currentCountryCode;
+  String? _resolvedAddressInput;
+  LatLng? _pickedLocation;
+  Position? _currentPosition;
+  late LatLng _mapFallbackCenter;
   final List<Spot> _linkedSpots = <Spot>[];
   final List<SpotList> _linkedLists = <SpotList>[];
+  List<Spot> _linkedListSpots = <Spot>[];
   final List<Uint8List?> _selectedImageBytes = <Uint8List?>[];
   final List<String> _existingImageUrls = <String>[];
+  SearchStateService? _searchStateServiceRef;
 
   @override
   void initState() {
     super.initState();
+    _browserTimeZone = detectIanaTimeZone();
+    _mapFallbackCenter = const LatLng(
+      AppConfig.defaultMapCenterLat,
+      AppConfig.defaultMapCenterLng,
+    );
     _timeZoneOptions = <String>[
       _localTimeZoneValue,
       ...EventScheduleUtils.availableTimeZoneIds(),
     ];
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadEvent());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _searchStateServiceRef = Provider.of<SearchStateService>(
+        context,
+        listen: false,
+      );
+      _searchStateServiceRef!.addListener(_onSearchStateChanged);
+      setState(() => _isSatelliteView = _searchStateServiceRef!.isSatellite);
+      _loadEvent();
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_scheduleDisplayInitialized && !_isLoading) {
+      _scheduleDisplayInitialized = true;
+      _syncScheduleDisplayControllers();
+    }
+    _recenterMapForDisplay();
   }
 
   @override
   void dispose() {
+    _searchStateServiceRef?.removeListener(_onSearchStateChanged);
     _titleController.dispose();
     _descriptionController.dispose();
     _websiteController.dispose();
-    _latitudeController.dispose();
-    _longitudeController.dispose();
-    _addressController.dispose();
-    _newImageUrlController.dispose();
+    _locationAddressController.dispose();
+    _scheduleDisplayController.dispose();
     super.dispose();
+  }
+
+  void _onSearchStateChanged() {
+    if (!mounted) return;
+    final searchState = _searchStateServiceRef;
+    if (searchState == null) return;
+    setState(() => _isSatelliteView = searchState.isSatellite);
+  }
+
+  LatLng get _displayLocationForMap {
+    if (_pickedLocation != null) return _pickedLocation!;
+    if (_currentPosition != null) {
+      return LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
+    }
+    return _mapFallbackCenter;
+  }
+
+  List<Spot> get _mapDisplaySpots {
+    final seen = <String>{};
+    final spots = <Spot>[];
+
+    void addSpot(Spot spot) {
+      final key = spot.id ?? '${spot.name}_${spot.latitude}_${spot.longitude}';
+      if (seen.add(key)) spots.add(spot);
+    }
+
+    for (final spot in _linkedSpots) {
+      addSpot(spot);
+    }
+    for (final spot in _linkedListSpots) {
+      addSpot(spot);
+    }
+    return spots;
+  }
+
+  List<LatLng> _mapMarkerLocations() {
+    final locations = <LatLng>[];
+    if (_pickedLocation != null) {
+      locations.add(_pickedLocation!);
+    }
+    for (final spot in _mapDisplaySpots) {
+      if (spotHasCoordinates(spot)) {
+        locations.add(LatLng(spot.latitude, spot.longitude));
+      }
+    }
+    if (locations.isNotEmpty) return locations;
+
+    if (_currentPosition != null) {
+      return [
+        LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+      ];
+    }
+    return [_mapFallbackCenter];
+  }
+
+  void _recenterMapForDisplay() {
+    recenterMapForLocationsAfterBuild(_mapMarkerLocations());
   }
 
   Future<void> _loadEvent() async {
@@ -107,19 +214,20 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
       if (list != null) lists.add(list);
     }
 
+    final listSpots = await _loadSpotsForLists(lists);
+
     if (!mounted) return;
+    final address = event.address?.trim();
     setState(() {
       _event = event;
       _titleController.text = event.title;
       _descriptionController.text = event.description ?? '';
       _websiteController.text = event.websiteUrl ?? '';
-      if (event.latitude != null) {
-        _latitudeController.text = event.latitude.toString();
+      _locationAddressController.text = address ?? '';
+      _resolvedAddressInput = address?.isNotEmpty == true ? address : null;
+      if (event.latitude != null && event.longitude != null) {
+        _pickedLocation = LatLng(event.latitude!, event.longitude!);
       }
-      if (event.longitude != null) {
-        _longitudeController.text = event.longitude.toString();
-      }
-      _addressController.text = event.address ?? '';
       _currentCity = event.city;
       _currentCountryCode = event.countryCode;
       _startAt = event.startAt.toUtc();
@@ -132,11 +240,39 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
       _linkedLists
         ..clear()
         ..addAll(lists);
+      _linkedListSpots = listSpots;
       _existingImageUrls
         ..clear()
         ..addAll(event.imageUrls);
       _isLoading = false;
     });
+    _syncScheduleDisplayControllers();
+    _scheduleDisplayInitialized = true;
+    _recenterMapForDisplay();
+  }
+
+  Future<List<Spot>> _loadSpotsForLists(List<SpotList> lists) async {
+    if (lists.isEmpty) return const [];
+    final spotService = context.read<SpotService>();
+    final loaded = <Spot>[];
+    final seen = <String>{};
+    for (final list in lists) {
+      for (final spotId in list.effectiveSpotIds) {
+        if (!seen.add(spotId)) continue;
+        final spot = await spotService.getSpotById(spotId);
+        if (spot != null) loaded.add(spot);
+        if (!mounted) return loaded;
+      }
+    }
+    return loaded;
+  }
+
+  Future<void> _reloadLinkedListSpots() async {
+    final spots = await _loadSpotsForLists(_linkedLists);
+    if (!mounted) return;
+    setState(() => _linkedListSpots = spots);
+    _recenterMapForDisplay();
+    _syncTimeZoneFromLocation();
   }
 
   String _selectionForTimeZone(String? timeZone) {
@@ -166,11 +302,130 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
     );
   }
 
-  Future<void> _pickStartAt() async {
+  String _timeZoneShortLabel(String value) {
+    if (value == _localTimeZoneValue) {
+      return 'Local (legacy)';
+    }
+    return EventScheduleUtils.formatTimeZoneShortLabel(
+      value,
+      referenceUtc: _startAt,
+    );
+  }
+
+  void _syncScheduleDisplayControllers() {
+    _scheduleDisplayController.text = EventScheduleUtils.formatSummaryLine(
+      context,
+      startAt: _startAt,
+      endAt: _endAt,
+      isDateOnly: _isDateOnly,
+      timeZone: _effectiveTimeZone,
+    );
+  }
+
+  Future<void> _withSchedulePickerLock(Future<void> Function() fn) async {
+    _isSchedulePickerOpen = true;
+    try {
+      await fn();
+    } finally {
+      _isSchedulePickerOpen = false;
+    }
+  }
+
+  DateTime _endAfterStartUtc({required DateTime startAtUtc}) {
+    if (_isDateOnly) {
+      final startLocal = _displayInSelectedTimeZone(startAtUtc);
+      final nextLocalDate = DateTime(
+        startLocal.year,
+        startLocal.month,
+        startLocal.day,
+      ).add(const Duration(days: 1));
+      return EventScheduleUtils.dateEndToUtc(
+        nextLocalDate,
+        timeZone: _effectiveTimeZone,
+      );
+    }
+
+    return startAtUtc.add(const Duration(hours: 1));
+  }
+
+  InputDecoration _outlineFieldDecoration(
+    ThemeData theme, {
+    required String labelText,
+    String? hintText,
+  }) {
+    final scheme = theme.colorScheme;
+    final borderRadius = BorderRadius.circular(12);
+    OutlineInputBorder border(Color color, {double width = 1}) {
+      return OutlineInputBorder(
+        borderRadius: borderRadius,
+        borderSide: BorderSide(color: color, width: width),
+      );
+    }
+
+    return InputDecoration(
+      labelText: labelText,
+      hintText: hintText,
+      border: border(scheme.outline),
+      enabledBorder: border(scheme.outline.withValues(alpha: 0.5)),
+      focusedBorder: border(scheme.primary, width: 2),
+      errorBorder: border(scheme.error),
+      focusedErrorBorder: border(scheme.error, width: 2),
+      filled: true,
+      fillColor: scheme.surface,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      labelStyle: TextStyle(color: scheme.onSurface.withValues(alpha: 0.7)),
+      hintStyle: TextStyle(color: scheme.onSurface.withValues(alpha: 0.5)),
+    );
+  }
+
+  Future<DateTime?> _pickDateTime({
+    required DateTime initial,
+    DateTime? minUtc,
+    String? dateHelpText,
+    String? timeHelpText,
+    String? dateCancelText,
+    String? timeCancelText,
+  }) async {
+    final displayInitial = _displayInSelectedTimeZone(initial);
+    final displayMin = minUtc == null ? null : _displayInSelectedTimeZone(minUtc);
+    final pickedDate = await showDatePicker(
+      context: context,
+      helpText: dateHelpText,
+      cancelText: dateCancelText,
+      initialDate: displayInitial,
+      firstDate: displayMin != null
+          ? DateTime(displayMin.year, displayMin.month, displayMin.day)
+          : DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+    if (pickedDate == null || !mounted) return null;
+
+    final pickedTime = await showTimePicker(
+      context: context,
+      helpText: timeHelpText,
+      cancelText: timeCancelText,
+      initialTime: TimeOfDay.fromDateTime(displayInitial),
+    );
+    if (pickedTime == null || !mounted) return null;
+
+    return EventScheduleUtils.localDateTimeToUtc(
+      DateTime(
+        pickedDate.year,
+        pickedDate.month,
+        pickedDate.day,
+        pickedTime.hour,
+        pickedTime.minute,
+      ),
+      timeZone: _effectiveTimeZone,
+    );
+  }
+
+  Future<DateTime?> _pickStartSchedule(AppLocalizations l10n) async {
     if (_isDateOnly) {
       final initialDate = _displayInSelectedTimeZone(_startAt);
-      final selectedDate = await showDatePicker(
+      final pickedDate = await showDatePicker(
         context: context,
+        helpText: l10n.addEventSchedulePickStartDate,
         initialDate: DateTime(
           initialDate.year,
           initialDate.month,
@@ -179,83 +434,369 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
         firstDate: DateTime(2020),
         lastDate: DateTime(2100),
       );
-      if (selectedDate == null) return;
-      final value = EventScheduleUtils.dateStartToUtc(
-        selectedDate,
+      if (pickedDate == null || !mounted) return null;
+      return EventScheduleUtils.dateStartToUtc(
+        pickedDate,
         timeZone: _effectiveTimeZone,
       );
-      setState(() {
-        _startAt = value;
-        if (_endAt != null && _endAt!.isBefore(_startAt)) {
-          _endAt = null;
-        }
-      });
-      return;
     }
-    final value = await _pickDateTime(
-      context,
+
+    return _pickDateTime(
       initial: _startAt,
-      timeZone: _effectiveTimeZone,
+      dateHelpText: l10n.addEventSchedulePickStartDate,
+      timeHelpText: l10n.addEventSchedulePickStartTime,
     );
-    if (value == null) return;
-    setState(() {
-      _startAt = value.toUtc();
-      if (_endAt != null && _endAt!.isBefore(_startAt)) {
-        _endAt = null;
+  }
+
+  Future<({DateTime? value, bool cancelled})> _pickEndSchedule(
+    AppLocalizations l10n, {
+    required DateTime startAtUtc,
+    DateTime? initialEndUtc,
+  }) async {
+    final initialEnd =
+        initialEndUtc ?? _endAfterStartUtc(startAtUtc: startAtUtc);
+
+    if (_isDateOnly) {
+      final initialDate = _displayInSelectedTimeZone(initialEnd);
+      final minDate = _displayInSelectedTimeZone(startAtUtc);
+      final pickedDate = await showDatePicker(
+        context: context,
+        helpText: l10n.addEventSchedulePickEndDateOptional,
+        cancelText: l10n.addEventScheduleSkipEnd,
+        initialDate: DateTime(
+          initialDate.year,
+          initialDate.month,
+          initialDate.day,
+        ),
+        firstDate: DateTime(
+          minDate.year,
+          minDate.month,
+          minDate.day,
+        ),
+        lastDate: DateTime(2100),
+      );
+      if (pickedDate == null || !mounted) {
+        return (value: null, cancelled: true);
       }
+      return (
+        value: EventScheduleUtils.dateEndToUtc(
+          pickedDate,
+          timeZone: _effectiveTimeZone,
+        ),
+        cancelled: false,
+      );
+    }
+
+    final picked = await _pickDateTime(
+      initial: initialEnd,
+      minUtc: startAtUtc,
+      dateHelpText: l10n.addEventSchedulePickEndDateOptional,
+      timeHelpText: l10n.addEventSchedulePickEndTimeOptional,
+      dateCancelText: l10n.addEventScheduleSkipEnd,
+      timeCancelText: l10n.addEventScheduleSkipEnd,
+    );
+    if (picked == null || !mounted) {
+      return (value: null, cancelled: true);
+    }
+
+    final clamped = picked.isBefore(startAtUtc)
+        ? _endAfterStartUtc(startAtUtc: startAtUtc)
+        : picked;
+    return (value: clamped, cancelled: false);
+  }
+
+  Future<void> _pickScheduleFromStart() async {
+    await _withSchedulePickerLock(() async {
+      final l10n = AppLocalizations.of(context)!;
+      final newStart = await _pickStartSchedule(l10n);
+      if (newStart == null || !mounted) return;
+
+      final preservedEnd =
+          _endAt != null && !_endAt!.isBefore(newStart) ? _endAt : null;
+      final endResult = await _pickEndSchedule(
+        l10n,
+        startAtUtc: newStart,
+        initialEndUtc: preservedEnd,
+      );
+      if (!mounted) return;
+
+      setState(() {
+        _startAt = newStart;
+        _endAt = endResult.cancelled ? null : endResult.value;
+        _syncScheduleDisplayControllers();
+        _formError = null;
+      });
     });
   }
 
-  Future<void> _pickEndAt() async {
-    if (_isDateOnly) {
-      final initialDateTime = _displayInSelectedTimeZone(_endAt ?? _startAt);
-      final selectedDate = await showDatePicker(
-        context: context,
-        initialDate: DateTime(
-          initialDateTime.year,
-          initialDateTime.month,
-          initialDateTime.day,
-        ),
-        firstDate: DateTime(2020),
-        lastDate: DateTime(2100),
-      );
-      if (selectedDate == null) return;
-      setState(
-        () => _endAt = EventScheduleUtils.dateEndToUtc(
-          selectedDate,
-          timeZone: _effectiveTimeZone,
-        ),
-      );
+  Future<void> _getCurrentLocation({bool setAsPickedPin = true}) async {
+    if (_isSchedulePickerOpen) return;
+    setState(() => _isGettingLocation = true);
+
+    final permission = await LocationPermissionUtils.checkAndRequestPermission(
+      context: context,
+      showErrorMessages: setAsPickedPin,
+    );
+    final isPermissionGranted = LocationPermissionUtils.isPermissionGranted(
+      permission,
+    );
+
+    if (mounted) {
+      setState(() => _isLocationPermissionDenied = !isPermissionGranted);
+    }
+
+    if (!isPermissionGranted) {
+      if (mounted) setState(() => _isGettingLocation = false);
       return;
     }
-    final initial = _endAt ?? _startAt.add(const Duration(hours: 2));
-    final value = await _pickDateTime(
-      context,
-      initial: initial,
-      timeZone: _effectiveTimeZone,
-    );
-    if (value == null) return;
-    setState(() => _endAt = value.toUtc());
+
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+
+      if (!mounted) return;
+      final latLng = LatLng(position.latitude, position.longitude);
+      setState(() {
+        _currentPosition = position;
+        if (setAsPickedPin) {
+          _pickedLocation = latLng;
+        }
+        _isLocationPermissionDenied = false;
+      });
+      _recenterMapForDisplay();
+      if (setAsPickedPin) {
+        _syncTimeZoneFromLocation();
+      }
+      await _geocodeLocation(latLng);
+    } catch (_) {
+      // Best-effort current location lookup.
+    } finally {
+      if (mounted) setState(() => _isGettingLocation = false);
+    }
   }
 
-  Future<void> _addLinkedSpot() async {
-    final selectedSpotId = await showDialog<String>(
-      context: context,
-      builder: (_) => const SpotSelectionDialog(allowExternalSources: true),
-    );
-    if (selectedSpotId == null || !mounted) return;
-    if (_linkedSpots.any((spot) => spot.id == selectedSpotId)) return;
-
-    final spot = await context.read<SpotService>().getSpotById(selectedSpotId);
+  Future<void> _geocodeLocation(LatLng location) async {
     if (!mounted) return;
-    if (spot == null || spot.id == null) {
-      setState(() => _formError = 'Could not load the selected spot');
+    setState(() => _isGeocoding = true);
+    try {
+      final result = await context
+          .read<GeocodingService>()
+          .geocodeCoordinatesDetails(location.latitude, location.longitude);
+      if (!mounted) return;
+      setState(() {
+        _currentCity = result['city'];
+        _currentCountryCode = result['countryCode'];
+        final address = result['address']?.trim();
+        if (address != null && address.isNotEmpty) {
+          _locationAddressController.text = address;
+          _resolvedAddressInput = address;
+        }
+      });
+    } catch (_) {
+      // Best-effort reverse geocoding.
+    } finally {
+      if (mounted) setState(() => _isGeocoding = false);
+    }
+  }
+
+  Future<void> _syncTimeZoneFromLocation() async {
+    if (!mounted ||
+        _timeZoneManuallySet ||
+        _selectedTimeZone == _localTimeZoneValue) {
       return;
     }
+
+    final generation = ++_timeZoneLookupGeneration;
+    final coordinates = resolveEventTimezoneCoordinates(
+      pickedLocation: _pickedLocation,
+      linkedSpots: _linkedSpots,
+      linkedSpotListSpots: _linkedListSpots,
+    );
+
+    if (coordinates == null) {
+      if (!mounted || generation != _timeZoneLookupGeneration) return;
+      setState(() {
+        _selectedTimeZone = _browserTimeZone;
+        _syncScheduleDisplayControllers();
+      });
+      return;
+    }
+
+    try {
+      final geocodingService = context.read<GeocodingService>();
+      final rawTimeZone = await geocodingService.lookupTimeZone(
+        coordinates.latitude,
+        coordinates.longitude,
+      );
+      final normalized = EventScheduleUtils.normalizeTimeZone(rawTimeZone);
+      if (!mounted || generation != _timeZoneLookupGeneration) return;
+      if (normalized == null) return;
+      setState(() {
+        _selectedTimeZone = normalized;
+        if (!_timeZoneOptions.contains(normalized)) {
+          _timeZoneOptions.insert(1, normalized);
+        }
+        _syncScheduleDisplayControllers();
+      });
+    } catch (_) {
+      // Best-effort timezone lookup.
+    }
+  }
+
+  Future<void> _linkSpotsOnMap() async {
+    final result = await ExploreEntityPickerScreen.show(
+      context,
+      config: ExploreEntityPickerConfig(
+        mode: ExploreEntityPickerMode.spotsOnly,
+        initialCenter: _pickedLocation,
+      ),
+    );
+    if (result == null || !mounted) return;
+    final spot = result.spot;
+    if (spot == null) return;
+    if (_linkedSpots.any((s) => s.id == spot.id)) return;
     setState(() {
       _linkedSpots.add(spot);
       _formError = null;
     });
+    _recenterMapForDisplay();
+    _syncTimeZoneFromLocation();
+  }
+
+  Future<void> _pickLocationOnMap() async {
+    if (_isSchedulePickerOpen) return;
+    final result = await ExploreEntityPickerScreen.show(
+      context,
+      config: ExploreEntityPickerConfig(
+        mode: ExploreEntityPickerMode.locationOnly,
+        initialLocation: _pickedLocation,
+        usageTip: LocationPickerUsageTip.addEvent,
+      ),
+    );
+    final latLng = result?.location;
+    if (latLng == null || !mounted) return;
+    setState(() {
+      _pickedLocation = latLng;
+      _currentPosition = null;
+      _currentCity = null;
+      _currentCountryCode = null;
+      _resolvedAddressInput = null;
+      _locationAddressController.clear();
+      _formError = null;
+    });
+    _recenterMapForDisplay();
+    await _geocodeLocation(latLng);
+    _syncTimeZoneFromLocation();
+  }
+
+  bool _typedAddressNeedsResolution() {
+    final typed = _locationAddressController.text.trim();
+    if (typed.isEmpty) return false;
+    return typed != _resolvedAddressInput || _pickedLocation == null;
+  }
+
+  Future<bool> _resolveTypedAddress() async {
+    final l10n = AppLocalizations.of(context)!;
+    final typedAddress = _locationAddressController.text.trim();
+    if (typedAddress.isEmpty) {
+      setState(() => _formError = l10n.addEventAddressRequiredToResolve);
+      return false;
+    }
+
+    setState(() {
+      _isGeocoding = true;
+      _formError = null;
+    });
+    try {
+      final geocodingService = context.read<GeocodingService>();
+      final result = await geocodingService.reverseGeocodeAddress(typedAddress);
+      if (!mounted) return false;
+      final latitude = result?['latitude'] as double?;
+      final longitude = result?['longitude'] as double?;
+      if (latitude == null || longitude == null) {
+        setState(() => _formError = l10n.addEventAddressNotFound);
+        return false;
+      }
+      final formattedAddress = (result?['address'] as String?)?.trim();
+      final acceptedAddress = typedAddress.isNotEmpty
+          ? typedAddress
+          : (formattedAddress?.isNotEmpty == true ? formattedAddress! : '');
+      setState(() {
+        _pickedLocation = LatLng(latitude, longitude);
+        _locationAddressController.text = acceptedAddress;
+        _resolvedAddressInput = acceptedAddress;
+        _currentCity = result?['city'] as String?;
+        _currentCountryCode = result?['countryCode'] as String?;
+        _currentPosition = null;
+      });
+      _recenterMapForDisplay();
+      _syncTimeZoneFromLocation();
+      return true;
+    } catch (_) {
+      if (mounted) setState(() => _formError = l10n.addEventAddressNotFound);
+      return false;
+    } finally {
+      if (mounted) setState(() => _isGeocoding = false);
+    }
+  }
+
+  void _clearLocation() {
+    setState(() {
+      _pickedLocation = null;
+      _currentPosition = null;
+      _currentCity = null;
+      _currentCountryCode = null;
+      _resolvedAddressInput = null;
+      _locationAddressController.clear();
+      _formError = null;
+    });
+    _recenterMapForDisplay();
+    _syncTimeZoneFromLocation();
+  }
+
+  Widget _buildLocationAddressSuffixIcon({
+    required AppLocalizations l10n,
+    required bool fieldsEnabled,
+    required bool hasSelectedPin,
+  }) {
+    if (_isGeocoding) {
+      return const Padding(
+        padding: EdgeInsets.all(12),
+        child: SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
+    }
+
+    final needsResolve = _typedAddressNeedsResolution();
+    final showSearch = needsResolve || !hasSelectedPin;
+    final showClear = hasSelectedPin;
+
+    Widget searchButton() => IconButton(
+      icon: const Icon(Icons.search),
+      tooltip: l10n.addEventUseAddressButton,
+      onPressed: fieldsEnabled ? _resolveTypedAddress : null,
+    );
+
+    Widget clearButton() => IconButton(
+      icon: const Icon(Icons.clear),
+      tooltip: l10n.addEventClearLocationTooltip,
+      onPressed: fieldsEnabled ? _clearLocation : null,
+    );
+
+    if (showSearch && showClear) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [searchButton(), clearButton()],
+      );
+    }
+    if (showSearch) return searchButton();
+    return clearButton();
   }
 
   Future<void> _addLinkedList() async {
@@ -279,6 +820,7 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
       _linkedLists.add(list);
       _formError = null;
     });
+    await _reloadLinkedListSpots();
   }
 
   Future<void> _pickFromGallery() async {
@@ -383,92 +925,13 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
     });
   }
 
-  Future<bool> _tryReverseGeocodeAddressIfNeeded({bool force = false}) async {
-    final address = _addressController.text.trim();
-    if (address.isEmpty) return true;
+  Future<bool> _backfillCityCountryFromCoordinates() async {
+    final location = _pickedLocation;
+    if (location == null) return true;
 
-    final latRaw = _latitudeController.text.trim();
-    final lngRaw = _longitudeController.text.trim();
-    final hasLatitudeText = latRaw.isNotEmpty;
-    final hasLongitudeText = lngRaw.isNotEmpty;
-
-    // Linked spots supply map pins; do not refill venue coordinates on save.
-    if (_hasLinkedSpotLocation() && !hasLatitudeText && !hasLongitudeText) {
-      return true;
-    }
-
-    if (hasLatitudeText && hasLongitudeText && !force) return true;
-    if (hasLatitudeText != hasLongitudeText) {
-      setState(() => _formError = 'Both latitude and longitude are required');
-      return false;
-    }
-
-    setState(() {
-      _isGeocoding = true;
-      _formError = null;
-    });
-    try {
-      final geocoding = context.read<GeocodingService>();
-      final coords = await geocoding.reverseGeocodeAddress(address);
-      if (!mounted) return false;
-      if (coords == null) {
-        setState(() {
-          _formError =
-              geocoding.error ??
-              'Unable to locate coordinates for this address';
-        });
-        return false;
-      }
-      final latitude = coords['latitude'];
-      final longitude = coords['longitude'];
-      if (latitude == null || longitude == null) {
-        setState(
-          () => _formError = 'Unable to locate coordinates for this address',
-        );
-        return false;
-      }
-      _latitudeController.text = latitude.toString();
-      _longitudeController.text = longitude.toString();
-      _currentCity = null;
-      _currentCountryCode = null;
-      return true;
-    } catch (e) {
-      if (!mounted) return false;
-      setState(() => _formError = 'Failed to locate address: $e');
-      return false;
-    } finally {
-      if (mounted) setState(() => _isGeocoding = false);
-    }
-  }
-
-  Future<bool> _tryGeocodeCoordinatesIfNeeded({bool force = false}) async {
-    final latRaw = _latitudeController.text.trim();
-    final lngRaw = _longitudeController.text.trim();
-    final hasLatitudeText = latRaw.isNotEmpty;
-    final hasLongitudeText = lngRaw.isNotEmpty;
-    final hasAddress = _addressController.text.trim().isNotEmpty;
-    final shouldRequireGeocodeSuccess = force || !hasAddress;
-
-    if (!hasLatitudeText && !hasLongitudeText) {
-      _currentCity = null;
-      _currentCountryCode = null;
-      return true;
-    }
-    if (hasLatitudeText != hasLongitudeText) {
-      setState(() => _formError = 'Both latitude and longitude are required');
-      return false;
-    }
-    final latitude = double.tryParse(latRaw);
-    final longitude = double.tryParse(lngRaw);
-    if (latitude == null || longitude == null) {
-      setState(
-        () => _formError = 'Latitude and longitude must be valid numbers',
-      );
-      return false;
-    }
     final hasCity = _currentCity?.trim().isNotEmpty == true;
     final hasCountryCode = _currentCountryCode?.trim().isNotEmpty == true;
-    if (hasAddress && hasCity && hasCountryCode && !force) return true;
+    if (hasCity && hasCountryCode) return true;
 
     setState(() {
       _isGeocoding = true;
@@ -477,55 +940,22 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
     try {
       final details = await context
           .read<GeocodingService>()
-          .geocodeCoordinatesDetails(latitude, longitude);
-      final resolvedAddress = details['address']?.trim();
-      final resolvedCity = details['city']?.trim();
-      final resolvedCountryCode = details['countryCode']?.trim().toUpperCase();
+          .geocodeCoordinatesDetails(location.latitude, location.longitude);
       if (!mounted) return false;
 
-      if (force) {
-        if (resolvedAddress == null || resolvedAddress.isEmpty) {
-          setState(() => _formError = 'Unable to geocode these coordinates');
-          return false;
-        }
-        _addressController.text = resolvedAddress;
-        _currentCity = resolvedCity?.isNotEmpty == true ? resolvedCity : null;
-        _currentCountryCode = resolvedCountryCode?.isNotEmpty == true
-            ? resolvedCountryCode
-            : null;
-        return true;
-      }
-
-      // Keep an existing address (e.g. imported ICS location); only backfill
-      // missing city/country from coordinates.
-      if (hasAddress) {
+      final resolvedCity = details['city']?.trim();
+      final resolvedCountryCode = details['countryCode']?.trim().toUpperCase();
+      setState(() {
         if (resolvedCity?.isNotEmpty == true && !hasCity) {
           _currentCity = resolvedCity;
         }
         if (resolvedCountryCode?.isNotEmpty == true && !hasCountryCode) {
           _currentCountryCode = resolvedCountryCode;
         }
-        return true;
-      }
-
-      if (resolvedAddress == null || resolvedAddress.isEmpty) {
-        if (!shouldRequireGeocodeSuccess) {
-          return true;
-        }
-        setState(() => _formError = 'Unable to geocode these coordinates');
-        return false;
-      }
-      _addressController.text = resolvedAddress;
-      _currentCity = resolvedCity?.isNotEmpty == true ? resolvedCity : null;
-      _currentCountryCode = resolvedCountryCode?.isNotEmpty == true
-          ? resolvedCountryCode
-          : null;
+      });
       return true;
     } catch (e) {
       if (!mounted) return false;
-      if (!shouldRequireGeocodeSuccess) {
-        return true;
-      }
       setState(() => _formError = 'Failed to geocode coordinates: $e');
       return false;
     } finally {
@@ -540,28 +970,11 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
     return auth.isModerator && event.isNativeEvent;
   }
 
-  bool _eventHasNoLocationSet() {
-    final hasAddress = _addressController.text.trim().isNotEmpty;
-    final hasLatitude = _latitudeController.text.trim().isNotEmpty;
-    final hasLongitude = _longitudeController.text.trim().isNotEmpty;
-    return !hasAddress && !hasLatitude && !hasLongitude;
-  }
+  bool _eventHasNoLocationSet() =>
+      _pickedLocation == null && _locationAddressController.text.trim().isEmpty;
 
   bool _hasLinkedSpotLocation() =>
       _linkedSpots.isNotEmpty || _linkedLists.isNotEmpty;
-
-  bool _eventHasVenueLocationSet() => !_eventHasNoLocationSet();
-
-  void _clearEventLocation() {
-    setState(() {
-      _latitudeController.clear();
-      _longitudeController.clear();
-      _addressController.clear();
-      _currentCity = null;
-      _currentCountryCode = null;
-      _formError = null;
-    });
-  }
 
   Future<void> _applyCityCountryFromFirstLinkedSpotIfNeeded() async {
     if (!_eventHasNoLocationSet()) return;
@@ -570,6 +983,8 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
     Spot? sourceSpot;
     if (_linkedSpots.isNotEmpty) {
       sourceSpot = _linkedSpots.first;
+    } else if (_linkedListSpots.isNotEmpty) {
+      sourceSpot = _linkedListSpots.first;
     } else {
       final spotIds = _linkedLists.first.effectiveSpotIds;
       if (spotIds.isEmpty) return;
@@ -589,6 +1004,17 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
     });
   }
 
+  String? _effectiveAddressForSubmission() {
+    final trimmed = _locationAddressController.text.trim();
+    if (trimmed.isNotEmpty) return trimmed;
+    if (_pickedLocation == null) return null;
+    final l10n = AppLocalizations.of(context)!;
+    return l10n.addEventApproxCoordinates(
+      _pickedLocation!.latitude.toStringAsFixed(5),
+      _pickedLocation!.longitude.toStringAsFixed(5),
+    );
+  }
+
   Future<void> _save() async {
     final l10n = AppLocalizations.of(context)!;
     final auth = context.read<AuthService>();
@@ -596,6 +1022,17 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
 
     final eventsService = context.read<AdminEventsService>();
     if (!_formKey.currentState!.validate()) return;
+
+    if (_typedAddressNeedsResolution() && !await _resolveTypedAddress()) {
+      return;
+    }
+    if (!mounted) return;
+
+    if (_pickedLocation != null && !await _backfillCityCountryFromCoordinates()) {
+      return;
+    }
+    if (!mounted) return;
+
     final timeZone = _effectiveTimeZone;
     DateTime normalizedStartAt = _startAt;
     DateTime? normalizedEndAt = _endAt;
@@ -613,12 +1050,12 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
     }
     if (normalizedEndAt != null &&
         normalizedEndAt.isBefore(normalizedStartAt)) {
-      setState(() => _formError = 'End time cannot be before start time');
+      setState(() => _formError = l10n.addEventEndBeforeStart);
       return;
     }
-    if (!await _tryReverseGeocodeAddressIfNeeded()) return;
-    if (!await _tryGeocodeCoordinatesIfNeeded()) return;
+
     await _applyCityCountryFromFirstLinkedSpotIfNeeded();
+    if (!mounted) return;
 
     setState(() {
       _isSubmitting = true;
@@ -656,9 +1093,9 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
       endAt: normalizedEndAt,
       isDateOnly: _isDateOnly,
       timeZone: timeZone,
-      latitude: double.tryParse(_latitudeController.text.trim()),
-      longitude: double.tryParse(_longitudeController.text.trim()),
-      address: _addressController.text.trim(),
+      latitude: _pickedLocation?.latitude,
+      longitude: _pickedLocation?.longitude,
+      address: _effectiveAddressForSubmission(),
       city: _currentCity,
       countryCode: _currentCountryCode,
       spotIds: _linkedSpots.map((s) => s.id!).toList(),
@@ -747,14 +1184,431 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
     );
   }
 
+  Widget _buildEventBasicsSection(
+    AppLocalizations l10n,
+    bool fieldsEnabled,
+  ) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            CustomTextField(
+              controller: _titleController,
+              labelText: l10n.addEventTitleLabel,
+              prefixIcon: Icons.event_outlined,
+              textCapitalization: TextCapitalization.words,
+              enabled: fieldsEnabled,
+              validator: (value) {
+                final trimmed = value?.trim() ?? '';
+                if (trimmed.isEmpty) return l10n.addEventTitleRequired;
+                if (trimmed.length > 200) return l10n.addEventTitleTooLong;
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            CustomTextField(
+              controller: _descriptionController,
+              labelText: l10n.addEventDescriptionLabel,
+              prefixIcon: Icons.description_outlined,
+              maxLines: 4,
+              textCapitalization: TextCapitalization.sentences,
+              enabled: fieldsEnabled,
+              validator: (value) {
+                final trimmed = value?.trim() ?? '';
+                if (trimmed.length > 2000) {
+                  return l10n.addEventDescriptionTooLong;
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            CustomTextField(
+              controller: _websiteController,
+              labelText: l10n.addEventWebsiteLabel,
+              hintText: l10n.addEventWebsiteHint,
+              prefixIcon: Icons.link,
+              keyboardType: TextInputType.url,
+              enabled: fieldsEnabled,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWhereSection(AppLocalizations l10n, ThemeData theme) {
+    final fieldsEnabled = !_isSubmitting && !_isGeocoding;
+    final hasSelectedPin = _pickedLocation != null;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.addEventWhereSectionTitle,
+              style: theme.textTheme.titleMedium,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              l10n.addEventLocationSectionHint,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            if (_hasLinkedSpotLocation()) ...[
+              const SizedBox(height: 8),
+              Text(
+                'This event is linked to a spot or list. Clear the event '
+                'location so the map only shows linked pins.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                TextButton.icon(
+                  onPressed: _isSubmitting ? null : _linkSpotsOnMap,
+                  icon: const Icon(Icons.add_location_alt_outlined, size: 18),
+                  label: Text(l10n.addEventLinkSpotButton),
+                ),
+                TextButton.icon(
+                  onPressed: _isSubmitting ? null : _addLinkedList,
+                  icon: const Icon(Icons.list_alt_outlined, size: 18),
+                  label: Text(l10n.adminEventAddSpotList),
+                ),
+              ],
+            ),
+            if (_linkedSpots.isNotEmpty || _linkedLists.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: [
+                  ..._linkedSpots.map(
+                    (spot) => Chip(
+                      avatar: const Icon(
+                        Icons.location_on_outlined,
+                        size: 18,
+                      ),
+                      label: Text(
+                        l10n.addEventLinkedSpotLabel(
+                          spot.name.isNotEmpty ? spot.name : (spot.id ?? ''),
+                        ),
+                      ),
+                      onDeleted: _isSubmitting
+                          ? null
+                          : () {
+                              setState(
+                                () => _linkedSpots.removeWhere(
+                                  (s) => s.id == spot.id,
+                                ),
+                              );
+                              _recenterMapForDisplay();
+                              _syncTimeZoneFromLocation();
+                            },
+                    ),
+                  ),
+                  ..._linkedLists.map(
+                    (list) => Chip(
+                      avatar: const Icon(Icons.list_alt_outlined, size: 18),
+                      label: Text(
+                        l10n.addEventLinkedSpotListLabel(
+                          list.name.isNotEmpty ? list.name : (list.id ?? ''),
+                        ),
+                      ),
+                      onDeleted: _isSubmitting
+                          ? null
+                          : () async {
+                              setState(
+                                () => _linkedLists.removeWhere(
+                                  (l) => l.id == list.id,
+                                ),
+                              );
+                              await _reloadLinkedListSpots();
+                            },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 12),
+            SpotLocationSection(
+              embedded: true,
+              showRequiredIndicator: false,
+              showSelectedPin: hasSelectedPin,
+              showLocationDetails: false,
+              mapHeroTagPrefix: 'adminEventEdit',
+              linkedSpots: _mapDisplaySpots,
+              currentLocation: _displayLocationForMap,
+              address: null,
+              countryCode: null,
+              isGettingLocation: _isGettingLocation,
+              isGeocoding: false,
+              isSatelliteView: _isSatelliteView,
+              isLocationPermissionDenied: _isLocationPermissionDenied,
+              onRefreshLocation: () => _getCurrentLocation(setAsPickedPin: true),
+              onPickOnMap: _pickLocationOnMap,
+              onToggleSatellite: (value) {
+                if (_isSchedulePickerOpen) return;
+                setState(() => _isSatelliteView = value);
+                final searchState = Provider.of<SearchStateService>(
+                  context,
+                  listen: false,
+                );
+                searchState.setSatellite(value);
+              },
+              onMapCreated: onMapCreated,
+            ),
+            if (!hasSelectedPin) ...[
+              const SizedBox(height: 8),
+              Text(
+                l10n.addEventLocationNotSet,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            CustomTextField(
+              controller: _locationAddressController,
+              labelText: l10n.addEventAddressLabel,
+              hintText: l10n.addEventAddressHint,
+              prefixIcon: Icons.place_outlined,
+              keyboardType: TextInputType.streetAddress,
+              textInputAction: TextInputAction.search,
+              enabled: fieldsEnabled,
+              onChanged: (value) {
+                setState(() {
+                  if (value.trim().isEmpty) {
+                    _resolvedAddressInput = null;
+                  }
+                  _formError = null;
+                });
+              },
+              onFieldSubmitted: (_) {
+                if (fieldsEnabled) _resolveTypedAddress();
+              },
+              suffixIconWidget: _buildLocationAddressSuffixIcon(
+                l10n: l10n,
+                fieldsEnabled: fieldsEnabled,
+                hasSelectedPin: hasSelectedPin,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWhenSection(AppLocalizations l10n, ThemeData theme) {
+    final fieldsEnabled = !_isSubmitting;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.addEventWhenSectionTitle,
+              style: theme.textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              value: _isDateOnly,
+              title: Text(l10n.addEventAllDay),
+              onChanged: fieldsEnabled
+                  ? (value) {
+                      setState(() {
+                        _isDateOnly = value;
+                        _syncScheduleDisplayControllers();
+                      });
+                    }
+                  : null,
+            ),
+            const SizedBox(height: 8),
+            CustomTextField(
+              controller: _scheduleDisplayController,
+              labelText: l10n.addEventScheduleLabel,
+              prefixIcon: Icons.date_range_outlined,
+              readOnly: true,
+              enabled: fieldsEnabled,
+              onTap: fieldsEnabled ? _pickScheduleFromStart : null,
+              suffixIcon: _endAt == null ? Icons.edit_calendar : null,
+              suffixIconWidget: _endAt == null
+                  ? null
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.clear, size: 20),
+                          tooltip: l10n.addEventClearEndTooltip,
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 40,
+                            minHeight: 40,
+                          ),
+                          onPressed: fieldsEnabled
+                              ? () => setState(() {
+                                  _endAt = null;
+                                  _syncScheduleDisplayControllers();
+                                })
+                              : null,
+                        ),
+                        const Icon(Icons.edit_calendar),
+                        const SizedBox(width: 8),
+                      ],
+                    ),
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              isExpanded: true,
+              initialValue: _selectedTimeZone,
+              decoration: _outlineFieldDecoration(
+                theme,
+                labelText: l10n.addEventTimezoneLabel,
+              ),
+              selectedItemBuilder: (context) {
+                return _timeZoneOptions
+                    .map(
+                      (value) => Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          _timeZoneShortLabel(value),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
+                    )
+                    .toList();
+              },
+              items: _timeZoneOptions
+                  .map(
+                    (value) => DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(
+                        _timeZoneLabel(value),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  )
+                  .toList(),
+              onChanged: fieldsEnabled
+                  ? (value) {
+                      if (value == null) return;
+                      setState(() {
+                        _selectedTimeZone = value;
+                        _timeZoneManuallySet = true;
+                        _syncScheduleDisplayControllers();
+                      });
+                    }
+                  : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEditForm(AppLocalizations l10n, AuthService auth) {
+    final theme = Theme.of(context);
+    final fieldsEnabled = !_isSubmitting;
+
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (!_event!.isNativeEvent && auth.isAdmin) ...[
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.sync,
+                          color: theme.colorScheme.primary,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          l10n.adminEventExternalSyncWarningTitle,
+                          style: theme.textTheme.titleSmall,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      l10n.adminEventExternalSyncWarningBody,
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          _buildEventBasicsSection(l10n, fieldsEnabled),
+          const SizedBox(height: 16),
+          _buildWhereSection(l10n, theme),
+          const SizedBox(height: 16),
+          _buildWhenSection(l10n, theme),
+          const SizedBox(height: 16),
+          SpotImageSection(
+            selectedImageBytes: _selectedImageBytes,
+            existingImageUrls: _existingImageUrls,
+            sectionTitle: l10n.addEventPhotosSectionTitle,
+            showRequiredIndicator: false,
+            onPickFromGallery: _pickFromGallery,
+            onTakePhoto: _takePhoto,
+            onRemoveSelectedAt: _removeSelectedImageAt,
+            onRemoveExistingAt: _removeExistingImageAt,
+            onReorderExisting: _reorderExistingImage,
+            onReorderSelected: _reorderSelectedImage,
+          ),
+          if (_formError != null) ...[
+            const SizedBox(height: 16),
+            Text(
+              _formError!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.error,
+              ),
+            ),
+          ],
+          const SizedBox(height: 24),
+          CustomButton(
+            onPressed: _isSubmitting ? null : _save,
+            text: _isSubmitting ? l10n.addEventSubmitting : l10n.adminEventEditSave,
+            isLoading: _isSubmitting,
+            icon: Icons.save_outlined,
+            width: double.infinity,
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final auth = context.select<AuthService, AuthService>((s) => s);
     final isStaff = auth.isModerator || auth.isAdmin;
     if (!isStaff) {
-      return Scaffold(
-        appBar: AppBar(title: Text(l10n.adminEventEditTitle)),
+      return PageScaffold(
+        title: l10n.adminEventEditTitle,
         body: const Center(
           child: Text('Moderator or administrator access required'),
         ),
@@ -768,499 +1622,30 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen> {
         !_event!.isNativeEvent &&
         isModeratorOnly;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.adminEventEditTitle),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
-        ),
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _event == null
-          ? Center(child: Text(_formError ?? 'Event not found'))
-          : isExternalBlocked
-          ? _buildExternalSourceBlockedBody(l10n)
-          : Form(
-              key: _formKey,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  if (!_event!.isNativeEvent && auth.isAdmin) ...[
-                    MaterialBanner(
-                      backgroundColor: Theme.of(
-                        context,
-                      ).colorScheme.tertiaryContainer.withValues(alpha: 0.5),
-                      leading: const Icon(Icons.sync),
-                      content: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            l10n.adminEventExternalSyncWarningTitle,
-                            style: Theme.of(context).textTheme.titleSmall,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(l10n.adminEventExternalSyncWarningBody),
-                        ],
-                      ),
-                      actions: const [SizedBox.shrink()],
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                  TextFormField(
-                    controller: _titleController,
-                    decoration: const InputDecoration(
-                      labelText: 'Title',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (v) => v == null || v.trim().isEmpty
-                        ? 'Title is required'
-                        : null,
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _descriptionController,
-                    decoration: const InputDecoration(
-                      labelText: 'Description (optional)',
-                      border: OutlineInputBorder(),
-                    ),
-                    minLines: 2,
-                    maxLines: 4,
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _websiteController,
-                    decoration: const InputDecoration(
-                      labelText: 'Website URL (optional)',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Text(
-                        'Event location',
-                        style: Theme.of(context).textTheme.titleSmall,
-                      ),
-                      const Spacer(),
-                      TextButton.icon(
-                        onPressed: (_isSubmitting || _isGeocoding) ||
-                                !_eventHasVenueLocationSet()
-                            ? null
-                            : _clearEventLocation,
-                        icon: const Icon(Icons.location_off_outlined),
-                        label: const Text('Clear location'),
-                      ),
-                    ],
-                  ),
-                  if (_hasLinkedSpotLocation()) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      'This event is linked to a spot. Clear the event location '
-                      'so the map only shows the spot pin.',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _latitudeController,
-                          decoration: const InputDecoration(
-                            labelText: 'Latitude',
-                            border: OutlineInputBorder(),
-                          ),
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                            signed: true,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _longitudeController,
-                          decoration: const InputDecoration(
-                            labelText: 'Longitude',
-                            border: OutlineInputBorder(),
-                          ),
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                            signed: true,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      FilledButton.tonalIcon(
-                        onPressed: (_isSubmitting || _isGeocoding)
-                            ? null
-                            : () => _tryGeocodeCoordinatesIfNeeded(force: true),
-                        icon: _isGeocoding
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.pin_drop_outlined),
-                        label: const Text('To address'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _addressController,
-                          decoration: const InputDecoration(
-                            labelText: 'Address',
-                            border: OutlineInputBorder(),
-                          ),
-                          minLines: 2,
-                          maxLines: 3,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      FilledButton.tonalIcon(
-                        onPressed: (_isSubmitting || _isGeocoding)
-                            ? null
-                            : () => _tryReverseGeocodeAddressIfNeeded(
-                                force: true,
-                              ),
-                        icon: _isGeocoding
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.location_searching_outlined),
-                        label: const Text('To coords'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: _buildReadOnlyLocationField(
-                          label: 'City',
-                          value: _currentCity,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildReadOnlyLocationField(
-                          label: 'Country code',
-                          value: _currentCountryCode,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  SpotImageSection(
-                    selectedImageBytes: _selectedImageBytes,
-                    existingImageUrls: _existingImageUrls,
-                    sectionTitle: 'Images (optional)',
-                    showRequiredIndicator: false,
-                    onPickFromGallery: _pickFromGallery,
-                    onTakePhoto: _takePhoto,
-                    onRemoveSelectedAt: _removeSelectedImageAt,
-                    onRemoveExistingAt: _removeExistingImageAt,
-                    onReorderExisting: _reorderExistingImage,
-                    onReorderSelected: _reorderSelectedImage,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildLinkedSpotsSection(l10n),
-                  const SizedBox(height: 16),
-                  _buildLinkedListsSection(l10n),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Schedule',
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    initialValue: _selectedTimeZone,
-                    decoration: const InputDecoration(
-                      labelText: 'Timezone',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: _timeZoneOptions
-                        .map(
-                          (value) => DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(
-                              _timeZoneLabel(value),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: _isSubmitting
-                        ? null
-                        : (value) {
-                            if (value == null) return;
-                            setState(() => _selectedTimeZone = value);
-                          },
-                  ),
-                  const SizedBox(height: 8),
-                  SwitchListTile.adaptive(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Date only (no times)'),
-                    subtitle: const Text(
-                      'Display this event everywhere without times',
-                    ),
-                    value: _isDateOnly,
-                    onChanged: _isSubmitting
-                        ? null
-                        : (value) {
-                            setState(() => _isDateOnly = value);
-                          },
-                  ),
-                  const SizedBox(height: 8),
-                  _AdminEventDateField(
-                    label: _isDateOnly ? 'Start date' : 'Start date & time',
-                    value: _startAt,
-                    isDateOnly: _isDateOnly,
-                    timeZone: _effectiveTimeZone,
-                    onPick: _pickStartAt,
-                  ),
-                  const SizedBox(height: 8),
-                  _AdminEventDateField(
-                    label: _isDateOnly
-                        ? 'End date (optional)'
-                        : 'End date & time (optional)',
-                    value: _endAt,
-                    isDateOnly: _isDateOnly,
-                    timeZone: _effectiveTimeZone,
-                    onPick: _pickEndAt,
-                    onClear: _endAt == null
-                        ? null
-                        : () => setState(() => _endAt = null),
-                  ),
-                  if (_formError != null) ...[
-                    const SizedBox(height: 16),
-                    Text(
-                      _formError!,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 24),
-                  FilledButton(
-                    onPressed: _isSubmitting ? null : _save,
-                    child: _isSubmitting
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text(l10n.adminEventEditSave),
-                  ),
-                ],
-              ),
-            ),
-    );
-  }
+    if (_isLoading) {
+      return PageScaffold(
+        title: l10n.adminEventEditTitle,
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
-  Widget _buildLinkedSpotsSection(AppLocalizations l10n) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text('Linked spots', style: Theme.of(context).textTheme.titleSmall),
-            const Spacer(),
-            FilledButton.icon(
-              onPressed: _isSubmitting ? null : _addLinkedSpot,
-              icon: const Icon(Icons.add),
-              label: const Text('Add spot'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        if (_linkedSpots.isEmpty)
-          Text(
-            'No spots selected',
-            style: Theme.of(context).textTheme.bodySmall,
-          )
-        else
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            children: _linkedSpots
-                .map(
-                  (spot) => Chip(
-                    label: Text('${spot.name} (${spot.id})'),
-                    onDeleted: _isSubmitting
-                        ? null
-                        : () => setState(
-                            () => _linkedSpots.removeWhere(
-                              (s) => s.id == spot.id,
-                            ),
-                          ),
-                  ),
-                )
-                .toList(),
-          ),
-      ],
-    );
-  }
+    if (_event == null) {
+      return PageScaffold(
+        title: l10n.adminEventEditTitle,
+        body: Center(child: Text(_formError ?? 'Event not found')),
+      );
+    }
 
-  Widget _buildLinkedListsSection(AppLocalizations l10n) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              l10n.adminEventLinkedSpotListsTitle,
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            const Spacer(),
-            FilledButton.icon(
-              onPressed: _isSubmitting ? null : _addLinkedList,
-              icon: const Icon(Icons.add),
-              label: Text(l10n.adminEventAddSpotList),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        if (_linkedLists.isEmpty)
-          Text(
-            l10n.adminEventNoLinkedSpotLists,
-            style: Theme.of(context).textTheme.bodySmall,
-          )
-        else
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            children: _linkedLists
-                .map(
-                  (list) => Chip(
-                    label: Text('${list.name} (${list.visibility.label})'),
-                    onDeleted: _isSubmitting
-                        ? null
-                        : () => setState(
-                            () => _linkedLists.removeWhere(
-                              (l) => l.id == list.id,
-                            ),
-                          ),
-                  ),
-                )
-                .toList(),
-          ),
-      ],
-    );
-  }
+    if (isExternalBlocked) {
+      return PageScaffold(
+        title: l10n.adminEventEditTitle,
+        body: _buildExternalSourceBlockedBody(l10n),
+      );
+    }
 
-  Widget _buildReadOnlyLocationField({
-    required String label,
-    required String? value,
-  }) {
-    final trimmed = value?.trim();
-    final hasValue = trimmed != null && trimmed.isNotEmpty;
-    return InputDecorator(
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
-        filled: true,
-        helperText: 'Set automatically from coordinates',
-        helperMaxLines: 2,
-      ),
-      child: Text(
-        hasValue ? trimmed : 'Not set',
-        style: hasValue ? null : TextStyle(color: Theme.of(context).hintColor),
-      ),
-    );
-  }
-
-  Future<DateTime?> _pickDateTime(
-    BuildContext context, {
-    required DateTime initial,
-    String? timeZone,
-  }) async {
-    final displayInitial = EventScheduleUtils.toDisplayDateTime(
-      initial,
-      timeZone: timeZone,
-    );
-    final selectedDate = await showDatePicker(
-      context: context,
-      initialDate: displayInitial,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2100),
-    );
-    if (selectedDate == null || !context.mounted) return null;
-
-    final selectedTime = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(displayInitial),
-    );
-    if (selectedTime == null) return null;
-
-    return EventScheduleUtils.localDateTimeToUtc(
-      DateTime(
-        selectedDate.year,
-        selectedDate.month,
-        selectedDate.day,
-        selectedTime.hour,
-        selectedTime.minute,
-      ),
-      timeZone: timeZone,
-    );
-  }
-}
-
-class _AdminEventDateField extends StatelessWidget {
-  const _AdminEventDateField({
-    required this.label,
-    required this.value,
-    required this.isDateOnly,
-    required this.timeZone,
-    required this.onPick,
-    this.onClear,
-  });
-
-  final String label;
-  final DateTime? value;
-  final bool isDateOnly;
-  final String? timeZone;
-  final VoidCallback onPick;
-  final VoidCallback? onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    final display = value == null
-        ? 'Not set'
-        : EventScheduleUtils.formatSummaryLine(
-            context,
-            startAt: value!,
-            isDateOnly: isDateOnly,
-            timeZone: timeZone,
-          );
-
-    return Row(
-      children: [
-        Expanded(child: Text('$label: $display')),
-        TextButton.icon(
-          onPressed: onPick,
-          icon: const Icon(Icons.edit_calendar),
-          label: const Text('Pick'),
-        ),
-        if (onClear != null)
-          IconButton(onPressed: onClear, icon: const Icon(Icons.clear)),
-      ],
+    return PageScaffold(
+      title: l10n.adminEventEditTitle,
+      body: _buildEditForm(l10n, auth),
     );
   }
 }
