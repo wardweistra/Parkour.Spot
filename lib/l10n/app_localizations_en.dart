@@ -571,6 +571,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get explorePickerSearchHintEvents => 'Search location or event…';
 
   @override
+  String get explorePickerSearchHintLocation => 'Search location…';
+
+  @override
   String get explorePickerConfirmSelect => 'Select';
 
   @override

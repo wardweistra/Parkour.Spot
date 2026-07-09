@@ -1060,6 +1060,12 @@ abstract class AppLocalizations {
   /// **'Search location or event…'**
   String get explorePickerSearchHintEvents;
 
+  /// Explore entity picker: search placeholder for location-only mode
+  ///
+  /// In en, this message translates to:
+  /// **'Search location…'**
+  String get explorePickerSearchHintLocation;
+
   /// Explore entity picker: confirm single selection
   ///
   /// In en, this message translates to:

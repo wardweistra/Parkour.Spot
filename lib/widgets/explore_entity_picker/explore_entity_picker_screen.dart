@@ -614,7 +614,8 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
 
   String _searchHint(AppLocalizations l10n) {
     return switch (_config.mode) {
-      ExploreEntityPickerMode.locationOnly => l10n.exploreSearchHint,
+      ExploreEntityPickerMode.locationOnly =>
+        l10n.explorePickerSearchHintLocation,
       ExploreEntityPickerMode.eventsOnly => l10n.explorePickerSearchHintEvents,
       ExploreEntityPickerMode.spotsOnly ||
       ExploreEntityPickerMode.spotsAndEvents => l10n.exploreSearchHint,

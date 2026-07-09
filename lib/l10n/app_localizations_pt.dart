@@ -577,6 +577,9 @@ class AppLocalizationsPt extends AppLocalizations {
       'Pesquisar localização ou evento…';
 
   @override
+  String get explorePickerSearchHintLocation => 'Pesquisar localização…';
+
+  @override
   String get explorePickerConfirmSelect => 'Selecionar';
 
   @override

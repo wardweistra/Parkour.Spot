@@ -118,6 +118,7 @@
   "explorePickerTitleEvents": "Choisir un événement",
   "explorePickerTitleSpotsAndEvents": "Choisir un spot ou un événement",
   "explorePickerSearchHintEvents": "Rechercher un lieu ou un événement…",
+  "explorePickerSearchHintLocation": "Rechercher un lieu…",
   "explorePickerConfirmSelect": "Sélectionner",
   "explorePickerConfirmAdd": "Ajouter",
   "explorePickerAlreadyAdded": "Ajouté",

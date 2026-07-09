@@ -580,6 +580,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Rechercher un lieu ou un événement…';
 
   @override
+  String get explorePickerSearchHintLocation => 'Rechercher un lieu…';
+
+  @override
   String get explorePickerConfirmSelect => 'Sélectionner';
 
   @override

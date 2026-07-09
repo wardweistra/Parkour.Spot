@@ -159,6 +159,7 @@
   "explorePickerTitleEvents": "Event kiezen",
   "explorePickerTitleSpotsAndEvents": "Spot of event kiezen",
   "explorePickerSearchHintEvents": "Zoek locatie of event…",
+  "explorePickerSearchHintLocation": "Zoek locatie…",
   "explorePickerConfirmSelect": "Selecteren",
   "explorePickerConfirmAdd": "Toevoegen",
   "explorePickerAlreadyAdded": "Toegevoegd",

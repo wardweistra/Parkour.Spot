@@ -578,6 +578,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get explorePickerSearchHintEvents => 'Buscar ubicación o evento…';
 
   @override
+  String get explorePickerSearchHintLocation => 'Buscar ubicación…';
+
+  @override
   String get explorePickerConfirmSelect => 'Seleccionar';
 
   @override

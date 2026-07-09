@@ -712,6 +712,10 @@
   "@explorePickerSearchHintEvents": {
     "description": "Explore entity picker: search placeholder for events mode"
   },
+  "explorePickerSearchHintLocation": "Search location…",
+  "@explorePickerSearchHintLocation": {
+    "description": "Explore entity picker: search placeholder for location-only mode"
+  },
   "explorePickerConfirmSelect": "Select",
   "@explorePickerConfirmSelect": {
     "description": "Explore entity picker: confirm single selection"
