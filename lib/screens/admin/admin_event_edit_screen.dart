@@ -970,37 +970,46 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
     return auth.isModerator && event.isNativeEvent;
   }
 
-  bool _eventHasNoLocationSet() =>
-      _pickedLocation == null && _locationAddressController.text.trim().isEmpty;
-
   bool _hasLinkedSpotLocation() =>
       _linkedSpots.isNotEmpty || _linkedLists.isNotEmpty;
 
   Future<void> _applyCityCountryFromFirstLinkedSpotIfNeeded() async {
-    if (!_eventHasNoLocationSet()) return;
+    if (eventHasDirectLocation(
+      latitude: _pickedLocation?.latitude,
+      longitude: _pickedLocation?.longitude,
+      address: _locationAddressController.text,
+    )) {
+      return;
+    }
     if (_linkedSpots.isEmpty && _linkedLists.isEmpty) return;
 
-    Spot? sourceSpot;
-    if (_linkedSpots.isNotEmpty) {
-      sourceSpot = _linkedSpots.first;
-    } else if (_linkedListSpots.isNotEmpty) {
-      sourceSpot = _linkedListSpots.first;
-    } else {
+    var linkedSpotListSpots = _linkedListSpots;
+    if (_linkedSpots.isEmpty &&
+        linkedSpotListSpots.isEmpty &&
+        _linkedLists.isNotEmpty) {
       final spotIds = _linkedLists.first.effectiveSpotIds;
       if (spotIds.isEmpty) return;
-      sourceSpot = await context.read<SpotService>().getSpotById(spotIds.first);
+      final spot = await context.read<SpotService>().getSpotById(spotIds.first);
       if (!mounted) return;
+      if (spot != null) linkedSpotListSpots = [spot];
     }
 
-    final city = sourceSpot?.city?.trim();
-    final countryCode = sourceSpot?.countryCode?.trim().toUpperCase();
-    final hasCity = city != null && city.isNotEmpty;
-    final hasCountryCode = countryCode != null && countryCode.isNotEmpty;
-    if (!hasCity && !hasCountryCode) return;
+    final resolved = resolveEventCityCountryFromLinkedSpots(
+      latitude: _pickedLocation?.latitude,
+      longitude: _pickedLocation?.longitude,
+      address: _locationAddressController.text,
+      city: _currentCity,
+      countryCode: _currentCountryCode,
+      linkedSpots: _linkedSpots,
+      linkedSpotListSpots: linkedSpotListSpots,
+    );
+    if (resolved.city == null && resolved.countryCode == null) return;
 
     setState(() {
-      if (hasCity) _currentCity = city;
-      if (hasCountryCode) _currentCountryCode = countryCode;
+      if (resolved.city != null) _currentCity = resolved.city;
+      if (resolved.countryCode != null) {
+        _currentCountryCode = resolved.countryCode;
+      }
     });
   }
 

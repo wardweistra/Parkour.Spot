@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 
 import '../models/parkour_event.dart';
 import '../utils/event_date_window.dart';
+import '../utils/event_linked_spot_loader.dart';
 import '../utils/image_preparation.dart';
 
 class AdminEventsService extends ChangeNotifier {
@@ -158,96 +159,6 @@ class AdminEventsService extends ChangeNotifier {
     } finally {
       _isLoadingMore = false;
       notifyListeners();
-    }
-  }
-
-  Future<bool> createEvent({
-    required String title,
-    String? description,
-    List<String>? imageUrls,
-    String? websiteUrl,
-    required DateTime startAt,
-    DateTime? endAt,
-    bool isDateOnly = false,
-    String? timeZone,
-    double? latitude,
-    double? longitude,
-    String? address,
-    String? city,
-    String? countryCode,
-    required List<String> spotIds,
-    List<String> spotListIds = const <String>[],
-    required String createdBy,
-  }) async {
-    final normalized = _normalizeEventInput(
-      title: title,
-      description: description,
-      imageUrls: imageUrls,
-      websiteUrl: websiteUrl,
-      address: address,
-      spotIds: spotIds,
-      spotListIds: spotListIds,
-      startAt: startAt,
-      endAt: endAt,
-      isDateOnly: isDateOnly,
-      timeZone: timeZone,
-      latitude: latitude,
-      longitude: longitude,
-      city: city,
-      countryCode: countryCode,
-    );
-    if (normalized.error != null) {
-      _error = normalized.error;
-      notifyListeners();
-      return false;
-    }
-
-    final listError = await validateSpotListIdsForLinking(
-      normalized.spotListIds,
-    );
-    if (listError != null) {
-      _error = listError;
-      notifyListeners();
-      return false;
-    }
-
-    _error = null;
-    notifyListeners();
-
-    try {
-      final now = DateTime.now().toUtc();
-      final event = ParkourEvent(
-        title: normalized.title,
-        description: normalized.description,
-        imageUrls: normalized.imageUrls,
-        websiteUrl: normalized.websiteUrl,
-        startAt: normalized.startAt,
-        endAt: normalized.endAt,
-        isDateOnly: normalized.isDateOnly,
-        timeZone: normalized.timeZone,
-        latitude: normalized.latitude,
-        longitude: normalized.longitude,
-        address: normalized.address,
-        city: normalized.city,
-        countryCode: normalized.countryCode,
-        spotIds: normalized.spotIds,
-        spotListIds: normalized.spotListIds,
-        createdBy: createdBy,
-        createdAt: now,
-        updatedAt: now,
-      );
-      final ref = await _firestore
-          .collection('events')
-          .add(event.toFirestore());
-      _events.insert(0, event.copyWith(id: ref.id));
-      _events.sort((a, b) => b.startAt.compareTo(a.startAt));
-      notifyListeners();
-      return true;
-    } catch (e, st) {
-      _error = 'Failed to create event';
-      debugPrint('AdminEventsService.createEvent error: $e\n$st');
-      notifyListeners();
-      return false;
     }
   }
 
@@ -409,6 +320,17 @@ class AdminEventsService extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final resolvedCityCountry = await resolveEventCityCountryFromFirestore(
+        firestore: _firestore,
+        latitude: normalized.latitude,
+        longitude: normalized.longitude,
+        address: normalized.address,
+        city: normalized.city,
+        countryCode: normalized.countryCode,
+        spotIds: normalized.spotIds,
+        spotListIds: normalized.spotListIds,
+      );
+
       final now = DateTime.now().toUtc();
       final updated = existing.copyWith(
         title: normalized.title,
@@ -422,8 +344,8 @@ class AdminEventsService extends ChangeNotifier {
         latitude: normalized.latitude,
         longitude: normalized.longitude,
         address: normalized.address,
-        city: normalized.city,
-        countryCode: normalized.countryCode,
+        city: resolvedCityCountry.city,
+        countryCode: resolvedCityCountry.countryCode,
         spotIds: normalized.spotIds,
         spotListIds: normalized.spotListIds,
         updatedAt: now,

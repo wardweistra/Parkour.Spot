@@ -1080,6 +1080,16 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
         }
       }
 
+      final resolvedCityCountry = resolveEventCityCountryFromLinkedSpots(
+        latitude: _pickedLocation?.latitude,
+        longitude: _pickedLocation?.longitude,
+        address: _effectiveAddressForSubmission(),
+        city: _city,
+        countryCode: _countryCode,
+        linkedSpots: _linkedSpots,
+        linkedSpotListSpots: _linkedSpotListSpots,
+      );
+
       final success = await eventReportService.submitEventReport(
         title: _titleController.text,
         description: _descriptionController.text,
@@ -1093,8 +1103,8 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
         latitude: _pickedLocation?.latitude,
         longitude: _pickedLocation?.longitude,
         address: _effectiveAddressForSubmission(),
-        city: _city,
-        countryCode: _countryCode,
+        city: resolvedCityCountry.city,
+        countryCode: resolvedCityCountry.countryCode,
         spotIds: _linkedSpots
             .map((spot) => spot.id)
             .whereType<String>()

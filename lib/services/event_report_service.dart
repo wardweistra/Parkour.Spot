@@ -6,6 +6,7 @@ import '../utils/replay_latest_stream.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/event_report.dart';
+import '../utils/event_linked_spot_loader.dart';
 import '../utils/event_suggestion_utils.dart';
 import '../utils/image_preparation.dart';
 
@@ -135,6 +136,17 @@ class EventReportService {
     }
 
     try {
+      final resolvedCityCountry = await resolveEventCityCountryFromFirestore(
+        firestore: _firestore,
+        latitude: latitude,
+        longitude: longitude,
+        address: address,
+        city: city,
+        countryCode: countryCode,
+        spotIds: normalizedSpotIds,
+        spotListIds: normalizedSpotListIds,
+      );
+
       final reportData = <String, dynamic>{
         'title': trimmedTitle,
         if (description != null && description.trim().isNotEmpty)
@@ -151,10 +163,11 @@ class EventReportService {
           'longitude': longitude,
           if (address != null && address.trim().isNotEmpty)
             'address': address.trim(),
-          if (city != null && city.trim().isNotEmpty) 'city': city.trim(),
-          if (countryCode != null && countryCode.trim().isNotEmpty)
-            'countryCode': countryCode.trim().toUpperCase(),
         },
+        if (resolvedCityCountry.city != null)
+          'city': resolvedCityCountry.city!,
+        if (resolvedCityCountry.countryCode != null)
+          'countryCode': resolvedCityCountry.countryCode!,
         'spotIds': normalizedSpotIds,
         'spotListIds': normalizedSpotListIds,
         if (linkedSpotName != null && linkedSpotName.trim().isNotEmpty)
@@ -375,6 +388,17 @@ class EventReportService {
         }
       }
 
+      final resolvedCityCountry = await resolveEventCityCountryFromFirestore(
+        firestore: _firestore,
+        latitude: report.latitude,
+        longitude: report.longitude,
+        address: report.address,
+        city: report.city,
+        countryCode: report.countryCode,
+        spotIds: report.spotIds,
+        spotListIds: report.spotListIds,
+      );
+
       final result = await _firestore.runTransaction<String?>((
         transaction,
       ) async {
@@ -457,6 +481,8 @@ class EventReportService {
           report: txReport,
           approverUserId: approverUserId,
           imageUrls: promotedImageUrls,
+          city: resolvedCityCountry.city,
+          countryCode: resolvedCityCountry.countryCode,
         );
         if (eventData == null) {
           throw StateError('Invalid event report data');
@@ -877,6 +903,8 @@ class EventReportService {
     required EventReport report,
     required String approverUserId,
     List<String>? imageUrls,
+    String? city,
+    String? countryCode,
   }) {
     final title = report.title.trim();
     if (title.isEmpty) return null;
@@ -901,6 +929,8 @@ class EventReportService {
 
     final hasLatLng = report.latitude != null && report.longitude != null;
     final hasAddress = report.address?.trim().isNotEmpty == true;
+    final resolvedCity = city?.trim();
+    final resolvedCountryCode = countryCode?.trim().toUpperCase();
     final normalizedImageUrls = imageUrls
         ?.map((url) => url.trim())
         .where((url) => url.isNotEmpty)
@@ -926,11 +956,10 @@ class EventReportService {
         'latitude': report.latitude,
         'longitude': report.longitude,
         'address': report.address!.trim(),
-        if (report.city != null && report.city!.trim().isNotEmpty)
-          'city': report.city!.trim(),
-        if (report.countryCode != null && report.countryCode!.trim().isNotEmpty)
-          'countryCode': report.countryCode!.trim().toUpperCase(),
       },
+      if (resolvedCity != null && resolvedCity.isNotEmpty) 'city': resolvedCity,
+      if (resolvedCountryCode != null && resolvedCountryCode.isNotEmpty)
+        'countryCode': resolvedCountryCode,
       'spotIds': normalizedSpotIds,
       'spotListIds': normalizedSpotListIds,
       if (normalizedImageUrls != null && normalizedImageUrls.isNotEmpty)

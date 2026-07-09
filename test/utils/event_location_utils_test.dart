@@ -115,4 +115,73 @@ void main() {
       );
     });
   });
+
+  group('eventHasDirectLocation', () {
+    test('returns true when coordinates are set', () {
+      expect(
+        eventHasDirectLocation(latitude: 52.0, longitude: 4.0),
+        isTrue,
+      );
+    });
+
+    test('returns true when address is set', () {
+      expect(
+        eventHasDirectLocation(address: 'Main Street 1'),
+        isTrue,
+      );
+    });
+
+    test('returns false when only linked spots provide location', () {
+      expect(eventHasDirectLocation(), isFalse);
+    });
+  });
+
+  group('resolveEventCityCountryFromLinkedSpots', () {
+    final linkedSpot = Spot(
+      id: 'spot-1',
+      name: 'Linked',
+      description: '',
+      latitude: 40.7128,
+      longitude: -74.006,
+      city: 'New York',
+      countryCode: 'US',
+    );
+
+    test('inherits city and country from linked spot when no direct location', () {
+      final resolved = resolveEventCityCountryFromLinkedSpots(
+        latitude: null,
+        longitude: null,
+        address: null,
+        linkedSpots: [linkedSpot],
+        linkedSpotListSpots: const [],
+      );
+      expect(resolved.city, 'New York');
+      expect(resolved.countryCode, 'US');
+    });
+
+    test('does not inherit when event has direct location', () {
+      final resolved = resolveEventCityCountryFromLinkedSpots(
+        latitude: 52.37,
+        longitude: 4.89,
+        address: 'Utrecht',
+        linkedSpots: [linkedSpot],
+        linkedSpotListSpots: const [],
+      );
+      expect(resolved.city, isNull);
+      expect(resolved.countryCode, isNull);
+    });
+
+    test('keeps existing city/country and fills missing values from spot', () {
+      final resolved = resolveEventCityCountryFromLinkedSpots(
+        latitude: null,
+        longitude: null,
+        address: null,
+        city: 'Rotterdam',
+        linkedSpots: [linkedSpot],
+        linkedSpotListSpots: const [],
+      );
+      expect(resolved.city, 'Rotterdam');
+      expect(resolved.countryCode, 'US');
+    });
+  });
 }
