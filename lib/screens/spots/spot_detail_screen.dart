@@ -1872,14 +1872,15 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       case _SpotMenuAction.createEvent:
         final spotId = _spot.id;
         if (spotId == null) break;
-        final query = <String, String>{
-          'spotId': spotId,
-          'spotName': _spot.name,
-          'lat': _spot.latitude.toString(),
-          'lng': _spot.longitude.toString(),
-        };
         context.push(
-          Uri(path: '/events/add', queryParameters: query).toString(),
+          Uri(
+            path: '/events/add',
+            queryParameters: {
+              'spotId': spotId,
+              'spotName': _spot.name,
+            },
+          ).toString(),
+          extra: _spot,
         );
         break;
       case _SpotMenuAction.edit:

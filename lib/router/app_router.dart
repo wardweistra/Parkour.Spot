@@ -332,6 +332,7 @@ class AppRouter {
                 ? gmaps.LatLng(lat, lng)
                 : null;
             final extra = state.extra;
+            final initialLinkedSpot = extra is Spot ? extra : null;
             final initialSpotListSpots = extra is List<Spot>
                 ? extra
                 : (extra is List
@@ -339,6 +340,7 @@ class AppRouter {
                       : null);
             return AddEventReportScreen(
               initialLocation: initialLocation,
+              initialLinkedSpot: initialLinkedSpot,
               initialSpotId: state.uri.queryParameters['spotId'],
               initialSpotName: state.uri.queryParameters['spotName'],
               initialSpotListId: state.uri.queryParameters['spotListId'],

@@ -34,6 +34,7 @@ class AddEventReportScreen extends StatefulWidget {
   const AddEventReportScreen({
     super.key,
     this.initialLocation,
+    this.initialLinkedSpot,
     this.initialSpotId,
     this.initialSpotName,
     this.initialSpotListId,
@@ -42,6 +43,7 @@ class AddEventReportScreen extends StatefulWidget {
   });
 
   final LatLng? initialLocation;
+  final Spot? initialLinkedSpot;
   final String? initialSpotId;
   final String? initialSpotName;
   final String? initialSpotListId;
@@ -163,7 +165,9 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
     _selectedTimeZone = _browserTimeZone;
     _timeZoneOptions = EventScheduleUtils.availableTimeZoneIds();
     _pickedLocation = widget.initialLocation;
-    if (widget.initialSpotId != null) {
+    if (widget.initialLinkedSpot != null) {
+      _linkedSpots = [widget.initialLinkedSpot!];
+    } else if (widget.initialSpotId != null) {
       _linkedSpots = [
         Spot(
           id: widget.initialSpotId,
