@@ -19,6 +19,7 @@ import '../../utils/event_location_utils.dart';
 import '../../utils/event_schedule_utils.dart';
 import '../../utils/image_preparation.dart';
 import '../../utils/image_picker_utils.dart';
+import '../../utils/ui_yield.dart';
 import '../../utils/location_permission_utils.dart';
 import '../../utils/map_recentering_mixin.dart';
 import '../../l10n/app_localizations.dart';
@@ -96,6 +97,8 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
   String? _linkedSpotListName;
 
   final List<Uint8List?> _selectedImageBytes = [];
+  bool _isPreparingImages = false;
+  String? _imageProcessingMessage;
   bool _scheduleDisplayInitialized = false;
 
   LatLng get _displayLocationForMap {
@@ -894,30 +897,60 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
   }
 
   Future<void> _pickImagesFromGallery() async {
-    try {
-      final pickedFiles = await pickImagesFromGallery();
+    final l10n = AppLocalizations.of(context)!;
 
-      if (pickedFiles.isNotEmpty) {
-        var added = 0;
-        for (final pickedFile in pickedFiles) {
-          try {
-            final bytes = await pickedFile.readAsBytes();
-            final prepared = await preparePickedImageBytes(bytes);
+    List<XFile> pickedFiles;
+    try {
+      pickedFiles = await pickImagesFromGallery();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.addSpotPickImagesFailed),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    if (!mounted || pickedFiles.isEmpty) return;
+
+    setState(() {
+      _isPreparingImages = true;
+      _imageProcessingMessage = l10n.publicProfileProcessingImage;
+    });
+    await yieldToUi();
+
+    try {
+      final preparedImages = await preparePickedFiles(
+        pickedFiles,
+        onProgress: ({required current, required total, required phase}) {
+          if (!mounted) return;
+          setState(() {
+            _imageProcessingMessage =
+                '${l10n.publicProfileProcessingImage} (${imagePickProgressLabel(current, total)})';
+          });
+        },
+      );
+
+      if (!mounted) return;
+
+      if (preparedImages.isNotEmpty) {
+        setState(() {
+          for (final prepared in preparedImages) {
             _selectedImageBytes.add(prepared.bytes);
-            added++;
-          } on ImagePreparationException catch (e) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(e.message), backgroundColor: Colors.red),
-              );
-            }
           }
-        }
-        if (added > 0 && mounted) setState(() {});
+        });
+      }
+    } on ImagePreparationException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+        );
       }
     } catch (e) {
       if (mounted) {
-        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -929,17 +962,32 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
           ),
         );
       }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPreparingImages = false;
+          _imageProcessingMessage = null;
+        });
+      }
     }
   }
 
   Future<void> _takePhoto() async {
-    try {
-      final pickedFile = await pickImage(source: ImageSource.camera);
+    final l10n = AppLocalizations.of(context)!;
 
-      if (pickedFile != null) {
-        final bytes = await pickedFile.readAsBytes();
-        final prepared = await preparePickedImageBytes(bytes);
-        setState(() => _selectedImageBytes.add(prepared.bytes));
+    final pickedFile = await pickImage(source: ImageSource.camera);
+    if (!mounted || pickedFile == null) return;
+
+    setState(() {
+      _isPreparingImages = true;
+      _imageProcessingMessage = l10n.publicProfileProcessingImage;
+    });
+    await yieldToUi();
+
+    try {
+      final preparedImages = await preparePickedFiles([pickedFile], maxImages: 1);
+      if (preparedImages.isNotEmpty && mounted) {
+        setState(() => _selectedImageBytes.add(preparedImages.first.bytes));
       }
     } on ImagePreparationException catch (e) {
       if (mounted) {
@@ -949,13 +997,19 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
       }
     } catch (e) {
       if (mounted) {
-        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.addSpotTakePhotoFailed),
             backgroundColor: Colors.red,
           ),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPreparingImages = false;
+          _imageProcessingMessage = null;
+        });
       }
     }
   }
@@ -1503,6 +1557,8 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
               onReorderSelected: _reorderSelectedImage,
               sectionTitle: l10n.addEventPhotosSectionTitle,
               showRequiredIndicator: false,
+              isProcessingImages: _isPreparingImages,
+              processingMessage: _imageProcessingMessage,
             ),
             const SizedBox(height: 24),
             if (submitBlockReason != null) ...[

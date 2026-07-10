@@ -1,4 +1,6 @@
-import 'dart:typed_data';
+import 'dart:isolate';
+
+import 'package:flutter/foundation.dart';
 import 'package:heic_to_png_jpg/heic_to_png_jpg.dart';
 import 'package:image/image.dart' as img;
 
@@ -134,6 +136,105 @@ PreparedImage _prepareFromDecoded({
   );
 }
 
+class _PrepareImageRequest {
+  final Uint8List bytes;
+  final int maxDimension;
+  final int jpegQuality;
+
+  const _PrepareImageRequest({
+    required this.bytes,
+    required this.maxDimension,
+    required this.jpegQuality,
+  });
+}
+
+PreparedImage _prepareImageForUploadSync(_PrepareImageRequest request) {
+  final bytes = request.bytes;
+  if (bytes.isEmpty) {
+    throw ImagePreparationException('Image data is empty.');
+  }
+
+  final contentType = detectContentType(bytes);
+  if (contentType.isEmpty) {
+    throw ImagePreparationException(
+      'Unsupported image format. Please use JPEG, PNG, GIF, WebP, or HEIC.',
+    );
+  }
+
+  final decoded = img.decodeImage(bytes);
+  if (decoded == null || decoded.width <= 0 || decoded.height <= 0) {
+    throw ImagePreparationException(
+      'This image appears to be corrupt or unreadable. Please try a different photo.',
+    );
+  }
+
+  return _prepareFromDecoded(
+    decoded: decoded,
+    originalBytes: bytes,
+    contentType: contentType,
+    maxDimension: request.maxDimension,
+    jpegQuality: request.jpegQuality,
+  );
+}
+
+Map<String, Object?> _prepareImageForUploadWorker(Map<String, Object?> message) {
+  try {
+    final result = _prepareImageForUploadSync(
+      _PrepareImageRequest(
+        bytes: message['bytes']! as Uint8List,
+        maxDimension: message['maxDimension']! as int,
+        jpegQuality: message['jpegQuality']! as int,
+      ),
+    );
+    return {
+      'bytes': result.bytes,
+      'contentType': result.contentType,
+    };
+  } on ImagePreparationException catch (e) {
+    return {'error': e.message};
+  } catch (_) {
+    return {
+      'error': 'Failed to process image. Please try a different photo.',
+    };
+  }
+}
+
+Future<PreparedImage> _prepareImageOffMainThread(
+  Uint8List bytes, {
+  int maxDimension = 0,
+  int jpegQuality = 0,
+}) async {
+  final request = _PrepareImageRequest(
+    bytes: bytes,
+    maxDimension: maxDimension,
+    jpegQuality: jpegQuality,
+  );
+
+  if (kIsWeb) {
+    // Prefer Isolate.run on web; compute's Map payload adds copy overhead.
+    try {
+      return await Isolate.run(() => _prepareImageForUploadSync(request));
+    } catch (_) {
+      // Fall back if workers are unavailable in this build target.
+      return _prepareImageForUploadSync(request);
+    }
+  }
+
+  final result = await compute(_prepareImageForUploadWorker, <String, Object?>{
+    'bytes': bytes,
+    'maxDimension': maxDimension,
+    'jpegQuality': jpegQuality,
+  });
+  final error = result['error'] as String?;
+  if (error != null) {
+    throw ImagePreparationException(error);
+  }
+  return PreparedImage(
+    bytes: result['bytes']! as Uint8List,
+    contentType: result['contentType']! as String,
+  );
+}
+
 /// Validates image bytes, converts HEIC to JPEG if needed, and returns
 /// prepared bytes with correct contentType. Rejects invalid formats.
 ///
@@ -179,24 +280,8 @@ Future<PreparedImage> prepareImageForUpload(
     }
   }
 
-  final contentType = detectContentType(bytes);
-  if (contentType.isEmpty) {
-    throw ImagePreparationException(
-      'Unsupported image format. Please use JPEG, PNG, GIF, WebP, or HEIC.',
-    );
-  }
-
-  final decoded = img.decodeImage(bytes);
-  if (decoded == null || decoded.width <= 0 || decoded.height <= 0) {
-    throw ImagePreparationException(
-      'This image appears to be corrupt or unreadable. Please try a different photo.',
-    );
-  }
-
-  return _prepareFromDecoded(
-    decoded: decoded,
-    originalBytes: bytes,
-    contentType: contentType,
+  return _prepareImageOffMainThread(
+    bytes,
     maxDimension: maxDimension,
     jpegQuality: jpegQuality,
   );

@@ -22,6 +22,7 @@ import '../../utils/event_location_utils.dart';
 import '../../utils/event_schedule_utils.dart';
 import '../../utils/image_preparation.dart';
 import '../../utils/image_picker_utils.dart';
+import '../../utils/ui_yield.dart';
 import '../../utils/location_permission_utils.dart';
 import '../../utils/map_recentering_mixin.dart';
 import '../../widgets/custom_button.dart';
@@ -66,6 +67,8 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
   int _timeZoneLookupGeneration = 0;
   bool _isLoading = true;
   bool _isSubmitting = false;
+  bool _isPreparingImages = false;
+  String? _imageProcessingMessage;
   bool _isGeocoding = false;
   bool _isGettingLocation = false;
   bool _isSatelliteView = false;
@@ -824,27 +827,51 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
   }
 
   Future<void> _pickFromGallery() async {
+    List<XFile> pickedFiles;
     try {
-      final pickedFiles = await pickImagesFromGallery();
-      if (pickedFiles.isEmpty) return;
-
-      for (final pickedFile in pickedFiles) {
-        try {
-          final bytes = await pickedFile.readAsBytes();
-          final prepared = await preparePickedImageBytes(bytes);
-          if (mounted) {
-            setState(() => _selectedImageBytes.add(prepared.bytes));
-          }
-        } on ImagePreparationException catch (e) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(e.message), backgroundColor: Colors.red),
-            );
-          }
-        }
-      }
+      pickedFiles = await pickImagesFromGallery();
+    } catch (e) {
       if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to pick images. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (!mounted || pickedFiles.isEmpty) return;
+
+    setState(() {
+      _isPreparingImages = true;
+      _imageProcessingMessage = 'Processing image...';
+    });
+    await yieldToUi();
+
+    try {
+      final preparedImages = await preparePickedFiles(
+        pickedFiles,
+        onProgress: ({required current, required total, required phase}) {
+          if (!mounted) return;
+          setState(() {
+            _imageProcessingMessage =
+                'Processing image... (${imagePickProgressLabel(current, total)})';
+          });
+        },
+      );
+      if (!mounted) return;
+
+      for (final prepared in preparedImages) {
+        setState(() => _selectedImageBytes.add(prepared.bytes));
+      }
       setState(() => _formError = null);
+    } on ImagePreparationException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -857,19 +884,31 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
           backgroundColor: Colors.red,
         ),
       );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPreparingImages = false;
+          _imageProcessingMessage = null;
+        });
+      }
     }
   }
 
   Future<void> _takePhoto() async {
-    try {
-      final pickedFile = await pickImage(source: ImageSource.camera);
-      if (pickedFile == null) return;
+    final pickedFile = await pickImage(source: ImageSource.camera);
+    if (!mounted || pickedFile == null) return;
 
-      final bytes = await pickedFile.readAsBytes();
-      final prepared = await preparePickedImageBytes(bytes);
-      if (!mounted) return;
+    setState(() {
+      _isPreparingImages = true;
+      _imageProcessingMessage = 'Processing image...';
+    });
+    await yieldToUi();
+
+    try {
+      final preparedImages = await preparePickedFiles([pickedFile], maxImages: 1);
+      if (!mounted || preparedImages.isEmpty) return;
       setState(() {
-        _selectedImageBytes.add(prepared.bytes);
+        _selectedImageBytes.add(preparedImages.first.bytes);
         _formError = null;
       });
     } on ImagePreparationException catch (e) {
@@ -885,6 +924,13 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
           backgroundColor: Colors.red,
         ),
       );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPreparingImages = false;
+          _imageProcessingMessage = null;
+        });
+      }
     }
   }
 
@@ -1576,6 +1622,8 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
             onRemoveExistingAt: _removeExistingImageAt,
             onReorderExisting: _reorderExistingImage,
             onReorderSelected: _reorderSelectedImage,
+            isProcessingImages: _isPreparingImages,
+            processingMessage: _imageProcessingMessage,
           ),
           if (_formError != null) ...[
             const SizedBox(height: 16),

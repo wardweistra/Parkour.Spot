@@ -22,6 +22,7 @@ import '../../utils/map_recentering_mixin.dart';
 import '../../utils/location_permission_utils.dart';
 import '../../utils/image_preparation.dart';
 import '../../utils/image_picker_utils.dart';
+import '../../utils/ui_yield.dart';
 
 class EditSpotScreen extends StatefulWidget {
   final Spot spot;
@@ -70,6 +71,8 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
 
   // Loading state
   bool _isLoading = false;
+  bool _isPreparingImages = false;
+  String? _imageProcessingMessage;
   
   // Warning banner state (for admin editing spot-source spots)
   bool _warningDismissed = false;
@@ -286,25 +289,52 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
   }
 
   Future<void> _pickFromGallery() async {
+    List<XFile> pickedFiles;
     try {
-      final images = await pickImagesFromGallery();
+      pickedFiles = await pickImagesFromGallery();
+    } catch (e) {
+      debugPrint('Error picking images: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Failed to pick images. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
 
-      if (images.isNotEmpty) {
-        for (final image in images) {
-          try {
-            final bytes = await image.readAsBytes();
-            final prepared = await preparePickedImageBytes(bytes);
-            if (mounted) {
-              setState(() => _selectedImageBytes.add(prepared.bytes));
-            }
-          } on ImagePreparationException catch (e) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(e.message), backgroundColor: Colors.red),
-              );
-            }
-          }
-        }
+    if (!mounted || pickedFiles.isEmpty) return;
+
+    setState(() {
+      _isPreparingImages = true;
+      _imageProcessingMessage = 'Processing image...';
+    });
+    await yieldToUi();
+
+    try {
+      final preparedImages = await preparePickedFiles(
+        pickedFiles,
+        onProgress: ({required current, required total, required phase}) {
+          if (!mounted) return;
+          setState(() {
+            _imageProcessingMessage =
+                'Processing image... (${imagePickProgressLabel(current, total)})';
+          });
+        },
+      );
+
+      if (!mounted) return;
+
+      for (final prepared in preparedImages) {
+        setState(() => _selectedImageBytes.add(prepared.bytes));
+      }
+    } on ImagePreparationException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+        );
       }
     } catch (e) {
       debugPrint('Error picking images: $e');
@@ -320,19 +350,30 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
           ),
         );
       }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPreparingImages = false;
+          _imageProcessingMessage = null;
+        });
+      }
     }
   }
 
   Future<void> _takePhoto() async {
-    try {
-      final image = await pickImage(source: ImageSource.camera);
+    final pickedFile = await pickImage(source: ImageSource.camera);
+    if (!mounted || pickedFile == null) return;
 
-      if (image != null) {
-        final bytes = await image.readAsBytes();
-        final prepared = await preparePickedImageBytes(bytes);
-        if (mounted) {
-          setState(() => _selectedImageBytes.add(prepared.bytes));
-        }
+    setState(() {
+      _isPreparingImages = true;
+      _imageProcessingMessage = 'Processing image...';
+    });
+    await yieldToUi();
+
+    try {
+      final preparedImages = await preparePickedFiles([pickedFile], maxImages: 1);
+      if (preparedImages.isNotEmpty && mounted) {
+        setState(() => _selectedImageBytes.add(preparedImages.first.bytes));
       }
     } on ImagePreparationException catch (e) {
       if (mounted) {
@@ -349,6 +390,13 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
             backgroundColor: Colors.red,
           ),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPreparingImages = false;
+          _imageProcessingMessage = null;
+        });
       }
     }
   }
@@ -765,6 +813,8 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
                     onRemoveExistingAt: _removeExistingImageAt,
                     onReorderExisting: _reorderExistingImage,
                     onReorderSelected: _reorderSelectedImage,
+                    isProcessingImages: _isPreparingImages,
+                    processingMessage: _imageProcessingMessage,
                   ),
                   const SizedBox(height: 16),
 

@@ -29,6 +29,9 @@ import '../../utils/map_recentering_mixin.dart';
 import '../../utils/event_suggestion_utils.dart';
 import '../../utils/image_preparation.dart';
 import '../../utils/image_picker_utils.dart';
+import '../../utils/ui_yield.dart';
+import '../../widgets/image_processing_banner.dart';
+import '../../widgets/memory_image_preview.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/location_info_box.dart';
 import '../../widgets/explore_entity_picker/explore_entity_picker_config.dart';
@@ -1708,6 +1711,9 @@ class _SuggestEventPhotoDialog extends StatefulWidget {
 class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
   final TextEditingController _emailController = TextEditingController();
   final List<Uint8List> _selectedImageBytes = <Uint8List>[];
+  bool _isPreparingImages = false;
+  String? _imageProgressLabel;
+  bool _isUploading = false;
   bool _submitting = false;
   String? _error;
 
@@ -1729,46 +1735,113 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
 
   bool _validEmail(String value) => _emailRegex.hasMatch(value);
 
-  Future<void> _pickImagesFromGallery() async {
-    try {
-      final pickedFiles = await pickImagesFromGallery();
-      if (pickedFiles.isEmpty || !mounted) return;
+  bool get _isBusy => _isPreparingImages || _submitting;
 
-      for (final pickedFile in pickedFiles) {
-        if (_selectedImageBytes.length >=
-            EventReportService.maxSuggestedPhotos) {
-          break;
-        }
-        final bytes = await pickedFile.readAsBytes();
-        final prepared = await preparePickedImageBytes(bytes);
-        _selectedImageBytes.add(prepared.bytes);
+  Future<void> _pickImagesFromGallery() async {
+    final remaining =
+        EventReportService.maxSuggestedPhotos - _selectedImageBytes.length;
+    if (remaining <= 0) return;
+
+    List<XFile> pickedFiles;
+    try {
+      pickedFiles = await pickImagesFromGallery();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = '$e');
+      return;
+    }
+
+    if (!mounted || pickedFiles.isEmpty) return;
+
+    setState(() {
+      _isPreparingImages = true;
+      _imageProgressLabel = null;
+      _error = null;
+    });
+    await yieldToUi();
+
+    try {
+      final preparedImages = await preparePickedFiles(
+        pickedFiles,
+        maxImages: remaining,
+        onProgress: ({required current, required total, required phase}) {
+          if (!mounted) return;
+          setState(() {
+            _imageProgressLabel = imagePickProgressLabel(current, total);
+          });
+        },
+      );
+
+      if (!mounted) return;
+
+      if (preparedImages.isNotEmpty) {
+        setState(() {
+          for (final prepared in preparedImages) {
+            if (_selectedImageBytes.length >=
+                EventReportService.maxSuggestedPhotos) {
+              break;
+            }
+            _selectedImageBytes.add(prepared.bytes);
+          }
+        });
       }
-      if (mounted) setState(() {});
     } on ImagePreparationException catch (e) {
       if (!mounted) return;
       setState(() => _error = e.message);
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = '$e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPreparingImages = false;
+          _imageProgressLabel = null;
+        });
+      }
     }
   }
 
   Future<void> _takePhoto() async {
+    if (_selectedImageBytes.length >= EventReportService.maxSuggestedPhotos) {
+      return;
+    }
+
+    final pickedFile = await pickImage(source: ImageSource.camera);
+    if (!mounted || pickedFile == null) return;
+
+    setState(() {
+      _isPreparingImages = true;
+      _imageProgressLabel = null;
+      _error = null;
+    });
+    await yieldToUi();
+
     try {
-      if (_selectedImageBytes.length >= EventReportService.maxSuggestedPhotos) {
-        return;
-      }
-      final pickedFile = await pickImage(source: ImageSource.camera);
-      if (pickedFile == null || !mounted) return;
-      final bytes = await pickedFile.readAsBytes();
-      final prepared = await preparePickedImageBytes(bytes);
-      setState(() => _selectedImageBytes.add(prepared.bytes));
+      final preparedImages = await preparePickedFiles(
+        [pickedFile],
+        maxImages: 1,
+        onProgress: ({required current, required total, required phase}) {
+          if (!mounted) return;
+          setState(() {
+            _imageProgressLabel = imagePickProgressLabel(current, total);
+          });
+        },
+      );
+      if (!mounted || preparedImages.isEmpty) return;
+      setState(() => _selectedImageBytes.add(preparedImages.first.bytes));
     } on ImagePreparationException catch (e) {
       if (!mounted) return;
       setState(() => _error = e.message);
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = '$e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPreparingImages = false;
+          _imageProgressLabel = null;
+        });
+      }
     }
   }
 
@@ -1794,6 +1867,7 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
 
     setState(() {
       _submitting = true;
+      _isUploading = true;
       _error = null;
     });
 
@@ -1802,6 +1876,10 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
       final uploadedUrls = await eventService.uploadSuggestedEventPhotos(
         _selectedImageBytes,
       );
+
+      if (!mounted) return;
+
+      setState(() => _isUploading = false);
       final contactEmail = isLoggedIn
           ? (trimmedEmail.isNotEmpty
                 ? trimmedEmail
@@ -1836,7 +1914,10 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
       setState(() => _error = l10n.eventDetailSuggestPhotosSubmitError('$e'));
     } finally {
       if (mounted) {
-        setState(() => _submitting = false);
+        setState(() {
+          _submitting = false;
+          _isUploading = false;
+        });
       }
     }
   }
@@ -1867,7 +1948,7 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
                       setState(() => _error = null);
                     }
                   },
-                  enabled: !_submitting,
+                  enabled: !_isBusy,
                   decoration: InputDecoration(
                     labelText: l10n.spotDetailReportEmailLabel,
                     hintText: l10n.spotDetailReportEmailLabel,
@@ -1926,14 +2007,10 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
                     final bytes = _selectedImageBytes[index];
                     return Stack(
                       children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.memory(
-                            bytes,
-                            width: 96,
-                            height: 96,
-                            fit: BoxFit.cover,
-                          ),
+                        MemoryImagePreview(
+                          bytes: bytes,
+                          size: 96,
+                          borderRadius: 8,
                         ),
                         Positioned(
                           top: 4,
@@ -1942,7 +2019,7 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
                             color: Colors.black.withValues(alpha: 0.5),
                             borderRadius: BorderRadius.circular(16),
                             child: InkWell(
-                              onTap: _submitting
+                              onTap: _isBusy
                                   ? null
                                   : () => setState(
                                       () => _selectedImageBytes.removeAt(index),
@@ -1968,7 +2045,7 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: _submitting ? null : _pickImagesFromGallery,
+                      onPressed: _isBusy ? null : _pickImagesFromGallery,
                       icon: const Icon(Icons.photo_library_outlined),
                       label: Text(l10n.addSpotGalleryButton),
                     ),
@@ -1976,7 +2053,7 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: _submitting ? null : _takePhoto,
+                      onPressed: _isBusy ? null : _takePhoto,
                       icon: const Icon(Icons.photo_camera_outlined),
                       label: Text(l10n.addSpotCameraButton),
                     ),
@@ -1990,6 +2067,19 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
               ),
+              if (_isPreparingImages) ...[
+                const SizedBox(height: 12),
+                ImageProcessingBanner(
+                  message: l10n.publicProfileProcessingImage,
+                  progressLabel: _imageProgressLabel,
+                ),
+              ],
+              if (_isUploading) ...[
+                const SizedBox(height: 12),
+                ImageProcessingBanner(
+                  message: l10n.publicProfileUploading,
+                ),
+              ],
               if (_error != null) ...[
                 const SizedBox(height: 10),
                 Text(
@@ -2005,18 +2095,23 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: _submitting
-              ? null
-              : () => Navigator.of(context).pop(false),
+          onPressed: _isBusy ? null : () => Navigator.of(context).pop(false),
           child: Text(l10n.profileCancel),
         ),
         FilledButton(
-          onPressed: _submitting ? null : _submit,
-          child: _submitting
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+          onPressed: (_isBusy || _isUploading) ? null : _submit,
+          child: (_submitting || _isUploading)
+              ? Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(l10n.publicProfileUploading),
+                  ],
                 )
               : Text(l10n.spotDetailSubmit),
         ),

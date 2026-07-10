@@ -49,6 +49,9 @@ import '../../widgets/spot_detail_community_section.dart';
 import '../../widgets/spot_detail_quick_action_chip.dart';
 import '../../utils/image_preparation.dart';
 import '../../utils/image_picker_utils.dart';
+import '../../utils/ui_yield.dart';
+import '../../widgets/image_processing_banner.dart';
+import '../../widgets/memory_image_preview.dart';
 import '../../services/user_profile_service.dart';
 import '../../services/jumpflix_service.dart';
 import '../../utils/relative_date_localization.dart';
@@ -6717,6 +6720,8 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
   late final TextEditingController detailsController;
   late final TextEditingController emailController;
   final List<Uint8List> _selectedImageBytes = [];
+  bool _isPreparingImages = false;
+  String? _imageProgressLabel;
   bool _isUploading = false;
   bool _isSubmitting = false;
   String? _submissionError;
@@ -6743,31 +6748,65 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
     super.dispose();
   }
 
-  Future<void> _pickImages() async {
-    try {
-      final pickedFiles = await pickImagesFromGallery();
+  bool get _isBusy => _isPreparingImages || _isSubmitting || _isUploading;
 
-      if (pickedFiles.isNotEmpty) {
-        for (final pickedFile in pickedFiles) {
-          try {
-            final bytes = await pickedFile.readAsBytes();
-            final prepared = await preparePickedImageBytes(bytes);
-            if (mounted) {
-              setState(() => _selectedImageBytes.add(prepared.bytes));
-            }
-          } on ImagePreparationException catch (e) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(e.message), backgroundColor: Colors.red),
-              );
-            }
+  Future<void> _pickImages() async {
+    final l10n = AppLocalizations.of(context)!;
+
+    List<XFile> pickedFiles;
+    try {
+      pickedFiles = await pickImagesFromGallery();
+    } catch (e) {
+      debugPrint('Error picking images: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.spotDetailPickImagesFailed),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    if (!mounted || pickedFiles.isEmpty) return;
+
+    setState(() {
+      _isPreparingImages = true;
+      _imageProgressLabel = null;
+      _submissionError = null;
+    });
+    await yieldToUi();
+
+    try {
+      final preparedImages = await preparePickedFiles(
+        pickedFiles,
+        onProgress: ({required current, required total, required phase}) {
+          if (!mounted) return;
+          setState(() {
+            _imageProgressLabel = imagePickProgressLabel(current, total);
+          });
+        },
+      );
+
+      if (!mounted) return;
+
+      if (preparedImages.isNotEmpty) {
+        setState(() {
+          for (final prepared in preparedImages) {
+            _selectedImageBytes.add(prepared.bytes);
           }
-        }
+        });
+      }
+    } on ImagePreparationException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+        );
       }
     } catch (e) {
       debugPrint('Error picking images: $e');
       if (mounted) {
-        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -6778,6 +6817,13 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
             backgroundColor: Colors.red,
           ),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPreparingImages = false;
+          _imageProgressLabel = null;
+        });
       }
     }
   }
@@ -6916,7 +6962,7 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
         authService.isAuthenticated && authService.userProfile != null;
 
     return PopScope(
-      canPop: !_isSubmitting && !_isUploading,
+      canPop: !_isBusy,
       child: AlertDialog(
         title: Row(
           children: [
@@ -6944,10 +6990,23 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
                 ),
                 const SizedBox(height: 8),
                 ElevatedButton.icon(
-                  onPressed: _isSubmitting || _isUploading ? null : _pickImages,
+                  onPressed: _isBusy ? null : _pickImages,
                   icon: const Icon(Icons.add_photo_alternate),
                   label: Text(l10n.spotDetailPickPhotos),
                 ),
+                if (_isPreparingImages) ...[
+                  const SizedBox(height: 12),
+                  ImageProcessingBanner(
+                    message: l10n.publicProfileProcessingImage,
+                    progressLabel: _imageProgressLabel,
+                  ),
+                ],
+                if (_isUploading) ...[
+                  const SizedBox(height: 12),
+                  ImageProcessingBanner(
+                    message: l10n.publicProfileUploading,
+                  ),
+                ],
                 const SizedBox(height: 16),
                 // Display selected images
                 if (_selectedImageBytes.isNotEmpty) ...[
@@ -6968,20 +7027,10 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
                                 color: theme.colorScheme.outline,
                               ),
                             ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.memory(
-                                _selectedImageBytes[index],
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    Center(
-                                      child: Icon(
-                                        Icons.broken_image_outlined,
-                                        color: theme.colorScheme.error,
-                                        size: 32,
-                                      ),
-                                    ),
-                              ),
+                            child: MemoryImagePreview(
+                              bytes: _selectedImageBytes[index],
+                              size: 100,
+                              borderRadius: 8,
                             ),
                           ),
                           Positioned(
@@ -6990,7 +7039,7 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
                             child: IconButton(
                               icon: const Icon(Icons.close, size: 20),
                               color: theme.colorScheme.error,
-                              onPressed: _isSubmitting || _isUploading
+                              onPressed: _isBusy
                                   ? null
                                   : () => _removeImage(index),
                               padding: EdgeInsets.zero,
@@ -7020,7 +7069,7 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
                     filled: true,
                     fillColor: theme.colorScheme.surfaceContainerHighest,
                   ),
-                  enabled: !_isSubmitting && !_isUploading,
+                  enabled: !_isBusy,
                 ),
                 const SizedBox(height: 16),
                 if (!isLoggedIn) ...[
@@ -7043,7 +7092,7 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
                       filled: true,
                       fillColor: theme.colorScheme.surfaceContainerHighest,
                     ),
-                    enabled: !_isSubmitting && !_isUploading,
+                    enabled: !_isBusy,
                   ),
                 ] else ...[
                   Container(
@@ -7101,18 +7150,23 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
         ),
         actions: [
           TextButton(
-            onPressed: (_isSubmitting || _isUploading)
-                ? null
-                : () => Navigator.of(dialogContext).pop(false),
+            onPressed: _isBusy ? null : () => Navigator.of(dialogContext).pop(false),
             child: Text(l10n.profileCancel),
           ),
           ElevatedButton(
-            onPressed: (_isSubmitting || _isUploading) ? null : _submitPhotos,
-            child: _isSubmitting || _isUploading
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+            onPressed: (_isBusy || _isUploading) ? null : _submitPhotos,
+            child: (_isSubmitting || _isUploading)
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(l10n.publicProfileUploading),
+                    ],
                   )
                 : Text(l10n.spotDetailSubmit),
           ),

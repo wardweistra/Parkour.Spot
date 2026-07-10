@@ -22,6 +22,7 @@ import 'package:go_router/go_router.dart';
 import '../../utils/map_recentering_mixin.dart';
 import '../../utils/image_preparation.dart';
 import '../../utils/image_picker_utils.dart';
+import '../../utils/ui_yield.dart';
 import '../../config/app_config.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/page_scaffold.dart';
@@ -48,6 +49,8 @@ class _AddSpotScreenState extends State<AddSpotScreen>
   String? _currentCity;
   String? _currentCountryCode;
   bool _isLoading = false;
+  bool _isPreparingImages = false;
+  String? _imageProcessingMessage;
   bool _isGettingLocation = false;
   bool _isGeocoding = false;
   bool _isSatelliteView = false;
@@ -246,52 +249,51 @@ class _AddSpotScreenState extends State<AddSpotScreen>
   }
 
   Future<void> _pickImagesFromGallery() async {
-    try {
-      final pickedFiles = await pickImagesFromGallery();
+    final l10n = AppLocalizations.of(context)!;
 
-      if (pickedFiles.isNotEmpty) {
-        int added = 0;
-        for (final pickedFile in pickedFiles) {
-          try {
-            final bytes = await pickedFile.readAsBytes();
-            final prepared = await preparePickedImageBytes(bytes);
-            _selectedImageBytes.add(prepared.bytes);
-            added++;
-          } on ImagePreparationException catch (e) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(e.message), backgroundColor: Colors.red),
-              );
-            }
-          }
-        }
-        if (added > 0) setState(() {});
-      }
+    List<XFile> pickedFiles;
+    try {
+      pickedFiles = await pickImagesFromGallery();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              e is ImagePreparationException
-                  ? e.message
-                  : AppLocalizations.of(context)!.addSpotPickImagesFailed,
-            ),
+            content: Text(l10n.addSpotPickImagesFailed),
             backgroundColor: Colors.red,
           ),
         );
       }
+      return;
     }
-  }
 
-  Future<void> _takePhoto() async {
+    if (!mounted || pickedFiles.isEmpty) return;
+
+    setState(() {
+      _isPreparingImages = true;
+      _imageProcessingMessage = l10n.publicProfileProcessingImage;
+    });
+    await yieldToUi();
+
     try {
-      final pickedFile = await pickImage(source: ImageSource.camera);
+      final preparedImages = await preparePickedFiles(
+        pickedFiles,
+        onProgress: ({required current, required total, required phase}) {
+          if (!mounted) return;
+          setState(() {
+            _imageProcessingMessage =
+                '${l10n.publicProfileProcessingImage} (${imagePickProgressLabel(current, total)})';
+          });
+        },
+      );
 
-      if (pickedFile != null) {
-        final bytes = await pickedFile.readAsBytes();
-        final prepared = await preparePickedImageBytes(bytes);
-        _selectedImageBytes.add(prepared.bytes);
-        setState(() {});
+      if (!mounted) return;
+
+      if (preparedImages.isNotEmpty) {
+        setState(() {
+          for (final prepared in preparedImages) {
+            _selectedImageBytes.add(prepared.bytes);
+          }
+        });
       }
     } on ImagePreparationException catch (e) {
       if (mounted) {
@@ -303,10 +305,63 @@ class _AddSpotScreenState extends State<AddSpotScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.addSpotTakePhotoFailed),
+            content: Text(
+              e is ImagePreparationException
+                  ? e.message
+                  : l10n.addSpotPickImagesFailed,
+            ),
             backgroundColor: Colors.red,
           ),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPreparingImages = false;
+          _imageProcessingMessage = null;
+        });
+      }
+    }
+  }
+
+  Future<void> _takePhoto() async {
+    final l10n = AppLocalizations.of(context)!;
+
+    final pickedFile = await pickImage(source: ImageSource.camera);
+    if (!mounted || pickedFile == null) return;
+
+    setState(() {
+      _isPreparingImages = true;
+      _imageProcessingMessage = l10n.publicProfileProcessingImage;
+    });
+    await yieldToUi();
+
+    try {
+      final preparedImages = await preparePickedFiles([pickedFile], maxImages: 1);
+      if (preparedImages.isNotEmpty && mounted) {
+        setState(() => _selectedImageBytes.add(preparedImages.first.bytes));
+      }
+    } on ImagePreparationException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.addSpotTakePhotoFailed),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPreparingImages = false;
+          _imageProcessingMessage = null;
+        });
       }
     }
   }
@@ -575,6 +630,8 @@ class _AddSpotScreenState extends State<AddSpotScreen>
                     onRemoveSelectedAt: _removeImageAt,
                     onRemoveExistingAt: (index) {}, // Not used in add mode
                     onReorderSelected: _reorderSelectedImage,
+                    isProcessingImages: _isPreparingImages,
+                    processingMessage: _imageProcessingMessage,
                   ),
 
                   const SizedBox(height: 16),

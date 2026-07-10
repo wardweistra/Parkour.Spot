@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
+import '../memory_image_preview.dart';
 
 class SpotImageSection extends StatelessWidget {
   final List<Uint8List?> selectedImageBytes;
@@ -14,6 +15,8 @@ class SpotImageSection extends StatelessWidget {
   final String? sectionTitle;
   final bool showRequiredIndicator;
   final bool showAddButtons;
+  final bool isProcessingImages;
+  final String? processingMessage;
 
   const SpotImageSection({
     super.key,
@@ -28,6 +31,8 @@ class SpotImageSection extends StatelessWidget {
     this.sectionTitle,
     this.showRequiredIndicator = true,
     this.showAddButtons = true,
+    this.isProcessingImages = false,
+    this.processingMessage,
   });
 
   @override
@@ -162,12 +167,35 @@ class SpotImageSection extends StatelessWidget {
               const SizedBox(height: 12),
             ],
 
+            if (isProcessingImages) ...[
+              Row(
+                children: [
+                  SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      processingMessage ?? l10n.publicProfileProcessingImage,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ],
+
             if (showAddButtons)
               Row(
                 children: [
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: onPickFromGallery,
+                      onPressed: isProcessingImages ? null : onPickFromGallery,
                       icon: const Icon(Icons.photo_library),
                       label: Text(l10n.addSpotGalleryButton),
                     ),
@@ -175,7 +203,7 @@ class SpotImageSection extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: onTakePhoto,
+                      onPressed: isProcessingImages ? null : onTakePhoto,
                       icon: const Icon(Icons.camera_alt),
                       label: Text(l10n.addSpotCameraButton),
                     ),
@@ -193,24 +221,10 @@ class SpotImageSection extends StatelessWidget {
     if (bytes == null) return const SizedBox.shrink();
     return Stack(
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Image.memory(
-            bytes,
-            width: 120,
-            height: 120,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Container(
-              width: 120,
-              height: 120,
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              child: Icon(
-                Icons.broken_image_outlined,
-                color: Theme.of(context).colorScheme.error,
-                size: 48,
-              ),
-            ),
-          ),
+        MemoryImagePreview(
+          bytes: bytes,
+          size: 120,
+          borderRadius: 12,
         ),
         Positioned(
           top: 6,
@@ -331,21 +345,10 @@ class SpotImageSection extends StatelessWidget {
                     fit: BoxFit.cover,
                   )
                 : item != null
-                    ? Image.memory(
-                        item as Uint8List,
-                        width: 120,
-                        height: 120,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          width: 120,
-                          height: 120,
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                          child: Icon(
-                            Icons.broken_image_outlined,
-                            color: Theme.of(context).colorScheme.error,
-                            size: 48,
-                          ),
-                        ),
+                    ? MemoryImagePreview(
+                        bytes: item as Uint8List,
+                        size: 120,
+                        borderRadius: 12,
                       )
                     : const SizedBox.shrink(),
           ),
