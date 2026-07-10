@@ -39,6 +39,48 @@ Future<Spot?> loadSourceSpotForCityCountry({
   return null;
 }
 
+/// All eligible linked spots for event map display (same walk order as locate).
+///
+/// Walks [spotIds], then expandable [spotListIds] (`public` / `unlisted` only).
+/// Skips hidden / duplicate spots and spots without valid coordinates.
+Future<List<Spot>> loadEligibleSpotsForEventPins({
+  required FirebaseFirestore firestore,
+  required List<String> spotIds,
+  required List<String> spotListIds,
+}) async {
+  final seen = <String>{};
+  final result = <Spot>[];
+
+  void addSpot(Spot? spot) {
+    if (spot == null || !isSpotEligibleForEventMapPin(spot)) return;
+    final id = spot.id?.trim();
+    if (id == null || id.isEmpty || seen.contains(id)) return;
+    seen.add(id);
+    result.add(spot);
+  }
+
+  for (final spotId in spotIds) {
+    final trimmedId = spotId.trim();
+    if (trimmedId.isEmpty) continue;
+    addSpot(await _loadSpotById(firestore, trimmedId));
+  }
+
+  for (final listId in spotListIds) {
+    final trimmedListId = listId.trim();
+    if (trimmedListId.isEmpty) continue;
+    final listDoc =
+        await firestore.collection('spotLists').doc(trimmedListId).get();
+    if (!listDoc.exists || listDoc.data() == null) continue;
+    final list = SpotList.fromFirestore(listDoc);
+    if (!isSpotListExpandableForEventPins(list)) continue;
+    for (final spotId in list.effectiveSpotIds) {
+      addSpot(await _loadSpotById(firestore, spotId));
+    }
+  }
+
+  return result;
+}
+
 /// First eligible linked spot for Explore locate when the event has no venue.
 ///
 /// Walks [spotIds], then expandable [spotListIds] (`public` / `unlisted` only).

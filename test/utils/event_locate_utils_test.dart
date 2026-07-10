@@ -186,6 +186,104 @@ void main() {
     });
   });
 
+  group('eventVenueMapPinFromEvent', () {
+    test('builds venue pin from direct coordinates', () {
+      final event = ParkourEvent(
+        id: 'event-venue',
+        title: 'Meetup',
+        startAt: DateTime.utc(2026, 8, 1),
+        latitude: 52.37,
+        longitude: 4.89,
+        spotIds: const ['spot-1'],
+      );
+
+      final pin = eventVenueMapPinFromEvent(event);
+      expect(pin.id, 'event-venue_venue');
+      expect(pin.kind, EventMapPinKind.venue);
+      expect(pin.latitude, 52.37);
+      expect(pin.longitude, 4.89);
+      expect(pin.spotId, isNull);
+    });
+  });
+
+  group('resolveEventDetailMapPins', () {
+    final start = DateTime.utc(2026, 9, 1, 10);
+
+    test('returns materialized pins when available', () async {
+      final event = ParkourEvent(
+        id: 'e-mat',
+        title: 'Materialized',
+        startAt: start,
+        spotIds: const ['spot-a'],
+      );
+      final materialized = [
+        EventMapPin(
+          id: 'e-mat_spot_a',
+          eventId: 'e-mat',
+          kind: EventMapPinKind.spot,
+          latitude: 40.0,
+          longitude: -74.0,
+          title: 'Materialized',
+          startAt: start,
+          spotId: 'spot-a',
+        ),
+      ];
+
+      final pins = await resolveEventDetailMapPins(
+        event: event,
+        getMapPinsForEvent: (_) async => materialized,
+      );
+
+      expect(pins, materialized);
+    });
+
+    test('builds venue and linked spot pins when materialized list is empty',
+        () async {
+      final event = ParkourEvent(
+        id: 'e-fallback',
+        title: 'Fallback',
+        startAt: start,
+        latitude: 52.1,
+        longitude: 5.1,
+        spotIds: const ['spot-b', 'spot-c'],
+      );
+
+      final pins = await resolveEventDetailMapPins(
+        event: event,
+        getMapPinsForEvent: (_) async => const [],
+        loadEligibleSpots: ({
+          required spotIds,
+          required spotListIds,
+        }) async {
+          expect(spotIds, ['spot-b', 'spot-c']);
+          return [
+            Spot(
+              id: 'spot-b',
+              name: 'B',
+              description: '',
+              latitude: 52.2,
+              longitude: 5.2,
+            ),
+            Spot(
+              id: 'spot-c',
+              name: 'C',
+              description: '',
+              latitude: 52.3,
+              longitude: 5.3,
+            ),
+          ];
+        },
+      );
+
+      expect(pins, hasLength(3));
+      expect(pins.first.kind, EventMapPinKind.venue);
+      expect(pins.first.latitude, 52.1);
+      expect(pins[1].kind, EventMapPinKind.spot);
+      expect(pins[1].spotId, 'spot-b');
+      expect(pins[2].spotId, 'spot-c');
+    });
+  });
+
   group('resolveEventMapPinForLocate', () {
     final start = DateTime.utc(2026, 9, 1, 10);
 

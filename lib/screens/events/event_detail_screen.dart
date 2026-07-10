@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:provider/provider.dart';
 
 import '../../config/app_config.dart';
@@ -20,7 +19,6 @@ import '../../services/geocoding_service.dart';
 import '../../services/snackbar_service.dart';
 import '../../services/spot_service.dart';
 import '../../services/search_state_service.dart';
-import '../../services/mobile_detection_service.dart';
 import '../../services/event_report_service.dart';
 import '../../utils/browser_timezone_utils.dart';
 import '../../utils/event_location_utils.dart';
@@ -28,7 +26,6 @@ import '../../utils/event_schedule_utils.dart';
 import '../../utils/location_permission_utils.dart';
 import '../../utils/map_recentering_mixin.dart';
 import '../../utils/event_suggestion_utils.dart';
-import '../../utils/marker_icon_utils.dart';
 import '../../utils/image_preparation.dart';
 import '../../utils/image_picker_utils.dart';
 import '../../widgets/custom_text_field.dart';
@@ -41,6 +38,7 @@ import '../../utils/share_link_text.dart';
 import '../../widgets/admin/admin_image_urls_overview_dialog.dart';
 import '../../widgets/detail_action_menu_item.dart';
 import '../../widgets/detail_image_carousel.dart';
+import '../../widgets/event_location_map_preview.dart';
 import '../../widgets/event_detail_provenance_line.dart';
 import '../../widgets/event_detail_when_block.dart';
 import '../../widgets/event_duplicate_report_dialog.dart';
@@ -77,14 +75,12 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   bool _loadingDuplicates = false;
 
   late final ValueNotifier<bool> _isSatelliteViewNotifier;
-  BitmapDescriptor? _eventMapPinIcon;
   SearchStateService? _searchStateServiceRef;
 
   @override
   void initState() {
     super.initState();
     _isSatelliteViewNotifier = ValueNotifier<bool>(false);
-    _loadEventMapPinIcon();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _searchStateServiceRef = Provider.of<SearchStateService>(
@@ -120,13 +116,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     final isSatellite = _searchStateServiceRef?.isSatellite ?? false;
     if (_isSatelliteViewNotifier.value != isSatellite) {
       _isSatelliteViewNotifier.value = isSatellite;
-    }
-  }
-
-  Future<void> _loadEventMapPinIcon() async {
-    final icon = await MarkerIconUtils.loadEventMapPin();
-    if (mounted) {
-      setState(() => _eventMapPinIcon = icon);
     }
   }
 
@@ -1195,46 +1184,42 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     }
 
     if (hasWhereSection) {
-      widgets.add(const SizedBox(height: SpotDetailUi.detailSectionGap));
-    }
-
-    if (hasLinkedSpots) {
-      final spotsHeading = hasLinkedSpotLists
-          ? l10n.eventDetailEventSpotLocationsLabel
-          : l10n.eventDetailEventSpotsLabel;
+      final mightHaveMapPins =
+          hasLocation || hasLinkedSpots || hasLinkedSpotLists;
       widgets.addAll([
-        _detailSectionHeading(context, spotsHeading),
+        const SizedBox(height: SpotDetailUi.detailSectionGap),
+        _detailSectionHeading(context, _whereSectionHeading(l10n, event)),
         const SizedBox(height: SpotDetailUi.detailLabelGap),
-        _LinkedSpotsSection(
-          spotIds: event.spotIds,
-          emptyLabel: l10n.eventDetailNoEventSpotLocations,
-        ),
-      ]);
-    }
-
-    if (hasLinkedSpotLists) {
-      if (hasLinkedSpots) {
-        widgets.add(const SizedBox(height: SpotDetailUi.detailSectionGap));
-      }
-      widgets.addAll([
-        _detailSectionHeading(context, l10n.eventDetailEventSpotsLabel),
-        const SizedBox(height: SpotDetailUi.detailLabelGap),
-        _LinkedSpotListsSection(
-          spotListIds: event.spotListIds,
-          emptyLabel: l10n.eventDetailNoEventSpots,
-        ),
-      ]);
-    }
-
-    if (hasLocation || hasAddress) {
-      if (hasLinkedSpots || hasLinkedSpotLists) {
-        widgets.add(const SizedBox(height: SpotDetailUi.detailSectionGap));
-      }
-      widgets.addAll([
-        _detailSectionHeading(context, l10n.eventDetailLocationLabel),
-        const SizedBox(height: SpotDetailUi.detailLabelGap),
+        if (mightHaveMapPins)
+          EventLocationMapPreview(
+            event: event,
+            isSatelliteViewNotifier: _isSatelliteViewNotifier,
+            onTap: _locateEventOnMap,
+          ),
         ..._buildDirectLocationSection(context, event, l10n),
       ]);
+
+      if (hasLinkedSpots) {
+        widgets.addAll([
+          const SizedBox(height: SpotDetailUi.detailSectionGap),
+          _LinkedSpotsSection(
+            spotIds: event.spotIds,
+            emptyLabel: l10n.eventDetailNoEventSpotLocations,
+            showSeeOnMapButton: false,
+          ),
+        ]);
+      }
+
+      if (hasLinkedSpotLists) {
+        widgets.addAll([
+          const SizedBox(height: SpotDetailUi.detailSectionGap),
+          _LinkedSpotListsSection(
+            spotListIds: event.spotListIds,
+            emptyLabel: l10n.eventDetailNoEventSpots,
+            showSeeOnMapButton: false,
+          ),
+        ]);
+      }
     }
 
     widgets.add(
@@ -1248,6 +1233,19 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     return widgets;
   }
 
+  String _whereSectionHeading(AppLocalizations l10n, ParkourEvent event) {
+    final hasLocation = event.latitude != null && event.longitude != null;
+    final hasLinkedSpots = event.spotIds.isNotEmpty;
+    final hasLinkedSpotLists = event.spotListIds.isNotEmpty;
+    final locationSources = (hasLocation ? 1 : 0) +
+        (hasLinkedSpots ? 1 : 0) +
+        (hasLinkedSpotLists ? 1 : 0);
+    if (locationSources > 1 || hasLinkedSpots || hasLinkedSpotLists) {
+      return l10n.eventDetailEventSpotLocationsLabel;
+    }
+    return l10n.eventDetailLocationLabel;
+  }
+
   List<Widget> _buildDirectLocationSection(
     BuildContext context,
     ParkourEvent event,
@@ -1259,133 +1257,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     final widgets = <Widget>[];
 
     if (hasLocation) {
-      widgets.addAll([
-        Container(
-          height: 200,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
-            border: Border.all(color: colors.outline.withValues(alpha: 0.3)),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Stack(
-            children: [
-              ValueListenableBuilder<bool>(
-                valueListenable: _isSatelliteViewNotifier,
-                builder: (context, isSatellite, child) {
-                  return GoogleMap(
-                    initialCameraPosition: CameraPosition(
-                      target: LatLng(event.latitude!, event.longitude!),
-                      zoom: 16,
-                    ),
-                    mapType: isSatellite ? MapType.hybrid : MapType.normal,
-                    markers: {
-                      Marker(
-                        markerId: MarkerId(event.id ?? 'event'),
-                        position: LatLng(event.latitude!, event.longitude!),
-                        icon:
-                            _eventMapPinIcon ?? BitmapDescriptor.defaultMarker,
-                        anchor: const Offset(0.5, 1.0),
-                        onTap: null,
-                        consumeTapEvents: true,
-                        infoWindow: InfoWindow.noText,
-                      ),
-                    },
-                    zoomControlsEnabled: false,
-                    myLocationButtonEnabled: false,
-                    mapToolbarEnabled: false,
-                    liteModeEnabled: kIsWeb,
-                    compassEnabled: false,
-                    zoomGesturesEnabled: false,
-                    scrollGesturesEnabled: false,
-                    tiltGesturesEnabled: false,
-                    rotateGesturesEnabled: false,
-                    indoorViewEnabled: false,
-                    trafficEnabled: false,
-                  );
-                },
-              ),
-              Positioned.fill(
-                child: PointerInterceptor(
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: _locateEventOnMap,
-                      borderRadius: BorderRadius.circular(
-                        SpotDetailUi.surfaceRadius,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: 24,
-                right: 10,
-                child: PointerInterceptor(
-                  child: ValueListenableBuilder<bool>(
-                    valueListenable: _isSatelliteViewNotifier,
-                    builder: (context, isSatellite, child) {
-                      return FloatingActionButton(
-                        onPressed: () {
-                          _isSatelliteViewNotifier.value = !isSatellite;
-                          final searchState = Provider.of<SearchStateService>(
-                            context,
-                            listen: false,
-                          );
-                          searchState.setSatellite(
-                            _isSatelliteViewNotifier.value,
-                          );
-                        },
-                        heroTag: 'eventDetailMapTypeToggleFab',
-                        mini: true,
-                        tooltip: isSatellite
-                            ? l10n.spotDetailMapSwitchToMap
-                            : l10n.spotDetailMapSwitchToSatellite,
-                        child: Icon(isSatellite ? Icons.map : Icons.terrain),
-                      );
-                    },
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 8,
-                right: 8,
-                child: PointerInterceptor(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.7),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          MobileDetectionService.isMobileDevice
-                              ? Icons.phone_android
-                              : Icons.touch_app,
-                          color: Colors.white,
-                          size: 14,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          l10n.spotDetailMapLocateOnMap,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
+      widgets.add(
         LocationInfoBox(
           latitude: event.latitude!,
           longitude: event.longitude!,
@@ -1396,7 +1268,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               ? () => _copyAddressToClipboard(event.address!.trim())
               : null,
         ),
-      ]);
+      );
     } else if (hasAddress) {
       widgets.add(
         Container(
@@ -3586,10 +3458,12 @@ class _LinkedSpotListsSection extends StatefulWidget {
   const _LinkedSpotListsSection({
     required this.spotListIds,
     required this.emptyLabel,
+    this.showSeeOnMapButton = true,
   });
 
   final List<String> spotListIds;
   final String emptyLabel;
+  final bool showSeeOnMapButton;
 
   @override
   State<_LinkedSpotListsSection> createState() =>
@@ -3684,7 +3558,11 @@ class _LinkedSpotListsSectionState extends State<_LinkedSpotListsSection> {
               padding: EdgeInsets.only(
                 top: index > 0 ? SpotDetailUi.detailSubsectionGap : 0,
               ),
-              child: _EventSpotListCard(preview: preview, l10n: l10n),
+              child: _EventSpotListCard(
+                preview: preview,
+                l10n: l10n,
+                showSeeOnMapButton: widget.showSeeOnMapButton,
+              ),
             );
           }).toList(),
         );
@@ -3694,10 +3572,15 @@ class _LinkedSpotListsSectionState extends State<_LinkedSpotListsSection> {
 }
 
 class _EventSpotListCard extends StatelessWidget {
-  const _EventSpotListCard({required this.preview, required this.l10n});
+  const _EventSpotListCard({
+    required this.preview,
+    required this.l10n,
+    this.showSeeOnMapButton = true,
+  });
 
   final _EventSpotListPreview preview;
   final AppLocalizations l10n;
+  final bool showSeeOnMapButton;
 
   @override
   Widget build(BuildContext context) {
@@ -3804,7 +3687,7 @@ class _EventSpotListCard extends StatelessWidget {
                   icon: const Icon(Icons.list_alt_outlined, size: 18),
                   label: Text(l10n.eventDetailEventSpotListViewAll),
                 ),
-              if (listId != null)
+              if (listId != null && showSeeOnMapButton)
                 OutlinedButton.icon(
                   onPressed: () => context.go('/explore?listId=$listId'),
                   icon: const Icon(Icons.map_outlined, size: 18),
@@ -3819,10 +3702,15 @@ class _EventSpotListCard extends StatelessWidget {
 }
 
 class _LinkedSpotsSection extends StatefulWidget {
-  const _LinkedSpotsSection({required this.spotIds, required this.emptyLabel});
+  const _LinkedSpotsSection({
+    required this.spotIds,
+    required this.emptyLabel,
+    this.showSeeOnMapButton = true,
+  });
 
   final List<String> spotIds;
   final String emptyLabel;
+  final bool showSeeOnMapButton;
 
   @override
   State<_LinkedSpotsSection> createState() => _LinkedSpotsSectionState();
@@ -3894,7 +3782,11 @@ class _LinkedSpotsSectionState extends State<_LinkedSpotsSection> {
               padding: EdgeInsets.only(
                 top: index > 0 ? SpotDetailUi.detailSubsectionGap : 0,
               ),
-              child: _EventLinkedSpotCard(spot: spot, l10n: l10n),
+              child: _EventLinkedSpotCard(
+                spot: spot,
+                l10n: l10n,
+                showSeeOnMapButton: widget.showSeeOnMapButton,
+              ),
             );
           }).toList(),
         );
@@ -3904,10 +3796,15 @@ class _LinkedSpotsSectionState extends State<_LinkedSpotsSection> {
 }
 
 class _EventLinkedSpotCard extends StatelessWidget {
-  const _EventLinkedSpotCard({required this.spot, required this.l10n});
+  const _EventLinkedSpotCard({
+    required this.spot,
+    required this.l10n,
+    this.showSeeOnMapButton = true,
+  });
 
   final Spot spot;
   final AppLocalizations l10n;
+  final bool showSeeOnMapButton;
 
   String? _locationLine() {
     final address = spot.address?.trim();
@@ -4035,11 +3932,13 @@ class _EventLinkedSpotCard extends StatelessWidget {
                   icon: const Icon(Icons.open_in_new, size: 18),
                   label: Text(l10n.eventDetailEventSpotViewDetails),
                 ),
-                OutlinedButton.icon(
-                  onPressed: () => context.go('/explore?locateSpotId=$spotId'),
-                  icon: const Icon(Icons.map_outlined, size: 18),
-                  label: Text(l10n.eventDetailEventSpotListSeeOnMap),
-                ),
+                if (showSeeOnMapButton)
+                  OutlinedButton.icon(
+                    onPressed: () =>
+                        context.go('/explore?locateSpotId=$spotId'),
+                    icon: const Icon(Icons.map_outlined, size: 18),
+                    label: Text(l10n.eventDetailEventSpotListSeeOnMap),
+                  ),
               ],
             ),
           ],

@@ -1,6 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../models/event_map_pin.dart';
 import '../models/parkour_event.dart';
 import '../models/spot.dart';
+import 'event_linked_spot_loader.dart';
 import 'event_location_utils.dart';
 import 'explore_events_utils.dart';
 
@@ -13,6 +16,36 @@ bool isSpotEligibleForEventMapPin(Spot spot) {
   if (spot.latitude < -90 || spot.latitude > 90) return false;
   if (spot.longitude < -180 || spot.longitude > 180) return false;
   return true;
+}
+
+/// Venue pin from direct event coordinates (mirrors materialized `eventMapPins`).
+EventMapPin eventVenueMapPinFromEvent(ParkourEvent event) {
+  final eventId = event.id;
+  if (eventId == null || eventId.isEmpty) {
+    throw ArgumentError('ParkourEvent.id is required');
+  }
+  final lat = event.latitude;
+  final lng = event.longitude;
+  if (lat == null || lng == null) {
+    throw ArgumentError('ParkourEvent latitude and longitude are required');
+  }
+
+  return EventMapPin(
+    id: '${eventId}_venue',
+    eventId: eventId,
+    kind: EventMapPinKind.venue,
+    latitude: lat,
+    longitude: lng,
+    title: event.title.trim().isNotEmpty ? event.title.trim() : 'Event',
+    startAt: event.startAt,
+    endAt: event.endAt,
+    isDateOnly: event.isDateOnly,
+    timeZone: event.timeZone,
+    description: event.description,
+    imageUrls: event.imageUrls,
+    city: event.city,
+    countryCode: event.countryCode,
+  );
 }
 
 /// Builds a spot-kind pin from a linked [spot] for Explore locate.
@@ -99,4 +132,53 @@ Future<EventMapPin?> resolveEventMapPinForLocate({
   if (!isSpotEligibleForEventMapPin(spot)) return null;
 
   return eventMapPinFromLinkedSpot(event: event, spot: spot);
+}
+
+/// Map pins for event detail preview and inline maps.
+///
+/// Uses materialized [eventMapPins] when present; otherwise builds venue +
+/// linked spot pins client-side (same eligibility rules as Cloud Functions).
+Future<List<EventMapPin>> resolveEventDetailMapPins({
+  required ParkourEvent event,
+  FirebaseFirestore? firestore,
+  required Future<List<EventMapPin>> Function(String eventId) getMapPinsForEvent,
+  Future<List<Spot>> Function({
+    required List<String> spotIds,
+    required List<String> spotListIds,
+  })?
+  loadEligibleSpots,
+}) async {
+  final eventId = event.id?.trim();
+  if (eventId == null || eventId.isEmpty) return const [];
+
+  final materialized = await getMapPinsForEvent(eventId);
+  if (materialized.isNotEmpty) return materialized;
+
+  final pins = <EventMapPin>[];
+  if (event.latitude != null && event.longitude != null) {
+    pins.add(eventVenueMapPinFromEvent(event));
+  }
+
+  if (event.spotIds.isNotEmpty || event.spotListIds.isNotEmpty) {
+    final List<Spot> linkedSpots;
+    if (loadEligibleSpots != null) {
+      linkedSpots = await loadEligibleSpots(
+        spotIds: event.spotIds,
+        spotListIds: event.spotListIds,
+      );
+    } else {
+      if (firestore == null) {
+        throw ArgumentError('firestore is required when loading linked spots');
+      }
+      linkedSpots = await loadEligibleSpotsForEventPins(
+        firestore: firestore,
+        spotIds: event.spotIds,
+        spotListIds: event.spotListIds,
+      );
+    }
+    for (final spot in linkedSpots) {
+      pins.add(eventMapPinFromLinkedSpot(event: event, spot: spot));
+    }
+  }
+  return pins;
 }

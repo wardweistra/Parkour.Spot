@@ -27,6 +27,8 @@ class EventMapService extends ChangeNotifier {
 
   final FirebaseFirestore _firestore;
 
+  FirebaseFirestore get firestore => _firestore;
+
   Future<EventsInBoundsResult> getEventsInBounds(
     double minLat,
     double maxLat,

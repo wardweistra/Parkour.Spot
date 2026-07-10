@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:parkour_spot/models/spot.dart';
 import 'package:parkour_spot/utils/map_bounds_utils.dart';
 
@@ -10,6 +11,23 @@ Spot _spot(double lat, double lng) => Spot(
     );
 
 void main() {
+  group('calculateBoundsForLatLngs', () {
+    test('returns null for empty iterable', () {
+      expect(calculateBoundsForLatLngs(const []), isNull);
+    });
+
+    test('matches calculateBoundsForSpots for equivalent coordinates', () {
+      final spots = [_spot(52.0, 4.5), _spot(53.0, 5.5)];
+      final fromSpots = calculateBoundsForSpots(spots);
+      final fromLatLngs = calculateBoundsForLatLngs(
+        spots.map((spot) => LatLng(spot.latitude, spot.longitude)),
+      );
+      expect(fromLatLngs, isNotNull);
+      expect(fromLatLngs!.southwest.latitude, fromSpots!.southwest.latitude);
+      expect(fromLatLngs.northeast.longitude, fromSpots.northeast.longitude);
+    });
+  });
+
   group('calculateBoundsForSpots', () {
     test('returns null for empty list', () {
       expect(calculateBoundsForSpots([]), isNull);

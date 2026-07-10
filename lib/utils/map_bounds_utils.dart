@@ -1,28 +1,26 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../models/spot.dart';
 
-/// Calculate bounds to fit all spots with 5% margin
-/// Returns null if the spots list is empty
-LatLngBounds? calculateBoundsForSpots(List<Spot> spots) {
-  if (spots.isEmpty) return null;
+LatLngBounds? _calculateBoundsFromCoordinates({
+  required double firstLat,
+  required double firstLng,
+  required Iterable<({double lat, double lng})> rest,
+}) {
+  double minLat = firstLat;
+  double maxLat = firstLat;
+  double minLng = firstLng;
+  double maxLng = firstLng;
 
-  double minLat = spots.first.latitude;
-  double maxLat = spots.first.latitude;
-  double minLng = spots.first.longitude;
-  double maxLng = spots.first.longitude;
-
-  for (final spot in spots) {
-    if (spot.latitude < minLat) minLat = spot.latitude;
-    if (spot.latitude > maxLat) maxLat = spot.latitude;
-    if (spot.longitude < minLng) minLng = spot.longitude;
-    if (spot.longitude > maxLng) maxLng = spot.longitude;
+  for (final point in rest) {
+    if (point.lat < minLat) minLat = point.lat;
+    if (point.lat > maxLat) maxLat = point.lat;
+    if (point.lng < minLng) minLng = point.lng;
+    if (point.lng > maxLng) maxLng = point.lng;
   }
 
-  // Add 5% margin
   final latMargin = (maxLat - minLat) * 0.05;
   final lngMargin = (maxLng - minLng) * 0.05;
 
-  // Handle edge case where all spots are at the same location
   if (latMargin == 0) {
     minLat -= 0.01;
     maxLat += 0.01;
@@ -42,6 +40,33 @@ LatLngBounds? calculateBoundsForSpots(List<Spot> spots) {
   return LatLngBounds(
     southwest: LatLng(minLat, minLng),
     northeast: LatLng(maxLat, maxLng),
+  );
+}
+
+/// Calculate bounds to fit all [positions] with 5% margin.
+/// Returns null if [positions] is empty.
+LatLngBounds? calculateBoundsForLatLngs(Iterable<LatLng> positions) {
+  final iterator = positions.iterator;
+  if (!iterator.moveNext()) return null;
+  final first = iterator.current;
+  final rest = <({double lat, double lng})>[];
+  while (iterator.moveNext()) {
+    final position = iterator.current;
+    rest.add((lat: position.latitude, lng: position.longitude));
+  }
+  return _calculateBoundsFromCoordinates(
+    firstLat: first.latitude,
+    firstLng: first.longitude,
+    rest: rest,
+  );
+}
+
+/// Calculate bounds to fit all spots with 5% margin
+/// Returns null if the spots list is empty
+LatLngBounds? calculateBoundsForSpots(List<Spot> spots) {
+  if (spots.isEmpty) return null;
+  return calculateBoundsForLatLngs(
+    spots.map((spot) => LatLng(spot.latitude, spot.longitude)),
   );
 }
 
