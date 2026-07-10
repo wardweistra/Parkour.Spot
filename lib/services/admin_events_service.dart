@@ -9,6 +9,7 @@ import '../models/parkour_event.dart';
 import '../utils/event_date_window.dart';
 import '../utils/event_linked_spot_loader.dart';
 import '../utils/image_preparation.dart';
+import 'audit_log_service.dart';
 
 class AdminEventsService extends ChangeNotifier {
   AdminEventsService({
@@ -20,6 +21,7 @@ class AdminEventsService extends ChangeNotifier {
 
   final FirebaseFirestore _firestore;
   final FirebaseFunctions _functions;
+  final AuditLogService _auditLogService = AuditLogService();
 
   final List<ParkourEvent> _events = <ParkourEvent>[];
   bool _isLoading = false;
@@ -1132,6 +1134,57 @@ class AdminEventsService extends ChangeNotifier {
     } catch (e, st) {
       _error = 'Failed to remove duplicate status';
       debugPrint('AdminEventsService.clearEventDuplicateStatus error: $e\n$st');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Hide or unhide an event (moderator/admin only).
+  Future<bool> setEventHidden(
+    String eventId,
+    bool hidden, {
+    String? userId,
+    String? userName,
+    String? reportId,
+    String? notes,
+  }) async {
+    _error = null;
+    notifyListeners();
+    final id = eventId.trim();
+    if (id.isEmpty) {
+      _error = 'Invalid event id';
+      notifyListeners();
+      return false;
+    }
+    try {
+      final event = await getEventById(id);
+      if (event == null) {
+        _error = 'Event not found';
+        notifyListeners();
+        return false;
+      }
+
+      await _firestore.collection('events').doc(id).update({
+        'hidden': hidden,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      if (userId != null && userName != null) {
+        await _auditLogService.logEventHidden(
+          eventId: id,
+          hidden: hidden,
+          userId: userId,
+          userName: userName,
+          reportId: reportId,
+          notes: notes,
+        );
+      }
+
+      notifyListeners();
+      return true;
+    } catch (e, st) {
+      _error = 'Failed to ${hidden ? 'hide' : 'unhide'} event: $e';
+      debugPrint('AdminEventsService.setEventHidden error: $e\n$st');
       notifyListeners();
       return false;
     }

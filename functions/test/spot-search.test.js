@@ -43,6 +43,11 @@ describe("isEventSearchIndexEligible", () => {
       title: "Jam",
       startAt: past,
     })).toBe(false);
+    expect(isEventSearchIndexEligible({
+      title: "Jam",
+      startAt: future,
+      hidden: true,
+    })).toBe(false);
   });
 });
 

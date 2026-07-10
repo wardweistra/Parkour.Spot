@@ -37,6 +37,9 @@ class ParkourEvent {
   /// Whether this event was created via "Create native event" from an external import.
   final bool createdFromCreateNative;
 
+  /// Whether the event is hidden from public view (map, search, etc.).
+  final bool hidden;
+
   ParkourEvent({
     this.id,
     required this.title,
@@ -68,6 +71,7 @@ class ParkourEvent {
     this.contributors = const <Map<String, String>>[],
     this.duplicateOf,
     this.createdFromCreateNative = false,
+    this.hidden = false,
   });
 
   /// Native events are authored on parkour.spot (not imported from an external calendar source).
@@ -127,6 +131,7 @@ class ParkourEvent {
           : const <Map<String, String>>[],
       duplicateOf: data['duplicateOf'] as String?,
       createdFromCreateNative: data['createdFromCreateNative'] == true,
+      hidden: data['hidden'] == true,
     );
   }
 
@@ -180,6 +185,7 @@ class ParkourEvent {
           : const <Map<String, String>>[],
       duplicateOf: data['duplicateOf'] as String?,
       createdFromCreateNative: data['createdFromCreateNative'] == true,
+      hidden: data['hidden'] == true,
     );
   }
 
@@ -229,6 +235,7 @@ class ParkourEvent {
       if (duplicateOf != null && duplicateOf!.trim().isNotEmpty)
         'duplicateOf': duplicateOf!.trim(),
       if (createdFromCreateNative) 'createdFromCreateNative': true,
+      if (hidden) 'hidden': true,
     };
   }
 
@@ -263,6 +270,7 @@ class ParkourEvent {
     List<Map<String, String>>? contributors,
     Object? duplicateOf = _unset,
     bool? createdFromCreateNative,
+    bool? hidden,
   }) {
     return ParkourEvent(
       id: id ?? this.id,
@@ -330,6 +338,7 @@ class ParkourEvent {
           : duplicateOf as String?,
       createdFromCreateNative:
           createdFromCreateNative ?? this.createdFromCreateNative,
+      hidden: hidden ?? this.hidden,
     );
   }
 

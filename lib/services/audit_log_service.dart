@@ -123,6 +123,37 @@ class AuditLogService {
     }
   }
 
+  /// Log when an event is hidden or unhidden
+  Future<void> logEventHidden({
+    required String eventId,
+    required bool hidden,
+    required String? userId,
+    required String? userName,
+    String? reportId,
+    String? notes,
+  }) async {
+    try {
+      await _firestore.collection('auditLog').add({
+        'action': (hidden ? AuditLogAction.eventHidden : AuditLogAction.eventUnhidden)
+            .toString()
+            .split('.')
+            .last,
+        'eventId': eventId,
+        if (reportId != null) 'reportId': reportId,
+        'userId': userId,
+        'userName': userName,
+        'timestamp': FieldValue.serverTimestamp(),
+        'metadata': {
+          'hidden': hidden,
+          if (notes != null && notes.isNotEmpty) 'notes': notes,
+        },
+      });
+    } catch (e) {
+      debugPrint('Error logging event hidden/unhidden: $e');
+      // Don't throw - audit logging should not break the main operation
+    }
+  }
+
   /// Get audit logs for a specific user
   Future<List<AuditLog>> getAuditLogsForUser(String userId, {int limit = 100}) async {
     try {

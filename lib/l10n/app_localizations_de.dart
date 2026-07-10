@@ -3535,6 +3535,60 @@ class AppLocalizationsDe extends AppLocalizations {
       'Nur Teammitglieder können Event-Duplikate verwalten.';
 
   @override
+  String get eventDetailMenuHideEvent => 'Event ausblenden';
+
+  @override
+  String get eventDetailMenuHideEventSubtitle =>
+      'Für die Öffentlichkeit ausblenden';
+
+  @override
+  String get eventDetailMenuUnhideEvent => 'Event einblenden';
+
+  @override
+  String get eventDetailMenuUnhideEventSubtitle => 'Wieder öffentlich anzeigen';
+
+  @override
+  String get eventDetailHiddenBanner =>
+      'Dieses Event ist für die Öffentlichkeit ausgeblendet. Es existiert wahrscheinlich nicht mehr oder entspricht nicht unseren Richtlinien. Es erscheint nicht in Suchergebnissen oder auf der Karte.';
+
+  @override
+  String get eventDetailModeratorsOnlyHideUnhide =>
+      'Nur Moderatoren können Events aus- oder einblenden.';
+
+  @override
+  String get eventDetailHideEventTitle => 'Event ausblenden';
+
+  @override
+  String get eventDetailUnhideEventTitle => 'Event einblenden';
+
+  @override
+  String get eventDetailHideEventMessage =>
+      'Das Event wird für die Öffentlichkeit ausgeblendet. Ausgeblendete Events erscheinen nicht in Suche oder auf der Karte; Daten bleiben erhalten und können später wieder sichtbar gemacht werden.';
+
+  @override
+  String get eventDetailUnhideEventMessage =>
+      'Das Event wird wieder öffentlich sichtbar und erscheint erneut in Suche und auf der Karte.';
+
+  @override
+  String get eventDetailUnableHideUnhideNow =>
+      'Event kann gerade nicht aus- oder eingeblendet werden.';
+
+  @override
+  String get eventDetailEventHiddenSuccess => 'Event erfolgreich ausgeblendet.';
+
+  @override
+  String get eventDetailEventUnhiddenSuccess =>
+      'Event erfolgreich eingeblendet.';
+
+  @override
+  String get eventDetailFailedHideEvent =>
+      'Event konnte nicht ausgeblendet werden';
+
+  @override
+  String get eventDetailFailedUnhideEvent =>
+      'Event konnte nicht eingeblendet werden';
+
+  @override
   String get eventDetailMarkDuplicatePickNativeTitle =>
       'Als Duplikat eines nativen Events markieren';
 

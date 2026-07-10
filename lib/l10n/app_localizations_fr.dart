@@ -3543,6 +3543,58 @@ class AppLocalizationsFr extends AppLocalizations {
       'Seule l\'équipe peut gérer les doublons d\'événements.';
 
   @override
+  String get eventDetailMenuHideEvent => 'Masquer l\'événement';
+
+  @override
+  String get eventDetailMenuHideEventSubtitle => 'Masquer du public';
+
+  @override
+  String get eventDetailMenuUnhideEvent => 'Afficher l\'événement';
+
+  @override
+  String get eventDetailMenuUnhideEventSubtitle => 'Rendre public à nouveau';
+
+  @override
+  String get eventDetailHiddenBanner =>
+      'Cet événement est masqué au public. Il n\'existe probablement plus ou ne respecte pas nos règles. Il n\'apparaîtra pas dans les recherches ni sur la carte.';
+
+  @override
+  String get eventDetailModeratorsOnlyHideUnhide =>
+      'Seuls les modérateurs peuvent masquer ou afficher des événements.';
+
+  @override
+  String get eventDetailHideEventTitle => 'Masquer l\'événement';
+
+  @override
+  String get eventDetailUnhideEventTitle => 'Afficher l\'événement';
+
+  @override
+  String get eventDetailHideEventMessage =>
+      'L\'événement sera masqué au public. Il n\'apparaîtra pas dans les recherches ni sur la carte, mais les données sont conservées et peuvent être réaffichées.';
+
+  @override
+  String get eventDetailUnhideEventMessage =>
+      'L\'événement sera à nouveau visible au public et réapparaîtra dans les recherches et sur la carte.';
+
+  @override
+  String get eventDetailUnableHideUnhideNow =>
+      'Impossible de masquer ou d\'afficher cet événement pour le moment.';
+
+  @override
+  String get eventDetailEventHiddenSuccess => 'Événement masqué avec succès.';
+
+  @override
+  String get eventDetailEventUnhiddenSuccess =>
+      'Événement affiché avec succès.';
+
+  @override
+  String get eventDetailFailedHideEvent => 'Échec du masquage de l\'événement';
+
+  @override
+  String get eventDetailFailedUnhideEvent =>
+      'Échec de l\'affichage de l\'événement';
+
+  @override
   String get eventDetailMarkDuplicatePickNativeTitle =>
       'Marquer comme doublon d’un événement natif';
 

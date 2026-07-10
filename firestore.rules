@@ -83,7 +83,8 @@ service cloud.firestore {
           data.startAt is timestamp &&
           (!('endAt' in data) ||
             (data.endAt is timestamp && data.endAt >= data.startAt)) &&
-          eventLocationOk(data);
+          eventLocationOk(data) &&
+          (!('hidden' in data) || data.hidden is bool);
       }
 
       function eventSpotIdsOk(data) {
@@ -146,6 +147,16 @@ service cloud.firestore {
           eventDuplicateOfOk(request.resource.data);
       }
 
+      function eventHiddenStatusUpdateShape() {
+        return request.auth != null &&
+          request.resource.data.createdBy == resource.data.createdBy &&
+          request.resource.data.createdAt == resource.data.createdAt &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['hidden', 'updatedAt']) &&
+          eventUpdatedAtOk(request.resource.data) &&
+          request.resource.data.hidden is bool;
+      }
+
       // Native events have no external calendar source id.
       function eventIsNative() {
         return !('eventSourceId' in resource.data) ||
@@ -163,6 +174,8 @@ service cloud.firestore {
         )
       ) || (
         eventDuplicateStatusUpdateShape() && requestingUserIsStaff()
+      ) || (
+        eventHiddenStatusUpdateShape() && requestingUserIsStaff()
       );
       allow delete: if requestingUserIsAdmin();
     }

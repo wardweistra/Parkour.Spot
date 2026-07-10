@@ -3475,6 +3475,56 @@ class AppLocalizationsEn extends AppLocalizations {
       'Only staff can manage event duplicates.';
 
   @override
+  String get eventDetailMenuHideEvent => 'Hide event';
+
+  @override
+  String get eventDetailMenuHideEventSubtitle => 'Hide from public view';
+
+  @override
+  String get eventDetailMenuUnhideEvent => 'Unhide event';
+
+  @override
+  String get eventDetailMenuUnhideEventSubtitle => 'Show to public again';
+
+  @override
+  String get eventDetailHiddenBanner =>
+      'This event is hidden from public view. It likely no longer exists or doesn’t meet our policies. It will not appear in search results or on the map.';
+
+  @override
+  String get eventDetailModeratorsOnlyHideUnhide =>
+      'Only moderators can hide/unhide events.';
+
+  @override
+  String get eventDetailHideEventTitle => 'Hide Event';
+
+  @override
+  String get eventDetailUnhideEventTitle => 'Unhide Event';
+
+  @override
+  String get eventDetailHideEventMessage =>
+      'This will hide the event from public view. Hidden events will not appear in search results or on the map, but the event data will be preserved and can be unhidden later.';
+
+  @override
+  String get eventDetailUnhideEventMessage =>
+      'This will restore the event to public view. The event will appear in search results and on the map again.';
+
+  @override
+  String get eventDetailUnableHideUnhideNow =>
+      'Unable to hide/unhide this event right now.';
+
+  @override
+  String get eventDetailEventHiddenSuccess => 'Event hidden successfully.';
+
+  @override
+  String get eventDetailEventUnhiddenSuccess => 'Event unhidden successfully.';
+
+  @override
+  String get eventDetailFailedHideEvent => 'Failed to hide event';
+
+  @override
+  String get eventDetailFailedUnhideEvent => 'Failed to unhide event';
+
+  @override
   String get eventDetailMarkDuplicatePickNativeTitle =>
       'Mark as duplicate of native event';
 

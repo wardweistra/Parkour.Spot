@@ -5943,6 +5943,96 @@ abstract class AppLocalizations {
   /// **'Only staff can manage event duplicates.'**
   String get eventDetailMarkDuplicateStaffOnly;
 
+  /// No description provided for @eventDetailMenuHideEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide event'**
+  String get eventDetailMenuHideEvent;
+
+  /// No description provided for @eventDetailMenuHideEventSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide from public view'**
+  String get eventDetailMenuHideEventSubtitle;
+
+  /// No description provided for @eventDetailMenuUnhideEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Unhide event'**
+  String get eventDetailMenuUnhideEvent;
+
+  /// No description provided for @eventDetailMenuUnhideEventSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show to public again'**
+  String get eventDetailMenuUnhideEventSubtitle;
+
+  /// No description provided for @eventDetailHiddenBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'This event is hidden from public view. It likely no longer exists or doesn’t meet our policies. It will not appear in search results or on the map.'**
+  String get eventDetailHiddenBanner;
+
+  /// No description provided for @eventDetailModeratorsOnlyHideUnhide.
+  ///
+  /// In en, this message translates to:
+  /// **'Only moderators can hide/unhide events.'**
+  String get eventDetailModeratorsOnlyHideUnhide;
+
+  /// No description provided for @eventDetailHideEventTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide Event'**
+  String get eventDetailHideEventTitle;
+
+  /// No description provided for @eventDetailUnhideEventTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unhide Event'**
+  String get eventDetailUnhideEventTitle;
+
+  /// No description provided for @eventDetailHideEventMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This will hide the event from public view. Hidden events will not appear in search results or on the map, but the event data will be preserved and can be unhidden later.'**
+  String get eventDetailHideEventMessage;
+
+  /// No description provided for @eventDetailUnhideEventMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This will restore the event to public view. The event will appear in search results and on the map again.'**
+  String get eventDetailUnhideEventMessage;
+
+  /// No description provided for @eventDetailUnableHideUnhideNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to hide/unhide this event right now.'**
+  String get eventDetailUnableHideUnhideNow;
+
+  /// No description provided for @eventDetailEventHiddenSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Event hidden successfully.'**
+  String get eventDetailEventHiddenSuccess;
+
+  /// No description provided for @eventDetailEventUnhiddenSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Event unhidden successfully.'**
+  String get eventDetailEventUnhiddenSuccess;
+
+  /// No description provided for @eventDetailFailedHideEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to hide event'**
+  String get eventDetailFailedHideEvent;
+
+  /// No description provided for @eventDetailFailedUnhideEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to unhide event'**
+  String get eventDetailFailedUnhideEvent;
+
   /// Event selection dialog title
   ///
   /// In en, this message translates to:

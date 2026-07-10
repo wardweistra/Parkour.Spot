@@ -554,6 +554,42 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
               }
             }
             break;
+          case AuditLogAction.eventHidden:
+            title = 'Event Hidden';
+            subtitle = auditLog.userName != null
+                ? 'Hidden by ${auditLog.userName}'
+                : auditLog.userId != null
+                    ? 'Hidden by ${auditLog.userId}'
+                    : 'Hidden by unknown';
+            details = 'Event hidden from public view';
+            if (auditLog.reportId != null) {
+              details += '\nLinked to report: ${auditLog.reportId}';
+            }
+            if (auditLog.metadata != null && auditLog.metadata!['notes'] != null) {
+              final notes = auditLog.metadata!['notes'] as String;
+              if (notes.isNotEmpty) {
+                details += '\n\nNotes: $notes';
+              }
+            }
+            break;
+          case AuditLogAction.eventUnhidden:
+            title = 'Event Unhidden';
+            subtitle = auditLog.userName != null
+                ? 'Unhidden by ${auditLog.userName}'
+                : auditLog.userId != null
+                    ? 'Unhidden by ${auditLog.userId}'
+                    : 'Unhidden by unknown';
+            details = 'Event made visible to public';
+            if (auditLog.reportId != null) {
+              details += '\nLinked to report: ${auditLog.reportId}';
+            }
+            if (auditLog.metadata != null && auditLog.metadata!['notes'] != null) {
+              final notes = auditLog.metadata!['notes'] as String;
+              if (notes.isNotEmpty) {
+                details += '\n\nNotes: $notes';
+              }
+            }
+            break;
           case AuditLogAction.spotReportStatusChange:
             title = 'Spot Report Status Changed';
             subtitle = auditLog.userName != null
@@ -738,7 +774,10 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
           subtitle: subtitle,
           details: details,
           metadata: {
-            if (auditLog.action != AuditLogAction.spotSourceSync) 'spotId': auditLog.spotId,
+            if (auditLog.action != AuditLogAction.spotSourceSync &&
+                auditLog.spotId != null)
+              'spotId': auditLog.spotId,
+            if (auditLog.eventId != null) 'eventId': auditLog.eventId,
             if (auditLog.reportId != null) 'reportId': auditLog.reportId,
             'userId': auditLog.userId,
             'userName': auditLog.userName,
@@ -1526,6 +1565,18 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
     return spotIds;
   }
 
+  List<String> _getEventIdsFromEntry(AuditLogEntry entry) {
+    final eventIds = <String>[];
+    if (entry.type == AuditLogEntryType.auditLogAction &&
+        entry.metadata?['eventId'] != null) {
+      final eventId = entry.metadata!['eventId'] as String;
+      if (eventId.isNotEmpty) {
+        eventIds.add(eventId);
+      }
+    }
+    return eventIds;
+  }
+
   /// Navigate to a spot by fetching it first to get location info
   Future<void> _navigateToSpot(String spotId) async {
     try {
@@ -1551,6 +1602,12 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
       if (mounted) {
         context.push('/spot/$spotId');
       }
+    }
+  }
+
+  void _navigateToEvent(String eventId) {
+    if (mounted) {
+      context.push('/event/$eventId');
     }
   }
 
@@ -1671,6 +1728,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                               dateFormat.format(entry.timestamp);
 
                           final spotIds = _getSpotIdsFromEntry(entry);
+                          final eventIds = _getEventIdsFromEntry(entry);
                           
                           return Card(
                             margin: const EdgeInsets.symmetric(
@@ -1727,14 +1785,14 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                   ),
                                 ],
                               ),
-                              trailing: (spotIds.isNotEmpty || _isSpotReportStatusChange(entry) || _isSpotReportCreation(entry) || _isUserCreation(entry) || _hasReportId(entry) || _isSpotEdit(entry))
+                              trailing: (spotIds.isNotEmpty || eventIds.isNotEmpty || _isSpotReportStatusChange(entry) || _isSpotReportCreation(entry) || _isUserCreation(entry) || _hasReportId(entry) || _isSpotEdit(entry))
                                   ? Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         // Spot buttons
                                         ...spotIds.asMap().entries.map((spotEntry) {
                                           final isLast = spotEntry.key == spotIds.length - 1;
-                                          final hasOtherButtons = _isSpotReportStatusChange(entry) || _isSpotReportCreation(entry) || _isUserCreation(entry) || _hasReportId(entry) || _isSpotEdit(entry);
+                                          final hasOtherButtons = eventIds.isNotEmpty || _isSpotReportStatusChange(entry) || _isSpotReportCreation(entry) || _isUserCreation(entry) || _hasReportId(entry) || _isSpotEdit(entry);
                                           return Padding(
                                             padding: EdgeInsets.only(
                                               right: isLast && !hasOtherButtons ? 0 : 4,
@@ -1757,6 +1815,19 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                             ),
                                           );
                                         }),
+                                        ...eventIds.map(
+                                          (eventId) => IconButton(
+                                            icon: const Icon(
+                                              Icons.event_outlined,
+                                              size: 20,
+                                            ),
+                                            tooltip: 'Open event',
+                                            onPressed: () =>
+                                                _navigateToEvent(eventId),
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(),
+                                          ),
+                                        ),
                                         // Spot Report Queue button
                                         if (_isSpotReportStatusChange(entry) || _isSpotReportCreation(entry) || _hasReportId(entry) || _isSpotEdit(entry))
                                           IconButton(

@@ -104,6 +104,12 @@ describe("event-map-pins helpers", () => {
         title: "Past",
         startAt: pastStart,
       }, new Map(), new Map(), {now}).pins).toHaveLength(0);
+
+      expect(buildEventMapPinWrites("e1", {
+        title: "Hidden",
+        startAt: futureStart,
+        hidden: true,
+      }, new Map(), new Map(), {now}).pins).toHaveLength(0);
     });
 
     it("writes venue and spot pins", () => {

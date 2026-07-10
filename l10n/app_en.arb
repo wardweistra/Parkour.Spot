@@ -3380,6 +3380,21 @@
   "@eventDetailMarkDuplicateStaffOnly": {
     "description": "Shown when a non-staff user opens staff-only duplicate action"
   },
+  "eventDetailMenuHideEvent": "Hide event",
+  "eventDetailMenuHideEventSubtitle": "Hide from public view",
+  "eventDetailMenuUnhideEvent": "Unhide event",
+  "eventDetailMenuUnhideEventSubtitle": "Show to public again",
+  "eventDetailHiddenBanner": "This event is hidden from public view. It likely no longer exists or doesn’t meet our policies. It will not appear in search results or on the map.",
+  "eventDetailModeratorsOnlyHideUnhide": "Only moderators can hide/unhide events.",
+  "eventDetailHideEventTitle": "Hide Event",
+  "eventDetailUnhideEventTitle": "Unhide Event",
+  "eventDetailHideEventMessage": "This will hide the event from public view. Hidden events will not appear in search results or on the map, but the event data will be preserved and can be unhidden later.",
+  "eventDetailUnhideEventMessage": "This will restore the event to public view. The event will appear in search results and on the map again.",
+  "eventDetailUnableHideUnhideNow": "Unable to hide/unhide this event right now.",
+  "eventDetailEventHiddenSuccess": "Event hidden successfully.",
+  "eventDetailEventUnhiddenSuccess": "Event unhidden successfully.",
+  "eventDetailFailedHideEvent": "Failed to hide event",
+  "eventDetailFailedUnhideEvent": "Failed to unhide event",
   "eventDetailMarkDuplicatePickNativeTitle": "Mark as duplicate of native event",
   "@eventDetailMarkDuplicatePickNativeTitle": {
     "description": "Event selection dialog title"

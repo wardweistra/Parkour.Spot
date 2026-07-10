@@ -4257,6 +4257,7 @@ async function buildExternalEventCreateData(parsedEvent, options = {}) {
     spotIds: [],
     spotListIds: [],
     imageUrls: [],
+    hidden: false,
     createdBy: "external-event-sync",
     eventSourceId: parsedEvent.eventSourceId,
     eventSourceName: parsedEvent.eventSourceName,

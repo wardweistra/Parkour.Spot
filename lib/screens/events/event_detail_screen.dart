@@ -610,6 +610,21 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             );
           }
 
+          items.add(
+            PopupMenuItem<_EventEditMenuAction>(
+              value: _EventEditMenuAction.toggleHide,
+              child: DetailActionMenuItem(
+                icon: event.hidden ? Icons.visibility : Icons.visibility_off,
+                title: event.hidden
+                    ? l10n.eventDetailMenuUnhideEvent
+                    : l10n.eventDetailMenuHideEvent,
+                subtitle: event.hidden
+                    ? l10n.eventDetailMenuUnhideEventSubtitle
+                    : l10n.eventDetailMenuHideEventSubtitle,
+              ),
+            ),
+          );
+
           if (isAdmin && event.imageUrls.isNotEmpty) {
             items.add(
               PopupMenuItem<_EventEditMenuAction>(
@@ -702,6 +717,16 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           isAdmin,
           isModeratorOnly,
         );
+        return;
+      case _EventEditMenuAction.toggleHide:
+        final result = await _showHideEventConfirmationDialog(event);
+        if (result != null && result['confirmed'] == true && mounted) {
+          await _toggleEventHidden(
+            event,
+            reportId: result['reportId'] as String?,
+            notes: result['notes'] as String?,
+          );
+        }
         return;
       case _EventEditMenuAction.viewImageUrls:
         if (event.imageUrls.isEmpty) return;
@@ -1018,6 +1043,49 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                                       context.push('/event/$targetId');
                                     }
                                   },
+                          ),
+                        ],
+                        if (event.hidden) ...[
+                          const SizedBox(
+                            height: SpotDetailUi.detailSubsectionGap,
+                          ),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .errorContainer
+                                  .withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Theme.of(context).colorScheme.error
+                                    .withValues(alpha: 0.6),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(
+                                  Icons.visibility_off,
+                                  color: Theme.of(context).colorScheme.error,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    l10n.eventDetailHiddenBanner,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onErrorContainer,
+                                        ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                         _buildShareActionRow(
@@ -1414,6 +1482,177 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           ),
         );
       }
+    }
+  }
+
+  Future<Map<String, dynamic>?> _showHideEventConfirmationDialog(
+    ParkourEvent event,
+  ) async {
+    final authService = context.read<AuthService>();
+    if (!authService.isAuthenticated ||
+        (!authService.isModerator && !authService.isAdmin)) {
+      if (!mounted) return null;
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.eventDetailModeratorsOnlyHideUnhide)),
+      );
+      return null;
+    }
+
+    final isHiding = !event.hidden;
+    String? selectedReportId;
+    final notesController = TextEditingController();
+
+    return showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) {
+          final l10n = AppLocalizations.of(dialogContext)!;
+          return AlertDialog(
+            title: Text(
+              isHiding
+                  ? l10n.eventDetailHideEventTitle
+                  : l10n.eventDetailUnhideEventTitle,
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isHiding
+                        ? l10n.eventDetailHideEventMessage
+                        : l10n.eventDetailUnhideEventMessage,
+                  ),
+                  const SizedBox(height: 16),
+                  ModeratorActionFields(
+                    eventId: event.id,
+                    notesController: notesController,
+                    showReportSelector: true,
+                    onReportSelected: (reportId) {
+                      setState(() {
+                        selectedReportId = reportId;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  notesController.dispose();
+                  Navigator.of(dialogContext).pop(null);
+                },
+                child: Text(l10n.profileCancel),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  final notes = notesController.text.trim().isEmpty
+                      ? null
+                      : notesController.text.trim();
+                  notesController.dispose();
+                  Navigator.of(dialogContext).pop({
+                    'confirmed': true,
+                    'reportId': selectedReportId,
+                    'notes': notes,
+                  });
+                },
+                child: Text(
+                  isHiding
+                      ? l10n.spotDetailActionHide
+                      : l10n.spotDetailActionUnhide,
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _toggleEventHidden(
+    ParkourEvent event, {
+    String? reportId,
+    String? notes,
+  }) async {
+    final eventId = event.id;
+    if (eventId == null) {
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.eventDetailUnableHideUnhideNow)),
+      );
+      return;
+    }
+
+    final admin = context.read<AdminEventsService>();
+    final authService = context.read<AuthService>();
+    if (!authService.isAuthenticated ||
+        (!authService.isModerator && !authService.isAdmin)) {
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.eventDetailModeratorsOnlyHideUnhide)),
+      );
+      return;
+    }
+
+    final newHiddenState = !event.hidden;
+    final userId = authService.currentUser?.uid;
+    final userName =
+        authService.userProfile?.displayName ??
+        authService.currentUser?.displayName ??
+        authService.currentUser?.email;
+    final l10n = AppLocalizations.of(context)!;
+
+    try {
+      final success = await admin.setEventHidden(
+        eventId,
+        newHiddenState,
+        userId: userId,
+        userName: userName,
+        reportId: reportId,
+        notes: notes,
+      );
+
+      if (!mounted) return;
+
+      if (success) {
+        await _loadEvent();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              newHiddenState
+                  ? l10n.eventDetailEventHiddenSuccess
+                  : l10n.eventDetailEventUnhiddenSuccess,
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              admin.error ??
+                  (newHiddenState
+                      ? l10n.eventDetailFailedHideEvent
+                      : l10n.eventDetailFailedUnhideEvent),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            newHiddenState
+                ? '${l10n.eventDetailFailedHideEvent}: $e'
+                : '${l10n.eventDetailFailedUnhideEvent}: $e',
+          ),
+        ),
+      );
     }
   }
 
@@ -3327,6 +3566,7 @@ enum _EventEditMenuAction {
   createNativeEvent,
   markDuplicate,
   removeDuplicate,
+  toggleHide,
   viewImageUrls,
 }
 

@@ -3509,6 +3509,58 @@ class AppLocalizationsEs extends AppLocalizations {
       'Solo el equipo puede gestionar duplicados de eventos.';
 
   @override
+  String get eventDetailMenuHideEvent => 'Ocultar evento';
+
+  @override
+  String get eventDetailMenuHideEventSubtitle => 'Ocultar del público';
+
+  @override
+  String get eventDetailMenuUnhideEvent => 'Mostrar evento';
+
+  @override
+  String get eventDetailMenuUnhideEventSubtitle =>
+      'Volver a mostrar al público';
+
+  @override
+  String get eventDetailHiddenBanner =>
+      'Este evento está oculto al público. Probablemente ya no existe o no cumple nuestras normas. No aparecerá en búsquedas ni en el mapa.';
+
+  @override
+  String get eventDetailModeratorsOnlyHideUnhide =>
+      'Solo los moderadores pueden ocultar o mostrar eventos.';
+
+  @override
+  String get eventDetailHideEventTitle => 'Ocultar evento';
+
+  @override
+  String get eventDetailUnhideEventTitle => 'Mostrar evento';
+
+  @override
+  String get eventDetailHideEventMessage =>
+      'El evento dejará de verse públicamente. No aparecerá en búsquedas ni en el mapa, pero los datos se conservan y pueden mostrarse después.';
+
+  @override
+  String get eventDetailUnhideEventMessage =>
+      'El evento volverá a ser público y aparecerá de nuevo en búsquedas y en el mapa.';
+
+  @override
+  String get eventDetailUnableHideUnhideNow =>
+      'No se puede ocultar o mostrar este evento ahora.';
+
+  @override
+  String get eventDetailEventHiddenSuccess => 'Evento ocultado correctamente.';
+
+  @override
+  String get eventDetailEventUnhiddenSuccess =>
+      'Evento mostrado correctamente.';
+
+  @override
+  String get eventDetailFailedHideEvent => 'No se pudo ocultar el evento';
+
+  @override
+  String get eventDetailFailedUnhideEvent => 'No se pudo mostrar el evento';
+
+  @override
   String get eventDetailMarkDuplicatePickNativeTitle =>
       'Marcar como duplicado de un evento nativo';
 

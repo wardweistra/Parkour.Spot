@@ -5,6 +5,8 @@ enum AuditLogAction {
   spotMarkedAsDuplicate,
   spotHidden,
   spotUnhidden,
+  eventHidden,
+  eventUnhidden,
   spotReportStatusChange,
   spotDelete,
   spotSourceSync,
@@ -15,7 +17,8 @@ enum AuditLogAction {
 class AuditLog {
   final String? id;
   final AuditLogAction action;
-  final String spotId;
+  final String? spotId;
+  final String? eventId;
   final String? reportId; // Optional report ID for spot report-related actions
   final String? userId;
   final String? userName;
@@ -26,7 +29,8 @@ class AuditLog {
   AuditLog({
     this.id,
     required this.action,
-    required this.spotId,
+    this.spotId,
+    this.eventId,
     this.reportId,
     this.userId,
     this.userName,
@@ -43,7 +47,8 @@ class AuditLog {
         (e) => e.toString().split('.').last == data['action'],
         orElse: () => AuditLogAction.spotEdit,
       ),
-      spotId: data['spotId'] as String,
+      spotId: data['spotId'] as String?,
+      eventId: data['eventId'] as String?,
       reportId: data['reportId'] as String?,
       userId: data['userId'] as String?,
       userName: data['userName'] as String?,
@@ -56,7 +61,8 @@ class AuditLog {
   Map<String, dynamic> toFirestore() {
     return {
       'action': action.toString().split('.').last,
-      'spotId': spotId,
+      if (spotId != null) 'spotId': spotId,
+      if (eventId != null) 'eventId': eventId,
       if (reportId != null) 'reportId': reportId,
       'userId': userId,
       'userName': userName,

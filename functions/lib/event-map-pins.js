@@ -223,6 +223,9 @@ function buildEventMapPinWrites(
   if (typeof duplicateOf === "string" && duplicateOf.trim().length > 0) {
     return {pins, truncated: false};
   }
+  if (eventData.hidden === true) {
+    return {pins, truncated: false};
+  }
   if (isEventPast(eventData, now)) {
     return {pins, truncated: false};
   }

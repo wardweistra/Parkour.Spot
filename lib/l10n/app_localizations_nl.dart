@@ -3496,6 +3496,57 @@ class AppLocalizationsNl extends AppLocalizations {
       'Alleen teamleden kunnen eventduplicaten beheren.';
 
   @override
+  String get eventDetailMenuHideEvent => 'Event verbergen';
+
+  @override
+  String get eventDetailMenuHideEventSubtitle => 'Verbergen voor publiek';
+
+  @override
+  String get eventDetailMenuUnhideEvent => 'Event zichtbaar maken';
+
+  @override
+  String get eventDetailMenuUnhideEventSubtitle => 'Weer publiek tonen';
+
+  @override
+  String get eventDetailHiddenBanner =>
+      'Dit event is verborgen voor het publiek. Het bestaat waarschijnlijk niet meer of voldoet niet aan ons beleid. Het verschijnt niet in zoekresultaten of op de kaart.';
+
+  @override
+  String get eventDetailModeratorsOnlyHideUnhide =>
+      'Alleen moderators kunnen events verbergen of zichtbaar maken.';
+
+  @override
+  String get eventDetailHideEventTitle => 'Event verbergen';
+
+  @override
+  String get eventDetailUnhideEventTitle => 'Event zichtbaar maken';
+
+  @override
+  String get eventDetailHideEventMessage =>
+      'Hiermee verberg je het event voor het publiek. Verborgen events verschijnen niet in zoekresultaten of op de kaart, maar de gegevens blijven bewaard en kunnen later weer zichtbaar worden gemaakt.';
+
+  @override
+  String get eventDetailUnhideEventMessage =>
+      'Het event wordt weer publiek zichtbaar en verschijnt opnieuw in zoekresultaten en op de kaart.';
+
+  @override
+  String get eventDetailUnableHideUnhideNow =>
+      'Dit event kan nu niet verborgen of zichtbaar worden gemaakt.';
+
+  @override
+  String get eventDetailEventHiddenSuccess => 'Event succesvol verborgen.';
+
+  @override
+  String get eventDetailEventUnhiddenSuccess =>
+      'Event succesvol zichtbaar gemaakt.';
+
+  @override
+  String get eventDetailFailedHideEvent => 'Event verbergen mislukt';
+
+  @override
+  String get eventDetailFailedUnhideEvent => 'Event zichtbaar maken mislukt';
+
+  @override
   String get eventDetailMarkDuplicatePickNativeTitle =>
       'Als duplicaat van een native event markeren';
 

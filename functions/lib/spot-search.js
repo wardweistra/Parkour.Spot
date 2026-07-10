@@ -56,6 +56,7 @@ function isSpotSearchIndexEligible(spotData) {
  */
 function isEventSearchIndexEligible(eventData, now = new Date()) {
   if (!eventData || typeof eventData !== "object") return false;
+  if (eventData.hidden === true) return false;
   const duplicateOf = eventData.duplicateOf;
   if (typeof duplicateOf === "string" && duplicateOf.trim().length > 0) {
     return false;

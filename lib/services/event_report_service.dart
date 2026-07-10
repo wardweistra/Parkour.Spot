@@ -431,6 +431,46 @@ class EventReportService {
     }
   }
 
+  /// Gets all event reports for a specific event.
+  /// Includes reports targeting the event or naming it as the duplicate original.
+  Future<List<EventReport>> getReportsForEvent(String eventId) async {
+    try {
+      final directReportsQuery = _firestore
+          .collection('eventReports')
+          .where('targetEventId', isEqualTo: eventId);
+
+      final duplicateReportsQuery = _firestore
+          .collection('eventReports')
+          .where('duplicateOfEventId', isEqualTo: eventId);
+
+      final results = await Future.wait([
+        directReportsQuery.get(),
+        duplicateReportsQuery.get(),
+      ]);
+
+      final allDocs = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+      allDocs.addAll(results[0].docs);
+      allDocs.addAll(results[1].docs);
+
+      final reportsMap = <String, EventReport>{};
+      for (final doc in allDocs) {
+        final report = EventReport.fromSnapshot(doc);
+        reportsMap[report.id] = report;
+      }
+
+      final reports = reportsMap.values.toList();
+      reports.sort((a, b) {
+        final aTime = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bTime = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return bTime.compareTo(aTime);
+      });
+      return reports;
+    } catch (e) {
+      debugPrint('Error getting event reports for event: $e');
+      return [];
+    }
+  }
+
   Future<String?> approveReport({
     required String reportId,
     required String approverUserId,
